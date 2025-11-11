@@ -147,7 +147,7 @@ public class GuildSettingSlashCommands : ApplicationCommandModule<ApplicationCom
 
             var components =
                 new ComponentBuilder().WithButton($"Loading {name.ToLower()} view...", customId: "1",
-                    emote: Emote.Parse("<a:loading:821676038102056991>"), disabled: true, style: ButtonStyle.Secondary);
+                    emote: EmojiProperties.Custom("<a:loading:821676038102056991>"), disabled: true, style: ButtonStyle.Secondary);
             await message.ModifyAsync(m => m.Components = components.Build());
 
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);

@@ -286,7 +286,7 @@ public class SupporterService
                 .WithButton("Resubscribe", style: ButtonStyle.Secondary,
                     customId: InteractionConstants.SupporterLinks
                         .GeneratePurchaseButtons(source: "goodbye-resubscribe"))
-                .WithButton("Support server", style: ButtonStyle.Link, url: "https://discord.gg/fmbot");
+                .WithButton("Support server",  url: "https://discord.gg/fmbot");
 
             goodbyeEmbed.AddField("🏷️ Annual deal",
                 "Resubscribe and save 50% on .fmbot supporter with our new yearly option.");

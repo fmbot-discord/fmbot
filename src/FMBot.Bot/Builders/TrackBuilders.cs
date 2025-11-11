@@ -278,8 +278,8 @@ public class TrackBuilders
                 response.Embed.AddField($"Eurovision <:eurovision:1084971471610323035> ", eurovisionDescription.full);
                 if (eurovisionEntry.VideoLink != null)
                 {
-                    response.Components.WithButton(style: ButtonStyle.Link,
-                        emote: Emote.Parse(DiscordConstants.YouTube), url: eurovisionEntry.VideoLink);
+                    response.Components.WithButton(
+                        emote: EmojiProperties.Custom(DiscordConstants.YouTube), url: eurovisionEntry.VideoLink);
                 }
             }
         }
@@ -297,7 +297,7 @@ public class TrackBuilders
                     "Preview",
                     $"{InteractionConstants.TrackPreview}-{dbTrack.Id}",
                     style: ButtonStyle.Secondary,
-                    emote: Emote.Parse("<:playpreview:1305607890941378672>"));
+                    emote: EmojiProperties.Custom("<:playpreview:1305607890941378672>"));
         }
 
         if (SupporterService.IsSupporter(context.ContextUser.UserType) &&
@@ -853,7 +853,7 @@ public class TrackBuilders
                     "Preview",
                     $"{InteractionConstants.TrackPreview}-{spotifyTrack.Id}",
                     style: ButtonStyle.Secondary,
-                    emote: Emote.Parse("<:playpreview:1305607890941378672>"));
+                    emote: EmojiProperties.Custom("<:playpreview:1305607890941378672>"));
         }
 
         return response;

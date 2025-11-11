@@ -103,7 +103,7 @@ public class MusicBotService
         var description = new StringBuilder();
         description.Append(
             $"<a:now_scrobbling:1374003167838081136> Scrobbling **{trackResult.TrackName}** by **{trackResult.ArtistName}** for {listenerCount} {StringExtensions.GetListenersString(listenerCount)}");
-        container.AddComponent(new TextDisplayBuilder(description.ToString()));
+        container.AddComponent(new TextDisplayProperties(description.ToString()));
 
         var footer = new StringBuilder();
         if (trackResult.DurationMs.HasValue)
@@ -117,7 +117,7 @@ public class MusicBotService
         {
             Components =
             [
-                new TextDisplayBuilder(footer.ToString())
+                new TextDisplayProperties(footer.ToString())
             ],
             Accessory = new ButtonBuilder("Manage", style: ButtonStyle.Secondary,
                 customId: InteractionConstants.BotScrobblingManage)

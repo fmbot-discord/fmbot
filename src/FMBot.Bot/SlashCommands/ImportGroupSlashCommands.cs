@@ -168,7 +168,7 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
                     $"We can only process files that are from the ['Extended Streaming History'](https://www.spotify.com/us/account/privacy/) package. Instead you have uploaded the 'Account data' package.",
                     true,
                     image: "https://fm.bot/img/bot/import-spotify-instructions.png",
-                    components: new ComponentBuilder().WithButton("Spotify privacy page", style: ButtonStyle.Link,
+                    components: new ComponentBuilder().WithButton("Spotify privacy page",
                         url: "https://www.spotify.com/us/account/privacy/"));
                 this.Context.LogCommandUsed(CommandResponse.WrongInput);
                 return;

@@ -364,7 +364,7 @@ public class ArtistBuilders
             footer.AppendLine(GenreService.GenresToString(fullArtist.ArtistGenres.ToList()));
         }
 
-        response.Components = new ComponentBuilder()
+        response.Components
             .WithButton("Overview",
                 $"{InteractionConstants.Artist.Overview}-{fullArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}",
                 style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("\ud83d\udcca"));
@@ -373,19 +373,19 @@ public class ArtistBuilders
             fullArtist.ArtistLinks.Any(a => a.Type == LinkType.RateYourMusic))
         {
             var rym = fullArtist.ArtistLinks.First(f => f.Type == LinkType.RateYourMusic);
-            response.Components.WithButton(style: ButtonStyle.Link, emote: Emote.Parse(DiscordConstants.RateYourMusic),
+            response.Components.WithButton(emote: EmojiProperties.Custom(DiscordConstants.RateYourMusic),
                 url: rym.Url);
         }
         else if (fullArtist.SpotifyId != null)
         {
-            response.Components.WithButton(style: ButtonStyle.Link,
-                emote: Emote.Parse(DiscordConstants.Spotify),
+            response.Components.WithButton(
+                emote: EmojiProperties.Custom(DiscordConstants.Spotify),
                 url: $"https://open.spotify.com/artist/{fullArtist.SpotifyId}");
 
             if (fullArtist.AppleMusicUrl != null)
             {
-                response.Components.WithButton(style: ButtonStyle.Link,
-                    emote: Emote.Parse(DiscordConstants.AppleMusic), url: fullArtist.AppleMusicUrl);
+                response.Components.WithButton(
+                    emote: EmojiProperties.Custom(DiscordConstants.AppleMusic), url: fullArtist.AppleMusicUrl);
             }
         }
 
@@ -394,36 +394,36 @@ public class ArtistBuilders
             var facebook = fullArtist.ArtistLinks.FirstOrDefault(f => f.Type == LinkType.Facebook);
             if (facebook != null && fullArtist.ArtistLinks.All(a => a.Type != LinkType.Instagram))
             {
-                response.Components.WithButton(style: ButtonStyle.Link,
-                    emote: Emote.Parse(DiscordConstants.Facebook), url: facebook.Url);
+                response.Components.WithButton(
+                    emote: EmojiProperties.Custom(DiscordConstants.Facebook), url: facebook.Url);
             }
 
             var instagram = fullArtist.ArtistLinks.FirstOrDefault(f => f.Type == LinkType.Instagram);
             if (instagram != null)
             {
-                response.Components.WithButton(style: ButtonStyle.Link,
-                    emote: Emote.Parse(DiscordConstants.Instagram), url: instagram.Url);
+                response.Components.WithButton(
+                    emote: EmojiProperties.Custom(DiscordConstants.Instagram), url: instagram.Url);
             }
 
             var twitter = fullArtist.ArtistLinks.FirstOrDefault(f => f.Type == LinkType.Twitter);
             if (twitter != null)
             {
-                response.Components.WithButton(style: ButtonStyle.Link,
-                    emote: Emote.Parse(DiscordConstants.Twitter), url: twitter.Url);
+                response.Components.WithButton(
+                    emote: EmojiProperties.Custom(DiscordConstants.Twitter), url: twitter.Url);
             }
 
             var tiktok = fullArtist.ArtistLinks.FirstOrDefault(f => f.Type == LinkType.TikTok);
             if (tiktok != null)
             {
-                response.Components.WithButton(style: ButtonStyle.Link,
-                    emote: Emote.Parse(DiscordConstants.TikTok), url: tiktok.Url);
+                response.Components.WithButton(
+                    emote: EmojiProperties.Custom(DiscordConstants.TikTok), url: tiktok.Url);
             }
 
             var bandcamp = fullArtist.ArtistLinks.FirstOrDefault(f => f.Type == LinkType.Bandcamp);
             if (bandcamp != null)
             {
-                response.Components.WithButton(style: ButtonStyle.Link,
-                    emote: Emote.Parse(DiscordConstants.Bandcamp), url: bandcamp.Url);
+                response.Components.WithButton(
+                    emote: EmojiProperties.Custom(DiscordConstants.Bandcamp), url: bandcamp.Url);
             }
         }
 
@@ -613,7 +613,7 @@ public class ArtistBuilders
         var components = new ComponentBuilder()
             .WithButton("Artist",
                 $"{InteractionConstants.Artist.Info}-{fullArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}",
-                style: ButtonStyle.Secondary, emote: Emote.Parse(DiscordConstants.Info));
+                style: ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.Info));
 
         components.WithButton("All top tracks",
             $"{InteractionConstants.Artist.Tracks}-{fullArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}",

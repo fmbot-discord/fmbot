@@ -26,7 +26,7 @@ public class ResponseModel
     public EmbedAuthorProperties EmbedAuthor { get; set; }
     public EmbedProperties Embed { get; set; }
     public EmbedFooterProperties EmbedFooter { get; set; }
-    public ComponentBuilder Components { get; set; }
+    public ActionRowProperties Components { get; set; }
 
     public ComponentBuilderV2 ComponentsV2 { get; set; }
     public ComponentContainerProperties ComponentsContainer { get; set; }

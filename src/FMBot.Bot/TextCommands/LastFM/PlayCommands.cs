@@ -332,7 +332,7 @@ public class PlayCommands : BaseCommandModule
             var loading = false;
             if (!this._recapBuilders.RecapCacheHot(timeSettings.Description, userSettings.UserNameLastFm))
             {
-                await Context.Message.AddReactionAsync(Emote.Parse(DiscordConstants.Loading));
+                await Context.Message.AddReactionAsync(EmojiProperties.Custom(DiscordConstants.Loading));
                 loading = true;
             }
 
@@ -343,7 +343,7 @@ public class PlayCommands : BaseCommandModule
 
             if (loading)
             {
-                await Context.Message.RemoveReactionAsync(Emote.Parse(DiscordConstants.Loading),
+                await Context.Message.RemoveReactionAsync(EmojiProperties.Custom(DiscordConstants.Loading),
                     this._botSettings.Discord.ApplicationId.GetValueOrDefault());
             }
 

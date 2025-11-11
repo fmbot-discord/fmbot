@@ -531,10 +531,10 @@ public class CountryBuilders
         response.Stream = encoded.AsStream();
         response.FileName = "artist-map.png";
 
-        response.ComponentsContainer.AddComponent(new TextDisplayBuilder($"**{embedTitle}**"));
+        response.ComponentsContainer.AddComponent(new TextDisplayProperties($"**{embedTitle}**"));
         response.ComponentsContainer.AddComponent(
             new MediaGalleryBuilder().AddItem($"attachment://{response.FileName}"));
-        response.ComponentsContainer.AddComponent(new TextDisplayBuilder("-# Country source: Musicbrainz"));
+        response.ComponentsContainer.AddComponent(new TextDisplayProperties("-# Country source: Musicbrainz"));
 
         response.ResponseType = ResponseType.ComponentsV2;
         response.ComponentsContainer.WithAccentColor(DiscordConstants.LastFmColorRed);

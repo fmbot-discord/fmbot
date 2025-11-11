@@ -711,7 +711,7 @@ public class GenreBuilders
 
         var interaction = userView ? InteractionConstants.Genre.GenreGuild : InteractionConstants.Genre.GenreUser;
         var optionEmote =
-            userView ? Emote.Parse("<:server:961685224041902140>") : Emote.Parse("<:user:961687127249260634>");
+            userView ? EmojiProperties.Custom("<:server:961685224041902140>") : EmojiProperties.Custom("<:user:961687127249260634>");
         var optionDescription = userView ? "View server overview" : "View user overview";
         var originalSearchValue = !string.IsNullOrWhiteSpace(originalSearch) ? originalSearch : "0";
         var optionId =

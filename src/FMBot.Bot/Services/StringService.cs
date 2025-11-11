@@ -275,7 +275,7 @@ public static class StringService
 
         if (customOptionId == null && pages.Count >= 25)
         {
-            builder.AddOption(Emote.Parse(DiscordConstants.PagesGoTo),
+            builder.AddOption(EmojiProperties.Custom(DiscordConstants.PagesGoTo),
                 PaginatorAction.Jump, ButtonStyle.Secondary);
         }
 
@@ -311,7 +311,7 @@ public static class StringService
 
         if (pages.Count >= 10 && customOptionId == null)
         {
-            builder.AddOption(Emote.Parse(DiscordConstants.PagesGoTo),
+            builder.AddOption(EmojiProperties.Custom(DiscordConstants.PagesGoTo),
                 PaginatorAction.Jump, ButtonStyle.Secondary);
         }
 
@@ -332,8 +332,8 @@ public static class StringService
 
         builder.WithOptions(new List<PaginatorButton>
         {
-            new(Emote.Parse(DiscordConstants.PagesPrevious), PaginatorAction.Backward, ButtonStyle.Secondary),
-            new(Emote.Parse(DiscordConstants.PagesNext), PaginatorAction.Forward, ButtonStyle.Secondary),
+            new(EmojiProperties.Custom(DiscordConstants.PagesPrevious), PaginatorAction.Backward, ButtonStyle.Secondary),
+            new(EmojiProperties.Custom(DiscordConstants.PagesNext), PaginatorAction.Forward, ButtonStyle.Secondary),
         });
 
         return builder;
@@ -514,18 +514,18 @@ public static class StringService
     public static ActionRowBuilder GetSimplePaginationActionRow(IComponentPaginator p)
     {
         return new ActionRowBuilder()
-            .AddPreviousButton(p, style: ButtonStyle.Secondary, emote: Emote.Parse(DiscordConstants.PagesPrevious))
-            .AddNextButton(p, style: ButtonStyle.Secondary, emote: Emote.Parse(DiscordConstants.PagesNext));
+            .AddPreviousButton(p, style: ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.PagesPrevious))
+            .AddNextButton(p, style: ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.PagesNext));
     }
 
     public static ActionRowBuilder GetPaginationActionRow(IComponentPaginator p)
     {
         return new ActionRowBuilder()
-            .AddFirstButton(p, style: ButtonStyle.Secondary, emote: Emote.Parse(DiscordConstants.PagesFirst))
+            .AddFirstButton(p, style: ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.PagesFirst))
             .AddPreviousButton(p, style: ButtonStyle.Secondary,
-                emote: Emote.Parse(DiscordConstants.PagesPrevious))
-            .AddNextButton(p, style: ButtonStyle.Secondary, emote: Emote.Parse(DiscordConstants.PagesNext))
-            .AddLastButton(p, style: ButtonStyle.Secondary, emote: Emote.Parse(DiscordConstants.PagesLast))
-            .AddJumpButton(p, style: ButtonStyle.Secondary, emote: Emote.Parse(DiscordConstants.PagesGoTo));
+                emote: EmojiProperties.Custom(DiscordConstants.PagesPrevious))
+            .AddNextButton(p, style: ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.PagesNext))
+            .AddLastButton(p, style: ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.PagesLast))
+            .AddJumpButton(p, style: ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.PagesGoTo));
     }
 }

@@ -51,7 +51,7 @@ public class ImportBuilders
             response.Components = new ComponentBuilder()
                 .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
                     customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "importing"))
-                .WithButton("Import info", style: ButtonStyle.Link, url: "https://fm.bot/importing/");
+                .WithButton("Import info",  url: "https://fm.bot/importing/");
             response.Embed.WithColor(DiscordConstants.InformationColorBlue);
             response.CommandResponse = CommandResponse.SupporterRequired;
 
@@ -77,9 +77,9 @@ public class ImportBuilders
 
         response.Components = new ComponentBuilder()
             .WithButton("Spotify", InteractionConstants.ImportInstructionsSpotify,
-                emote: Emote.Parse("<:spotify:882221219334725662>"))
+                emote: EmojiProperties.Custom("<:spotify:882221219334725662>"))
             .WithButton("Apple Music", InteractionConstants.ImportInstructionsAppleMusic,
-                emote: Emote.Parse("<:apple_music:1218182727149420544>"));
+                emote: EmojiProperties.Custom("<:apple_music:1218182727149420544>"));
 
         response.Embed.WithDescription(description.ToString());
 
@@ -144,7 +144,7 @@ public class ImportBuilders
 
         response.Embed.WithFooter(footer.ToString());
         response.Components = new ComponentBuilder()
-            .WithButton("Spotify privacy page", style: ButtonStyle.Link,
+            .WithButton("Spotify privacy page",
                 url: "https://www.spotify.com/us/account/privacy/");
 
         if (count > 0)
@@ -219,7 +219,7 @@ public class ImportBuilders
         response.Embed.WithFooter(footer.ToString());
 
         response.Components = new ComponentBuilder()
-            .WithButton("Apple Data and Privacy", style: ButtonStyle.Link, url: "https://privacy.apple.com/");
+            .WithButton("Apple Data and Privacy",  url: "https://privacy.apple.com/");
 
         if (count > 0)
         {

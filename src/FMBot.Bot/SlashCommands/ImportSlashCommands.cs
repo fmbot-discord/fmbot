@@ -804,7 +804,7 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
         await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
         {
             e.Components = new ComponentBuilder().WithButton(text, customId: "0",
-                emote: Emote.Parse(DiscordConstants.Loading), disabled: true, style: ButtonStyle.Secondary).Build();
+                emote: EmojiProperties.Custom(DiscordConstants.Loading), disabled: true, style: ButtonStyle.Secondary).Build();
         });
     }
 }

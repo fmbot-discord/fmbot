@@ -259,7 +259,7 @@ namespace FMBot.Bot.Services
         {
             if (context.Message != null)
             {
-                await context.Message.AddReactionAsync(Emote.Parse(DiscordConstants.Shortcut));
+                await context.Message.AddReactionAsync(EmojiProperties.Custom(DiscordConstants.Shortcut));
             }
         }
     }

@@ -1154,7 +1154,7 @@ public class GuildService
             {
                 try
                 {
-                    Emote.Parse(emote);
+                    EmojiProperties.Custom(emote);
                 }
                 catch
                 {
@@ -1213,7 +1213,7 @@ public class GuildService
             }
             else
             {
-                var emote = Emote.Parse(emoteString);
+                var emote = EmojiProperties.Custom(emoteString);
                 await message.AddReactionAsync(emote);
             }
         }

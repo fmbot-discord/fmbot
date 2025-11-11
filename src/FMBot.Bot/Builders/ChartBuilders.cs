@@ -12,6 +12,8 @@ using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Domain.Types;
+using NetCord;
+using NetCord.Rest;
 using SkiaSharp;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 
@@ -221,7 +223,7 @@ public class ChartBuilders
             await this._supporterService.GetRandomSupporter(context.DiscordGuild, context.ContextUser.UserType);
         ChartService.AddSettingsToDescription(chartSettings, embedDescription, supporter, context.Prefix);
 
-        var nsfwAllowed = context.DiscordGuild == null || ((SocketTextChannel)context.DiscordChannel).IsNsfw;
+        var nsfwAllowed = context.DiscordGuild == null || ((TextGuildChannel)context.DiscordChannel).Nsfw;
         var chart = await this._chartService.GenerateChartAsync(chartSettings);
 
         if (chartSettings.CensoredItems is > 0)
@@ -233,7 +235,7 @@ public class ChartBuilders
         if (chartSettings.ContainsNsfw && !nsfwAllowed)
         {
             response.ComponentsContainer.AddComponent(
-                new TextDisplayBuilder("**⚠️ Contains NSFW covers - Click to reveal**"));
+                new TextDisplayProperties("**⚠️ Contains NSFW covers - Click to reveal**"));
         }
 
         response.FileDescription = StringExtensions.TruncateLongString(chartSettings.FileDescription.ToString(), 1024);
@@ -244,21 +246,21 @@ public class ChartBuilders
             StringExtensions.TruncateLongString(response.FileDescription, 256),
             isSpoiler: chartSettings.ContainsNsfw));
 
-        response.ComponentsContainer.AddComponent(new TextDisplayBuilder($"**{embedTitle}**"));
+        response.ComponentsContainer.AddComponent(new TextDisplayProperties($"**{embedTitle}**"));
 
         if (embedDescription.Length > 0)
         {
-            response.ComponentsContainer.AddComponent(new TextDisplayBuilder(embedDescription.ToString()));
+            response.ComponentsContainer.AddComponent(new TextDisplayProperties(embedDescription.ToString()));
         }
 
         if (!userSettings.DifferentUser)
         {
-            response.ComponentsContainer.AddComponent(new TextDisplayBuilder(
+            response.ComponentsContainer.AddComponent(new TextDisplayProperties(
                 $"-# {userSettings.UserNameLastFm} has {context.ContextUser.TotalPlaycount.Format(context.NumberFormat)} scrobbles"));
         }
         else
         {
-            response.ComponentsContainer.AddComponent(new TextDisplayBuilder(
+            response.ComponentsContainer.AddComponent(new TextDisplayProperties(
                 $"-# Chart requested by {await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser)}"));
         }
 
@@ -412,7 +414,7 @@ public class ChartBuilders
         if (chartSettings.ContainsNsfw && !nsfwAllowed)
         {
             response.ComponentsContainer.AddComponent(
-                new TextDisplayBuilder("**⚠️ Contains NSFW images - Click to reveal**"));
+                new TextDisplayProperties("**⚠️ Contains NSFW images - Click to reveal**"));
         }
 
         response.FileName =
@@ -421,14 +423,14 @@ public class ChartBuilders
         response.ComponentsContainer.AddComponent(new MediaGalleryBuilder().AddItem($"attachment://{response.FileName}",
             isSpoiler: chartSettings.ContainsNsfw));
 
-        response.ComponentsContainer.AddComponent(new TextDisplayBuilder($"**{embedTitle}**"));
+        response.ComponentsContainer.AddComponent(new TextDisplayProperties($"**{embedTitle}**"));
 
         if (embedDescription.Length > 0)
         {
-            response.ComponentsContainer.AddComponent(new TextDisplayBuilder(embedDescription.ToString()));
+            response.ComponentsContainer.AddComponent(new TextDisplayProperties(embedDescription.ToString()));
         }
 
-        response.ComponentsContainer.AddComponent(new TextDisplayBuilder(footer.ToString()));
+        response.ComponentsContainer.AddComponent(new TextDisplayProperties(footer.ToString()));
 
         var encoded = chart.Encode(SKEncodedImageFormat.Png, 100);
         response.Stream = encoded.AsStream();

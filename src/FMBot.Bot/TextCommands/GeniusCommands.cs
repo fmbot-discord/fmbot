@@ -133,7 +133,7 @@ public class GeniusCommands : BaseCommandModule
 
                     response.Embed.WithDescription($"By **[{firstResult.PrimaryArtist.Name}]({firstResult.PrimaryArtist.Url})**");
 
-                    response.Components = new ComponentBuilder().WithButton("View on Genius", style: ButtonStyle.Link, url: firstResult.Url);
+                    response.Components = new ComponentBuilder().WithButton("View on Genius",  url: firstResult.Url);
 
                     await this.Context.SendResponse(this.Interactivity, response);
                     this.Context.LogCommandUsed(response.CommandResponse);

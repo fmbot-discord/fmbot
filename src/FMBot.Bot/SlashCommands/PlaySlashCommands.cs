@@ -628,7 +628,7 @@ public class PlaySlashCommands : ApplicationCommandModule<ApplicationCommandCont
             var name = viewType.GetAttribute<ChoiceDisplayAttribute>().Name;
             var components =
                 new ComponentBuilder().WithButton($"{name} for {timeSettings.Description} loading...", customId: "1",
-                    emote: Emote.Parse("<a:loading:821676038102056991>"), disabled: true, style: ButtonStyle.Secondary);
+                    emote: EmojiProperties.Custom("<a:loading:821676038102056991>"), disabled: true, style: ButtonStyle.Secondary);
             await Context.ModifyComponents(message, components);
 
             var response =
@@ -709,7 +709,7 @@ public class PlaySlashCommands : ApplicationCommandModule<ApplicationCommandCont
 
             var components =
                 new ComponentBuilder().WithButton($"Loading {viewType.ToString().ToLower()} gaps...", customId: "1",
-                    emote: Emote.Parse(DiscordConstants.Loading), disabled: true, style: ButtonStyle.Secondary);
+                    emote: EmojiProperties.Custom(DiscordConstants.Loading), disabled: true, style: ButtonStyle.Secondary);
             await this.Context.Interaction.ModifyOriginalResponseAsync(m => m.Components = components.Build());
 
             var discordUserId = ulong.Parse(splitInput[2]);

@@ -103,7 +103,7 @@ public class DiscogsBuilder
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
         response.Components = new ComponentBuilder()
-            .WithButton("Login to Discogs", style: ButtonStyle.Link, url: discogsAuth.LoginUrl);
+            .WithButton("Login to Discogs",  url: discogsAuth.LoginUrl);
 
         var dm = await context.DiscordUser.SendMessageAsync("", false, response.Embed.Build(), components: response.Components.Build());
         response.Embed.Footer = null;

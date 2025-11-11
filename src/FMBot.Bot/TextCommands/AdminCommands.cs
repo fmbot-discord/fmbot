@@ -1766,11 +1766,11 @@ public class AdminCommands : BaseCommandModule
             {
                 Components =
                 [
-                    new TextDisplayBuilder(
+                    new TextDisplayProperties(
                         "Welcome to the .fmbot support server!\n" +
                         "Get help with .fmbot, chat with other music enthusiasts and more."),
                     new SeparatorBuilder { Spacing = SeparatorSpacingSize.Large },
-                    new TextDisplayBuilder(@"## 📜 Server rules:
+                    new TextDisplayProperties(@"## 📜 Server rules:
 1. **Be nice to each other.** Treat everyone with respect. No bigotry allowed, including but not limited to racism, sexism, homophobia, transphobia, ableism, and use of slurs (reclaimed or otherwise).
 2. **Remember that music taste is subjective.** Criticism is fine, music elitism is not. Respect the music taste of others.
 3. **Don't be spammy or annoying in general.** This can include repeatedly interrupting others, flooding the chat, immaturity, personal attacks, instigating or prolonging drama, and other behaviour that sucks the air out of the chat.
@@ -1782,13 +1782,13 @@ public class AdminCommands : BaseCommandModule
 
 Not following these rules might lead to a mute, kick or ban. Staff members can ban, kick or mute you for any reason if they feel it is needed."),
                     new SeparatorBuilder { Spacing = SeparatorSpacingSize.Large },
-                    new TextDisplayBuilder(@"Role pings:
+                    new TextDisplayProperties(@"Role pings:
 - Ping <@&1083762942144688198> for issues that require immediate staff attention, like someone disrupting the server or a raid
 - Ping <@&1083762904924434442> if the bot is down (not responding)
 
 For anything else, you must use <#856212952305893376> and after that ask in <#1006526334316576859>. Someone will get to you when they have time."),
                     new SeparatorBuilder { Spacing = SeparatorSpacingSize.Large },
-                    new TextDisplayBuilder(@"## 🔗 Links:
+                    new TextDisplayProperties(@"## 🔗 Links:
 - Documentation: <https://fm.bot/>
 - Link to this server: <http://discord.gg/fmbot>
 - Bluesky: <https://bsky.app/profile/fm.bot>
@@ -1800,9 +1800,9 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                     {
                         Components =
                         [
-                            new TextDisplayBuilder("### Get .fmbot in your server")
+                            new TextDisplayProperties("### Get .fmbot in your server")
                         ],
-                        Accessory = new ButtonBuilder("Add to server", style: ButtonStyle.Link,
+                        Accessory = new ButtonBuilder("Add to server",
                             url:
                             "https://discord.com/oauth2/authorize?client_id=356268235697553409&permissions=275415092288&scope=applications.commands%20bot")
                     },
@@ -1810,9 +1810,9 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                     {
                         Components =
                         [
-                            new TextDisplayBuilder("### Use .fmbot slash commands everywhere")
+                            new TextDisplayProperties("### Use .fmbot slash commands everywhere")
                         ],
-                        Accessory = new ButtonBuilder("Add to account", style: ButtonStyle.Link,
+                        Accessory = new ButtonBuilder("Add to account",
                             url:
                             "https://discord.com/oauth2/authorize?client_id=356268235697553409&scope=applications.commands&integration_type=1")
                     },
@@ -1821,7 +1821,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                     {
                         Components =
                         [
-                            new TextDisplayBuilder("### Support us and unlock extra perks")
+                            new TextDisplayProperties("### Support us and unlock extra perks")
                         ],
                         Accessory = new ButtonBuilder("Get .fmbot supporter", style: ButtonStyle.Primary,
                             customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(true, false,
@@ -1834,13 +1834,13 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
             {
                 Components =
                 [
-                    new TextDisplayBuilder("## 🚨 NSFW and NSFL artwork report form"),
-                    new TextDisplayBuilder(
+                    new TextDisplayProperties("## 🚨 NSFW and NSFL artwork report form"),
+                    new TextDisplayProperties(
                         "Found album artwork or an artist image that should be marked NSFW or censored entirely? Please report that here. \n\n" +
                         "Note that artwork is censored according to Discord guidelines and only as required by Discord. .fmbot is fundamentally opposed to artistic censorship."),
-                    new TextDisplayBuilder("**Marked NSFW**\n" +
+                    new TextDisplayProperties("**Marked NSFW**\n" +
                                            "Frontal nudity [genitalia, exposed anuses, and 'female presenting nipples,' which is not our terminology], furry art in an erotic context and people covered in blood and/or wounds"),
-                    new TextDisplayBuilder(
+                    new TextDisplayProperties(
                         "**Fully censored / NSFL**\n" +
                         "Hate speech [imagery or text promoting prejudice against a group], gore [detailed, realistic, or semi realistic depictions of viscera or extreme bodily harm, not blood alone] and pornographic content [depictions of sex]"),
                     new SeparatorBuilder(),
@@ -1867,8 +1867,8 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
             {
                 Components =
                 [
-                    new TextDisplayBuilder("## 🌐 GlobalWhoKnows report form"),
-                    new TextDisplayBuilder(globalWhoKnowsDescription.ToString()),
+                    new TextDisplayProperties("## 🌐 GlobalWhoKnows report form"),
+                    new TextDisplayProperties(globalWhoKnowsDescription.ToString()),
                     new SeparatorBuilder(),
                     new ActionRowBuilder()
                         .WithButton("Report user", style: ButtonStyle.Secondary,

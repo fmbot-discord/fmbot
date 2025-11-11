@@ -487,7 +487,7 @@ public class AlbumBuilders
                     .WithMinValues(0)
                     .WithMaxValues(25);
 
-                response.Components = new ComponentBuilder().WithSelectMenu(allowedRoles);
+                response.Components.WithSelectMenu(allowedRoles);
             }
             else
             {
@@ -1130,7 +1130,7 @@ public class AlbumBuilders
 
         var albumImages = await this._albumService.GetAlbumImages(databaseAlbum.Id);
 
-        response.Components = new ComponentBuilder()
+        response.Components
             .WithButton("Album",
                 $"{InteractionConstants.Album.Info}-{databaseAlbum.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}",
                 style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("💽"));

@@ -290,7 +290,7 @@ public class TrackSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         buttonBuilder.WithLabel("Open on Spotify");
         buttonBuilder.WithStyle(ButtonStyle.Link);
         buttonBuilder.WithUrl("https://open.spotify.com/track/" + dbTrack.SpotifyId);
-        buttonBuilder.WithEmote(Emote.Parse(DiscordConstants.Spotify));
+        buttonBuilder.WithEmote(EmojiProperties.Custom(DiscordConstants.Spotify));
 
         await this.Context.AddButton(buttonBuilder);
 

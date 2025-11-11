@@ -225,7 +225,7 @@ public class UserBuilder
         response.Components = new ComponentBuilder()
             .WithButton("Enable", InteractionConstants.BotScrobblingEnable, style: ButtonStyle.Primary)
             .WithButton("Disable", InteractionConstants.BotScrobblingDisable, style: ButtonStyle.Secondary)
-            .WithButton("Supported music bots", style: ButtonStyle.Link,
+            .WithButton("Supported music bots",
                 url: "https://fm.bot/botscrobbling/#currently-supported-bots");
 
         return response;
@@ -262,7 +262,7 @@ public class UserBuilder
         response.Embed.WithColor(DiscordConstants.LastFmColorRed);
         response.Embed.WithDescription(reply.ToString());
         response.Components = new ComponentBuilder()
-            .WithButton("Connect Last.fm account to .fmbot", style: ButtonStyle.Link, url: link);
+            .WithButton("Connect Last.fm account to .fmbot",  url: link);
         return response;
     }
 
@@ -309,7 +309,7 @@ public class UserBuilder
         response.Components = new ComponentBuilder()
             .WithButton("Settings", style: ButtonStyle.Secondary, customId: InteractionConstants.User.Settings,
                 emote: EmojiProperties.Standard("⚙️"))
-            .WithButton("Add .fmbot", style: ButtonStyle.Link,
+            .WithButton("Add .fmbot",
                 url: "https://discord.com/oauth2/authorize?client_id=356268235697553409");
 
         response.Embed.WithDescription(description.ToString());
@@ -873,12 +873,12 @@ public class UserBuilder
 
         if (string.IsNullOrWhiteSpace(userInfo.Image))
         {
-            response.ComponentsContainer.AddComponent(new TextDisplayBuilder(initialDescription.ToString()));
+            response.ComponentsContainer.AddComponent(new TextDisplayProperties(initialDescription.ToString()));
         }
         else
         {
             response.ComponentsContainer.WithSection([
-                    new TextDisplayBuilder(initialDescription.ToString())
+                    new TextDisplayProperties(initialDescription.ToString())
                 ],
                 new ThumbnailBuilder(userInfo.Image));
         }
@@ -895,7 +895,7 @@ public class UserBuilder
         if (playcounts.Length > 0)
         {
             response.ComponentsContainer.AddComponent(new SeparatorBuilder());
-            response.ComponentsContainer.AddComponent(new TextDisplayBuilder(playcounts.ToString()));
+            response.ComponentsContainer.AddComponent(new TextDisplayProperties(playcounts.ToString()));
         }
 
         var discogs = false;
@@ -923,7 +923,7 @@ public class UserBuilder
             if (collection.Length > 0)
             {
                 response.ComponentsContainer.AddComponent(new SeparatorBuilder());
-                response.ComponentsContainer.AddComponent(new TextDisplayBuilder(collection.ToString()));
+                response.ComponentsContainer.AddComponent(new TextDisplayProperties(collection.ToString()));
             }
         }
 
@@ -966,7 +966,7 @@ public class UserBuilder
         if (stats.Length > 0 && userInfo.Playcount > 0)
         {
             response.ComponentsContainer.AddComponent(new SeparatorBuilder());
-            response.ComponentsContainer.AddComponent(new TextDisplayBuilder(stats.ToString()));
+            response.ComponentsContainer.AddComponent(new TextDisplayProperties(stats.ToString()));
         }
 
         var featuredHistory =
@@ -1002,7 +1002,7 @@ public class UserBuilder
         if (footer.Length > 0)
         {
             response.ComponentsContainer.AddComponent(new SeparatorBuilder());
-            response.ComponentsContainer.AddComponent(new TextDisplayBuilder($"-# " + footer));
+            response.ComponentsContainer.AddComponent(new TextDisplayProperties($"-# " + footer));
         }
 
         var actionRow = new ActionRowBuilder();
@@ -1016,13 +1016,13 @@ public class UserBuilder
             actionRow
                 .WithButton("Collection",
                     $"{InteractionConstants.Discogs.Collection}-{user.DiscordUserId}-{context.ContextUser.DiscordUserId}",
-                    style: ButtonStyle.Secondary, emote: Emote.Parse(DiscordConstants.Vinyl));
+                    style: ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.Vinyl));
         }
 
         actionRow
-            .WithButton("Last.fm", style: ButtonStyle.Link,
+            .WithButton("Last.fm",
                 url: LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm),
-                emote: Emote.Parse("<:lastfm:882227627287515166>"));
+                emote: EmojiProperties.Custom("<:lastfm:882227627287515166>"));
 
         response.ComponentsV2.AddComponent(actionRow);
 
@@ -1072,12 +1072,12 @@ public class UserBuilder
 
         if (string.IsNullOrWhiteSpace(userInfo.Image))
         {
-            response.ComponentsContainer.AddComponent(new TextDisplayBuilder(initialDescription.ToString()));
+            response.ComponentsContainer.AddComponent(new TextDisplayProperties(initialDescription.ToString()));
         }
         else
         {
             response.ComponentsContainer.WithSection([
-                    new TextDisplayBuilder(initialDescription.ToString())
+                    new TextDisplayProperties(initialDescription.ToString())
                 ],
                 new ThumbnailBuilder(userInfo.Image));
         }
@@ -1112,7 +1112,7 @@ public class UserBuilder
         {
             anyHistoryStored = true;
             response.ComponentsContainer.AddComponent(new SeparatorBuilder());
-            response.ComponentsContainer.AddComponent(new TextDisplayBuilder("**Last months**\n" + monthDescription));
+            response.ComponentsContainer.AddComponent(new TextDisplayProperties("**Last months**\n" + monthDescription));
         }
 
         if (userSettings.UserType != UserType.User)
@@ -1144,7 +1144,7 @@ public class UserBuilder
             {
                 anyHistoryStored = true;
                 response.ComponentsContainer.AddComponent(new SeparatorBuilder());
-                response.ComponentsContainer.AddComponent(new TextDisplayBuilder("**All years**\n" + yearDescription));
+                response.ComponentsContainer.AddComponent(new TextDisplayProperties("**All years**\n" + yearDescription));
             }
         }
         else
@@ -1174,7 +1174,7 @@ public class UserBuilder
         {
             response.ComponentsContainer.AddComponent(new SeparatorBuilder());
             response.ComponentsContainer.AddComponent(
-                new TextDisplayBuilder("*Sorry, it seems like there is no stored data in .fmbot for this user.*"));
+                new TextDisplayProperties("*Sorry, it seems like there is no stored data in .fmbot for this user.*"));
         }
         else
         {
@@ -1188,7 +1188,7 @@ public class UserBuilder
                     case DataSource.ImportThenFullLastFm:
                         response.ComponentsContainer.AddComponent(new SeparatorBuilder());
                         response.ComponentsContainer.AddComponent(
-                            new TextDisplayBuilder($"{DiscordConstants.Imports} .fmbot imports: {name}"));
+                            new TextDisplayProperties($"{DiscordConstants.Imports} .fmbot imports: {name}"));
                         break;
                     case DataSource.LastFm:
                     default:
@@ -1203,9 +1203,9 @@ public class UserBuilder
             .WithButton("Profile",
                 $"{InteractionConstants.User.Profile}-{user.DiscordUserId}-{context.ContextUser.DiscordUserId}",
                 style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("ℹ"))
-            .WithButton("Last.fm", style: ButtonStyle.Link,
+            .WithButton("Last.fm",
                 url: LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm),
-                emote: Emote.Parse("<:lastfm:882227627287515166>"));
+                emote: EmojiProperties.Custom("<:lastfm:882227627287515166>"));
 
         response.ComponentsV2.AddComponent(actionRow);
 
@@ -1779,7 +1779,7 @@ public class UserBuilder
         response.Embed.WithDescription("Use the link below to authorize .fmbot.\n\n" +
                                        "If a server has any linked roles available, you can claim them by clicking the server name and going to 'Linked roles'.");
         response.Components = new ComponentBuilder()
-            .WithButton("Authorize .fmbot", style: ButtonStyle.Link, url: this._botSettings.Discord.InstallUri)
+            .WithButton("Authorize .fmbot",  url: this._botSettings.Discord.InstallUri)
             .WithButton("Refresh linked data", style: ButtonStyle.Secondary, customId: "update-linkedroles");
 
         return response;
@@ -2050,7 +2050,7 @@ public class UserBuilder
 
         var name = await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser);
         response.ComponentsContainer.AddComponent(
-            new TextDisplayBuilder($"## {DiscordConstants.Shortcut} {name}'s command shortcuts"));
+            new TextDisplayProperties($"## {DiscordConstants.Shortcut} {name}'s command shortcuts"));
         var prfx = context.Prefix == "/" ? "." : context.Prefix;
 
         if (shortcuts.Count == 0)
@@ -2066,7 +2066,7 @@ public class UserBuilder
             emptyState.AppendLine("- `gm` > `fm oneline`");
             emptyState.AppendLine();
             emptyState.AppendLine($"Make sure you don't include the `{prfx}` prefix  when creating shortcuts.");
-            response.ComponentsContainer.AddComponent(new TextDisplayBuilder(emptyState.ToString()));
+            response.ComponentsContainer.AddComponent(new TextDisplayProperties(emptyState.ToString()));
         }
         else
         {
@@ -2077,7 +2077,7 @@ public class UserBuilder
                 {
                     Components =
                     [
-                        new TextDisplayBuilder(
+                        new TextDisplayProperties(
                             $"**Input:** `{StringExtensions.Sanitize(shortcut.Input)}`\n**Output:** `{StringExtensions.Sanitize(shortcut.Output)}`")
                     ],
                     Accessory = new ButtonBuilder(emote: EmojiProperties.Standard("📝"), style: ButtonStyle.Secondary,
@@ -2091,7 +2091,7 @@ public class UserBuilder
         {
             Components =
             [
-                new TextDisplayBuilder(
+                new TextDisplayProperties(
                     $"-# ⭐ Supporter perk - {shortcuts.Count}/10 shortcut slots used\n" +
                     $"-# Any change takes a minute to apply in all servers")
             ],
@@ -2133,7 +2133,7 @@ public class UserBuilder
         var description = new StringBuilder();
         description.AppendLine($"**Input:** `{shortcut.Input}`");
         description.AppendLine($"**Output:** `{shortcut.Output}`");
-        response.ComponentsContainer.AddComponent(new TextDisplayBuilder(description.ToString()));
+        response.ComponentsContainer.AddComponent(new TextDisplayProperties(description.ToString()));
 
         response.ComponentsContainer.AddComponent(new SeparatorBuilder());
         var actionRow = new ActionRowBuilder();

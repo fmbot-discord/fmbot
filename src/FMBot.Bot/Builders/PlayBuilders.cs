@@ -543,7 +543,7 @@ public class PlayBuilder
                 if (track.AlbumCoverUrl != null && showImages)
                 {
                     container.WithSection([
-                            new TextDisplayBuilder(StringService
+                            new TextDisplayProperties(StringService
                                 .TrackToLinkedStringWithTimestamp(track, context.ContextUser.RymEnabled))
                         ],
                         new ThumbnailBuilder(track.AlbumCoverUrl));
@@ -959,7 +959,7 @@ public class PlayBuilder
                                    $"{StringExtensions.GetListeningTimeString(day.ListeningTime)} — " +
                                    $"{day.Playcount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(day.Playcount)}**");
                 content.AppendLine(fieldContent.ToString());
-                container.Components.Add(new TextDisplayBuilder(content.ToString()));
+                container.Components.Add(new TextDisplayProperties(content.ToString()));
                 container.Components.Add(new SeparatorBuilder());
 
                 plays.AddRange(day.Plays);

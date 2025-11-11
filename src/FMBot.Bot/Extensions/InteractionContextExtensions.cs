@@ -424,7 +424,7 @@ public static class InteractionContextExtensions
                         {
                             newComponents.WithButton(buttonComponent.Label, buttonComponent.CustomId,
                                 buttonComponent.Style,
-                                Emote.Parse(DiscordConstants.Loading), buttonComponent.Url, true);
+                                EmojiProperties.Custom(DiscordConstants.Loading), buttonComponent.Url, true);
                         }
                         else
                         {

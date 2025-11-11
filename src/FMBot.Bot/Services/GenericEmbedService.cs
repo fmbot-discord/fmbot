@@ -36,7 +36,7 @@ public static class GenericEmbedService
     public static ComponentBuilder UsernameNotSetErrorComponents()
     {
         return new ComponentBuilder()
-            .WithButton("Sign up", style: ButtonStyle.Link, url: "https://www.last.fm/join")
+            .WithButton("Sign up",  url: "https://www.last.fm/join")
             .WithButton("Connect Last.fm account", style: ButtonStyle.Secondary,
                 customId: InteractionConstants.User.Login);
     }
@@ -94,8 +94,8 @@ public static class GenericEmbedService
     private static ComponentBuilder NoScrobblesFoundComponents()
     {
         return new ComponentBuilder()
-            .WithButton("Track my music app", style: ButtonStyle.Link, url: "https://www.last.fm/about/trackmymusic")
-            .WithButton("Track Spotify", style: ButtonStyle.Link, url: "https://www.last.fm/settings/applications");
+            .WithButton("Track my music app",  url: "https://www.last.fm/about/trackmymusic")
+            .WithButton("Track Spotify",  url: "https://www.last.fm/settings/applications");
     }
 
     public static void ErrorResponse(this EmbedProperties embed, ResponseStatus? responseStatus, string message,
@@ -368,12 +368,19 @@ public static class GenericEmbedService
         return actionRow;
     }
 
-    public static ActionRowProperties WithButton(this ActionRowProperties actionRow, string label, string url,
+    public static ActionRowProperties WithButton(this ActionRowProperties actionRow, string url, string label = null,
         EmojiProperties emote = null, int row = 1)
     {
-        actionRow.Add(emote == null
-            ? new LinkButtonProperties(url, label)
-            : new LinkButtonProperties(url, label, emote));
+        if (label == null && emote != null)
+        {
+            actionRow.Add(new LinkButtonProperties(url, emote));
+        }
+        else
+        {
+            actionRow.Add(emote == null
+                ? new LinkButtonProperties(url, label)
+                : new LinkButtonProperties(url, label, emote));
+        }
 
         return actionRow;
     }
@@ -382,5 +389,11 @@ public static class GenericEmbedService
     {
         menu.Add(properties);
         return menu;
+    }
+
+    public static ComponentContainerProperties AddComponent(this ComponentContainerProperties component, IComponentContainerComponentProperties properties)
+    {
+        component.AddComponents(properties);
+        return component;
     }
 }

@@ -72,10 +72,10 @@ public class StaticBuilders
         }
 
         response.Components = new ComponentBuilder()
-            .WithButton("Last.fm settings", style: ButtonStyle.Link, url: "https://www.last.fm/settings/applications")
-            .WithButton("Full guide", style: ButtonStyle.Link,
+            .WithButton("Last.fm settings",  url: "https://www.last.fm/settings/applications")
+            .WithButton("Full guide",
                 url: "https://support.last.fm/t/spotify-has-stopped-scrobbling-what-can-i-do/3184")
-            .WithButton("Your profile", style: ButtonStyle.Link,
+            .WithButton("Your profile",
                 url: $"{LastfmUrlExtensions.GetUserUrl(context.ContextUser.UserNameLastFM)}");
 
         return response;
@@ -165,7 +165,7 @@ public class StaticBuilders
 
                     var stripeManageLink = await this._supporterService.GetSupporterManageLink(stripeSupporter);
 
-                    response.Components.WithButton("Manage subscription", style: ButtonStyle.Link,
+                    response.Components.WithButton("Manage subscription",
                         url: stripeManageLink);
                 }
             }

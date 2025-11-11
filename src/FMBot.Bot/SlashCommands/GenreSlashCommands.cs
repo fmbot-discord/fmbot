@@ -79,7 +79,7 @@ public class GenreSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         }
 
         var components =
-            new ComponentBuilder().WithButton($"Loading server view...", customId: "1", emote: Emote.Parse("<a:loading:821676038102056991>"), disabled: true, style: ButtonStyle.Secondary);
+            new ComponentBuilder().WithButton($"Loading server view...", customId: "1", emote: EmojiProperties.Custom("<a:loading:821676038102056991>"), disabled: true, style: ButtonStyle.Secondary);
         await message.ModifyAsync(m => m.Components = components.Build());
 
         var discordUserId = ulong.Parse(discordUser);
@@ -117,7 +117,7 @@ public class GenreSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         }
 
         var components =
-            new ComponentBuilder().WithButton($"Loading user view...", customId: "1", emote: Emote.Parse("<a:loading:821676038102056991>"), disabled: true, style: ButtonStyle.Secondary);
+            new ComponentBuilder().WithButton($"Loading user view...", customId: "1", emote: EmojiProperties.Custom("<a:loading:821676038102056991>"), disabled: true, style: ButtonStyle.Secondary);
         await Context.ModifyComponents(message, components);
 
         var discordUserId = ulong.Parse(discordUser);
@@ -166,7 +166,7 @@ public class GenreSlashCommands : ApplicationCommandModule<ApplicationCommandCon
             var originalSearch = string.IsNullOrWhiteSpace(options[4]) ? null : options[4];
 
             var components =
-                new ComponentBuilder().WithButton($"Loading {selectedOption}...", customId: "1", emote: Emote.Parse(DiscordConstants.Loading), disabled: true, style: ButtonStyle.Secondary);
+                new ComponentBuilder().WithButton($"Loading {selectedOption}...", customId: "1", emote: EmojiProperties.Custom(DiscordConstants.Loading), disabled: true, style: ButtonStyle.Secondary);
             await Context.ModifyComponents(message, components);
 
             var guild = await this._guildService.GetGuildAsync(this.Context.Guild?.Id);

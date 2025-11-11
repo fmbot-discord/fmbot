@@ -133,10 +133,10 @@ public class StaticCommands : BaseCommandModule
         }
 
         var components = new ComponentBuilder()
-            .WithButton("Add to server", style: ButtonStyle.Link,
+            .WithButton("Add to server",
                 url:
                 $"https://discord.com/oauth2/authorize?client_id={selfId}&scope=bot%20applications.commands&permissions={Constants.InviteLinkPermissions}")
-            .WithButton("Add to user", style: ButtonStyle.Link,
+            .WithButton("Add to user",
                 url:
                 $"https://discord.com/oauth2/authorize?client_id={selfId}&scope=applications.commands&integration_type=1");
 
