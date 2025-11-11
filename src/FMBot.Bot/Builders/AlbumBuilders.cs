@@ -487,11 +487,11 @@ public class AlbumBuilders
                     .WithMinValues(0)
                     .WithMaxValues(25);
 
-                response.Components.WithSelectMenu(allowedRoles);
+                response.RoleMenu = allowedRoles;
             }
             else
             {
-                //response.Components = new ComponentBuilder().WithButton(Constants.GetPremiumServer, disabled: true, customId: "1");
+                //response.Components = new ActionRowProperties().WithButton(Constants.GetPremiumServer, disabled: true, customId: "1");
             }
         }
 

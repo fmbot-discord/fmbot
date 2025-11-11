@@ -1,4 +1,6 @@
 
+using FMBot.Domain.Attributes;
+
 namespace FMBot.Bot.Models;
 
 public class CrownSeedDto
@@ -19,10 +21,10 @@ public class CurrentCrownHolderDto
 
 public enum CrownViewType
 {
-    [ChoiceDisplay("Active crowns ordered by playcount")]
+    [Option("Active crowns ordered by playcount")]
     Playcount = 1,
-    [ChoiceDisplay("Recently obtained crowns")]
+    [Option("Recently obtained crowns")]
     Recent = 2,
-    [ChoiceDisplay("Recently stolen crowns")]
+    [Option("Recently stolen crowns")]
     Stolen = 3
 }

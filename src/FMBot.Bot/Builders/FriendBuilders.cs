@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Dasync.Collections;
-
+using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
@@ -18,6 +18,7 @@ using FMBot.Domain.Models;
 using FMBot.Domain.Types;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
+using NetCord;
 
 namespace FMBot.Bot.Builders;
 
@@ -80,7 +81,7 @@ public class FriendBuilders
         response.EmbedAuthor.WithName(embedTitle);
         if (!context.SlashCommand)
         {
-            response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
+            response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl()?.ToString());
         }
 
         response.EmbedAuthor.WithUrl(LastfmUrlExtensions.GetUserUrl(context.ContextUser.UserNameLastFM));
@@ -252,7 +253,7 @@ public class FriendBuilders
                 response.Embed.AddField("Friend limit reached",
                     $"Sorry, but you can't have more than {Constants.MaxFriends} friends. \n\n" +
                     $".fmbot supporters can add up to {Constants.MaxFriendsSupporter} friends.");
-                response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton,
+                response.Components = new ActionRowProperties().WithButton(Constants.GetSupporterButton,
                     style: ButtonStyle.Primary,
                     customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "friends-limit"));
             }

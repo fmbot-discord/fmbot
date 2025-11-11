@@ -54,7 +54,7 @@ public class AdminCommands : BaseCommandModule
     private readonly AliasService _aliasService;
     private readonly WhoKnowsFilterService _whoKnowsFilterService;
     private readonly PlayService _playService;
-    private readonly DiscordShardedClient _client;
+    private readonly ShardedGatewayClient _client;
     private readonly WebhookService _webhookService;
     private readonly TrackService _trackService;
     private readonly WhoKnowsTrackService _whoKnowsTrackService;
@@ -81,7 +81,7 @@ public class AdminCommands : BaseCommandModule
         ArtistsService artistsService,
         AliasService aliasService,
         WhoKnowsFilterService whoKnowsFilterService,
-        PlayService playService, DiscordShardedClient client, WebhookService webhookService, TrackService trackService,
+        PlayService playService, ShardedGatewayClient client, WebhookService webhookService, TrackService trackService,
         WhoKnowsTrackService whoKnowsTrackService, IDbContextFactory<FMBotDbContext> contextFactory) : base(botSettings)
     {
         this._adminService = adminService;
@@ -230,7 +230,7 @@ public class AdminCommands : BaseCommandModule
             ));
         }
 
-        var builder = new ComponentBuilder()
+        var builder = new ActionRowProperties()
             .WithSelectMenu(guildFlagsOptions);
 
         await ReplyAsync("", false, this._embed.Build(), components: builder.Build()).ConfigureAwait(false);
@@ -525,7 +525,7 @@ public class AdminCommands : BaseCommandModule
         {
             _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-            var client = this.Context.Client as DiscordShardedClient;
+            var client = this.Context.Client as ShardedGatewayClient;
             if (client == null)
             {
                 await ReplyAsync("Client is null");
@@ -736,7 +736,7 @@ public class AdminCommands : BaseCommandModule
                 }
             }
 
-            var builder = new ComponentBuilder()
+            var builder = new ActionRowProperties()
                 .WithSelectMenu(censorOptions);
 
             this._embed.WithTitle("Album - Censor information");
@@ -798,7 +798,7 @@ public class AdminCommands : BaseCommandModule
                 aliasOptions.AddOption(new SelectMenuOptionBuilder(name, value, description, isDefault: active));
             }
 
-            var builder = new ComponentBuilder()
+            var builder = new ActionRowProperties()
                 .WithSelectMenu(aliasOptions);
 
             this._embed.WithTitle("Artist alias - Option information");
@@ -903,7 +903,7 @@ public class AdminCommands : BaseCommandModule
                 }
             }
 
-            var builder = new ComponentBuilder()
+            var builder = new ActionRowProperties()
                 .WithSelectMenu(censorOptions);
 
             this._embed.WithTitle("Artist - Censor information");
@@ -1035,7 +1035,7 @@ public class AdminCommands : BaseCommandModule
             ComponentBuilder components = null;
             if (filteredUser != null && bottedUser == null)
             {
-                components = new ComponentBuilder().WithButton($"Convert to ban",
+                components = new ActionRowProperties().WithButton($"Convert to ban",
                     $"gwk-filtered-user-to-ban-{filteredUser.GlobalFilteredUserId}", style: ButtonStyle.Secondary);
             }
 
@@ -1699,7 +1699,7 @@ public class AdminCommands : BaseCommandModule
             return;
         }
 
-        var client = this.Context.Client as DiscordShardedClient;
+        var client = this.Context.Client as ShardedGatewayClient;
 
         DiscordSocketClient shard;
 
@@ -1887,7 +1887,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                 "Use the button below to get started.");
             this._embed.WithDescription(description.ToString());
 
-            var components = new ComponentBuilder().WithButton("Get .fmbot supporter", style: ButtonStyle.Primary,
+            var components = new ActionRowProperties().WithButton("Get .fmbot supporter", style: ButtonStyle.Primary,
                 customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(true, false, false,
                     source: "embedpromo"));
             await ReplyAsync(embed: this._embed.Build(), components: components.Build());
@@ -1908,7 +1908,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                 "Note that we don't take reports for sleep or 24/7 scrobbling, those get filtered automatically with temporary bans.");
             this._embed.WithDescription(description.ToString());
 
-            var components = new ComponentBuilder().WithButton("Report user", style: ButtonStyle.Secondary,
+            var components = new ActionRowProperties().WithButton("Report user", style: ButtonStyle.Secondary,
                 customId: InteractionConstants.ModerationCommands.GlobalWhoKnowsReport);
             await ReplyAsync(embed: this._embed.Build(), components: components.Build());
         }
@@ -1933,7 +1933,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                 "Hate speech [imagery or text promoting prejudice against a group], gore [detailed, realistic, or semi realistic depictions of viscera or extreme bodily harm, not blood alone] and pornographic content [depictions of sex]");
             this._embed.WithDescription(description.ToString());
 
-            var components = new ComponentBuilder()
+            var components = new ActionRowProperties()
                 .WithButton("Report artist image", style: ButtonStyle.Secondary,
                     customId: InteractionConstants.ModerationCommands.ReportArtist)
                 .WithButton("Report album cover", style: ButtonStyle.Secondary,
@@ -2640,7 +2640,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
         {
             if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
-                var components = new ComponentBuilder()
+                var components = new ActionRowProperties()
                     .WithButton("Get .fmbot supporter",
                         customId: $"{InteractionConstants.SupporterLinks.GetPurchaseButtons}-true-false-true-testlink");
 
@@ -2940,7 +2940,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                     "- The new user should have no imports! Otherwise they might be duplicated" +
                     "- After moving they can enable the imports with `/import manage`");
 
-                var components = new ComponentBuilder().WithButton("Move data",
+                var components = new ActionRowProperties().WithButton("Move data",
                     customId: $"move-user-data-{oldUser.UserId}-{newUser.UserId}", ButtonStyle.Danger);
 
                 await ReplyAsync(null, embed: embed.Build(), allowedMentions: AllowedMentions.None,
@@ -3047,7 +3047,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                 embed.WithDescription(
                     "This will move over Stripe supporter from one user to another and update their details within the Stripe dashboard. This can take a few seconds to complete.");
 
-                var components = new ComponentBuilder().WithButton("Move supporter",
+                var components = new ActionRowProperties().WithButton("Move supporter",
                     customId: $"move-supporter-{oldUser.DiscordUserId}-{newUser.DiscordUserId}", ButtonStyle.Danger);
 
                 await ReplyAsync(null, embed: embed.Build(), allowedMentions: AllowedMentions.None,
@@ -3109,7 +3109,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                     userDescription.ToString());
                 embed.WithFooter("⚠️ You cant revert this ⚠️ watch out whee oooo");
 
-                var components = new ComponentBuilder().WithButton("Delete user",
+                var components = new ActionRowProperties().WithButton("Delete user",
                     customId: $"admin-delete-user-{user.UserId}", ButtonStyle.Danger);
 
                 await ReplyAsync(null, embed: embed.Build(), allowedMentions: AllowedMentions.None,
@@ -3140,7 +3140,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                 ".fmbot is not affiliated with Last.fm, the bot and the website are two different things.\n\n" +
                 "Generally speaking we can't help with Last.fm issues, but we and other members of the community might still be able to offer suggestions. You can also consider asking the two communities linked below.");
 
-            var components = new ComponentBuilder()
+            var components = new ActionRowProperties()
                 .WithButton(url: "https://support.last.fm/", label: "Last.fm support forums", style: ButtonStyle.Link)
                 .WithButton(url: "https://discord.gg/lastfm", label: "Last.fm Discord", style: ButtonStyle.Link);
 

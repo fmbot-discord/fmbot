@@ -1,9 +1,11 @@
 
+using System.Collections.Generic;
 using FMBot.Domain.Enums;
 using FMBot.Persistence.Domain.Models;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using NetCord.Services.Commands;
+using GuildUser = NetCord.GuildUser;
 
 namespace FMBot.Bot.Models;
 
@@ -14,6 +16,10 @@ public class ContextModel
         this.Prefix = prefix;
         this.NumberFormat = contextUser?.NumberFormat ?? NumberFormat.NoSeparator;
         this.DiscordGuild = context.Guild;
+        if (context.Guild != null)
+        {
+            this.CachedGuildUsers = context.Client.Cache.Guilds[context.Guild.Id]?.Users;
+        }
         this.DiscordChannel = context.Channel;
         this.DiscordUser = context.User;
         this.ContextUser = contextUser;
@@ -27,6 +33,10 @@ public class ContextModel
         this.Prefix = "/";
         this.NumberFormat = contextUser?.NumberFormat ?? NumberFormat.NoSeparator;
         this.DiscordGuild = context.Guild;
+        if (context.Guild != null)
+        {
+            this.CachedGuildUsers = context.Client.Cache.Guilds[context.Guild.Id]?.Users;
+        }
         this.DiscordChannel = context.Channel;
         this.DiscordUser = discordContextUser ?? context.User;
         this.ContextUser = contextUser;
@@ -39,6 +49,8 @@ public class ContextModel
     public string Prefix { get; set; }
 
     public NetCord.Gateway.Guild DiscordGuild { get; set; }
+    public IReadOnlyDictionary<ulong, GuildUser> CachedGuildUsers { get; set; }
+
     public NetCord.Channel DiscordChannel { get; set; }
     public NetCord.User DiscordUser { get; set; }
 
@@ -46,7 +58,7 @@ public class ContextModel
 
     public RestMessage ReferencedMessage { get; set; }
 
-    public SelectMenuBuilder SelectMenu { get; set; }
+    public StringMenuProperties SelectMenu { get; set; }
 
     public User ContextUser { get; set; }
 

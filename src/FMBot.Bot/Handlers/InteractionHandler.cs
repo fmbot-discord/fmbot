@@ -24,7 +24,7 @@ namespace FMBot.Bot.Handlers;
 
 public class InteractionHandler
 {
-    private readonly DiscordShardedClient _client;
+    private readonly ShardedGatewayClient _client;
     private readonly InteractionService _interactionService;
     private readonly IServiceProvider _provider;
     private readonly UserService _userService;
@@ -35,7 +35,7 @@ public class InteractionHandler
     private readonly IMemoryCache _cache;
     private readonly InteractiveService _interactivity;
 
-    public InteractionHandler(DiscordShardedClient client,
+    public InteractionHandler(ShardedGatewayClient client,
         InteractionService interactionService,
         IServiceProvider provider,
         UserService userService,
@@ -269,7 +269,7 @@ public class InteractionHandler
 
             if (!userIsRegistered)
             {
-                var embed = new EmbedBuilder()
+                var embed = new EmbedProperties()
                     .WithColor(DiscordConstants.LastFmColorRed);
                 var userNickname = (context.User as SocketGuildUser)?.DisplayName;
                 embed.UsernameNotSetErrorResponse("/", userNickname ?? context.User.Username);
@@ -287,7 +287,7 @@ public class InteractionHandler
 
             if (contextUser?.SessionKeyLastFm == null)
             {
-                var embed = new EmbedBuilder()
+                var embed = new EmbedProperties()
                     .WithColor(DiscordConstants.LastFmColorRed);
                 embed.SessionRequiredResponse("/");
                 await context.Interaction.RespondAsync(null, [embed.Build()], ephemeral: true,
@@ -404,7 +404,7 @@ public class InteractionHandler
 
     private static async Task UserBlockedResponse(ShardedInteractionContext shardedCommandContext)
     {
-        var embed = new EmbedBuilder().WithColor(DiscordConstants.LastFmColorRed);
+        var embed = new EmbedProperties().WithColor(DiscordConstants.LastFmColorRed);
         embed.UserBlockedResponse("/");
         await shardedCommandContext.Channel.SendMessageAsync("", false, embed.Build());
         shardedCommandContext.LogCommandUsed(CommandResponse.UserBlocked);

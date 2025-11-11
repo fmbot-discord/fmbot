@@ -95,7 +95,7 @@ public class ImportCommands : BaseCommandModule
 
         if (this.Context.Guild != null)
         {
-            var serverEmbed = new EmbedBuilder()
+            var serverEmbed = new EmbedProperties()
                 .WithColor(DiscordConstants.InformationColorBlue)
                 .WithDescription("Check your DMs to continue with modifying your .fmbot imports.");
 
@@ -109,7 +109,7 @@ public class ImportCommands : BaseCommandModule
         try
         {
             var response = await this._importBuilders.ImportModify(new ContextModel(this.Context, prfx, contextUser), contextUser.UserId);
-            await this.Context.User.SendMessageAsync("", false, response.Embed.Build(), components: response.Components.Build());
+            await this.Context.User.SendMessageAsync("", false, response.Embed, components: response.Components);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)

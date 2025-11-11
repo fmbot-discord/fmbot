@@ -92,7 +92,7 @@ public class GameSlashCommands : ApplicationCommandModule<ApplicationCommandCont
     {
         try
         {
-            await DeferAsync();
+            await RespondAsync(InteractionCallback.DeferredMessage());
             await this.Context.DisableInteractionButtons();
 
             var jumbleTypeEnum = (JumbleType)Enum.Parse(typeof(JumbleType), jumbleType);
@@ -129,7 +129,7 @@ public class GameSlashCommands : ApplicationCommandModule<ApplicationCommandCont
                 }
 
                 var name = await UserService.GetNameAsync(this.Context.Guild, this.Context.User);
-                var components = new ComponentBuilder().WithButton($"{name} is playing again!", customId: "1",
+                var components = new ActionRowProperties().WithButton($"{name} is playing again!", customId: "1",
                     url: null, disabled: true, style: ButtonStyle.Secondary);
                 _ = Task.Run(() => message.ModifyAsync(m => m.Components = components.Build()));
 

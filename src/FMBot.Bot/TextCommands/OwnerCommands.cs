@@ -26,14 +26,14 @@ public class OwnerCommands : BaseCommandModule
     private readonly AdminService _adminService;
     private readonly UserService _userService;
     private readonly IMemoryCache _cache;
-    private readonly DiscordShardedClient _client;
+    private readonly ShardedGatewayClient _client;
 
     public OwnerCommands(
         AdminService adminService,
         UserService userService,
         IOptions<BotSettings> botSettings,
         IMemoryCache cache,
-        DiscordShardedClient client) : base(botSettings)
+        ShardedGatewayClient client) : base(botSettings)
     {
         this._adminService = adminService;
         this._userService = userService;
@@ -159,7 +159,7 @@ public class OwnerCommands : BaseCommandModule
     {
         if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
         {
-            var client = this.Context.Client as DiscordShardedClient;
+            var client = this.Context.Client as ShardedGatewayClient;
             string desc = null;
 
             foreach (var guild in client.Guilds.OrderByDescending(o => o.MemberCount).Take(100))
@@ -294,7 +294,7 @@ public class OwnerCommands : BaseCommandModule
             return;
         }
 
-        var embed = new EmbedBuilder()
+        var embed = new EmbedProperties()
             .WithColor(DiscordConstants.InformationColorBlue)
             .WithTitle("Detailed Memory Diagnostics");
 

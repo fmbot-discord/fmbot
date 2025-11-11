@@ -88,7 +88,7 @@ public class IndexCommands : BaseCommandModule
 
             await indexMessage.ModifyAsync(m =>
             {
-                m.Embed = new EmbedBuilder()
+                m.Embed = new EmbedProperties()
                     .WithDescription(reply.ToString())
                     .WithColor(DiscordConstants.SuccessColorGreen)
                     .Build();
@@ -137,7 +137,7 @@ public class IndexCommands : BaseCommandModule
 
             await message.ModifyAsync(m =>
             {
-                m.Embed = updatedResponse.Embed.Build();
+                m.Embed = updatedresponse.Embed;
                 m.Components = updatedResponse.Components?.Build();
             });
 
@@ -161,7 +161,7 @@ public class IndexCommands : BaseCommandModule
 
             await message.ModifyAsync(m =>
             {
-                m.Embed = updatedResponse.Embed.Build();
+                m.Embed = updatedresponse.Embed;
                 m.Components = updatedResponse.Components?.Build();
             });
 

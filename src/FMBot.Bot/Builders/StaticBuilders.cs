@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
+using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
@@ -11,10 +11,12 @@ using FMBot.Bot.Services;
 using FMBot.Domain;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
-using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
+using NetCord;
+using NetCord.Rest;
 using Shared.Domain.Enums;
+using User = FMBot.Persistence.Domain.Models.User;
 
 namespace FMBot.Bot.Builders;
 
@@ -71,7 +73,7 @@ public class StaticBuilders
                 ".fmbot is not affiliated with Last.fm.");
         }
 
-        response.Components = new ComponentBuilder()
+        response.Components = new ActionRowProperties()
             .WithButton("Last.fm settings",  url: "https://www.last.fm/settings/applications")
             .WithButton("Full guide",
                 url: "https://support.last.fm/t/spotify-has-stopped-scrobbling-what-can-i-do/3184")
@@ -95,7 +97,7 @@ public class StaticBuilders
         };
 
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
-        response.Components = new ComponentBuilder();
+        response.Components = new ActionRowProperties();
 
         if (expandWithPerks)
         {
@@ -177,7 +179,7 @@ public class StaticBuilders
                 response.Embed.AddField($"Yearly - {pricing.YearlyPriceString}",
                     $"-# {pricing.YearlySubText}", true);
 
-                response.Components = new ComponentBuilder()
+                response.Components = new ActionRowProperties()
                     .WithButton("Get monthly",
                         customId: $"{InteractionConstants.SupporterLinks.GetPurchaseLink}-monthly-{source}")
                     .WithButton("Get yearly",
@@ -261,7 +263,7 @@ public class StaticBuilders
             "- Your identity will not be revealed",
             false);
 
-        var components = new ComponentBuilder();
+        var components = new ActionRowProperties();
         var actionRow = new ActionRowBuilder();
 
         if (!string.IsNullOrEmpty(pricing.QuarterlyPriceId))

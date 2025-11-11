@@ -42,7 +42,7 @@ public class DiscogsBuilder
         response.Embed.WithDescription($"Click the button below to get your Discogs login link.");
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
-        response.Components = new ComponentBuilder()
+        response.Components = new ActionRowProperties()
             .WithButton("Get login link", style: ButtonStyle.Primary, customId: InteractionConstants.Discogs.StartAuth);
 
         return response;
@@ -102,10 +102,10 @@ public class DiscogsBuilder
         response.Embed.WithFooter($"Do not share the code outside of this DM conversation");
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
-        response.Components = new ComponentBuilder()
-            .WithButton("Login to Discogs",  url: discogsAuth.LoginUrl);
+        response.Components = new ActionRowProperties()
+            .WithButton(discogsAuth.LoginUrl, "Login to Discogs");
 
-        var dm = await context.DiscordUser.SendMessageAsync("", false, response.Embed.Build(), components: response.Components.Build());
+        var dm = await context.DiscordUser.SendMessageAsync("", false, response.Embed, components: response.Components);
         response.Embed.Footer = null;
 
         var result = await this._interactivity.NextMessageAsync(x => x.Channel.Id == dm.Channel.Id, timeout: TimeSpan.FromMinutes(15));
@@ -136,7 +136,7 @@ public class DiscogsBuilder
                                         $"Re-run the `{context.Prefix}discogs` command to try again.");
             response.Embed.WithColor(DiscordConstants.WarningColorOrange);
             response.CommandResponse = CommandResponse.WrongInput;
-            await context.DiscordUser.SendMessageAsync("", false, response.Embed.Build());
+            await context.DiscordUser.SendMessageAsync("", false, response.Embed);
             return response;
         }
 
@@ -149,7 +149,7 @@ public class DiscogsBuilder
             response.Embed.WithDescription($"✅ Your Discogs account '[{user.Identity.Username}]({Constants.DiscogsUserUrl}{user.Identity.Username})' has been connected.\n" +
                                         $"Run the `{context.Prefix}collection` command to view your collection.");
             response.CommandResponse = CommandResponse.Ok;
-            await context.DiscordUser.SendMessageAsync("", false, response.Embed.Build());
+            await context.DiscordUser.SendMessageAsync("", false, response.Embed);
         }
         else
         {
@@ -157,7 +157,7 @@ public class DiscogsBuilder
                                         $"Re-run the `{context.Prefix}discogs` command to try again.");
             response.Embed.WithColor(DiscordConstants.WarningColorOrange);
             response.CommandResponse = CommandResponse.WrongInput;
-            await context.DiscordUser.SendMessageAsync("", false, response.Embed.Build());
+            await context.DiscordUser.SendMessageAsync("", false, response.Embed);
         }
 
         return response;
@@ -352,7 +352,7 @@ public class DiscogsBuilder
         {
             if (!context.SlashCommand)
             {
-                response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
+                response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl()?.ToString());
             }
             userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
         }
@@ -427,7 +427,7 @@ public class DiscogsBuilder
         var response = new ResponseModel
         {
             ResponseType = ResponseType.Embed,
-            Components = new ComponentBuilder()
+            Components = new ActionRowProperties()
                 .WithButton(context.ContextUser.UserDiscogs.HideValue == true ? "Show value" : "Hide value", InteractionConstants.Discogs.ToggleCollectionValue, ButtonStyle.Secondary)
                 .WithButton("Re-login", InteractionConstants.Discogs.StartAuth, ButtonStyle.Secondary)
                 .WithButton("Remove connection", InteractionConstants.Discogs.RemoveAccount, ButtonStyle.Danger)

@@ -133,10 +133,10 @@ public static class InteractionContextExtensions
     public static async Task SendResponse(this ApplicationCommandContext context, InteractiveService interactiveService,
         ResponseModel response, bool ephemeral = false, ResponseModel extraResponse = null)
     {
-        var embeds = new[] { response.Embed.Build() };
+        var embeds = new[] { response.Embed };
         if (extraResponse != null)
         {
-            embeds = [response.Embed.Build(), extraResponse.Embed?.Build()];
+            embeds = [response.Embed, extraResponse.Embed?.Build()];
         }
 
         switch (response.ResponseType)
@@ -225,7 +225,7 @@ public static class InteractionContextExtensions
                 responseId = text.Id;
                 break;
             case ResponseType.Embed:
-                var embed = await context.Interaction.FollowupAsync(null, [response.Embed.Build()],
+                var embed = await context.Interaction.FollowupAsync(null, [response.Embed],
                     ephemeral: ephemeral, components: response.Components?.Build());
                 responseId = embed.Id;
                 break;
@@ -406,7 +406,7 @@ public static class InteractionContextExtensions
             return;
         }
 
-        var newComponents = new ComponentBuilder();
+        var newComponents = new ActionRowProperties();
         foreach (var component in message.Components)
         {
             if (component is not ActionRowComponent actionRowComponent)
@@ -461,7 +461,7 @@ public static class InteractionContextExtensions
             return;
         }
 
-        var newComponents = new ComponentBuilder();
+        var newComponents = new ActionRowProperties();
         foreach (var component in message.Components)
         {
             if (component is not ActionRowComponent actionRowComponent)
@@ -493,7 +493,7 @@ public static class InteractionContextExtensions
             return;
         }
 
-        var newComponents = new ComponentBuilder();
+        var newComponents = new ActionRowProperties();
         foreach (var component in message.Components)
         {
             if (component is not ActionRowComponent actionRowComponent)

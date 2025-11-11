@@ -49,7 +49,7 @@ public class ServerSlashCommands : ApplicationCommandModule<ApplicationCommandCo
         [Summary("Time-period", "Time period")] PlayTimePeriod timePeriod = PlayTimePeriod.Weekly,
         [Summary("Order", "Order for chart (defaults to listeners)")] OrderType orderType = OrderType.Listeners)
     {
-        await DeferAsync();
+        await RespondAsync(InteractionCallback.DeferredMessage());
 
         var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
@@ -84,7 +84,7 @@ public class ServerSlashCommands : ApplicationCommandModule<ApplicationCommandCo
         [Summary("Artist", "The artist you want to filter on")]
         [Autocomplete(typeof(ArtistAutoComplete))]string artist = null)
     {
-        await DeferAsync();
+        await RespondAsync(InteractionCallback.DeferredMessage());
 
         var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
@@ -121,7 +121,7 @@ public class ServerSlashCommands : ApplicationCommandModule<ApplicationCommandCo
         [Summary("Artist", "The artist you want to filter on")]
         [Autocomplete(typeof(ArtistAutoComplete))]string artist = null)
     {
-        await DeferAsync();
+        await RespondAsync(InteractionCallback.DeferredMessage());
 
         var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
@@ -156,7 +156,7 @@ public class ServerSlashCommands : ApplicationCommandModule<ApplicationCommandCo
         [Summary("Time-period", "Time period")] PlayTimePeriod timePeriod = PlayTimePeriod.Weekly,
         [Summary("Order", "Order for chart (defaults to listeners)")] OrderType orderType = OrderType.Listeners)
     {
-        await DeferAsync();
+        await RespondAsync(InteractionCallback.DeferredMessage());
 
         var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 

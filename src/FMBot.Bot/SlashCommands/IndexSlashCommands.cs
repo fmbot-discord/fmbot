@@ -39,7 +39,7 @@ public class IndexSlashCommands : ApplicationCommandModule<ApplicationCommandCon
     [SlashCommand("refreshmembers", "Refreshes the cached member list that .fmbot has for your server")]
     public async Task RefreshMembersAsync()
     {
-        await DeferAsync();
+        await RespondAsync(InteractionCallback.DeferredMessage());
 
         try
         {
@@ -110,7 +110,7 @@ public class IndexSlashCommands : ApplicationCommandModule<ApplicationCommandCon
             var updatedResponse = await this._userBuilder.UpdatePlays(new ContextModel(this.Context, contextUser));
             await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
             {
-                e.Embed = updatedResponse.Embed.Build();
+                e.Embed = updatedresponse.Embed;
                 e.Components = updatedResponse.Components?.Build();
             });
             this.Context.LogCommandUsed(updatedResponse.CommandResponse);
@@ -133,7 +133,7 @@ public class IndexSlashCommands : ApplicationCommandModule<ApplicationCommandCon
                     updateType.updateType);
             await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
             {
-                e.Embed = updatedResponse.Embed.Build();
+                e.Embed = updatedresponse.Embed;
                 e.Components = updatedResponse.Components?.Build();
             });
             this.Context.LogCommandUsed(updatedResponse.CommandResponse);

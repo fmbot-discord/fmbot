@@ -434,7 +434,7 @@ public class GenreBuilders
                 response.Embed.WithFooter($"Genre source: Spotify\n" +
                                           $"Add a genre to this command to see {commandDescription}");
 
-                response.Components = new ComponentBuilder().WithSelectMenu(selectMenu);
+                response.Components = new ActionRowProperties().WithSelectMenu(selectMenu);
 
                 response.Embed.WithDescription(genreDescription.ToString());
 
@@ -482,7 +482,7 @@ public class GenreBuilders
                     response.Embed.WithFooter($"Genre source: Spotify\n" +
                                               $"Add a genre to this command to see {commandDescription}");
 
-                    response.Components = new ComponentBuilder().WithSelectMenu(selectMenu);
+                    response.Components = new ActionRowProperties().WithSelectMenu(selectMenu);
                 }
                 else
                 {
@@ -907,7 +907,7 @@ public class GenreBuilders
 
         if (genres.selectMenu != null)
         {
-            response.Components = new ComponentBuilder().WithSelectMenu(genres.selectMenu);
+            response.Components = new ActionRowProperties().WithSelectMenu(genres.selectMenu);
         }
 
         response.Embed.WithTitle($"{genres.genres.First().Transform(To.TitleCase)} in {context.DiscordGuild.Name}");
@@ -1011,7 +1011,7 @@ public class GenreBuilders
 
         if (genres.selectMenu != null)
         {
-            response.Components = new ComponentBuilder().WithSelectMenu(genres.selectMenu);
+            response.Components = new ActionRowProperties().WithSelectMenu(genres.selectMenu);
         }
 
         response.Embed.WithTitle($"{genres.genres.First().Transform(To.TitleCase)} with friends");

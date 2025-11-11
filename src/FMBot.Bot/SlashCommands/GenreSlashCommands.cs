@@ -47,7 +47,7 @@ public class GenreSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         [Autocomplete(typeof(GenreArtistAutoComplete))] string search = null,
         [Summary("User", "The user to show (defaults to self)")] string user = null)
     {
-        await DeferAsync();
+        await RespondAsync(InteractionCallback.DeferredMessage());
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var guild = await this._guildService.GetGuildAsync(this.Context.Guild?.Id);
@@ -70,7 +70,7 @@ public class GenreSlashCommands : ApplicationCommandModule<ApplicationCommandCon
     [ComponentInteraction($"{InteractionConstants.Genre.GenreGuild}~*~*~*~*")]
     public async Task GuildGenresAsync(string discordUser, string requesterDiscordUser, string genre, string originalSearch)
     {
-        await DeferAsync();
+        await RespondAsync(InteractionCallback.DeferredMessage());
 
         var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
         if (message == null)
@@ -79,7 +79,7 @@ public class GenreSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         }
 
         var components =
-            new ComponentBuilder().WithButton($"Loading server view...", customId: "1", emote: EmojiProperties.Custom("<a:loading:821676038102056991>"), disabled: true, style: ButtonStyle.Secondary);
+            new ActionRowProperties().WithButton($"Loading server view...", customId: "1", emote: EmojiProperties.Custom("<a:loading:821676038102056991>"), disabled: true, style: ButtonStyle.Secondary);
         await message.ModifyAsync(m => m.Components = components.Build());
 
         var discordUserId = ulong.Parse(discordUser);
@@ -108,7 +108,7 @@ public class GenreSlashCommands : ApplicationCommandModule<ApplicationCommandCon
     [ComponentInteraction($"{InteractionConstants.Genre.GenreUser}~*~*~*~*")]
     public async Task UserGenresAsync(string discordUser, string requesterDiscordUser, string genre, string originalSearch)
     {
-        await DeferAsync();
+        await RespondAsync(InteractionCallback.DeferredMessage());
 
         var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
         if (message == null)
@@ -117,7 +117,7 @@ public class GenreSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         }
 
         var components =
-            new ComponentBuilder().WithButton($"Loading user view...", customId: "1", emote: EmojiProperties.Custom("<a:loading:821676038102056991>"), disabled: true, style: ButtonStyle.Secondary);
+            new ActionRowProperties().WithButton($"Loading user view...", customId: "1", emote: EmojiProperties.Custom("<a:loading:821676038102056991>"), disabled: true, style: ButtonStyle.Secondary);
         await Context.ModifyComponents(message, components);
 
         var discordUserId = ulong.Parse(discordUser);
@@ -151,7 +151,7 @@ public class GenreSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         {
             var options = inputs.First().Split("~");
 
-            await DeferAsync();
+            await RespondAsync(InteractionCallback.DeferredMessage());
 
             var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
             if (message == null)
@@ -166,7 +166,7 @@ public class GenreSlashCommands : ApplicationCommandModule<ApplicationCommandCon
             var originalSearch = string.IsNullOrWhiteSpace(options[4]) ? null : options[4];
 
             var components =
-                new ComponentBuilder().WithButton($"Loading {selectedOption}...", customId: "1", emote: EmojiProperties.Custom(DiscordConstants.Loading), disabled: true, style: ButtonStyle.Secondary);
+                new ActionRowProperties().WithButton($"Loading {selectedOption}...", customId: "1", emote: EmojiProperties.Custom(DiscordConstants.Loading), disabled: true, style: ButtonStyle.Secondary);
             await Context.ModifyComponents(message, components);
 
             var guild = await this._guildService.GetGuildAsync(this.Context.Guild?.Id);

@@ -204,7 +204,7 @@ public static class CommandContextExtensions
                 responseMessage = text;
                 break;
             case ResponseType.Embed:
-                var embed = await context.Channel.SendMessageAsync("", false, response.Embed.Build(),
+                var embed = await context.Channel.SendMessageAsync("", false, response.Embed,
                     components: response.Components?.Build());
                 responseMessage = embed;
                 break;
@@ -221,7 +221,7 @@ public static class CommandContextExtensions
                     new FileAttachment(response.Stream, response.FileName, response.FileDescription, response.Spoiler),
                     null,
                     false,
-                    response.Embed.Build(),
+                    response.Embed,
                     components: response.Components?.Build());
 
                 await response.Stream.DisposeAsync();

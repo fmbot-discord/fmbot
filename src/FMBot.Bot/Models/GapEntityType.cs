@@ -3,11 +3,11 @@ namespace FMBot.Bot.Models
 {
     public enum GapEntityType
     {
-        [ChoiceDisplay("Artists")]
+        [Option("Artists")]
         Artist,
-        [ChoiceDisplay("Albums")]
+        [Option("Albums")]
         Album,
-        [ChoiceDisplay("Tracks")]
+        [Option("Tracks")]
         Track
     }
 }

@@ -2,8 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-
-using Discord.WebSocket;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.AutoCompleteHandlers;
@@ -19,9 +17,9 @@ using FMBot.Domain.Enums;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using NetCord;
+using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using NetCord.Services.ComponentInteractions;
-using SummaryAttribute = NetCord.Discord.Interactions.SummaryAttribute;
 
 namespace FMBot.Bot.SlashCommands;
 
@@ -67,7 +65,7 @@ public class PlaySlashCommands : ApplicationCommandModule<ApplicationCommandCont
         [Summary("User", "The user to show (defaults to self)")]
         string user = null)
     {
-        await DeferAsync();
+        await RespondAsync(InteractionCallback.DeferredMessage());
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var context = new ContextModel(this.Context, contextUser);
@@ -135,7 +133,7 @@ public class PlaySlashCommands : ApplicationCommandModule<ApplicationCommandCont
             }
         }
 
-        await DeferAsync();
+        await RespondAsync(InteractionCallback.DeferredMessage());
 
         try
         {
@@ -184,7 +182,7 @@ public class PlaySlashCommands : ApplicationCommandModule<ApplicationCommandCont
         [Summary("Artist", "Artist you want to filter on")] [Autocomplete(typeof(ArtistAutoComplete))]
         string artistName = null)
     {
-        await DeferAsync();
+        await RespondAsync(InteractionCallback.DeferredMessage());
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings =
@@ -213,7 +211,7 @@ public class PlaySlashCommands : ApplicationCommandModule<ApplicationCommandCont
         [Summary("User", "The user to show (defaults to self)")]
         string user = null)
     {
-        await DeferAsync();
+        await RespondAsync(InteractionCallback.DeferredMessage());
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings =
@@ -299,7 +297,7 @@ public class PlaySlashCommands : ApplicationCommandModule<ApplicationCommandCont
         [Summary("Amount", "Amount of days to show")]
         int amount = 4)
     {
-        await DeferAsync();
+        await RespondAsync(InteractionCallback.DeferredMessage());
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings =
@@ -338,7 +336,7 @@ public class PlaySlashCommands : ApplicationCommandModule<ApplicationCommandCont
         [Summary("User", "The user to show (defaults to self)")]
         string user = null)
     {
-        await DeferAsync();
+        await RespondAsync(InteractionCallback.DeferredMessage());
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings =
@@ -375,7 +373,7 @@ public class PlaySlashCommands : ApplicationCommandModule<ApplicationCommandCont
         [Summary("User", "The user to show (defaults to self)")]
         string user = null)
     {
-        await DeferAsync();
+        await RespondAsync(InteractionCallback.DeferredMessage());
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings =
@@ -409,7 +407,7 @@ public class PlaySlashCommands : ApplicationCommandModule<ApplicationCommandCont
         [Summary("User", "The user to show (defaults to self)")]
         string user = null)
     {
-        await DeferAsync();
+        await RespondAsync(InteractionCallback.DeferredMessage());
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings =
@@ -446,7 +444,7 @@ public class PlaySlashCommands : ApplicationCommandModule<ApplicationCommandCont
             return;
         }
 
-        await DeferAsync();
+        await RespondAsync(InteractionCallback.DeferredMessage());
         await this.Context.DisableInteractionButtons();
 
         var contextUser = await this._userService.GetUserWithDiscogs(requesterDiscordUserId);
@@ -486,7 +484,7 @@ public class PlaySlashCommands : ApplicationCommandModule<ApplicationCommandCont
         [Summary("User", "The user to show (defaults to self)")]
         string user = null)
     {
-        await DeferAsync();
+        await RespondAsync(InteractionCallback.DeferredMessage());
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings =
@@ -518,7 +516,7 @@ public class PlaySlashCommands : ApplicationCommandModule<ApplicationCommandCont
         [Summary("User", "The user to show (defaults to self)")]
         string user = null)
     {
-        await DeferAsync();
+        await RespondAsync(InteractionCallback.DeferredMessage());
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings =
@@ -548,7 +546,7 @@ public class PlaySlashCommands : ApplicationCommandModule<ApplicationCommandCont
     [UsernameSetRequired]
     public async Task RecapAllTime(string userId)
     {
-        await DeferAsync();
+        await RespondAsync(InteractionCallback.DeferredMessage());
         _ = this.Context.DisableInteractionButtons(specificButtonOnly: $"{InteractionConstants.RecapAlltime}-{userId}",
             addLoaderToSpecificButton: true);
 
@@ -617,7 +615,7 @@ public class PlaySlashCommands : ApplicationCommandModule<ApplicationCommandCont
                 return;
             }
 
-            await DeferAsync();
+            await RespondAsync(InteractionCallback.DeferredMessage());
 
             var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
             if (message == null)
@@ -627,7 +625,7 @@ public class PlaySlashCommands : ApplicationCommandModule<ApplicationCommandCont
 
             var name = viewType.GetAttribute<ChoiceDisplayAttribute>().Name;
             var components =
-                new ComponentBuilder().WithButton($"{name} for {timeSettings.Description} loading...", customId: "1",
+                new ActionRowProperties().WithButton($"{name} for {timeSettings.Description} loading...", customId: "1",
                     emote: EmojiProperties.Custom("<a:loading:821676038102056991>"), disabled: true, style: ButtonStyle.Secondary);
             await Context.ModifyComponents(message, components);
 
@@ -695,7 +693,7 @@ public class PlaySlashCommands : ApplicationCommandModule<ApplicationCommandCont
     {
         try
         {
-            await DeferAsync();
+            await RespondAsync(InteractionCallback.DeferredMessage());
             var splitInput = inputs.First().Split("-");
             if (!Enum.TryParse(splitInput[0], out GapEntityType viewType))
             {
@@ -708,7 +706,7 @@ public class PlaySlashCommands : ApplicationCommandModule<ApplicationCommandCont
             }
 
             var components =
-                new ComponentBuilder().WithButton($"Loading {viewType.ToString().ToLower()} gaps...", customId: "1",
+                new ActionRowProperties().WithButton($"Loading {viewType.ToString().ToLower()} gaps...", customId: "1",
                     emote: EmojiProperties.Custom(DiscordConstants.Loading), disabled: true, style: ButtonStyle.Secondary);
             await this.Context.Interaction.ModifyOriginalResponseAsync(m => m.Components = components.Build());
 

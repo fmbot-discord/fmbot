@@ -43,7 +43,7 @@ public class AlbumSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         [Summary("Album", "The album your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(AlbumAutoComplete))] string name = null)
     {
-        await DeferAsync();
+        await RespondAsync(InteractionCallback.DeferredMessage());
 
         var contextUser = await this._userService.GetUserWithDiscogs(this.Context.User.Id);
 
@@ -64,7 +64,7 @@ public class AlbumSlashCommands : ApplicationCommandModule<ApplicationCommandCon
     [UsernameSetRequired]
     public async Task AlbumAsync(string album, string discordUser, string requesterDiscordUser)
     {
-        await DeferAsync();
+        await RespondAsync(InteractionCallback.DeferredMessage());
         await this.Context.DisableInteractionButtons();
 
         var discordUserId = ulong.Parse(discordUser);
@@ -99,7 +99,7 @@ public class AlbumSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         [Summary("Mode", "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
         [Summary("Role-picker", "Display a rolepicker to filter with roles")] bool displayRoleFilter = false)
     {
-        await DeferAsync();
+        await RespondAsync(InteractionCallback.DeferredMessage());
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -191,7 +191,7 @@ public class AlbumSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         [Summary("Mode", "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
         [Summary("Hide-private", "Hide or show private users")] bool hidePrivate = false)
     {
-        await DeferAsync();
+        await RespondAsync(InteractionCallback.DeferredMessage());
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -225,7 +225,7 @@ public class AlbumSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         [Summary("Album", "The album your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(AlbumAutoComplete))] string name = null)
     {
-        await DeferAsync();
+        await RespondAsync(InteractionCallback.DeferredMessage());
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(null, contextUser, this.Context.Guild, this.Context.User, true);
@@ -247,7 +247,7 @@ public class AlbumSlashCommands : ApplicationCommandModule<ApplicationCommandCon
     [UsernameSetRequired]
     public async Task AlbumCoverAsync(string album, string discordUser, string requesterDiscordUser, string type)
     {
-        await DeferAsync();
+        await RespondAsync(InteractionCallback.DeferredMessage());
         await this.Context.DisableInteractionButtons();
 
         var discordUserId = ulong.Parse(discordUser);
@@ -286,7 +286,7 @@ public class AlbumSlashCommands : ApplicationCommandModule<ApplicationCommandCon
             return;
         }
 
-        await DeferAsync();
+        await RespondAsync(InteractionCallback.DeferredMessage());
         await this.Context.DisableInteractionButtons();
 
         var contextUser = await this._userService.GetUserWithDiscogs(requesterDiscordUserId);
@@ -322,7 +322,7 @@ public class AlbumSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         [Summary("User", "The user to show (defaults to self)")] string user = null,
         [Summary("Playcount-order", "If the list should be ordered by playcount")] bool orderByPlaycount = false)
     {
-        await DeferAsync();
+        await RespondAsync(InteractionCallback.DeferredMessage());
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
@@ -344,7 +344,7 @@ public class AlbumSlashCommands : ApplicationCommandModule<ApplicationCommandCon
     [UsernameSetRequired]
     public async Task AlbumTracksAsync(string album, string discordUser, string requesterDiscordUser)
     {
-        await DeferAsync();
+        await RespondAsync(InteractionCallback.DeferredMessage());
         await this.Context.DisableInteractionButtons();
 
         var discordUserId = ulong.Parse(discordUser);
@@ -380,7 +380,7 @@ public class AlbumSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         [Autocomplete(typeof(AlbumAutoComplete))] string name = null,
         [Summary("User", "The user to show (defaults to self)")] string user = null)
     {
-        await DeferAsync();
+        await RespondAsync(InteractionCallback.DeferredMessage());
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);

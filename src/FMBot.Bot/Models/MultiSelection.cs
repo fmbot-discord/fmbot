@@ -14,7 +14,7 @@ public class MultiSelection<T> : BaseSelection<MultiSelectionOption<T>>
 
     public override ComponentBuilder GetOrAddComponents(bool disableAll, ComponentBuilder builder = null)
     {
-        builder ??= new ComponentBuilder();
+        builder ??= new ActionRowProperties();
         var selectMenus = new Dictionary<int, SelectMenuBuilder>();
 
         foreach (var option in Options)

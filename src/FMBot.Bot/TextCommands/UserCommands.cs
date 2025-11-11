@@ -312,7 +312,7 @@ public class UserCommands : BaseCommandModule
             IUserMessage message;
             if (response.ResponseType == ResponseType.Embed)
             {
-                message = await ReplyAsync("", false, response.Embed.Build());
+                message = await ReplyAsync("", false, response.Embed);
             }
             else
             {
@@ -468,8 +468,8 @@ public class UserCommands : BaseCommandModule
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
             var response = UserBuilder.FmMode(new ContextModel(this.Context, prfx, contextUser), guild);
 
-            await this.Context.User.SendMessageAsync(embed: response.Embed.Build(),
-                components: response.Components.Build());
+            await this.Context.User.SendMessageAsync(embed: response.Embed,
+                components: response.Components);
 
             if (this.Context.Guild != null)
             {
@@ -568,8 +568,8 @@ public class UserCommands : BaseCommandModule
 
             await this.Context.SendResponse(this.Interactivity, response);
 
-            // await this.Context.User.SendMessageAsync(embed: response.Embed.Build(),
-            //     components: response.Components.Build());
+            // await this.Context.User.SendMessageAsync(embed: response.Embed,
+            //     components: response.Components);
             //
             // if (this.Context.Guild != null)
             // {
@@ -619,7 +619,7 @@ public class UserCommands : BaseCommandModule
 
         if (this.Context.Guild != null)
         {
-            var serverEmbed = new EmbedBuilder()
+            var serverEmbed = new EmbedProperties()
                 .WithColor(DiscordConstants.WarningColorOrange)
                 .WithDescription("Check your DMs to continue with your .fmbot account deletion.");
 
@@ -627,8 +627,8 @@ public class UserCommands : BaseCommandModule
         }
 
         var response = UserBuilder.RemoveDataResponse(new ContextModel(this.Context, prfx, contextUser));
-        await this.Context.User.SendMessageAsync("", false, response.Embed.Build(),
-            components: response.Components.Build());
+        await this.Context.User.SendMessageAsync("", false, response.Embed,
+            components: response.Components);
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 

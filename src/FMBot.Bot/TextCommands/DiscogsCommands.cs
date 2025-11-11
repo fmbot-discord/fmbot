@@ -55,7 +55,7 @@ public class DiscogsCommands : BaseCommandModule
         {
             if (this.Context.Guild != null)
             {
-                var serverEmbed = new EmbedBuilder()
+                var serverEmbed = new EmbedProperties()
                     .WithColor(DiscordConstants.InformationColorBlue);
 
                 serverEmbed.WithDescription("Check your DMs for a link to connect your Discogs account to .fmbot!");
@@ -64,15 +64,15 @@ public class DiscogsCommands : BaseCommandModule
 
             var response =
                 this._discogsBuilder.DiscogsLoginGetLinkAsync(new ContextModel(this.Context, prfx, contextUser));
-            await this.Context.User.SendMessageAsync("", false, response.Embed.Build(),
-                components: response.Components.Build());
+            await this.Context.User.SendMessageAsync("", false, response.Embed,
+                components: response.Components);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         else
         {
             if (this.Context.Guild != null)
             {
-                var serverEmbed = new EmbedBuilder()
+                var serverEmbed = new EmbedProperties()
                     .WithColor(DiscordConstants.InformationColorBlue);
 
                 serverEmbed.WithDescription("Check your DMs for a message to manage your connected Discogs account!");
@@ -80,7 +80,7 @@ public class DiscogsCommands : BaseCommandModule
             }
 
             var response = DiscogsBuilder.DiscogsManage(new ContextModel(this.Context, prfx, contextUser));
-            await this.Context.User.SendMessageAsync("", false, response.Embed.Build(), components: response.Components.Build());
+            await this.Context.User.SendMessageAsync("", false, response.Embed, components: response.Components);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
     }

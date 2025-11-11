@@ -37,7 +37,7 @@ public class FriendSlashCommands : ApplicationCommandModule<ApplicationCommandCo
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task FriendsAsync()
     {
-        await DeferAsync();
+        await RespondAsync(InteractionCallback.DeferredMessage());
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 

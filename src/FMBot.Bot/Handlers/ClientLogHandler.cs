@@ -2,8 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-
-using Discord.WebSocket;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Services;
@@ -11,6 +9,7 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Caching.Memory;
+using NetCord.Gateway;
 using Serilog;
 using Shared.Domain.Enums;
 
@@ -21,7 +20,7 @@ namespace FMBot.Bot.Handlers;
 public class ClientLogHandler
 {
     private readonly IMemoryCache _cache;
-    private readonly DiscordShardedClient _client;
+    private readonly ShardedGatewayClient _client;
     private readonly ChannelToggledCommandService _channelToggledCommandService;
     private readonly GuildDisabledCommandService _guildDisabledCommandService;
     private readonly DisabledChannelService _disabledChannelService;
@@ -29,7 +28,7 @@ public class ClientLogHandler
     private readonly GuildService _guildService;
     private readonly IndexService _indexService;
 
-    public ClientLogHandler(DiscordShardedClient client,
+    public ClientLogHandler(ShardedGatewayClient client,
         ChannelToggledCommandService channelToggledCommandService,
         GuildDisabledCommandService guildDisabledCommandService,
         GuildService guildService,

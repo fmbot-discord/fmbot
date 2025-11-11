@@ -186,7 +186,7 @@ public class GuildSettingBuilder
             guildSettings.AddOption(new SelectMenuOptionBuilder(name, $"gs-view-{value}", description));
         }
 
-        response.Components = new ComponentBuilder()
+        response.Components = new ActionRowProperties()
             .WithSelectMenu(guildSettings);
 
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
@@ -217,7 +217,7 @@ public class GuildSettingBuilder
         description.AppendLine($"`{prefix}whoknows`");
         description.AppendLine();
 
-        var components = new ComponentBuilder();
+        var components = new ActionRowProperties();
 
         if (guild.Prefix != null &&
             guild.Prefix != this._botSettings.Bot.Prefix)
@@ -264,7 +264,7 @@ public class GuildSettingBuilder
 
         var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
 
-        var components = new ComponentBuilder();
+        var components = new ActionRowProperties();
 
         if (!guild.ActivityThresholdDays.HasValue)
         {
@@ -310,7 +310,7 @@ public class GuildSettingBuilder
         var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
         var crownsDisabled = guild.CrownsDisabled == true;
 
-        var components = new ComponentBuilder();
+        var components = new ActionRowProperties();
 
         if (!guild.CrownsActivityThresholdDays.HasValue)
         {
@@ -364,7 +364,7 @@ public class GuildSettingBuilder
         var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
         var crownsDisabled = guild.CrownsDisabled == true;
 
-        var components = new ComponentBuilder();
+        var components = new ActionRowProperties();
 
         if (!guild.CrownsMinimumPlaycountThreshold.HasValue)
         {
@@ -419,7 +419,7 @@ public class GuildSettingBuilder
         description.AppendLine();
         description.AppendLine($"To add or update all crowns, press the button below.");
 
-        var components = new ComponentBuilder();
+        var components = new ActionRowProperties();
         components.WithButton("Run crownseeder", $"{InteractionConstants.RunCrownseeder}", style: ButtonStyle.Secondary, disabled: crownsDisabled);
 
         if (crownsDisabled)
@@ -686,7 +686,7 @@ public class GuildSettingBuilder
             response.Embed.WithFooter($"Last modified by {lastModifier.Username}");
         }
 
-        response.Components = new ComponentBuilder().WithSelectMenu(fmType);
+        response.Components = new ActionRowProperties().WithSelectMenu(fmType);
 
         return response;
     }
@@ -747,7 +747,7 @@ public class GuildSettingBuilder
 
         response.Embed.AddField("Disabled commands", currentlyDisabled.Length > 0 ? currentlyDisabled.ToString() : "✅ All commands enabled.");
 
-        var components = new ComponentBuilder()
+        var components = new ActionRowProperties()
             .WithButton("Add", $"{InteractionConstants.ToggleCommand.ToggleGuildCommandAdd}", style: ButtonStyle.Secondary)
             .WithButton("Remove", $"{InteractionConstants.ToggleCommand.ToggleGuildCommandRemove}", style: ButtonStyle.Secondary, disabled: currentlyDisabled.Length == 0)
             .WithButton("Clear", $"{InteractionConstants.ToggleCommand.ToggleGuildCommandClear}", style: ButtonStyle.Secondary, disabled: currentlyDisabled.Length == 0);
@@ -933,7 +933,7 @@ public class GuildSettingBuilder
         var upDisabled = previousCategoryId == 0 || previousChannelId == 0;
         var downDisabled = nextCategoryId == 0 || nextChannelId == 0;
 
-        var components = new ComponentBuilder()
+        var components = new ActionRowProperties()
             .WithButton(null, $"{InteractionConstants.ToggleCommand.ToggleCommandMove}-{previousChannelId}-{previousCategoryId}-up", style: ButtonStyle.Secondary, EmojiProperties.Custom(DiscordConstants.OneToFiveUp), disabled: upDisabled)
             .WithButton(null, $"{InteractionConstants.ToggleCommand.ToggleCommandMove}-{nextChannelId}-{nextCategoryId}-down", style: ButtonStyle.Secondary, EmojiProperties.Custom(DiscordConstants.OneToFiveDown), disabled: downDisabled, row: 1)
             .WithButton("Add", $"{InteractionConstants.ToggleCommand.ToggleCommandAdd}-{selectedChannel.Id}-{selectedCategoryId}", style: ButtonStyle.Secondary)
@@ -991,7 +991,7 @@ public class GuildSettingBuilder
             description.AppendLine();
             description.AppendLine("Use the button below to re-enable crowns.");
 
-            response.Components = new ComponentBuilder().WithButton("Enable crowns", $"{InteractionConstants.ToggleCrowns.Enable}", style: ButtonStyle.Secondary);
+            response.Components = new ActionRowProperties().WithButton("Enable crowns", $"{InteractionConstants.ToggleCrowns.Enable}", style: ButtonStyle.Secondary);
         }
         else
         {
@@ -1000,7 +1000,7 @@ public class GuildSettingBuilder
             description.AppendLine();
             description.AppendLine("Use the button below to disable crown functionality server-wide. Crown history will be preserved, but it will no longer be visible.");
 
-            response.Components = new ComponentBuilder().WithButton("Disable crowns", $"{InteractionConstants.ToggleCrowns.Disable}", style: ButtonStyle.Secondary);
+            response.Components = new ActionRowProperties().WithButton("Disable crowns", $"{InteractionConstants.ToggleCrowns.Disable}", style: ButtonStyle.Secondary);
         }
 
         response.Embed.WithDescription(description.ToString());

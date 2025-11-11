@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using FMBot.Bot.Models;
 using System.Threading.Tasks;
+using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.WhoKnows;

@@ -35,7 +35,7 @@ public static class GenericEmbedService
 
     public static ComponentBuilder UsernameNotSetErrorComponents()
     {
-        return new ComponentBuilder()
+        return new ActionRowProperties()
             .WithButton("Sign up",  url: "https://www.last.fm/join")
             .WithButton("Connect Last.fm account", style: ButtonStyle.Secondary,
                 customId: InteractionConstants.User.Login);
@@ -43,7 +43,7 @@ public static class GenericEmbedService
 
     public static ComponentBuilder ReconnectComponents()
     {
-        return new ComponentBuilder()
+        return new ActionRowProperties()
             .WithButton("Reconnect Last.fm account", style: ButtonStyle.Secondary,
                 customId: InteractionConstants.User.Login);
     }
@@ -93,7 +93,7 @@ public static class GenericEmbedService
 
     private static ComponentBuilder NoScrobblesFoundComponents()
     {
-        return new ComponentBuilder()
+        return new ActionRowProperties()
             .WithButton("Track my music app",  url: "https://www.last.fm/about/trackmymusic")
             .WithButton("Track Spotify",  url: "https://www.last.fm/settings/applications");
     }
@@ -325,7 +325,7 @@ public static class GenericEmbedService
 
     public static ComponentBuilder PurchaseButtons(CommandInfo commandInfo)
     {
-        return new ComponentBuilder()
+        return new ActionRowProperties()
             .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
                 customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(
                     source: $"help-{commandInfo.Name}"));
@@ -358,13 +358,18 @@ public static class GenericEmbedService
     }
 
     public static ActionRowProperties WithButton(this ActionRowProperties actionRow, string label, string customId,
-        ButtonStyle style, EmojiProperties emote = null)
+        ButtonStyle style, EmojiProperties emote = null, bool disabled = false)
     {
-        actionRow.Add(emote == null
+        var button = emote == null
             ? new ButtonProperties(customId, label, style)
-            : new ButtonProperties(customId, label, emote, style));
+            : new ButtonProperties(customId, label, emote, style);
 
-        actionRow.Add(new ButtonProperties(customId, label, style));
+        if (disabled)
+        {
+            button.Disabled = true;
+        }
+
+        actionRow.Add(button);
         return actionRow;
     }
 

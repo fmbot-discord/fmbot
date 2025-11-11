@@ -49,7 +49,7 @@ public class DiscogsSlashCommands : ApplicationCommandModule<ApplicationCommandC
             {
                 if (this.Context.Guild != null)
                 {
-                    var serverEmbed = new EmbedBuilder()
+                    var serverEmbed = new EmbedProperties()
                         .WithColor(DiscordConstants.InformationColorBlue);
 
                     serverEmbed.WithDescription("Check your DMs for a link to connect your Discogs account to .fmbot!");
@@ -57,14 +57,14 @@ public class DiscogsSlashCommands : ApplicationCommandModule<ApplicationCommandC
                 }
 
                 var response = this._discogsBuilder.DiscogsLoginGetLinkAsync(new ContextModel(this.Context, contextUser));
-                await this.Context.User.SendMessageAsync("", false, response.Embed.Build(), components: response.Components.Build());
+                await this.Context.User.SendMessageAsync("", false, response.Embed, components: response.Components);
                 this.Context.LogCommandUsed(response.CommandResponse);
             }
             else
             {
                 if (this.Context.Guild != null)
                 {
-                    var serverEmbed = new EmbedBuilder()
+                    var serverEmbed = new EmbedProperties()
                         .WithColor(DiscordConstants.InformationColorBlue);
 
                     serverEmbed.WithDescription("Check your DMs for a message to manage your connected Discogs account!");
@@ -72,7 +72,7 @@ public class DiscogsSlashCommands : ApplicationCommandModule<ApplicationCommandC
                 }
 
                 var response = DiscogsBuilder.DiscogsManage(new ContextModel(this.Context, contextUser));
-                await this.Context.User.SendMessageAsync("", false, response.Embed.Build(), components: response.Components.Build());
+                await this.Context.User.SendMessageAsync("", false, response.Embed, components: response.Components);
                 this.Context.LogCommandUsed(response.CommandResponse);
             }
         }
@@ -158,7 +158,7 @@ public class DiscogsSlashCommands : ApplicationCommandModule<ApplicationCommandC
         embed.WithColor(DiscordConstants.InformationColorBlue);
         await RespondAsync(embed: embed.Build());
 
-        var components = new ComponentBuilder();
+        var components = new ActionRowProperties();
         await message.ModifyAsync(m => m.Components = components.Build());
 
         try
@@ -181,7 +181,7 @@ public class DiscogsSlashCommands : ApplicationCommandModule<ApplicationCommandC
         [Summary("User", "The user to show (defaults to self)")] string user = null,
         [Summary("Format", "Media format to include")] DiscogsFormat? format = null)
     {
-        await DeferAsync();
+        await RespondAsync(InteractionCallback.DeferredMessage());
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
@@ -206,7 +206,7 @@ public class DiscogsSlashCommands : ApplicationCommandModule<ApplicationCommandC
     [ComponentInteraction($"{InteractionConstants.Discogs.Collection}-*-*")]
     public async Task CollectionAsync(string discordUser, string requesterDiscordUser)
     {
-        await DeferAsync();
+        await RespondAsync(InteractionCallback.DeferredMessage());
         await this.Context.DisableActionRows(specificButtonOnly:$"{InteractionConstants.Discogs.Collection}-{discordUser}-{requesterDiscordUser}");
 
         var discordUserId = ulong.Parse(discordUser);

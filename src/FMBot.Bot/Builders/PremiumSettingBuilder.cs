@@ -81,7 +81,7 @@ public class PremiumSettingBuilder
 
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
-        response.Components = new ComponentBuilder().WithSelectMenu(allowedRoles);
+        response.Components = new ActionRowProperties().WithSelectMenu(allowedRoles);
 
         return response;
     }
@@ -138,7 +138,7 @@ public class PremiumSettingBuilder
 
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
-        response.Components = new ComponentBuilder().WithSelectMenu(blockedRoles);
+        response.Components = new ActionRowProperties().WithSelectMenu(blockedRoles);
 
         return response;
     }
@@ -200,7 +200,7 @@ public class PremiumSettingBuilder
 
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
-        response.Components = new ComponentBuilder().WithSelectMenu(botManagementRoles);
+        response.Components = new ActionRowProperties().WithSelectMenu(botManagementRoles);
 
         return response;
     }
@@ -226,7 +226,7 @@ public class PremiumSettingBuilder
 
         var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
 
-        var components = new ComponentBuilder();
+        var components = new ActionRowProperties();
 
         if (!guild.UserActivityThresholdDays.HasValue)
         {

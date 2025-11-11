@@ -69,7 +69,7 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
             ComponentBuilder components = null;
             if (dataSource == DataSource.LastFm)
             {
-                components = new ComponentBuilder()
+                components = new ActionRowProperties()
                     .WithButton("Delete imported Spotify history", InteractionConstants.ImportClearSpotify,
                         style: ButtonStyle.Danger, row: 0)
                     .WithButton("Delete imported Apple Music history", InteractionConstants.ImportClearAppleMusic,
@@ -234,7 +234,7 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
         try
         {
             _ = this.Context.Channel?.TriggerTypingStateAsync()!;
-            await DeferAsync();
+            await RespondAsync(InteractionCallback.DeferredMessage());
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
             var importRef = this._importService.StoreImportReference(new ReferencedMusic { Artist = modal.ArtistName });
@@ -257,7 +257,7 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
         try
         {
             _ = this.Context.Channel?.TriggerTypingStateAsync()!;
-            await DeferAsync();
+            await RespondAsync(InteractionCallback.DeferredMessage());
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
             var importRef = this._importService.StoreImportReference(new ReferencedMusic
@@ -283,7 +283,7 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
         try
         {
             _ = this.Context.Channel?.TriggerTypingStateAsync()!;
-            await DeferAsync();
+            await RespondAsync(InteractionCallback.DeferredMessage());
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
             var importRef = this._importService.StoreImportReference(new ReferencedMusic
@@ -329,7 +329,7 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
     {
         try
         {
-            await DeferAsync();
+            await RespondAsync(InteractionCallback.DeferredMessage());
             await EditToLoader();
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -344,7 +344,7 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
 
             await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
             {
-                e.Embed = response.Embed.Build();
+                e.Embed = response.Embed;
                 e.Components = response.Components?.Build();
             });
 
@@ -361,7 +361,7 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
     {
         try
         {
-            await DeferAsync();
+            await RespondAsync(InteractionCallback.DeferredMessage());
             await EditToLoader("Editing selected imports...");
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -386,7 +386,7 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
 
             await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
             {
-                e.Embed = response.Embed.Build();
+                e.Embed = response.Embed;
                 e.Components = response.Components?.Build();
             });
 
@@ -403,7 +403,7 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
     {
         try
         {
-            await DeferAsync();
+            await RespondAsync(InteractionCallback.DeferredMessage());
             await EditToLoader();
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -415,7 +415,7 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
 
             await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
             {
-                e.Embed = response.Embed.Build();
+                e.Embed = response.Embed;
                 e.Components = response.Components?.Build();
             });
 
@@ -432,7 +432,7 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
     {
         try
         {
-            await DeferAsync();
+            await RespondAsync(InteractionCallback.DeferredMessage());
             await EditToLoader("Deleting selected imports...");
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -455,7 +455,7 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
 
             await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
             {
-                e.Embed = response.Embed.Build();
+                e.Embed = response.Embed;
                 e.Components = response.Components?.Build();
             });
 
@@ -494,7 +494,7 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
     {
         try
         {
-            await DeferAsync();
+            await RespondAsync(InteractionCallback.DeferredMessage());
             await EditToLoader();
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -509,7 +509,7 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
 
             await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
             {
-                e.Embed = response.Embed.Build();
+                e.Embed = response.Embed;
                 e.Components = response.Components?.Build();
             });
 
@@ -526,7 +526,7 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
     {
         try
         {
-            await DeferAsync();
+            await RespondAsync(InteractionCallback.DeferredMessage());
             await EditToLoader("Editing selected imports...");
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -552,7 +552,7 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
 
             await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
             {
-                e.Embed = response.Embed.Build();
+                e.Embed = response.Embed;
                 e.Components = response.Components?.Build();
             });
 
@@ -569,7 +569,7 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
     {
         try
         {
-            await DeferAsync();
+            await RespondAsync(InteractionCallback.DeferredMessage());
             await EditToLoader();
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -581,7 +581,7 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
 
             await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
             {
-                e.Embed = response.Embed.Build();
+                e.Embed = response.Embed;
                 e.Components = response.Components?.Build();
             });
 
@@ -598,7 +598,7 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
     {
         try
         {
-            await DeferAsync();
+            await RespondAsync(InteractionCallback.DeferredMessage());
             await EditToLoader("Deleting selected imports...");
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -621,7 +621,7 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
 
             await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
             {
-                e.Embed = response.Embed.Build();
+                e.Embed = response.Embed;
                 e.Components = response.Components?.Build();
             });
 
@@ -660,7 +660,7 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
     {
         try
         {
-            await DeferAsync();
+            await RespondAsync(InteractionCallback.DeferredMessage());
             await EditToLoader();
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -675,7 +675,7 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
 
             await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
             {
-                e.Embed = response.Embed.Build();
+                e.Embed = response.Embed;
                 e.Components = response.Components?.Build();
             });
 
@@ -692,7 +692,7 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
     {
         try
         {
-            await DeferAsync();
+            await RespondAsync(InteractionCallback.DeferredMessage());
             await EditToLoader("Editing selected imports...");
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -718,7 +718,7 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
 
             await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
             {
-                e.Embed = response.Embed.Build();
+                e.Embed = response.Embed;
                 e.Components = response.Components?.Build();
             });
 
@@ -735,7 +735,7 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
     {
         try
         {
-            await DeferAsync();
+            await RespondAsync(InteractionCallback.DeferredMessage());
             await EditToLoader();
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -747,7 +747,7 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
 
             await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
             {
-                e.Embed = response.Embed.Build();
+                e.Embed = response.Embed;
                 e.Components = response.Components?.Build();
             });
 
@@ -764,7 +764,7 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
     {
         try
         {
-            await DeferAsync();
+            await RespondAsync(InteractionCallback.DeferredMessage());
             await EditToLoader("Deleting selected imports...");
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -787,7 +787,7 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
 
             await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
             {
-                e.Embed = response.Embed.Build();
+                e.Embed = response.Embed;
                 e.Components = response.Components?.Build();
             });
 
@@ -803,7 +803,7 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
     {
         await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
         {
-            e.Components = new ComponentBuilder().WithButton(text, customId: "0",
+            e.Components = new ActionRowProperties().WithButton(text, customId: "0",
                 emote: EmojiProperties.Custom(DiscordConstants.Loading), disabled: true, style: ButtonStyle.Secondary).Build();
         });
     }

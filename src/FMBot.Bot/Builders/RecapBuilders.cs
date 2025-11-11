@@ -121,7 +121,7 @@ public class RecapBuilders
             viewType.AddOption(new SelectMenuOptionBuilder(name, value, null, isDefault: active));
         }
 
-        var componentBuilder = new ComponentBuilder()
+        var componentBuilder = new ActionRowProperties()
             .WithSelectMenu(viewType);
         response.Components = componentBuilder;
         context.SelectMenu = viewType;

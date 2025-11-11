@@ -26,7 +26,10 @@ using FMBot.Images.Generators;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using NetCord;
+using NetCord.Gateway;
+using NetCord.Rest;
 using SkiaSharp;
+using Guild = FMBot.Persistence.Domain.Models.Guild;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 
 namespace FMBot.Bot.Builders;
@@ -53,6 +56,8 @@ public class ArtistBuilders
     private readonly CensorService _censorService;
     private readonly FeaturedService _featuredService;
     private readonly MusicDataFactory _musicDataFactory;
+    private readonly ShardedGatewayClient _client;
+
 
     public ArtistBuilders(ArtistsService artistsService,
         IDataSourceFactory dataSourceFactory,
@@ -73,7 +78,7 @@ public class ArtistBuilders
         DiscogsService discogsService,
         CensorService censorService,
         FeaturedService featuredService,
-        MusicDataFactory musicDataFactory)
+        MusicDataFactory musicDataFactory, ShardedGatewayClient client)
     {
         this._artistsService = artistsService;
         this._dataSourceFactory = dataSourceFactory;
@@ -95,6 +100,7 @@ public class ArtistBuilders
         this._censorService = censorService;
         this._featuredService = featuredService;
         this._musicDataFactory = musicDataFactory;
+        this._client = client;
     }
 
     public async Task<ResponseModel> ArtistInfoAsync(ContextModel context,
@@ -286,7 +292,8 @@ public class ArtistBuilders
                 var usersWithArtist = await this._whoKnowsArtistService.GetIndexedUsersForArtist(context.DiscordGuild,
                     guildUsers, contextGuild.GuildId, artistSearch.Artist.ArtistName);
                 var (filterStats, filteredUsersWithArtist) =
-                    WhoKnowsService.FilterWhoKnowsObjects(usersWithArtist, guildUsers, contextGuild, context.ContextUser.UserId);
+                    WhoKnowsService.FilterWhoKnowsObjects(usersWithArtist, guildUsers, contextGuild,
+                        context.ContextUser.UserId);
 
                 if (filteredUsersWithArtist.Count != 0)
                 {
@@ -610,7 +617,7 @@ public class ArtistBuilders
             footer.AppendLine(GenreService.GenresToString(fullArtist.ArtistGenres.ToList()));
         }
 
-        var components = new ComponentBuilder()
+        var components = new ActionRowProperties()
             .WithButton("Artist",
                 $"{InteractionConstants.Artist.Info}-{fullArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}",
                 style: ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.Info));
@@ -1192,7 +1199,7 @@ public class ArtistBuilders
             response.Embed.WithDescription(
                 $"To see what music you've recently discovered we need to store your lifetime Last.fm history. Your lifetime history and more are only available for supporters.");
 
-            response.Components = new ComponentBuilder()
+            response.Components = new ActionRowProperties()
                 .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
                     customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "discoveries"));
             response.Embed.WithColor(DiscordConstants.InformationColorBlue);
@@ -1206,7 +1213,7 @@ public class ArtistBuilders
             response.Embed.WithDescription(
                 $"Sorry, discovery commands uses somebody's lifetime listening history. You can only use this command on other supporters.");
 
-            response.Components = new ComponentBuilder()
+            response.Components = new ActionRowProperties()
                 .WithButton(".fmbot supporter", style: ButtonStyle.Secondary,
                     customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "discoveries"));
             response.Embed.WithColor(DiscordConstants.InformationColorBlue);
@@ -1553,7 +1560,8 @@ public class ArtistBuilders
             artistSearch.Artist.ArtistName, context.DiscordGuild, artistSearch.Artist.UserPlaycount);
 
         var (filterStats, filteredUsersWithArtist) =
-            WhoKnowsService.FilterWhoKnowsObjects(usersWithArtist, guildUsers, contextGuild, context.ContextUser.UserId, roles);
+            WhoKnowsService.FilterWhoKnowsObjects(usersWithArtist, guildUsers, contextGuild, context.ContextUser.UserId,
+                roles);
 
         CrownModel crownModel = null;
         if (contextGuild.CrownsDisabled != true && filteredUsersWithArtist.Count >= 1 && !displayRoleSelector &&
@@ -1571,7 +1579,7 @@ public class ArtistBuilders
         if (showCrownButton)
         {
             var stolen = crownModel?.Stolen == true;
-            response.Components = new ComponentBuilder()
+            response.Components = new ActionRowProperties()
                 .WithButton("Crown history", $"{InteractionConstants.Artist.Crown}-{cachedArtist.Id}-{stolen}",
                     style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("👑"));
         }
@@ -1679,38 +1687,36 @@ public class ArtistBuilders
         {
             if (PublicProperties.PremiumServers.ContainsKey(context.DiscordGuild.Id))
             {
-                var allowedRoles = new SelectMenuBuilder()
-                    .WithPlaceholder("Apply role filter..")
-                    .WithCustomId($"{InteractionConstants.WhoKnowsRolePicker}-{cachedArtist.Id}")
-                    .WithType(ComponentType.RoleSelect)
-                    .WithMinValues(0)
-                    .WithMaxValues(25);
+                var allowedRoles =
+                    new RoleMenuProperties($"{InteractionConstants.WhoKnowsRolePicker}-{cachedArtist.Id}")
+                        .WithPlaceholder("Apply role filter..")
+                        .WithMinValues(0)
+                        .WithMaxValues(25);
 
-                response.Components = new ComponentBuilder().WithSelectMenu(allowedRoles);
+                response.RoleMenu = allowedRoles;
             }
             else
             {
-                //response.Components = new ComponentBuilder().WithButton(Constants.GetPremiumServer, disabled: true, customId: "1");
+                //response.Components = new ActionRowProperties().WithButton(Constants.GetPremiumServer, disabled: true, customId: "1");
             }
         }
 
         return response;
     }
 
-    public SelectMenuBuilder GetFilterSelectMenu(string customId, Guild guild,
+    public StringMenuProperties GetFilterSelectMenu(string customId, Guild guild,
         IDictionary<int, FullGuildUser> guildUsers)
     {
-        var builder = new SelectMenuBuilder();
+        var builder = new StringMenuProperties(customId);
 
         builder
             .WithPlaceholder("Set filter options")
-            .WithCustomId(customId)
             .WithMinValues(0);
 
         if (guildUsers.Any(a => a.Value.BlockedFromWhoKnows))
         {
-            builder.AddOption(new SelectMenuOptionBuilder("Blocked users", "blocked-users",
-                "Filter out users you've manually blocked", isDefault: true));
+            builder.AddOption(new StringMenuSelectOptionProperties("Blocked users",
+                "Filter out users you've manually blocked").WithValue("blocked-users").WithDefault(true));
         }
 
         return builder;
@@ -1961,8 +1967,10 @@ public class ArtistBuilders
             var globalPlaycount = usersWithArtist.Sum(a => a.Playcount);
             var avgPlaycount = usersWithArtist.Average(a => a.Playcount);
 
-            footer.Append($"{globalListeners.Format(context.NumberFormat)} {StringExtensions.GetListenersString(globalListeners)} - ");
-            footer.Append($"{globalPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(globalPlaycount)} - ");
+            footer.Append(
+                $"{globalListeners.Format(context.NumberFormat)} {StringExtensions.GetListenersString(globalListeners)} - ");
+            footer.Append(
+                $"{globalPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(globalPlaycount)} - ");
             footer.AppendLine($"{((int)avgPlaycount).Format(context.NumberFormat)} avg");
         }
 
@@ -2091,13 +2099,11 @@ public class ArtistBuilders
         var ownName = context.DiscordUser.GlobalName ?? context.DiscordUser.Username;
         var otherName = userSettings.DisplayName;
 
-        if (context.DiscordGuild != null)
+        if (context.CachedGuildUsers != null)
         {
-            var discordGuildUser =
-                await context.DiscordGuild.GetUserAsync(context.ContextUser.DiscordUserId, CacheMode.CacheOnly);
-            if (discordGuildUser != null)
+            if (context.CachedGuildUsers.TryGetValue(context.ContextUser.DiscordUserId, out var discordGuildUser))
             {
-                ownName = discordGuildUser.DisplayName;
+                ownName = discordGuildUser.Nickname ?? discordGuildUser.GlobalName ?? discordGuildUser.Username;
             }
         }
 

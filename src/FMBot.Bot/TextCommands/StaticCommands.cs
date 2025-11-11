@@ -7,6 +7,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Configurations;
@@ -21,6 +22,8 @@ using FMBot.Domain.Models;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Options;
 using NetCord;
+using NetCord.Gateway;
+using NetCord.Rest;
 using NetCord.Services.Commands;
 using Serilog;
 using Web.InternalApi;
@@ -41,7 +44,7 @@ public class StaticCommands : BaseCommandModule
     private readonly MusicBotService _musicBotService;
     private readonly StaticBuilders _staticBuilders;
     private readonly StatusHandler.StatusHandlerClient _statusHandler;
-    private readonly DiscordShardedClient _client;
+    private readonly ShardedGatewayClient _client;
 
     private InteractiveService Interactivity { get; }
 
@@ -60,7 +63,7 @@ public class StaticCommands : BaseCommandModule
         MusicBotService musicBotService,
         StaticBuilders staticBuilders,
         StatusHandler.StatusHandlerClient statusHandler,
-        DiscordShardedClient client) : base(botSettings)
+        ShardedGatewayClient client) : base(botSettings)
     {
         this._friendService = friendsService;
         this._guildService = guildService;
@@ -75,18 +78,16 @@ public class StaticCommands : BaseCommandModule
         this._client = client;
     }
 
-    [Command("invite")]
+    [Command("invite", "server", "info")]
     [Summary("Info for inviting the bot to a server")]
-    [Alias("server", "info")]
     [CommandCategories(CommandCategory.Other)]
     public async Task InviteAsync()
     {
-        var socketCommandContext = (SocketCommandContext)this.Context;
-        var selfId = socketCommandContext.Client.CurrentUser.Id.ToString();
+        var selfId = this._client.Id.ToString();
         var embedDescription = new StringBuilder();
         this._embed.WithColor(DiscordConstants.InformationColorBlue);
 
-        if (socketCommandContext.Client.CurrentUser.Id == Constants.BotBetaId)
+        if (this._client.Id == Constants.BotBetaId)
         {
             embedDescription.AppendLine(
                 "The version of the bot you're currently using is the beta version, which is used to test new features and fixes.");
@@ -125,28 +126,19 @@ public class StaticCommands : BaseCommandModule
 
         this._embed.WithDescription(embedDescription.ToString());
 
-        if (IsBotSelfHosted(socketCommandContext.Client.CurrentUser.Id))
-        {
-            this._embed.AddField("Note:",
-                "This instance of .fmbot is self-hosted and could differ from the 'official' .fmbot. " +
-                "The invite link linked here invites the self-hosted instance and not the official .fmbot.");
-        }
-
-        var components = new ComponentBuilder()
-            .WithButton("Add to server",
-                url:
-                $"https://discord.com/oauth2/authorize?client_id={selfId}&scope=bot%20applications.commands&permissions={Constants.InviteLinkPermissions}")
-            .WithButton("Add to user",
-                url:
-                $"https://discord.com/oauth2/authorize?client_id={selfId}&scope=applications.commands&integration_type=1");
+        var components = new ActionRowProperties()
+            .WithButton(
+                $"https://discord.com/oauth2/authorize?client_id={selfId}&scope=bot%20applications.commands&permissions={Constants.InviteLinkPermissions}",
+                "Add to server")
+            .WithButton($"https://discord.com/oauth2/authorize?client_id={selfId}&scope=applications.commands&integration_type=1",
+                "Add to user");
 
         await this.Context.Channel.SendMessageAsync("", false, this._embed.Build(), components: components.Build());
         this.Context.LogCommandUsed();
     }
 
-    [Command("source")]
+    [Command("source", "github", "gitlab", "opensource", "sourcecode", "code")]
     [Summary("Shows links to the source code of .fmbot")]
-    [Alias("github", "gitlab", "opensource", "sourcecode", "code")]
     [CommandCategories(CommandCategory.Other)]
     public async Task SourceAsync()
     {
@@ -169,9 +161,8 @@ public class StaticCommands : BaseCommandModule
         this.Context.LogCommandUsed();
     }
 
-    [Command("outofsync")]
+    [Command("outofsync", "broken", "sync", "fix", "lagging", "stuck")]
     [Summary("Info for what to do when now playing track is lagging behind")]
-    [Alias("broken", "sync", "fix", "lagging", "stuck")]
     [CommandCategories(CommandCategory.Other)]
     public async Task OutOfSyncAsync([CommandParameter(Remainder = true)] string options = null)
     {
@@ -184,9 +175,8 @@ public class StaticCommands : BaseCommandModule
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [Command("getsupporter")]
+    [Command("getsupporter", "support", "patreon", "opencollective", "donations", "supporter")]
     [Summary("Get the best .fmbot experience with Supporter")]
-    [Alias("support", "patreon", "opencollective", "donations", "supporter")]
     [CommandCategories(CommandCategory.Other)]
     public async Task GetSupporter()
     {
@@ -221,7 +211,7 @@ public class StaticCommands : BaseCommandModule
         var currentMemoryUsage = currentProcess.WorkingSet64;
         var peakMemoryUsage = currentProcess.PeakWorkingSet64;
 
-        var client = this.Context.Client as DiscordShardedClient;
+        var client = this.Context.Client as ShardedGatewayClient;
 
         var ticks = Stopwatch.GetTimestamp();
         var upTime = (double)ticks / Stopwatch.Frequency;
@@ -295,7 +285,7 @@ public class StaticCommands : BaseCommandModule
     {
         this._embed.WithTitle("Bot instance shards");
 
-        var client = this.Context.Client as DiscordShardedClient;
+        var client = this.Context.Client as ShardedGatewayClient;
 
         var shardDescription = new StringBuilder();
 
@@ -437,7 +427,7 @@ public class StaticCommands : BaseCommandModule
             return;
         }
 
-        var client = this.Context.Client as DiscordShardedClient;
+        var client = this.Context.Client as ShardedGatewayClient;
 
         DiscordSocketClient shard;
 

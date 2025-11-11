@@ -207,7 +207,7 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
                             return;
                         }
 
-                        var serverEmbed = new EmbedBuilder()
+                        var serverEmbed = new EmbedProperties()
                             .WithColor(DiscordConstants.InformationColorBlue)
                             .WithDescription("Check your DMs to continue with configuring your command shortcuts.");
 
@@ -266,15 +266,15 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
                     }
                     case UserSetting.DeleteAccount:
                     {
-                        var serverEmbed = new EmbedBuilder()
+                        var serverEmbed = new EmbedProperties()
                             .WithColor(DiscordConstants.WarningColorOrange)
                             .WithDescription("Check your DMs to continue with your .fmbot account deletion.");
 
                         await this.Context.Interaction.RespondAsync("", embed: serverEmbed.Build(), ephemeral: true);
 
                         response = UserBuilder.RemoveDataResponse(new ContextModel(this.Context, contextUser));
-                        await this.Context.User.SendMessageAsync("", false, response.Embed.Build(),
-                            components: response.Components.Build());
+                        await this.Context.User.SendMessageAsync("", false, response.Embed,
+                            components: response.Components);
                         break;
                     }
                     default:
@@ -325,8 +325,8 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
             var loginUrlResponse =
                 UserBuilder.StartLogin(contextUser, token.Content.Token, this._botSettings.LastFm.PublicKey);
 
-            await RespondAsync(null, [loginUrlResponse.Embed.Build()], ephemeral: true,
-                components: loginUrlResponse.Components.Build());
+            await RespondAsync(null, [loginUrlresponse.Embed], ephemeral: true,
+                components: loginUrlresponse.Components);
             this.Context.LogCommandUsed(CommandResponse.UsernameNotSet);
 
             var loginResult = await this._userService.GetAndStoreAuthSession(this.Context.User, token.Content.Token);
@@ -345,8 +345,8 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
 
                 await this.Context.Interaction.ModifyOriginalResponseAsync(m =>
                 {
-                    m.Components = loginSuccessResponse.Components.Build();
-                    m.Embed = loginSuccessResponse.Embed.Build();
+                    m.Components = loginSuccessresponse.Components;
+                    m.Embed = loginSuccessresponse.Embed;
                 });
                 this.Context.LogCommandUsed();
 
@@ -359,8 +359,8 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
 
                     await this.Context.Interaction.ModifyOriginalResponseAsync(m =>
                     {
-                        m.Components = loginSuccessResponse.Components.Build();
-                        m.Embed = loginSuccessResponse.Embed.Build();
+                        m.Components = loginSuccessresponse.Components;
+                        m.Embed = loginSuccessresponse.Embed;
                     });
                 }
 
@@ -845,7 +845,7 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
 
         if (this.Context.Guild != null)
         {
-            var serverEmbed = new EmbedBuilder()
+            var serverEmbed = new EmbedProperties()
                 .WithColor(DiscordConstants.WarningColorOrange)
                 .WithDescription("Check your DMs to continue with your .fmbot account deletion.");
 
@@ -853,7 +853,7 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
         }
         else
         {
-            var serverEmbed = new EmbedBuilder()
+            var serverEmbed = new EmbedProperties()
                 .WithColor(DiscordConstants.WarningColorOrange)
                 .WithDescription("Check the message below to continue with your .fmbot account deletion.");
 
@@ -861,8 +861,8 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
         }
 
         var response = UserBuilder.RemoveDataResponse(new ContextModel(this.Context, userSettings));
-        await this.Context.User.SendMessageAsync("", false, response.Embed.Build(),
-            components: response.Components.Build());
+        await this.Context.User.SendMessageAsync("", false, response.Embed,
+            components: response.Components);
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
@@ -922,7 +922,7 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
 
         try
         {
-            await message.ModifyAsync(m => m.Components = new ComponentBuilder().Build());
+            await message.ModifyAsync(m => m.Components = new ActionRowProperties().Build());
 
             await this.DeferAsync(true);
 
@@ -1022,7 +1022,7 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
     {
         try
         {
-            await DeferAsync();
+            await RespondAsync(InteractionCallback.DeferredMessage());
             await this.Context.DisableInteractionButtons();
 
             var discordUserId = ulong.Parse(discordUser);
@@ -1036,13 +1036,13 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
             EmbedBuilder loaderEmbed;
             if (result == "compliment")
             {
-                loaderEmbed = new EmbedBuilder()
+                loaderEmbed = new EmbedProperties()
                     .WithDescription($"<a:loading:821676038102056991> Loading {descriptor} compliment...")
                     .WithColor(new Color(186, 237, 169));
             }
             else
             {
-                loaderEmbed = new EmbedBuilder()
+                loaderEmbed = new EmbedProperties()
                     .WithDescription(
                         $"<a:loading:821676038102056991> Loading {descriptor} roast (don't take it personally)...")
                     .WithColor(new Color(255, 122, 1));
@@ -1103,7 +1103,7 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
 
             await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
             {
-                e.Embed = response.Embed.Build();
+                e.Embed = response.Embed;
                 e.Components = null;
             });
 
@@ -1316,7 +1316,7 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
         [Summary("User", "The user of which you want to view their profile")]
         string user = null)
     {
-        await DeferAsync();
+        await RespondAsync(InteractionCallback.DeferredMessage());
 
         var contextUser = await this._userService.GetFullUserAsync(this.Context.User.Id);
         var userSettings =
@@ -1332,7 +1332,7 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
     [ComponentInteraction($"{InteractionConstants.User.Profile}-*-*")]
     public async Task ProfileAsync(string discordUser, string requesterDiscordUser)
     {
-        await DeferAsync();
+        await RespondAsync(InteractionCallback.DeferredMessage());
         await this.Context.DisableActionRows();
 
         var discordUserId = ulong.Parse(discordUser);
@@ -1357,7 +1357,7 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
     {
         try
         {
-            await DeferAsync();
+            await RespondAsync(InteractionCallback.DeferredMessage());
             await this.Context.DisableActionRows();
 
             var discordUserId = ulong.Parse(discordUser);
@@ -1446,7 +1446,7 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
             description.AppendLine(
                 ".fmbot is not affiliated with Last.fm. No Last.fm data can be modified, transferred or deleted with this command.");
 
-            var components = new ComponentBuilder()
+            var components = new ActionRowProperties()
                 .WithButton("Delete account",
                     $"{InteractionConstants.ManageAlts.ManageAltsDeleteAlt}-false-{targetUser.UserId}",
                     style: ButtonStyle.Danger);
@@ -1520,7 +1520,7 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
                 "Because your current account already has imported plays, imports from the account you're deleting will not be transferred.");
         }
 
-        var components = new ComponentBuilder()
+        var components = new ActionRowProperties()
             .WithButton(transferData == "true"
                     ? "Confirm data transfer and deletion"
                     : "Confirm deletion",
@@ -1572,7 +1572,7 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
             await this._userService.DeleteUser(userToDelete.UserId);
 
             var components =
-                new ComponentBuilder().WithButton(
+                new ActionRowProperties().WithButton(
                     transferData == "true"
                         ? "Successfully transferred data and deleted alt"
                         : "Successfully deleted alt",

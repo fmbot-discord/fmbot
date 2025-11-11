@@ -8,9 +8,9 @@ using System.Text;
 using System.Threading;
 using FMBot.Domain.Models;
 using System.Threading.Tasks;
+using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Services;
-using Discord.Commands;
 using FMBot.Domain;
 using FMBot.Domain.Interfaces;
 using Serilog;
@@ -18,6 +18,9 @@ using FMBot.Persistence.Domain.Models;
 using SkiaSharp;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
+using NetCord;
+using NetCord.Rest;
+using NetCord.Services.Commands;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 
 namespace FMBot.Bot.Builders;
@@ -83,7 +86,7 @@ public class GameBuilders
             response.Embed.WithColor(DiscordConstants.InformationColorBlue);
             response.Embed.WithDescription(
                 $"You've used up all your {jumbleLimit} jumbles of today. Get supporter to play unlimited jumble games and much more.");
-            response.Components = new ComponentBuilder()
+            response.Components = new ActionRowProperties()
                 .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
                     customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "jumble-dailylimit"));
             response.CommandResponse = CommandResponse.SupporterRequired;
@@ -173,7 +176,7 @@ public class GameBuilders
             response.Embed.WithColor(DiscordConstants.InformationColorBlue);
             response.Embed.WithDescription(
                 $"You've used up all your {jumbleLimit} pixel jumbles of today. Get supporter to play unlimited jumble games and much more.");
-            response.Components = new ComponentBuilder()
+            response.Components = new ActionRowProperties()
                 .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
                     customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "pixel-dailylimit"));
             response.CommandResponse = CommandResponse.SupporterRequired;
@@ -245,7 +248,7 @@ public class GameBuilders
         return response;
     }
 
-    private static void BuildJumbleEmbed(EmbedBuilder embed, string jumbledArtist, List<JumbleSessionHint> hints,
+    private static void BuildJumbleEmbed(EmbedProperties embed, string jumbledArtist, List<JumbleSessionHint> hints,
         bool canBeAnswered = true, JumbleType jumbleType = JumbleType.Artist)
     {
         var hintsShown = hints.Count(w => w.HintShown);
@@ -392,13 +395,13 @@ public class GameBuilders
         return response;
     }
 
-    private static ComponentBuilder BuildJumbleComponents(int gameId, List<JumbleSessionHint> hints, float? blur = null,
+    private static ActionRowProperties BuildJumbleComponents(int gameId, List<JumbleSessionHint> hints, float? blur = null,
         bool shuffledHidden = false)
     {
         var addHintDisabled = hints.Count(c => c.HintShown) == hints.Count;
         var offerUnblur = blur is > 0.01f;
 
-        return new ComponentBuilder()
+        return new ActionRowProperties()
             .WithButton(addHintDisabled && offerUnblur ? "Unblur" : "Add hint",
                 addHintDisabled && offerUnblur
                     ? $"{InteractionConstants.Game.JumbleUnblur}-{gameId}"
@@ -582,7 +585,7 @@ public class GameBuilders
         response.Components = null;
         response.Embed.WithColor(DiscordConstants.AppleMusicRed);
 
-        var playAgainButton = new ComponentBuilder().WithButton("Play again",
+        var playAgainButton = new ActionRowProperties().WithButton("Play again",
             $"{InteractionConstants.Game.JumblePlayAgain}-{currentGame.JumbleType}",
             ButtonStyle.Secondary);
 
@@ -717,7 +720,7 @@ public class GameBuilders
 
                     separateResponse.WithFooter(footer.ToString());
                     separateResponse.WithColor(DiscordConstants.SpotifyColorGreen);
-                    var playAgainComponent = new ComponentBuilder().WithButton("Play again",
+                    var playAgainComponent = new ActionRowProperties().WithButton("Play again",
                         $"{InteractionConstants.Game.JumblePlayAgain}-{currentGame.JumbleType}",
                         ButtonStyle.Secondary);
                     if (context.DiscordChannel is IMessageChannel msgChannel)
@@ -763,7 +766,7 @@ public class GameBuilders
                         await message.ModifyAsync(m =>
                         {
                             m.Components = null;
-                            m.Embed = response.Embed.Build();
+                            m.Embed = response.Embed;
                             m.Attachments = response.Stream != null
                                 ? new Optional<IEnumerable<FileAttachment>>(new List<FileAttachment>
                                 {
@@ -830,7 +833,7 @@ public class GameBuilders
         response.Components = null;
         response.Embed.WithColor(DiscordConstants.AppleMusicRed);
 
-        var playAgainComponent = new ComponentBuilder().WithButton("Play again",
+        var playAgainComponent = new ActionRowProperties().WithButton("Play again",
             $"{InteractionConstants.Game.JumblePlayAgain}-{currentGame.JumbleType}",
             ButtonStyle.Secondary);
 

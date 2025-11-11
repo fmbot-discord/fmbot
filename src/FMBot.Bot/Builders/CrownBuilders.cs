@@ -15,10 +15,10 @@ using System.Collections.Generic;
 using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Resources;
-
 using FMBot.Bot.Factories;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
+using FMBot.Domain.Attributes;
 using NetCord;
 using NetCord.Rest;
 using User = FMBot.Persistence.Domain.Models.User;
@@ -99,7 +99,7 @@ public class CrownBuilders
 
         var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
 
-        response.Components = new ComponentBuilder()
+        response.Components = new ActionRowProperties()
             .WithButton("WhoKnows", $"{InteractionConstants.Artist.WhoKnows}-{cachedArtist.Id}", style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("📋"));
 
         if (!artistCrowns.Any(a => a.Active))
@@ -212,7 +212,7 @@ public class CrownBuilders
 
         foreach (var option in ((CrownViewType[])Enum.GetValues(typeof(CrownViewType))))
         {
-            var name = option.GetAttribute<ChoiceDisplayAttribute>().Name;
+            var name = option.GetAttribute<OptionAttribute>().Name;
             var value = $"{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}-{Enum.GetName(option)}";
 
             var active = option == crownViewType;

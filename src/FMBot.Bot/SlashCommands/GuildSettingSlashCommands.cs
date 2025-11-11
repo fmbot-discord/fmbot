@@ -105,7 +105,7 @@ public class GuildSettingSlashCommands : ApplicationCommandModule<ApplicationCom
     {
         try
         {
-            await DeferAsync();
+            await RespondAsync(InteractionCallback.DeferredMessage());
 
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
             var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
@@ -130,7 +130,7 @@ public class GuildSettingSlashCommands : ApplicationCommandModule<ApplicationCom
     {
         try
         {
-            await DeferAsync();
+            await RespondAsync(InteractionCallback.DeferredMessage());
 
             if (!Enum.TryParse(inputs.First(), out GuildViewType viewType))
             {
@@ -146,7 +146,7 @@ public class GuildSettingSlashCommands : ApplicationCommandModule<ApplicationCom
             var name = viewType.GetAttribute<ChoiceDisplayAttribute>().Name;
 
             var components =
-                new ComponentBuilder().WithButton($"Loading {name.ToLower()} view...", customId: "1",
+                new ActionRowProperties().WithButton($"Loading {name.ToLower()} view...", customId: "1",
                     emote: EmojiProperties.Custom("<a:loading:821676038102056991>"), disabled: true, style: ButtonStyle.Secondary);
             await message.ModifyAsync(m => m.Components = components.Build());
 
@@ -371,8 +371,8 @@ public class GuildSettingSlashCommands : ApplicationCommandModule<ApplicationCom
             await Context.Interaction.DeferAsync(ephemeral: true);
             await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
             {
-                e.Embed = response.Embed.Build();
-                e.Components = response.Components.Build();
+                e.Embed = response.Embed;
+                e.Components = response.Components;
             });
         }
         catch (Exception e)

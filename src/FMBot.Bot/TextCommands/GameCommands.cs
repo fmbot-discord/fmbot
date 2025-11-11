@@ -130,7 +130,7 @@ public class GameCommands : BaseCommandModule
         await message.ModifyAsync(m =>
         {
             m.Components = null;
-            m.Embed = response.Embed.Build();
+            m.Embed = response.Embed;
             m.Attachments = response.Stream != null ? new Optional<IEnumerable<FileAttachment>>(new List<FileAttachment>
             {
                 new(response.Stream, response.Spoiler ? $"SPOILER_{response.FileName}" : $"{response.FileName}")

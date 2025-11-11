@@ -15,6 +15,7 @@ using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Domain.Types;
 using FMBot.Images.Generators;
+using NetCord.Rest;
 using SkiaSharp;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 
@@ -532,8 +533,15 @@ public class CountryBuilders
         response.FileName = "artist-map.png";
 
         response.ComponentsContainer.AddComponent(new TextDisplayProperties($"**{embedTitle}**"));
-        response.ComponentsContainer.AddComponent(
-            new MediaGalleryBuilder().AddItem($"attachment://{response.FileName}"));
+
+        var mediaGallery =
+            new MediaGalleryItemProperties(new ComponentMediaProperties($"attachment://{response.FileName}"));
+
+        response.ComponentsContainer.AddComponent(new MediaGalleryProperties
+        {
+            mediaGallery
+        });
+
         response.ComponentsContainer.AddComponent(new TextDisplayProperties("-# Country source: Musicbrainz"));
 
         response.ResponseType = ResponseType.ComponentsV2;

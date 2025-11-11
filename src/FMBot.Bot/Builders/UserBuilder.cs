@@ -122,7 +122,7 @@ public class UserBuilder
             guildSettings.AddOption(new SelectMenuOptionBuilder(name, $"us-view-{value}", description));
         }
 
-        response.Components = new ComponentBuilder()
+        response.Components = new ActionRowProperties()
             .WithSelectMenu(guildSettings);
 
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
@@ -193,7 +193,7 @@ public class UserBuilder
 
         if (this._timer.CurrentFeatured.SupporterDay && context.ContextUser.UserType == UserType.User)
         {
-            response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton,
+            response.Components = new ActionRowProperties().WithButton(Constants.GetSupporterButton,
                 style: ButtonStyle.Secondary,
                 customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(
                     source: "featured-onsupportersunday"));
@@ -222,7 +222,7 @@ public class UserBuilder
             "For this to work properly fmbot needs to be in the server, you need to make sure it can see the voice channel and you must use a supported music bot.\n\n" +
             "Only tracks that already exist on Last.fm will be scrobbled. The bot reads the 'Now Playing' message a bot sends and tries to retrieve the artist and track name from there.");
 
-        response.Components = new ComponentBuilder()
+        response.Components = new ActionRowProperties()
             .WithButton("Enable", InteractionConstants.BotScrobblingEnable, style: ButtonStyle.Primary)
             .WithButton("Disable", InteractionConstants.BotScrobblingDisable, style: ButtonStyle.Secondary)
             .WithButton("Supported music bots",
@@ -261,7 +261,7 @@ public class UserBuilder
 
         response.Embed.WithColor(DiscordConstants.LastFmColorRed);
         response.Embed.WithDescription(reply.ToString());
-        response.Components = new ComponentBuilder()
+        response.Components = new ActionRowProperties()
             .WithButton("Connect Last.fm account to .fmbot",  url: link);
         return response;
     }
@@ -306,7 +306,7 @@ public class UserBuilder
         description.AppendLine();
         description.AppendLine($"Please note that .fmbot is not affiliated with Last.fm.");
 
-        response.Components = new ComponentBuilder()
+        response.Components = new ActionRowProperties()
             .WithButton("Settings", style: ButtonStyle.Secondary, customId: InteractionConstants.User.Settings,
                 emote: EmojiProperties.Standard("⚙️"))
             .WithButton("Add .fmbot",
@@ -352,7 +352,7 @@ public class UserBuilder
         response.Embed.WithDescription(description.ToString());
         response.Embed.WithColor(DiscordConstants.WarningColorOrange);
 
-        response.Components = new ComponentBuilder()
+        response.Components = new ActionRowProperties()
             .WithButton("Manage alts", InteractionConstants.ManageAlts.ManageAltsButton, style: ButtonStyle.Primary);
 
         return response;
@@ -451,7 +451,7 @@ public class UserBuilder
             }
         }
 
-        var builder = new ComponentBuilder()
+        var builder = new ActionRowProperties()
             .WithSelectMenu(fmType)
             .WithSelectMenu(fmOptions, 1);
 
@@ -527,7 +527,7 @@ public class UserBuilder
             fmType.AddOption(new SelectMenuOptionBuilder(name, name, isDefault: picked));
         }
 
-        response.Components = new ComponentBuilder()
+        response.Components = new ActionRowProperties()
             .WithSelectMenu(fmType);
 
         var description = new StringBuilder();
@@ -546,7 +546,7 @@ public class UserBuilder
         var response = new ResponseModel
         {
             ResponseType = ResponseType.Embed,
-            Components = new ComponentBuilder()
+            Components = new ActionRowProperties()
                 .WithButton("'.fm' mode", InteractionConstants.FmCommand.FmModeChange)
                 .WithButton("Response mode", InteractionConstants.ResponseModeChange)
         };
@@ -583,7 +583,7 @@ public class UserBuilder
             privacySetting.AddOption(new SelectMenuOptionBuilder(name, name, isDefault: picked));
         }
 
-        var builder = new ComponentBuilder()
+        var builder = new ActionRowProperties()
             .WithSelectMenu(privacySetting);
 
         response.Components = builder;
@@ -730,7 +730,7 @@ public class UserBuilder
                             description.AppendLine();
                             description.AppendLine(
                                 $"Become an [.fmbot supporter]({Constants.GetSupporterDiscordLink}) and get a higher chance every Supporter Sunday. The next Supporter Sunday is in {nextSupporterSunday} {StringExtensions.GetDaysString(nextSupporterSunday)} (first Sunday of each month).");
-                            response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton,
+                            response.Components = new ActionRowProperties().WithButton(Constants.GetSupporterButton,
                                 style: ButtonStyle.Secondary,
                                 customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(
                                     source: "featured-supportersunday"));
@@ -1259,7 +1259,7 @@ public class UserBuilder
                 description.AppendLine(
                     $"[Become a supporter]({Constants.GetSupporterOverviewLink}) to raise your daily limit and to get access to better responses.");
 
-                response.Components = new ComponentBuilder()
+                response.Components = new ActionRowProperties()
                     .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
                         customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(
                             source: "judge-dailylimit"));
@@ -1295,7 +1295,7 @@ public class UserBuilder
 
         if (hasUsesLeft)
         {
-            response.Components = new ComponentBuilder()
+            response.Components = new ActionRowProperties()
                 .WithButton("Compliment", emote: EmojiProperties.Standard("🙂"), style: ButtonStyle.Primary,
                     customId:
                     $"{InteractionConstants.Judge}~{timeSettings.Description}~compliment~{userSettings.DiscordUserId}~{context.DiscordUser.Id}")
@@ -1474,7 +1474,7 @@ public class UserBuilder
         description.AppendLine();
         description.AppendLine("Note: This will not delete any data from Last.fm, just from .fmbot.");
 
-        response.Components = new ComponentBuilder().WithButton("Delete my .fmbot account",
+        response.Components = new ActionRowProperties().WithButton("Delete my .fmbot account",
             $"{InteractionConstants.RemoveFmbotAccount}-{context.DiscordUser.Id}", ButtonStyle.Danger);
 
         response.Embed.WithDescription(description.ToString());
@@ -1499,7 +1499,7 @@ public class UserBuilder
             $"Only .fmbot supporters can set their own personal automatic emoji reactions.\n\n" +
             $"Get .fmbot supporter or use `{prfx}serverreactions` as a server-wide alternative.");
 
-        response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton,
+        response.Components = new ActionRowProperties().WithButton(Constants.GetSupporterButton,
             style: ButtonStyle.Primary,
             customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "userreactions"));
 
@@ -1589,7 +1589,7 @@ public class UserBuilder
             importSetting.AddOption(new SelectMenuOptionBuilder(name, value, description, isDefault: active));
         }
 
-        response.Components = new ComponentBuilder().WithSelectMenu(importSetting);
+        response.Components = new ActionRowProperties().WithSelectMenu(importSetting);
 
         response.Embed.WithAuthor("Configuring how imports are combined with your Last.fm");
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
@@ -1742,7 +1742,7 @@ public class UserBuilder
                 amount++;
             }
 
-            response.Components = new ComponentBuilder().WithSelectMenu(altSelector);
+            response.Components = new ActionRowProperties().WithSelectMenu(altSelector);
         }
         else
         {
@@ -1778,7 +1778,7 @@ public class UserBuilder
 
         response.Embed.WithDescription("Use the link below to authorize .fmbot.\n\n" +
                                        "If a server has any linked roles available, you can claim them by clicking the server name and going to 'Linked roles'.");
-        response.Components = new ComponentBuilder()
+        response.Components = new ActionRowProperties()
             .WithButton("Authorize .fmbot",  url: this._botSettings.Discord.InstallUri)
             .WithButton("Refresh linked data", style: ButtonStyle.Secondary, customId: "update-linkedroles");
 
@@ -1810,7 +1810,7 @@ public class UserBuilder
         var updatePromo =
             await this._supporterService.GetPromotionalUpdateMessage(context.ContextUser, context.Prefix,
                 context.DiscordGuild?.Id);
-        var upgradeButton = new ComponentBuilder().WithButton(Constants.GetSupporterButton,
+        var upgradeButton = new ActionRowProperties().WithButton(Constants.GetSupporterButton,
             style: ButtonStyle.Secondary,
             customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: updatePromo.supporterSource));
 
@@ -1861,7 +1861,7 @@ public class UserBuilder
             }
 
             response.Embed =
-                new EmbedBuilder()
+                new EmbedProperties()
                     .WithDescription(updatedDescription.ToString())
                     .WithColor(DiscordConstants.SuccessColorGreen);
         }
@@ -1889,7 +1889,7 @@ public class UserBuilder
                 }
             }
 
-            response.Embed = new EmbedBuilder()
+            response.Embed = new EmbedProperties()
                 .WithDescription(updatedDescription.ToString())
                 .WithColor(DiscordConstants.SuccessColorGreen);
         }
@@ -1987,13 +1987,13 @@ public class UserBuilder
 
         var description = UserService.GetIndexCompletedUserStats(context.ContextUser, result, context.NumberFormat);
 
-        response.Embed = new EmbedBuilder()
+        response.Embed = new EmbedProperties()
             .WithDescription(description.description)
             .WithColor(result.UpdateError != true
                 ? DiscordConstants.SuccessColorGreen
                 : DiscordConstants.WarningColorOrange);
         response.Components = description.promo
-            ? new ComponentBuilder()
+            ? new ActionRowProperties()
                 .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Secondary,
                     customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "update-alldata"))
             : null;
@@ -2025,7 +2025,7 @@ public class UserBuilder
 
             response.Embed.WithDescription(promoText.ToString());
 
-            response.Components = new ComponentBuilder()
+            response.Components = new ActionRowProperties()
                 .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
                     customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "user-shortcuts"));
             response.Embed.WithColor(DiscordConstants.InformationColorBlue);

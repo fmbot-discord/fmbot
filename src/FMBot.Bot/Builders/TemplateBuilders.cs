@@ -72,7 +72,7 @@ public class TemplateBuilders
         response.Embed.WithDescription("Select the template you want to change, or pick which one you want used as a default.");
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
-        response.Components = new ComponentBuilder()
+        response.Components = new ActionRowProperties()
             .WithSelectMenu(templateManagePicker)
             .WithButton("Create", InteractionConstants.Template.Create, ButtonStyle.Secondary)
             .WithButton("Import sharecode", InteractionConstants.Template.ImportCode, ButtonStyle.Secondary)
@@ -125,7 +125,7 @@ public class TemplateBuilders
             templateOptionPicker.AddOption(new SelectMenuOptionBuilder(name, value, StringExtensions.TruncateLongString(description, 95) ?? "Not set"));
         }
 
-        response.Components = new ComponentBuilder()
+        response.Components = new ActionRowProperties()
             .WithSelectMenu(templateOptionPicker)
             .WithButton("Rename", $"{InteractionConstants.Template.Rename}-{template.Id}", ButtonStyle.Secondary)
             .WithButton("Copy", $"{InteractionConstants.Template.Copy}-{template.Id}", ButtonStyle.Secondary)
@@ -181,7 +181,7 @@ public class TemplateBuilders
         response.Embed.WithDescription($"Only supporters can configure templates and fully customize their fm commands.\n\n" +
                                        $"[Get supporter here]({Constants.GetSupporterDiscordLink}).");
 
-        response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
+        response.Components = new ActionRowProperties().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
             customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "fm-templates"));
 
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);

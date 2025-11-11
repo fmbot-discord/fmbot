@@ -229,7 +229,7 @@ public class CrownGuildSettingCommands : BaseCommandModule
                                         $"Last.fm username: `{userToBlock.UserNameLastFM}`");
             this._embed.WithFooter($"Expires in 30 seconds..");
 
-            var builder = new ComponentBuilder()
+            var builder = new ActionRowProperties()
                 .WithButton("Confirm", "id");
 
             var msg = await ReplyAsync("", false, this._embed.Build(), components: builder.Build());
@@ -248,7 +248,7 @@ public class CrownGuildSettingCommands : BaseCommandModule
                 await msg.ModifyAsync(x =>
                 {
                     x.Embed = this._embed.Build();
-                    x.Components = new ComponentBuilder().Build(); // No components
+                    x.Components = new ActionRowProperties().Build(); // No components
                     x.AllowedMentions = AllowedMentions.None;
                 });
             }
@@ -258,7 +258,7 @@ public class CrownGuildSettingCommands : BaseCommandModule
                 await msg.ModifyAsync(x =>
                 {
                     x.Embed = this._embed.Build();
-                    x.Components = new ComponentBuilder().Build(); // No components
+                    x.Components = new ActionRowProperties().Build(); // No components
                     x.AllowedMentions = AllowedMentions.None;
                 });
             }

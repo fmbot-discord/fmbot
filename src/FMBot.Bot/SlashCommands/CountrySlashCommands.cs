@@ -42,7 +42,7 @@ public class CountrySlashCommands : ApplicationCommandModule<ApplicationCommandC
         [Autocomplete(typeof(CountryArtistAutoComplete))]
         string name = null)
     {
-        await DeferAsync();
+        await RespondAsync(InteractionCallback.DeferredMessage());
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 

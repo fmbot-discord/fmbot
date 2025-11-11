@@ -3,13 +3,13 @@ namespace FMBot.Bot.Models;
 
 public enum GuildViewType
 {
-    [ChoiceDisplay("Overview")]
+    [Option("Overview")]
     Overview = 1,
-    [ChoiceDisplay("Ordered by total crowns")]
+    [Option("Ordered by total crowns")]
     Crowns = 2,
-    [ChoiceDisplay("Ordered by recent listening time")]
+    [Option("Ordered by recent listening time")]
     ListeningTime = 3,
-    [ChoiceDisplay("Ordered by total playcount (scrobbles)")]
+    [Option("Ordered by total playcount (scrobbles)")]
     Plays = 4
 }
 

@@ -587,7 +587,7 @@ public class IndexService
         }
     }
 
-    public async Task AddOrUpdateGuildUser(IGuildUser discordGuildUser, bool checkIfRegistered = true)
+    public async Task AddOrUpdateGuildUser(NetCord.GuildUser discordGuildUser, bool checkIfRegistered = true)
     {
         try
         {

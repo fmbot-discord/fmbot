@@ -25,11 +25,11 @@ public class CensorService
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
     private readonly IMemoryCache _cache;
     private readonly BotSettings _botSettings;
-    private readonly DiscordShardedClient _client;
+    private readonly ShardedGatewayClient _client;
     private readonly CensorHandler.CensorHandlerClient _censorHandler;
 
 
-    public CensorService(IDbContextFactory<FMBotDbContext> contextFactory, IMemoryCache cache, IOptions<BotSettings> botSettings, DiscordShardedClient client, CensorHandler.CensorHandlerClient censorHandler)
+    public CensorService(IDbContextFactory<FMBotDbContext> contextFactory, IMemoryCache cache, IOptions<BotSettings> botSettings, ShardedGatewayClient client, CensorHandler.CensorHandlerClient censorHandler)
     {
         this._contextFactory = contextFactory;
         this._cache = cache;

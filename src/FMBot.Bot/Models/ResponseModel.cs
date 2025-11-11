@@ -27,6 +27,8 @@ public class ResponseModel
     public EmbedProperties Embed { get; set; }
     public EmbedFooterProperties EmbedFooter { get; set; }
     public ActionRowProperties Components { get; set; }
+    public RoleMenuProperties RoleMenu { get; set; }
+    public StringMenuProperties StringMenu { get; set; }
 
     public ComponentBuilderV2 ComponentsV2 { get; set; }
     public ComponentContainerProperties ComponentsContainer { get; set; }

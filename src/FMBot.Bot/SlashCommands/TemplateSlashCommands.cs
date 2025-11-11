@@ -192,11 +192,11 @@ public class TemplateSlashCommands : ApplicationCommandModule<ApplicationCommand
             var parsedTemplateId = int.Parse(templateId);
             var template = await this._templateService.GetTemplate(parsedTemplateId);
 
-            var embed = new EmbedBuilder()
+            var embed = new EmbedProperties()
                 .WithColor(DiscordConstants.WarningColorOrange)
                 .WithDescription($"Are you sure you want to delete **{template.Name}**?");
 
-            var components = new ComponentBuilder()
+            var components = new ActionRowProperties()
                 .WithButton("Yes, delete", $"{InteractionConstants.Template.DeleteConfirmed}-{templateId}", ButtonStyle.Danger);
 
             await Context.Interaction.RespondAsync(null, [embed.Build()], components: components.Build(), ephemeral: true);
@@ -217,7 +217,7 @@ public class TemplateSlashCommands : ApplicationCommandModule<ApplicationCommand
             var parsedTemplateId = int.Parse(templateId);
             await this._templateService.DeleteTemplate(parsedTemplateId);
 
-            var embed = new EmbedBuilder()
+            var embed = new EmbedProperties()
                 .WithColor(DiscordConstants.WarningColorOrange)
                 .WithDescription($"Template has been deleted.");
 

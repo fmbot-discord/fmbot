@@ -177,7 +177,7 @@ public class WebhookService
         webhookClient.Dispose();
     }
 
-    public async Task PostFeatured(FeaturedLog featuredLog, DiscordShardedClient client)
+    public async Task PostFeatured(FeaturedLog featuredLog, ShardedGatewayClient client)
     {
         var builder = new EmbedProperties();
         if (featuredLog.FullSizeImage == null)
@@ -298,7 +298,7 @@ public class WebhookService
         }
     }
 
-    public async Task ChangeToNewAvatar(DiscordShardedClient client, string imageUrl)
+    public async Task ChangeToNewAvatar(ShardedGatewayClient client, string imageUrl)
     {
         Log.Information($"ChangeToNewAvatar: Updating avatar to {imageUrl}");
 

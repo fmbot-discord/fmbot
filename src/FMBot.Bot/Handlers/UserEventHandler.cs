@@ -18,14 +18,14 @@ namespace FMBot.Bot.Handlers;
 
 public class UserEventHandler
 {
-    private readonly DiscordShardedClient _client;
+    private readonly ShardedGatewayClient _client;
     private readonly IndexService _indexService;
     private readonly CrownService _crownService;
     private readonly BotSettings _botSettings;
     private readonly UserService _userService;
     private readonly SupporterService _supporterService;
 
-    public UserEventHandler(DiscordShardedClient client, IndexService indexService, CrownService crownService, IOptions<BotSettings> botSettings, UserService userService, SupporterService supporterService)
+    public UserEventHandler(ShardedGatewayClient client, IndexService indexService, CrownService crownService, IOptions<BotSettings> botSettings, UserService userService, SupporterService supporterService)
     {
         this._client = client;
         this._indexService = indexService;

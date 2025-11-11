@@ -12,6 +12,7 @@ using FMBot.Persistence.Domain.Models;
 using Google.Protobuf.Reflection;
 using Microsoft.AspNetCore.WebUtilities;
 using NetCord;
+using NetCord.Rest;
 
 namespace FMBot.Bot.Services;
 
@@ -236,7 +237,7 @@ public static class StringService
 
         if (customOptionId != null || selectMenu != null)
         {
-            response.Components = new ComponentBuilder();
+            response.Components = new ActionRowProperties();
         }
 
         if (customOptionId != null)
@@ -252,7 +253,7 @@ public static class StringService
     }
 
     public static StaticPaginatorBuilder BuildStaticPaginator(IList<PageBuilder> pages, string customOptionId = null,
-        EmojiProperties optionEmote = null, SelectMenuBuilder selectMenuBuilder = null)
+        EmojiProperties optionEmote = null, StringMenuProperties selectMenuBuilder = null)
     {
         var builder = new StaticPaginatorBuilder()
             .WithPages(pages)

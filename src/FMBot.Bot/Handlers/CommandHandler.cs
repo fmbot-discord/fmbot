@@ -248,7 +248,7 @@ public class CommandHandler
                 {
                     if (!rateLimit.messageSent)
                     {
-                        var embed = new EmbedBuilder()
+                        var embed = new EmbedProperties()
                             .WithColor(DiscordConstants.WarningColorOrange);
                         embed.RateLimitedResponse();
                         await context.Channel.SendMessageAsync("", false, embed.Build());
@@ -304,7 +304,7 @@ public class CommandHandler
                 var userIsRegistered = await this._userService.UserRegisteredAsync(context.User);
                 if (!userIsRegistered)
                 {
-                    var embed = new EmbedBuilder()
+                    var embed = new EmbedProperties()
                         .WithColor(DiscordConstants.LastFmColorRed);
                     var userNickname = (context.User as SocketGuildUser)?.DisplayName;
 
@@ -321,7 +321,7 @@ public class CommandHandler
                 {
                     if (!rateLimit.messageSent)
                     {
-                        var embed = new EmbedBuilder()
+                        var embed = new EmbedProperties()
                             .WithColor(DiscordConstants.WarningColorOrange);
                         embed.RateLimitedResponse();
                         await context.Channel.SendMessageAsync("", false, embed.Build());
@@ -337,7 +337,7 @@ public class CommandHandler
                 var userSession = await this._userService.UserHasSessionAsync(context.User);
                 if (!userSession)
                 {
-                    var embed = new EmbedBuilder()
+                    var embed = new EmbedProperties()
                         .WithColor(DiscordConstants.LastFmColorRed);
                     embed.SessionRequiredResponse(prfx ?? this._botSettings.Bot.Prefix);
                     await context.Channel.SendMessageAsync("", false, embed.Build());
@@ -581,7 +581,7 @@ public class CommandHandler
 
     private async Task UserBlockedResponse(SocketCommandContext context, string s)
     {
-        var embed = new EmbedBuilder()
+        var embed = new EmbedProperties()
             .WithColor(DiscordConstants.LastFmColorRed);
         embed.UserBlockedResponse(s ?? this._botSettings.Bot.Prefix);
         await context.Channel.SendMessageAsync("", false, embed.Build());

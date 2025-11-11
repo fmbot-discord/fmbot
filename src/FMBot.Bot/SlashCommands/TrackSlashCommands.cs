@@ -55,7 +55,7 @@ public class TrackSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         [Autocomplete(typeof(TrackAutoComplete))]
         string name = null)
     {
-        await DeferAsync();
+        await RespondAsync(InteractionCallback.DeferredMessage());
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -83,7 +83,7 @@ public class TrackSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         [Summary("Role-picker", "Display a rolepicker to filter with roles")]
         bool displayRoleFilter = false)
     {
-        await DeferAsync();
+        await RespondAsync(InteractionCallback.DeferredMessage());
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -186,7 +186,7 @@ public class TrackSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         [Summary("Hide-private", "Hide or show private users")]
         bool hidePrivate = false)
     {
-        await DeferAsync();
+        await RespondAsync(InteractionCallback.DeferredMessage());
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -226,7 +226,7 @@ public class TrackSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         [Summary("User", "The user to show (defaults to self)")]
         string user = null)
     {
-        await DeferAsync();
+        await RespondAsync(InteractionCallback.DeferredMessage());
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings =
@@ -256,7 +256,7 @@ public class TrackSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         [Autocomplete(typeof(TrackAutoComplete))]
         string name = null)
     {
-        await DeferAsync();
+        await RespondAsync(InteractionCallback.DeferredMessage());
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -277,7 +277,7 @@ public class TrackSlashCommands : ApplicationCommandModule<ApplicationCommandCon
     [UsernameSetRequired]
     public async Task TrackPreviewAsync(string trackId)
     {
-        await DeferAsync();
+        await RespondAsync(InteractionCallback.DeferredMessage());
 
         await this.Context.DisableInteractionButtons();
 
@@ -321,7 +321,7 @@ public class TrackSlashCommands : ApplicationCommandModule<ApplicationCommandCon
             return;
         }
 
-        await DeferAsync();
+        await RespondAsync(InteractionCallback.DeferredMessage());
 
         await this.Context.DisableInteractionButtons(specificButtonOnly: $"{InteractionConstants.TrackLyrics}-{trackId}");
 
@@ -480,7 +480,7 @@ public class TrackSlashCommands : ApplicationCommandModule<ApplicationCommandCon
             return;
         }
 
-        await DeferAsync();
+        await RespondAsync(InteractionCallback.DeferredMessage());
 
         try
         {

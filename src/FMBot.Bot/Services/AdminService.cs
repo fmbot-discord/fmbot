@@ -388,7 +388,7 @@ public class AdminService
             var embed = new EmbedProperties();
             embed.WithTitle($"New gwk botted user report");
 
-            var components = new ComponentBuilder()
+            var components = new ActionRowProperties()
                 .WithButton("Ban", $"gwk-report-ban-{report.Id}", style: ButtonStyle.Success)
                 .WithButton("Deny", $"gwk-report-deny-{report.Id}", style: ButtonStyle.Danger);
 

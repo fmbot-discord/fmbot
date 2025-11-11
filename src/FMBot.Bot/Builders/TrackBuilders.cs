@@ -265,7 +265,7 @@ public class TrackBuilders
             response.Embed.AddField("Info", info.ToString(), true);
         }
 
-        response.Components = new ComponentBuilder();
+        response.Components = new ActionRowProperties();
 
         if (dbTrack?.SpotifyId != null)
         {
@@ -457,11 +457,11 @@ public class TrackBuilders
                     .WithMinValues(0)
                     .WithMaxValues(25);
 
-                response.Components = new ComponentBuilder().WithSelectMenu(allowedRoles);
+                response.Components = new ActionRowProperties().WithSelectMenu(allowedRoles);
             }
             else
             {
-                //response.Components = new ComponentBuilder().WithButton(Constants.GetPremiumServer, disabled: true, customId: "1");
+                //response.Components = new ActionRowProperties().WithButton(Constants.GetPremiumServer, disabled: true, customId: "1");
             }
         }
 
@@ -848,7 +848,7 @@ public class TrackBuilders
 
         if (spotifyTrack?.SpotifyPreviewUrl != null)
         {
-            response.Components = new ComponentBuilder()
+            response.Components = new ActionRowProperties()
                 .WithButton(
                     "Preview",
                     $"{InteractionConstants.TrackPreview}-{spotifyTrack.Id}",
@@ -1036,7 +1036,7 @@ public class TrackBuilders
 
         if (!userSettings.DifferentUser)
         {
-            response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
+            response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl()?.ToString());
         }
 
         var firstTrack = lovedTracks.Content.RecentTracks[0];
@@ -1814,7 +1814,7 @@ public class TrackBuilders
             response.Embed.WithDescription(
                 "Viewing track lyrics in .fmbot is only available for .fmbot supporters.");
 
-            response.Components = new ComponentBuilder()
+            response.Components = new ActionRowProperties()
                 .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
                     customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "lyrics"));
             response.Embed.WithColor(DiscordConstants.InformationColorBlue);

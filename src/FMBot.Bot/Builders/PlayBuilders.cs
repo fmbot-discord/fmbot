@@ -823,7 +823,7 @@ public class PlayBuilder
 
             if (editMode)
             {
-                response.Components = new ComponentBuilder()
+                response.Components = new ActionRowProperties()
                     .WithButton(emote: EmojiProperties.Standard("🗑️"), customId: InteractionConstants.DeleteStreak);
             }
 
@@ -1147,7 +1147,7 @@ public class PlayBuilder
 
         if (isRandom)
         {
-            response.Components = new ComponentBuilder().WithButton("Reroll",
+            response.Components = new ActionRowProperties().WithButton("Reroll",
                 $"{InteractionConstants.RandomMilestone}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}",
                 style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("🎲"));
         }
@@ -1511,7 +1511,7 @@ public class PlayBuilder
             response.Embed.WithDescription(
                 $"To see the biggest gaps between when you listened to certain artists we need to store your lifetime Last.fm history. Your lifetime history and more are only available for supporters.");
 
-            response.Components = new ComponentBuilder()
+            response.Components = new ActionRowProperties()
                 .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
                     customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "gaps"));
             response.Embed.WithColor(DiscordConstants.InformationColorBlue);
@@ -1525,7 +1525,7 @@ public class PlayBuilder
             response.Embed.WithDescription(
                 $"Sorry, artist gaps uses somebody's lifetime listening history. You can only use this command on other supporters.");
 
-            response.Components = new ComponentBuilder()
+            response.Components = new ActionRowProperties()
                 .WithButton(".fmbot supporter", style: ButtonStyle.Secondary,
                     customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "gaps"));
             response.Embed.WithColor(DiscordConstants.InformationColorBlue);
@@ -1556,7 +1556,7 @@ public class PlayBuilder
         {
             if (!context.SlashCommand)
             {
-                response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
+                response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl()?.ToString());
             }
 
             userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
@@ -1722,7 +1722,7 @@ public class PlayBuilder
             response.FileName = $"{entityTypeDisplay.ToLower()}-gaps-{userSettings.DiscordUserId}.png";
             response.ResponseType = ResponseType.ImageOnly;
             response.Embed = null;
-            response.Components = new ComponentBuilder().WithSelectMenu(viewType);
+            response.Components = new ActionRowProperties().WithSelectMenu(viewType);
 
             return response;
         }

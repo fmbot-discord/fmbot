@@ -255,7 +255,7 @@ public class AdminSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         }
 
         var components =
-            new ComponentBuilder().WithButton($"Denied by {this.Context.Interaction.User.Username}", customId: "1",
+            new ActionRowProperties().WithButton($"Denied by {this.Context.Interaction.User.Username}", customId: "1",
                 url: null, disabled: true, style: ButtonStyle.Danger);
         await message.ModifyAsync(m => m.Components = components.Build());
     }
@@ -307,7 +307,7 @@ public class AdminSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         }
 
         var components =
-            new ComponentBuilder().WithButton($"Banned by {this.Context.Interaction.User.Username}", customId: "1",
+            new ActionRowProperties().WithButton($"Banned by {this.Context.Interaction.User.Username}", customId: "1",
                 url: null, disabled: true, style: ButtonStyle.Success);
         await message.ModifyAsync(m => m.Components = components.Build());
     }
@@ -354,7 +354,7 @@ public class AdminSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         }
 
         var components =
-            new ComponentBuilder().WithButton($"Converted to ban by {this.Context.Interaction.User.Username}",
+            new ActionRowProperties().WithButton($"Converted to ban by {this.Context.Interaction.User.Username}",
                 customId: "1", url: null, disabled: true, style: ButtonStyle.Success);
         await message.ModifyAsync(m => m.Components = components.Build());
     }
@@ -509,7 +509,7 @@ public class AdminSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         }
 
         var components =
-            new ComponentBuilder().WithButton($"Marked NSFW by {this.Context.Interaction.User.Username}", customId: "1",
+            new ActionRowProperties().WithButton($"Marked NSFW by {this.Context.Interaction.User.Username}", customId: "1",
                 url: null, disabled: true, style: ButtonStyle.Success);
         await message.ModifyAsync(m => m.Components = components.Build());
     }
@@ -567,7 +567,7 @@ public class AdminSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         }
 
         var components =
-            new ComponentBuilder().WithButton($"Marked Censored by {this.Context.Interaction.User.Username}",
+            new ActionRowProperties().WithButton($"Marked Censored by {this.Context.Interaction.User.Username}",
                 customId: "1", url: null, disabled: true, style: ButtonStyle.Success);
         await message.ModifyAsync(m => m.Components = components.Build());
     }
@@ -600,7 +600,7 @@ public class AdminSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         }
 
         var components =
-            new ComponentBuilder().WithButton($"Denied by {this.Context.Interaction.User.Username}", customId: "1",
+            new ActionRowProperties().WithButton($"Denied by {this.Context.Interaction.User.Username}", customId: "1",
                 url: null, disabled: true, style: ButtonStyle.Danger);
         await message.ModifyAsync(m => m.Components = components.Build());
     }
@@ -630,7 +630,7 @@ public class AdminSlashCommands : ApplicationCommandModule<ApplicationCommandCon
             }
 
             var components =
-                new ComponentBuilder().WithButton($"Moved by {this.Context.Interaction.User.Username}", customId: "1",
+                new ActionRowProperties().WithButton($"Moved by {this.Context.Interaction.User.Username}", customId: "1",
                     url: null, disabled: true, style: ButtonStyle.Danger);
             await message.ModifyAsync(m => m.Components = components.Build());
         }
@@ -665,7 +665,7 @@ public class AdminSlashCommands : ApplicationCommandModule<ApplicationCommandCon
             }
 
             var components =
-                new ComponentBuilder().WithButton($"Moved by {this.Context.Interaction.User.Username}", customId: "1",
+                new ActionRowProperties().WithButton($"Moved by {this.Context.Interaction.User.Username}", customId: "1",
                     url: null, disabled: true, style: ButtonStyle.Danger);
             await message.ModifyAsync(m => m.Components = components.Build());
         }
@@ -700,7 +700,7 @@ public class AdminSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         }
 
         var components =
-            new ComponentBuilder().WithButton($"Deleted by {this.Context.Interaction.User.Username}", customId: "1",
+            new ActionRowProperties().WithButton($"Deleted by {this.Context.Interaction.User.Username}", customId: "1",
                 url: null, disabled: true, style: ButtonStyle.Danger);
         await message.ModifyAsync(m => m.Components = components.Build());
     }

@@ -48,7 +48,7 @@ public class ImportBuilders
         {
             response.Embed.WithDescription($"Only supporters can import and access their Spotify or Apple Music history.");
 
-            response.Components = new ComponentBuilder()
+            response.Components = new ActionRowProperties()
                 .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
                     customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "importing"))
                 .WithButton("Import info",  url: "https://fm.bot/importing/");
@@ -75,7 +75,7 @@ public class ImportBuilders
 
         description.AppendLine("What music service history would you like to import?");
 
-        response.Components = new ComponentBuilder()
+        response.Components = new ActionRowProperties()
             .WithButton("Spotify", InteractionConstants.ImportInstructionsSpotify,
                 emote: EmojiProperties.Custom("<:spotify:882221219334725662>"))
             .WithButton("Apple Music", InteractionConstants.ImportInstructionsAppleMusic,
@@ -143,7 +143,7 @@ public class ImportBuilders
         footer.AppendLine("Having issues with importing? Please open a help thread on discord.gg/fmbot");
 
         response.Embed.WithFooter(footer.ToString());
-        response.Components = new ComponentBuilder()
+        response.Components = new ActionRowProperties()
             .WithButton("Spotify privacy page",
                 url: "https://www.spotify.com/us/account/privacy/");
 
@@ -218,7 +218,7 @@ public class ImportBuilders
 
         response.Embed.WithFooter(footer.ToString());
 
-        response.Components = new ComponentBuilder()
+        response.Components = new ActionRowProperties()
             .WithButton("Apple Data and Privacy",  url: "https://privacy.apple.com/");
 
         if (count > 0)
@@ -264,7 +264,7 @@ public class ImportBuilders
             a.PlaySource == PlaySource.SpotifyImport || a.PlaySource == PlaySource.AppleMusicImport);
 
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
-        response.Components = new ComponentBuilder()
+        response.Components = new ActionRowProperties()
             .WithButton("Artist",
                 $"{InteractionConstants.ImportModify.Modify}-{nameof(ImportModifyPick.Artist)}",
                 disabled: !hasImported)
@@ -384,7 +384,7 @@ public class ImportBuilders
                     $"This will delete **{processedPlays.Count(c => c.PlaySource != PlaySource.LastFm)}** imported plays. \n" +
                     "This action can only be reversed by re-importing.");
 
-                response.Components = new ComponentBuilder()
+                response.Components = new ActionRowProperties()
                     .WithButton("Confirm deletion", style: ButtonStyle.Danger,
                         customId:
                         $"{InteractionConstants.ImportModify.ArtistDeleteConfirmed}——{importRef}");
@@ -398,7 +398,7 @@ public class ImportBuilders
             if (string.IsNullOrWhiteSpace(newArtistName))
             {
                 response.Embed.WithColor(DiscordConstants.InformationColorBlue);
-                response.Components = new ComponentBuilder()
+                response.Components = new ActionRowProperties()
                     .WithButton("Edit artist imports", style: ButtonStyle.Secondary,
                         customId: $"{InteractionConstants.ImportModify.ArtistRename}——{importRef}")
                     .WithButton("Delete imports", style: ButtonStyle.Danger,
@@ -410,7 +410,7 @@ public class ImportBuilders
                 response.Embed.AddField("Confirm your edit ⚠️",
                     $"`{capitalizedArtistName}` to `{newArtistName}`");
 
-                response.Components = new ComponentBuilder()
+                response.Components = new ActionRowProperties()
                     .WithButton("Confirm edit", style: ButtonStyle.Secondary,
                         customId:
                         $"{InteractionConstants.ImportModify.ArtistRenameConfirmed}——{importRef}——{newImportRef}");
@@ -488,7 +488,7 @@ public class ImportBuilders
                     $"This will delete **{processedPlays.Count(c => c.PlaySource != PlaySource.LastFm)}** imported plays. \n" +
                     "This action can only be reversed by re-importing.");
 
-                response.Components = new ComponentBuilder()
+                response.Components = new ActionRowProperties()
                     .WithButton("Confirm deletion", style: ButtonStyle.Danger,
                         customId:
                         $"{InteractionConstants.ImportModify.AlbumDeleteConfirmed}——{importRef}");
@@ -509,7 +509,7 @@ public class ImportBuilders
             if (string.IsNullOrWhiteSpace(newImportRef))
             {
                 response.Embed.WithColor(DiscordConstants.InformationColorBlue);
-                response.Components = new ComponentBuilder()
+                response.Components = new ActionRowProperties()
                     .WithButton("Edit album imports", style: ButtonStyle.Secondary,
                         customId: $"{InteractionConstants.ImportModify.AlbumRename}——{importRef}")
                     .WithButton("Delete imports", style: ButtonStyle.Danger,
@@ -521,7 +521,7 @@ public class ImportBuilders
                 response.Embed.AddField("Confirm your edit ⚠️",
                     $"`{capitalizedAlbumName}` by `{capitalizedArtistName}` to `{newAlbumRef.Album}` by `{newAlbumRef.Artist}`");
 
-                response.Components = new ComponentBuilder()
+                response.Components = new ActionRowProperties()
                     .WithButton("Confirm edit", style: ButtonStyle.Secondary,
                         customId:
                         $"{InteractionConstants.ImportModify.AlbumRenameConfirmed}——{importRef}——{newImportRef}");
@@ -599,7 +599,7 @@ public class ImportBuilders
                     $"This will delete **{processedPlays.Count(c => c.PlaySource != PlaySource.LastFm)}** imported plays. \n" +
                     "This action can only be reversed by re-importing.");
 
-                response.Components = new ComponentBuilder()
+                response.Components = new ActionRowProperties()
                     .WithButton("Confirm deletion", style: ButtonStyle.Danger,
                         customId:
                         $"{InteractionConstants.ImportModify.TrackDeleteConfirmed}——{importRef}");
@@ -619,7 +619,7 @@ public class ImportBuilders
 
             if (string.IsNullOrWhiteSpace(newImportRef))
             {
-                response.Components = new ComponentBuilder()
+                response.Components = new ActionRowProperties()
                     .WithButton("Edit track imports", style: ButtonStyle.Secondary,
                         customId: $"{InteractionConstants.ImportModify.TrackRename}——{importRef}")
                     .WithButton("Delete imports", style: ButtonStyle.Danger,
@@ -631,7 +631,7 @@ public class ImportBuilders
                 response.Embed.AddField("Confirm your edit ⚠️",
                     $"`{capitalizedTrackName}` by `{capitalizedArtistName}` to `{newTrackRef.Track}` by `{newTrackRef.Artist}`");
 
-                response.Components = new ComponentBuilder()
+                response.Components = new ActionRowProperties()
                     .WithButton("Confirm edit", style: ButtonStyle.Secondary,
                         customId:
                         $"{InteractionConstants.ImportModify.TrackRenameConfirmed}——{importRef}——{newImportRef}");

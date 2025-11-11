@@ -168,7 +168,7 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
                     $"We can only process files that are from the ['Extended Streaming History'](https://www.spotify.com/us/account/privacy/) package. Instead you have uploaded the 'Account data' package.",
                     true,
                     image: "https://fm.bot/img/bot/import-spotify-instructions.png",
-                    components: new ComponentBuilder().WithButton("Spotify privacy page",
+                    components: new ActionRowProperties().WithButton("Spotify privacy page",
                         url: "https://www.spotify.com/us/account/privacy/"));
                 this.Context.LogCommandUsed(CommandResponse.WrongInput);
                 return;
@@ -290,7 +290,7 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
                 embed.AddField("⚙️ Current import setting", importSetting);
             }
 
-            var components = new ComponentBuilder()
+            var components = new ActionRowProperties()
                 .WithButton("View your stats", $"{InteractionConstants.RecapAlltime}-{contextUser.UserId}",
                     style: ButtonStyle.Primary)
                 .WithButton("Manage import settings", InteractionConstants.ImportManage, style: ButtonStyle.Secondary);
@@ -485,7 +485,7 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
 
             embed.WithColor(DiscordConstants.AppleMusicRed);
 
-            var components = new ComponentBuilder()
+            var components = new ActionRowProperties()
                 .WithButton("View your stats", $"{InteractionConstants.RecapAlltime}-{contextUser.UserId}",
                     style: ButtonStyle.Primary)
                 .WithButton("Manage import settings", InteractionConstants.ImportManage, style: ButtonStyle.Secondary);
@@ -623,8 +623,8 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
             var response =
                 await this._importBuilders.ImportModify(new ContextModel(this.Context, contextUser),
                     contextUser.UserId);
-            await this.Context.User.SendMessageAsync("", false, response.Embed.Build(),
-                components: response.Components.Build());
+            await this.Context.User.SendMessageAsync("", false, response.Embed,
+                components: response.Components);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)

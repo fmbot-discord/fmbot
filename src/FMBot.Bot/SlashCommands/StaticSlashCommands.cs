@@ -123,7 +123,7 @@ public class StaticSlashCommands : ApplicationCommandModule<ApplicationCommandCo
         var link = await this._supporterService.GetSupporterCheckoutLink(this.Context.User.Id,
             contextUser.UserNameLastFM, type, pricing, existingStripeSupporter, source);
 
-        var components = new ComponentBuilder().WithButton($"Complete purchase",  url: link,
+        var components = new ActionRowProperties().WithButton($"Complete purchase",  url: link,
             emote: EmojiProperties.Standard("⭐"));
 
         var embed = new EmbedProperties();
@@ -257,7 +257,7 @@ public class StaticSlashCommands : ApplicationCommandModule<ApplicationCommandCo
         embed.WithDescription($"**Click the unique link below to manage your supporter.**");
         embed.WithColor(DiscordConstants.InformationColorBlue);
 
-        var components = new ComponentBuilder()
+        var components = new ActionRowProperties()
             .WithButton("Manage subscription",  url: stripeManageLink, emote: EmojiProperties.Standard("⭐"));
 
         await RespondAsync(embed: embed.Build(), ephemeral: true, components: components.Build());
@@ -360,11 +360,11 @@ public class StaticSlashCommands : ApplicationCommandModule<ApplicationCommandCo
             description.AppendLine(
                 $"**Click the unique link below to complete your gift purchase for {recipientUser.UserNameLastFM}**");
             description.AppendLine($"-# {summary}");
-            var embed = new EmbedBuilder()
+            var embed = new EmbedProperties()
                 .WithDescription(description.ToString())
                 .WithColor(DiscordConstants.InformationColorBlue);
 
-            var components = new ComponentBuilder()
+            var components = new ActionRowProperties()
                 .WithButton("Complete purchase",  url: checkoutLink, emote: EmojiProperties.Standard("🎁"));
 
             await Context.Interaction.FollowupAsync(embed: embed.Build(), components: components.Build(),
