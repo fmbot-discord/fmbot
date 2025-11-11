@@ -1,6 +1,6 @@
 #See https://aka.ms/containerfastmode to understand how Visual Studio uses this Dockerfile to build your images for faster debugging.
 
-FROM mcr.microsoft.com/dotnet/runtime:9.0-noble-amd64 AS base
+FROM mcr.microsoft.com/dotnet/runtime:10.0-noble-amd64 AS base
 RUN apt-get update -y && apt-get install -y libgdiplus software-properties-common curl
 RUN add-apt-repository ppa:ubuntuhandbook1/ffmpeg7 && apt update -y && apt install ffmpeg -y
 
@@ -24,7 +24,7 @@ RUN wget --no-verbose -O /tmp/chrome.deb https://dl.google.com/linux/direct/goog
 
 ENV PUPPETEER_EXECUTABLE_PATH "/usr/bin/google-chrome-stable"
 
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 # Install dotnet diagnostic tools
