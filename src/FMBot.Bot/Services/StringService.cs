@@ -514,14 +514,14 @@ public static class StringService
 
     public static ActionRowBuilder GetSimplePaginationActionRow(IComponentPaginator p)
     {
-        return new ActionRowBuilder()
+        return new ActionRowProperties()
             .AddPreviousButton(p, style: ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.PagesPrevious))
             .AddNextButton(p, style: ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.PagesNext));
     }
 
     public static ActionRowBuilder GetPaginationActionRow(IComponentPaginator p)
     {
-        return new ActionRowBuilder()
+        return new ActionRowProperties()
             .AddFirstButton(p, style: ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.PagesFirst))
             .AddPreviousButton(p, style: ButtonStyle.Secondary,
                 emote: EmojiProperties.Custom(DiscordConstants.PagesPrevious))

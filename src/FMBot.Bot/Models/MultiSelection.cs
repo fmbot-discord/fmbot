@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 
 using Fergun.Interactive.Selection;
+using NetCord.Rest;
 
 namespace FMBot.Bot.Models;
 
@@ -21,14 +22,11 @@ public class MultiSelection<T> : BaseSelection<MultiSelectionOption<T>>
         {
             if (!selectMenus.ContainsKey(option.Row))
             {
-                selectMenus[option.Row] = new StringMenuProperties()
-                    .WithCustomId($"selectmenu{option.Row}")
+                selectMenus[option.Row] = new StringMenuProperties($"selectmenu{option.Row}")
                     .WithDisabled(disableAll);
             }
 
-            var optionBuilder = new SelectMenuOptionBuilder()
-                .WithLabel(option.Option)
-                .WithValue(option.Value)
+            var optionBuilder = new StringMenuSelectOptionProperties(option.Option, option.Value)
                 .WithDescription(option.Description)
                 .WithDefault(option.IsDefault);
 

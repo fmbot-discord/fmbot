@@ -700,7 +700,9 @@ public class GuildSettingSlashCommands : ApplicationCommandModule<ApplicationCom
         var parsedChannelId = ulong.Parse(channelId);
         var parsedCategoryId = ulong.Parse(categoryId);
 
-        var selectedChannel = await this.Context.Guild.GetChannelAsync(parsedChannelId);
+        var channels = await this.Context.Guild.GetChannelsAsync();
+        var selectedChannel = channels.FirstOrDefault(f => f.Id == parsedChannelId);
+
         await this._guildService.ClearDisabledChannelCommandsAsync(selectedChannel, this.Context.Guild.Id);
 
         await this._channelToggledCommandService.ReloadToggledCommands(this.Context.Guild.Id);

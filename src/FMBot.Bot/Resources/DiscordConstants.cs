@@ -19,6 +19,8 @@ public static class DiscordConstants
 
     public static Color AppleMusicRed = new(249, 87, 107);
 
+    public static Color Gold = new(241, 196, 15);
+
     public static readonly List<PaginatorButton> PaginationEmotes =
     [
         new(EmojiProperties.Custom(PagesFirst), PaginatorAction.SkipToStart, ButtonStyle.Secondary),
@@ -57,6 +59,7 @@ public static class DiscordConstants
     public const ulong RateYourMusic = 1183851241151930399;
     public const ulong YouTube = 1230496939355934730;
     public const ulong AppleMusic = 1218182727149420544;
+    public const ulong LastFm = 882227627287515166;
 
     public const ulong Loading = 821676038102056991;
     public const ulong Imports = 1131511469096312914;

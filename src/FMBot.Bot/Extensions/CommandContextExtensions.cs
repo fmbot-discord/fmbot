@@ -218,7 +218,10 @@ public static class CommandContextExtensions
             case ResponseType.ImageWithEmbed:
                 response.FileName = StringExtensions.ReplaceInvalidChars(response.FileName);
                 var imageWithEmbed = await context.Channel.SendFileAsync(
-                    new FileAttachment(response.Stream, response.FileName, response.FileDescription, response.Spoiler),
+                    new AttachmentProperties(response.Stream, response.FileName, response.FileDescription, response.Spoiler)
+                    {
+
+                    },
                     null,
                     false,
                     response.Embed,

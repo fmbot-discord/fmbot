@@ -1,4 +1,6 @@
 
+using FMBot.Domain.Attributes;
+
 namespace FMBot.Bot.Models
 {
     public enum GapEntityType

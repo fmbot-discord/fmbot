@@ -4,8 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
-using Discord.Commands;
+using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
@@ -21,6 +20,7 @@ using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
 using NetCord;
+using NetCord.Rest;
 using NetCord.Services.Commands;
 using Serilog;
 using User = FMBot.Persistence.Domain.Models.User;
@@ -108,9 +108,8 @@ public class UserBuilder
 
         response.Embed.WithDescription(settings.ToString());
 
-        var guildSettings = new StringMenuProperties()
+        var guildSettings = new StringMenuProperties(InteractionConstants.UserSetting)
             .WithPlaceholder("Select setting to view or change")
-            .WithCustomId(InteractionConstants.UserSetting)
             .WithMaxValues(1);
 
         foreach (var setting in ((UserSetting[])Enum.GetValues(typeof(UserSetting))))
@@ -119,11 +118,13 @@ public class UserBuilder
             var description = setting.GetAttribute<OptionAttribute>().Description;
             var value = Enum.GetName(setting);
 
-            guildSettings.AddOption(new SelectMenuOptionBuilder(name, $"us-view-{value}", description));
+            guildSettings.AddOption(new StringMenuSelectOptionProperties(name, $"us-view-{value}")
+            {
+                Description = description
+            });
         }
 
-        response.Components = new ActionRowProperties()
-            .WithSelectMenu(guildSettings);
+        response.StringMenu = guildSettings;
 
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
@@ -153,7 +154,7 @@ public class UserBuilder
         }
         else
         {
-            response.Embed.WithImageUrl(this._timer.CurrentFeatured.FullSizeImage);
+            response.Embed.WithImage(this._timer.CurrentFeatured.FullSizeImage);
         }
 
         response.Embed.AddField("Featured:", this._timer.CurrentFeatured.Description);
@@ -393,9 +394,8 @@ public class UserBuilder
             ResponseType = ResponseType.Embed,
         };
 
-        var fmType = new StringMenuProperties()
+        var fmType = new StringMenuProperties(InteractionConstants.FmCommand.FmSettingType)
             .WithPlaceholder("Select embed type")
-            .WithCustomId(InteractionConstants.FmCommand.FmSettingType)
             .WithMinValues(1)
             .WithMaxValues(1);
 
@@ -408,22 +408,24 @@ public class UserBuilder
 
             var active = option == context.ContextUser.FmEmbedType;
 
-            fmType.AddOption(new SelectMenuOptionBuilder(name, value, description, isDefault: active));
+            fmType.AddOption(new StringMenuSelectOptionProperties(name, value)
+            {
+                Description = description,
+                Default = active
+            });
         }
 
         var maxOptions = context.ContextUser.UserType == UserType.User
             ? Constants.MaxFooterOptions
             : Constants.MaxFooterOptionsSupporter;
 
-        var fmOptions = new StringMenuProperties()
+        var fmOptions = new StringMenuProperties(InteractionConstants.FmCommand.FmSettingFooter)
             .WithPlaceholder("Select footer options")
-            .WithCustomId(InteractionConstants.FmCommand.FmSettingFooter)
             .WithMinValues(0)
             .WithMaxValues(maxOptions);
 
-        var fmSupporterOptions = new StringMenuProperties()
+        var fmSupporterOptions = new StringMenuProperties(InteractionConstants.FmCommand.FmSettingFooterSupporter)
             .WithPlaceholder("Select supporter-exclusive footer option")
-            .WithCustomId(InteractionConstants.FmCommand.FmSettingFooterSupporter)
             .WithMinValues(0)
             .WithMaxValues(1);
 
@@ -436,18 +438,26 @@ public class UserBuilder
 
             var active = context.ContextUser.FmFooterOptions.HasFlag(option);
 
-            if (fmOptions.Options.Count(c => c.IsDefault == true) >= maxOptions)
+            if (fmOptions.Options.Count(c => c.Default == true) >= maxOptions)
             {
                 active = false;
             }
 
             if (!supporterOnly)
             {
-                fmOptions.AddOption(new SelectMenuOptionBuilder(name, value, description, isDefault: active));
+                fmOptions.AddOption(new StringMenuSelectOptionProperties(name, value)
+                {
+                    Description = description,
+                    Default = active
+                });
             }
             else
             {
-                fmSupporterOptions.AddOption(new SelectMenuOptionBuilder(name, value, description, isDefault: active));
+                fmSupporterOptions.AddOption(new StringMenuSelectOptionProperties(name, value)
+                {
+                    Description = description,
+                    Default = active
+                });
             }
         }
 
@@ -513,9 +523,8 @@ public class UserBuilder
         response.Embed.WithAuthor("Configuring your default WhoKnows and top list mode");
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
-        var fmType = new StringMenuProperties()
+        var fmType = new StringMenuProperties(InteractionConstants.ResponseModeSetting)
             .WithPlaceholder("Select response mode")
-            .WithCustomId(InteractionConstants.ResponseModeSetting)
             .WithMinValues(1)
             .WithMaxValues(1);
 
@@ -524,11 +533,13 @@ public class UserBuilder
             var picked = context.SlashCommand && context.ContextUser.Mode.HasValue &&
                          Enum.GetName(context.ContextUser.Mode.Value) == name;
 
-            fmType.AddOption(new SelectMenuOptionBuilder(name, name, isDefault: picked));
+            fmType.AddOption(new StringMenuSelectOptionProperties(name, name)
+            {
+                Default = picked
+            });
         }
 
-        response.Components = new ActionRowProperties()
-            .WithSelectMenu(fmType);
+        response.StringMenu = fmType;
 
         var description = new StringBuilder();
 
@@ -570,9 +581,8 @@ public class UserBuilder
             ResponseType = ResponseType.Embed,
         };
 
-        var privacySetting = new StringMenuProperties()
+        var privacySetting = new StringMenuProperties(InteractionConstants.FmPrivacySetting)
             .WithPlaceholder("Select Global WhoKnows privacy")
-            .WithCustomId(InteractionConstants.FmPrivacySetting)
             .WithMinValues(1)
             .WithMaxValues(1);
 
@@ -580,13 +590,13 @@ public class UserBuilder
         {
             var picked = context.SlashCommand && Enum.GetName(context.ContextUser.PrivacyLevel) == name;
 
-            privacySetting.AddOption(new SelectMenuOptionBuilder(name, name, isDefault: picked));
+            privacySetting.AddOption(new StringMenuSelectOptionProperties(name, name)
+            {
+                Default = picked
+            });
         }
 
-        var builder = new ActionRowProperties()
-            .WithSelectMenu(privacySetting);
-
-        response.Components = builder;
+        response.StringMenu = privacySetting;
 
         response.Embed.WithAuthor("Configuring your Global WhoKnows visibility");
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
@@ -793,9 +803,8 @@ public class UserBuilder
             response.Embed.WithFooter(footer.ToString());
         }
 
-        var viewType = new StringMenuProperties()
+        var viewType = new StringMenuProperties(InteractionConstants.FeaturedLog)
             .WithPlaceholder("Select featured view")
-            .WithCustomId(InteractionConstants.FeaturedLog)
             .WithMinValues(1)
             .WithMaxValues(1);
 
@@ -811,7 +820,10 @@ public class UserBuilder
                 continue;
             }
 
-            viewType.AddOption(new SelectMenuOptionBuilder(name, value, null, isDefault: active));
+            viewType.AddOption(new StringMenuSelectOptionProperties(name, value)
+            {
+                Default = active
+            });
         }
 
         response.StaticPaginator = StringService.BuildStaticPaginatorWithSelectMenu(pages, viewType);
@@ -1005,7 +1017,7 @@ public class UserBuilder
             response.ComponentsContainer.AddComponent(new TextDisplayProperties($"-# " + footer));
         }
 
-        var actionRow = new ActionRowBuilder();
+        var actionRow = new ActionRowProperties();
 
         actionRow.WithButton("History",
             $"{InteractionConstants.User.History}-{user.DiscordUserId}-{context.ContextUser.DiscordUserId}",
@@ -1022,7 +1034,7 @@ public class UserBuilder
         actionRow
             .WithButton("Last.fm",
                 url: LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm),
-                emote: EmojiProperties.Custom("<:lastfm:882227627287515166>"));
+                emote: EmojiProperties.Custom(DiscordConstants.LastFm));
 
         response.ComponentsV2.AddComponent(actionRow);
 
@@ -1197,7 +1209,7 @@ public class UserBuilder
             }
         }
 
-        var actionRow = new ActionRowBuilder();
+        var actionRow = new ActionRowProperties();
 
         actionRow
             .WithButton("Profile",
@@ -1586,7 +1598,7 @@ public class UserBuilder
 
             var active = context.ContextUser.DataSource == option;
 
-            importSetting.AddOption(new SelectMenuOptionBuilder(name, value, description, isDefault: active));
+            importSetting.AddOption(new StringMenuSelectOptionProperties(name, value, description, isDefault: active));
         }
 
         response.Components = new ActionRowProperties().WithSelectMenu(importSetting);
@@ -1736,8 +1748,8 @@ public class UserBuilder
                 }
 
                 altSelector.AddOption(description.Length > 0
-                    ? new SelectMenuOptionBuilder(displayName, alt.UserId.ToString(), description.ToString())
-                    : new SelectMenuOptionBuilder(displayName, alt.UserId.ToString()));
+                    ? new StringMenuSelectOptionProperties(displayName, alt.UserId.ToString(), description.ToString())
+                    : new StringMenuSelectOptionProperties(displayName, alt.UserId.ToString()));
 
                 amount++;
             }
@@ -2136,7 +2148,7 @@ public class UserBuilder
         response.ComponentsContainer.AddComponent(new TextDisplayProperties(description.ToString()));
 
         response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
-        var actionRow = new ActionRowBuilder();
+        var actionRow = new ActionRowProperties();
         actionRow.AddComponent(new ButtonBuilder("Modify", style: ButtonStyle.Secondary,
             customId: $"{InteractionConstants.Shortcuts.Modify}-{shortcut.Id}-{overviewMessageId}"));
         actionRow.AddComponent(new ButtonBuilder("Delete", style: ButtonStyle.Danger,

@@ -15,9 +15,14 @@ using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using NetCord;
+using NetCord.Gateway;
+using NetCord.Rest;
+using NetCord.Services.Commands;
 using Serilog;
 using Shared.Domain.Enums;
 using SkiaSharp;
+using Webhook = FMBot.Persistence.Domain.Models.Webhook;
 
 namespace FMBot.Bot.Services.Guild;
 
@@ -182,11 +187,11 @@ public class WebhookService
         var builder = new EmbedProperties();
         if (featuredLog.FullSizeImage == null)
         {
-            builder.WithThumbnailUrl(featuredLog.ImageUrl);
+            builder.WithThumbnail(featuredLog.ImageUrl);
         }
         else
         {
-            builder.WithImageUrl(featuredLog.FullSizeImage);
+            builder.WithImage(featuredLog.FullSizeImage);
         }
 
         builder.AddField("Featured:", featuredLog.Description);
@@ -215,7 +220,7 @@ public class WebhookService
                         {
                             var localFeaturedMsg = await channel.SendMessageAsync($"🥳 Congratulations <@{guildUser.User.DiscordUserId}>! You've just been picked as the featured user for the next hour.",
                                 false,
-                                builder.Build());
+                                builder);
 
                             if (localFeaturedMsg != null)
                             {
@@ -227,7 +232,7 @@ public class WebhookService
                     }
                 }
 
-                var message = await channel.SendMessageAsync("", false, builder.Build());
+                var message = await channel.SendMessageAsync("", false, builder);
 
                 if (message != null)
                 {

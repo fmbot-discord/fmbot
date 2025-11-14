@@ -54,7 +54,7 @@ public class TemplateBuilders
 
         foreach (var template in templates)
         {
-            templateManagePicker.AddOption(new SelectMenuOptionBuilder(template.Name, $"{InteractionConstants.Template.ManagePicker}-{template.Id}"));
+            templateManagePicker.AddOption(new StringMenuSelectOptionProperties(template.Name, $"{InteractionConstants.Template.ManagePicker}-{template.Id}"));
         }
 
         var templateGlobalPicker = new StringMenuProperties(InteractionConstants.Template.SetGlobalDefaultPicker)
@@ -71,8 +71,8 @@ public class TemplateBuilders
         response.Embed.WithDescription("Select the template you want to change, or pick which one you want used as a default.");
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
+        response.StringMenu = templateManagePicker;
         response.Components = new ActionRowProperties()
-            .WithSelectMenu(templateManagePicker)
             .WithButton("Create", InteractionConstants.Template.Create, ButtonStyle.Secondary)
             .WithButton("Import sharecode", InteractionConstants.Template.ImportCode, ButtonStyle.Secondary)
             .WithButton("Import script", InteractionConstants.Template.ImportScript, ButtonStyle.Secondary);
@@ -120,11 +120,14 @@ public class TemplateBuilders
 
             fmEmbed.Content.TryGetValue(option, out var description);
 
-            templateOptionPicker.AddOption(new SelectMenuOptionBuilder(name, value, StringExtensions.TruncateLongString(description, 95) ?? "Not set"));
+            templateOptionPicker.AddOption(new StringMenuSelectOptionProperties(name, value)
+            {
+                Description = StringExtensions.TruncateLongString(description, 95) ?? "Not set"
+            });
         }
 
+        response.StringMenu = templateOptionPicker;
         response.Components = new ActionRowProperties()
-            .WithSelectMenu(templateOptionPicker)
             .WithButton("Rename", $"{InteractionConstants.Template.Rename}-{template.Id}", ButtonStyle.Secondary)
             .WithButton("Copy", $"{InteractionConstants.Template.Copy}-{template.Id}", ButtonStyle.Secondary)
             .WithButton("Script", $"{InteractionConstants.Template.ViewScript}-{template.Id}", ButtonStyle.Secondary)

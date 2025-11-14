@@ -74,7 +74,7 @@ public class StaticBuilders
         }
 
         response.Components = new ActionRowProperties()
-            .WithButton("Last.fm settings",  url: "https://www.last.fm/settings/applications")
+            .WithButton("Last.fm settings", url: "https://www.last.fm/settings/applications")
             .WithButton("Full guide",
                 url: "https://support.last.fm/t/spotify-has-stopped-scrobbling-what-can-i-do/3184")
             .WithButton("Your profile",
@@ -180,10 +180,12 @@ public class StaticBuilders
                     $"-# {pricing.YearlySubText}", true);
 
                 response.Components = new ActionRowProperties()
-                    .WithButton("Get monthly",
-                        customId: $"{InteractionConstants.SupporterLinks.GetPurchaseLink}-monthly-{source}")
-                    .WithButton("Get yearly",
-                        customId: $"{InteractionConstants.SupporterLinks.GetPurchaseLink}-yearly-{source}");
+                    .AddComponents(new ButtonProperties(
+                        $"{InteractionConstants.SupporterLinks.GetPurchaseLink}-monthly-{source}", "Get monthly",
+                        ButtonStyle.Primary))
+                    .AddComponents(new ButtonProperties(
+                        $"{InteractionConstants.SupporterLinks.GetPurchaseLink}-yearly-{source}", "Get yearly",
+                        ButtonStyle.Primary));
 
                 if (pricing.LifetimePriceId != null &&
                     pricing.LifetimePriceString != null &&
@@ -192,9 +194,9 @@ public class StaticBuilders
                     response.Embed.AddField($"Lifetime - {pricing.LifetimePriceString}",
                         $"-# {pricing.LifetimeSubText}", true);
 
-                    response.Components
-                        .WithButton("Get lifetime",
-                            customId: $"{InteractionConstants.SupporterLinks.GetPurchaseLink}-lifetime-{source}");
+                    response.Components.AddComponents(new ButtonProperties(
+                        $"{InteractionConstants.SupporterLinks.GetPurchaseLink}-lifetime-{source}", "Get lifetime",
+                        ButtonStyle.Primary));
                 }
             }
         }
@@ -252,10 +254,11 @@ public class StaticBuilders
             .WithTitle("🎁 Gift .fmbot supporter")
             .WithDescription(
                 $"You are gifting supporter to **{recipient.UserNameLastFM}** (<@{recipient.DiscordUserId}>)")
-            .WithColor(Color.Gold);
+            .WithColor(DiscordConstants.Gold);
 
         var existingStripeSupporter = await this._supporterService.GetStripeSupporter(purchaserDiscordId);
-        var pricing = await this._supporterService.GetPricing(userLocale, existingStripeSupporter?.Currency, StripeSupporterType.GiftedSupporter);
+        var pricing = await this._supporterService.GetPricing(userLocale, existingStripeSupporter?.Currency,
+            StripeSupporterType.GiftedSupporter);
 
         response.Embed.AddField("Note",
             "- This is a gift purchase - no subscription will be created\n" +
@@ -263,8 +266,7 @@ public class StaticBuilders
             "- Your identity will not be revealed",
             false);
 
-        var components = new ActionRowProperties();
-        var actionRow = new ActionRowBuilder();
+        var actionRow = new ActionRowProperties();
 
         if (!string.IsNullOrEmpty(pricing.QuarterlyPriceId))
         {
@@ -292,9 +294,7 @@ public class StaticBuilders
         //     actionRow.WithButton("Lifetime", $"gift-supporter-purchase-lifetime-{recipient.DiscordUserId}", ButtonStyle.Success, EmojiProperties.Standard("⭐"));
         // }
 
-        components.AddRow(actionRow);
-
-        response.Components = components;
+        response.Components = actionRow;
 
         return response;
     }

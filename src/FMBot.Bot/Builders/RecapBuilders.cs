@@ -120,7 +120,10 @@ public class RecapBuilders
 
             var active = option == view;
 
-            viewType.AddOption(new SelectMenuOptionBuilder(name, value, null, isDefault: active));
+            viewType.AddOptions(new StringMenuSelectOptionProperties(name, value)
+            {
+                Default = active
+            });
         }
 
         context.SelectMenu = viewType;

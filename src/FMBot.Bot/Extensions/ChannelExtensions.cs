@@ -1,8 +1,5 @@
-using Discord.WebSocket;
-
 using System.Collections.Generic;
 using System;
-using System.Linq;
 using NetCord;
 
 namespace FMBot.Bot.Extensions;

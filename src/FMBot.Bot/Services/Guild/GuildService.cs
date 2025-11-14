@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
-
-using Discord.Commands;
 using FMBot.Bot.Models;
 using FMBot.Domain;
 using FMBot.Domain.Models;
@@ -13,8 +11,13 @@ using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using NetCord;
+using NetCord.Services;
+using NetCord.Services.Commands;
 using Npgsql;
 using Serilog;
+using Channel = FMBot.Persistence.Domain.Models.Channel;
+using GuildUser = FMBot.Persistence.Domain.Models.GuildUser;
 
 namespace FMBot.Bot.Services.Guild;
 
@@ -33,7 +36,7 @@ public class GuildService
     }
 
     // Message is in dm?
-    public bool CheckIfDM(ICommandContext context)
+    public bool CheckIfDM(CommandContext context)
     {
         return context.Guild == null;
     }
@@ -261,14 +264,14 @@ public class GuildService
         return (stats, users);
     }
 
-    public static async Task<GuildPermissions> GetGuildPermissionsAsync(ICommandContext context)
+    public static async Task<Permissions> GetGuildPermissionsAsync(ICommandContext context)
     {
         var socketCommandContext = (SocketCommandContext)context;
         var guildUser = await context.Guild.GetUserAsync(socketCommandContext.Client.CurrentUser.Id);
         return guildUser.GuildPermissions;
     }
 
-    public static async Task<GuildPermissions> GetGuildPermissionsAsync(IInteractionContext context)
+    public static async Task<Permissions> GetGuildPermissionsAsync(IInteractionContext context)
     {
         var socketCommandContext = (ShardedInteractionContext)context;
         var guildUser = await context.Guild.GetUserAsync(socketCommandContext.Client.CurrentUser.Id);
@@ -839,7 +842,7 @@ public class GuildService
         return existingChannel;
     }
 
-    public async Task DisableChannelCommandsAsync(NetCord.Channel discordChannel, int guildId, List<string> commands,
+    public async Task DisableChannelCommandsAsync(IGuildChannel discordChannel, int guildId, List<string> commands,
         ulong discordGuildId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -891,7 +894,7 @@ public class GuildService
         await db.SaveChangesAsync();
     }
 
-    public async Task SetChannelEmbedType(NetCord.Channel discordChannel, int guildId, FmEmbedType? embedType,
+    public async Task SetChannelEmbedType(IGuildChannel discordChannel, int guildId, FmEmbedType? embedType,
         ulong discordGuildId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -927,7 +930,7 @@ public class GuildService
         await db.SaveChangesAsync();
     }
 
-    public async Task<string[]> EnableChannelCommandsAsync(NetCord.Channel discordChannel, List<string> commands,
+    public async Task<string[]> EnableChannelCommandsAsync(IGuildChannel discordChannel, List<string> commands,
         ulong discordGuildId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -947,7 +950,7 @@ public class GuildService
         return existingChannel.DisabledCommands;
     }
 
-    public async Task<string[]> ClearDisabledChannelCommandsAsync(NetCord.Channel discordChannel, ulong discordGuildId)
+    public async Task<string[]> ClearDisabledChannelCommandsAsync(IGuildChannel discordChannel, ulong discordGuildId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var existingChannel = await db.Channels
@@ -966,7 +969,7 @@ public class GuildService
         return existingChannel.DisabledCommands;
     }
 
-    public async Task DisableChannelAsync(NetCord.Channel discordChannel, int guildId, ulong discordGuildId)
+    public async Task DisableChannelAsync(IGuildChannel discordChannel, int guildId, ulong discordGuildId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var existingChannel = await db.Channels
@@ -1038,7 +1041,7 @@ public class GuildService
         return existingChannel?.FmCooldown;
     }
 
-    public async Task<int?> SetChannelCooldownAsync(NetCord.Channel discordChannel, int guildId, int? cooldown,
+    public async Task<int?> SetChannelCooldownAsync(IGuildChannel discordChannel, int guildId, int? cooldown,
         ulong discordGuildId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();

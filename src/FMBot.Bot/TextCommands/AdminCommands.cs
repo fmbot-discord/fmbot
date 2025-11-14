@@ -732,7 +732,7 @@ public class AdminCommands : BaseCommandModule
                     censorDescription.Append(" - ");
                     censorDescription.AppendLine(name);
 
-                    censorOptions.AddOption(new SelectMenuOptionBuilder(name, value, description, isDefault: active));
+                    censorOptions.AddOption(new StringMenuSelectOptionProperties(name, value, description, isDefault: active));
                 }
             }
 
@@ -795,7 +795,7 @@ public class AdminCommands : BaseCommandModule
                 censorDescription.Append(" - ");
                 censorDescription.AppendLine(name);
 
-                aliasOptions.AddOption(new SelectMenuOptionBuilder(name, value, description, isDefault: active));
+                aliasOptions.AddOption(new StringMenuSelectOptionProperties(name, value, description, isDefault: active));
             }
 
             var builder = new ActionRowProperties()
@@ -899,7 +899,7 @@ public class AdminCommands : BaseCommandModule
                     censorDescription.Append(" - ");
                     censorDescription.AppendLine(name);
 
-                    censorOptions.AddOption(new SelectMenuOptionBuilder(name, value, description, isDefault: active));
+                    censorOptions.AddOption(new StringMenuSelectOptionProperties(name, value, description, isDefault: active));
                 }
             }
 
@@ -1870,7 +1870,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                     new TextDisplayProperties("## 🌐 GlobalWhoKnows report form"),
                     new TextDisplayProperties(globalWhoKnowsDescription.ToString()),
                     new ComponentSeparatorProperties(),
-                    new ActionRowBuilder()
+                    new ActionRowProperties()
                         .WithButton("Report user", style: ButtonStyle.Secondary,
                             customId: InteractionConstants.ModerationCommands.GlobalWhoKnowsReport)
                 ]

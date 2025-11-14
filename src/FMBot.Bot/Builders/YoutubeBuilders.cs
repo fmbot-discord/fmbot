@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services;
@@ -7,6 +8,7 @@ using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
+using NetCord;
 
 namespace FMBot.Bot.Builders;
 
@@ -81,7 +83,7 @@ public class YoutubeBuilders
         var user = context.DiscordGuild != null
             ? await context.DiscordGuild.GetUserAsync(context.DiscordUser.Id)
             : null;
-        if (user == null || user.GuildPermissions.EmbedLinks)
+        if (user == null || user.GetPermissions(context.DiscordGuild).HasFlag(Permissions.EmbedLinks))
         {
             if (YoutubeService.IsFamilyFriendly(video))
             {

@@ -242,15 +242,16 @@ public class PlayBuilder
                 embedType = channel.FmEmbedType.Value;
             }
 
-            if (guild != null)
-            {
-                guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
-                var discordGuildUser =
-                    await context.DiscordGuild.GetUserAsync(context.ContextUser.DiscordUserId, CacheMode.CacheOnly);
-
-                await this._indexService.UpdateGuildUser(guildUsers, discordGuildUser, context.ContextUser.UserId,
-                    guild);
-            }
+            // TODO: check if still needed and there is no performance impact
+            // if (guild != null)
+            // {
+            //     guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
+            //     var discordGuildUser =
+            //         await context.DiscordGuild.GetUserAsync(context.ContextUser.DiscordUserId);
+            //
+            //     await this._indexService.UpdateGuildUser(guildUsers, discordGuildUser, context.ContextUser.UserId,
+            //         guild);
+            // }
         }
 
         var totalPlaycount = recentTracks.Content.TotalAmount;
@@ -531,7 +532,7 @@ public class PlayBuilder
             var pageIndex = p.CurrentPageIndex;
             var trackPage = trackPages.ElementAtOrDefault(pageIndex);
 
-            var container = new ContainerBuilder();
+            var container = new ComponentContainerProperties();
 
             container.WithTextDisplay(
                 userSettings.DisplayName.ContainsEmoji()
@@ -1684,7 +1685,7 @@ public class PlayBuilder
                 $"{Enum.GetName(option)}-{Enum.GetName(mode)}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}";
 
             var active = option == entityType;
-            viewType.AddOption(new SelectMenuOptionBuilder(name, value, null, isDefault: active));
+            viewType.AddOption(new StringMenuSelectOptionProperties(name, value, null, isDefault: active));
         }
 
         if (mode == ResponseMode.Image && sortedEntitiesWithGaps.Count != 0)
