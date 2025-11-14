@@ -1715,7 +1715,7 @@ public class ArtistBuilders
 
         if (guildUsers.Any(a => a.Value.BlockedFromWhoKnows))
         {
-            builder.AddOption(new StringMenuSelectOptionProperties("Blocked users",
+            builder.AddOptions(new StringMenuSelectOptionProperties("Blocked users",
                 "Filter out users you've manually blocked").WithValue("blocked-users").WithDefault(true));
         }
 

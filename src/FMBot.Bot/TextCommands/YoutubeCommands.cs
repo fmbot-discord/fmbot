@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
@@ -38,9 +39,8 @@ public class YoutubeCommands : BaseCommandModule
         this._youtubeBuilders = youtubeBuilders;
     }
 
-    [Command("youtube")]
+    [Command("youtube", "yt", "y", "youtubesearch", "ytsearch", "yts")]
     [Summary("Shares a link to a YouTube video based on what a user is listening to or searching for")]
-    [Alias("yt", "y", "youtubesearch", "ytsearch", "yts")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.ThirdParty)]
     public async Task YoutubeAsync([CommandParameter(Remainder = true)] string searchValue = null)

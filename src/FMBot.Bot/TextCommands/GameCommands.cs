@@ -76,7 +76,7 @@ public class GameCommands : BaseCommandModule
 
             if (response.CommandResponse == CommandResponse.Cooldown)
             {
-                _ = Task.Run(() => this.Context.Message.AddReactionAsync(EmojiProperties.Standard("❌")));
+                _ = Task.Run(() => this.Context.Message.AddReactionAsync(new ReactionEmojiProperties("❌")));
                 this.Context.LogCommandUsed(response.CommandResponse);
                 return;
             }
@@ -172,7 +172,7 @@ public class GameCommands : BaseCommandModule
 
             if (response.CommandResponse == CommandResponse.Cooldown)
             {
-                _ = Task.Run(() => this.Context.Message.AddReactionAsync(EmojiProperties.Standard("❌")));
+                _ = Task.Run(() => this.Context.Message.AddReactionAsync(new ReactionEmojiProperties("❌")));
                 this.Context.LogCommandUsed(response.CommandResponse);
                 return;
             }

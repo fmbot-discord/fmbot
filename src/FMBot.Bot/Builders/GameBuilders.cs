@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using System.Text;
@@ -19,6 +18,7 @@ using SkiaSharp;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using NetCord;
+using NetCord.Gateway;
 using NetCord.Rest;
 using NetCord.Services.Commands;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
@@ -342,7 +342,7 @@ public class GameBuilders
         }
 
         pages.Add(userPage);
-        response.Embed = userPage.GetEmbedBuilder();
+        response.Embed = userPage.GetEmbedProperties();
 
         var guildPage = new PageBuilder();
         guildPage.WithAuthor($"{name} server stats - {context.DiscordGuild.Name}");
@@ -395,7 +395,8 @@ public class GameBuilders
         return response;
     }
 
-    private static ActionRowProperties BuildJumbleComponents(int gameId, List<JumbleSessionHint> hints, float? blur = null,
+    private static ActionRowProperties BuildJumbleComponents(int gameId, List<JumbleSessionHint> hints,
+        float? blur = null,
         bool shuffledHidden = false)
     {
         var addHintDisabled = hints.Count(c => c.HintShown) == hints.Count;
@@ -434,7 +435,8 @@ public class GameBuilders
             var image = await this._gameService.GetImageFromCache(currentGame.JumbleSessionId);
             if (image == null)
             {
-                response.Embed.WithDescription("Sorry, something went wrong while getting the album cover for your album.");
+                response.Embed.WithDescription(
+                    "Sorry, something went wrong while getting the album cover for your album.");
                 response.CommandResponse = CommandResponse.Error;
                 response.ResponseType = ResponseType.Embed;
                 return response;
@@ -475,7 +477,8 @@ public class GameBuilders
             var image = await this._gameService.GetImageFromCache(currentGame.JumbleSessionId);
             if (image == null)
             {
-                response.Embed.WithDescription("Sorry, something went wrong while getting the album cover for your album.");
+                response.Embed.WithDescription(
+                    "Sorry, something went wrong while getting the album cover for your album.");
                 response.CommandResponse = CommandResponse.Error;
                 response.ResponseType = ResponseType.Embed;
                 return response;
@@ -609,7 +612,8 @@ public class GameBuilders
                 separateResponse.WithFooter(footer.ToString());
             }
 
-            if (context.DiscordChannel is IMessageChannel msgChannel)
+            // TODO: check if right type of channel
+            if (context.DiscordChannel is TextChannel msgChannel)
             {
                 _ = Task.Run(() => SendSeparateResponse(msgChannel, separateResponse, playAgainButton,
                     new ReferencedMusic
@@ -644,15 +648,19 @@ public class GameBuilders
         return response;
     }
 
-    private static async Task SendSeparateResponse(IMessageChannel msgChannel, EmbedBuilder separateResponse,
-        ComponentBuilder components, ReferencedMusic referencedMusic)
+    private static async Task SendSeparateResponse(TextChannel msgChannel, EmbedProperties separateResponse,
+        ActionRowProperties components, ReferencedMusic referencedMusic)
     {
-        var msg = await msgChannel.SendMessageAsync(embed: separateResponse.Build(), components: components.Build());
+        var msg = await msgChannel.SendMessageAsync(new MessageProperties
+        {
+            Embeds = [separateResponse],
+            Components = [components]
+        });
 
         PublicProperties.UsedCommandsReferencedMusic.TryAdd(msg.Id, referencedMusic);
     }
 
-    public async Task JumbleProcessAnswer(ContextModel context, ICommandContext commandContext)
+    public async Task JumbleProcessAnswer(ContextModel context, CommandContext commandContext)
     {
         var response = new ResponseModel
         {
@@ -686,7 +694,7 @@ public class GameBuilders
                     var dayStreakTask =
                         this._gameService.GetConsecutiveDaysStreak(context.DiscordUser.Id, currentGame.JumbleType);
 
-                    _ = Task.Run(() => commandContext.Message.AddReactionAsync(EmojiProperties.Standard("✅")));
+                    _ = Task.Run(() => commandContext.Message.AddReactionAsync(new ReactionEmojiProperties("✅")));
 
                     _ = Task.Run(() => this._gameService.JumbleAddAnswer(currentGame, commandContext.User.Id, true));
 
@@ -723,7 +731,7 @@ public class GameBuilders
                     var playAgainComponent = new ActionRowProperties().WithButton("Play again",
                         $"{InteractionConstants.Game.JumblePlayAgain}-{currentGame.JumbleType}",
                         ButtonStyle.Secondary);
-                    if (context.DiscordChannel is IMessageChannel msgChannel)
+                    if (context.DiscordChannel is TextChannel msgChannel)
                     {
                         _ = Task.Run(() => SendSeparateResponse(msgChannel, separateResponse, playAgainComponent,
                             new ReferencedMusic
@@ -749,7 +757,8 @@ public class GameBuilders
                         }
 
                         var msg = await commandContext.Channel.GetMessageAsync(currentGame.DiscordResponseId.Value);
-                        if (msg is not IUserMessage message)
+                        // TODO: check if right type of message
+                        if (msg is not Message message)
                         {
                             return;
                         }
@@ -766,15 +775,11 @@ public class GameBuilders
                         await message.ModifyAsync(m =>
                         {
                             m.Components = null;
-                            m.Embed = response.Embed;
+                            m.Embeds = [response.Embed];
                             m.Attachments = response.Stream != null
-                                ? new Optional<IEnumerable<FileAttachment>>(new List<FileAttachment>
-                                {
-                                    new(response.Stream,
-                                        response.Spoiler
-                                            ? $"SPOILER_{response.FileName}.png"
-                                            : $"{response.FileName}.png")
-                                })
+                                ? [new AttachmentProperties(response.Spoiler
+                                    ? $"SPOILER_{response.FileName}.png"
+                                    : $"{response.FileName}.png", response.Stream)]
                                 : null;
                         });
                     }
@@ -788,11 +793,11 @@ public class GameBuilders
                     if (levenshteinDistance == 1 ||
                         levenshteinDistance == 2 && commandContext.Message.Content.Length > 4)
                     {
-                        await commandContext.Message.AddReactionAsync(EmojiProperties.Standard("🤏"));
+                        await commandContext.Message.AddReactionAsync(new ReactionEmojiProperties("🤏"));
                     }
                     else
                     {
-                        await commandContext.Message.AddReactionAsync(EmojiProperties.Standard("❌"));
+                        await commandContext.Message.AddReactionAsync(new ReactionEmojiProperties("❌"));
                     }
 
                     await this._gameService.JumbleAddAnswer(currentGame, commandContext.User.Id, false);
@@ -804,8 +809,9 @@ public class GameBuilders
             Log.Error("Error in JumbleProcessAnswer: {exception}", e.Message, e);
             if (e.Message.Contains("error 50001", StringComparison.OrdinalIgnoreCase))
             {
-                await commandContext.Channel.SendMessageAsync("❌ Error: I can't properly process your jumble answers, because this server hasn't given me the necessary permissions.\n" +
-                                                              "Please ensure .fmbot has access to the **Add Reactions** permission.");
+                await commandContext.Channel.SendMessageAsync(
+                    "❌ Error: I can't properly process your jumble answers, because this server hasn't given me the necessary permissions.\n" +
+                    "Please ensure .fmbot has access to the **Add Reactions** permission.");
             }
         }
     }
@@ -844,7 +850,8 @@ public class GameBuilders
                 ? $"Nobody guessed it right. It was `{currentGame.CorrectAnswer}`"
                 : $"Nobody guessed it right. It was `{currentGame.CorrectAnswer}` by {currentGame.ArtistName}");
             separateResponse.WithColor(DiscordConstants.AppleMusicRed);
-            if (context.DiscordChannel is IMessageChannel msgChannel)
+            // TODO: check if right type of channel
+            if (context.DiscordChannel is TextChannel msgChannel)
             {
                 _ = Task.Run(() => SendSeparateResponse(msgChannel, separateResponse, playAgainComponent,
                     new ReferencedMusic

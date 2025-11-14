@@ -19,6 +19,7 @@ using FMBot.Domain.Types;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using NetCord;
+using NetCord.Rest;
 
 namespace FMBot.Bot.Builders;
 
@@ -102,10 +103,12 @@ public class FriendBuilders
                     friendNameToDisplay = guildUser.UserName;
 
                     var user = await this._userService.GetUserForIdAsync(guildUser.UserId);
-                    var discordUser = await context.DiscordGuild.GetUserAsync(user.DiscordUserId, CacheMode.CacheOnly);
-                    if (discordUser?.Username != null)
+                    if (context.CachedGuildUsers != null)
                     {
-                        friendNameToDisplay = discordUser.DisplayName;
+                        if (context.CachedGuildUsers.TryGetValue(user.DiscordUserId, out var discordGuildUser))
+                        {
+                            friendNameToDisplay = discordGuildUser.Nickname ?? discordGuildUser.GlobalName ?? discordGuildUser.Username;
+                        }
                     }
                 }
             }

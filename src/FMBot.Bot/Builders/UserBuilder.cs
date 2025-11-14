@@ -108,7 +108,7 @@ public class UserBuilder
 
         response.Embed.WithDescription(settings.ToString());
 
-        var guildSettings = new SelectMenuBuilder()
+        var guildSettings = new StringMenuProperties()
             .WithPlaceholder("Select setting to view or change")
             .WithCustomId(InteractionConstants.UserSetting)
             .WithMaxValues(1);
@@ -393,7 +393,7 @@ public class UserBuilder
             ResponseType = ResponseType.Embed,
         };
 
-        var fmType = new SelectMenuBuilder()
+        var fmType = new StringMenuProperties()
             .WithPlaceholder("Select embed type")
             .WithCustomId(InteractionConstants.FmCommand.FmSettingType)
             .WithMinValues(1)
@@ -415,13 +415,13 @@ public class UserBuilder
             ? Constants.MaxFooterOptions
             : Constants.MaxFooterOptionsSupporter;
 
-        var fmOptions = new SelectMenuBuilder()
+        var fmOptions = new StringMenuProperties()
             .WithPlaceholder("Select footer options")
             .WithCustomId(InteractionConstants.FmCommand.FmSettingFooter)
             .WithMinValues(0)
             .WithMaxValues(maxOptions);
 
-        var fmSupporterOptions = new SelectMenuBuilder()
+        var fmSupporterOptions = new StringMenuProperties()
             .WithPlaceholder("Select supporter-exclusive footer option")
             .WithCustomId(InteractionConstants.FmCommand.FmSettingFooterSupporter)
             .WithMinValues(0)
@@ -513,7 +513,7 @@ public class UserBuilder
         response.Embed.WithAuthor("Configuring your default WhoKnows and top list mode");
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
-        var fmType = new SelectMenuBuilder()
+        var fmType = new StringMenuProperties()
             .WithPlaceholder("Select response mode")
             .WithCustomId(InteractionConstants.ResponseModeSetting)
             .WithMinValues(1)
@@ -570,7 +570,7 @@ public class UserBuilder
             ResponseType = ResponseType.Embed,
         };
 
-        var privacySetting = new SelectMenuBuilder()
+        var privacySetting = new StringMenuProperties()
             .WithPlaceholder("Select Global WhoKnows privacy")
             .WithCustomId(InteractionConstants.FmPrivacySetting)
             .WithMinValues(1)
@@ -793,7 +793,7 @@ public class UserBuilder
             response.Embed.WithFooter(footer.ToString());
         }
 
-        var viewType = new SelectMenuBuilder()
+        var viewType = new StringMenuProperties()
             .WithPlaceholder("Select featured view")
             .WithCustomId(InteractionConstants.FeaturedLog)
             .WithMinValues(1)
@@ -801,7 +801,7 @@ public class UserBuilder
 
         foreach (var option in ((FeaturedView[])Enum.GetValues(typeof(FeaturedView))))
         {
-            var name = option.GetAttribute<ChoiceDisplayAttribute>().Name;
+            var name = option.GetAttribute<OptionAttribute>().Name;
             var value = $"{Enum.GetName(option)}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}";
 
             var active = option == view;
@@ -894,7 +894,7 @@ public class UserBuilder
 
         if (playcounts.Length > 0)
         {
-            response.ComponentsContainer.AddComponent(new SeparatorBuilder());
+            response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
             response.ComponentsContainer.AddComponent(new TextDisplayProperties(playcounts.ToString()));
         }
 
@@ -922,7 +922,7 @@ public class UserBuilder
 
             if (collection.Length > 0)
             {
-                response.ComponentsContainer.AddComponent(new SeparatorBuilder());
+                response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
                 response.ComponentsContainer.AddComponent(new TextDisplayProperties(collection.ToString()));
             }
         }
@@ -965,7 +965,7 @@ public class UserBuilder
 
         if (stats.Length > 0 && userInfo.Playcount > 0)
         {
-            response.ComponentsContainer.AddComponent(new SeparatorBuilder());
+            response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
             response.ComponentsContainer.AddComponent(new TextDisplayProperties(stats.ToString()));
         }
 
@@ -1001,7 +1001,7 @@ public class UserBuilder
 
         if (footer.Length > 0)
         {
-            response.ComponentsContainer.AddComponent(new SeparatorBuilder());
+            response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
             response.ComponentsContainer.AddComponent(new TextDisplayProperties($"-# " + footer));
         }
 
@@ -1111,7 +1111,7 @@ public class UserBuilder
         if (monthDescription.Length > 0)
         {
             anyHistoryStored = true;
-            response.ComponentsContainer.AddComponent(new SeparatorBuilder());
+            response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
             response.ComponentsContainer.AddComponent(new TextDisplayProperties("**Last months**\n" + monthDescription));
         }
 
@@ -1143,7 +1143,7 @@ public class UserBuilder
             if (yearDescription.Length > 0)
             {
                 anyHistoryStored = true;
-                response.ComponentsContainer.AddComponent(new SeparatorBuilder());
+                response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
                 response.ComponentsContainer.AddComponent(new TextDisplayProperties("**All years**\n" + yearDescription));
             }
         }
@@ -1172,7 +1172,7 @@ public class UserBuilder
 
         if (!anyHistoryStored)
         {
-            response.ComponentsContainer.AddComponent(new SeparatorBuilder());
+            response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
             response.ComponentsContainer.AddComponent(
                 new TextDisplayProperties("*Sorry, it seems like there is no stored data in .fmbot for this user.*"));
         }
@@ -1186,7 +1186,7 @@ public class UserBuilder
                 {
                     case DataSource.FullImportThenLastFm:
                     case DataSource.ImportThenFullLastFm:
-                        response.ComponentsContainer.AddComponent(new SeparatorBuilder());
+                        response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
                         response.ComponentsContainer.AddComponent(
                             new TextDisplayProperties($"{DiscordConstants.Imports} .fmbot imports: {name}"));
                         break;
@@ -1563,7 +1563,7 @@ public class UserBuilder
             ResponseType = ResponseType.Embed,
         };
 
-        var importSetting = new SelectMenuBuilder()
+        var importSetting = new StringMenuProperties()
             .WithPlaceholder("Select import setting")
             .WithCustomId(InteractionConstants.ImportSetting)
             .WithMinValues(1)
@@ -1696,7 +1696,7 @@ public class UserBuilder
 
         if (alts.Count > 1)
         {
-            var altSelector = new SelectMenuBuilder()
+            var altSelector = new StringMenuProperties()
                 .WithPlaceholder("Select alt to manage")
                 .WithCustomId(InteractionConstants.ManageAlts.ManageAltsPicker)
                 .WithMinValues(1)
@@ -2055,7 +2055,7 @@ public class UserBuilder
 
         if (shortcuts.Count == 0)
         {
-            response.ComponentsContainer.AddComponent(new SeparatorBuilder());
+            response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
             var emptyState = new StringBuilder();
             emptyState.AppendLine("You don't have any command shortcuts yet.");
             emptyState.AppendLine();
@@ -2070,7 +2070,7 @@ public class UserBuilder
         }
         else
         {
-            response.ComponentsContainer.AddComponent(new SeparatorBuilder());
+            response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
             foreach (var shortcut in shortcuts)
             {
                 response.ComponentsContainer.AddComponent(new SectionBuilder
@@ -2086,7 +2086,7 @@ public class UserBuilder
             }
         }
 
-        response.ComponentsContainer.AddComponent(new SeparatorBuilder());
+        response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
         response.ComponentsContainer.AddComponent(new SectionBuilder
         {
             Components =
@@ -2135,7 +2135,7 @@ public class UserBuilder
         description.AppendLine($"**Output:** `{shortcut.Output}`");
         response.ComponentsContainer.AddComponent(new TextDisplayProperties(description.ToString()));
 
-        response.ComponentsContainer.AddComponent(new SeparatorBuilder());
+        response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
         var actionRow = new ActionRowBuilder();
         actionRow.AddComponent(new ButtonBuilder("Modify", style: ButtonStyle.Secondary,
             customId: $"{InteractionConstants.Shortcuts.Modify}-{shortcut.Id}-{overviewMessageId}"));

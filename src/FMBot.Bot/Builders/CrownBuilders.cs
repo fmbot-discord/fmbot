@@ -217,7 +217,10 @@ public class CrownBuilders
 
             var active = option == crownViewType;
 
-            viewType.AddOption(new StringMenuSelectOptionProperties(name, value, null, isDefault: active));
+            viewType.AddOptions(new StringMenuSelectOptionProperties(name, value)
+            {
+                Default = active
+            });
         }
 
         if (!userCrowns.Any())
@@ -235,7 +238,7 @@ public class CrownBuilders
 
             response.ResponseType = ResponseType.Embed;
             response.CommandResponse = CommandResponse.NotFound;
-            response.Components = new componen().WithSelectMenu(viewType);
+            response.StringMenu = viewType;
             return response;
         }
 

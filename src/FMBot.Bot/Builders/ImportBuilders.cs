@@ -14,6 +14,8 @@ using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
+using NetCord;
+using NetCord.Rest;
 
 namespace FMBot.Bot.Builders;
 
@@ -77,9 +79,9 @@ public class ImportBuilders
 
         response.Components = new ActionRowProperties()
             .WithButton("Spotify", InteractionConstants.ImportInstructionsSpotify,
-                emote: EmojiProperties.Custom("<:spotify:882221219334725662>"))
+                emote: EmojiProperties.Custom(DiscordConstants.Spotify))
             .WithButton("Apple Music", InteractionConstants.ImportInstructionsAppleMusic,
-                emote: EmojiProperties.Custom("<:apple_music:1218182727149420544>"));
+                emote: EmojiProperties.Custom(DiscordConstants.AppleMusic));
 
         response.Embed.WithDescription(description.ToString());
 
@@ -265,6 +267,7 @@ public class ImportBuilders
 
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
         response.Components = new ActionRowProperties()
+            .AddComponents()
             .WithButton("Artist",
                 $"{InteractionConstants.ImportModify.Modify}-{nameof(ImportModifyPick.Artist)}",
                 disabled: !hasImported)
@@ -650,7 +653,7 @@ public class ImportBuilders
         return response;
     }
 
-    private static void AddImportPickCounts(EmbedBuilder embed, NumberFormat numberFormat,
+    private static void AddImportPickCounts(EmbedProperties embed, NumberFormat numberFormat,
         ICollection<UserPlay> allPlays,
         ICollection<UserPlay> processedPlays)
     {

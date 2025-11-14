@@ -33,15 +33,15 @@ public static class GenericEmbedService
         embed.WithColor(DiscordConstants.WarningColorOrange);
     }
 
-    public static ComponentBuilder UsernameNotSetErrorComponents()
+    public static ActionRowProperties UsernameNotSetErrorComponents()
     {
         return new ActionRowProperties()
-            .WithButton("Sign up",  url: "https://www.last.fm/join")
+            .WithButton("Sign up", url: "https://www.last.fm/join")
             .WithButton("Connect Last.fm account", style: ButtonStyle.Secondary,
                 customId: InteractionConstants.User.Login);
     }
 
-    public static ComponentBuilder ReconnectComponents()
+    public static ActionRowProperties ReconnectComponents()
     {
         return new ActionRowProperties()
             .WithButton("Reconnect Last.fm account", style: ButtonStyle.Secondary,
@@ -58,7 +58,7 @@ public static class GenericEmbedService
     public static void UserBlockedResponse(this EmbedProperties embed, string prfx)
     {
         embed.WithDescription("You're banned from using .fmbot.");
-        Embed.WithThumbnail("https://i.imgur.com/wNmcoR5.jpg");
+        embed.WithThumbnail("https://i.imgur.com/wNmcoR5.jpg");
 
         embed.WithColor(DiscordConstants.WarningColorOrange);
     }
@@ -91,11 +91,11 @@ public static class GenericEmbedService
         embed.WithColor(DiscordConstants.WarningColorOrange);
     }
 
-    private static ComponentBuilder NoScrobblesFoundComponents()
+    private static ActionRowProperties NoScrobblesFoundComponents()
     {
         return new ActionRowProperties()
-            .WithButton("Track my music app",  url: "https://www.last.fm/about/trackmymusic")
-            .WithButton("Track Spotify",  url: "https://www.last.fm/settings/applications");
+            .WithButton("Track my music app", url: "https://www.last.fm/about/trackmymusic")
+            .WithButton("Track Spotify", url: "https://www.last.fm/settings/applications");
     }
 
     public static void ErrorResponse(this EmbedProperties embed, ResponseStatus? responseStatus, string message,
@@ -323,7 +323,7 @@ public static class GenericEmbedService
         return (embed, showPurchaseButtons);
     }
 
-    public static ComponentBuilder PurchaseButtons(CommandInfo commandInfo)
+    public static ActionRowProperties PurchaseButtons(CommandInfo commandInfo)
     {
         return new ActionRowProperties()
             .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
@@ -331,30 +331,33 @@ public static class GenericEmbedService
                     source: $"help-{commandInfo.Name}"));
     }
 
-    public static void AddField(this EmbedProperties embed, string name, string value, bool inline = false)
+    extension(EmbedProperties embed)
     {
-        embed.AddFields(new EmbedFieldProperties
+        public void AddField(string name, string value, bool inline = false)
         {
-            Name = name,
-            Value = value,
-            Inline = inline
-        });
-    }
+            embed.AddFields(new EmbedFieldProperties
+            {
+                Name = name,
+                Value = value,
+                Inline = inline
+            });
+        }
 
-    public static void WithFooter(this EmbedProperties embed, string value)
-    {
-        embed.WithFooter(new EmbedFooterProperties
+        public void WithFooter(string value)
         {
-            Text = value
-        });
-    }
+            embed.WithFooter(new EmbedFooterProperties
+            {
+                Text = value
+            });
+        }
 
-    public static void WithAuthor(this EmbedProperties embed, string value)
-    {
-        embed.WithAuthor(new EmbedAuthorProperties()
+        public void WithAuthor(string value)
         {
-            Name = value
-        });
+            embed.WithAuthor(new EmbedAuthorProperties
+            {
+                Name = value
+            });
+        }
     }
 
     public static ActionRowProperties WithButton(this ActionRowProperties actionRow, string label, string customId,
@@ -364,17 +367,14 @@ public static class GenericEmbedService
             ? new ButtonProperties(customId, label, style)
             : new ButtonProperties(customId, label, emote, style);
 
-        if (disabled)
-        {
-            button.Disabled = true;
-        }
+        button.Disabled = disabled;
 
         actionRow.Add(button);
         return actionRow;
     }
 
-    public static ActionRowProperties WithButton(this ActionRowProperties actionRow, string url, string label = null,
-        EmojiProperties emote = null, int row = 1)
+    public static ActionRowProperties WithButton(this ActionRowProperties actionRow, string label = null,
+        string url = null, EmojiProperties emote = null, int row = 1)
     {
         if (label == null && emote != null)
         {
@@ -390,13 +390,28 @@ public static class GenericEmbedService
         return actionRow;
     }
 
-    public static StringMenuProperties AddOption(this StringMenuProperties menu, StringMenuSelectOptionProperties properties)
+    public static StringMenuProperties AddOption(this StringMenuProperties menu,
+        StringMenuSelectOptionProperties properties)
     {
         menu.Add(properties);
         return menu;
     }
 
-    public static ComponentContainerProperties AddComponent(this ComponentContainerProperties component, IComponentContainerComponentProperties properties)
+    public static StringMenuProperties AddOption(this StringMenuProperties menu, string label, string value,
+        bool isDefault = false, string description = null)
+    {
+        var option = new StringMenuSelectOptionProperties(label, value)
+        {
+            Default = isDefault,
+            Description = description
+        };
+
+        menu.Add(option);
+        return menu;
+    }
+
+    public static ComponentContainerProperties AddComponent(this ComponentContainerProperties component,
+        IComponentContainerComponentProperties properties)
     {
         component.AddComponents(properties);
         return component;

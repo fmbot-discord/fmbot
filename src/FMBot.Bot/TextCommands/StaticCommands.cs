@@ -598,7 +598,7 @@ public class StaticCommands : BaseCommandModule
                         {
                             options.ForEach(x => x.IsDefault = false); // Reset to default
                             options.First(x => x.Option == selectedCategoryOrCommand).IsDefault = true;
-                            this._embed.Fields = new List<EmbedFieldBuilder>();
+                            this._embed.Fields = new List<EmbedFieldProperties>();
                             await SetGeneralHelpEmbed(prefix);
                         }
                         else
@@ -607,7 +607,7 @@ public class StaticCommands : BaseCommandModule
                                 $"Overview of all {selectedCategory} commands");
                             this._embed.WithDescription(commands);
                             this._embed.Footer = null;
-                            this._embed.Fields = new List<EmbedFieldBuilder>();
+                            this._embed.Fields = new List<EmbedFieldProperties>();
                             if (selectedCategory == CommandCategory.Importing)
                             {
                                 this._embed.AddField("Slash commands:",
@@ -628,7 +628,7 @@ public class StaticCommands : BaseCommandModule
                     {
                         var userName = (this.Context.Message.Author as SocketGuildUser)?.DisplayName ??
                                        this.Context.User.GlobalName ?? this.Context.User.Username;
-                        this._embed.Fields = new List<EmbedFieldBuilder>();
+                        this._embed.Fields = new List<EmbedFieldProperties>();
                         var helpResponse =
                             GenericEmbedService.HelpResponse(this._embed, searchResult.Commands[0].Command, prefix, userName);
                         await this.Context.Channel.SendMessageAsync("", false, this._embed.Build(),

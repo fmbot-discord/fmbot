@@ -143,7 +143,7 @@ public class GuildSettingSlashCommands : ApplicationCommandModule<ApplicationCom
                 return;
             }
 
-            var name = viewType.GetAttribute<ChoiceDisplayAttribute>().Name;
+            var name = viewType.GetAttribute<OptionAttribute>().Name;
 
             var components =
                 new ActionRowProperties().WithButton($"Loading {name.ToLower()} view...", customId: "1",

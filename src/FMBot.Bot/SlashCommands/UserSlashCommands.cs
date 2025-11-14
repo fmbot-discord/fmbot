@@ -974,7 +974,7 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
         var ogMessage = await this.Context.Channel.GetMessageAsync(interactionToDelete.ContextId);
         if (ogMessage != null)
         {
-            await ogMessage.AddReactionAsync(EmojiProperties.Standard("🚮"));
+            await ogMessage.AddReactionAsync(new ReactionEmojiProperties("🚮"));
         }
 
         await fetchedMessage.DeleteAsync(options: new RequestOptions

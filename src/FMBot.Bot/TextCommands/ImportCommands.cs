@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
@@ -9,6 +10,7 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
+using NetCord.Rest;
 using NetCord.Services.Commands;
 
 namespace FMBot.Bot.TextCommands;
@@ -33,9 +35,8 @@ public class ImportCommands : BaseCommandModule
         this.Interactivity = interactivity;
     }
 
-    [Command("import")]
+    [Command("import", "import spotify", "import apple", "import applemusic", "spotifyimport", "spotifyimport")]
     [Summary("Imports your Spotify or Apple Music history into .fmbot")]
-    [Alias("import spotify", "import apple", "import applemusic", "spotifyimport", "spotifyimport")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Importing)]
     [SupporterExclusive("Only supporters can import and access their Spotify or Apple Music history")]
@@ -72,9 +73,8 @@ public class ImportCommands : BaseCommandModule
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [Command("importmodify")]
+    [Command("importmodify", "modifyimport", "importsmodify", "modifyimports", "import modify")]
     [Summary("Allows you to modify your .fmbot imports")]
-    [Alias("modifyimport", "importsmodify", "modifyimports", "import modify")]
     [CommandCategories(CommandCategory.UserSettings)]
     [UsernameSetRequired]
     [SupporterExclusive("Only supporters can import and access their Spotify or Apple Music history")]

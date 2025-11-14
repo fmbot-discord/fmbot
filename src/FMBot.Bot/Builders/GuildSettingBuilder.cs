@@ -3,9 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
-using Discord.Commands;
-using Discord.WebSocket;
 using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
@@ -19,6 +16,7 @@ using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
 using NetCord;
+using NetCord.Rest;
 using NetCord.Services;
 
 namespace FMBot.Bot.Builders;
@@ -36,7 +34,7 @@ public class GuildSettingBuilder
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<ResponseModel> GetGuildSettings(ContextModel context, GuildPermissions guildPermissions)
+    public async Task<ResponseModel> GetGuildSettings(ContextModel context, Permissions guildPermissions)
     {
         var response = new ResponseModel
         {
@@ -146,23 +144,23 @@ public class GuildSettingBuilder
         response.Embed.WithDescription(settings.ToString());
 
         var serverPermission = new StringBuilder();
-        if (!guildPermissions.SendMessages)
+        if (!guildPermissions.HasFlag(Permissions.SendMessages))
         {
             serverPermission.AppendLine("❌ Send messages");
         }
-        if (!guildPermissions.AttachFiles)
+        if (!guildPermissions.HasFlag(Permissions.AttachFiles))
         {
             serverPermission.AppendLine("❌ Attach files");
         }
-        if (!guildPermissions.EmbedLinks)
+        if (!guildPermissions.HasFlag(Permissions.EmbedLinks))
         {
             serverPermission.AppendLine("❌ Embed links");
         }
-        if (!guildPermissions.AddReactions)
+        if (!guildPermissions.HasFlag(Permissions.AddReactions))
         {
             serverPermission.AppendLine("❌ Add reactions");
         }
-        if (!guildPermissions.UseExternalEmojis)
+        if (!guildPermissions.HasFlag(Permissions.UseExternalEmojis))
         {
             serverPermission.AppendLine("❌ Use external emojis");
         }
@@ -172,9 +170,8 @@ public class GuildSettingBuilder
             response.Embed.AddField("Missing server-wide permissions", serverPermission.ToString());
         }
 
-        var guildSettings = new SelectMenuBuilder()
+        var guildSettings = new StringMenuProperties(InteractionConstants.GuildSetting)
             .WithPlaceholder("Select setting you want to change")
-            .WithCustomId(InteractionConstants.GuildSetting)
             .WithMaxValues(1);
 
         foreach (var setting in ((GuildSetting[])Enum.GetValues(typeof(GuildSetting))))
@@ -183,11 +180,10 @@ public class GuildSettingBuilder
             var description = setting.GetAttribute<OptionAttribute>().Description;
             var value = Enum.GetName(setting);
 
-            guildSettings.AddOption(new SelectMenuOptionBuilder(name, $"gs-view-{value}", description));
+            guildSettings.AddOption(name, $"gs-view-{value}", description: description);
         }
 
-        response.Components = new ActionRowProperties()
-            .WithSelectMenu(guildSettings);
+        response.StringMenu = guildSettings;
 
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
@@ -485,10 +481,12 @@ public class GuildSettingBuilder
             return false;
         }
 
-        var guildUser = (IGuildUser)context.DiscordUser;
+        // TODO: check if this works
+        var guildUser = (PartialGuildUser)context.DiscordUser;
+        var permissions = guildUser.GetPermissions(context.DiscordGuild);
 
-        if (guildUser.GuildPermissions.BanMembers ||
-            guildUser.GuildPermissions.Administrator)
+        if (permissions.HasFlag(Permissions.BanUsers) ||
+            permissions.HasFlag(Permissions.Administrator))
         {
             return true;
         }
@@ -642,9 +640,8 @@ public class GuildSettingBuilder
 
         var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
 
-        var fmType = new SelectMenuBuilder()
+        var fmType = new StringMenuProperties(InteractionConstants.FmGuildSettingType)
             .WithPlaceholder("Forced server 'fm' mode")
-            .WithCustomId(InteractionConstants.FmGuildSettingType)
             .WithMinValues(0)
             .WithMaxValues(1);
 
@@ -655,7 +652,7 @@ public class GuildSettingBuilder
             var value = Enum.GetName(option);
 
             var selected = value == guild.FmEmbedType.ToString();
-            fmType.AddOption(new SelectMenuOptionBuilder(name, value, optionDescription, isDefault: selected));
+            fmType.AddOption(name, value, description: optionDescription, isDefault: selected);
         }
 
         response.Embed.WithTitle("Set server 'fm' mode");
@@ -686,7 +683,7 @@ public class GuildSettingBuilder
             response.Embed.WithFooter($"Last modified by {lastModifier.Username}");
         }
 
-        response.Components = new ActionRowProperties().WithSelectMenu(fmType);
+        response.StringMenu = fmType;
 
         return response;
     }
@@ -886,9 +883,8 @@ public class GuildSettingBuilder
             }
         }
 
-        var fmType = new SelectMenuBuilder()
+        var fmType = new StringMenuProperties($"{InteractionConstants.ToggleCommand.ToggleCommandChannelFmType}-{selectedChannel.Id}-{selectedCategoryId}")
             .WithPlaceholder("Forced channel 'fm' mode")
-            .WithCustomId($"{InteractionConstants.ToggleCommand.ToggleCommandChannelFmType}-{selectedChannel.Id}-{selectedCategoryId}")
             .WithMinValues(0)
             .WithMaxValues(1);
 
@@ -900,7 +896,7 @@ public class GuildSettingBuilder
 
             var active = option == channel?.FmEmbedType;
 
-            fmType.AddOption(new SelectMenuOptionBuilder(name, value, description, isDefault: active));
+            fmType.AddOption(name, value, description: description, isDefault: active);
         }
 
         if (!botDisabled)

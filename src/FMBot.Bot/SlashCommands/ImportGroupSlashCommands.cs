@@ -534,10 +534,10 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
             : $"{DiscordConstants.AppleMusic} Importing history into .fmbot..";
 
         var index = embed.Fields.FindIndex(f => f.Name == title);
-        embed.Fields[index] = new EmbedFieldBuilder()
+        embed.Fields[index] = new EmbedFieldProperties()
             .WithName(title)
             .WithValue(builder + (lastLine ? null : loadingLine))
-            .WithIsInline(true);
+            .WithInline(true);
 
         if (image != null)
         {

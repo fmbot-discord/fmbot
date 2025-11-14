@@ -9,10 +9,12 @@ using FMBot.Bot.Services.WhoKnows;
 using System.Linq;
 using FMBot.Bot.Extensions;
 using System.Text;
-
+using Fergun.Interactive;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Domain.Attributes;
 using FMBot.Domain.Extensions;
+using NetCord.Rest;
 
 namespace FMBot.Bot.Builders;
 
@@ -251,20 +253,20 @@ public class GuildBuilders
                 throw new ArgumentOutOfRangeException(nameof(guildViewType), guildViewType, null);
         }
 
-        var viewType = new SelectMenuBuilder()
+        var viewType = new StringMenuProperties(InteractionConstants.GuildMembers)
             .WithPlaceholder("Select member view")
-            .WithCustomId(InteractionConstants.GuildMembers)
             .WithMinValues(1)
             .WithMaxValues(1);
 
         foreach (var option in ((GuildViewType[])Enum.GetValues(typeof(GuildViewType))))
         {
-            var name = option.GetAttribute<ChoiceDisplayAttribute>().Name;
+            var name = option.GetAttribute<OptionAttribute>().Name;
             var value = Enum.GetName(option);
 
             var active = option == guildViewType;
 
-            viewType.AddOption(new SelectMenuOptionBuilder(name, value, null, isDefault: active));
+            // TODO: check if this is right
+            viewType.AddOption( value, null, isDefault: active);
         }
 
         if (!pages.Any())

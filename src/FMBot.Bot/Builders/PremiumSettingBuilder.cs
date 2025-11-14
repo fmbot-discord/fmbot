@@ -29,7 +29,7 @@ public class PremiumSettingBuilder
 
         var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
 
-        var allowedRoles = new SelectMenuBuilder()
+        var allowedRoles = new StringMenuProperties()
             .WithPlaceholder("Pick allowed roles")
             .WithCustomId(InteractionConstants.SetAllowedRoleMenu)
             .WithType(ComponentType.RoleSelect)
@@ -95,7 +95,7 @@ public class PremiumSettingBuilder
 
         var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
 
-        var blockedRoles = new SelectMenuBuilder()
+        var blockedRoles = new StringMenuProperties()
             .WithPlaceholder("Pick blocked roles")
             .WithCustomId(InteractionConstants.SetBlockedRoleMenu)
             .WithType(ComponentType.RoleSelect)
@@ -152,7 +152,7 @@ public class PremiumSettingBuilder
 
         var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
 
-        var botManagementRoles = new SelectMenuBuilder()
+        var botManagementRoles = new StringMenuProperties()
             .WithPlaceholder("Pick bot management roles")
             .WithCustomId(InteractionConstants.SetBotManagementRoleMenu)
             .WithType(ComponentType.RoleSelect)

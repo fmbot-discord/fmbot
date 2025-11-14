@@ -21,7 +21,7 @@ public class MultiSelection<T> : BaseSelection<MultiSelectionOption<T>>
         {
             if (!selectMenus.ContainsKey(option.Row))
             {
-                selectMenus[option.Row] = new SelectMenuBuilder()
+                selectMenus[option.Row] = new StringMenuProperties()
                     .WithCustomId($"selectmenu{option.Row}")
                     .WithDisabled(disableAll);
             }

@@ -14,6 +14,8 @@ using FMBot.Domain.Attributes;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
+using NetCord;
+using NetCord.Rest;
 
 namespace FMBot.Bot.Builders;
 
@@ -45,9 +47,8 @@ public class TemplateBuilders
 
         var templates = await this._templateService.GetTemplates(context.ContextUser.UserId);
 
-        var templateManagePicker = new SelectMenuBuilder()
+        var templateManagePicker = new StringMenuProperties(InteractionConstants.Template.ManagePicker)
             .WithPlaceholder("Select template to change")
-            .WithCustomId(InteractionConstants.Template.ManagePicker)
             .WithMinValues(1)
             .WithMaxValues(1);
 
@@ -56,15 +57,13 @@ public class TemplateBuilders
             templateManagePicker.AddOption(new SelectMenuOptionBuilder(template.Name, $"{InteractionConstants.Template.ManagePicker}-{template.Id}"));
         }
 
-        var templateGlobalPicker = new SelectMenuBuilder()
+        var templateGlobalPicker = new StringMenuProperties(InteractionConstants.Template.SetGlobalDefaultPicker)
             .WithPlaceholder("Template you use globally")
-            .WithCustomId(InteractionConstants.Template.SetGlobalDefaultPicker)
             .WithMinValues(1)
             .WithMaxValues(1);
 
-        var templateGuildPicker = new SelectMenuBuilder()
+        var templateGuildPicker = new StringMenuProperties(InteractionConstants.Template.SetGuildDefaultPicker)
             .WithPlaceholder("Template you use in this server")
-            .WithCustomId(InteractionConstants.Template.SetGuildDefaultPicker)
             .WithMinValues(1)
             .WithMaxValues(1);
 
@@ -93,9 +92,8 @@ public class TemplateBuilders
 
         var template = await this._templateService.GetTemplate(templateId);
 
-        var templateOptionPicker = new SelectMenuBuilder()
+        var templateOptionPicker = new StringMenuProperties(InteractionConstants.Template.SetOptionPicker)
             .WithPlaceholder("Select embed option you want to change")
-            .WithCustomId(InteractionConstants.Template.SetOptionPicker)
             .WithMinValues(1)
             .WithMaxValues(1);
 

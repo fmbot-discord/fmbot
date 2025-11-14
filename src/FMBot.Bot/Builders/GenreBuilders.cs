@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
+using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Factories;
 using FMBot.Bot.Interfaces;
@@ -21,8 +21,11 @@ using FMBot.Domain.Types;
 using FMBot.Images.Generators;
 using FMBot.Persistence.Domain.Models;
 using Humanizer;
+using NetCord;
+using NetCord.Rest;
 using SkiaSharp;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
+using User = FMBot.Persistence.Domain.Models.User;
 
 namespace FMBot.Bot.Builders;
 
@@ -344,13 +347,13 @@ public class GenreBuilders
         return response;
     }
 
-    private async Task<(List<string> genres, SelectMenuBuilder selectMenu)> GetGenreOrRespond(string genreOptions,
+    private async Task<(List<string> genres, StringMenuProperties selectMenu)> GetGenreOrRespond(string genreOptions,
         ContextModel context, ResponseModel response, User userSettings, string commandDescription,
         string selectedValue = null,
         string selectCommandId = null, string selectCommandDescription = null)
     {
         var genres = new List<string>();
-        SelectMenuBuilder selectMenu = null;
+        StringMenuProperties selectMenu = null;
 
         if (string.IsNullOrWhiteSpace(genreOptions))
         {
@@ -412,9 +415,8 @@ public class GenreBuilders
             if (genres.Count != 0 && artist.ArtistGenres.Count != 0)
             {
                 var genreDescription = new StringBuilder();
-                selectMenu = new SelectMenuBuilder()
+                selectMenu = new StringMenuProperties(InteractionConstants.Genre.GenreSelectMenu)
                     .WithPlaceholder(selectCommandDescription)
-                    .WithCustomId(InteractionConstants.Genre.GenreSelectMenu)
                     .WithMinValues(1)
                     .WithMaxValues(1);
 
@@ -427,14 +429,13 @@ public class GenreBuilders
 
                     var optionId =
                         $"{userSettings.DiscordUserId}~{context.ContextUser.DiscordUserId}~{selectCommandId}~{artistGenre.Name}~{artist.Name}";
-                    selectMenu.AddOption(artistGenre.Name.Transform(To.TitleCase), optionId,
-                        isDefault: selected);
+                    selectMenu.AddOption(artistGenre.Name.Transform(To.TitleCase), optionId, selected);
                 }
 
                 response.Embed.WithFooter($"Genre source: Spotify\n" +
                                           $"Add a genre to this command to see {commandDescription}");
 
-                response.Components = new ActionRowProperties().WithSelectMenu(selectMenu);
+                response.StringMenu = selectMenu;
 
                 response.Embed.WithDescription(genreDescription.ToString());
 
@@ -460,9 +461,8 @@ public class GenreBuilders
                 var genreDescription = new StringBuilder();
                 if (artist.ArtistGenres != null && artist.ArtistGenres.Any())
                 {
-                    selectMenu = new SelectMenuBuilder()
+                    selectMenu = new StringMenuProperties(InteractionConstants.Genre.GenreSelectMenu)
                         .WithPlaceholder(selectCommandDescription)
-                        .WithCustomId(InteractionConstants.Genre.GenreSelectMenu)
                         .WithMinValues(1)
                         .WithMaxValues(1);
 
@@ -482,7 +482,7 @@ public class GenreBuilders
                     response.Embed.WithFooter($"Genre source: Spotify\n" +
                                               $"Add a genre to this command to see {commandDescription}");
 
-                    response.Components = new ActionRowProperties().WithSelectMenu(selectMenu);
+                    response.StringMenu = selectMenu;
                 }
                 else
                 {
@@ -532,19 +532,18 @@ public class GenreBuilders
         return (genres, selectMenu);
     }
 
-    private async Task<SelectMenuBuilder> GetGenreSearchOptions(ContextModel context, User userSettings,
+    private async Task<StringMenuProperties> GetGenreSearchOptions(ContextModel context, User userSettings,
         string genreOptions, List<string> genreResults, string selectCommandId, string selectedValue)
     {
-        SelectMenuBuilder selectMenu = null;
+        StringMenuProperties selectMenu = null;
 
         var topArtists = await this._artistsService.GetUserAllTimeTopArtists(userSettings.UserId, true);
         var topGenres = await this._genreService.GetTopGenresForTopArtists(topArtists);
 
         if (genreResults.Count > 1)
         {
-            selectMenu = new SelectMenuBuilder()
+            selectMenu = new StringMenuProperties(InteractionConstants.Genre.GenreSelectMenu)
                 .WithPlaceholder("Select similar genres")
-                .WithCustomId(InteractionConstants.Genre.GenreSelectMenu)
                 .WithMinValues(1)
                 .WithMaxValues(1);
 
@@ -574,7 +573,7 @@ public class GenreBuilders
             }
         }
 
-        if (selectMenu == null || selectMenu.Options.Count == 1)
+        if (selectMenu == null || selectMenu.Options.Count() == 1)
         {
             return null;
         }
@@ -711,7 +710,7 @@ public class GenreBuilders
 
         var interaction = userView ? InteractionConstants.Genre.GenreGuild : InteractionConstants.Genre.GenreUser;
         var optionEmote =
-            userView ? EmojiProperties.Custom("<:server:961685224041902140>") : EmojiProperties.Custom("<:user:961687127249260634>");
+            userView ? EmojiProperties.Custom(DiscordConstants.Server) : EmojiProperties.Custom(DiscordConstants.User);
         var optionDescription = userView ? "View server overview" : "View user overview";
         var originalSearchValue = !string.IsNullOrWhiteSpace(originalSearch) ? originalSearch : "0";
         var optionId =
@@ -749,7 +748,7 @@ public class GenreBuilders
     }
 
     private static List<PageBuilder> CreateGenrePageBuilder(List<List<TopArtist>> topArtists,
-        EmbedAuthorBuilder author,
+        EmbedAuthorProperties author,
         TopGenre topGenre,
         string view,
         NumberFormat numberFormat,
@@ -907,7 +906,7 @@ public class GenreBuilders
 
         if (genres.selectMenu != null)
         {
-            response.Components = new ActionRowProperties().WithSelectMenu(genres.selectMenu);
+            response.StringMenu = genres.selectMenu;
         }
 
         response.Embed.WithTitle($"{genres.genres.First().Transform(To.TitleCase)} in {context.DiscordGuild.Name}");
@@ -1011,7 +1010,7 @@ public class GenreBuilders
 
         if (genres.selectMenu != null)
         {
-            response.Components = new ActionRowProperties().WithSelectMenu(genres.selectMenu);
+            response.StringMenu = genres.selectMenu;
         }
 
         response.Embed.WithTitle($"{genres.genres.First().Transform(To.TitleCase)} with friends");

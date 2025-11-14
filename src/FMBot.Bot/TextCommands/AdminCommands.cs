@@ -206,7 +206,7 @@ public class AdminCommands : BaseCommandModule
         this._embed.WithDescription(description);
 
         // Add guild flags selectmenu
-        var guildFlagsOptions = new SelectMenuBuilder()
+        var guildFlagsOptions = new StringMenuProperties()
             .WithPlaceholder("Select guild flags")
             .WithCustomId($"guild-flags-{guild.DiscordGuildId}")
             .WithMinValues(0)
@@ -222,7 +222,7 @@ public class AdminCommands : BaseCommandModule
             var flagName = Enum.GetName(flag);
             var isActive = guild.GuildFlags.HasValue && guild.GuildFlags.Value.HasFlag(flag);
 
-            guildFlagsOptions.AddOption(new SelectMenuOptionBuilder(
+            guildFlagsOptions.AddOptions(new StringMenuSelectOptionProperties(
                 label: flagName,
                 value: flagName,
                 description: $"Toggle {flagName} flag",
@@ -711,7 +711,7 @@ public class AdminCommands : BaseCommandModule
                 this._embed.WithDescription($"Showing existing album entry (no modifications made).");
             }
 
-            var censorOptions = new SelectMenuBuilder()
+            var censorOptions = new StringMenuProperties()
                 .WithPlaceholder("Select censor types")
                 .WithCustomId($"admin-censor-{existingAlbum.CensoredMusicId}")
                 .WithMinValues(0)
@@ -776,7 +776,7 @@ public class AdminCommands : BaseCommandModule
                 return;
             }
 
-            var aliasOptions = new SelectMenuBuilder()
+            var aliasOptions = new StringMenuProperties()
                 .WithPlaceholder("Select alias options")
                 .WithCustomId($"artist-alias-{artistAlias.Id}")
                 .WithMinValues(0)
@@ -878,7 +878,7 @@ public class AdminCommands : BaseCommandModule
                 this._embed.WithDescription($"Showing existing artist entry (no modifications made).");
             }
 
-            var censorOptions = new SelectMenuBuilder()
+            var censorOptions = new StringMenuProperties()
                 .WithPlaceholder("Select censor types")
                 .WithCustomId($"admin-censor-{existingArtist.CensoredMusicId}")
                 .WithMinValues(0)
@@ -1843,7 +1843,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                     new TextDisplayProperties(
                         "**Fully censored / NSFL**\n" +
                         "Hate speech [imagery or text promoting prejudice against a group], gore [detailed, realistic, or semi realistic depictions of viscera or extreme bodily harm, not blood alone] and pornographic content [depictions of sex]"),
-                    new SeparatorBuilder(),
+                    new ComponentSeparatorProperties(),
                     new ActionRowProperties()
                         .WithButton("Report artist image", style: ButtonStyle.Secondary,
                             customId: InteractionConstants.ModerationCommands.ReportArtist)
@@ -1869,7 +1869,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                 [
                     new TextDisplayProperties("## 🌐 GlobalWhoKnows report form"),
                     new TextDisplayProperties(globalWhoKnowsDescription.ToString()),
-                    new SeparatorBuilder(),
+                    new ComponentSeparatorProperties(),
                     new ActionRowBuilder()
                         .WithButton("Report user", style: ButtonStyle.Secondary,
                             customId: InteractionConstants.ModerationCommands.GlobalWhoKnowsReport)

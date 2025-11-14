@@ -13,6 +13,7 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
+using FMBot.Domain.Attributes;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
@@ -20,6 +21,7 @@ using FMBot.Domain.Models;
 using FMBot.Images.Generators;
 using FMBot.Persistence.Domain.Models;
 using NetCord;
+using NetCord.Rest;
 using SkiaSharp;
 using IPage = PuppeteerSharp.IPage;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
@@ -960,7 +962,7 @@ public class PlayBuilder
                                    $"{day.Playcount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(day.Playcount)}**");
                 content.AppendLine(fieldContent.ToString());
                 container.Components.Add(new TextDisplayProperties(content.ToString()));
-                container.Components.Add(new SeparatorBuilder());
+                container.Components.Add(new ComponentSeparatorProperties());
 
                 plays.AddRange(day.Plays);
             }
@@ -1192,7 +1194,7 @@ public class PlayBuilder
         var pages = new List<PageBuilder>();
 
         var description = new StringBuilder();
-        var fields = new List<EmbedFieldBuilder>();
+        var fields = new List<EmbedFieldProperties>();
 
         if (yearOverview.PreviousTopArtists?.TopArtists is { Count: > 0 })
         {
@@ -1233,8 +1235,8 @@ public class PlayBuilder
             }
         }
 
-        fields.Add(new EmbedFieldBuilder().WithName("Genres").WithValue(genreDescription.ToString())
-            .WithIsInline(true));
+        fields.Add(new EmbedFieldProperties().WithName("Genres").WithValue(genreDescription.ToString())
+            .WithInline(true));
 
         var artistDescription = new StringBuilder();
         for (var i = 0; i < yearOverview.TopArtists.TopArtists.Count; i++)
@@ -1258,8 +1260,8 @@ public class PlayBuilder
             }
         }
 
-        fields.Add(new EmbedFieldBuilder().WithName("Artists").WithValue(artistDescription.ToString())
-            .WithIsInline(true));
+        fields.Add(new EmbedFieldProperties().WithName("Artists").WithValue(artistDescription.ToString())
+            .WithInline(true));
 
         var rises = lines
             .Where(w => w.OldPosition is >= 20 && w.NewPosition <= 15 && w.PositionsMoved >= 15)
@@ -1279,7 +1281,7 @@ public class PlayBuilder
 
         if (risesDescription.Length > 0)
         {
-            fields.Add(new EmbedFieldBuilder().WithName("Rises").WithValue(risesDescription.ToString()));
+            fields.Add(new EmbedFieldProperties().WithName("Rises").WithValue(risesDescription.ToString()));
         }
 
         var drops = lines
@@ -1300,7 +1302,7 @@ public class PlayBuilder
 
         if (dropsDescription.Length > 0)
         {
-            fields.Add(new EmbedFieldBuilder().WithName("Drops").WithValue(dropsDescription.ToString()));
+            fields.Add(new EmbedFieldProperties().WithName("Drops").WithValue(dropsDescription.ToString()));
         }
 
         pages.Add(new PageBuilder()
@@ -1308,7 +1310,7 @@ public class PlayBuilder
             .WithDescription(description.ToString())
             .WithTitle($"{userTitle} {year} in Review - 1/{pagesAmount}"));
 
-        fields = new List<EmbedFieldBuilder>();
+        fields = new List<EmbedFieldProperties>();
 
         var albumDescription = new StringBuilder();
         if (yearOverview.TopAlbums.TopAlbums.Any())
@@ -1331,7 +1333,7 @@ public class PlayBuilder
                         i, previousPosition).Text);
             }
 
-            fields.Add(new EmbedFieldBuilder().WithName("Albums").WithValue(albumDescription.ToString()));
+            fields.Add(new EmbedFieldProperties().WithName("Albums").WithValue(albumDescription.ToString()));
         }
 
         var trackDescription = new StringBuilder();
@@ -1351,7 +1353,7 @@ public class PlayBuilder
                 .GetBillboardLine($"**{topTrack.ArtistName}** - **{topTrack.TrackName}**", i, previousPosition).Text);
         }
 
-        fields.Add(new EmbedFieldBuilder().WithName("Tracks").WithValue(trackDescription.ToString()));
+        fields.Add(new EmbedFieldProperties().WithName("Tracks").WithValue(trackDescription.ToString()));
 
         var countries = await this._countryService.GetTopCountriesForTopArtists(yearOverview.TopArtists.TopArtists);
 
@@ -1381,8 +1383,8 @@ public class PlayBuilder
             }
         }
 
-        fields.Add(new EmbedFieldBuilder().WithName("Countries").WithValue(countryDescription.ToString())
-            .WithIsInline(true));
+        fields.Add(new EmbedFieldProperties().WithName("Countries").WithValue(countryDescription.ToString())
+            .WithInline(true));
 
         var tracksAudioOverview =
             await this._trackService.GetAverageTrackAudioFeaturesForTopTracks(yearOverview.TopTracks.TopTracks);
@@ -1392,7 +1394,7 @@ public class PlayBuilder
 
         if (tracksAudioOverview.Total > 0)
         {
-            fields.Add(new EmbedFieldBuilder().WithName("Top track analysis")
+            fields.Add(new EmbedFieldProperties().WithName("Top track analysis")
                 .WithValue(TrackService.AudioFeatureAnalysisComparisonString(tracksAudioOverview,
                     previousTracksAudioOverview)));
         }
@@ -1408,7 +1410,7 @@ public class PlayBuilder
 
         if (userSettings.UserType != UserType.User)
         {
-            fields = new List<EmbedFieldBuilder>();
+            fields = new List<EmbedFieldProperties>();
 
             var allPlays = await this._playService.GetAllUserPlays(userSettings.UserId);
             allPlays = (await this._timeService.EnrichPlaysWithPlayTime(allPlays)).enrichedPlays;
@@ -1451,7 +1453,7 @@ public class PlayBuilder
 
             if (newArtistDescription.Length > 0)
             {
-                fields.Add(new EmbedFieldBuilder().WithName("Artist discoveries")
+                fields.Add(new EmbedFieldProperties().WithName("Artist discoveries")
                     .WithValue(newArtistDescription.ToString()));
             }
 
@@ -1485,7 +1487,7 @@ public class PlayBuilder
 
             if (monthDescription.Length > 0)
             {
-                fields.Add(new EmbedFieldBuilder().WithName("Months")
+                fields.Add(new EmbedFieldProperties().WithName("Months")
                     .WithValue(monthDescription.ToString()));
             }
 
@@ -1669,7 +1671,7 @@ public class PlayBuilder
             .OrderByDescending(o => o.GapDuration.TotalDays)
             .ToList();
 
-        var viewType = new SelectMenuBuilder()
+        var viewType = new StringMenuProperties()
             .WithPlaceholder("Select gap view")
             .WithCustomId(InteractionConstants.GapView)
             .WithMinValues(1)
@@ -1677,7 +1679,7 @@ public class PlayBuilder
 
         foreach (var option in Enum.GetValues<GapEntityType>())
         {
-            var name = option.GetAttribute<ChoiceDisplayAttribute>().Name;
+            var name = option.GetAttribute<OptionAttribute>().Name;
             var value =
                 $"{Enum.GetName(option)}-{Enum.GetName(mode)}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}";
 

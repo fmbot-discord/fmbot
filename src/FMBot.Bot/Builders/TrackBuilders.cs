@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-
+using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Factories;
 using FMBot.Bot.Models;
@@ -21,6 +21,8 @@ using FMBot.Images.Generators;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Subscriptions.Services;
+using NetCord;
+using NetCord.Rest;
 using Serilog;
 using SkiaSharp;
 
@@ -284,8 +286,6 @@ public class TrackBuilders
             }
         }
 
-
-
         if (!string.IsNullOrWhiteSpace(trackSearch.Track.Description))
         {
             response.Embed.AddField("Summary", trackSearch.Track.Description);
@@ -297,7 +297,7 @@ public class TrackBuilders
                     "Preview",
                     $"{InteractionConstants.TrackPreview}-{dbTrack.Id}",
                     style: ButtonStyle.Secondary,
-                    emote: EmojiProperties.Custom("<:playpreview:1305607890941378672>"));
+                    emote: EmojiProperties.Custom(DiscordConstants.PlayPreview));
         }
 
         if (SupporterService.IsSupporter(context.ContextUser.UserType) &&
@@ -450,14 +450,12 @@ public class TrackBuilders
         {
             if (PublicProperties.PremiumServers.ContainsKey(context.DiscordGuild.Id))
             {
-                var allowedRoles = new SelectMenuBuilder()
+                var allowedRoles = new RoleMenuProperties($"{InteractionConstants.WhoKnowsTrackRolePicker}-{cachedTrack.Id}")
                     .WithPlaceholder("Apply role filter..")
-                    .WithCustomId($"{InteractionConstants.WhoKnowsTrackRolePicker}-{cachedTrack.Id}")
-                    .WithType(ComponentType.RoleSelect)
                     .WithMinValues(0)
                     .WithMaxValues(25);
 
-                response.Components = new ActionRowProperties().WithSelectMenu(allowedRoles);
+                response.RoleMenu = allowedRoles;
             }
             else
             {
@@ -853,7 +851,7 @@ public class TrackBuilders
                     "Preview",
                     $"{InteractionConstants.TrackPreview}-{spotifyTrack.Id}",
                     style: ButtonStyle.Secondary,
-                    emote: EmojiProperties.Custom("<:playpreview:1305607890941378672>"));
+                    emote: EmojiProperties.Custom(DiscordConstants.PlayPreview));
         }
 
         return response;

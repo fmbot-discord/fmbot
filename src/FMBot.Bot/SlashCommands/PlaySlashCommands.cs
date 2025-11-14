@@ -623,7 +623,7 @@ public class PlaySlashCommands : ApplicationCommandModule<ApplicationCommandCont
                 return;
             }
 
-            var name = viewType.GetAttribute<ChoiceDisplayAttribute>().Name;
+            var name = viewType.GetAttribute<OptionAttribute>().Name;
             var components =
                 new ActionRowProperties().WithButton($"{name} for {timeSettings.Description} loading...", customId: "1",
                     emote: EmojiProperties.Custom("<a:loading:821676038102056991>"), disabled: true, style: ButtonStyle.Secondary);

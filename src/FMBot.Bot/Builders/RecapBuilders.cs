@@ -9,10 +9,13 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain;
+using FMBot.Domain.Attributes;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
+using NetCord;
+using NetCord.Rest;
 
 namespace FMBot.Bot.Builders;
 
@@ -92,9 +95,8 @@ public class RecapBuilders
             TimespanString = timeSettings.Description
         };
 
-        var viewType = new SelectMenuBuilder()
+        var viewType = new StringMenuProperties(InteractionConstants.RecapPicker)
             .WithPlaceholder("Select recap page")
-            .WithCustomId(InteractionConstants.RecapPicker)
             .WithMinValues(1)
             .WithMaxValues(1);
 
@@ -112,7 +114,7 @@ public class RecapBuilders
                 continue;
             }
 
-            var name = option.GetAttribute<ChoiceDisplayAttribute>().Name;
+            var name = option.GetAttribute<OptionAttribute>().Name;
             var value =
                 $"{Enum.GetName(option)}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}-{timeSettings.Description}";
 
@@ -121,9 +123,6 @@ public class RecapBuilders
             viewType.AddOption(new SelectMenuOptionBuilder(name, value, null, isDefault: active));
         }
 
-        var componentBuilder = new ActionRowProperties()
-            .WithSelectMenu(viewType);
-        response.Components = componentBuilder;
         context.SelectMenu = viewType;
 
         switch (view)

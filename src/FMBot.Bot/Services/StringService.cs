@@ -225,13 +225,13 @@ public static class StringService
 
     public static void SinglePageToEmbedResponseWithButton(this ResponseModel response, PageBuilder page,
         string customOptionId = null, EmojiProperties optionEmote = null, string optionDescription = null,
-        SelectMenuBuilder selectMenu = null)
+        StringMenuProperties selectMenu = null)
     {
         response.Embed.WithTitle(page.Title);
         response.Embed.WithAuthor(page.Author);
         response.Embed.WithDescription(page.Description);
         response.Embed.WithUrl(page.Url);
-        response.Embed.WithThumbnail(page.ThumbnailUrl);
+        response.Embed.WithThumbnail(page.Thumbnail);
         response.Embed.WithFooter(page.Footer);
         response.Embed.Color = null;
 
@@ -289,7 +289,7 @@ public static class StringService
     }
 
     public static StaticPaginatorBuilder BuildStaticPaginatorWithSelectMenu(IList<PageBuilder> pages,
-        SelectMenuBuilder selectMenuBuilder, string customOptionId = null, IEmote optionEmote = null)
+        StringMenuProperties selectMenuBuilder, string customOptionId = null, EmojiProperties optionEmote = null)
     {
         var builder = new StaticPaginatorBuilder()
             .WithPages(pages)

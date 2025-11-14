@@ -45,6 +45,9 @@ public static class DiscordConstants
     public const ulong Info = 1183840696457777153;
     public const ulong Vinyl = 1043644602969763861;
 
+    public const ulong Server = 961685224041902140;
+    public const ulong User = 961687127249260634;
+
     public const ulong Facebook = 1183830516533825656;
     public const ulong Twitter = 1183831922917511298;
     public const ulong Instagram = 1183829878458548224;
@@ -59,4 +62,5 @@ public static class DiscordConstants
     public const ulong Imports = 1131511469096312914;
     public const ulong Discoveries = 1145740579284713512;
     public const ulong Shortcut = 1416430054061117610;
+    public const ulong PlayPreview = 1305607890941378672;
 }

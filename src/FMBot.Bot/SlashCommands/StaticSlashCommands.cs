@@ -1,8 +1,7 @@
 using System;
 using System.Text;
 using System.Threading.Tasks;
-
-
+using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
@@ -36,10 +35,15 @@ public class StaticSlashCommands : ApplicationCommandModule<ApplicationCommandCo
         this._supporterService = supporterService;
     }
 
-    [SlashCommand("outofsync", "What to do if your Last.fm isn't up to date with Spotify")]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
-        InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
+    [SlashCommand("outofsync", "What to do if your Last.fm isn't up to date with Spotify", Contexts =
+    [
+        InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,
+        InteractionContextType.Guild
+    ], IntegrationTypes =
+    [
+        ApplicationIntegrationType.GuildInstall,
+        ApplicationIntegrationType.UserInstall
+    ])]
     public async Task OutOfSyncAsync([Summary("private", "Show info privately?")] bool privateResponse = true)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -49,10 +53,15 @@ public class StaticSlashCommands : ApplicationCommandModule<ApplicationCommandCo
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [SlashCommand("getsupporter", "⭐ Get supporter or manage your current subscription")]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
-        InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
+    [SlashCommand("getsupporter", "⭐ Get supporter or manage your current subscription", Contexts =
+    [
+        InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,
+        InteractionContextType.Guild
+    ], IntegrationTypes =
+    [
+        ApplicationIntegrationType.GuildInstall,
+        ApplicationIntegrationType.UserInstall
+    ])]
     public async Task GetSupporterAsync()
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -123,7 +132,7 @@ public class StaticSlashCommands : ApplicationCommandModule<ApplicationCommandCo
         var link = await this._supporterService.GetSupporterCheckoutLink(this.Context.User.Id,
             contextUser.UserNameLastFM, type, pricing, existingStripeSupporter, source);
 
-        var components = new ActionRowProperties().WithButton($"Complete purchase",  url: link,
+        var components = new ActionRowProperties().WithButton($"Complete purchase", url: link,
             emote: EmojiProperties.Standard("⭐"));
 
         var embed = new EmbedProperties();
@@ -258,16 +267,21 @@ public class StaticSlashCommands : ApplicationCommandModule<ApplicationCommandCo
         embed.WithColor(DiscordConstants.InformationColorBlue);
 
         var components = new ActionRowProperties()
-            .WithButton("Manage subscription",  url: stripeManageLink, emote: EmojiProperties.Standard("⭐"));
+            .WithButton("Manage subscription", url: stripeManageLink, emote: EmojiProperties.Standard("⭐"));
 
         await RespondAsync(embed: embed.Build(), ephemeral: true, components: components.Build());
         this.Context.LogCommandUsed();
     }
 
-    [SlashCommand("giftsupporter", "🎁 Gift supporter to another user")]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
-        InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
+    [SlashCommand("giftsupporter", "🎁 Gift supporter to another user", Contexts =
+    [
+        InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,
+        InteractionContextType.Guild
+    ], IntegrationTypes =
+    [
+        ApplicationIntegrationType.GuildInstall,
+        ApplicationIntegrationType.UserInstall
+    ])]
     public async Task GiftSupporterAsync([Summary("User", "The user you want to gift supporter")] NetCord.User user)
     {
         await Context.Interaction.DeferAsync(ephemeral: true);
@@ -280,10 +294,15 @@ public class StaticSlashCommands : ApplicationCommandModule<ApplicationCommandCo
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [UserCommand("Gift supporter")]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
-        InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
+    [UserCommand("Gift supporter", Contexts =
+    [
+        InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,
+        InteractionContextType.Guild
+    ], IntegrationTypes =
+    [
+        ApplicationIntegrationType.GuildInstall,
+        ApplicationIntegrationType.UserInstall
+    ])]
     public async Task GiftSupporterUserCommand(NetCord.User targetUser)
     {
         await Context.Interaction.DeferAsync(ephemeral: true);
@@ -365,7 +384,7 @@ public class StaticSlashCommands : ApplicationCommandModule<ApplicationCommandCo
                 .WithColor(DiscordConstants.InformationColorBlue);
 
             var components = new ActionRowProperties()
-                .WithButton("Complete purchase",  url: checkoutLink, emote: EmojiProperties.Standard("🎁"));
+                .WithButton("Complete purchase", url: checkoutLink, emote: EmojiProperties.Standard("🎁"));
 
             await Context.Interaction.FollowupAsync(embed: embed.Build(), components: components.Build(),
                 ephemeral: true);
