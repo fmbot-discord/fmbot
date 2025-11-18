@@ -15,14 +15,14 @@ public static class Statistics
         .CreateCounter("lastfm_api_calls", "Amount of last.fm API calls",
             new CounterConfiguration
             {
-                LabelNames = new[] { "method" }
+                LabelNames = ["method"]
             });
 
     public static readonly Counter LastfmAuthorizedApiCalls = Metrics
         .CreateCounter("lastfm_authorized_api_calls", "Amount of authorized last.fm API calls",
             new CounterConfiguration
             {
-                LabelNames = new[] { "method" }
+                LabelNames = ["method"]
             });
 
     public static readonly Counter LastfmImageCalls = Metrics
@@ -35,7 +35,7 @@ public static class Statistics
         .CreateHistogram("lastfm_api_response_time", "Histogram of Last.fm API response time",
             new HistogramConfiguration
             {
-                LabelNames = new[] { "method" }
+                LabelNames = ["method"]
             });
 
 
@@ -43,24 +43,36 @@ public static class Statistics
         .CreateCounter("lastfm_scrobbling_nowplaying", "Amount of now playing updates sent to Last.fm",
             new CounterConfiguration
             {
-                LabelNames = new[] { "bot" }
+                LabelNames = ["bot"]
             });
 
     public static readonly Counter LastfmScrobbles = Metrics
         .CreateCounter("lastfm_scrobbling_scrobbled", "Amount of scrobbles sent to Last.fm",
             new CounterConfiguration
             {
-                LabelNames = new[] { "bot" }
+                LabelNames = ["bot"]
             });
 
     public static readonly Counter LastfmErrors = Metrics
-        .CreateCounter("lastfm_errors", "Amount of errors Last.fm is returning");
+        .CreateCounter("lastfm_errors", "Amount of errors Last.fm is returning",
+            new CounterConfiguration
+            {
+                LabelNames = ["method"]
+            });
 
     public static readonly Counter LastfmFailureErrors = Metrics
-        .CreateCounter("lastfm_errors_failure", "Amount of failure errors Last.fm is returning");
+        .CreateCounter("lastfm_errors_failure", "Amount of failure errors Last.fm is returning",
+            new CounterConfiguration
+            {
+                LabelNames = ["method"]
+            });
 
     public static readonly Counter LastfmBadAuthErrors = Metrics
-        .CreateCounter("lastfm_errors_badauth", "Amount of badauth errors Last.fm is returning");
+        .CreateCounter("lastfm_errors_badauth", "Amount of badauth errors Last.fm is returning",
+            new CounterConfiguration
+            {
+                LabelNames = ["method"]
+            });
 
 
     public static readonly Counter SpotifyApiCalls = Metrics
@@ -89,14 +101,14 @@ public static class Statistics
         .CreateCounter("bot_commands_executed", "Amount of commands executed",
             new CounterConfiguration
             {
-                LabelNames = new[] { "name" }
+                LabelNames = ["name"]
             });
 
     public static readonly Counter SlashCommandsExecuted = Metrics
         .CreateCounter("bot_slash_commands_executed", "Amount of slash commands executed",
             new CounterConfiguration
             {
-                LabelNames = new[] { "name", "integration_type" }
+                LabelNames = ["name", "integration_type"]
             });
 
 
@@ -130,7 +142,7 @@ public static class Statistics
         .CreateCounter("bot_discord_events", "Amount of events through the Discord gateway",
             new CounterConfiguration
             {
-                LabelNames = new[] { "name" }
+                LabelNames = ["name"]
             });
 
 
@@ -150,10 +162,12 @@ public static class Statistics
         .CreateGauge("bot_active_supporter_count", "Total count of all active supporters in the database");
 
     public static readonly Gauge ActiveDiscordSupporterCount = Metrics
-        .CreateGauge("bot_active_discord_supporter_count", "Total count of all active Discord supporters in the database");
+        .CreateGauge("bot_active_discord_supporter_count",
+            "Total count of all active Discord supporters in the database");
 
     public static readonly Gauge ActiveStripeSupporterCount = Metrics
-        .CreateGauge("bot_active_stripe_supporter_count", "Total count of all active Stripe supporters in the database");
+        .CreateGauge("bot_active_stripe_supporter_count",
+            "Total count of all active Stripe supporters in the database");
 
 
     public static readonly Gauge OneDayActiveUserCount = Metrics
@@ -169,13 +183,13 @@ public static class Statistics
     public static readonly Counter IndexedUsers = Metrics
         .CreateCounter("bot_indexed_users", "Amount of indexed users", new CounterConfiguration
         {
-            LabelNames = new[] { "reason" }
+            LabelNames = ["reason"]
         });
 
     public static readonly Counter UpdatedUsers = Metrics
         .CreateCounter("bot_updated_users", "Amount of updated users", new CounterConfiguration
         {
-            LabelNames = new[] { "reason" }
+            LabelNames = ["reason"]
         });
 
     public static readonly Counter SmallIndexedUsers = Metrics
