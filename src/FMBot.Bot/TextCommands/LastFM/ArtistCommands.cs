@@ -283,11 +283,6 @@ public class ArtistCommands : BaseCommandModule
             var topListSettings = SettingService.SetTopListSettings(userSettings.NewSearchValue);
             userSettings.RegisteredLastFm ??= await this._indexService.AddUserRegisteredLfmDate(userSettings.UserId);
 
-            if (topListSettings.Discogs)
-            {
-                userSettings.RegisteredLastFm = DateTime.MinValue;
-            }
-
             var timeSettings = SettingService.GetTimePeriod(topListSettings.NewSearchValue,
                 topListSettings.Discogs ? TimePeriod.AllTime : TimePeriod.Weekly,
                 registeredLastFm: userSettings.RegisteredLastFm, timeZone: userSettings.TimeZone);

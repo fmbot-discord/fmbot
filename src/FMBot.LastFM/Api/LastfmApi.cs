@@ -132,16 +132,16 @@ public class LastfmApi : ILastfmApi
                 response.Success = false;
                 response.Message = errorResponse.Message;
                 response.Error = errorResponse.Error;
-                Statistics.LastfmErrors.Inc();
+                Statistics.LastfmErrors.WithLabels(call).Inc();
 
                 if (response.Error == ResponseStatus.Failure)
                 {
-                    Statistics.LastfmFailureErrors.Inc();
+                    Statistics.LastfmFailureErrors.WithLabels(call).Inc();
                 }
 
                 if (response.Error == ResponseStatus.BadAuth)
                 {
-                    Statistics.LastfmBadAuthErrors.Inc();
+                    Statistics.LastfmBadAuthErrors.WithLabels(call).Inc();
                 }
             }
         }
@@ -162,7 +162,7 @@ public class LastfmApi : ILastfmApi
 
             Log.Error("Object error - Call: {call} - Parameters: {errorParameters} - RequestBody {requestBody}",
                 call, errorParameters, requestBody);
-            Statistics.LastfmErrors.Inc();
+            Statistics.LastfmErrors.WithLabels(call).Inc();
         }
 
         timer.Dispose();

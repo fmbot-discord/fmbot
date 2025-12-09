@@ -78,7 +78,7 @@ public class PlaySlashCommands : ApplicationCommandModule<ApplicationCommandCont
 
             if (supporterRequiredResponse != null)
             {
-                await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse);
+                await this.Context.SendFollowUpResponse(this.Interactivity, supporterRequiredResponse);
                 this.Context.LogCommandUsed(supporterRequiredResponse.CommandResponse);
                 return;
             }

@@ -215,7 +215,7 @@ public class DiscogsBuilder
 
         var justUpdated = false;
         if (user.UserDiscogs.ReleasesLastUpdated == null ||
-            user.UserDiscogs.ReleasesLastUpdated <= DateTime.UtcNow.AddHours(-1))
+            user.UserDiscogs.ReleasesLastUpdated <= DateTime.UtcNow.AddMinutes(-2))
         {
             user.UserDiscogs = await this._discogsService.StoreUserReleases(user);
             user.UserDiscogs = await this._discogsService.UpdateCollectionValue(user.UserId);
@@ -295,14 +295,14 @@ public class DiscogsBuilder
 
             if (justUpdated)
             {
-                footer.AppendLine("Last update just now - Updates max once per hour");
+                // footer.AppendLine("Last update just now - Updates max once per minute");
             }
             else
             {
                 var diff = DateTime.UtcNow - user.UserDiscogs.ReleasesLastUpdated;
 
-                footer.AppendLine($"Last update {(int)diff.Value.TotalMinutes}m ago - " +
-                                  $"Updates max once per hour");
+                footer.AppendLine($"Last update {(int)diff.Value.TotalSeconds}s ago - " +
+                                  $"Updates max once every two minutes");
             }
 
             if (releases.Count >= 95 &&
@@ -366,7 +366,7 @@ public class DiscogsBuilder
         }
 
         if (user.UserDiscogs.ReleasesLastUpdated == null ||
-            user.UserDiscogs.ReleasesLastUpdated <= DateTime.UtcNow.AddHours(-1))
+            user.UserDiscogs.ReleasesLastUpdated <= DateTime.UtcNow.AddMinutes(-1))
         {
             user.UserDiscogs = await this._discogsService.StoreUserReleases(user);
             user.UserDiscogs = await this._discogsService.UpdateCollectionValue(user.UserId);

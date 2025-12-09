@@ -47,6 +47,35 @@ public class LastFmRepository : ILastfmRepository
     }
 
     // Recent scrobbles
+    private async Task<Response<T>> CallApiWithRetryAsync<T>(
+        Dictionary<string, string> queryParams,
+        string call,
+        bool authorizedCall,
+        int maxRetries,
+        string context)
+    {
+        int[] failureDelay = [500, 2500, 5000, 10000, 25000];
+        Response<T> response = null;
+
+        for (var attempt = 0; attempt <= maxRetries; attempt++)
+        {
+            if (attempt > 0)
+            {
+                Log.Warning("Retrying {call} for {context}, attempt {attempt}", call, context, attempt + 1);
+                await Task.Delay(failureDelay[Math.Min(attempt - 1, failureDelay.Length - 1)]);
+            }
+
+            response = await this._lastFmApi.CallApiAsync<T>(queryParams, call, authorizedCall);
+
+            if (response.Success)
+            {
+                break;
+            }
+        }
+
+        return response;
+    }
+
     public async Task<Response<RecentTrackList>> GetRecentTracksAsync(string lastFmUserName, int count = 2,
         bool useCache = false, string sessionKey = null, long? fromUnixTimestamp = null, int amountOfPages = 1,
         int errorRetries = 2)
@@ -87,54 +116,34 @@ public class LastFmRepository : ILastfmRepository
 
         try
         {
-            var recentTracksCall = await this._lastFmApi.CallApiAsync<RecentTracksListLfmResponseModel>(queryParams,
-                Call.RecentTracks, authorizedCall);
+            var recentTracksCall = await CallApiWithRetryAsync<RecentTracksListLfmResponseModel>(
+                queryParams, Call.RecentTracks, authorizedCall, errorRetries, lastFmUserName);
 
             if (amountOfPages > 1 && recentTracksCall.Success &&
                 recentTracksCall.Content.RecentTracks.Track.Count >= (count - 2) && count >= 400)
             {
-                int[] failureDelay = [500, 2500, 5000, 10000, 25000];
-
                 for (var i = 1; i < amountOfPages; i++)
                 {
                     queryParams.Remove("page");
                     queryParams.Add("page", (i + 1).ToString());
 
-                    Response<RecentTracksListLfmResponseModel> pageResponse = null;
-                    var pageFetchedSuccessfully = false;
-                    var attempts = 0;
+                    var pageResponse = await CallApiWithRetryAsync<RecentTracksListLfmResponseModel>(
+                        queryParams, Call.RecentTracks, authorizedCall, errorRetries, $"{lastFmUserName} page {i + 1}");
 
-                    while (attempts < errorRetries && !pageFetchedSuccessfully)
-                    {
-                        if (attempts > 0)
-                        {
-                            await Task.Delay(failureDelay[attempts - 1]);
-                        }
-
-                        pageResponse = await this._lastFmApi.CallApiAsync<RecentTracksListLfmResponseModel>(queryParams,
-                            Call.RecentTracks, authorizedCall);
-
-                        attempts++;
-
-                        if (pageResponse.Success)
-                        {
-                            pageFetchedSuccessfully = true;
-                        }
-                    }
-
-                    if (pageFetchedSuccessfully)
+                    if (pageResponse.Success)
                     {
                         recentTracksCall.Content.RecentTracks.Track.AddRange(
                             pageResponse.Content.RecentTracks.Track);
 
                         if (pageResponse.Content.RecentTracks.Track.Count < (count - 2))
                         {
-                            break; // Last page of results, exit the loop.
+                            break;
                         }
                     }
                     else
                     {
-                        Log.Warning("Failed to fetch page {page} for {user} after {attempts} attempts. Stopping pagination.", (i + 1), lastFmUserName, attempts);
+                        Log.Warning("Failed to fetch page {page} for {user} after retries. Stopping pagination.",
+                            i + 1, lastFmUserName);
                         break;
                     }
                 }
@@ -541,7 +550,7 @@ public class LastFmRepository : ILastfmRepository
     {
         var queryParams = new Dictionary<string, string>
         {
-            { "artist",  artistName },
+            { "artist", artistName },
             { "username", username },
             { "autocorrect", redirectsEnabled ? "1" : "0" }
         };
