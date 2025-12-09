@@ -78,7 +78,7 @@ public class LastFmRepository : ILastfmRepository
 
     public async Task<Response<RecentTrackList>> GetRecentTracksAsync(string lastFmUserName, int count = 2,
         bool useCache = false, string sessionKey = null, long? fromUnixTimestamp = null, int amountOfPages = 1,
-        int errorRetries = 2)
+        int errorRetries = 1)
     {
         var cacheKey = $"{lastFmUserName}-lastfm-recent-tracks";
         var queryParams = new Dictionary<string, string>
