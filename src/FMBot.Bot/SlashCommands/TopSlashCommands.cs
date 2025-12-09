@@ -27,6 +27,7 @@ public class TopSlashCommands : InteractionModuleBase
     private readonly GenreBuilders _genreBuilders;
     private readonly CountryBuilders _countryBuilders;
     private readonly DiscogsBuilder _discogsBuilders;
+    private readonly IndexService _indexService;
 
     private InteractiveService Interactivity { get; }
 
@@ -38,7 +39,8 @@ public class TopSlashCommands : InteractionModuleBase
         TrackBuilders trackBuilders,
         GenreBuilders genreBuilders,
         CountryBuilders countryBuilders,
-        DiscogsBuilder discogsBuilders)
+        DiscogsBuilder discogsBuilders,
+        IndexService indexService)
     {
         this._userService = userService;
         this._artistBuilders = artistBuilders;
@@ -49,6 +51,7 @@ public class TopSlashCommands : InteractionModuleBase
         this._genreBuilders = genreBuilders;
         this._countryBuilders = countryBuilders;
         this._discogsBuilders = discogsBuilders;
+        this._indexService = indexService;
     }
 
     [SlashCommand("artists", "Your top artists")]
@@ -66,9 +69,11 @@ public class TopSlashCommands : InteractionModuleBase
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+        userSettings.RegisteredLastFm ??= await this._indexService.AddUserRegisteredLfmDate(userSettings.UserId);
+
         mode ??= contextUser.Mode ?? ResponseMode.Embed;
 
-        var timeSettings = SettingService.GetTimePeriod(timePeriod, discogs ? TimePeriod.AllTime : TimePeriod.Weekly, discogs ? DateTime.MinValue : null, timeZone: userSettings.TimeZone);
+        var timeSettings = SettingService.GetTimePeriod(timePeriod, discogs ? TimePeriod.AllTime : TimePeriod.Weekly, userSettings.RegisteredLastFm, timeZone: userSettings.TimeZone);
         var topListSettings = new TopListSettings(embedSize ?? EmbedSize.Default, billboard, discogs);
 
         var response = topListSettings.Discogs

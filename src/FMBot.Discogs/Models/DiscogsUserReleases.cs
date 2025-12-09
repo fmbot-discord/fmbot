@@ -107,7 +107,7 @@ public class Label
     public string EntityTypeName { get; set; }
 
     [JsonPropertyName("id")]
-    public int Id { get; set; }
+    public int? Id { get; set; }
 
     [JsonPropertyName("resource_url")]
     public string ResourceUrl { get; set; }
