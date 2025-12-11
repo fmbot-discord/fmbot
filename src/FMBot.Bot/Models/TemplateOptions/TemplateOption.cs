@@ -797,19 +797,17 @@ public static class TemplateOptions
                     return null;
                 }
 
-                var albumCollection = await Task.Run(() => discogsUser.DiscogsReleases.Where(w =>
-                        (w.Release.Title.StartsWith(context.CurrentTrack.AlbumName,
-                             StringComparison.OrdinalIgnoreCase) ||
-                         context.CurrentTrack.AlbumName.StartsWith(w.Release.Title,
-                             StringComparison.OrdinalIgnoreCase))
-                        &&
-                        (w.Release.Artist.StartsWith(context.CurrentTrack.ArtistName,
-                             StringComparison.OrdinalIgnoreCase) ||
-                         context.CurrentTrack.ArtistName.StartsWith(w.Release.Artist,
-                             StringComparison.OrdinalIgnoreCase)))
-                    .ToList());
+                var albumName = context.CurrentTrack.AlbumName;
+                var artistName = context.CurrentTrack.ArtistName;
 
-                var discogsAlbum = await Task.Run(() => albumCollection.MaxBy(o => o.DateAdded));
+                var discogsAlbum = discogsUser.DiscogsReleases
+                    .Where(w =>
+                        (w.Release.Title.StartsWith(albumName, StringComparison.OrdinalIgnoreCase) ||
+                         albumName.StartsWith(w.Release.Title.Split(" (")[0], StringComparison.OrdinalIgnoreCase)) &&
+                        (w.Release.Artist.StartsWith(artistName, StringComparison.OrdinalIgnoreCase) ||
+                         artistName.StartsWith(w.Release.Artist.Split(" (")[0], StringComparison.OrdinalIgnoreCase)))
+                    .MaxBy(o => o.DateAdded);
+
                 return discogsAlbum != null
                     ? new VariableResult(StringService.UserDiscogsReleaseToSimpleString(discogsAlbum))
                     : null;
