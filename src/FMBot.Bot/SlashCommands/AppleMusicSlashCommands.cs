@@ -10,6 +10,8 @@ using FMBot.Domain;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using NetCord.Services.ApplicationCommands;
+using NetCord;
+using Fergun.Interactive;
 
 namespace FMBot.Bot.SlashCommands;
 
@@ -29,14 +31,11 @@ public class AppleMusicSlashCommands : ApplicationCommandModule<ApplicationComma
         this.Interactivity = interactivity;
     }
 
-    [SlashCommand("applemusic", "Search through Apple Music.")]
+    [SlashCommand("applemusic", "Search through Apple Music.", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,     InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
-        InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task AppleMusicAsync(
-        [Summary("Search", "Search value")] string searchValue = null,
-        [Summary("Private", "Only show response to you")]
+        [SlashCommandParameter(Name = "Search", Description = "Search value")] string searchValue = null,
+        [SlashCommandParameter(Name = "Private", Description = "Only show response to you")]
         bool privateResponse = false)
     {
         await DeferAsync(privateResponse);

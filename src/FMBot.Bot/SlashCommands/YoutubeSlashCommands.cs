@@ -9,6 +9,8 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain.Interfaces;
 using NetCord.Services.ApplicationCommands;
+using NetCord;
+using Fergun.Interactive;
 
 namespace FMBot.Bot.SlashCommands;
 
@@ -27,14 +29,11 @@ public class YoutubeSlashCommands: ApplicationCommandModule<ApplicationCommandCo
         this._youtubeBuilders = youtubeBuilders;
     }
 
-    [SlashCommand("youtube", "Search through YouTube")]
+    [SlashCommand("youtube", "Search through YouTube", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,     InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
-        InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task YoutubeAsync(
-        [Summary("Search", "Search value")] string searchValue = null,
-        [Summary("Private", "Only show response to you")] bool privateResponse = false)
+        [SlashCommandParameter(Name = "Search", Description = "Search value")] string searchValue = null,
+        [SlashCommandParameter(Name = "Private", Description = "Only show response to you")] bool privateResponse = false)
     {
         try
         {

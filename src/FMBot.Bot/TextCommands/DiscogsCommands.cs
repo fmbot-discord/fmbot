@@ -12,6 +12,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using NetCord.Services.Commands;
 using static System.Text.RegularExpressions.Regex;
+using Fergun.Interactive;
 
 namespace FMBot.Bot.TextCommands;
 

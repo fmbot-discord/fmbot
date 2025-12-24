@@ -15,6 +15,7 @@ using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
 using NetCord.Services.Commands;
 using SpotifyAPI.Web;
+using Fergun.Interactive;
 
 namespace FMBot.Bot.TextCommands;
 
@@ -46,9 +47,8 @@ public class SpotifyCommands : BaseCommandModule
         this._dataSourceFactory = dataSourceFactory;
     }
 
-    [Command("spotify")]
+    [Command("spotify", "sp", "s", "spotifyfind", "spotifysearch", "alexa play", "hey siri", "hey google", "ok google")]
     [Summary("Shares a link to a Spotify track based on what a user is listening to or searching for")]
-    [Alias("sp", "s", "spotifyfind", "spotifysearch", "alexa play", "hey siri", "hey google", "ok google")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.ThirdParty)]
     public async Task SpotifyAsync([CommandParameter(Remainder = true)] string searchValue = null)
@@ -152,9 +152,8 @@ public class SpotifyCommands : BaseCommandModule
         }
     }
 
-    [Command("spotifyalbum")]
+    [Command("spotifyalbum", "spab")]
     [Summary("Shares a link to a Spotify album based on what a user is listening to or searching for")]
-    [Alias("spab")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.ThirdParty)]
     public async Task SpotifyAlbumAsync([CommandParameter(Remainder = true)] string searchValue = null)
@@ -240,9 +239,8 @@ public class SpotifyCommands : BaseCommandModule
         }
     }
 
-    [Command("spotifyartist")]
+    [Command("spotifyartist", "spa")]
     [Summary("Shares a link to a Spotify artist based on what a user is listening to or searching for")]
-    [Alias("spa")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.ThirdParty)]
     public async Task SpotifyArtistAsync([CommandParameter(Remainder = true)] string searchValue = null)

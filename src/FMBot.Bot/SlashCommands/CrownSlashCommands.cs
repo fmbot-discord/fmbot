@@ -13,6 +13,8 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Domain.Models;
 using NetCord.Services.ApplicationCommands;
 using NetCord.Services.ComponentInteractions;
+using NetCord;
+using NetCord.Rest;
 
 namespace FMBot.Bot.SlashCommands;
 
@@ -40,8 +42,7 @@ public class CrownSlashCommands : ApplicationCommandModule<ApplicationCommandCon
     [SlashCommand("crown", "History for a specific crown")]
     [UsernameSetRequired]
     public async Task CrownAsync(
-        [Summary("Artist", "The artist your want to search for (defaults to currently playing)")]
-        [Autocomplete(typeof(ArtistAutoComplete))] string name = null)
+        [SlashCommandParameter(Name = "Artist", Description = "The artist your want to search for (defaults to currently playing)", AutocompleteProviderType = typeof(ArtistAutoComplete))] string name = null)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
 
@@ -96,8 +97,8 @@ public class CrownSlashCommands : ApplicationCommandModule<ApplicationCommandCon
     [SlashCommand("crowns", "View a list of crowns for you or someone else")]
     [UsernameSetRequired]
     public async Task CrownOverViewAsync(
-        [Summary("View", "View of crowns you want to see")] CrownViewType viewType = CrownViewType.Playcount,
-        [Summary("User", "The user to show (defaults to self)")] string user = null)
+        [SlashCommandParameter(Name = "View", Description = "View of crowns you want to see")] CrownViewType viewType = CrownViewType.Playcount,
+        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")] string user = null)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
 

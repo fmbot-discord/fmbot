@@ -10,6 +10,8 @@ using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using NetCord.Services.ApplicationCommands;
 using SpotifyAPI.Web;
+using NetCord;
+using Fergun.Interactive;
 
 namespace FMBot.Bot.SlashCommands;
 
@@ -37,14 +39,12 @@ public class SpotifySlashCommands : ApplicationCommandModule<ApplicationCommandC
         Playlist = 4
     }
 
-    [SlashCommand("spotify", "Search through Spotify")]
+    [SlashCommand("spotify", "Search through Spotify", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task SpotifyAsync(
-        [Summary("Search", "Search value")] string searchValue = null,
-        [Summary("Type", "What you want to search for on Spotify (defaults to track)")] SpotifySearch type = SpotifySearch.Track,
-        [Summary("Private", "Only show response to you")] bool privateResponse = false)
+        [SlashCommandParameter(Name = "Search", Description = "Search value")] string searchValue = null,
+        [SlashCommandParameter(Name = "Type", Description = "What you want to search for on Spotify (defaults to track)")] SpotifySearch type = SpotifySearch.Track,
+        [SlashCommandParameter(Name = "Private", Description = "Only show response to you")] bool privateResponse = false)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         await RespondAsync(InteractionCallback.DeferredMessage());

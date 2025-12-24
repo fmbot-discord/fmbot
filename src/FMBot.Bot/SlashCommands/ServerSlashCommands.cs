@@ -9,6 +9,8 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain.Models;
 using NetCord.Services.ApplicationCommands;
+using NetCord;
+using Fergun.Interactive;
 
 namespace FMBot.Bot.SlashCommands;
 
@@ -46,8 +48,8 @@ public class ServerSlashCommands : ApplicationCommandModule<ApplicationCommandCo
     [UsernameSetRequired]
     [RequiresIndex]
     public async Task GuildArtistsAsync(
-        [Summary("Time-period", "Time period")] PlayTimePeriod timePeriod = PlayTimePeriod.Weekly,
-        [Summary("Order", "Order for chart (defaults to listeners)")] OrderType orderType = OrderType.Listeners)
+        [SlashCommandParameter(Name = "Time-period", Description = "Time period")] PlayTimePeriod timePeriod = PlayTimePeriod.Weekly,
+        [SlashCommandParameter(Name = "Order", Description = "Order for chart (defaults to listeners)")] OrderType orderType = OrderType.Listeners)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
 
@@ -79,10 +81,9 @@ public class ServerSlashCommands : ApplicationCommandModule<ApplicationCommandCo
     [UsernameSetRequired]
     [RequiresIndex]
     public async Task GuildAlbumsAsync(
-        [Summary("Time-period", "Time period")] PlayTimePeriod timePeriod = PlayTimePeriod.Weekly,
-        [Summary("Order", "Order for chart (defaults to listeners)")] OrderType orderType = OrderType.Listeners,
-        [Summary("Artist", "The artist you want to filter on")]
-        [Autocomplete(typeof(ArtistAutoComplete))]string artist = null)
+        [SlashCommandParameter(Name = "Time-period", Description = "Time period")] PlayTimePeriod timePeriod = PlayTimePeriod.Weekly,
+        [SlashCommandParameter(Name = "Order", Description = "Order for chart (defaults to listeners)")] OrderType orderType = OrderType.Listeners,
+        [SlashCommandParameter(Name = "Artist", Description = "The artist you want to filter on", AutocompleteProviderType = typeof(ArtistAutoComplete))]string artist = null)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
 
@@ -116,10 +117,9 @@ public class ServerSlashCommands : ApplicationCommandModule<ApplicationCommandCo
     [UsernameSetRequired]
     [RequiresIndex]
     public async Task GuildTracksAsync(
-        [Summary("Time-period", "Time period")] PlayTimePeriod timePeriod = PlayTimePeriod.Weekly,
-        [Summary("Order", "Order for chart (defaults to listeners)")] OrderType orderType = OrderType.Listeners,
-        [Summary("Artist", "The artist you want to filter on")]
-        [Autocomplete(typeof(ArtistAutoComplete))]string artist = null)
+        [SlashCommandParameter(Name = "Time-period", Description = "Time period")] PlayTimePeriod timePeriod = PlayTimePeriod.Weekly,
+        [SlashCommandParameter(Name = "Order", Description = "Order for chart (defaults to listeners)")] OrderType orderType = OrderType.Listeners,
+        [SlashCommandParameter(Name = "Artist", Description = "The artist you want to filter on", AutocompleteProviderType = typeof(ArtistAutoComplete))]string artist = null)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
 
@@ -153,8 +153,8 @@ public class ServerSlashCommands : ApplicationCommandModule<ApplicationCommandCo
     [UsernameSetRequired]
     [RequiresIndex]
     public async Task GuildGenresAsync(
-        [Summary("Time-period", "Time period")] PlayTimePeriod timePeriod = PlayTimePeriod.Weekly,
-        [Summary("Order", "Order for chart (defaults to listeners)")] OrderType orderType = OrderType.Listeners)
+        [SlashCommandParameter(Name = "Time-period", Description = "Time period")] PlayTimePeriod timePeriod = PlayTimePeriod.Weekly,
+        [SlashCommandParameter(Name = "Order", Description = "Order for chart (defaults to listeners)")] OrderType orderType = OrderType.Listeners)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
 

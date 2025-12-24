@@ -7,7 +7,6 @@ using FMBot.Bot.Services.Guild;
 using Serilog;
 using System.Text;
 
-using Discord.WebSocket;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
@@ -15,6 +14,8 @@ using FMBot.Bot.Services;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 using NetCord.Services.ApplicationCommands;
+using NetCord;
+using Fergun.Interactive;
 
 namespace FMBot.Bot.SlashCommands;
 
@@ -90,13 +91,10 @@ public class IndexSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         }
     }
 
-    [SlashCommand("update", "Update .fmbot's cache manually with your latest Last.fm data")]
+    [SlashCommand("update", "Update .fmbot's cache manually with your latest Last.fm data", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,     InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
-        InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task UpdateAsync(
-        [Summary("type", "Select what you want to update")]
+        [SlashCommandParameter(Name = "type", Description = "Select what you want to update")]
         UpdateType updateTypeInput = UpdateType.RecentPlays)
     {
         var contextUser = await this._userService.GetUserWithFriendsAsync(this.Context.User);

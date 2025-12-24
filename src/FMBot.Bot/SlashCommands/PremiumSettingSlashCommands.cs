@@ -9,10 +9,10 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain.Models;
-using Discord.WebSocket;
 using FMBot.Bot.Models.Modals;
 using NetCord.Services.ApplicationCommands;
 using NetCord.Services.ComponentInteractions;
+using NetCord;
 
 namespace FMBot.Bot.SlashCommands;
 

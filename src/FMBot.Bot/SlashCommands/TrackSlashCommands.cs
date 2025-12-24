@@ -13,6 +13,8 @@ using FMBot.Bot.Services;
 using FMBot.Domain.Models;
 using NetCord.Services.ApplicationCommands;
 using NetCord.Services.ComponentInteractions;
+using NetCord;
+using Fergun.Interactive;
 
 namespace FMBot.Bot.SlashCommands;
 
@@ -45,14 +47,10 @@ public class TrackSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         this._countryService = countryService;
     }
 
-    [SlashCommand("track", "Shows track info for the track you're currently listening to or searching for")]
+    [SlashCommand("track", "Shows track info for the track you're currently listening to or searching for", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,     InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
-        InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task TrackAsync(
-        [Summary("Track", "The track your want to search for (defaults to currently playing)")]
-        [Autocomplete(typeof(TrackAutoComplete))]
+        [SlashCommandParameter(Name = "Track", Description = "The track your want to search for (defaults to currently playing)", AutocompleteProviderType = typeof(TrackAutoComplete))]
         string name = null)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
@@ -75,12 +73,11 @@ public class TrackSlashCommands : ApplicationCommandModule<ApplicationCommandCon
     [SlashCommand("wktrack", "Shows what other users listen to a track in your server")]
     [UsernameSetRequired]
     public async Task WhoKnowsTrackAsync(
-        [Summary("Track", "The track your want to search for (defaults to currently playing)")]
-        [Autocomplete(typeof(TrackAutoComplete))]
+        [SlashCommandParameter(Name = "Track", Description = "The track your want to search for (defaults to currently playing)", AutocompleteProviderType = typeof(TrackAutoComplete))]
         string name = null,
-        [Summary("Mode", "The type of response you want - change default with /responsemode")]
+        [SlashCommandParameter(Name = "Mode", Description = "The type of response you want - change default with /responsemode")]
         ResponseMode? mode = null,
-        [Summary("Role-picker", "Display a rolepicker to filter with roles")]
+        [SlashCommandParameter(Name = "Role-picker", Description = "Display a rolepicker to filter with roles")]
         bool displayRoleFilter = false)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
@@ -137,18 +134,14 @@ public class TrackSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         }
     }
 
-    [SlashCommand("fwktrack", "Who of your friends know a track")]
+    [SlashCommand("fwktrack", "Who of your friends know a track", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,     InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
-        InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task FriendsWhoKnowAlbumAsync(
-        [Summary("Track", "The track your want to search for (defaults to currently playing)")]
-        [Autocomplete(typeof(TrackAutoComplete))]
+        [SlashCommandParameter(Name = "Track", Description = "The track your want to search for (defaults to currently playing)", AutocompleteProviderType = typeof(TrackAutoComplete))]
         string name = null,
-        [Summary("Mode", "The type of response you want - change default with /responsemode")]
+        [SlashCommandParameter(Name = "Mode", Description = "The type of response you want - change default with /responsemode")]
         ResponseMode? mode = null,
-        [Summary("Private", "Only show response to you")]
+        [SlashCommandParameter(Name = "Private", Description = "Only show response to you")]
         bool privateResponse = false)
     {
         await DeferAsync(privateResponse);
@@ -172,18 +165,14 @@ public class TrackSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         }
     }
 
-    [SlashCommand("gwktrack", "Shows what other users listen to a track globally in .fmbot")]
+    [SlashCommand("gwktrack", "Shows what other users listen to a track globally in .fmbot", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,     InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
-        InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task GlobalWhoKnowsTrackAsync(
-        [Summary("Track", "The track your want to search for (defaults to currently playing)")]
-        [Autocomplete(typeof(TrackAutoComplete))]
+        [SlashCommandParameter(Name = "Track", Description = "The track your want to search for (defaults to currently playing)", AutocompleteProviderType = typeof(TrackAutoComplete))]
         string name = null,
-        [Summary("Mode", "The type of response you want - change default with /responsemode")]
+        [SlashCommandParameter(Name = "Mode", Description = "The type of response you want - change default with /responsemode")]
         ResponseMode? mode = null,
-        [Summary("Hide-private", "Hide or show private users")]
+        [SlashCommandParameter(Name = "Hide-private", Description = "Hide or show private users")]
         bool hidePrivate = false)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
@@ -214,16 +203,12 @@ public class TrackSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         }
     }
 
-    [SlashCommand("trackplays", "Shows playcount for current track or the one you're searching for")]
+    [SlashCommand("trackplays", "Shows playcount for current track or the one you're searching for", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,     InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
-        InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task TrackPlaysAsync(
-        [Summary("Track", "The track your want to search for (defaults to currently playing)")]
-        [Autocomplete(typeof(TrackAutoComplete))]
+        [SlashCommandParameter(Name = "Track", Description = "The track your want to search for (defaults to currently playing)", AutocompleteProviderType = typeof(TrackAutoComplete))]
         string name = null,
-        [Summary("User", "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")]
         string user = null)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
@@ -246,14 +231,10 @@ public class TrackSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         }
     }
 
-    [SlashCommand("trackdetails", "Shows metadata details for current track or the one you're searching for")]
+    [SlashCommand("trackdetails", "Shows metadata details for current track or the one you're searching for", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,     InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
-        InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task TrackDetailsAsync(
-        [Summary("Track", "The track your want to search for (defaults to currently playing)")]
-        [Autocomplete(typeof(TrackAutoComplete))]
+        [SlashCommandParameter(Name = "Track", Description = "The track your want to search for (defaults to currently playing)", AutocompleteProviderType = typeof(TrackAutoComplete))]
         string name = null)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
@@ -341,16 +322,12 @@ public class TrackSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         }
     }
 
-    [SlashCommand("love", "Loves track you're currently listening to or searching for on Last.fm")]
+    [SlashCommand("love", "Loves track you're currently listening to or searching for on Last.fm", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,     InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UserSessionRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
-        InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task LoveTrackAsync(
-        [Summary("Track", "The track your want to love (defaults to currently playing)")]
-        [Autocomplete(typeof(TrackAutoComplete))]
+        [SlashCommandParameter(Name = "Track", Description = "The track your want to love (defaults to currently playing)", AutocompleteProviderType = typeof(TrackAutoComplete))]
         string name = null,
-        [Summary("Private", "Only show response to you")]
+        [SlashCommandParameter(Name = "Private", Description = "Only show response to you")]
         bool privateResponse = false)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -368,16 +345,12 @@ public class TrackSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         }
     }
 
-    [SlashCommand("unlove", "Removes track you're currently listening to or searching from your loved tracks")]
+    [SlashCommand("unlove", "Removes track you're currently listening to or searching from your loved tracks", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,     InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UserSessionRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
-        InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task UnloveTrackAsync(
-        [Summary("Track", "The track your want to remove (defaults to currently playing)")]
-        [Autocomplete(typeof(TrackAutoComplete))]
+        [SlashCommandParameter(Name = "Track", Description = "The track your want to remove (defaults to currently playing)", AutocompleteProviderType = typeof(TrackAutoComplete))]
         string name = null,
-        [Summary("Private", "Only show response to you")]
+        [SlashCommandParameter(Name = "Private", Description = "Only show response to you")]
         bool privateResponse = false)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -396,17 +369,14 @@ public class TrackSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         }
     }
 
-    [SlashCommand("receipt", "Shows your track receipt. Based on Receiptify.")]
+    [SlashCommand("receipt", "Shows your track receipt. Based on Receiptify.", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,     InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
-        InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task ReceiptAsync(
-        [Summary("Time-period", "Time period")] [Autocomplete(typeof(DateTimeAutoComplete))]
+        [SlashCommandParameter(Name = "Time-period", Description = "Time period", AutocompleteProviderType = typeof(DateTimeAutoComplete))]
         string timePeriod = null,
-        [Summary("User", "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")]
         string user = null,
-        [Summary("Private", "Only show response to you")]
+        [SlashCommandParameter(Name = "Private", Description = "Only show response to you")]
         bool privateResponse = false)
     {
         await DeferAsync(privateResponse);
@@ -432,15 +402,12 @@ public class TrackSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [SlashCommand("loved", "Tracks you've loved on Last.fm")]
+    [SlashCommand("loved", "Tracks you've loved on Last.fm", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,     InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
-        InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task LovedTracksAsync(
-        [Summary("User", "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")]
         string user = null,
-        [Summary("Private", "Only show response to you")]
+        [SlashCommandParameter(Name = "Private", Description = "Only show response to you")]
         bool privateResponse = false)
     {
         await DeferAsync(privateResponse);
@@ -456,15 +423,11 @@ public class TrackSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [SlashCommand("lyrics", "⭐ Shows lyrics for the track you're currently listening to or searching for")]
+    [SlashCommand("lyrics", "⭐ Shows lyrics for the track you're currently listening to or searching for", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,     InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     [SupportsPagination]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
-        InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task LyricsAsync(
-        [Summary("Track", "The track you want to search for (defaults to currently playing)")]
-        [Autocomplete(typeof(TrackAutoComplete))]
+        [SlashCommandParameter(Name = "Track", Description = "The track you want to search for (defaults to currently playing)", AutocompleteProviderType = typeof(TrackAutoComplete))]
         string name = null)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -495,15 +458,12 @@ public class TrackSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         }
     }
 
-    [SlashCommand("scrobble", "Scrobbles a track on Last.fm")]
+    [SlashCommand("scrobble", "Scrobbles a track on Last.fm", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,     InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UserSessionRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
-        InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task ScrobbleAsync(
-        [Summary("Track", "The track your want to scrobble")] [Autocomplete(typeof(TrackAutoComplete))]
+        [SlashCommandParameter(Name = "Track", Description = "The track your want to scrobble", AutocompleteProviderType = typeof(TrackAutoComplete))]
         string name = null,
-        [Summary("Private", "Only show response to you")]
+        [SlashCommandParameter(Name = "Private", Description = "Only show response to you")]
         bool privateResponse = false)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -521,14 +481,11 @@ public class TrackSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         }
     }
 
-    [SlashCommand("eurovision", "View Eurovision overview for a year and/or a country")]
+    [SlashCommand("eurovision", "View Eurovision overview for a year and/or a country", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,     InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UserSessionRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
-        InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task EurovisionAsync(
-        [Summary("Year", "Year (1956 to now)")] [Autocomplete(typeof(YearAutoComplete))] string year = null,
-        [Summary("Country", "Eurovision country")] [Autocomplete(typeof(EurovisionAutoComplete))] string country = null)
+        [SlashCommandParameter(Name = "Year", Description = "Year (1956 to now)", AutocompleteProviderType = typeof(YearAutoComplete))] string year = null,
+        [SlashCommandParameter(Name = "Country", Description = "Eurovision country", AutocompleteProviderType = typeof(EurovisionAutoComplete))] string country = null)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var context = new ContextModel(this.Context, contextUser);

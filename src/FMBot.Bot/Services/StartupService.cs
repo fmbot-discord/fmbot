@@ -31,7 +31,7 @@ namespace FMBot.Bot.Services;
 public class StartupService
 {
     private readonly CommandService<CommandContext> _textCommands;
-    private readonly ApplicationCommandService<ApplicationCommandContext> _appCommands;
+    private readonly ApplicationCommandService<ApplicationCommandContext, AutocompleteInteractionContext> _appCommands;
     private readonly GuildDisabledCommandService _guildDisabledCommands;
     private readonly ChannelToggledCommandService _channelToggledCommands;
     private readonly DisabledChannelService _disabledChannelService;
@@ -63,7 +63,7 @@ public class StartupService
         ChartService chartService,
         ShortcutService shortcutService,
         CommandService<CommandContext> textCommands,
-        ApplicationCommandService<ApplicationCommandContext> appCommands)
+        ApplicationCommandService<ApplicationCommandContext, AutocompleteInteractionContext> appCommands)
     {
         this._provider = provider;
         this._client = discord;

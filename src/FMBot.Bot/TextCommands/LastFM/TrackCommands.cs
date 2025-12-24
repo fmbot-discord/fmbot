@@ -22,6 +22,7 @@ using FMBot.LastFM.Repositories;
 using Microsoft.Extensions.Options;
 using NetCord.Services.Commands;
 using TimePeriod = FMBot.Domain.Models.TimePeriod;
+using Fergun.Interactive;
 
 namespace FMBot.Bot.TextCommands.LastFM;
 
@@ -72,14 +73,13 @@ public class TrackCommands : BaseCommandModule
         this._countryService = countryService;
     }
 
-    [Command("track")]
+    [Command("track", "tr", "ti", "ts", "trackinfo")]
     [Summary("Track you're currently listening to or searching for.")]
     [Examples(
         "tr",
         "track",
         "track Depeche Mode Enjoy The Silence",
         "track Crystal Waters | Gypsy Woman (She's Homeless) - Radio Edit")]
-    [Alias("tr", "ti", "ts", "trackinfo")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks)]
     [SupporterEnhanced("Supporters can see the date they first discovered a track")]
@@ -104,7 +104,7 @@ public class TrackCommands : BaseCommandModule
         }
     }
 
-    [Command("trackplays")]
+    [Command("trackplays", "tp", "trackplay", "tplays", "trackp", "track plays")]
     [Summary("Shows playcount for current track or the one you're searching for.\n\n" +
              "You can also mention another user to see their playcount.")]
     [Examples(
@@ -113,7 +113,6 @@ public class TrackCommands : BaseCommandModule
         "trackplays Mac DeMarco Here Comes The Cowboy",
         "tp lfm:fm-bot",
         "trackplays Cocteau Twins | Heaven or Las Vegas @user")]
-    [Alias("tp", "trackplay", "tplays", "trackp", "track plays")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks)]
     public async Task TrackPlaysAsync([CommandParameter(Remainder = true)] string trackValues = null)
@@ -131,13 +130,12 @@ public class TrackCommands : BaseCommandModule
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [Command("trackdetails")]
+    [Command("trackdetails", "td", "trackdata", "trackmetadata", "tds")]
     [Summary("Shows metadata for current track or the one you're searching for.")]
     [Examples(
         "tp",
         "trackdetails",
         "td Mac DeMarco Here Comes The Cowboy")]
-    [Alias("td", "trackdata", "trackmetadata", "tds")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks)]
     public async Task TrackDetailsAsync([CommandParameter(Remainder = true)] string trackValues = null)
@@ -154,10 +152,9 @@ public class TrackCommands : BaseCommandModule
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [Command("love")]
+    [Command("love", "l", "heart", "favorite", "affection", "appreciation", "lust", "fuckyeah", "fukk", "unfuck")]
     [Summary("Loves a track on Last.fm")]
     [Examples("love", "l", "love Tame Impala Borderline")]
-    [Alias("l", "heart", "favorite", "affection", "appreciation", "lust", "fuckyeah", "fukk", "unfuck")]
     [UserSessionRequired]
     [CommandCategories(CommandCategory.Tracks)]
     public async Task LoveAsync([CommandParameter(Remainder = true)] string trackValues = null)
@@ -174,10 +171,9 @@ public class TrackCommands : BaseCommandModule
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [Command("unlove")]
+    [Command("unlove", "ul", "unheart", "hate", "fuck")]
     [Summary("Removes the track you're currently listening to or searching for from your last.fm loved tracks.")]
     [Examples("unlove", "ul", "unlove Lou Reed Brandenburg Gate")]
-    [Alias("ul", "unheart", "hate", "fuck")]
     [UserSessionRequired]
     [CommandCategories(CommandCategory.Tracks)]
     public async Task UnLoveAsync([CommandParameter(Remainder = true)] string trackValues = null)
@@ -194,10 +190,9 @@ public class TrackCommands : BaseCommandModule
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [Command("loved")]
+    [Command("loved", "lovedtracks", "lt", "unfucked")]
     [Summary("Shows your Last.fm loved tracks.")]
     [Examples("loved", "lt", "lovedtracks lfm:fm-bot", "lovedtracks @user")]
-    [Alias("lovedtracks", "lt", "unfucked")]
     [UserSessionRequired]
     [SupportsPagination]
     [CommandCategories(CommandCategory.Tracks)]
@@ -223,12 +218,11 @@ public class TrackCommands : BaseCommandModule
         }
     }
 
-    [Command("scrobble")]
+    [Command("scrobble", "sb")]
     [Summary("Scrobbles a track on Last.fm.")]
     [Examples("scrobble", "sb the less i know the better", "scrobble Loona Heart Attack",
         "scrobble Mac DeMarco | Chamber of Reflection")]
     [UserSessionRequired]
-    [Alias("sb")]
     [CommandCategories(CommandCategory.Tracks)]
     public async Task ScrobbleAsync([CommandParameter(Remainder = true)] string trackValues = null)
     {
@@ -244,12 +238,11 @@ public class TrackCommands : BaseCommandModule
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [Command("toptracks")]
+    [Command("toptracks", "tt", "tl", "tracklist", "tracks", "trackslist", "top tracks", "top track", "ttracks")]
     [Summary("Shows your or someone else's top tracks over a certain time period.")]
     [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample,
         Constants.BillboardExample, Constants.EmbedSizeExample)]
     [Examples("tt", "toptracks", "tt y", "toptracks weekly @user", "tt bb xl")]
-    [Alias("tt", "tl", "tracklist", "tracks", "trackslist", "top tracks", "top track", "ttracks")]
     [UsernameSetRequired]
     [SupportsPagination]
     [CommandCategories(CommandCategory.Tracks)]
@@ -281,11 +274,10 @@ public class TrackCommands : BaseCommandModule
         }
     }
 
-    [Command("receipt")]
+    [Command("receipt", "rcpt", "receiptify", "reciept")]
     [Summary("Shows your track receipt. Based on Receiptify.")]
     [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample)]
     [Examples("receipt", "receipt 2022", "rcpt week")]
-    [Alias("rcpt", "receiptify", "reciept")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks)]
     public async Task ReceiptAsync([CommandParameter(Remainder = true)] string extraOptions = null)
@@ -321,11 +313,10 @@ public class TrackCommands : BaseCommandModule
         }
     }
 
-    [Command("whoknowstrack")]
+    [Command("whoknowstrack", "wt", "wkt", "wktr", "wtr", "wktrack", "wk track", "whoknows track")]
     [Summary("Shows what other users listen to a track in your server")]
     [Examples("wt", "whoknowstrack", "whoknowstrack Hothouse Flowers Don't Go",
         "whoknowstrack Natasha Bedingfield | Unwritten")]
-    [Alias("wt", "wkt", "wktr", "wtr", "wktrack", "wk track", "whoknows track")]
     [UsernameSetRequired]
     [GuildOnly]
     [RequiresIndex]
@@ -361,11 +352,10 @@ public class TrackCommands : BaseCommandModule
         }
     }
 
-    [Command("globalwhoknowstrack")]
+    [Command("globalwhoknowstrack", "gwt", "gwkt", "gwtr", "gwktr", "globalwkt", "globalwktrack", "globalwhoknows track")]
     [Summary("Shows what other users listen to a track in .fmbot")]
     [Examples("gwt", "globalwhoknowstrack", "globalwhoknowstrack Hothouse Flowers Don't Go",
         "globalwhoknowstrack Natasha Bedingfield | Unwritten")]
-    [Alias("gwt", "gwkt", "gwtr", "gwktr", "globalwkt", "globalwktrack", "globalwhoknows track")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks, CommandCategory.WhoKnows)]
     public async Task GlobalWhoKnowsTrackAsync([CommandParameter(Remainder = true)] string trackValues = null)
@@ -409,12 +399,11 @@ public class TrackCommands : BaseCommandModule
         }
     }
 
-    [Command("friendwhoknowstrack")]
+    [Command("friendwhoknowstrack", "fwt", "fwkt", "fwktr", "fwtrack", "friendwhoknows track", "friends whoknows track",
+        "friend whoknows track")]
     [Summary("Shows who of your friends listen to an track in .fmbot")]
     [Examples("fwt", "fwkt The Beatles Yesterday", "friendwhoknowstrack",
         "friendwhoknowstrack Hothouse Flowers Don't Go", "friendwhoknowstrack Mall Grab | Sunflower")]
-    [Alias("fwt", "fwkt", "fwktr", "fwtrack", "friendwhoknows track", "friends whoknows track",
-        "friend whoknows track")]
     [UsernameSetRequired]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Tracks, CommandCategory.WhoKnows, CommandCategory.Friends)]
@@ -457,13 +446,12 @@ public class TrackCommands : BaseCommandModule
         }
     }
 
-    [Command("servertracks")]
+    [Command("servertracks", "st", "stt", "servertoptracks", "servertrack", "server tracks", "billboard", "bb")]
     [Summary("Top tracks for your server, optionally for an artist")]
     [Options("Time periods: `weekly`, `monthly` and `alltime`", "Order options: `plays` and `listeners`",
         "Artist name")]
     [Examples("st", "st a p", "servertracks", "servertracks alltime", "servertracks listeners weekly",
         "servertracks the beatles listeners", "servertracks the beatles alltime")]
-    [Alias("st", "stt", "servertoptracks", "servertrack", "server tracks", "billboard", "bb")]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Tracks)]
@@ -508,8 +496,7 @@ public class TrackCommands : BaseCommandModule
         }
     }
 
-    [Command("eurovision")]
-    [Alias("ev", "esc", "eurovisie", "eurovisionsongcontest", "songcontest")]
+    [Command("eurovision", "ev", "esc", "eurovisie", "eurovisionsongcontest", "songcontest")]
     public async Task EurovisionAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -554,11 +541,10 @@ public class TrackCommands : BaseCommandModule
         }
     }
 
-    [Command("trackgaps")]
+    [Command("trackgaps", "tgaps", "tgap", "trackgap", "songgaps", "songgap")]
     [Summary("Shows the tracks you've returned to after a gap in listening.")]
     [Options(Constants.UserMentionExample, Constants.EmbedSizeExample)]
     [Examples("tgaps", "trackgaps", "trackgaps @user")]
-    [Alias("tgaps", "tgap", "trackgap", "songgaps", "songgap")]
     [UsernameSetRequired]
     [SupportsPagination]
     [CommandCategories(CommandCategory.Tracks)]
@@ -601,14 +587,13 @@ public class TrackCommands : BaseCommandModule
         }
     }
 
-    [Command("lyrics")]
+    [Command("lyrics", "lyric", "lyr", "lr", "lyricsfind", "lyricsearch", "lyricssearch")]
     [Summary("Lyrics for a track you're currently listening to or searching for")]
     [Examples(
         "lyrics",
         "l",
         "lyrics The Beatles Let It Be",
         "lyrics Daft Punk | Get Lucky")]
-    [Alias("lyric", "lyr", "lr", "lyricsfind", "lyricsearch", "lyricssearch")]
     [UsernameSetRequired]
     [SupportsPagination]
     [CommandCategories(CommandCategory.Tracks)]

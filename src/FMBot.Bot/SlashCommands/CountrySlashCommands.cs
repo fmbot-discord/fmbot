@@ -10,6 +10,9 @@ using FMBot.Bot.Services.Guild;
 
 using FMBot.Domain.Models;
 using NetCord.Services.ApplicationCommands;
+using NetCord;
+using Fergun.Interactive;
+using NetCord.Rest;
 
 namespace FMBot.Bot.SlashCommands;
 
@@ -33,13 +36,10 @@ public class CountrySlashCommands : ApplicationCommandModule<ApplicationCommandC
         this._settingService = settingService;
     }
 
-    [SlashCommand("country", "Country for artist or top artists for country")]
+    [SlashCommand("country", "Country for artist or top artists for country", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task CountryAsync(
-        [Summary("search", "The country or artist you want to view")]
-        [Autocomplete(typeof(CountryArtistAutoComplete))]
+        [SlashCommandParameter(Name = "search", Description = "The country or artist you want to view", AutocompleteProviderType = typeof(CountryArtistAutoComplete))]
         string name = null)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
@@ -59,14 +59,12 @@ public class CountrySlashCommands : ApplicationCommandModule<ApplicationCommandC
         }
     }
 
-    [SlashCommand("countrychart", "Generates a map of the location from your top artists")]
+    [SlashCommand("countrychart", "Generates a map of the location from your top artists", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task CountryChartAsync(
-        [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
-        [Summary("User", "The user to show (defaults to self)")] string user = null,
-        [Summary("Private", "Only show response to you")] bool privateResponse = false)
+        [SlashCommandParameter(Name = "Time-period", Description = "Time period", AutocompleteProviderType = typeof(DateTimeAutoComplete))] string timePeriod = null,
+        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")] string user = null,
+        [SlashCommandParameter(Name = "Private", Description = "Only show response to you")] bool privateResponse = false)
     {
         await DeferAsync(privateResponse);
 

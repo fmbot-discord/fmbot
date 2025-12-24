@@ -59,9 +59,8 @@ public class OwnerCommands : BaseCommandModule
         }
     }
 
-    [Command("botrestart")]
+    [Command("botrestart", "restart")]
     [Summary("Reboots the bot.")]
-    [Alias("restart")]
     public async Task BotRestartAsync()
     {
         if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))

@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-using Discord.WebSocket;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
@@ -35,10 +34,8 @@ public class DiscogsSlashCommands : ApplicationCommandModule<ApplicationCommandC
         this._settingService = settingService;
     }
 
-    [SlashCommand("discogs", "Connects your Discogs account by sending a link to your DMs")]
+    [SlashCommand("discogs", "Connects your Discogs account by sending a link to your DMs", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task DiscogsAsync()
     {
         var contextUser = await this._userService.GetUserWithDiscogs(this.Context.User.Id);
@@ -172,14 +169,12 @@ public class DiscogsSlashCommands : ApplicationCommandModule<ApplicationCommandC
         }
     }
 
-    [SlashCommand("collection", "You or someone else's Discogs collection")]
+    [SlashCommand("collection", "You or someone else's Discogs collection", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task AlbumAsync(
-        [Summary("Search", "Search query to filter on")] string search = null,
-        [Summary("User", "The user to show (defaults to self)")] string user = null,
-        [Summary("Format", "Media format to include")] DiscogsFormat? format = null)
+        [SlashCommandParameter(Name = "Search", Description = "Search query to filter on")] string search = null,
+        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")] string user = null,
+        [SlashCommandParameter(Name = "Format", Description = "Media format to include")] DiscogsFormat? format = null)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
 

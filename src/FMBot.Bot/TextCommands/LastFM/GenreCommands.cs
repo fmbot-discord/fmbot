@@ -12,6 +12,8 @@ using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
 using TimePeriod = FMBot.Domain.Models.TimePeriod;
+using Fergun.Interactive;
+using NetCord.Services.Commands;
 
 namespace FMBot.Bot.TextCommands.LastFM;
 
@@ -54,11 +56,10 @@ public class GenreCommands : BaseCommandModule
         this._genreBuilders = genreBuilders;
     }
 
-    [Command("topgenres")]
+    [Command("topgenres", "gl", "tg", "genrelist", "genres", "top genres", "genreslist")]
     [Summary("Shows a list of your or someone else's top genres over a certain time period.")]
     [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample)]
     [Examples("tg", "topgenres", "tg a lfm:fm-bot", "topgenres weekly @user")]
-    [Alias("gl", "tg", "genrelist", "genres", "top genres", "genreslist")]
     [UsernameSetRequired]
     [SupportsPagination]
     [CommandCategories(CommandCategory.Genres)]
@@ -89,10 +90,9 @@ public class GenreCommands : BaseCommandModule
         }
     }
 
-    [Command("genre")]
+    [Command("genre", "genreinfo", "genres", "gi", "g")]
     [Summary("Shows genre information for an artist, or top artist for a specific genre")]
     [Examples("genre", "genres hip hop, electronic", "g", "genre Indie Soul", "genre The Beatles")]
-    [Alias("genreinfo", "genres", "gi", "g")]
     [UsernameSetRequired]
     [SupportsPagination]
     [CommandCategories(CommandCategory.Genres)]
@@ -121,10 +121,9 @@ public class GenreCommands : BaseCommandModule
         }
     }
 
-    [Command("whoknowsgenre")]
+    [Command("whoknowsgenre", "wg", "wkg", "whoknows genre")]
     [Summary("Shows what other users listen to a genre in your server")]
     [Examples("wg", "wkg hip hop", "whoknowsgenre", "whoknowsgenre techno")]
-    [Alias("wg", "wkg", "whoknows genre")]
     [UsernameSetRequired]
     [GuildOnly]
     [RequiresIndex]
@@ -158,11 +157,10 @@ public class GenreCommands : BaseCommandModule
         }
     }
 
-    [Command("servergenres")]
+    [Command("servergenres", "sg", "sgenres", "serverg", "server genre", "servergenre", "server genres")]
     [Summary("Top genres for your server")]
     [Options("Time periods: `weekly`, `monthly` and `alltime`", "Order options: `plays` and `listeners`")]
     [Examples("sg", "sg a p", "servergenres", "servergenres alltime", "servergenres listeners weekly")]
-    [Alias("sg", "sgenres", "serverg", "server genre", "servergenre", "server genres")]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Genres)]
@@ -202,10 +200,9 @@ public class GenreCommands : BaseCommandModule
         }
     }
 
-    [Command("friendwhoknowgenre")]
+    [Command("friendwhoknowgenre", "fwg", "fwkg", "friendwhoknows genre", "friendwhoknowsgenre", "friend whoknowsgenre", "friends whoknow genre", "friend whoknows genre", "friends whoknows genre")]
     [Summary("Who of your friends listen to a genre")]
     [Examples("fwg", "fwg pop", "friendwhoknowgenre", "friendwhoknowgenre pov: indie")]
-    [Alias("fwg", "fwkg", "friendwhoknows genre", "friendwhoknowsgenre", "friend whoknowsgenre", "friends whoknow genre", "friend whoknows genre", "friends whoknows genre")]
     [UsernameSetRequired]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Artists, CommandCategory.WhoKnows, CommandCategory.Friends)]

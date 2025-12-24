@@ -12,6 +12,7 @@ using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
 using NetCord.Services.Commands;
+using Fergun.Interactive;
 
 namespace FMBot.Bot.TextCommands.LastFM;
 
@@ -57,9 +58,8 @@ public class CrownCommands : BaseCommandModule
         this._guildBuilders = guildBuilders;
     }
 
-    [Command("crowns")]
+    [Command("crowns", "cws", "topcrowns", "topcws", "tcws")]
     [Summary("Shows you your crowns for this server.")]
-    [Alias("cws", "topcrowns", "topcws", "tcws")]
     [UsernameSetRequired]
     [GuildOnly]
     [SupportsPagination]
@@ -88,9 +88,8 @@ public class CrownCommands : BaseCommandModule
         }
     }
 
-    [Command("crown")]
+    [Command("crown", "cw")]
     [Summary("Shows crown history for the artist you're currently listening to or searching for")]
-    [Alias("cw")]
     [UsernameSetRequired]
     [GuildOnly]
     [RequiresIndex]
@@ -116,9 +115,8 @@ public class CrownCommands : BaseCommandModule
         }
     }
 
-    [Command("crownleaderboard")]
+    [Command("crownleaderboard", "cwlb", "crownlb", "cwleaderboard", "crown leaderboard")]
     [Summary("Shows users with the most crowns in your server")]
-    [Alias("cwlb", "crownlb", "cwleaderboard", "crown leaderboard")]
     [UsernameSetRequired]
     [GuildOnly]
     [SupportsPagination]

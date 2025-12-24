@@ -7,6 +7,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services;
 using NetCord;
+using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 
 namespace FMBot.Bot.SlashCommands;
@@ -31,10 +32,8 @@ public class FriendSlashCommands : ApplicationCommandModule<ApplicationCommandCo
         this._friendBuilders = friendBuilders;
     }
 
-    [SlashCommand("friends", "Displays your friends and what they're listening to")]
+    [SlashCommand("friends", "Displays your friends and what they're listening to", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task FriendsAsync()
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
@@ -54,11 +53,9 @@ public class FriendSlashCommands : ApplicationCommandModule<ApplicationCommandCo
         }
     }
 
-    [SlashCommand("addfriend", "Add a friend to your .fmbot friends")]
+    [SlashCommand("addfriend", "Add a friend to your .fmbot friends", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
-    public async Task AddFriendAsync([Summary("User", "The user to add")] NetCord.User user)
+    public async Task AddFriendAsync([SlashCommandParameter(Name = "User", Description = "The user to add")] NetCord.User user)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -75,10 +72,8 @@ public class FriendSlashCommands : ApplicationCommandModule<ApplicationCommandCo
         }
     }
 
-    [UserCommand("Add as friend")]
+    [UserCommand("Add as friend", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task AddFriendUserCommandAsync(NetCord.User user)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -96,11 +91,9 @@ public class FriendSlashCommands : ApplicationCommandModule<ApplicationCommandCo
         }
     }
 
-    [SlashCommand("removefriend", "Remove a friend from your .fmbot friends")]
+    [SlashCommand("removefriend", "Remove a friend from your .fmbot friends", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
-    public async Task RemoveFriendAsync([Summary("User", "The user to remove")] NetCord.User user)
+    public async Task RemoveFriendAsync([SlashCommandParameter(Name = "User", Description = "The user to remove")] NetCord.User user)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -117,10 +110,8 @@ public class FriendSlashCommands : ApplicationCommandModule<ApplicationCommandCo
         }
     }
 
-    [UserCommand("Remove friend")]
+    [UserCommand("Remove friend", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task RemoveFriendUserCommandAsync(NetCord.User user)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);

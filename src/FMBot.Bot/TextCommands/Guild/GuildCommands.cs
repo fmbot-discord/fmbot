@@ -51,10 +51,9 @@ public class GuildCommands : BaseCommandModule
         this._guildBuilders = guildBuilders;
     }
 
-    [Command("configuration")]
+    [Command("configuration", "ss", "config", "serversettings", "fmbotconfig", "serverconfig")]
     [Summary("Shows server configuration for .fmbot")]
     [CommandCategories(CommandCategory.ServerSettings)]
-    [Alias("ss", "config", "serversettings", "fmbotconfig", "serverconfig")]
     public async Task GuildSettingsAsync([CommandParameter(Remainder = true)] string searchValues = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
@@ -77,11 +76,10 @@ public class GuildCommands : BaseCommandModule
         }
     }
 
-    [Command("members")]
+    [Command("members", "mb", "users", "memberoverview", "mo")]
     [Summary("view members in your server that have an .fmbot account")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.ServerSettings)]
-    [Alias("mb", "users", "memberoverview", "mo")]
     public async Task MemberOverviewAsync([CommandParameter(Remainder = true)] string searchValues = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
@@ -117,11 +115,10 @@ public class GuildCommands : BaseCommandModule
             "If you still wish to remove all server data from the bot you can kick the bot after the time period is over.");
     }
 
-    [Command("servermode")]
+    [Command("servermode", "guildmode")]
     [Summary("Sets the forced .fm mode for the server.\n\n" +
              "To view current settings, use `{{prfx}}servermode info`")]
     [Options("Modes: embedtiny/embedmini/embedfull/textmini/textfull")]
-    [Alias("guildmode")]
     [GuildOnly]
     [CommandCategories(CommandCategory.ServerSettings)]
     public async Task SetServerModeAsync([CommandParameter(Remainder = true)] string unused = null)
@@ -135,12 +132,11 @@ public class GuildCommands : BaseCommandModule
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [Command("serverreactions")]
+    [Command("serverreactions", "serversetreactions", "serveremojis", "serverreacts")]
     [Summary("Sets the automatic emoji reactions for the `fm` and `featured` command.\n\n" +
              "Use this command without any emojis to disable.")]
     [Examples("serverreactions :PagChomp: :PensiveBlob:", "serverreactions 😀 😯 🥵", "serverreactions 😀 😯 :PensiveBlob:",
         "serverreactions")]
-    [Alias("serversetreactions", "serveremojis", "serverreacts")]
     [GuildOnly]
     [CommandCategories(CommandCategory.ServerSettings)]
     public async Task SetGuildReactionsAsync([CommandParameter(Remainder = true)] string emojis = null)
@@ -275,9 +271,8 @@ public class GuildCommands : BaseCommandModule
         }
     }
 
-    [Command("toggleservercommand")]
+    [Command("toggleservercommand", "toggleservercommands", "toggleserver", "servertoggle")]
     [Summary("Enables or disables a command server-wide")]
-    [Alias("toggleservercommands", "toggleserver", "servertoggle")]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.ServerSettings)]
@@ -299,10 +294,9 @@ public class GuildCommands : BaseCommandModule
 
     [GuildOnly]
     [RequiresIndex]
-    [Command("togglecommand")]
-    [Summary("Enables or disables a command in a channel")]
-    [Alias("togglecommands", "channeltoggle", "togglechannel", "togglechannelcommand", "togglechannelcommands", "channelmode",
+    [Command("togglecommand", "togglecommands", "channeltoggle", "togglechannel", "togglechannelcommand", "togglechannelcommands", "channelmode",
         "channelfmmode")]
+    [Summary("Enables or disables a command in a channel")]
     [CommandCategories(CommandCategory.ServerSettings)]
     public async Task ToggleChannelCommand(string _ = null)
     {

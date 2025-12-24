@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using AngleSharp.Css;
 
-using Discord.WebSocket;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
@@ -18,6 +17,8 @@ using FMBot.Domain.Models;
 using NetCord.Services.ApplicationCommands;
 using NetCord.Services.ComponentInteractions;
 using Serilog;
+using NetCord;
+using Fergun.Interactive;
 
 namespace FMBot.Bot.SlashCommands;
 

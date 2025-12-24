@@ -14,6 +14,7 @@ using FMBot.Domain;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
 using NetCord.Services.Commands;
+using Fergun.Interactive;
 
 namespace FMBot.Bot.TextCommands.Guild;
 
@@ -49,9 +50,8 @@ public class CrownGuildSettingCommands : BaseCommandModule
         this._adminService = adminService;
     }
 
-    [Command("crownthreshold")]
+    [Command("crownthreshold", "setcrownthreshold", "setcwthreshold", "cwthreshold", "crowntreshold")]
     [Summary("Sets amount of plays before someone can earn a crown in your server")]
-    [Alias("setcrownthreshold", "setcwthreshold", "cwthreshold", "crowntreshold")]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Crowns, CommandCategory.ServerSettings)]
@@ -71,10 +71,9 @@ public class CrownGuildSettingCommands : BaseCommandModule
         }
     }
 
-    [Command("crownactivitythreshold")]
+    [Command("crownactivitythreshold", "setcrownactivitythreshold", "setcwactivitythreshold", "cwactivitythreshold", "crownactivitytreshold")]
     [Summary("Sets amount of days to filter out users from earning crowns for inactivity. " +
              "Inactivity is counted by the last date that someone has used .fmbot")]
-    [Alias("setcrownactivitythreshold", "setcwactivitythreshold", "cwactivitythreshold", "crownactivitytreshold")]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Crowns, CommandCategory.ServerSettings)]
@@ -94,10 +93,9 @@ public class CrownGuildSettingCommands : BaseCommandModule
         }
     }
 
-    [Command("crownblock")]
+    [Command("crownblock", "crownblockuser", "crownban", "cwblock", "cwban", "crownbanuser", "crownbanmember")]
     [Summary("Block a user from gaining any crowns in your server")]
     [Options(Constants.UserMentionExample)]
-    [Alias("crownblockuser", "crownban", "cwblock", "cwban", "crownbanuser", "crownbanmember")]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Crowns, CommandCategory.ServerSettings)]
@@ -185,10 +183,9 @@ public class CrownGuildSettingCommands : BaseCommandModule
         }
     }
 
-    [Command("removeusercrowns")]
+    [Command("removeusercrowns", "deleteusercrowns", "deleteusercrown", "removeusercrown", "removeusercws", "deleteusercws", "usercrownsdelete", "usercrownsremove", "killusercrowns")]
     [Summary("Removes crowns from a user")]
     [Options(Constants.UserMentionExample)]
-    [Alias("deleteusercrowns", "deleteusercrown", "removeusercrown", "removeusercws", "deleteusercws", "usercrownsdelete", "usercrownsremove", "killusercrowns")]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Crowns, CommandCategory.ServerSettings)]
@@ -271,9 +268,8 @@ public class CrownGuildSettingCommands : BaseCommandModule
         }
     }
 
-    [Command("crownblockedusers")]
+    [Command("crownblockedusers", "crownblocked", "crownbanned", "crownbannedusers", "crownbannedmembers")]
     [Summary("View all users that are blocked from earning crowns in your server")]
-    [Alias("crownblocked", "crownbanned", "crownbannedusers", "crownbannedmembers")]
     [GuildOnly]
     [RequiresIndex]
     [SupportsPagination]
@@ -297,9 +293,8 @@ public class CrownGuildSettingCommands : BaseCommandModule
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [Command("togglecrowns")]
+    [Command("togglecrowns", "togglecrown")]
     [Summary("Completely enables/disables crowns for your server.")]
-    [Alias("togglecrown")]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Crowns, CommandCategory.ServerSettings)]
@@ -321,9 +316,8 @@ public class CrownGuildSettingCommands : BaseCommandModule
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [Command("killcrown")]
+    [Command("killcrown", "kcw", "kcrown", "killcw", "kill crown", "crown kill")]
     [Summary("Removes all crowns from a specific artist for your server.")]
-    [Alias("kcw", "kcrown", "killcw", "kill crown", "crown kill")]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Crowns, CommandCategory.ServerSettings)]
@@ -384,9 +378,8 @@ public class CrownGuildSettingCommands : BaseCommandModule
         this.Context.LogCommandUsed();
     }
 
-    [Command("crownseeder")]
+    [Command("crownseeder", "crownseed", "seedcrowns")]
     [Summary("Automatically generates or updates all crowns for your server")]
-    [Alias("crownseed", "seedcrowns")]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Crowns, CommandCategory.ServerSettings)]
@@ -406,9 +399,8 @@ public class CrownGuildSettingCommands : BaseCommandModule
         }
     }
 
-    [Command("killallcrowns")]
+    [Command("killallcrowns", "removeallcrowns")]
     [Summary("Removes all crowns from your server")]
-    [Alias("removeallcrowns")]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Crowns, CommandCategory.ServerSettings)]
@@ -472,9 +464,8 @@ public class CrownGuildSettingCommands : BaseCommandModule
         this.Context.LogCommandUsed();
     }
 
-    [Command("killallseededcrowns")]
+    [Command("killallseededcrowns", "removeallseededcrowns")]
     [Summary("Removes all crowns seeded by the `crownseeder` command. All other manually claimed crowns will remain in place.")]
-    [Alias("removeallseededcrowns")]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Crowns, CommandCategory.ServerSettings)]

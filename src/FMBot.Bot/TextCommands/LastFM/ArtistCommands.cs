@@ -1,8 +1,6 @@
 using System;
-using System.Globalization;
 using System.Text;
 using System.Threading.Tasks;
-using Discord.Commands;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
@@ -14,7 +12,6 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
-using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
 using NetCord.Services.Commands;
@@ -62,14 +59,13 @@ public class ArtistCommands : BaseCommandModule
         this._playBuilders = playBuilders;
     }
 
-    [Command("artist")]
+    [Command("artist", "a", "ai", "artistinfo")]
     [Summary("Artist you're currently listening to or searching for.")]
     [Examples(
         "a",
         "artist",
         "a Gorillaz",
         "artist Gamma Intel")]
-    [Alias("a", "ai", "artistinfo")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Artists)]
     [SupporterEnhanced("Supporters can see the date they first discovered an artist")]
@@ -97,14 +93,13 @@ public class ArtistCommands : BaseCommandModule
         }
     }
 
-    [Command("artistoverview")]
+    [Command("artistoverview", "ao", "artist overview", "artistsoverview", "artists overview")]
     [Summary("Artist you're currently listening to or searching for.")]
     [Examples(
         "ao",
         "artistoverview",
         "ao Gorillaz",
         "artistoverview Gamma Intel")]
-    [Alias("ao", "artist overview", "artistsoverview", "artists overview")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Artists)]
     public async Task ArtistOverviewAsync([CommandParameter(Remainder = true)] string artistValues = null)
@@ -132,14 +127,13 @@ public class ArtistCommands : BaseCommandModule
         }
     }
 
-    [Command("artisttracks")]
+    [Command("artisttracks", "at", "att", "artisttrack", "artist track", "artist tracks", "artistrack", "artisttoptracks",
+        "artisttoptrack", "favs")]
     [Summary("Top tracks for an artist")]
     [Examples(
         "at",
         "artisttracks",
         "artisttracks DMX")]
-    [Alias("at", "att", "artisttrack", "artist track", "artist tracks", "artistrack", "artisttoptracks",
-        "artisttoptrack", "favs")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Artists)]
     [SupporterEnhanced("Supporters have their complete Last.fm history cached in the bot, so the artisttracks command always contains all their tracks")]
@@ -163,14 +157,13 @@ public class ArtistCommands : BaseCommandModule
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [Command("artistalbums")]
+    [Command("artistalbums", "aa", "aab", "atab", "artistalbum", "artist album", "artist albums", "artistopalbum", "artisttopalbums",
+        "artisttab")]
     [Summary("Top albums for an artist.")]
     [Examples(
         "aa",
         "artistalbums",
         "artistalbums The Prodigy")]
-    [Alias("aa", "aab", "atab", "artistalbum", "artist album", "artist albums", "artistopalbum", "artisttopalbums",
-        "artisttab")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Artists)]
     [SupporterEnhanced("Supporters have their complete Last.fm history cached in the bot, so the artistalbums command always contains all their albums")]
@@ -191,7 +184,7 @@ public class ArtistCommands : BaseCommandModule
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [Command("artistplays")]
+    [Command("artistplays", "ap", "artist plays")]
     [Summary("Shows playcount for current artist or the one you're searching for.\n\n" +
              "You can also mention another user to see their playcount.")]
     [Examples(
@@ -200,7 +193,6 @@ public class ArtistCommands : BaseCommandModule
         "albumplays @user",
         "ap lfm:fm-bot",
         "artistplays Mall Grab @user")]
-    [Alias("ap", "artist plays")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Artists)]
     public async Task ArtistPlaysAsync([CommandParameter(Remainder = true)] string artistValues = null)
@@ -221,12 +213,11 @@ public class ArtistCommands : BaseCommandModule
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [Command("artistpace")]
+    [Command("artistpace", "apc", "apace", "artistpc")]
     [Summary("Shows estimated date you reach a certain amount of plays on an artist")]
     [Options("weekly/monthly", "Optional goal amount: For example `500` or `2k`", Constants.UserMentionExample)]
     [Examples("apc", "apc 1k q", "apc 400 h @user", "artistpace", "artistpace weekly @user 2500")]
     [UsernameSetRequired]
-    [Alias("apc", "apace", "artistpc")]
     [CommandCategories(CommandCategory.Artists)]
     public async Task ArtistPaceAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
@@ -261,12 +252,11 @@ public class ArtistCommands : BaseCommandModule
         }
     }
 
-    [Command("topartists")]
+    [Command("topartists", "al", "as", "ta", "artistlist", "artists", "top artists", "artistslist")]
     [Summary("Shows your or someone else's top artists over a certain time period.")]
     [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample,
         Constants.BillboardExample, Constants.EmbedSizeExample)]
     [Examples("ta", "topartists", "ta a lfm:fm-bot", "topartists weekly @user", "ta bb xl")]
-    [Alias("al", "as", "ta", "artistlist", "artists", "top artists", "artistslist")]
     [UsernameSetRequired]
     [SupportsPagination]
     [CommandCategories(CommandCategory.Artists)]
@@ -308,11 +298,10 @@ public class ArtistCommands : BaseCommandModule
         }
     }
 
-    [Command("discoveries")]
+    [Command("discoveries", "d", "discovered", "discovery", "artistdiscoveries", "firstlistened")]
     [Summary("Artists you've recently discovered")]
     [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample, Constants.EmbedSizeExample)]
     [Examples("d", "discovered", "ta a lfm:fm-bot", "topartists weekly @user", "ta bb xl")]
-    [Alias("d", "discovered", "discovery", "artistdiscoveries", "firstlistened")]
     [UsernameSetRequired]
     [SupportsPagination]
     [CommandCategories(CommandCategory.Artists)]
@@ -358,13 +347,12 @@ public class ArtistCommands : BaseCommandModule
         }
     }
 
-    [Command("taste")]
+    [Command("taste", "t")]
     [Summary("Compares your top artists, genres and countries to those from another user.")]
     [Options(Constants.CompactTimePeriodList, Constants.UserMentionOrLfmUserNameExample, "Mode: `table` or `embed`",
         Constants.EmbedSizeExample)]
     [Examples("t frikandel_", "t @user", "taste bitldev", "taste @user monthly embed")]
     [UsernameSetRequired]
-    [Alias("t")]
     [CommandCategories(CommandCategory.Artists)]
     public async Task TasteAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
@@ -403,10 +391,9 @@ public class ArtistCommands : BaseCommandModule
         }
     }
 
-    [Command("whoknows")]
+    [Command("whoknows", "w", "wk", "whoknows artist", "thosewhoknow")]
     [Summary("Shows what other users listen to an artist in your server")]
     [Examples("w", "wk COMA", "whoknows", "whoknows DJ Seinfeld")]
-    [Alias("w", "wk", "whoknows artist", "thosewhoknow")]
     [UsernameSetRequired]
     [GuildOnly]
     [RequiresIndex]
@@ -457,10 +444,9 @@ public class ArtistCommands : BaseCommandModule
         }
     }
 
-    [Command("globalwhoknows")]
+    [Command("globalwhoknows", "gw", "gwk", "globalwk", "globalwhoknows artist")]
     [Summary("Shows what other users listen to an artist in .fmbot")]
     [Examples("gw", "gwk COMA", "globalwhoknows", "globalwhoknows DJ Seinfeld")]
-    [Alias("gw", "gwk", "globalwk", "globalwhoknows artist")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Artists, CommandCategory.WhoKnows)]
     public async Task GlobalWhoKnowsAsync([CommandParameter(Remainder = true)] string artistValues = null)
@@ -506,11 +492,10 @@ public class ArtistCommands : BaseCommandModule
         }
     }
 
-    [Command("friendwhoknows")]
+    [Command("friendwhoknows", "fw", "fwk", "friendwhoknows artist", "friend whoknows", "friends whoknows", "friend whoknows artist",
+        "friends whoknows artist")]
     [Summary("Who of your friends know an artist")]
     [Examples("fw", "fwk COMA", "friendwhoknows", "friendwhoknows DJ Seinfeld")]
-    [Alias("fw", "fwk", "friendwhoknows artist", "friend whoknows", "friends whoknows", "friend whoknows artist",
-        "friends whoknows artist")]
     [UsernameSetRequired]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Artists, CommandCategory.WhoKnows, CommandCategory.Friends)]
@@ -555,11 +540,10 @@ public class ArtistCommands : BaseCommandModule
         }
     }
 
-    [Command("serverartists")]
+    [Command("serverartists", "sa", "sta", "servertopartists", "server artists", "serverartist")]
     [Summary("Top artists for your server")]
     [Options("Time periods: `weekly`, `monthly` and `alltime`", "Order options: `plays` and `listeners`")]
     [Examples("sa", "sa a p", "serverartists", "serverartists alltime", "serverartists listeners weekly")]
-    [Alias("sa", "sta", "servertopartists", "server artists", "serverartist")]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Artists)]
@@ -608,9 +592,8 @@ public class ArtistCommands : BaseCommandModule
         }
     }
 
-    [Command("affinity")]
+    [Command("affinity", "n", "aff", "neighbors", "soulmates", "neighbours")]
     [Summary("Shows users from this server with similar top artists.")]
-    [Alias("n", "aff", "neighbors", "soulmates", "neighbours")]
     [UsernameSetRequired]
     [GuildOnly]
     [RequiresIndex]
@@ -677,11 +660,10 @@ public class ArtistCommands : BaseCommandModule
         }
     }
 
-    [Command("iceberg")]
+    [Command("iceberg", "ice", "icebergify", "berg")]
     [Summary("Shows your iceberg, based on artists popularity.")]
     [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample)]
     [Examples("iceberg", "iceberg 2024", "iceberg alltime")]
-    [Alias("ice", "icebergify", "berg")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Artists)]
     public async Task IcebergAsync([CommandParameter(Remainder = true)] string extraOptions = null)
@@ -709,11 +691,10 @@ public class ArtistCommands : BaseCommandModule
         }
     }
 
-    [Command("artistgaps")]
+    [Command("artistgaps", "gaps", "gap", "artistgap")]
     [Summary("Shows the artists you've returned to after a gap in listening.")]
     [Options(Constants.UserMentionExample, Constants.EmbedSizeExample)]
     [Examples("gaps", "artistgaps", "artistgaps quarterly @user", "gaps yearly")]
-    [Alias("gaps", "gap", "artistgap")]
     [UsernameSetRequired]
     [SupportsPagination]
     [CommandCategories(CommandCategory.Artists)]

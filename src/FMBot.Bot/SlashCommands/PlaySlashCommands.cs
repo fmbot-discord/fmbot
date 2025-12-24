@@ -53,16 +53,12 @@ public class PlaySlashCommands : ApplicationCommandModule<ApplicationCommandCont
         this._recapBuilders = recapBuilders;
     }
 
-    [SlashCommand("discoverydate", "⭐ Shows the date you discovered the artist, album, and track")]
+    [SlashCommand("discoverydate", "⭐ Shows the date you discovered the artist, album, and track", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,     InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
-        InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task DateDiscoveredAsync(
-        [Summary("Track", "The track your want to search for (defaults to currently playing)")]
-        [Autocomplete(typeof(TrackAutoComplete))]
+        [SlashCommandParameter(Name = "Track", Description = "The track your want to search for (defaults to currently playing)", AutocompleteProviderType = typeof(TrackAutoComplete))]
         string name = null,
-        [Summary("User", "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")]
         string user = null)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
@@ -95,13 +91,10 @@ public class PlaySlashCommands : ApplicationCommandModule<ApplicationCommandCont
         }
     }
 
-    [SlashCommand("fm", "Now Playing - Shows you or someone else's current track")]
+    [SlashCommand("fm", "Now Playing - Shows you or someone else's current track", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,     InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
-        InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
-    public async Task NowPlayingAsync([Summary("user", "The user to show (defaults to self)")] string user = null,
-        [Summary("embed-type", "The embed type to use, can also be configured as a setting")]FmEmbedType? embedType = null )
+    public async Task NowPlayingAsync([SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")] string user = null,
+        [SlashCommandParameter(Name = "embed-type", Description = "The embed type to use, can also be configured as a setting")]FmEmbedType? embedType = null )
     {
         var existingFmCooldown = await this._guildService.GetChannelCooldown(this.Context.Channel?.Id);
         if (existingFmCooldown.HasValue)
@@ -171,15 +164,12 @@ public class PlaySlashCommands : ApplicationCommandModule<ApplicationCommandCont
         }
     }
 
-    [SlashCommand("recent", "Shows you or someone else's recent tracks")]
+    [SlashCommand("recent", "Shows you or someone else's recent tracks", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,     InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
-        InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task RecentAsync(
-        [Summary("User", "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")]
         string user = null,
-        [Summary("Artist", "Artist you want to filter on")] [Autocomplete(typeof(ArtistAutoComplete))]
+        [SlashCommandParameter(Name = "Artist", Description = "Artist you want to filter on", AutocompleteProviderType = typeof(ArtistAutoComplete))]
         string artistName = null)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
@@ -202,13 +192,10 @@ public class PlaySlashCommands : ApplicationCommandModule<ApplicationCommandCont
         }
     }
 
-    [SlashCommand("streak", "You or someone else's streak for an artist, album and track")]
+    [SlashCommand("streak", "You or someone else's streak for an artist, album and track", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,     InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
-        InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task StreakAsync(
-        [Summary("User", "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")]
         string user = null)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
@@ -232,17 +219,14 @@ public class PlaySlashCommands : ApplicationCommandModule<ApplicationCommandCont
         }
     }
 
-    [SlashCommand("streakhistory", "Shows you or someone else's streak history")]
+    [SlashCommand("streakhistory", "Shows you or someone else's streak history", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,     InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
-        InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task StreakHistory(
-        [Summary("Editmode", "Enable or disable editor mode")]
+        [SlashCommandParameter(Name = "Editmode", Description = "Enable or disable editor mode")]
         bool editMode = false,
-        [Summary("User", "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")]
         string user = null,
-        [Summary("Artist", "The artist you want to filter your results to")] [Autocomplete(typeof(ArtistAutoComplete))]
+        [SlashCommandParameter(Name = "Artist", Description = "The artist you want to filter your results to", AutocompleteProviderType = typeof(ArtistAutoComplete))]
         string name = null)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -286,15 +270,12 @@ public class PlaySlashCommands : ApplicationCommandModule<ApplicationCommandCont
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [SlashCommand("overview", "Shows a daily overview")]
+    [SlashCommand("overview", "Shows a daily overview", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,     InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
-        InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task OverviewAsync(
-        [Summary("User", "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")]
         string user = null,
-        [Summary("Amount", "Amount of days to show")]
+        [SlashCommandParameter(Name = "Amount", Description = "Amount of days to show")]
         int amount = 4)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
@@ -322,18 +303,14 @@ public class PlaySlashCommands : ApplicationCommandModule<ApplicationCommandCont
         }
     }
 
-    [SlashCommand("pace", "Shows estimated date you reach a scrobble goal based on average scrobbles per day")]
+    [SlashCommand("pace", "Shows estimated date you reach a scrobble goal based on average scrobbles per day", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,     InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
-        InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task PaceAsync(
-        [Summary("Amount", "Goal scrobble amount")]
+        [SlashCommandParameter(Name = "Amount", Description = "Goal scrobble amount")]
         int amount = 1,
-        [Summary("Time-period", "Time period to base average playcount on")]
-        [Autocomplete(typeof(DateTimeAutoComplete))]
+        [SlashCommandParameter(Name = "Time-period", Description = "Time period to base average playcount on", AutocompleteProviderType = typeof(DateTimeAutoComplete))]
         string timePeriod = null,
-        [Summary("User", "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")]
         string user = null)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
@@ -361,16 +338,12 @@ public class PlaySlashCommands : ApplicationCommandModule<ApplicationCommandCont
         }
     }
 
-    [SlashCommand("plays", "Shows your total scrobble count for a specific time period")]
+    [SlashCommand("plays", "Shows your total scrobble count for a specific time period", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,     InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
-        InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task PlaysAsync(
-        [Summary("Time-period", "Time period to base average playcount on")]
-        [Autocomplete(typeof(DateTimeAutoComplete))]
+        [SlashCommandParameter(Name = "Time-period", Description = "Time period to base average playcount on", AutocompleteProviderType = typeof(DateTimeAutoComplete))]
         string timePeriod = null,
-        [Summary("User", "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")]
         string user = null)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
@@ -396,15 +369,12 @@ public class PlaySlashCommands : ApplicationCommandModule<ApplicationCommandCont
         }
     }
 
-    [SlashCommand("milestone", "Shows a milestone scrobble")]
+    [SlashCommand("milestone", "Shows a milestone scrobble", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,     InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
-        InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task MileStoneAsync(
-        [Summary("Amount", "Milestone scrobble amount")]
+        [SlashCommandParameter(Name = "Amount", Description = "Milestone scrobble amount")]
         int amount = 99999999,
-        [Summary("User", "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")]
         string user = null)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
@@ -480,8 +450,8 @@ public class PlaySlashCommands : ApplicationCommandModule<ApplicationCommandCont
     [SlashCommand("year", "Shows an overview of your year")]
     [UsernameSetRequired]
     public async Task YearAsync(
-        [Summary("Year", "Year to view")] int? year = null,
-        [Summary("User", "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "Year", Description = "Year to view")] int? year = null,
+        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")]
         string user = null)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
@@ -505,15 +475,12 @@ public class PlaySlashCommands : ApplicationCommandModule<ApplicationCommandCont
         }
     }
 
-    [SlashCommand("recap", "Shows a recap for your selected time period")]
+    [SlashCommand("recap", "Shows a recap for your selected time period", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,     InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
-        InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task RecapAsync(
-        [Summary("Time-period", "Time period to show (defaults to year)")] [Autocomplete(typeof(DateTimeAutoComplete))]
+        [SlashCommandParameter(Name = "Time-period", Description = "Time period to show (defaults to year)", AutocompleteProviderType = typeof(DateTimeAutoComplete))]
         string timePeriod = null,
-        [Summary("User", "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")]
         string user = null)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
@@ -643,20 +610,17 @@ public class PlaySlashCommands : ApplicationCommandModule<ApplicationCommandCont
         }
     }
 
-    [SlashCommand("gaps", "⭐ Music you've returned to after a gap in listening")]
+    [SlashCommand("gaps", "⭐ Music you've returned to after a gap in listening", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,     InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
-        InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task ListeningGapsAsync(
-        [Summary("Type", "Music gap type")] GapEntityType gapType = GapEntityType.Artist,
-        [Summary("User", "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "Type", Description = "Music gap type")] GapEntityType gapType = GapEntityType.Artist,
+        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")]
         string user = null,
-        [Summary("Mode", "The type of response you want - change default with /responsemode")]
+        [SlashCommandParameter(Name = "Mode", Description = "The type of response you want - change default with /responsemode")]
         ResponseMode? mode = null,
-        [Summary("Size", "Amount of listening gaps to show per page")]
+        [SlashCommandParameter(Name = "Size", Description = "Amount of listening gaps to show per page")]
         EmbedSize? embedSize = null,
-        [Summary("Private", "Only show response to you")]
+        [SlashCommandParameter(Name = "Private", Description = "Only show response to you")]
         bool privateResponse = false)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);

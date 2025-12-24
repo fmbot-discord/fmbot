@@ -3,7 +3,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using Discord.WebSocket;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.AutoCompleteHandlers;
@@ -14,6 +13,7 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using NetCord;
+using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using NetCord.Services.ComponentInteractions;
 
@@ -38,14 +38,11 @@ public class GenreSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         this._settingService = settingService;
     }
 
-    [SlashCommand("genre", "Shows genre info for artist or top artists for genre")]
+    [SlashCommand("genre", "Shows genre info for artist or top artists for genre", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task GenreAsync(
-        [Summary("search", "The genre or artist you want to view")]
-        [Autocomplete(typeof(GenreArtistAutoComplete))] string search = null,
-        [Summary("User", "The user to show (defaults to self)")] string user = null)
+        [SlashCommandParameter(Name = "search", Description = "The genre or artist you want to view", AutocompleteProviderType = typeof(GenreArtistAutoComplete))] string search = null,
+        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")] string user = null)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
 
@@ -204,15 +201,12 @@ public class GenreSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         }
     }
 
-    [SlashCommand("fwkgenre", "Shows who of your friends listen to a genre")]
+    [SlashCommand("fwkgenre", "Shows who of your friends listen to a genre", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     [RequiresIndex]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task FriendsWhoKnowGenreAsync(
-        [Summary("search", "The genre or artist you want to view")]
-        [Autocomplete(typeof(GenreArtistAutoComplete))] string search = null,
-        [Summary("Private", "Only show response to you")] bool privateResponse = false)
+        [SlashCommandParameter(Name = "search", Description = "The genre or artist you want to view", AutocompleteProviderType = typeof(GenreArtistAutoComplete))] string search = null,
+        [SlashCommandParameter(Name = "Private", Description = "Only show response to you")] bool privateResponse = false)
     {
         await DeferAsync(privateResponse);
 

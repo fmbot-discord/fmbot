@@ -47,9 +47,8 @@ public class PremiumGuildCommands : BaseCommandModule
         this._premiumSettingBuilder = premiumSettingBuilder;
     }
 
-    [Command("allowedroles")]
+    [Command("allowedroles", "wkwhitelist", "wkroles", "whoknowswhitelist", "whoknowsroles")]
     [Summary("Sets roles that are allowed to be in server-wide charts")]
-    [Alias("wkwhitelist", "wkroles", "whoknowswhitelist", "whoknowsroles")]
     [GuildOnly]
     [ExcludeFromHelp]
     [RequiresIndex]
@@ -77,9 +76,8 @@ public class PremiumGuildCommands : BaseCommandModule
         }
     }
 
-    [Command("blockedroles")]
+    [Command("blockedroles", "wkwblacklist", "wkblocklist", "whoknowsblaccklist", "whoknowsblocklist")]
     [Summary("Sets roles that are blocked from server-wide charts")]
-    [Alias("wkwblacklist", "wkblocklist", "whoknowsblaccklist", "whoknowsblocklist")]
     [GuildOnly]
     [ExcludeFromHelp]
     [RequiresIndex]
@@ -107,9 +105,8 @@ public class PremiumGuildCommands : BaseCommandModule
         }
     }
 
-    [Command("botmanagementroles")]
+    [Command("botmanagementroles", "managementroles", "staffroles", "adminroles", "modroles", "botroles", "botmangementroles")]
     [Summary("Sets roles that are allowed to manage .fmbot in this server")]
-    [Alias("managementroles", "staffroles", "adminroles", "modroles", "botroles", "botmangementroles")]
     [GuildOnly]
     [ExcludeFromHelp]
     [RequiresIndex]
@@ -166,9 +163,8 @@ public class PremiumGuildCommands : BaseCommandModule
         }
     }
 
-    [Command("serveractivitythreshold")]
+    [Command("serveractivitythreshold", "activitythreshold", "guildactivitythreshold", "activitytreshold")]
     [Summary("Sets roles that are allowed to manage .fmbot in this server")]
-    [Alias("activitythreshold", "guildactivitythreshold", "activitytreshold")]
     [GuildOnly]
     [ExcludeFromHelp]
     [RequiresIndex]

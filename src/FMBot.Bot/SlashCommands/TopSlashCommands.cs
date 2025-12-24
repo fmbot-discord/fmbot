@@ -10,11 +10,13 @@ using FMBot.Bot.Services;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 using NetCord.Services.ApplicationCommands;
+using NetCord;
+using Fergun.Interactive;
 
 namespace FMBot.Bot.SlashCommands;
 
 [Group("top", "Top lists - Artist/Albums/Tracks/Genres/Countries")]
-[CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+[CommandContextType(InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild)]
 [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
 public class TopSlashCommands : ApplicationCommandModule<ApplicationCommandContext>
 {
@@ -56,13 +58,13 @@ public class TopSlashCommands : ApplicationCommandModule<ApplicationCommandConte
     [SlashCommand("artists", "Your top artists")]
     [UsernameSetRequired]
     public async Task TopArtistsAsync(
-        [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
-        [Summary("Billboard", "Show top artists billboard-style")] bool billboard = false,
-        [Summary("User", "The user to show (defaults to self)")] string user = null,
-        [Summary("Mode", "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
-        [Summary("Size", "Amount of artists to show")] EmbedSize? embedSize = null,
-        [Summary("Private", "Only show response to you")] bool privateResponse = false,
-        [Summary("Discogs", "Show top artists in Discogs collection")] bool discogs = false)
+        [SlashCommandParameter(Name = "Time-period", Description = "Time period", AutocompleteProviderType = typeof(DateTimeAutoComplete))] string timePeriod = null,
+        [SlashCommandParameter(Name = "Billboard", Description = "Show top artists billboard-style")] bool billboard = false,
+        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")] string user = null,
+        [SlashCommandParameter(Name = "Mode", Description = "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
+        [SlashCommandParameter(Name = "Size", Description = "Amount of artists to show")] EmbedSize? embedSize = null,
+        [SlashCommandParameter(Name = "Private", Description = "Only show response to you")] bool privateResponse = false,
+        [SlashCommandParameter(Name = "Discogs", Description = "Show top artists in Discogs collection")] bool discogs = false)
     {
         await DeferAsync(privateResponse);
 
@@ -88,14 +90,14 @@ public class TopSlashCommands : ApplicationCommandModule<ApplicationCommandConte
     [SlashCommand("albums", "Shows your top albums")]
     [UsernameSetRequired]
     public async Task TopAlbumsAsync(
-        [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
-        [Summary("Released", "Filter to albums released in year")][Autocomplete(typeof(YearAutoComplete))] string year = null,
-        [Summary("Decade", "Filter to albums released in decade")][Autocomplete(typeof(DecadeAutoComplete))] string decade = null,
-        [Summary("Billboard", "Show top albums billboard-style")] bool billboard = false,
-        [Summary("User", "The user to show (defaults to self)")] string user = null,
-        [Summary("Mode", "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
-        [Summary("Size", "Amount of albums to show")] EmbedSize? embedSize = null,
-        [Summary("Private", "Only show response to you")] bool privateResponse = false)
+        [SlashCommandParameter(Name = "Time-period", Description = "Time period", AutocompleteProviderType = typeof(DateTimeAutoComplete))] string timePeriod = null,
+        [SlashCommandParameter(Name = "Released", Description = "Filter to albums released in year", AutocompleteProviderType = typeof(YearAutoComplete))] string year = null,
+        [SlashCommandParameter(Name = "Decade", Description = "Filter to albums released in decade", AutocompleteProviderType = typeof(DecadeAutoComplete))] string decade = null,
+        [SlashCommandParameter(Name = "Billboard", Description = "Show top albums billboard-style")] bool billboard = false,
+        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")] string user = null,
+        [SlashCommandParameter(Name = "Mode", Description = "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
+        [SlashCommandParameter(Name = "Size", Description = "Amount of albums to show")] EmbedSize? embedSize = null,
+        [SlashCommandParameter(Name = "Private", Description = "Only show response to you")] bool privateResponse = false)
     {
         await DeferAsync(privateResponse);
 
@@ -117,12 +119,12 @@ public class TopSlashCommands : ApplicationCommandModule<ApplicationCommandConte
     [SlashCommand("tracks", "Shows your top tracks")]
     [UsernameSetRequired]
     public async Task TopTracksAsync(
-        [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
-        [Summary("Billboard", "Show top tracks billboard-style")] bool billboard = false,
-        [Summary("User", "The user to show (defaults to self)")] string user = null,
-        [Summary("Mode", "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
-        [Summary("Size", "Amount of tracks to show")] EmbedSize? embedSize = null,
-        [Summary("Private", "Only show response to you")] bool privateResponse = false)
+        [SlashCommandParameter(Name = "Time-period", Description = "Time period", AutocompleteProviderType = typeof(DateTimeAutoComplete))] string timePeriod = null,
+        [SlashCommandParameter(Name = "Billboard", Description = "Show top tracks billboard-style")] bool billboard = false,
+        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")] string user = null,
+        [SlashCommandParameter(Name = "Mode", Description = "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
+        [SlashCommandParameter(Name = "Size", Description = "Amount of tracks to show")] EmbedSize? embedSize = null,
+        [SlashCommandParameter(Name = "Private", Description = "Only show response to you")] bool privateResponse = false)
     {
         await DeferAsync(privateResponse);
 
@@ -144,12 +146,12 @@ public class TopSlashCommands : ApplicationCommandModule<ApplicationCommandConte
     [SlashCommand("genres", "Shows your top genres")]
     [UsernameSetRequired]
     public async Task TopGenresAsync(
-        [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
-        [Summary("Billboard", "Show top genres billboard-style")] bool billboard = false,
-        [Summary("User", "The user to show (defaults to self)")] string user = null,
-        [Summary("Mode", "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
-        [Summary("Size", "Amount of genres to show")] EmbedSize? embedSize = null,
-        [Summary("Private", "Only show response to you")] bool privateResponse = false)
+        [SlashCommandParameter(Name = "Time-period", Description = "Time period", AutocompleteProviderType = typeof(DateTimeAutoComplete))] string timePeriod = null,
+        [SlashCommandParameter(Name = "Billboard", Description = "Show top genres billboard-style")] bool billboard = false,
+        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")] string user = null,
+        [SlashCommandParameter(Name = "Mode", Description = "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
+        [SlashCommandParameter(Name = "Size", Description = "Amount of genres to show")] EmbedSize? embedSize = null,
+        [SlashCommandParameter(Name = "Private", Description = "Only show response to you")] bool privateResponse = false)
     {
         await DeferAsync(privateResponse);
 
@@ -171,12 +173,12 @@ public class TopSlashCommands : ApplicationCommandModule<ApplicationCommandConte
     [SlashCommand("countries", "Shows your top countries")]
     [UsernameSetRequired]
     public async Task TopCountriesAsync(
-        [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
-        [Summary("Billboard", "Show top countries billboard-style")] bool billboard = false,
-        [Summary("User", "The user to show (defaults to self)")] string user = null,
-        [Summary("Mode", "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
-        [Summary("Size", "Amount of countries to show")] EmbedSize? embedSize = null,
-        [Summary("Private", "Only show response to you")] bool privateResponse = false)
+        [SlashCommandParameter(Name = "Time-period", Description = "Time period", AutocompleteProviderType = typeof(DateTimeAutoComplete))] string timePeriod = null,
+        [SlashCommandParameter(Name = "Billboard", Description = "Show top countries billboard-style")] bool billboard = false,
+        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")] string user = null,
+        [SlashCommandParameter(Name = "Mode", Description = "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
+        [SlashCommandParameter(Name = "Size", Description = "Amount of countries to show")] EmbedSize? embedSize = null,
+        [SlashCommandParameter(Name = "Private", Description = "Only show response to you")] bool privateResponse = false)
     {
         await DeferAsync(privateResponse);
 

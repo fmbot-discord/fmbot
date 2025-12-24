@@ -752,9 +752,9 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
     ])]
     [UsernameSetRequired]
     public async Task SetLocalization(
-        [Summary("Timezone", "Timezone you want to set")] [Autocomplete(typeof(TimeZoneAutoComplete))]
+        [SlashCommandParameter(Name = "Timezone", Description = "Timezone you want to set", AutocompleteProviderType = typeof(TimeZoneAutoComplete))]
         string timezone = null,
-        [Summary("Numberformat", "Number formatting you want to use")]
+        [SlashCommandParameter(Name = "Numberformat", Description = "Number formatting you want to use")]
         NumberFormat? numberFormat = null)
     {
         try
@@ -995,9 +995,9 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
     ])]
     [UsernameSetRequired]
     public async Task JudgeAsync(
-        [Summary("Time-period", "Time period")] [Autocomplete(typeof(DateTimeAutoComplete))]
+        [SlashCommandParameter(Name = "Time-period", Description = "Time period", AutocompleteProviderType = typeof(DateTimeAutoComplete))]
         string timePeriod = null,
-        [Summary("User", "The user to judge")] string user = null)
+        [SlashCommandParameter(Name = "User", Description = "The user to judge")] string user = null)
     {
         var contextUser = await this._userService.GetUserAsync(this.Context.User.Id);
         var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.Quarterly);
@@ -1251,9 +1251,9 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
     ])]
     [UsernameSetRequired]
     public async Task FeaturedLogAsync(
-        [Summary("View", "Type of log you want to view")]
+        [SlashCommandParameter(Name = "View", Description = "Type of log you want to view")]
         FeaturedView view = FeaturedView.User,
-        [Summary("User", "The user to view the featured log for (defaults to self)")]
+        [SlashCommandParameter(Name = "User", Description = "The user to view the featured log for (defaults to self)")]
         string user = null)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -1307,13 +1307,10 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
         }
     }
 
-    [SlashCommand("profile", "Shows you or someone else's profile")]
+    [SlashCommand("profile", "Shows you or someone else's profile", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,     InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
-        InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task ProfileAsync(
-        [Summary("User", "The user of which you want to view their profile")]
+        [SlashCommandParameter(Name = "User", Description = "The user of which you want to view their profile")]
         string user = null)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());

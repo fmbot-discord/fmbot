@@ -13,6 +13,7 @@ using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
 using NetCord.Services.Commands;
 using Constants = FMBot.Domain.Constants;
+using Fergun.Interactive;
 
 namespace FMBot.Bot.TextCommands.LastFM;
 

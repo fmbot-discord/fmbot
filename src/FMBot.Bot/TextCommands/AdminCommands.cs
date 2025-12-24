@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Data;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
@@ -31,6 +32,8 @@ using Serilog;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 using NetCord.Services.Commands;
 using NetCord;
+using Fergun.Interactive;
+using NetCord.Gateway;
 
 namespace FMBot.Bot.TextCommands;
 
@@ -135,9 +138,8 @@ public class AdminCommands : BaseCommandModule
     //}
 
 
-    [Command("serverdebug")]
+    [Command("serverdebug", "guilddebug", "debugserver", "debugguild")]
     [Summary("Returns server data")]
-    [Alias("guilddebug", "debugserver", "debugguild")]
     public async Task DebugGuildAsync([CommandParameter(Remainder = true)] string guildId = null)
     {
         if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
@@ -267,9 +269,8 @@ public class AdminCommands : BaseCommandModule
         }
     }
 
-    [Command("leaveserver")]
+    [Command("leaveserver", "leaveguild")]
     [Summary("Makes the bot leave a server")]
-    [Alias("leaveguild")]
     public async Task LeaveGuild([CommandParameter(Remainder = true)] string reason = null)
     {
         if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
@@ -296,9 +297,8 @@ public class AdminCommands : BaseCommandModule
         }
     }
 
-    [Command("banguild")]
+    [Command("banguild", "banserver")]
     [Summary("Bans a guild and makes the bot leave the server")]
-    [Alias("banserver")]
     public async Task BanGuild([CommandParameter(Remainder = true)] string guildId = null)
     {
         if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
@@ -589,9 +589,8 @@ public class AdminCommands : BaseCommandModule
         }
     }
 
-    [Command("opencollectivesupporters")]
+    [Command("opencollectivesupporters", "ocsupporters")]
     [Summary("Displays all .fmbot supporters.")]
-    [Alias("ocsupporters")]
     public async Task OpenCollectiveSupportersAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
@@ -622,9 +621,8 @@ public class AdminCommands : BaseCommandModule
         }
     }
 
-    [Command("discordsupporters")]
+    [Command("discordsupporters", "dsupporters", "dsupp", "discsupp")]
     [Summary("Displays all .fmbot supporters.")]
-    [Alias("dsupporters", "dsupp", "discsupp")]
     public async Task DiscordSupportersAsync()
     {
         if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
@@ -652,10 +650,9 @@ public class AdminCommands : BaseCommandModule
         }
     }
 
-    [Command("addalbum")]
+    [Command("addalbum", "addcensoredalbum", "addnsfwalbum", "checkalbum")]
     [Summary("Manage album censoring")]
     [Examples("addcensoredalbum Death Grips No Love Deep Web")]
-    [Alias("addcensoredalbum", "addnsfwalbum", "checkalbum")]
     public async Task AddAlbumAsync([CommandParameter(Remainder = true)] string albumValues)
     {
         try
@@ -822,10 +819,9 @@ public class AdminCommands : BaseCommandModule
         }
     }
 
-    [Command("addartist")]
+    [Command("addartist", "addcensoredartist", "addnsfwartist", "addfeaturedban", "checkartist")]
     [Summary("Manage artist censoring")]
     [Examples("addcensoredartist Last Days of Humanity")]
-    [Alias("addcensoredartist", "addnsfwartist", "addfeaturedban", "checkartist")]
     public async Task AddArtistAsync([CommandParameter(Remainder = true)] string artist)
     {
         try
@@ -921,8 +917,7 @@ public class AdminCommands : BaseCommandModule
         }
     }
 
-    [Command("checkbotted")]
-    [Alias("checkbotteduser")]
+    [Command("checkbotted", "checkbotteduser")]
     [Summary("Checks some stats for a user and if they're banned from global whoknows")]
     public async Task CheckBottedUserAsync(string user = null)
     {
@@ -1123,8 +1118,7 @@ public class AdminCommands : BaseCommandModule
         }
     }
 
-    [Command("addbotted")]
-    [Alias("addbotteduser")]
+    [Command("addbotted", "addbotteduser")]
     [Examples(".addbotteduser \"Kefkef123\" \"8 days listening time in Last.week\"")]
     public async Task AddBottedUserAsync(string user = null, string reason = null)
     {
@@ -1188,8 +1182,7 @@ public class AdminCommands : BaseCommandModule
         }
     }
 
-    [Command("removebotted")]
-    [Alias("removebotteduser")]
+    [Command("removebotted", "removebotteduser")]
     [Examples("removebotteduser \"Kefkef123\"")]
     public async Task RemoveBottedUserAsync(string user = null)
     {
@@ -1343,8 +1336,7 @@ public class AdminCommands : BaseCommandModule
         }
     }
 
-    [Command("sendsupporterwelcome")]
-    [Alias("sendwelcomedm")]
+    [Command("sendsupporterwelcome", "sendwelcomedm")]
     public async Task SendWelcomeDm(string user = null)
     {
         if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
@@ -1384,8 +1376,7 @@ public class AdminCommands : BaseCommandModule
         }
     }
 
-    [Command("sendsupportergoodbye")]
-    [Alias("sendgoodbyedm")]
+    [Command("sendsupportergoodbye", "sendgoodbyedm")]
     public async Task SendGoodbyeDm(string user = null)
     {
         if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
@@ -1676,11 +1667,10 @@ public class AdminCommands : BaseCommandModule
         }
     }
 
-    [Command("reconnectshard")]
+    [Command("reconnectshard", "reconnectshards")]
     [Summary("Reconnects a shard")]
     [GuildOnly]
     [ExcludeFromHelp]
-    [Alias("reconnectshards")]
     [Examples("shard 0", "shard 821660544581763093")]
     public async Task ReconnectShardAsync(ulong? guildId = null)
     {
@@ -2002,9 +1992,8 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
     //    }
     //}
 
-    [Command("resetfeatured")]
+    [Command("resetfeatured", "restarttimer", "timerstart", "timerrestart")]
     [Summary("Restarts the featured timer.")]
-    [Alias("restarttimer", "timerstart", "timerrestart")]
     public async Task RestartTimerAsync([CommandParameter(Remainder = true)] int? id = null)
     {
         if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
@@ -2294,9 +2283,8 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
         }
     }
 
-    [Command("runtimer")]
+    [Command("runtimer", "triggerjob", "runjob")]
     [Summary("Run a timer manually (only works if it exists)")]
-    [Alias("triggerjob", "runjob")]
     public async Task RunTimerAsync([CommandParameter(Remainder = true)] string job = null)
     {
         if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
@@ -2345,9 +2333,8 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
         }
     }
 
-    [Command("removetimer")]
+    [Command("removetimer", "removejob", "deletejob")]
     [Summary("Remove a timer manually (only works if it exists)")]
-    [Alias("removejob", "deletejob")]
     public async Task RemoveJobAsync([CommandParameter(Remainder = true)] string job = null)
     {
         if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
@@ -2462,9 +2449,8 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
         }
     }
 
-    [Command("globalblockadd")]
+    [Command("globalblockadd", "globalblocklistadd", "globalblacklistadd")]
     [Summary("Blocks a user from using .fmbot.")]
-    [Alias("globalblocklistadd", "globalblacklistadd")]
     public async Task BlacklistAddAsync(ulong? user = null)
     {
         try
@@ -2515,9 +2501,8 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
         }
     }
 
-    [Command("globalblockremove")]
+    [Command("globalblockremove", "globalblocklistremove", "globalblacklistremove")]
     [Summary("Unblocks a user so they can use .fmbot again.")]
-    [Alias("globalblocklistremove", "globalblacklistremove")]
     public async Task BlackListRemoveAsync(ulong? user = null)
     {
         try
@@ -3066,9 +3051,8 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
         }
     }
 
-    [Command("deleteuser")]
+    [Command("deleteuser", "removeuser")]
     [Summary("Remove a user")]
-    [Alias("removeuser")]
     public async Task DeleteUser(string userToDelete = null)
     {
         try
@@ -3128,8 +3112,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
         }
     }
 
-    [Command("lastfmissue")]
-    [Alias("lfmissue")]
+    [Command("lastfmissue", "lfmissue")]
     public async Task LastfmIssue(string _ = null)
     {
         if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))

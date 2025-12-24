@@ -33,6 +33,7 @@ using FMBot.Persistence.Interfaces;
 using System.Linq;
 using System.Net.Http;
 using System.Runtime.CompilerServices;
+using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using Web.InternalApi;
 using FMBot.AppleMusic;
@@ -41,7 +42,7 @@ using GraphQL.Client.Serializer.SystemTextJson;
 using NetCord;
 using NetCord.Gateway;
 using NetCord.Rest;
-using GatewayIntents = Discord.GatewayIntents;
+using GatewayIntents = NetCord.Gateway.GatewayIntents;
 
 namespace FMBot.Bot;
 

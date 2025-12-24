@@ -13,6 +13,7 @@ using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
 using Microsoft.Extensions.Options;
 using NetCord.Services.Commands;
+using Fergun.Interactive;
 
 namespace FMBot.Bot.TextCommands;
 
@@ -53,9 +54,8 @@ public class FriendsCommands : BaseCommandModule
         this.Interactivity = interactivity;
     }
 
-    [Command("friends")]
+    [Command("friends", "recentfriends", "friendsrecent", "f")]
     [Summary("Displays your friends and what they're listening to.")]
-    [Alias("recentfriends", "friendsrecent", "f")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Friends)]
     [SupporterEnhanced($"Supporters can add up to 18 friends (up from 12)")]
@@ -101,11 +101,10 @@ public class FriendsCommands : BaseCommandModule
         }
     }
 
-    [Command("addfriends")]
+    [Command("addfriends", "friend", "friendsset", "setfriends", "friendsadd", "addfriend", "setfriend", "friends add", "add")]
     [Summary("Adds users to your friend list")]
     [Options(Constants.UserMentionExample)]
     [Examples("addfriends fm-bot @user", "addfriends 356268235697553409")]
-    [Alias("friend", "friendsset", "setfriends", "friendsadd", "addfriend", "setfriend", "friends add", "add")]
     [UsernameSetRequired]
     [GuildOnly]
     [CommandCategories(CommandCategory.Friends)]
@@ -137,11 +136,10 @@ public class FriendsCommands : BaseCommandModule
         }
     }
 
-    [Command("removefriends")]
+    [Command("removefriends", "unfriend", "friendsremove", "deletefriend", "deletefriends", "removefriend", "friends remove", "friend remove", "unadd")]
     [Summary("Removes users from your friend list")]
     [Options(Constants.UserMentionExample)]
     [Examples("removefriends fm-bot @user", "removefriend 356268235697553409")]
-    [Alias("unfriend", "friendsremove", "deletefriend", "deletefriends", "removefriend", "friends remove", "friend remove", "unadd")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Friends)]
     public async Task RemoveFriends([Summary("Friend names")] params string[] enteredFriends)
@@ -169,9 +167,8 @@ public class FriendsCommands : BaseCommandModule
         }
     }
 
-    [Command("removeallfriends")]
+    [Command("removeallfriends", "friendsremoveall", "friends remove all")]
     [Summary("Remove all your friends")]
-    [Alias("friendsremoveall", "friends remove all")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Friends)]
     public async Task RemoveAllFriends()

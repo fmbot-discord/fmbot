@@ -13,6 +13,8 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
+using Fergun.Interactive;
+using NetCord.Services.Commands;
 
 namespace FMBot.Bot.TextCommands.LastFM;
 
@@ -45,7 +47,7 @@ public class ChartCommands : BaseCommandModule
         this.Interactivity = interactivity;
     }
 
-    [Command("chart")]
+    [Command("chart", "c", "aoty", "albumsoftheyear", "albumoftheyear", "aotd", "albumsofthedecade", "albumofthedecade", "topster", "topsters")]
     [Summary("Generates an album image chart.")]
     [Options(
         Constants.CompactTimePeriodList,
@@ -57,7 +59,6 @@ public class ChartCommands : BaseCommandModule
         "Size: `WidthxHeight` - `2x2`, `3x3`, `4x5`, `20x4` up to 100 total images",
         Constants.UserMentionExample)]
     [Examples("c", "c q 8x8 nt s", "chart 8x8 quarterly notitles skip", "c 10x10 alltime notitles skip", "c @user 7x7 yearly", "aoty 2023")]
-    [Alias("c", "aoty", "albumsoftheyear", "albumoftheyear", "aotd", "albumsofthedecade", "albumofthedecade", "topster", "topsters")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Charts, CommandCategory.Albums)]
     public async Task ChartAsync([CommandParameter(Remainder = true)]string otherSettings = null)
@@ -112,7 +113,7 @@ public class ChartCommands : BaseCommandModule
         }
     }
 
-    [Command("artistchart")]
+    [Command("artistchart", "ac", "top", "c artist", "c artists", "chart artist", "chart artists")]
     [Summary("Generates an artist image chart.")]
     [Options(
         Constants.CompactTimePeriodList,
@@ -121,7 +122,6 @@ public class ChartCommands : BaseCommandModule
         "Size: WidthxHeight - `2x2`, `3x3`, `4x5` up to `10x10`",
         Constants.UserMentionExample)]
     [Examples("ac", "ac q 8x8 nt s", "artistchart 8x8 quarterly notitles skip", "ac 10x10 alltime notitles skip", "ac @user 7x7 yearly")]
-    [Alias("ac", "top", "c artist", "c artists", "chart artist", "chart artists")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Charts, CommandCategory.Artists)]
     public async Task ArtistChartAsync([CommandParameter(Remainder = true)]string otherSettings = null)

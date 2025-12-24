@@ -10,6 +10,7 @@ using FMBot.Domain;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
 using NetCord.Services.Commands;
+using Fergun.Interactive;
 
 namespace FMBot.Bot.TextCommands.LastFM;
 
@@ -39,11 +40,10 @@ public class CountryCommands : BaseCommandModule
         this.Interactivity = interactivity;
     }
 
-    [Command("topcountries")]
+    [Command("topcountries", "cl", "tc", "countrylist", "countries", "top countries", "countrieslist")]
     [Summary("Shows a list of your or someone else's top artist countries over a certain time period.")]
     [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample)]
     [Examples("tc", "topcountries", "tc a lfm:fm-bot", "topcountries weekly @user")]
-    [Alias("cl", "tc", "countrylist", "countries", "top countries", "countrieslist")]
     [UsernameSetRequired]
     [SupportsPagination]
     [CommandCategories(CommandCategory.Genres)]
@@ -74,9 +74,8 @@ public class CountryCommands : BaseCommandModule
         }
     }
 
-    [Command("countrychart")]
+    [Command("countrychart", "cc", "worldmap", "artistmap")]
     [Summary("Generates a map of the location from your top artists.")]
-    [Alias("cc", "worldmap", "artistmap")]
     public async Task CountryChartAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
@@ -104,9 +103,8 @@ public class CountryCommands : BaseCommandModule
         }
     }
 
-    [Command("country")]
+    [Command("country", "countries", "from")]
     [Summary("Shows country information for an artist, or top artists for a specific country")]
-    [Alias("countries", "from")]
     [UsernameSetRequired]
     [SupportsPagination]
     public async Task CountryInfoAsync([CommandParameter(Remainder = true)] string countryOptions = null)

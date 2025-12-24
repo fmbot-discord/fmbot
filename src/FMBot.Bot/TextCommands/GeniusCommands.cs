@@ -15,6 +15,8 @@ using FMBot.LastFM.Repositories;
 using Microsoft.Extensions.Options;
 using NetCord;
 using NetCord.Services.Commands;
+using Fergun.Interactive;
+using NetCord.Rest;
 
 namespace FMBot.Bot.TextCommands;
 
@@ -42,9 +44,8 @@ public class GeniusCommands : BaseCommandModule
         this.Interactivity = interactivity;
     }
 
-    [Command("genius")]
+    [Command("genius", "gen")]
     [Summary("Shares a link to the Genius lyrics based on what a user is listening to or what the user is searching for.")]
-    [Alias("gen")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.ThirdParty)]
     public async Task GeniusAsync([CommandParameter(Remainder = true)] string searchValue = null)

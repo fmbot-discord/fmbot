@@ -310,11 +310,8 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
         }
     }
 
-    [SlashCommand("applemusic", "⭐ Import your Apple Music history into .fmbot")]
+    [SlashCommand("applemusic", "⭐ Import your Apple Music history into .fmbot", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,     InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
-        InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task AppleMusicAsync(
         [SlashCommandParameter(Name = "file",
             Description = "'Apple Media Services information.zip' or 'Apple Music Play Activity.csv' file")]
@@ -551,11 +548,8 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
         });
     }
 
-    [SlashCommand("manage", "⭐ Manage your imports and configure how they are used")]
+    [SlashCommand("manage", "⭐ Manage your imports and configure how they are used", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,     InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
-        InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task ManageImportAsync()
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -585,11 +579,8 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
         }
     }
 
-    [SlashCommand("modify", "⭐ Edit and delete artists, albums and tracks in your .fmbot imports")]
+    [SlashCommand("modify", "⭐ Edit and delete artists, albums and tracks in your .fmbot imports", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,     InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
-        InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task ModifyImportAsync()
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);

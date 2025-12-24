@@ -1,8 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-
-using Discord.WebSocket;
+using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.AutoCompleteHandlers;
 using FMBot.Bot.Builders;
@@ -14,6 +13,8 @@ using FMBot.Domain;
 using FMBot.Domain.Models;
 using NetCord.Services.ApplicationCommands;
 using NetCord.Services.ComponentInteractions;
+using NetCord;
+using NetCord.Rest;
 
 namespace FMBot.Bot.SlashCommands;
 
@@ -35,13 +36,10 @@ public class AlbumSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         this._albumService = albumService;
     }
 
-    [SlashCommand("album", "Album info for the album you're currently listening to or searching for")]
+    [SlashCommand("album", "Album info for the album you're currently listening to or searching for", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task AlbumAsync(
-        [Summary("Album", "The album your want to search for (defaults to currently playing)")]
-        [Autocomplete(typeof(AlbumAutoComplete))] string name = null)
+        [SlashCommandParameter(Name = "Album", Description = "The album your want to search for (defaults to currently playing)", AutocompleteProviderType = typeof(AlbumAutoComplete))] string name = null)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
 
@@ -94,10 +92,9 @@ public class AlbumSlashCommands : ApplicationCommandModule<ApplicationCommandCon
     [SlashCommand("wkalbum", "Shows what other users listen to an album in your server")]
     [UsernameSetRequired]
     public async Task WhoKnowsAlbumAsync(
-        [Summary("Album", "The album your want to search for (defaults to currently playing)")]
-        [Autocomplete(typeof(AlbumAutoComplete))] string name = null,
-        [Summary("Mode", "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
-        [Summary("Role-picker", "Display a rolepicker to filter with roles")] bool displayRoleFilter = false)
+        [SlashCommandParameter(Name = "Album", Description = "The album your want to search for (defaults to currently playing)", AutocompleteProviderType = typeof(AlbumAutoComplete))] string name = null,
+        [SlashCommandParameter(Name = "Mode", Description = "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
+        [SlashCommandParameter(Name = "Role-picker", Description = "Display a rolepicker to filter with roles")] bool displayRoleFilter = false)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
 
@@ -150,16 +147,13 @@ public class AlbumSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         }
     }
 
-    [SlashCommand("fwkalbum", "Who of your friends know an album")]
+    [SlashCommand("fwkalbum", "Who of your friends know an album", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task FriendsWhoKnowAlbumAsync(
-        [Summary("Album", "The album your want to search for (defaults to currently playing)")]
-        [Autocomplete(typeof(AlbumAutoComplete))]
+        [SlashCommandParameter(Name = "Album", Description = "The album your want to search for (defaults to currently playing)", AutocompleteProviderType = typeof(AlbumAutoComplete))]
         string name = null,
-        [Summary("Mode", "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
-        [Summary("Private", "Only show response to you")] bool privateResponse = false)
+        [SlashCommandParameter(Name = "Mode", Description = "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
+        [SlashCommandParameter(Name = "Private", Description = "Only show response to you")] bool privateResponse = false)
     {
         await DeferAsync(privateResponse);
 
@@ -180,16 +174,13 @@ public class AlbumSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         }
     }
 
-    [SlashCommand("gwkalbum", "Shows what other users listen to an album globally in .fmbot")]
+    [SlashCommand("gwkalbum", "Shows what other users listen to an album globally in .fmbot", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task GlobalWhoKnowsAlbumAsync(
-        [Summary("Album", "The album your want to search for (defaults to currently playing)")]
-        [Autocomplete(typeof(AlbumAutoComplete))]
+        [SlashCommandParameter(Name = "Album", Description = "The album your want to search for (defaults to currently playing)", AutocompleteProviderType = typeof(AlbumAutoComplete))]
         string name = null,
-        [Summary("Mode", "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
-        [Summary("Hide-private", "Hide or show private users")] bool hidePrivate = false)
+        [SlashCommandParameter(Name = "Mode", Description = "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
+        [SlashCommandParameter(Name = "Hide-private", Description = "Hide or show private users")] bool hidePrivate = false)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
 
@@ -217,13 +208,10 @@ public class AlbumSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         }
     }
 
-    [SlashCommand("cover", "Cover for current album or the one you're searching for")]
+    [SlashCommand("cover", "Cover for current album or the one you're searching for", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task AlbumCoverAsync(
-        [Summary("Album", "The album your want to search for (defaults to currently playing)")]
-        [Autocomplete(typeof(AlbumAutoComplete))] string name = null)
+        [SlashCommandParameter(Name = "Album", Description = "The album your want to search for (defaults to currently playing)", AutocompleteProviderType = typeof(AlbumAutoComplete))] string name = null)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
 
@@ -312,15 +300,12 @@ public class AlbumSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         }
     }
 
-    [SlashCommand("albumtracks", "Shows album info for the album you're currently listening to or searching for")]
+    [SlashCommand("albumtracks", "Shows album info for the album you're currently listening to or searching for", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task AlbumTracksAsync(
-        [Summary("Album", "The album your want to search for (defaults to currently playing)")]
-        [Autocomplete(typeof(AlbumAutoComplete))] string name = null,
-        [Summary("User", "The user to show (defaults to self)")] string user = null,
-        [Summary("Playcount-order", "If the list should be ordered by playcount")] bool orderByPlaycount = false)
+        [SlashCommandParameter(Name = "Album", Description = "The album your want to search for (defaults to currently playing)", AutocompleteProviderType = typeof(AlbumAutoComplete))] string name = null,
+        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")] string user = null,
+        [SlashCommandParameter(Name = "Playcount-order", Description = "If the list should be ordered by playcount")] bool orderByPlaycount = false)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
 
@@ -371,14 +356,11 @@ public class AlbumSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         }
     }
 
-    [SlashCommand("albumplays", "Shows playcount for current album or the one you're searching for")]
+    [SlashCommand("albumplays", "Shows playcount for current album or the one you're searching for", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task AlbumPlaysAsync(
-        [Summary("Album", "The album your want to search for (defaults to currently playing)")]
-        [Autocomplete(typeof(AlbumAutoComplete))] string name = null,
-        [Summary("User", "The user to show (defaults to self)")] string user = null)
+        [SlashCommandParameter(Name = "Album", Description = "The album your want to search for (defaults to currently playing)", AutocompleteProviderType = typeof(AlbumAutoComplete))] string name = null,
+        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")] string user = null)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
 

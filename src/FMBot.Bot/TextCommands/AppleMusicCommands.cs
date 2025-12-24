@@ -12,6 +12,7 @@ using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
 using NetCord.Services.Commands;
+using Fergun.Interactive;
 
 namespace FMBot.Bot.TextCommands;
 

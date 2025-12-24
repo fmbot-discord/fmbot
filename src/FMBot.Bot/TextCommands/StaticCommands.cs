@@ -364,8 +364,7 @@ public class StaticCommands : BaseCommandModule
         this.Context.LogCommandUsed();
     }
 
-    [Command("debugbotscrobbling")]
-    [Alias("debugbotscrobble", "debugbotscrobbles", "botscrobbledebug", "botscrobblingdebug")]
+    [Command("debugbotscrobbling", "debugbotscrobble", "debugbotscrobbles", "botscrobbledebug", "botscrobblingdebug")]
     [Summary("Debugging for bot scrobbling")]
     [ExcludeFromHelp]
     public async Task DebugBotScrobbles()
@@ -411,11 +410,10 @@ public class StaticCommands : BaseCommandModule
         this.Context.LogCommandUsed();
     }
 
-    [Command("shard")]
+    [Command("shard", "shardinfo")]
     [Summary("Displays shard info for a specific guild")]
     [GuildOnly]
     [ExcludeFromHelp]
-    [Alias("shardinfo")]
     [Examples("shard 0", "shard 821660544581763093")]
     public async Task ShardInfoAsync(ulong? guildId = null)
     {
@@ -769,9 +767,8 @@ public class StaticCommands : BaseCommandModule
         return $"**`{prefix}{commandInfo.Name}`{firstAlias}**\n";
     }
 
-    [Command("supporters")]
+    [Command("supporters", "donators", "donors", "backers")]
     [Summary("Displays all .fmbot supporters.")]
-    [Alias("donators", "donors", "backers")]
     [CommandCategories(CommandCategory.Other)]
     public async Task AllSupportersAsync()
     {
@@ -1001,9 +998,8 @@ public class StaticCommands : BaseCommandModule
         this.Context.LogCommandUsed();
     }
 
-    [Command("settinghelp")]
+    [Command("settinghelp", "serverhelp", "serversettings", "settings", "help server")]
     [Summary("Displays a list of all server settings.")]
-    [Alias("serverhelp", "serversettings", "settings", "help server")]
     [CommandCategories(CommandCategory.Other)]
     public async Task ServerHelpAsync()
     {

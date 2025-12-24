@@ -14,6 +14,8 @@ using System.Threading;
 using FMBot.Domain;
 using NetCord;
 using NetCord.Services.Commands;
+using Fergun.Interactive;
+using NetCord.Rest;
 
 namespace FMBot.Bot.TextCommands;
 
@@ -44,11 +46,10 @@ public class GameCommands : BaseCommandModule
         this._settingService = settingService;
     }
 
-    [Command("jumble")]
+    [Command("jumble", "j", "jmbl", "jum", "jumbmle")]
     [Summary("Play the Jumble game.")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Games)]
-    [Alias("j", "jmbl", "jum", "jumbmle")]
     [Options("stats")]
     [SupporterEnhanced("Supporters can play unlimited Jumble games without a daily limit")]
     public async Task JumbleAsync([CommandParameter(Remainder = true)] string options = null)
@@ -138,11 +139,10 @@ public class GameCommands : BaseCommandModule
         });
     }
 
-    [Command("pixel")]
+    [Command("pixel", "px", "pixelation", "aj", "abj", "popidle", "pixeljumble", "pxj")]
     [Summary("Play the pixel jumble game with albums.")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Games)]
-    [Alias("px", "pixelation", "aj", "abj", "popidle", "pixeljumble", "pxj")]
     [Options("stats")]
     [SupporterEnhanced("Supporters can play unlimited Pixel Jumble games without a daily limit")]
     public async Task PixelAsync([CommandParameter(Remainder = true)] string options = null)

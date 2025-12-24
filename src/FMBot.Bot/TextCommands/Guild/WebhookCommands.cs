@@ -34,10 +34,9 @@ public class WebhookCommands : BaseCommandModule
         this._prefixService = prefixService;
     }
 
-    [Command("addwebhook")]
+    [Command("addwebhook", "addfeaturedwebhook")]
     [Summary("Adds featured webhook to a channel. This will automatically post all .fmbot features to this channel.\n\n" +
              "To remove, simply delete the webhook from your server and .fmbot will automatically delete it next time it tries to post a feature.")]
-    [Alias("addfeaturedwebhook")]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.ServerSettings)]
@@ -83,9 +82,8 @@ public class WebhookCommands : BaseCommandModule
         this.Context.LogCommandUsed();
     }
 
-    [Command("testwebhook")]
+    [Command("testwebhook", "testfeatured", "testfeaturedwebhook")]
     [Summary("Test the .fmbot webhook in your channel")]
-    [Alias("testfeatured", "testfeaturedwebhook")]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.ServerSettings)]

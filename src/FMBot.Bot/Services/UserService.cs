@@ -8,10 +8,6 @@ using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using Dapper;
-
-using Discord.Commands;
-using Discord.Rest;
-using Discord.WebSocket;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Models.TemplateOptions;
@@ -30,6 +26,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using NetCord;
 using NetCord.Gateway;
+using NetCord.Services.ApplicationCommands;
 using NetCord.Services.Commands;
 using Npgsql;
 using Serilog;
@@ -387,7 +384,7 @@ public class UserService
         }
     }
 
-    public async Task AddUserSlashCommandInteraction(ShardedInteractionContext context, string commandName)
+    public async Task AddUserSlashCommandInteraction(ApplicationCommandContext context, string commandName)
     {
         var user = await GetUserSettingsAsync(context.User);
         PublicProperties.UsedCommandDiscordUserIds.TryAdd(context.Interaction.Id, context.User.Id);
@@ -446,9 +443,9 @@ public class UserService
             }
 
             var options = new Dictionary<string, string>();
-            if (context.Interaction is SocketSlashCommand command)
+            if (context.Interaction is SlashCommandInteraction slashCommand)
             {
-                foreach (var option in command.Data.Options)
+                foreach (var option in slashCommand.Data.Options)
                 {
                     options.Add(option.Name, option.Value?.ToString());
                 }
@@ -465,8 +462,8 @@ public class UserService
                 DiscordId = context.Interaction.Id,
                 DiscordResponseId = responseId,
                 Response = commandResponse,
-                Type = context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
-                       !context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall)
+                Type = context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
+                       !context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall)
                     ? UserInteractionType.SlashCommandUser
                     : UserInteractionType.SlashCommandGuild,
                 ErrorReferenceId = errorReference,

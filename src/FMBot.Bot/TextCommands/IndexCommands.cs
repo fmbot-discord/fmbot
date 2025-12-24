@@ -45,9 +45,8 @@ public class IndexCommands : BaseCommandModule
         this.Interactivity = interactivity;
     }
 
-    [Command("refreshmembers")]
+    [Command("refreshmembers", "index", "refresh", "cachemembers", "refreshserver", "serverset", "refresh members")]
     [Summary("Refreshes the cached member list that .fmbot has for your server.")]
-    [Alias("index", "refresh", "cachemembers", "refreshserver", "serverset", "refresh members")]
     [GuildOnly]
     [CommandCategories(CommandCategory.ServerSettings)]
     public async Task IndexGuildAsync()
@@ -112,7 +111,7 @@ public class IndexCommands : BaseCommandModule
         }
     }
 
-    [Command("update")]
+    [Command("update", "u")]
     [Summary("Updates a users cached playcounts based on their recent plays\n\n" +
              "You can also update parts of your cached playcounts by using one of the options")]
     [Options("Full", "Plays", "Artists", "Albums", "Tracks")]
@@ -120,7 +119,6 @@ public class IndexCommands : BaseCommandModule
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.UserSettings)]
     [SupporterEnhanced("Supporters get their lifetime data cached in the bot, so all the commands that rely on this have the most complete data")]
-    [Alias("u")]
     public async Task UpdateAsync([CommandParameter(Remainder = true)] string options = null)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);

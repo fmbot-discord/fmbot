@@ -13,6 +13,7 @@ using FMBot.Domain;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
 using NetCord.Services.Commands;
+using Fergun.Interactive;
 
 namespace FMBot.Bot.TextCommands.Guild;
 
@@ -44,9 +45,8 @@ public class UserGuildSettingCommands : BaseCommandModule
         this._adminService = adminService;
     }
 
-    [Command("fmbotactivitythreshold")]
+    [Command("fmbotactivitythreshold", "setfmbotactivitythreshold", "setfmbotthreshold", "setfmbothreshold")]
     [Summary("Sets amount of days to filter out users for inactivity. Inactivity is counted by the last date that someone has used .fmbot")]
-    [Alias("setfmbotactivitythreshold", "setfmbotthreshold", "setfmbothreshold")]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.ServerSettings, CommandCategory.WhoKnows)]
@@ -66,10 +66,9 @@ public class UserGuildSettingCommands : BaseCommandModule
         }
     }
 
-    [Command("block")]
+    [Command("block", "blockuser", "blockmember")]
     [Summary("Block a user from appearing in server-wide commands and charts")]
     [Options(Constants.UserMentionExample)]
-    [Alias("blockuser", "blockmember")]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.ServerSettings, CommandCategory.WhoKnows)]
@@ -152,10 +151,9 @@ public class UserGuildSettingCommands : BaseCommandModule
         }
     }
 
-    [Command("unblock")]
+    [Command("unblock", "unblockuser", "removeblock", "removeban", "crownunblock", "crownunban")]
     [Summary("Remove block from a user from appearing in server-wide commands")]
     [Options(Constants.UserMentionExample)]
-    [Alias("unblockuser", "removeblock", "removeban", "crownunblock", "crownunban")]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.ServerSettings, CommandCategory.WhoKnows)]
@@ -217,9 +215,8 @@ public class UserGuildSettingCommands : BaseCommandModule
         }
     }
 
-    [Command("blockedusers")]
+    [Command("blockedusers", "blocked", "banned", "bannedusers", "blockedmembers", "bannedmembers")]
     [Summary("View all users that are blocked from appearing in server-wide commands")]
-    [Alias("blocked", "banned", "bannedusers", "blockedmembers", "bannedmembers")]
     [GuildOnly]
     [RequiresIndex]
     [SupportsPagination]

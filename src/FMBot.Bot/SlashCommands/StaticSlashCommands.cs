@@ -44,7 +44,7 @@ public class StaticSlashCommands : ApplicationCommandModule<ApplicationCommandCo
         ApplicationIntegrationType.GuildInstall,
         ApplicationIntegrationType.UserInstall
     ])]
-    public async Task OutOfSyncAsync([Summary("private", "Show info privately?")] bool privateResponse = true)
+    public async Task OutOfSyncAsync([SlashCommandParameter(Name = "private", Description = "Show info privately?")] bool privateResponse = true)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var response = StaticBuilders.OutOfSync(new ContextModel(this.Context, contextUser));
@@ -282,7 +282,7 @@ public class StaticSlashCommands : ApplicationCommandModule<ApplicationCommandCo
         ApplicationIntegrationType.GuildInstall,
         ApplicationIntegrationType.UserInstall
     ])]
-    public async Task GiftSupporterAsync([Summary("User", "The user you want to gift supporter")] NetCord.User user)
+    public async Task GiftSupporterAsync([SlashCommandParameter(Name = "User", Description = "The user you want to gift supporter")] NetCord.User user)
     {
         await Context.Interaction.DeferAsync(ephemeral: true);
 
