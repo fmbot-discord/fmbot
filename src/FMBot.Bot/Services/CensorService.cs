@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
 
-using Discord.WebSocket;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
@@ -13,6 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using NetCord;
+using NetCord.Gateway;
 using NetCord.Rest;
 using Npgsql;
 using Serilog;
@@ -376,7 +376,7 @@ public class CensorService
                 return;
             }
 
-            var guild = this._client.GetGuild(this._botSettings.Bot.BaseServerId);
+            var guild = this._client.Cache.Guilds.GetValueOrDefault(this._botSettings.Bot.BaseServerId);
             var channel = guild?.GetTextChannel(this._botSettings.Bot.CensorReportChannelId);
 
             if (channel == null)

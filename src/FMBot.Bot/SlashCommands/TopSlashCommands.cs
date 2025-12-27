@@ -11,13 +11,13 @@ using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 using NetCord.Services.ApplicationCommands;
 using NetCord;
+using NetCord.Rest;
 using Fergun.Interactive;
+using NetCord.Services.Commands;
 
 namespace FMBot.Bot.SlashCommands;
 
-[Group("top", "Top lists - Artist/Albums/Tracks/Genres/Countries")]
-[CommandContextType(InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild)]
-[IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
+[SlashCommand("top", "Top lists - Artist/Albums/Tracks/Genres/Countries", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
 public class TopSlashCommands : ApplicationCommandModule<ApplicationCommandContext>
 {
     private readonly UserService _userService;
@@ -66,7 +66,7 @@ public class TopSlashCommands : ApplicationCommandModule<ApplicationCommandConte
         [SlashCommandParameter(Name = "Private", Description = "Only show response to you")] bool privateResponse = false,
         [SlashCommandParameter(Name = "Discogs", Description = "Show top artists in Discogs collection")] bool discogs = false)
     {
-        await DeferAsync(privateResponse);
+        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
@@ -99,7 +99,7 @@ public class TopSlashCommands : ApplicationCommandModule<ApplicationCommandConte
         [SlashCommandParameter(Name = "Size", Description = "Amount of albums to show")] EmbedSize? embedSize = null,
         [SlashCommandParameter(Name = "Private", Description = "Only show response to you")] bool privateResponse = false)
     {
-        await DeferAsync(privateResponse);
+        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
@@ -126,7 +126,7 @@ public class TopSlashCommands : ApplicationCommandModule<ApplicationCommandConte
         [SlashCommandParameter(Name = "Size", Description = "Amount of tracks to show")] EmbedSize? embedSize = null,
         [SlashCommandParameter(Name = "Private", Description = "Only show response to you")] bool privateResponse = false)
     {
-        await DeferAsync(privateResponse);
+        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
@@ -153,7 +153,7 @@ public class TopSlashCommands : ApplicationCommandModule<ApplicationCommandConte
         [SlashCommandParameter(Name = "Size", Description = "Amount of genres to show")] EmbedSize? embedSize = null,
         [SlashCommandParameter(Name = "Private", Description = "Only show response to you")] bool privateResponse = false)
     {
-        await DeferAsync(privateResponse);
+        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
@@ -180,7 +180,7 @@ public class TopSlashCommands : ApplicationCommandModule<ApplicationCommandConte
         [SlashCommandParameter(Name = "Size", Description = "Amount of countries to show")] EmbedSize? embedSize = null,
         [SlashCommandParameter(Name = "Private", Description = "Only show response to you")] bool privateResponse = false)
     {
-        await DeferAsync(privateResponse);
+        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);

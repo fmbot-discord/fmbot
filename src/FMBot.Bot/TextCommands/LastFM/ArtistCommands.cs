@@ -16,6 +16,7 @@ using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
 using NetCord.Services.Commands;
 using TimePeriod = FMBot.Domain.Models.TimePeriod;
+using NetCord.Rest;
 
 namespace FMBot.Bot.TextCommands.LastFM;
 
@@ -434,8 +435,7 @@ public class ArtistCommands : BaseCommandModule
                 e.Message.Contains("The server responded with error 50013: Missing Permissions"))
             {
                 await this.Context.HandleCommandException(e, sendReply: false);
-                await ReplyAsync("Error while replying: The bot is missing permissions.\n" +
-                                 "Make sure it has permission to 'Embed links' and 'Attach Images'");
+                await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Error while replying: The bot is missing permissions.\nMake sure it has permission to 'Embed links' and 'Attach Images'" });
             }
             else
             {
@@ -482,8 +482,7 @@ public class ArtistCommands : BaseCommandModule
                 e.Message.Contains("The server responded with error 50013: Missing Permissions"))
             {
                 await this.Context.HandleCommandException(e, sendReply: false);
-                await ReplyAsync("Error while replying: The bot is missing permissions.\n" +
-                                 "Make sure it has permission to 'Embed links' and 'Attach Images'");
+                await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Error while replying: The bot is missing permissions.\nMake sure it has permission to 'Embed links' and 'Attach Images'" });
             }
             else
             {
@@ -530,8 +529,7 @@ public class ArtistCommands : BaseCommandModule
                 e.Message.Contains("The server responded with error 50013: Missing Permissions"))
             {
                 await this.Context.HandleCommandException(e, sendReply: false);
-                await ReplyAsync("Error while replying: The bot is missing permissions.\n" +
-                                 "Make sure it has permission to 'Embed links' and 'Attach Images'");
+                await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Error while replying: The bot is missing permissions.\nMake sure it has permission to 'Embed links' and 'Attach Images'" });
             }
             else
             {
@@ -632,7 +630,7 @@ public class ArtistCommands : BaseCommandModule
 
                 this._embed.WithDescription(description.ToString());
 
-                var message = await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                var message = await this.Context.Channel.SendMessageAsync(new MessageProperties().AddEmbeds(this._embed));
 
                 response = await this._artistBuilders
                     .AffinityAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, guild, guildUsers,

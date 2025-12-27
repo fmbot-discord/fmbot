@@ -10,7 +10,9 @@ using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain.Interfaces;
 using NetCord.Services.ApplicationCommands;
 using NetCord;
+using NetCord.Rest;
 using Fergun.Interactive;
+using NetCord.Services.Commands;
 
 namespace FMBot.Bot.SlashCommands;
 

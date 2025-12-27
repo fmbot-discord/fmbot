@@ -102,70 +102,43 @@ public class TemplateContext
 
 public enum EmbedOption
 {
-    [Option("Author")]
     [EmbedOption("author")]
     [EmbedOptionAccepts(VariableType.Text)]
     Author = 10,
-
-    [Option("Author icon url")]
     [EmbedOption("author-icon-url")]
     [EmbedOptionAccepts(VariableType.ImageUrl)]
     AuthorIconUrl = 11,
-
-    [Option("Author url")]
     [EmbedOption("author-url")]
     [EmbedOptionAccepts(VariableType.ResourceUrl)]
     AuthorUrl = 12,
-
-    [Option("Title")]
     [EmbedOption("title")]
     [EmbedOptionAccepts(VariableType.Text)]
     Title = 20,
-
-    [Option("Url")]
     [EmbedOption("url")]
     [EmbedOptionAccepts(VariableType.ResourceUrl, VariableType.ImageUrl)]
     Url = 21,
-
-    [Option("Description")]
     [EmbedOption("description")]
     [EmbedOptionAccepts(VariableType.Text, VariableType.ResourceUrl, VariableType.ImageUrl)]
     Description = 22,
-
-    [Option("Thumbnail image url")]
     [EmbedOption("thumbnail-image-url")]
     [EmbedOptionAccepts(VariableType.ImageUrl)]
     ThumbnailImageUrl = 23,
-
-    [Option("Large image url")]
     [EmbedOption("large-image-url")]
     [EmbedOptionAccepts(VariableType.ImageUrl)]
     LargeImageUrl = 24,
-
-    [Option("Color (hex code)")]
     [EmbedOption("embed-color-hex")]
     [EmbedOptionAccepts(VariableType.HexColor)]
     ColorHex = 25,
-
-    [Option("Add field")]
     AddField = 30,
-
-    [Option("Footer")]
     [EmbedOption("footer")]
     [EmbedOptionAccepts(VariableType.Text)]
     Footer = 40,
-
-    [Option("Footer icon url")]
     [EmbedOption("footer-icon-url")]
     [EmbedOptionAccepts(VariableType.ImageUrl)]
     FooterIconUrl = 41,
-
-    [Option("Footer timestamp")]
     [EmbedOption("footer-timestamp")]
     [EmbedOptionAccepts(VariableType.Timestamp)]
     FooterTimestamp = 42,
-
-    [Option("Add button")]
     AddButton = 50,
 }
 
@@ -271,7 +244,7 @@ public static class TemplateOptions
             Description = "Authors Discord avatar url",
             VariableType = VariableType.ImageUrl,
             ExecutionLogic = context =>
-                Task.FromResult(new VariableResult(context.DiscordContextUser.GetDisplayAvatarUrl()))
+                Task.FromResult(new VariableResult(context.DiscordContextUser.GetAvatarUrl()?.ToString()))
         },
         new ComplexTemplateOption
         {

@@ -31,6 +31,7 @@ public class InteractionHandler
     private readonly ShardedGatewayClient _client;
     private readonly ApplicationCommandService<ApplicationCommandContext, AutocompleteInteractionContext> _appCommands;
     private readonly ComponentInteractionService<ComponentInteractionContext> _componentCommands;
+    private readonly ComponentInteractionService<ModalInteractionContext> _modalCommands;
     private readonly IServiceProvider _provider;
     private readonly UserService _userService;
     private readonly GuildService _guildService;
@@ -43,6 +44,7 @@ public class InteractionHandler
     public InteractionHandler(ShardedGatewayClient client,
         ApplicationCommandService<ApplicationCommandContext, AutocompleteInteractionContext> appCommands,
         ComponentInteractionService<ComponentInteractionContext> componentCommands,
+        ComponentInteractionService<ModalInteractionContext> modalCommands,
         IServiceProvider provider,
         UserService userService,
         GuildService guildService,
@@ -54,6 +56,7 @@ public class InteractionHandler
         this._client = client;
         this._appCommands = appCommands;
         this._componentCommands = componentCommands;
+        this._modalCommands = modalCommands;
         this._provider = provider;
         this._userService = userService;
         this._guildService = guildService;
@@ -157,6 +160,18 @@ public class InteractionHandler
     {
         var context = new ApplicationCommandContext(userCommand, client);
 
+        var commandInfo = _appCommands.GetCommands()
+            .FirstOrDefault(c => c.Name.Equals(userCommand.Data.Name, StringComparison.OrdinalIgnoreCase));
+
+        if (commandInfo != null)
+        {
+            var keepGoing = await CheckAttributes(context, commandInfo.Attributes);
+            if (!keepGoing)
+            {
+                return;
+            }
+        }
+
         await this._appCommands.ExecuteAsync(context, this._provider);
 
         Statistics.UserCommandsExecuted.Inc();
@@ -167,6 +182,18 @@ public class InteractionHandler
     private async Task ExecuteMessageCommand(MessageCommandInteraction messageCommand, GatewayClient client)
     {
         var context = new ApplicationCommandContext(messageCommand, client);
+
+        var commandInfo = _appCommands.GetCommands()
+            .FirstOrDefault(c => c.Name.Equals(messageCommand.Data.Name, StringComparison.OrdinalIgnoreCase));
+
+        if (commandInfo != null)
+        {
+            var keepGoing = await CheckAttributes(context, commandInfo.Attributes);
+            if (!keepGoing)
+            {
+                return;
+            }
+        }
 
         await this._appCommands.ExecuteAsync(context, this._provider);
 

@@ -2,7 +2,6 @@
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Models.TemplateOptions;
@@ -141,7 +140,7 @@ public class TemplateBuilders
         var extraResponse = new ResponseModel
         {
             ResponseType = ResponseType.Embed,
-            Embed = fmEmbed.EmbedBuilder
+            Embed = fmEmbed.EmbedProperties
         };
 
         return (response, extraResponse);

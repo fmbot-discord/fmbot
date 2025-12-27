@@ -377,7 +377,7 @@ public class IndexService
         };
     }
 
-    public async Task<int> StoreGuildUsers(NetCord.Gateway.Guild discordGuild, IReadOnlyCollection<IGuildUser> discordGuildUsers)
+    public async Task<int> StoreGuildUsers(NetCord.Gateway.Guild discordGuild, List<NetCord.GuildUser> discordGuildUsers)
     {
         var userIds = discordGuildUsers.Select(s => s.Id).ToList();
 
@@ -419,7 +419,7 @@ public class IndexService
         {
             var discordUser = discordGuildUsers.First(f => f.Id == user.User.DiscordUserId);
 
-            user.UserName = discordUser.DisplayName;
+            user.UserName = discordUser.Nickname ?? discordUser.GlobalName ?? discordUser.Username;
             user.Bot = discordUser.IsBot;
 
             if (PublicProperties.PremiumServers.ContainsKey(discordGuild.Id))

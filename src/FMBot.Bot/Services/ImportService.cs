@@ -10,20 +10,22 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using CsvHelper;
 using CsvHelper.Configuration;
-
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.Repositories;
+using User = FMBot.Persistence.Domain.Models.User;
 using Google.Protobuf.Collections;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using NetCord;
 using Npgsql;
 using Serilog;
 using Web.InternalApi;
+using Timestamp = Google.Protobuf.WellKnownTypes.Timestamp;
 
 namespace FMBot.Bot.Services;
 
@@ -49,7 +51,7 @@ public class ImportService
     }
 
     public async Task<(ImportStatus status, List<AppleMusicCsvImportModel> result)> HandleAppleMusicFiles(User user,
-        IAttachment attachment)
+        Attachment attachment)
     {
         var appleMusicPlays = new List<AppleMusicCsvImportModel>();
 
@@ -60,8 +62,8 @@ public class ImportService
 
         Log.Information(
             "Importing: {userId} / {discordUserId} - HandleAppleMusicFiles - Processing {fileName}",
-            user.UserId, user.DiscordUserId, attachment.Filename);
-        if (attachment.Filename.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+            user.UserId, user.DiscordUserId, attachment.FileName);
+        if (attachment.FileName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
         {
             await using var stream = await this._httpClient.GetStreamAsync(attachment.Url);
             using var zip = new ZipArchive(stream, ZipArchiveMode.Read);
@@ -75,7 +77,7 @@ public class ImportService
                 {
                     Log.Information(
                         "Importing: {userId} / {discordUserId} - HandleAppleMusicFiles - Could not find 'Apple_Media_Services.zip' inside first zip - {zipName}",
-                        user.UserId, user.DiscordUserId, attachment.Filename);
+                        user.UserId, user.DiscordUserId, attachment.FileName);
 
                     return (ImportStatus.UnknownFailure, null);
                 }
@@ -232,15 +234,15 @@ public class ImportService
     }
 
     public async Task<(ImportStatus status, List<SpotifyEndSongImportModel> result, List<string> processedFiles)>
-        HandleSpotifyFiles(User user, IEnumerable<IAttachment> attachments)
+        HandleSpotifyFiles(User user, IEnumerable<Attachment> attachments)
     {
         try
         {
             var spotifyPlays = new List<SpotifyEndSongImportModel>();
             var processedFiles = new List<string>();
 
-            foreach (var attachment in attachments.Where(w => w?.Url != null && w.Filename.Contains(".json", StringComparison.OrdinalIgnoreCase))
-                         .GroupBy(g => g.Filename))
+            foreach (var attachment in attachments.Where(w => w?.Url != null && w.FileName.Contains(".json", StringComparison.OrdinalIgnoreCase))
+                         .GroupBy(g => g.FileName))
             {
                 await using var stream = await this._httpClient.GetStreamAsync(attachment.First().Url);
 
@@ -258,8 +260,8 @@ public class ImportService
                 }
             }
 
-            foreach (var attachment in attachments.Where(w => w?.Url != null && w.Filename.Contains(".zip", StringComparison.OrdinalIgnoreCase))
-                         .GroupBy(g => g.Filename))
+            foreach (var attachment in attachments.Where(w => w?.Url != null && w.FileName.Contains(".zip", StringComparison.OrdinalIgnoreCase))
+                         .GroupBy(g => g.FileName))
             {
                 await using var stream = await this._httpClient.GetStreamAsync(attachment.First().Url);
 

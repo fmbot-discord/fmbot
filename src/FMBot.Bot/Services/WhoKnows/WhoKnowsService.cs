@@ -12,6 +12,8 @@ using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
+using NetCord.Gateway;
+using DiscordGuild = NetCord.Gateway.Guild;
 
 namespace FMBot.Bot.Services.WhoKnows;
 
@@ -33,7 +35,7 @@ public class WhoKnowsService
             return users;
         }
 
-        IGuildUser discordGuildUser = null;
+        GuildUser discordGuildUser = null;
         if (discordGuild != null)
         {
             discordGuildUser = await discordGuild.GetUserAsync(contextUser.DiscordUserId);

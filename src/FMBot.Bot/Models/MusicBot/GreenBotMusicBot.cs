@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 
-using Discord.WebSocket;
 using System.Text.RegularExpressions;
 using NetCord.Gateway;
 

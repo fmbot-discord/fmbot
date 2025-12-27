@@ -13,10 +13,13 @@ using FMBot.Bot.Services.Guild;
 using Fergun.Interactive;
 using FMBot.Bot.Models.Modals;
 using FMBot.Bot.Attributes;
+using FMBot.Bot.Factories;
 using FMBot.Bot.Services.WhoKnows;
+using FMBot.Domain.Attributes;
 using Microsoft.Extensions.Options;
 using FMBot.Domain.Enums;
 using NetCord;
+using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using NetCord.Services.Commands;
 using NetCord.Services.ComponentInteractions;
@@ -32,7 +35,7 @@ public class GuildSettingSlashCommands : ApplicationCommandModule<ApplicationCom
     private readonly GuildService _guildService;
     private readonly GuildBuilders _guildBuilders;
 
-    private readonly CommandService<> _commands;
+    private readonly CommandService<CommandContext> _commands;
 
     private readonly ChannelToggledCommandService _channelToggledCommandService;
     private readonly DisabledChannelService _disabledChannelService;
@@ -49,7 +52,7 @@ public class GuildSettingSlashCommands : ApplicationCommandModule<ApplicationCom
         UserService userService,
         IPrefixService prefixService,
         GuildService guildService,
-        CommandService commands,
+        CommandService<CommandContext> commands,
         ChannelToggledCommandService channelToggledCommandService,
         DisabledChannelService disabledChannelService,
         GuildDisabledCommandService guildDisabledCommandService,
@@ -98,7 +101,7 @@ public class GuildSettingSlashCommands : ApplicationCommandModule<ApplicationCom
     [RequiresIndex]
     [GuildOnly]
     public async Task MemberOverviewAsync(
-        [Discord.Interactions.Summary("View", "Statistic you want to view")]
+        [SlashCommandParameter(Name = "View", Description = "Statistic you want to view")]
         GuildViewType viewType)
     {
         try
@@ -135,7 +138,7 @@ public class GuildSettingSlashCommands : ApplicationCommandModule<ApplicationCom
                 return;
             }
 
-            var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+            var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
             if (message == null)
             {
                 return;
@@ -146,7 +149,7 @@ public class GuildSettingSlashCommands : ApplicationCommandModule<ApplicationCom
             var components =
                 new ActionRowProperties().WithButton($"Loading {name.ToLower()} view...", customId: "1",
                     emote: EmojiProperties.Custom("<a:loading:821676038102056991>"), disabled: true, style: ButtonStyle.Secondary);
-            await message.ModifyAsync(m => m.Components = components.Build());
+            await message.ModifyAsync(m => m.Components = [components]);
 
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
             var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
@@ -289,46 +292,15 @@ public class GuildSettingSlashCommands : ApplicationCommandModule<ApplicationCom
     [ServerStaffOnly]
     public async Task SetPrefix()
     {
-        var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+        var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
 
         if (message == null)
         {
             return;
         }
 
-        await this.Context.Interaction.RespondWithModalAsync<SetPrefixModal>(
-            $"{InteractionConstants.SetPrefixModal}-{message.Id}");
-    }
-
-    [ModalInteraction($"{InteractionConstants.SetPrefixModal}-*")]
-    [ServerStaffOnly]
-    public async Task SetPrefix(string messageId, SetPrefixModal modal)
-    {
-        if (modal.NewPrefix == this._botSettings.Bot.Prefix)
-        {
-            await this._guildService.SetGuildPrefixAsync(this.Context.Guild, null);
-            this._prefixService.StorePrefix(null, this.Context.Guild.Id);
-        }
-        else if (modal.NewPrefix.Contains("/") ||
-                 modal.NewPrefix.Contains("*") ||
-                 modal.NewPrefix.Contains("|") ||
-                 modal.NewPrefix.Contains("`") ||
-                 modal.NewPrefix.Contains("#") ||
-                 modal.NewPrefix.Contains("_") ||
-                 modal.NewPrefix.Contains("~"))
-        {
-            await RespondAsync($"Prefix contains disallowed characters. Please try a different prefix.",
-                ephemeral: true);
-            return;
-        }
-        else
-        {
-            await this._guildService.SetGuildPrefixAsync(this.Context.Guild, modal.NewPrefix);
-            this._prefixService.StorePrefix(modal.NewPrefix, this.Context.Guild.Id);
-        }
-
-        var response = await this._guildSettingBuilder.SetPrefix(new ContextModel(this.Context), this.Context.User);
-        await this.Context.UpdateMessageEmbed(response, messageId);
+        await this.Context.Interaction.RespondWithModalAsync(ModalFactory.CreateSetPrefixModal(
+            $"{InteractionConstants.SetPrefixModal}:{message.Id}"));
     }
 
     [ComponentInteraction(InteractionConstants.RemovePrefix)]
@@ -366,11 +338,11 @@ public class GuildSettingSlashCommands : ApplicationCommandModule<ApplicationCom
 
             var response = await this._guildSettingBuilder.GuildMode(new ContextModel(this.Context), this.Context.User);
 
-            await Context.Interaction.DeferAsync(ephemeral: true);
-            await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
+            await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
+            await this.Context.Interaction.ModifyResponseAsync(e =>
             {
-                e.Embed = response.Embed;
-                e.Components = response.Components;
+                e.Embeds = [response.Embed];
+                e.Components = [response.Components];
             });
         }
         catch (Exception e)
@@ -394,7 +366,7 @@ public class GuildSettingSlashCommands : ApplicationCommandModule<ApplicationCom
         }
 
         var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
-        var selectedChannel = await this.Context.Guild.GetChannelAsync(parsedChannelId);
+        var selectedChannel = this.Context.Guild.Channels.TryGetValue(parsedChannelId, out var ch) ? ch : null;
 
         if (Enum.TryParse(inputs.FirstOrDefault(), out FmEmbedType embedType))
         {
@@ -415,41 +387,15 @@ public class GuildSettingSlashCommands : ApplicationCommandModule<ApplicationCom
     [ServerStaffOnly]
     public async Task SetFmbotActivityThreshold()
     {
-        var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+        var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
 
         if (message == null)
         {
             return;
         }
 
-        await this.Context.Interaction.RespondWithModalAsync<SetFmbotActivityThresholdModal>(
-            $"{InteractionConstants.SetFmbotActivityThresholdModal}-{message.Id}");
-    }
-
-    [ModalInteraction($"{InteractionConstants.SetFmbotActivityThresholdModal}-*")]
-    [ServerStaffOnly]
-    public async Task SetFmbotActivityThreshold(string messageId, SetFmbotActivityThresholdModal modal)
-    {
-        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
-        {
-            await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
-            return;
-        }
-
-        if (!int.TryParse(modal.Amount, out var result) ||
-            result < 2 ||
-            result > 999)
-        {
-            await RespondAsync($"Please enter a valid number between `2` and `999`.", ephemeral: true);
-            return;
-        }
-
-        await this._guildService.SetFmbotActivityThresholdDaysAsync(this.Context.Guild, result);
-
-        var response =
-            await this._guildSettingBuilder.SetFmbotActivityThreshold(new ContextModel(this.Context),
-                this.Context.User);
-        await this.Context.UpdateMessageEmbed(response, messageId);
+        await this.Context.Interaction.RespondWithModalAsync(ModalFactory.CreateSetFmbotActivityThresholdModal(
+            $"{InteractionConstants.SetFmbotActivityThresholdModal}:{message.Id}"));
     }
 
     [ComponentInteraction(InteractionConstants.RemoveFmbotActivityThreshold)]
@@ -468,35 +414,15 @@ public class GuildSettingSlashCommands : ApplicationCommandModule<ApplicationCom
     [ServerStaffOnly]
     public async Task SetCrownActivityThreshold()
     {
-        var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+        var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
 
         if (message == null)
         {
             return;
         }
 
-        await this.Context.Interaction.RespondWithModalAsync<SetCrownActivityThresholdModal>(
-            $"{InteractionConstants.SetCrownActivityThresholdModal}-{message.Id}");
-    }
-
-    [ModalInteraction($"{InteractionConstants.SetCrownActivityThresholdModal}-*")]
-    [ServerStaffOnly]
-    public async Task SetCrownActivityThreshold(string messageId, SetCrownActivityThresholdModal modal)
-    {
-        if (!int.TryParse(modal.Amount, out var result) ||
-            result < 2 ||
-            result > 999)
-        {
-            await RespondAsync($"Please enter a valid number between `2` and `999`.", ephemeral: true);
-            return;
-        }
-
-        await this._guildService.SetCrownActivityThresholdDaysAsync(this.Context.Guild, result);
-
-        var response =
-            await this._guildSettingBuilder.SetCrownActivityThreshold(new ContextModel(this.Context),
-                this.Context.User);
-        await this.Context.UpdateMessageEmbed(response, messageId);
+        await this.Context.Interaction.RespondWithModalAsync(ModalFactory.CreateSetCrownActivityThresholdModal(
+            $"{InteractionConstants.SetCrownActivityThresholdModal}:{message.Id}"));
     }
 
     [ComponentInteraction(InteractionConstants.RemoveCrownActivityThreshold)]
@@ -516,34 +442,15 @@ public class GuildSettingSlashCommands : ApplicationCommandModule<ApplicationCom
     [ServerStaffOnly]
     public async Task SetCrownMinPlaycount()
     {
-        var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+        var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
 
         if (message == null)
         {
             return;
         }
 
-        await this.Context.Interaction.RespondWithModalAsync<SetCrownMinPlaycountModal>(
-            $"{InteractionConstants.SetCrownMinPlaycountModal}-{message.Id}");
-    }
-
-    [ModalInteraction($"{InteractionConstants.SetCrownMinPlaycountModal}-*")]
-    [ServerStaffOnly]
-    public async Task SetCrownMinPlaycount(string messageId, SetCrownMinPlaycountModal modal)
-    {
-        if (!int.TryParse(modal.Amount, out var result) ||
-            result < 5 ||
-            result > 1000)
-        {
-            await RespondAsync($"Please enter a valid number between `5` and `1000`.", ephemeral: true);
-            return;
-        }
-
-        await this._guildService.SetMinimumCrownPlaycountThresholdAsync(this.Context.Guild, result);
-
-        var response =
-            await this._guildSettingBuilder.SetCrownMinPlaycount(new ContextModel(this.Context), this.Context.User);
-        await this.Context.UpdateMessageEmbed(response, messageId);
+        await this.Context.Interaction.RespondWithModalAsync(ModalFactory.CreateSetCrownMinPlaycountModal(
+            $"{InteractionConstants.SetCrownMinPlaycountModal}:{message.Id}"));
     }
 
     [ComponentInteraction(InteractionConstants.RemoveCrownMinPlaycount)]
@@ -573,122 +480,30 @@ public class GuildSettingSlashCommands : ApplicationCommandModule<ApplicationCom
     [ServerStaffOnly]
     public async Task AddDisabledChannelCommand(string channelId, string categoryId)
     {
-        var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+        var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
 
         if (message == null)
         {
             return;
         }
 
-        await this.Context.Interaction.RespondWithModalAsync<AddDisabledChannelCommandModal>(
-            $"{InteractionConstants.ToggleCommand.ToggleCommandAddModal}-{channelId}-{categoryId}-{message.Id}");
-    }
-
-    [ModalInteraction($"{InteractionConstants.ToggleCommand.ToggleCommandAddModal}-*-*-*")]
-    [ServerStaffOnly]
-    public async Task AddDisabledChannelCommand(string channelId, string categoryId, string messageId,
-        AddDisabledChannelCommandModal modal)
-    {
-        var parsedChannelId = ulong.Parse(channelId);
-        var parsedCategoryId = ulong.Parse(categoryId);
-        var searchResult = this._commands.Search(modal.Command.ToLower());
-        var selectedChannel = await this.Context.Guild.GetChannelAsync(parsedChannelId);
-
-        if (!searchResult.IsSuccess ||
-            !searchResult.Commands.Any())
-        {
-            await RespondAsync($"The command `{modal.Command}` could not be found. Please try again.", ephemeral: true);
-            return;
-        }
-
-        var commandToDisable = searchResult.Commands[0];
-
-        if (commandToDisable.Command.Name is "serversettings" or "togglecommand" or "toggleservercommand")
-        {
-            await RespondAsync($"You can't disable this command. Please try a different command.", ephemeral: true);
-            return;
-        }
-
-        var currentlyDisabledCommands = await this._guildService.GetDisabledCommandsForChannel(parsedChannelId);
-
-        if (currentlyDisabledCommands != null &&
-            currentlyDisabledCommands.Any(a => a == commandToDisable.Command.Name))
-        {
-            await RespondAsync(
-                $"The command `{commandToDisable.Command.Name}` is already disabled in <#{selectedChannel.Id}>.",
-                ephemeral: true);
-            return;
-        }
-
-        var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
-
-        await this._guildService
-            .DisableChannelCommandsAsync(selectedChannel, guild.GuildId,
-                new List<string> { commandToDisable.Command.Name }, this.Context.Guild.Id);
-
-        await this._channelToggledCommandService.ReloadToggledCommands(this.Context.Guild.Id);
-
-        var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context),
-            parsedChannelId, parsedCategoryId, this.Context.User);
-
-        await this.Context.UpdateMessageEmbed(response, messageId);
+        await this.Context.Interaction.RespondWithModalAsync(ModalFactory.CreateAddDisabledChannelCommandModal(
+            $"{InteractionConstants.ToggleCommand.ToggleCommandAddModal}:{channelId}:{categoryId}:{message.Id}"));
     }
 
     [ComponentInteraction($"{InteractionConstants.ToggleCommand.ToggleCommandRemove}-*-*")]
     [ServerStaffOnly]
     public async Task RemoveDisabledChannelCommand(string channelId, string categoryId)
     {
-        var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+        var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
 
         if (message == null)
         {
             return;
         }
 
-        await this.Context.Interaction.RespondWithModalAsync<RemoveDisabledChannelCommandModal>(
-            $"{InteractionConstants.ToggleCommand.ToggleCommandRemoveModal}-{channelId}-{categoryId}-{message.Id}");
-    }
-
-    [ModalInteraction($"{InteractionConstants.ToggleCommand.ToggleCommandRemoveModal}-*-*-*")]
-    [ServerStaffOnly]
-    public async Task RemoveDisabledChannelCommand(string channelId, string categoryId, string messageId,
-        RemoveDisabledChannelCommandModal modal)
-    {
-        var parsedChannelId = ulong.Parse(channelId);
-        var parsedCategoryId = ulong.Parse(categoryId);
-        var searchResult = this._commands.Search(modal.Command.ToLower());
-        var selectedChannel = await this.Context.Guild.GetChannelAsync(parsedChannelId);
-
-        if (!searchResult.IsSuccess ||
-            !searchResult.Commands.Any())
-        {
-            await RespondAsync($"The command `{modal.Command}` could not be found. Please try again.", ephemeral: true);
-            return;
-        }
-
-        var commandToEnable = searchResult.Commands[0];
-
-        var currentlyDisabledCommands = await this._guildService.GetDisabledCommandsForChannel(parsedChannelId);
-
-        if (currentlyDisabledCommands == null ||
-            currentlyDisabledCommands.All(a => a != commandToEnable.Command.Name))
-        {
-            await RespondAsync(
-                $"The command `{commandToEnable.Command.Name}` is not disabled in <#{selectedChannel.Id}>.",
-                ephemeral: true);
-            return;
-        }
-
-        await this._guildService
-            .EnableChannelCommandsAsync(selectedChannel, new List<string> { commandToEnable.Command.Name },
-                this.Context.Guild.Id);
-
-        await this._channelToggledCommandService.ReloadToggledCommands(this.Context.Guild.Id);
-
-        var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context),
-            parsedChannelId, parsedCategoryId, this.Context.User);
-
-        await this.Context.UpdateMessageEmbed(response, messageId);
+        await this.Context.Interaction.RespondWithModalAsync(ModalFactory.CreateRemoveDisabledChannelCommandModal(
+            $"{InteractionConstants.ToggleCommand.ToggleCommandRemoveModal}:{channelId}:{categoryId}:{message.Id}"));
     }
 
     [ComponentInteraction($"{InteractionConstants.ToggleCommand.ToggleCommandClear}-*-*")]
@@ -718,7 +533,7 @@ public class GuildSettingSlashCommands : ApplicationCommandModule<ApplicationCom
         var parsedCategoryId = ulong.Parse(categoryId);
 
         var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
-        var selectedChannel = await this.Context.Guild.GetChannelAsync(parsedChannelId);
+        var selectedChannel = this.Context.Guild.Channels.TryGetValue(parsedChannelId, out var ch) ? ch : null;
 
         await this._guildService.DisableChannelAsync(selectedChannel, guild.GuildId, this.Context.Guild.Id);
         await this._disabledChannelService.ReloadDisabledChannels(this.Context.Guild.Id);
@@ -735,7 +550,7 @@ public class GuildSettingSlashCommands : ApplicationCommandModule<ApplicationCom
         var parsedChannelId = ulong.Parse(channelId);
         var parsedCategoryId = ulong.Parse(categoryId);
 
-        var selectedChannel = await this.Context.Guild.GetChannelAsync(parsedChannelId);
+        var selectedChannel = this.Context.Guild.Channels.TryGetValue(parsedChannelId, out var ch) ? ch : null;
 
         await this._guildService.EnableChannelAsync(selectedChannel, this.Context.Guild.Id);
         await this._disabledChannelService.ReloadDisabledChannels(this.Context.Guild.Id);
@@ -749,106 +564,30 @@ public class GuildSettingSlashCommands : ApplicationCommandModule<ApplicationCom
     [ServerStaffOnly]
     public async Task AddDisabledGuildCommand()
     {
-        var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+        var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
 
         if (message == null)
         {
             return;
         }
 
-        await this.Context.Interaction.RespondWithModalAsync<AddDisabledGuildCommandModal>(
-            $"{InteractionConstants.ToggleCommand.ToggleGuildCommandAddModal}-{message.Id}");
-    }
-
-    [ModalInteraction($"{InteractionConstants.ToggleCommand.ToggleGuildCommandAddModal}-*")]
-    [ServerStaffOnly]
-    public async Task AddDisabledGuildCommand(string messageId, AddDisabledGuildCommandModal modal)
-    {
-        var searchResult = this._commands.Search(modal.Command.ToLower());
-
-        if (!searchResult.IsSuccess ||
-            !searchResult.Commands.Any())
-        {
-            await RespondAsync($"The command `{modal.Command}` could not be found. Please try again.", ephemeral: true);
-            return;
-        }
-
-        var commandToDisable = searchResult.Commands[0];
-
-        if (commandToDisable.Command.Name is "serversettings" or "togglecommand" or "toggleservercommand")
-        {
-            await RespondAsync($"You can't disable this command. Please try a different command.", ephemeral: true);
-            return;
-        }
-
-        var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
-        var currentlyDisabledCommands = guild.DisabledCommands?.ToList();
-
-        if (currentlyDisabledCommands != null &&
-            currentlyDisabledCommands.Any(a => a == commandToDisable.Command.Name))
-        {
-            await RespondAsync($"The command `{commandToDisable.Command.Name}` is already disabled in this server.",
-                ephemeral: true);
-            return;
-        }
-
-        await this._guildService.AddGuildDisabledCommandAsync(this.Context.Guild, commandToDisable.Command.Name);
-        await this._guildDisabledCommandService.ReloadDisabledCommands(this.Context.Guild.Id);
-
-        var response =
-            await this._guildSettingBuilder.ToggleGuildCommand(new ContextModel(this.Context), this.Context.User);
-
-        await this.Context.UpdateMessageEmbed(response, messageId);
+        await this.Context.Interaction.RespondWithModalAsync(ModalFactory.CreateAddDisabledGuildCommandModal(
+            $"{InteractionConstants.ToggleCommand.ToggleGuildCommandAddModal}:{message.Id}"));
     }
 
     [ComponentInteraction($"{InteractionConstants.ToggleCommand.ToggleGuildCommandRemove}")]
     [ServerStaffOnly]
     public async Task RemoveDisabledGuildCommand()
     {
-        var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+        var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
 
         if (message == null)
         {
             return;
         }
 
-        await this.Context.Interaction.RespondWithModalAsync<RemoveDisabledGuildCommandModal>(
-            $"{InteractionConstants.ToggleCommand.ToggleGuildCommandRemoveModal}-{message.Id}");
-    }
-
-    [ModalInteraction($"{InteractionConstants.ToggleCommand.ToggleGuildCommandRemoveModal}-*")]
-    [ServerStaffOnly]
-    public async Task RemoveDisabledChannelCommand(string messageId, RemoveDisabledGuildCommandModal modal)
-    {
-        var searchResult = this._commands.Search(modal.Command.ToLower());
-
-        if (!searchResult.IsSuccess ||
-            !searchResult.Commands.Any())
-        {
-            await RespondAsync($"The command `{modal.Command}` could not be found. Please try again.", ephemeral: true);
-            return;
-        }
-
-        var commandToEnable = searchResult.Commands[0];
-
-        var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
-        var currentlyDisabledCommands = guild.DisabledCommands?.ToList();
-
-        if (currentlyDisabledCommands == null ||
-            currentlyDisabledCommands.All(a => a != commandToEnable.Command.Name))
-        {
-            await RespondAsync($"The command `{commandToEnable.Command.Name}` is not disabled in this server.",
-                ephemeral: true);
-            return;
-        }
-
-        await this._guildService.RemoveGuildDisabledCommandAsync(this.Context.Guild, commandToEnable.Command.Name);
-        await this._guildDisabledCommandService.ReloadDisabledCommands(this.Context.Guild.Id);
-
-        var response =
-            await this._guildSettingBuilder.ToggleGuildCommand(new ContextModel(this.Context), this.Context.User);
-
-        await this.Context.UpdateMessageEmbed(response, messageId);
+        await this.Context.Interaction.RespondWithModalAsync(ModalFactory.CreateRemoveDisabledGuildCommandModal(
+            $"{InteractionConstants.ToggleCommand.ToggleGuildCommandRemoveModal}:{message.Id}"));
     }
 
     [ComponentInteraction($"{InteractionConstants.ToggleCommand.ToggleGuildCommandClear}")]

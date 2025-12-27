@@ -21,6 +21,7 @@ using Microsoft.Extensions.Options;
 using NetCord.Gateway;
 using NetCord.Services.ApplicationCommands;
 using NetCord.Services.Commands;
+using NetCord.Services.ComponentInteractions;
 using Prometheus;
 using Serilog;
 
@@ -32,6 +33,8 @@ public class StartupService
 {
     private readonly CommandService<CommandContext> _textCommands;
     private readonly ApplicationCommandService<ApplicationCommandContext, AutocompleteInteractionContext> _appCommands;
+    private readonly ComponentInteractionService<ComponentInteractionContext> _componentCommands;
+    private readonly ComponentInteractionService<ModalInteractionContext> _modalCommands;
     private readonly GuildDisabledCommandService _guildDisabledCommands;
     private readonly ChannelToggledCommandService _channelToggledCommands;
     private readonly DisabledChannelService _disabledChannelService;
@@ -63,7 +66,9 @@ public class StartupService
         ChartService chartService,
         ShortcutService shortcutService,
         CommandService<CommandContext> textCommands,
-        ApplicationCommandService<ApplicationCommandContext, AutocompleteInteractionContext> appCommands)
+        ApplicationCommandService<ApplicationCommandContext, AutocompleteInteractionContext> appCommands,
+        ComponentInteractionService<ComponentInteractionContext> componentCommands,
+        ComponentInteractionService<ModalInteractionContext> modalCommands)
     {
         this._provider = provider;
         this._client = discord;
@@ -80,6 +85,8 @@ public class StartupService
         this._shortcutService = shortcutService;
         this._textCommands = textCommands;
         this._appCommands = appCommands;
+        this._componentCommands = componentCommands;
+        this._modalCommands = modalCommands;
         this._botSettings = botSettings.Value;
     }
 
@@ -124,6 +131,10 @@ public class StartupService
 
         Log.Information("Loading interaction modules");
         this._appCommands.AddModules(typeof(Program).Assembly);
+
+        Log.Information("Loading component interaction modules");
+        this._componentCommands.AddModules(typeof(Program).Assembly);
+        this._modalCommands.AddModules(typeof(Program).Assembly);
 
         Log.Information("Loading command modules");
         this._textCommands.AddModules(typeof(Program).Assembly);

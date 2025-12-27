@@ -101,12 +101,12 @@ public class StaticSlashCommands : ApplicationCommandModule<ApplicationCommandCo
             }
             else
             {
-                await Context.Interaction.DeferAsync(ephemeral: true);
+                await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
 
-                await this.Context.Interaction.ModifyOriginalResponseAsync(m =>
+                await this.Context.Interaction.ModifyResponseAsync(m =>
                 {
-                    m.Components = response.Components?.Build();
-                    m.Embed = response.Embed?.Build();
+                    m.Components = [response.Components];
+                    m.Embeds = [response.Embed];
                 });
             }
 
@@ -159,7 +159,10 @@ public class StaticSlashCommands : ApplicationCommandModule<ApplicationCommandCo
 
         embed.WithDescription(description.ToString());
 
-        await RespondAsync(embed: embed.Build(), ephemeral: true, components: components.Build());
+        await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+            .WithEmbeds([embed])
+            .WithComponents([components])
+            .WithFlags(MessageFlags.Ephemeral)));
         this.Context.LogCommandUsed();
     }
 
@@ -251,7 +254,9 @@ public class StaticSlashCommands : ApplicationCommandModule<ApplicationCommandCo
             embed.AddField("Your details", existingSupporterDescription.ToString());
         }
 
-        await RespondAsync(embed: embed.Build(), ephemeral: true);
+        await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+            .WithEmbeds([embed])
+            .WithFlags(MessageFlags.Ephemeral)));
         this.Context.LogCommandUsed();
     }
 
@@ -269,7 +274,10 @@ public class StaticSlashCommands : ApplicationCommandModule<ApplicationCommandCo
         var components = new ActionRowProperties()
             .WithButton("Manage subscription", url: stripeManageLink, emote: EmojiProperties.Standard("⭐"));
 
-        await RespondAsync(embed: embed.Build(), ephemeral: true, components: components.Build());
+        await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+            .WithEmbeds([embed])
+            .WithComponents([components])
+            .WithFlags(MessageFlags.Ephemeral)));
         this.Context.LogCommandUsed();
     }
 
@@ -284,7 +292,7 @@ public class StaticSlashCommands : ApplicationCommandModule<ApplicationCommandCo
     ])]
     public async Task GiftSupporterAsync([SlashCommandParameter(Name = "User", Description = "The user you want to gift supporter")] NetCord.User user)
     {
-        await Context.Interaction.DeferAsync(ephemeral: true);
+        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
 
         var recipientUser = await this._userService.GetUserAsync(user.Id);
         var response = await this._staticBuilders.BuildGiftSupporterResponse(this.Context.User.Id, recipientUser,
@@ -305,7 +313,7 @@ public class StaticSlashCommands : ApplicationCommandModule<ApplicationCommandCo
     ])]
     public async Task GiftSupporterUserCommand(NetCord.User targetUser)
     {
-        await Context.Interaction.DeferAsync(ephemeral: true);
+        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
 
         var recipientUser = await this._userService.GetUserAsync(targetUser.Id);
         var response = await this._staticBuilders.BuildGiftSupporterResponse(this.Context.User.Id, recipientUser,
@@ -318,7 +326,7 @@ public class StaticSlashCommands : ApplicationCommandModule<ApplicationCommandCo
     [ComponentInteraction("gift-supporter-purchase-*-*")]
     public async Task HandleGiftPurchase(string duration, string recipientId)
     {
-        await Context.Interaction.DeferAsync(ephemeral: true);
+        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var recipientDiscordId = ulong.Parse(recipientId);
@@ -326,7 +334,9 @@ public class StaticSlashCommands : ApplicationCommandModule<ApplicationCommandCo
         var recipientUser = await this._userService.GetUserAsync(recipientDiscordId);
         if (recipientUser == null)
         {
-            await Context.Interaction.FollowupAsync("❌ Could not find recipient user.", ephemeral: true);
+            await Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
+                .WithContent("❌ Could not find recipient user.")
+                .WithFlags(MessageFlags.Ephemeral));
             return;
         }
 
@@ -352,8 +362,9 @@ public class StaticSlashCommands : ApplicationCommandModule<ApplicationCommandCo
 
         if (string.IsNullOrEmpty(priceId))
         {
-            await Context.Interaction.FollowupAsync(
-                "❌ Error while attempting to create checkout, please contact support.", ephemeral: true);
+            await Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
+                .WithContent("❌ Error while attempting to create checkout, please contact support.")
+                .WithFlags(MessageFlags.Ephemeral));
             return;
         }
 
@@ -370,8 +381,9 @@ public class StaticSlashCommands : ApplicationCommandModule<ApplicationCommandCo
 
             if (string.IsNullOrEmpty(checkoutLink))
             {
-                await Context.Interaction.FollowupAsync("❌ Could not create checkout link. Please try again later.",
-                    ephemeral: true);
+                await Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
+                    .WithContent("❌ Could not create checkout link. Please try again later.")
+                    .WithFlags(MessageFlags.Ephemeral));
                 return;
             }
 
@@ -386,8 +398,10 @@ public class StaticSlashCommands : ApplicationCommandModule<ApplicationCommandCo
             var components = new ActionRowProperties()
                 .WithButton("Complete purchase", url: checkoutLink, emote: EmojiProperties.Standard("🎁"));
 
-            await Context.Interaction.FollowupAsync(embed: embed.Build(), components: components.Build(),
-                ephemeral: true);
+            await Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
+                .WithEmbeds([embed])
+                .WithComponents([components])
+                .WithFlags(MessageFlags.Ephemeral));
             this.Context.LogCommandUsed();
         }
         catch (Exception ex)

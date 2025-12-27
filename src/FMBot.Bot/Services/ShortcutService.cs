@@ -1,5 +1,4 @@
-﻿using Discord.Commands;
-using FMBot.Persistence.EntityFrameWork;
+﻿using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using System;
@@ -7,10 +6,13 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-
 using FMBot.Bot.Resources;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
+using NetCord;
+using NetCord.Rest;
+using NetCord.Services.Commands;
+using User = FMBot.Persistence.Domain.Models.User;
 
 namespace FMBot.Bot.Services
 {
@@ -229,7 +231,7 @@ namespace FMBot.Bot.Services
             }
         }
 
-        public static (Shortcut shortcut, string remainingArgs)? FindShortcut(ICommandContext context, string messageContent)
+        public static (Shortcut shortcut, string remainingArgs)? FindShortcut(CommandContext context, string messageContent)
         {
             var userShortcuts = UserShortcuts.TryGetValue(context.User.Id, out var uShorts) ? uShorts : Enumerable.Empty<Shortcut>();
             var guildShortcuts = context.Guild != null && GuildShortcuts.TryGetValue(context.Guild.Id, out var gShorts)
@@ -255,11 +257,11 @@ namespace FMBot.Bot.Services
             return null;
         }
 
-        public static async Task AddShortcutReaction(ShardedCommandContext context)
+        public static async Task AddShortcutReaction(CommandContext context)
         {
             if (context.Message != null)
             {
-                await context.Message.AddReactionAsync(EmojiProperties.Custom(DiscordConstants.Shortcut));
+                await context.Message.AddReactionAsync(new ReactionEmojiProperties("Shortcut", DiscordConstants.Shortcut));
             }
         }
     }

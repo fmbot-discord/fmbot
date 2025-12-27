@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using Fergun.Interactive;
@@ -12,8 +13,10 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
+using NetCord;
 using NetCord.Services.Commands;
 using Serilog;
+using NetCord.Rest;
 
 namespace FMBot.Bot.TextCommands;
 
@@ -57,20 +60,24 @@ public class IndexCommands : BaseCommandModule
         {
             this._embed.WithColor(DiscordConstants.InformationColorBlue);
             this._embed.WithDescription("This server has already been updated in the last minute, please wait.");
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            await this.Context.Channel.SendMessageAsync(new MessageProperties().AddEmbeds(this._embed));
             this.Context.LogCommandUsed(CommandResponse.Cooldown);
             return;
         }
 
         this._embed.WithDescription(
             "<a:loading:821676038102056991> Updating memberlist, this can take a while on larger servers...");
-        var indexMessage = await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+        var indexMessage = await this.Context.Channel.SendMessageAsync(new MessageProperties().AddEmbeds(this._embed));
 
         try
         {
             await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow);
 
-            var guildUsers = await this.Context.Guild.GetUsersAsync();
+            var guildUsers = new List<GuildUser>();
+            await foreach (var user in this.Context.Guild.GetUsersAsync())
+            {
+                guildUsers.Add(user);
+            }
 
             Log.Information("Downloaded {guildUserCount} users for guild {guildId} / {guildName} from Discord",
                 guildUsers.Count, this.Context.Guild.Id, this.Context.Guild.Name);
@@ -87,15 +94,14 @@ public class IndexCommands : BaseCommandModule
 
             await indexMessage.ModifyAsync(m =>
             {
-                m.Embed = new EmbedProperties()
+                m.Embeds = [new EmbedProperties()
                     .WithDescription(reply.ToString())
-                    .WithColor(DiscordConstants.SuccessColorGreen)
-                    .Build();
+                    .WithColor(DiscordConstants.SuccessColorGreen)]
+                    ;
             });
 
-            if (this.Context.Guild is SocketGuild socketGuild)
+            if (this.Context.Guild is NetCord.Gateway.Guild socketGuild)
             {
-                socketGuild.PurgeUserCache();
             }
             this.Context.LogCommandUsed();
 
@@ -135,8 +141,8 @@ public class IndexCommands : BaseCommandModule
 
             await message.ModifyAsync(m =>
             {
-                m.Embed = updatedresponse.Embed;
-                m.Components = updatedResponse.Components?.Build();
+                m.Embeds = [updatedResponse.Embed];
+                m.Components = [updatedResponse.Components];
             });
 
             this.Context.LogCommandUsed(updatedResponse.CommandResponse);
@@ -159,8 +165,8 @@ public class IndexCommands : BaseCommandModule
 
             await message.ModifyAsync(m =>
             {
-                m.Embed = updatedresponse.Embed;
-                m.Components = updatedResponse.Components?.Build();
+                m.Embeds = [updatedResponse.Embed];
+                m.Components = [updatedResponse.Components];
             });
 
             this.Context.LogCommandUsed(updatedResponse.CommandResponse);

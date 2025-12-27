@@ -10,10 +10,8 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
-using FMBot.Domain.Models;
 using NetCord.Services.ApplicationCommands;
 using NetCord.Services.ComponentInteractions;
-using NetCord;
 using NetCord.Rest;
 
 namespace FMBot.Bot.SlashCommands;

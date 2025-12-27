@@ -2,7 +2,6 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 
-using Discord.Commands;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
@@ -14,6 +13,7 @@ using FMBot.Domain;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
 using Fergun.Interactive;
+using NetCord;
 using NetCord.Services.Commands;
 
 namespace FMBot.Bot.TextCommands.LastFM;
@@ -68,7 +68,7 @@ public class ChartCommands : BaseCommandModule
         var chartCount = await this._userService.GetCommandExecutedAmount(user.UserId, "chart", DateTime.UtcNow.AddSeconds(-40));
         if (chartCount >= 4)
         {
-            await ReplyAsync($"Please wait a minute before generating charts again.");
+            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Please wait a minute before generating charts again." });
             this.Context.LogCommandUsed(CommandResponse.Cooldown);
             return;
         }
@@ -78,9 +78,9 @@ public class ChartCommands : BaseCommandModule
         if (this.Context.Guild != null)
         {
             var perms = await GuildService.GetGuildPermissionsAsync(this.Context);
-            if (!perms.AttachFiles)
+            if (!perms.HasFlag(Permissions.AttachFiles))
             {
-                await ReplyAsync("I'm missing the 'Attach files' permission in this server, so I can't post a chart.");
+                await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "I'm missing the 'Attach files' permission in this server, so I can't post a chart." });
                 this.Context.LogCommandUsed(CommandResponse.NoPermission);
                 return;
             }
@@ -131,7 +131,7 @@ public class ChartCommands : BaseCommandModule
         var chartCount = await this._userService.GetCommandExecutedAmount(user.UserId, "artistchart", DateTime.UtcNow.AddSeconds(-45));
         if (chartCount >= 3)
         {
-            await ReplyAsync($"Please wait a minute before generating charts again.");
+            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Please wait a minute before generating charts again." });
             this.Context.LogCommandUsed(CommandResponse.Cooldown);
             return;
         }
@@ -141,9 +141,9 @@ public class ChartCommands : BaseCommandModule
         if (this.Context.Guild != null)
         {
             var perms = await GuildService.GetGuildPermissionsAsync(this.Context);
-            if (!perms.AttachFiles)
+            if (!perms.HasFlag(Permissions.AttachFiles))
             {
-                await ReplyAsync("I'm missing the 'Attach files' permission in this server, so I can't post a chart.");
+                await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "I'm missing the 'Attach files' permission in this server, so I can't post a chart." });
                 this.Context.LogCommandUsed(CommandResponse.NoPermission);
                 return;
             }

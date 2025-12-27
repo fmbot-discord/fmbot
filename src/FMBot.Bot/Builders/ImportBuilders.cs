@@ -267,15 +267,17 @@ public class ImportBuilders
 
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
         response.Components = new ActionRowProperties()
-            .AddComponents()
             .WithButton("Artist",
                 $"{InteractionConstants.ImportModify.Modify}-{nameof(ImportModifyPick.Artist)}",
+                ButtonStyle.Secondary,
                 disabled: !hasImported)
             .WithButton("Album",
                 $"{InteractionConstants.ImportModify.Modify}-{nameof(ImportModifyPick.Album)}",
+                ButtonStyle.Secondary,
                 disabled: !hasImported)
             .WithButton("Track",
                 $"{InteractionConstants.ImportModify.Modify}-{nameof(ImportModifyPick.Track)}",
+                ButtonStyle.Secondary,
                 disabled: !hasImported)
             .WithButton("Manage import settings", InteractionConstants.ImportManage, style: ButtonStyle.Secondary,
                 disabled: !hasImported);

@@ -1130,7 +1130,7 @@ public class AlbumBuilders
 
         var albumImages = await this._albumService.GetAlbumImages(databaseAlbum.Id);
 
-        response.Components
+        response.Components = response.Components
             .WithButton("Album",
                 $"{InteractionConstants.Album.Info}-{databaseAlbum.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}",
                 style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("💽"));

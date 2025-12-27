@@ -5,6 +5,7 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services;
 using FMBot.Persistence.Domain.Models;
 using System.Text;
+using Guild = FMBot.Persistence.Domain.Models.Guild;
 using System.Web;
 using System;
 using System.Linq;

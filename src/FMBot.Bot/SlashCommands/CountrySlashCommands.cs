@@ -7,7 +7,6 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
-
 using FMBot.Domain.Models;
 using NetCord.Services.ApplicationCommands;
 using NetCord;
@@ -66,7 +65,7 @@ public class CountrySlashCommands : ApplicationCommandModule<ApplicationCommandC
         [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")] string user = null,
         [SlashCommandParameter(Name = "Private", Description = "Only show response to you")] bool privateResponse = false)
     {
-        await DeferAsync(privateResponse);
+        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);

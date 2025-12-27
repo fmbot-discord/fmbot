@@ -27,6 +27,7 @@ using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using NetCord;
 using NetCord.Gateway;
+using DiscordGuild = NetCord.Gateway.Guild;
 using NetCord.Rest;
 using SkiaSharp;
 using Guild = FMBot.Persistence.Domain.Models.Guild;
@@ -371,7 +372,7 @@ public class ArtistBuilders
             footer.AppendLine(GenreService.GenresToString(fullArtist.ArtistGenres.ToList()));
         }
 
-        response.Components
+        response.Components = response.Components
             .WithButton("Overview",
                 $"{InteractionConstants.Artist.Overview}-{fullArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}",
                 style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("\ud83d\udcca"));

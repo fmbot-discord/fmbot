@@ -14,7 +14,9 @@ using FMBot.Domain.Models;
 using NetCord.Services.ApplicationCommands;
 using NetCord.Services.ComponentInteractions;
 using NetCord;
+using NetCord.Rest;
 using Fergun.Interactive;
+using NetCord.Services.Commands;
 
 namespace FMBot.Bot.SlashCommands;
 
@@ -144,7 +146,7 @@ public class TrackSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         [SlashCommandParameter(Name = "Private", Description = "Only show response to you")]
         bool privateResponse = false)
     {
-        await DeferAsync(privateResponse);
+        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
 
         var contextUser = await this._userService.GetUserWithFriendsAsync(this.Context.User);
 
@@ -267,13 +269,12 @@ public class TrackSlashCommands : ApplicationCommandModule<ApplicationCommandCon
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-        var buttonBuilder = new ButtonBuilder();
-        buttonBuilder.WithLabel("Open on Spotify");
-        buttonBuilder.WithStyle(ButtonStyle.Link);
-        buttonBuilder.WithUrl("https://open.spotify.com/track/" + dbTrack.SpotifyId);
-        buttonBuilder.WithEmote(EmojiProperties.Custom(DiscordConstants.Spotify));
+        var linkButton = new LinkButtonProperties(
+            "https://open.spotify.com/track/" + dbTrack.SpotifyId,
+            "Open on Spotify",
+            EmojiProperties.Custom(DiscordConstants.Spotify));
 
-        await this.Context.AddButton(buttonBuilder);
+        await this.Context.AddLinkButton(linkButton);
 
         try
         {
@@ -379,7 +380,7 @@ public class TrackSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         [SlashCommandParameter(Name = "Private", Description = "Only show response to you")]
         bool privateResponse = false)
     {
-        await DeferAsync(privateResponse);
+        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings =
@@ -410,7 +411,7 @@ public class TrackSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         [SlashCommandParameter(Name = "Private", Description = "Only show response to you")]
         bool privateResponse = false)
     {
-        await DeferAsync(privateResponse);
+        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings =

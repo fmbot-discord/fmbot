@@ -4,10 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
-
-using Discord.Commands;
-using Discord.Webhook;
-using Discord.WebSocket;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Resources;
 using FMBot.Domain.Models;
@@ -45,7 +41,17 @@ public class WebhookService
         this._avatarImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", "bot", "default-avatar.png");
     }
 
-    public async Task<Webhook> CreateWebhook(ICommandContext context, int guildId)
+    public static WebhookClient CreateWebhookClientFromUrl(string webhookUrl)
+    {
+        // Parse webhook URL: https://discord.com/api/webhooks/{id}/{token}
+        var uri = new Uri(webhookUrl);
+        var parts = uri.AbsolutePath.Split('/');
+        var id = ulong.Parse(parts[^2]);
+        var token = parts[^1];
+        return new WebhookClient(id, token);
+    }
+
+    public async Task<Webhook> CreateWebhook(CommandContext context, int guildId)
     {
         await using var fs = File.OpenRead(this._avatarImagePath);
 
@@ -95,11 +101,14 @@ public class WebhookService
 
     public async Task<bool> TestWebhook(Webhook webhook, string text)
     {
-        var webhookClient = new DiscordWebhookClient(webhook.DiscordWebhookId, webhook.Token);
+        var webhookClient = new WebhookClient(webhook.DiscordWebhookId, webhook.Token);
 
         try
         {
-            await webhookClient.SendMessageAsync(text, threadId: webhook.DiscordThreadId);
+            await webhookClient.ExecuteAsync(new WebhookMessageProperties
+            {
+                Content = text
+            }, threadId: webhook.DiscordThreadId);
 
             return true;
         }
@@ -121,16 +130,12 @@ public class WebhookService
 
             return false;
         }
-        finally
-        {
-            webhookClient.Dispose();
-        }
     }
 
     public async Task SendFeaturedWebhooks(FeaturedLog featured)
     {
         var embed = new EmbedProperties();
-        Embed.WithThumbnail(featured.ImageUrl);
+        embed.WithThumbnail(featured.ImageUrl);
         embed.AddField("Featured:", featured.Description);
 
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -151,7 +156,7 @@ public class WebhookService
     public async Task SendFeaturedPreview(FeaturedLog featured, string webhook)
     {
         var embed = new EmbedProperties();
-        embed.WithImageUrl(featured.ImageUrl);
+        embed.WithImage(featured.ImageUrl);
         embed.AddField("Featured:", featured.Description);
 
         var dateValue = ((DateTimeOffset)featured.DateTime).ToUnixTimeSeconds();
@@ -177,9 +182,11 @@ public class WebhookService
             }
         }
 
-        var webhookClient = new DiscordWebhookClient(webhook);
-        await webhookClient.SendMessageAsync(embeds: new[] { embed.Build() });
-        webhookClient.Dispose();
+        var webhookClient = CreateWebhookClientFromUrl(webhook);
+        await webhookClient.ExecuteAsync(new WebhookMessageProperties
+        {
+            Embeds = [embed]
+        });
     }
 
     public async Task PostFeatured(FeaturedLog featuredLog, ShardedGatewayClient client)
@@ -198,7 +205,7 @@ public class WebhookService
 
         if (this._botSettings.Bot.BaseServerId != 0 && this._botSettings.Bot.FeaturedChannelId != 0)
         {
-            var guild = client.GetGuild(this._botSettings.Bot.BaseServerId);
+            var guild = client.Cache.Guilds.GetValueOrDefault(this._botSettings.Bot.BaseServerId);
             var channel = guild?.GetTextChannel(this._botSettings.Bot.FeaturedChannelId);
 
             if (channel != null)
@@ -218,9 +225,11 @@ public class WebhookService
 
                         if (guildUser != null)
                         {
-                            var localFeaturedMsg = await channel.SendMessageAsync($"🥳 Congratulations <@{guildUser.User.DiscordUserId}>! You've just been picked as the featured user for the next hour.",
-                                false,
-                                builder);
+                            var localFeaturedMsg = await channel.SendMessageAsync(new MessageProperties
+                            {
+                                Content = $"🥳 Congratulations <@{guildUser.User.DiscordUserId}>! You've just been picked as the featured user for the next hour.",
+                                Embeds = [builder]
+                            });
 
                             if (localFeaturedMsg != null)
                             {
@@ -232,7 +241,7 @@ public class WebhookService
                     }
                 }
 
-                var message = await channel.SendMessageAsync("", false, builder);
+                var message = await channel.SendMessageAsync(new MessageProperties().AddEmbeds(builder));
 
                 if (message != null)
                 {
@@ -253,9 +262,9 @@ public class WebhookService
         }
     }
 
-    private async Task SendWebhookEmbed(Webhook webhook, EmbedBuilder embed, int? featuredUserId)
+    private async Task SendWebhookEmbed(Webhook webhook, EmbedProperties embed, int? featuredUserId)
     {
-        var webhookClient = new DiscordWebhookClient(webhook.DiscordWebhookId, webhook.Token);
+        var webhookClient = new WebhookClient(webhook.DiscordWebhookId, webhook.Token);
 
         try
         {
@@ -279,7 +288,10 @@ public class WebhookService
                 }
             }
 
-            await webhookClient.SendMessageAsync(embeds: new[] { embed.Build() }, threadId: webhook.DiscordThreadId);
+            await webhookClient.ExecuteAsync(new WebhookMessageProperties
+            {
+                Embeds = [embed]
+            }, threadId: webhook.DiscordThreadId);
         }
         catch (Exception e)
         {

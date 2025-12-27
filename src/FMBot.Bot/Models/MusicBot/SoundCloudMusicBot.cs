@@ -1,6 +1,5 @@
 using System.Linq;
 
-using Discord.WebSocket;
 using NetCord.Gateway;
 
 namespace FMBot.Bot.Models.MusicBot;

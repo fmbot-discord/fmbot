@@ -24,10 +24,9 @@ internal class BettyMusicBot : MusicBot
 
         foreach (var component in msg.Components)
         {
-            if (component.Type == ComponentType.MediaGallery)
+            if (component is MediaGallery mediaGallery)
             {
                 // Check if the media gallery contains an item with a description including | in the alt text of the image
-                var mediaGallery = (MediaGalleryComponent)component;
                 if (mediaGallery.Items.Any(item => item.Description != null && item.Description.Contains('|')))
                 {
                     return false;
@@ -42,9 +41,8 @@ internal class BettyMusicBot : MusicBot
     {
         foreach (var component in msg.Components)
         {
-            if (component.Type == ComponentType.MediaGallery)
+            if (component is MediaGallery mediaGallery)
             {
-                var mediaGallery = (MediaGalleryComponent)component;
                 var item = mediaGallery.Items.FirstOrDefault(i => i.Description != null && i.Description.Contains('|'));
                 var parts = item.Description.Split('|');
                 if (parts.Length == 2)

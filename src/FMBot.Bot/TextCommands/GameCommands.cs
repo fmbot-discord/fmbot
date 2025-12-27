@@ -9,13 +9,12 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Services;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
-
 using System.Threading;
 using FMBot.Domain;
-using NetCord;
 using NetCord.Services.Commands;
 using Fergun.Interactive;
 using NetCord.Rest;
+using NetCord.Gateway;
 
 namespace FMBot.Bot.TextCommands;
 
@@ -118,7 +117,7 @@ public class GameCommands : BaseCommandModule
         }
 
         var msg = await this.Context.Channel.GetMessageAsync(responseId);
-        if (msg is not IUserMessage message)
+        if (msg is not Message message)
         {
             return;
         }
@@ -131,7 +130,7 @@ public class GameCommands : BaseCommandModule
         await message.ModifyAsync(m =>
         {
             m.Components = null;
-            m.Embed = response.Embed;
+            m.Embeds = [response.Embed];
             m.Attachments = response.Stream != null ? new Optional<IEnumerable<FileAttachment>>(new List<FileAttachment>
             {
                 new(response.Stream, response.Spoiler ? $"SPOILER_{response.FileName}" : $"{response.FileName}")

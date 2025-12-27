@@ -512,14 +512,14 @@ public static class StringService
         return longString.ToString();
     }
 
-    public static ActionRowBuilder GetSimplePaginationActionRow(IComponentPaginator p)
+    public static ActionRowProperties GetSimplePaginationActionRow(IComponentPaginator p)
     {
         return new ActionRowProperties()
             .AddPreviousButton(p, style: ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.PagesPrevious))
             .AddNextButton(p, style: ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.PagesNext));
     }
 
-    public static ActionRowBuilder GetPaginationActionRow(IComponentPaginator p)
+    public static ActionRowProperties GetPaginationActionRow(IComponentPaginator p)
     {
         return new ActionRowProperties()
             .AddFirstButton(p, style: ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.PagesFirst))

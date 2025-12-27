@@ -9,9 +9,8 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
-using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
-using NetCord.Gateway;
+using NetCord;
 using NetCord.Rest;
 using NetCord.Services.Commands;
 using Serilog;
@@ -68,10 +67,10 @@ public static class CommandContextExtensions
         PublicProperties.UsedCommandsErrorReferences.TryAdd(context.Message.Id, referenceId);
     }
 
-    public static async Task<IUserMessage> SendResponse(this CommandContext context,
+    public static async Task<RestMessage> SendResponse(this CommandContext context,
         InteractiveService interactiveService, ResponseModel response)
     {
-        IUserMessage responseMessage = null;
+        RestMessage responseMessage = null;
 
         if (PublicProperties.UsedCommandsResponseMessageId.ContainsKey(context.Message.Id))
         {
@@ -82,8 +81,8 @@ public static class CommandContextExtensions
                         PublicProperties.UsedCommandsResponseMessageId[context.Message.Id], msg =>
                         {
                             msg.Content = response.Text;
-                            msg.Embed = null;
-                            msg.Components = response.Components?.Build();
+                            msg.Embeds = null;
+                            msg.Components = response.Components != null ? new[] { response.Components } : null;
                         });
                     break;
                 case ResponseType.Embed:
@@ -93,16 +92,17 @@ public static class CommandContextExtensions
                         PublicProperties.UsedCommandsResponseMessageId[context.Message.Id], msg =>
                         {
                             msg.Content = response.Text;
-                            msg.Embed = response.ResponseType == ResponseType.ImageOnly
+                            msg.Embeds = response.ResponseType == ResponseType.ImageOnly
                                 ? null
-                                : response.Embed?.Build();
-                            msg.Components = response.Components?.Build();
+                                : new[] { response.Embed };
+                            msg.Components = response.Components != null ? new[] { response.Components } : null;
                             msg.Attachments = response.Stream != null
-                                ? new Optional<IEnumerable<FileAttachment>>(new List<FileAttachment>
+                                ? new List<AttachmentProperties>
                                 {
-                                    new(response.Stream,
-                                        response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName, response.FileDescription)
-                                })
+                                    new AttachmentProperties(
+                                        response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName,
+                                        response.Stream).WithDescription(response.FileDescription)
+                                }
                                 : null;
                         });
 
@@ -116,14 +116,15 @@ public static class CommandContextExtensions
                     await context.Channel.ModifyMessageAsync(
                         PublicProperties.UsedCommandsResponseMessageId[context.Message.Id], msg =>
                         {
-                            msg.Flags = MessageFlags.ComponentsV2;
-                            msg.Components = response.ComponentsV2?.Build();
+                            msg.Flags = MessageFlags.IsComponentsV2;
+                            msg.Components = response.ComponentsV2;
                             msg.Attachments = response.Stream != null
-                                ? new Optional<IEnumerable<FileAttachment>>(new List<FileAttachment>
+                                ? new List<AttachmentProperties>
                                 {
-                                    new(response.Stream,
-                                        response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName, response.FileDescription)
-                                })
+                                    new AttachmentProperties(
+                                        response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName,
+                                        response.Stream).WithDescription(response.FileDescription)
+                                }
                                 : null;
                         });
 
@@ -144,9 +145,11 @@ public static class CommandContextExtensions
                             msg => { msg.Attachments = null; });
                     }
 
+                    // Delete old message and send new paginator
+                    await context.Channel.DeleteMessageAsync(existingMsgPaginator.Id);
                     await interactiveService.SendPaginatorAsync(
                         response.StaticPaginator.Build(),
-                        (IUserMessage)existingMsgPaginator,
+                        context.Channel,
                         TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
                     break;
                 case ResponseType.ComponentPaginator:
@@ -160,9 +163,11 @@ public static class CommandContextExtensions
                             msg => { msg.Attachments = null; });
                     }
 
+                    // Delete old message and send new paginator
+                    await context.Channel.DeleteMessageAsync(existingMsgComponentPaginator.Id);
                     await interactiveService.SendPaginatorAsync(
                         response.ComponentPaginator.Build(),
-                        (IUserMessage)existingMsgComponentPaginator,
+                        context.Channel,
                         TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
                     break;
                 default:
@@ -199,13 +204,16 @@ public static class CommandContextExtensions
         switch (response.ResponseType)
         {
             case ResponseType.Text:
-                var text = await context.Channel.SendMessageAsync(response.Text, allowedMentions: AllowedMentions.None,
-                    components: response.Components?.Build());
+                var text = await context.Channel.SendMessageAsync(new MessageProperties()
+                    .WithContent(response.Text)
+                    .WithAllowedMentions(AllowedMentionsProperties.None)
+                    .WithComponents(response.Components != null ? new[] { response.Components } : null));
                 responseMessage = text;
                 break;
             case ResponseType.Embed:
-                var embed = await context.Channel.SendMessageAsync("", false, response.Embed,
-                    components: response.Components?.Build());
+                var embed = await context.Channel.SendMessageAsync(new MessageProperties()
+                    .AddEmbeds(response.Embed)
+                    .WithComponents(response.Components != null ? new[] { response.Components } : null));
                 responseMessage = embed;
                 break;
             case ResponseType.Paginator:
@@ -217,24 +225,23 @@ public static class CommandContextExtensions
                 break;
             case ResponseType.ImageWithEmbed:
                 response.FileName = StringExtensions.ReplaceInvalidChars(response.FileName);
-                var imageWithEmbed = await context.Channel.SendFileAsync(
-                    new AttachmentProperties(response.Stream, response.FileName, response.FileDescription, response.Spoiler)
-                    {
-
-                    },
-                    null,
-                    false,
-                    response.Embed,
-                    components: response.Components?.Build());
+                var imageWithEmbed = await context.Channel.SendMessageAsync(new MessageProperties()
+                    .AddAttachments(new AttachmentProperties(
+                        response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName,
+                        response.Stream).WithDescription(response.FileDescription))
+                    .AddEmbeds(response.Embed)
+                    .WithComponents(response.Components != null ? new[] { response.Components } : null));
 
                 await response.Stream.DisposeAsync();
                 responseMessage = imageWithEmbed;
                 break;
             case ResponseType.ImageOnly:
                 response.FileName = StringExtensions.ReplaceInvalidChars(response.FileName);
-                var image = await context.Channel.SendFileAsync(
-                    new FileAttachment(response.Stream, response.FileName, response.FileDescription, response.Spoiler),
-                    components: response.Components?.Build());
+                var image = await context.Channel.SendMessageAsync(new MessageProperties()
+                    .AddAttachments(new AttachmentProperties(
+                        response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName,
+                        response.Stream).WithDescription(response.FileDescription))
+                    .WithComponents(response.Components != null ? new[] { response.Components } : null));
                 await response.Stream.DisposeAsync();
                 responseMessage = image;
                 break;
@@ -242,19 +249,23 @@ public static class CommandContextExtensions
                 if (response.Stream is { Length: > 0 })
                 {
                     response.FileName = StringExtensions.ReplaceInvalidChars(response.FileName);
-                    var componentImage = await context.Channel.SendFileAsync(
-                        new FileAttachment(response.Stream, response.FileName, response.FileDescription, response.Spoiler),
-                        components: response.ComponentsV2?.Build(),
-                        flags: MessageFlags.ComponentsV2,
-                        allowedMentions: AllowedMentions.None);
+                    var componentImage = await context.Channel.SendMessageAsync(new MessageProperties()
+                        .AddAttachments(new AttachmentProperties(
+                            response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName,
+                            response.Stream).WithDescription(response.FileDescription))
+                        .WithComponents(response.ComponentsV2)
+                        .WithFlags(MessageFlags.IsComponentsV2)
+                        .WithAllowedMentions(AllowedMentionsProperties.None));
 
                     await response.Stream.DisposeAsync();
                     responseMessage = componentImage;
                 }
                 else
                 {
-                    var components = await context.Channel.SendMessageAsync(components: response.ComponentsV2?.Build(),
-                        flags: MessageFlags.ComponentsV2, allowedMentions: AllowedMentions.None);
+                    var components = await context.Channel.SendMessageAsync(new MessageProperties()
+                        .WithComponents(response.ComponentsV2)
+                        .WithFlags(MessageFlags.IsComponentsV2)
+                        .WithAllowedMentions(AllowedMentionsProperties.None));
                     responseMessage = components;
                 }
 
@@ -291,11 +302,14 @@ public static class CommandContextExtensions
             catch (Exception e)
             {
                 await context.HandleCommandException(e, "Could not add emote reactions", sendReply: false);
-                _ = interactiveService.DelayedDeleteMessageAsync(
-                    await context.Channel.SendMessageAsync(
-                        $"Could not add automatic emoji reactions.\n" +
-                        $"-# Make sure the emojis still exist, the bot is the same server as where the emojis come from and the bot has permission to `Add Reactions`."),
-                    TimeSpan.FromSeconds(30));
+                var errorMsg = await context.Channel.SendMessageAsync(new MessageProperties()
+                    .WithContent("Could not add automatic emoji reactions.\n" +
+                        "-# Make sure the emojis still exist, the bot is the same server as where the emojis come from and the bot has permission to `Add Reactions`."));
+                _ = Task.Run(async () =>
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(30));
+                    try { await context.Channel.DeleteMessageAsync(errorMsg.Id); } catch { /* ignore */ }
+                });
             }
         }
 

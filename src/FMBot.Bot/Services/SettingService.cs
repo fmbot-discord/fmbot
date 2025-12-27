@@ -5,18 +5,17 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
-
-using Discord.Commands;
 using FMBot.Bot.Models;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
-using Google.Protobuf.WellKnownTypes;
 using IF.Lastfm.Core.Api.Enums;
 using Microsoft.EntityFrameworkCore;
 using NetCord.Services.Commands;
+using NetCord.Gateway;
+using DiscordGuild = NetCord.Gateway.Guild;
 
 namespace FMBot.Bot.Services;
 
@@ -734,7 +733,7 @@ public class SettingService
         if (discordGuild != null)
         {
             var discordGuildUser = await discordGuild.GetUserAsync(user.DiscordUserId, CacheMode.CacheOnly);
-            discordUserName = discordGuildUser?.DisplayName ?? discordUser.GlobalName ?? discordUser.Username;
+            discordUserName = discordGuildUser?.Nickname ?? discordUser.GlobalName ?? discordUser.Username;
         }
         else
         {
@@ -882,7 +881,7 @@ public class SettingService
     public async Task<UserSettingsModel> GetOriginalContextUser(
         ulong discordUserId, ulong requesterUserId, NetCord.Gateway.Guild discordGuild, NetCord.User contextDiscordUser)
     {
-        IGuildUser guildUser = null;
+        GuildUser guildUser = null;
         if (discordGuild != null)
         {
             guildUser = await discordGuild.GetUserAsync(discordUserId, CacheMode.CacheOnly);

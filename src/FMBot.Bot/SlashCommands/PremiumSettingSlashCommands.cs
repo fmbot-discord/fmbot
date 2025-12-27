@@ -1,9 +1,10 @@
 using System.Threading.Tasks;
 using System.Collections.Generic;
-using System.Linq;
+using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
+using FMBot.Bot.Factories;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
@@ -13,6 +14,7 @@ using FMBot.Bot.Models.Modals;
 using NetCord.Services.ApplicationCommands;
 using NetCord.Services.ComponentInteractions;
 using NetCord;
+using NetCord.Rest;
 
 namespace FMBot.Bot.SlashCommands;
 
@@ -23,12 +25,15 @@ public class PremiumSettingSlashCommands : ApplicationCommandModule<ApplicationC
 
     private readonly PremiumSettingBuilder _premiumSettingBuilder;
     private readonly GuildSettingBuilder _guildSettingBuilder;
+    private InteractiveService Interactivity { get; }
 
     public PremiumSettingSlashCommands(UserService userService,
         GuildService guildService,
         PremiumSettingBuilder premiumSettingBuilder,
-        GuildSettingBuilder guildSettingBuilder)
+        GuildSettingBuilder guildSettingBuilder,
+        InteractiveService interactivity)
     {
+        this.Interactivity = interactivity;
         this._userService = userService;
         this._guildService = guildService;
         this._premiumSettingBuilder = premiumSettingBuilder;
@@ -60,7 +65,7 @@ public class PremiumSettingSlashCommands : ApplicationCommandModule<ApplicationC
 
         var response = await this._premiumSettingBuilder.AllowedRoles(new ContextModel(this.Context), this.Context.User);
 
-        await this.DeferAsync();
+        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage());
 
         await this.Context.UpdateInteractionEmbed(response);
     }
@@ -90,7 +95,7 @@ public class PremiumSettingSlashCommands : ApplicationCommandModule<ApplicationC
 
         var response = await this._premiumSettingBuilder.BlockedRoles(new ContextModel(this.Context), this.Context.User);
 
-        await this.DeferAsync();
+        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage());
 
         await this.Context.UpdateInteractionEmbed(response);
     }
@@ -120,7 +125,7 @@ public class PremiumSettingSlashCommands : ApplicationCommandModule<ApplicationC
 
         var response = await this._premiumSettingBuilder.BotManagementRoles(new ContextModel(this.Context), this.Context.User);
 
-        await this.DeferAsync();
+        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage());
 
         await this.Context.UpdateInteractionEmbed(response);
     }
@@ -129,38 +134,14 @@ public class PremiumSettingSlashCommands : ApplicationCommandModule<ApplicationC
     [ServerStaffOnly]
     public async Task SetGuildActivityThreshold()
     {
-        var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+        var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
 
         if (message == null)
         {
             return;
         }
 
-        await this.Context.Interaction.RespondWithModalAsync<SetGuildActivityThresholdModal>($"{InteractionConstants.SetGuildActivityThresholdModal}-{message.Id}");
-    }
-
-    [ModalInteraction($"{InteractionConstants.SetGuildActivityThresholdModal}-*")]
-    [ServerStaffOnly]
-    public async Task SetGuildActivityThreshold(string messageId, SetGuildActivityThresholdModal modal)
-    {
-        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
-        {
-            await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
-            return;
-        }
-
-        if (!int.TryParse(modal.Amount, out var result) ||
-            result < 2 ||
-            result > 999)
-        {
-            await RespondAsync($"Please enter a valid number between `2` and `999`.", ephemeral: true);
-            return;
-        }
-
-        await this._guildService.SetGuildActivityThresholdDaysAsync(this.Context.Guild, result);
-
-        var response = await this._premiumSettingBuilder.SetGuildActivityThreshold(new ContextModel(this.Context), this.Context.User);
-        await this.Context.UpdateMessageEmbed(response, messageId);
+        await this.Context.Interaction.RespondWithModalAsync(ModalFactory.CreateSetGuildActivityThresholdModal($"{InteractionConstants.SetGuildActivityThresholdModal}:{message.Id}"));
     }
 
     [ComponentInteraction(InteractionConstants.RemoveGuildActivityThreshold)]

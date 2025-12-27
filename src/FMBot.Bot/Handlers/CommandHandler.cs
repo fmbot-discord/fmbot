@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Fergun.Interactive;
@@ -78,14 +79,9 @@ public class CommandHandler
     {
         Statistics.DiscordEvents.WithLabels("MessageReceived").Inc();
 
-        // if (this._discord?.CurrentUser != null && msg.Author?.Id == this._discord.CurrentUser?.Id)
-        // {
-        //     return;
-        // }
-
         var context = new CommandContext(msg, client);
 
-        if (msg.Author.IsBot && msg.Flags.HasValue && !msg.Flags.Value.HasFlag(MessageFlags.Loading))
+        if (msg.Author.IsBot && !msg.Flags.HasFlag(MessageFlags.Loading))
         {
             if (string.IsNullOrWhiteSpace(msg.Author.Username))
             {
@@ -128,7 +124,7 @@ public class CommandHandler
         }
     }
 
-    private ValueTask MessageUpdated(GatewayClient client, Message message, Message? oldMessage)
+    private ValueTask MessageUpdated(GatewayClient client, Message message)
     {
         Statistics.DiscordEvents.WithLabels("MessageUpdated").Inc();
 
@@ -139,7 +135,7 @@ public class CommandHandler
 
         var context = new CommandContext(message, client);
 
-        if (message.Author.IsBot && message.Flags.HasValue && !message.Flags.Value.HasFlag(MessageFlags.Loading) && message.InteractionMetadata != null)
+        if (message.Author.IsBot && !message.Flags.HasFlag(MessageFlags.Loading) && message.InteractionMetadata != null)
         {
             _ = Task.Run(async () => await TryScrobbling(message, context));
         }
@@ -173,7 +169,7 @@ public class CommandHandler
             var searchResult = this._commands.Search(message.Content[argPos..]);
             if (searchResult.IsSuccess &&
                 searchResult.Command != null &&
-                searchResult.Command.Name == "fm")
+                searchResult.Command.Aliases.Any(a => a == "fm"))
             {
                 _ = Task.Run(async () => await ExecuteCommand(message, commandContext, argPos, prfx, update));
                 return true;
@@ -518,7 +514,7 @@ public class CommandHandler
         return (false, errorSent);
     }
 
-    private async Task<bool> CommandEnabled(CommandContext context, IExecutionResult searchResult, string prfx,
+    private async Task<bool> CommandEnabled(CommandContext context, CommandSearchResult searchResult, string prfx,
         bool update = false)
     {
         if (context.Guild != null)
@@ -565,23 +561,19 @@ public class CommandHandler
                     if (toggledChannelCommands != null &&
                         toggledChannelCommands.Any())
                     {
-                        _ = this._interactiveService.DelayedDeleteMessageAsync(
-                            await context.Channel.SendMessageAsync(new MessageProperties
+                        _ = (await context.Channel.SendMessageAsync(new MessageProperties
                             {
                                 Content = "The command you're trying to execute is not enabled in this channel." +
                                     (isMod ? $"\n-# *Configured with `{prfx}togglecommand`*" : null)
-                            }),
-                            TimeSpan.FromSeconds(8));
+                            })).DeleteAfterAsync(8);
                     }
                     else
                     {
-                        _ = this._interactiveService.DelayedDeleteMessageAsync(
-                            await context.Channel.SendMessageAsync(new MessageProperties
+                        _ = (await context.Channel.SendMessageAsync(new MessageProperties
                             {
                                 Content = "The bot has been disabled in this channel." +
                                     (isMod ? $"\n-# *Configured with `{prfx}togglecommand`*" : null)
-                            }),
-                            TimeSpan.FromSeconds(8));
+                            })).DeleteAfterAsync(8);
                     }
                 }
 
@@ -595,13 +587,11 @@ public class CommandHandler
             {
                 if (!update)
                 {
-                    _ = this._interactiveService.DelayedDeleteMessageAsync(
-                        await context.Channel.SendMessageAsync(new MessageProperties
+                    _ = (await context.Channel.SendMessageAsync(new MessageProperties
                         {
                             Content = "The command you're trying to execute has been disabled in this server." +
                                 (isMod ? $"\n-# *Configured with `{prfx}toggleservercommand`*" : null)
-                        }),
-                        TimeSpan.FromSeconds(8));
+                        })).DeleteAfterAsync(8);
                 }
 
                 return false;
@@ -616,13 +606,11 @@ public class CommandHandler
             {
                 if (!update)
                 {
-                    _ = this._interactiveService.DelayedDeleteMessageAsync(
-                        await context.Channel.SendMessageAsync(new MessageProperties
+                    _ = (await context.Channel.SendMessageAsync(new MessageProperties
                         {
                             Content = "The command you're trying to execute has been disabled in this channel." +
                                 (isMod ? $"\n-# *Configured with `{prfx}togglecommand`*" : null)
-                        }),
-                        TimeSpan.FromSeconds(8));
+                        })).DeleteAfterAsync(8);
                 }
 
                 return false;
@@ -670,7 +658,11 @@ public class CommandHandler
 
     private async Task UpdateGuildIndex(CommandContext context)
     {
-        var guildUsers = await context.Guild.GetUsersAsync();
+        var guildUsers = new List<GuildUser>();
+        await foreach (var user in context.Guild.GetUsersAsync())
+        {
+            guildUsers.Add(user);
+        }
 
         Log.Information("Downloaded {guildUserCount} users for guild {guildId} / {guildName} from Discord",
             guildUsers.Count, context.Guild.Id, context.Guild.Name);

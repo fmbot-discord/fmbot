@@ -15,6 +15,7 @@ using NetCord.Services.ApplicationCommands;
 using NetCord.Services.ComponentInteractions;
 using NetCord;
 using NetCord.Rest;
+using NetCord.Services.Commands;
 
 namespace FMBot.Bot.SlashCommands;
 
@@ -155,7 +156,7 @@ public class AlbumSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         [SlashCommandParameter(Name = "Mode", Description = "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
         [SlashCommandParameter(Name = "Private", Description = "Only show response to you")] bool privateResponse = false)
     {
-        await DeferAsync(privateResponse);
+        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
 
         var contextUser = await this._userService.GetUserWithFriendsAsync(this.Context.User);
 
@@ -270,7 +271,9 @@ public class AlbumSlashCommands : ApplicationCommandModule<ApplicationCommandCon
 
         if (this.Context.User.Id != requesterDiscordUserId)
         {
-            await RespondAsync("🎲 Sorry, only the user that requested the random cover can reroll.", ephemeral: true);
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("🎲 Sorry, only the user that requested the random cover can reroll.")
+                .WithFlags(MessageFlags.Ephemeral)));
             return;
         }
 
@@ -288,7 +291,7 @@ public class AlbumSlashCommands : ApplicationCommandModule<ApplicationCommandCon
             await this.Context.UpdateInteractionEmbed(response, this.Interactivity, false);
             this.Context.LogCommandUsed(response.CommandResponse);
 
-            var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+            var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
             if (message != null && response.ReferencedMusic != null && PublicProperties.UsedCommandsResponseContextId.TryGetValue(message.Id, out var contextId))
             {
                 await this._userService.UpdateInteractionContext(contextId, response.ReferencedMusic);

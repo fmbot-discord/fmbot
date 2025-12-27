@@ -1,4 +1,4 @@
-using System.ComponentModel;
+using System.Collections.Generic;
 using System.IO;
 using Fergun.Interactive.Pagination;
 using FMBot.Bot.Resources;
@@ -16,11 +16,10 @@ public class ResponseModel
             .WithColor(DiscordConstants.LastFmColorRed);
         this.EmbedAuthor = new EmbedAuthorProperties();
         this.EmbedFooter = new EmbedFooterProperties();
+        this.Components = new ActionRowProperties();
+        this.ComponentsV2 = [];
         this.Spoiler = false;
         this.ReferencedMusic = null;
-        this.ComponentsV2 = new ComponentProperties();
-        this.ComponentsContainer = new ContainerProperties();
-        this.ComponentsV2.WithContainer(this.ComponentsContainer);
     }
 
     public EmbedAuthorProperties EmbedAuthor { get; set; }
@@ -30,7 +29,8 @@ public class ResponseModel
     public RoleMenuProperties RoleMenu { get; set; }
     public StringMenuProperties StringMenu { get; set; }
 
-    public ComponentBuilderV2 ComponentsV2 { get; set; }
+    public List<ActionRowProperties> ComponentsV2 { get; set; }
+
     public ComponentContainerProperties ComponentsContainer { get; set; }
 
     public ResponseType ResponseType { get; set; }

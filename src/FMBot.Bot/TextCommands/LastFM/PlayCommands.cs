@@ -14,11 +14,13 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
-using MetaBrainz.MusicBrainz.Interfaces;
 using Microsoft.Extensions.Options;
+using NetCord;
 using NetCord.Services.Commands;
-using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 using TimePeriod = FMBot.Domain.Models.TimePeriod;
+using NetCord.Rest;
+using GuildUser = FMBot.Persistence.Domain.Models.GuildUser;
+using User = FMBot.Persistence.Domain.Models.User;
 
 namespace FMBot.Bot.TextCommands.LastFM;
 
@@ -37,7 +39,7 @@ public class PlayCommands : BaseCommandModule
     private InteractiveService Interactivity { get; }
 
     private static readonly List<DateTimeOffset> StackCooldownTimer = new();
-    private static readonly List<SocketUser> StackCooldownTarget = new();
+    private static readonly List<User> StackCooldownTarget = new();
 
 
     public PlayCommands(
@@ -114,11 +116,11 @@ public class PlayCommands : BaseCommandModule
 
         if (contextUser?.UserNameLastFM == null)
         {
-            var userNickname = (this.Context.User as SocketGuildUser)?.DisplayName;
+            var userNickname = (this.Context.User as GuildUser)?.DisplayName;
             this._embed.UsernameNotSetErrorResponse(prfx,
                 userNickname ?? this.Context.User.GlobalName ?? this.Context.User.Username);
 
-            await ReplyAsync("", false, this._embed.Build(), components: GenericEmbedService.UsernameNotSetErrorComponents().Build());
+            await this.Context.Channel.SendMessageAsync(new MessageProperties { Embeds = [this._embed], Components = GenericEmbedService.UsernameNotSetErrorComponents() });
             this.Context.LogCommandUsed(CommandResponse.UsernameNotSet);
             return;
         }
@@ -147,7 +149,7 @@ public class PlayCommands : BaseCommandModule
 
             this._embed.WithFooter($"For more information on the bot in general, use '{prfx}help'");
 
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            await this.Context.Channel.SendMessageAsync(new MessageProperties().AddEmbeds(this._embed));
             this.Context.LogCommandUsed(CommandResponse.Help);
             return;
         }
@@ -157,21 +159,21 @@ public class PlayCommands : BaseCommandModule
             var existingFmCooldown = await this._guildService.GetChannelCooldown(this.Context.Channel.Id);
             if (existingFmCooldown.HasValue)
             {
-                var msg = this.Context.Message as SocketUserMessage;
+                var msg = this.Context.Message as UserMessage;
                 if (StackCooldownTarget.Contains(this.Context.Message.Author))
                 {
                     if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)]
                             .AddSeconds(existingFmCooldown.Value) >= DateTimeOffset.Now)
                     {
                         var secondsLeft = (int)(StackCooldownTimer[
-                                StackCooldownTarget.IndexOf(this.Context.Message.Author as SocketGuildUser)]
+                                StackCooldownTarget.IndexOf(this.Context.Message.Author as GuildUser)]
                             .AddSeconds(existingFmCooldown.Value) - DateTimeOffset.Now).TotalSeconds;
                         if (secondsLeft <= existingFmCooldown.Value - 2)
                         {
-                            _ = this.Interactivity.DelayedDeleteMessageAsync(
-                                await this.Context.Channel.SendMessageAsync(
-                                    $"This channel has a `{existingFmCooldown.Value}` second cooldown on `{prfx}fm`. Please wait for this to expire before using this command again."),
-                                TimeSpan.FromSeconds(6));
+                            _ = (await this.Context.Channel.SendMessageAsync(new MessageProperties
+                                {
+                                    Content = $"This channel has a `{existingFmCooldown.Value}` second cooldown on `{prfx}fm`. Please wait for this to expire before using this command again."
+                                })).DeleteAfterAsync(6);
                             this.Context.LogCommandUsed(CommandResponse.Cooldown);
                         }
 
@@ -204,8 +206,7 @@ public class PlayCommands : BaseCommandModule
                 e.Message.Contains("The server responded with error 50013: Missing Permissions"))
             {
                 await this.Context.HandleCommandException(e, sendReply: false);
-                await ReplyAsync("Error while replying: The bot is missing permissions.\n" +
-                                 "Make sure it has permission to 'Embed links' and 'Attach Images'");
+                await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Error while replying: The bot is missing permissions.\nMake sure it has permission to 'Embed links' and 'Attach Images'" });
             }
             else
             {
@@ -326,7 +327,7 @@ public class PlayCommands : BaseCommandModule
             var loading = false;
             if (!this._recapBuilders.RecapCacheHot(timeSettings.Description, userSettings.UserNameLastFm))
             {
-                await Context.Message.AddReactionAsync(EmojiProperties.Custom(DiscordConstants.Loading));
+                await Context.Message.AddReactionAsync(new ReactionEmojiProperties("Loading", DiscordConstants.Loading));
                 loading = true;
             }
 
@@ -337,7 +338,7 @@ public class PlayCommands : BaseCommandModule
 
             if (loading)
             {
-                await Context.Message.RemoveReactionAsync(EmojiProperties.Custom(DiscordConstants.Loading),
+                await Context.Message.DeleteUserReactionAsync(new ReactionEmojiProperties("Loading", DiscordConstants.Loading),
                     this._botSettings.Discord.ApplicationId.GetValueOrDefault());
             }
 

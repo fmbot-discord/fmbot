@@ -69,7 +69,7 @@ public class GenreSlashCommands : ApplicationCommandModule<ApplicationCommandCon
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
 
-        var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+        var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
         if (message == null)
         {
             return;
@@ -77,7 +77,7 @@ public class GenreSlashCommands : ApplicationCommandModule<ApplicationCommandCon
 
         var components =
             new ActionRowProperties().WithButton($"Loading server view...", customId: "1", emote: EmojiProperties.Custom("<a:loading:821676038102056991>"), disabled: true, style: ButtonStyle.Secondary);
-        await message.ModifyAsync(m => m.Components = components.Build());
+        await message.ModifyAsync(m => m.Components = [components]);
 
         var discordUserId = ulong.Parse(discordUser);
         var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
@@ -107,7 +107,7 @@ public class GenreSlashCommands : ApplicationCommandModule<ApplicationCommandCon
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
 
-        var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+        var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
         if (message == null)
         {
             return;
@@ -150,7 +150,7 @@ public class GenreSlashCommands : ApplicationCommandModule<ApplicationCommandCon
 
             await RespondAsync(InteractionCallback.DeferredMessage());
 
-            var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+            var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
             if (message == null)
             {
                 return;
@@ -208,7 +208,7 @@ public class GenreSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         [SlashCommandParameter(Name = "search", Description = "The genre or artist you want to view", AutocompleteProviderType = typeof(GenreArtistAutoComplete))] string search = null,
         [SlashCommandParameter(Name = "Private", Description = "Only show response to you")] bool privateResponse = false)
     {
-        await DeferAsync(privateResponse);
+        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
 
         var contextUser = await this._userService.GetUserWithFriendsAsync(this.Context.User);
 

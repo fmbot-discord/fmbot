@@ -3,9 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
-using Discord.Commands;
-using Discord.WebSocket;
+using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
@@ -19,6 +17,12 @@ using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Serilog;
+using NetCord;
+using NetCord.Gateway;
+using NetCord.Rest;
+using NetCord.Services.Commands;
+using GuildUser = NetCord.GuildUser;
+using User = FMBot.Persistence.Domain.Models.User;
 
 namespace FMBot.Bot.Services;
 
@@ -51,7 +55,7 @@ public class MusicBotService
         this.BotScrobblingLogs = new List<BotScrobblingLog>();
     }
 
-    public async Task Scrobble(MusicBot musicBot, SocketUserMessage msg, ICommandContext context)
+    public async Task Scrobble(MusicBot musicBot, Message msg, CommandContext context)
     {
         try
         {
@@ -92,7 +96,7 @@ public class MusicBotService
         }
     }
 
-    private async Task SendScrobbleMessage(ICommandContext context, MusicBot musicBot, TrackSearchResult trackResult,
+    private async Task SendScrobbleMessage(CommandContext context, MusicBot musicBot, TrackSearchResult trackResult,
         int listenerCount, ulong botMessageId)
     {
         var componentBuilder = new ComponentBuilderV2();
@@ -124,7 +128,7 @@ public class MusicBotService
         });
 
         var scrobbleMessage =
-            await context.Channel.SendMessageAsync(components: componentBuilder.Build(), allowedMentions: AllowedMentions.None,
+            await context.Channel.SendMessageAsync(components: componentBuilder, allowedMentions: AllowedMentionsProperties.None,
                 flags: MessageFlags.SuppressNotification | MessageFlags.ComponentsV2);
 
         var referencedMusic = new ReferencedMusic
@@ -191,20 +195,20 @@ public class MusicBotService
         }
     }
 
-    private async Task<List<User>> GetUsersInVoice(ICommandContext context, ulong botId)
+    private async Task<List<User>> GetUsersInVoice(CommandContext context, ulong botId)
     {
         try
         {
-            SocketGuildUser guildUser = null;
+            GuildUser guildUser = null;
 
-            if (context.User is not SocketGuildUser resolvedGuildUser)
+            if (context.User is not GuildUser resolvedGuildUser)
             {
-                // MessageUpdate event returns SocketWebhookUser instead of SocketGuildUser. In order to continue, we
-                // need to get the SocketGuildUser instance from the guild object.
-                if (context.User is SocketWebhookUser webhookUser)
-                {
-                    guildUser = await context.Guild.GetUserAsync(webhookUser.Id) as SocketGuildUser;
-                }
+                // MessageUpdate event returns SocketWebhookUser instead of GuildUser. In order to continue, we
+                // need to get the GuildUser instance from the guild object.
+                // if (context.User is SocketWebhookUser webhookUser)
+                // {
+                //     guildUser = await context.Guild.GetUserAsync(webhookUser.Id) as GuildUser;
+                // }
 
                 if (guildUser is null)
                 {
@@ -220,9 +224,8 @@ public class MusicBotService
                 guildUser = resolvedGuildUser;
             }
 
-            var voiceChannel = guildUser.VoiceChannel;
 
-            if (voiceChannel == null)
+            if (!context.Guild.VoiceStates.TryGetValue(context.User.Id, out var voiceState))
             {
                 Log.Debug("BotScrobbling: Skipped scrobble for {guildName} / {guildId} because no found voice channels", context.Guild.Name,
                     context.Guild.Id);

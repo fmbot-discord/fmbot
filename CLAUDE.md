@@ -57,6 +57,12 @@ dotnet ef database update --project ./src/FMBot.Persistence.EntityFrameWork --st
 - **FMBot.Youtube** - YouTube integration for video content
 - **FMBot.Tests** - NUnit test suite
 
+### Key Entry Points
+- `src/FMBot.Bot/Program.cs` - Application bootstrap
+- `src/FMBot.Bot/Startup.cs` - DI configuration and service registration
+- `src/FMBot.Bot/Handlers/CommandHandler.cs` - Text command routing
+- `src/FMBot.Bot/Handlers/InteractionHandler.cs` - Slash command routing
+
 ### Key Architectural Patterns
 
 **Command Pattern**: Discord interactions are handled through:
@@ -75,6 +81,11 @@ dotnet ef database update --project ./src/FMBot.Persistence.EntityFrameWork --st
 
 **Dependency Injection**: Extensive use of Microsoft DI with service registration organized by category in `Startup.cs`
 
+**Response Pattern**: Commands return `ResponseModel` objects built via builders:
+1. Handler receives interaction → creates `ContextModel`
+2. Service/Builder processes request → returns `ResponseModel`
+3. Handler sends response embed/components to Discord
+
 ### Database Architecture
 - **PostgreSQL** with Entity Framework Core
 - **Snake_case** naming convention
@@ -86,7 +97,7 @@ dotnet ef database update --project ./src/FMBot.Persistence.EntityFrameWork --st
 Primary services: Last.fm (core), Spotify (features), Apple Music (metadata), YouTube (videos), Discogs (collections), MusicBrainz (metadata), OpenAI (AI features), Genius (lyrics)
 
 ### Docker & Deployment
-- **Multi-stage Dockerfile** with .NET 9.0 runtime
+- **Multi-stage Dockerfile** with .NET 10.0 runtime
 - **Puppeteer/Chrome** for image generation
 - **Sharding support** for Discord bot scaling
 - **Health checks** and monitoring capabilities
@@ -106,10 +117,18 @@ Primary services: Last.fm (core), Spotify (features), Apple Music (metadata), Yo
 
 ### Code Conventions
 - **C# 9.0+ features** with nullable reference types enabled
-- **Discord.Net** framework for Discord API interactions
+- **NetCord** framework for Discord API interactions (migrated from Discord.Net)
 - **Async/await** patterns throughout
 - **Structured logging** with Serilog
 - **Extension methods** for common operations
+
+### Naming Conventions
+- Services: `*Service.cs` (e.g., `AlbumService.cs`)
+- Builders: `*Builders.cs` (plural, e.g., `AlbumBuilders.cs`)
+- Slash commands: `*SlashCommands.cs`
+- Text commands: `*Commands.cs`
+- Database columns: `snake_case`
+- C# properties: `PascalCase`
 
 ### Testing
 - **NUnit** testing framework with Moq for mocking
@@ -117,32 +136,34 @@ Primary services: Last.fm (core), Spotify (features), Apple Music (metadata), Yo
 - Focus on service layer and business logic testing
 - Minimal integration tests due to external API dependencies
 
-## Key Technical Considerations
+## Common Gotchas
+- Always check `userSettings` for null - user may not be registered with Last.fm
+- Guild-specific features require `GuildId` from context
+- Rate limits: Last.fm has aggressive limits, use caching where possible
+- Image generation requires Puppeteer - won't work without Chrome installed
+- Background jobs use Hangfire - check `TimerService` for scheduled tasks
 
-### Performance
-- **Background jobs** with Hangfire for async processing
-- **Caching strategies** for frequently accessed data
-- **Database indexing** for optimal query performance
-- **Sharding** for Discord bot scaling
+## Adding a New Command
 
-### Security
-- **API keys** managed through configuration
-- **User privacy** controls and data protection
-- **Rate limiting** for external API calls
-- **Input validation** and sanitization
+### Slash Command
+1. Add method in appropriate `SlashCommands/*SlashCommands.cs` file
+2. Create/update builder in `Builders/` for response construction
+3. Register any new services in `Startup.cs`
 
-### Monitoring & Diagnostics
-- **Structured logging** with Serilog to Seq
-- **Prometheus metrics** for monitoring
-- **Health checks** for application status
-- **Diagnostic tools** for memory and performance analysis
+### Text Command
+1. Add method in appropriate `TextCommands/*Commands.cs` file
+2. Reuse existing builders where possible
+3. Text commands often mirror slash commands - check for existing implementation
 
 ## File Organization
 
 Important directories:
 - `src/FMBot.Bot/SlashCommands/` - Discord slash command implementations
+- `src/FMBot.Bot/TextCommands/` - Text command implementations
+- `src/FMBot.Bot/Handlers/` - Command and interaction routing
 - `src/FMBot.Bot/Services/` - Business logic services
 - `src/FMBot.Bot/Builders/` - Response building logic
+- `src/FMBot.Bot/Models/` - DTOs including `ContextModel`, `ResponseModel`
 - `src/FMBot.Persistence.EntityFrameWork/Migrations/` - Database migrations
 - `src/FMBot.Images/` - Image generation services
 - `docker/` - Docker Compose configurations

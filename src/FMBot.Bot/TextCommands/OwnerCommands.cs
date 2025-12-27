@@ -15,6 +15,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using NetCord.Rest;
 using NetCord.Services.Commands;
+using NetCord.Gateway;
 
 namespace FMBot.Bot.TextCommands;
 
@@ -49,7 +50,7 @@ public class OwnerCommands : BaseCommandModule
         {
             try
             {
-                await ReplyAsync(say);
+                await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = say });
                 this.Context.LogCommandUsed();
             }
             catch (Exception e)
@@ -65,19 +66,18 @@ public class OwnerCommands : BaseCommandModule
     {
         if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
         {
-            await ReplyAsync("Restarting bot...");
+            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Restarting bot..." });
             this.Context.LogCommandUsed();
             Environment.Exit(1);
         }
         else
         {
-            await ReplyAsync("Error: Insufficient rights. Only FMBot admins can restart the bot.");
+            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Error: Insufficient rights. Only FMBot admins can restart the bot." });
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
         }
     }
 
-    [Command("setusertype"), Summary("Sets usertype for other users")]
-    [Alias("setperms")]
+    [Command("setusertype", "setperms"), Summary("Sets usertype for other users")]
     [UsernameSetRequired]
     public async Task SetUserTypeAsync(string userId = null, string userType = null)
     {
@@ -85,39 +85,37 @@ public class OwnerCommands : BaseCommandModule
         {
             if (userId == null || userType == null || userId == "help")
             {
-                await ReplyAsync(
-                    "Please format your command like this: `.fmsetusertype 'discord id' 'User/Admin/Owner'`");
+                await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Please format your command like this: `.fmsetusertype 'discord id' 'User/Admin/Owner'`" });
                 this.Context.LogCommandUsed(CommandResponse.Help);
                 return;
             }
 
             if (!Enum.TryParse(userType, true, out UserType userTypeEnum))
             {
-                await ReplyAsync("Invalid usertype. Please use 'User', 'Contributor', 'Admin', or 'Owner'.");
+                await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Invalid usertype. Please use 'User', 'Contributor', 'Admin', or 'Owner'." });
                 this.Context.LogCommandUsed(CommandResponse.WrongInput);
                 return;
             }
 
             if (await this._adminService.SetUserTypeAsync(ulong.Parse(userId), userTypeEnum))
             {
-                await ReplyAsync("You got it. User perms changed.");
+                await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "You got it. User perms changed." });
                 this.Context.LogCommandUsed();
             }
             else
             {
-                await ReplyAsync("Setting user failed. Are you sure the user exists?");
+                await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Setting user failed. Are you sure the user exists?" });
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
             }
         }
         else
         {
-            await ReplyAsync("Error: Insufficient rights. Only FMBot owners can change your usertype.");
+            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Error: Insufficient rights. Only FMBot owners can change your usertype." });
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
         }
     }
 
-    [Command("storagecheck"), Summary("Checks how much storage is left on the server.")]
-    [Alias("checkstorage", "storage")]
+    [Command("storagecheck", "checkstorage", "storage"), Summary("Checks how much storage is left on the server.")]
     [UsernameSetRequired]
     public async Task StorageCheckAsync()
     {
@@ -137,7 +135,7 @@ public class OwnerCommands : BaseCommandModule
                         drive.TotalSize.ToFormattedByteString());
                 }
 
-                await this.Context.Channel.SendMessageAsync("", false, builder.Build());
+                await this.Context.Channel.SendMessageAsync(new MessageProperties().AddEmbeds(builder));
                 this.Context.LogCommandUsed();
             }
             catch (Exception e)
@@ -147,7 +145,7 @@ public class OwnerCommands : BaseCommandModule
         }
         else
         {
-            await ReplyAsync("Only .fmbot admins or owners can execute this command.");
+            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Only .fmbot admins or owners can execute this command." });
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
         }
     }
@@ -168,19 +166,20 @@ public class OwnerCommands : BaseCommandModule
 
             if (!string.IsNullOrWhiteSpace(desc))
             {
+                var dmChannel = await this.Context.User.GetDMChannelAsync();
                 string[] descChunks = desc.SplitByMessageLength().ToArray();
                 foreach (string chunk in descChunks)
                 {
-                    await this.Context.User.SendMessageAsync(chunk);
+                    await dmChannel.SendMessageAsync(new MessageProperties { Content = chunk });
                 }
             }
 
-            await this.Context.Channel.SendMessageAsync("Check your DMs!");
+            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Check your DMs!" });
             this.Context.LogCommandUsed();
         }
         else
         {
-            await ReplyAsync("Only .fmbot owners can execute this command.");
+            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Only .fmbot owners can execute this command." });
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
         }
     }
@@ -193,9 +192,9 @@ public class OwnerCommands : BaseCommandModule
         {
             try
             {
-                await ReplyAsync($"Starting removed Last.fm user deleter.");
+                await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Starting removed Last.fm user deleter." });
                 var deletedUsers = await this._userService.DeleteInactiveUsers();
-                await ReplyAsync($"Deleted {deletedUsers} users from the database with deleted Last.fm");
+                await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = $"Deleted {deletedUsers} users from the database with deleted Last.fm" });
             }
             catch (Exception e)
             {
@@ -204,7 +203,7 @@ public class OwnerCommands : BaseCommandModule
         }
         else
         {
-            await ReplyAsync("Error: Insufficient rights. Only .fmbot owners can remove deleted users.");
+            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Error: Insufficient rights. Only .fmbot owners can remove deleted users." });
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
         }
     }
@@ -217,9 +216,9 @@ public class OwnerCommands : BaseCommandModule
         {
             try
             {
-                await ReplyAsync($"Starting inactive user deleter / de-duplicater.");
+                await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Starting inactive user deleter / de-duplicater." });
                 var deletedUsers = await this._userService.DeleteOldDuplicateUsers();
-                await ReplyAsync($"Deleted {deletedUsers} inactive users from the database");
+                await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = $"Deleted {deletedUsers} inactive users from the database" });
             }
             catch (Exception e)
             {
@@ -228,7 +227,7 @@ public class OwnerCommands : BaseCommandModule
         }
         else
         {
-            await ReplyAsync("Error: Insufficient rights. Only .fmbot owners can remove deleted users.");
+            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Error: Insufficient rights. Only .fmbot owners can remove deleted users." });
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
         }
     }
@@ -241,9 +240,9 @@ public class OwnerCommands : BaseCommandModule
         {
             try
             {
-                await ReplyAsync($"Starting play pruner for inactive users.");
+                await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Starting play pruner for inactive users." });
                 var usersPruned = await this._userService.PrunePlaysForInactiveUsers();
-                await ReplyAsync($"Pruned plays for {usersPruned} inactive users");
+                await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = $"Pruned plays for {usersPruned} inactive users" });
             }
             catch (Exception e)
             {
@@ -252,7 +251,7 @@ public class OwnerCommands : BaseCommandModule
         }
         else
         {
-            await ReplyAsync("Error: Insufficient rights. Only .fmbot owners can start the prune process.");
+            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Error: Insufficient rights. Only .fmbot owners can start the prune process." });
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
         }
     }
@@ -268,18 +267,18 @@ public class OwnerCommands : BaseCommandModule
 
             if (specialGuild == true)
             {
-                await ReplyAsync("This is now a special guild!!1!");
+                await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "This is now a special guild!!1!" });
             }
             else
             {
-                await ReplyAsync($"Not a special guild anymore :(");
+                await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Not a special guild anymore :(" });
             }
 
             this.Context.LogCommandUsed();
         }
         else
         {
-            await ReplyAsync("Only .fmbot owners can execute this command.");
+            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Only .fmbot owners can execute this command." });
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
         }
     }
@@ -378,7 +377,7 @@ public class OwnerCommands : BaseCommandModule
         unmanagedInfo.AppendLine($"**Handle Count:** `{process.HandleCount}`");
         embed.AddField("Unmanaged Memory", unmanagedInfo.ToString());
 
-        await this.Context.Channel.SendMessageAsync("", false, embed.Build());
+        await this.Context.Channel.SendMessageAsync(new MessageProperties().AddEmbeds(embed));
         this.Context.LogCommandUsed();
     }
 

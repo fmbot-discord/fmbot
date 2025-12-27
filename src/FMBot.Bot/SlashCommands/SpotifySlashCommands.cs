@@ -11,6 +11,7 @@ using FMBot.Domain.Models;
 using NetCord.Services.ApplicationCommands;
 using SpotifyAPI.Web;
 using NetCord;
+using NetCord.Rest;
 using Fergun.Interactive;
 
 namespace FMBot.Bot.SlashCommands;
@@ -160,12 +161,18 @@ public class SpotifySlashCommands : ApplicationCommandModule<ApplicationCommandC
 
             if (result)
             {
-                await FollowupAsync(reply, allowedMentions: AllowedMentions.None, ephemeral: privateResponse);
+                await this.Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
+                    .WithContent(reply)
+                    .WithAllowedMentions(AllowedMentionsProperties.None)
+                    .WithFlags(privateResponse ? MessageFlags.Ephemeral : default));
                 this.Context.LogCommandUsed();
             }
             else
             {
-                await FollowupAsync($"Sorry, Spotify returned no results for *`{StringExtensions.Sanitize(querystring)}`*.", allowedMentions: AllowedMentions.None, ephemeral: true);
+                await this.Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
+                    .WithContent($"Sorry, Spotify returned no results for *`{StringExtensions.Sanitize(querystring)}`*.")
+                    .WithAllowedMentions(AllowedMentionsProperties.None)
+                    .WithFlags(MessageFlags.Ephemeral));
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
             }
         }

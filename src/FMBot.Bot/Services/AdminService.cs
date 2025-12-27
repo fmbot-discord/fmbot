@@ -8,14 +8,15 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using System.Linq;
 
-using Discord.WebSocket;
 using FMBot.Domain.Enums;
 using Serilog;
 using Microsoft.Extensions.Options;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
+using NetCord;
 using NetCord.Gateway;
+using NetCord.Rest;
 using User = FMBot.Persistence.Domain.Models.User;
 
 namespace FMBot.Bot.Services;
@@ -376,7 +377,7 @@ public class AdminService
                 return;
             }
 
-            var guild = this._client.GetGuild(this._botSettings.Bot.BaseServerId);
+            var guild = this._client.Cache.Guilds.GetValueOrDefault(this._botSettings.Bot.BaseServerId);
             var channel = guild?.GetTextChannel(this._botSettings.Bot.GlobalWhoKnowsReportChannelId);
 
             if (channel == null)
@@ -392,7 +393,7 @@ public class AdminService
                 .WithButton("Ban", $"gwk-report-ban-{report.Id}", style: ButtonStyle.Success)
                 .WithButton("Deny", $"gwk-report-deny-{report.Id}", style: ButtonStyle.Danger);
 
-            components.WithButton("User", url: $"{Constants.LastFMUserUrl}{report.UserNameLastFM}", row: 1, style: ButtonStyle.Link);
+            components.WithButton("User", url: $"{Constants.LastFMUserUrl}{report.UserNameLastFM}", row: 1);
 
             embed.AddField("User", $"**[{report.UserNameLastFM}]({Constants.LastFMUserUrl}{report.UserNameLastFM})**");
 
@@ -414,7 +415,7 @@ public class AdminService
             embed.AddField("Reporter",
                 $"**{reporter?.DisplayName}** - <@{report.ReportedByDiscordUserId}> - `{report.ReportedByDiscordUserId}`");
 
-            await channel.SendMessageAsync(embed: embed.Build(), components: components.Build());
+            await channel.SendMessageAsync(embed: embed, components: components);
         }
         catch (Exception e)
         {

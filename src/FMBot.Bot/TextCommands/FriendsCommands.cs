@@ -109,11 +109,11 @@ public class FriendsCommands : BaseCommandModule
     [GuildOnly]
     [CommandCategories(CommandCategory.Friends)]
     [SupporterEnhanced($"Supporters can add up to 18 friends (up from 12)")]
-    public async Task AddFriends([Summary("Friend names")] params string[] enteredFriends)
+    public async Task AddFriends(params string[] enteredFriends)
     {
         if (enteredFriends.Length == 0)
         {
-            await ReplyAsync("Please enter at least one friend to add. You can use their Last.fm usernames, Discord mention or Discord id.");
+            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Please enter at least one friend to add. You can use their Last.fm usernames, Discord mention or Discord id." });
             this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
             return;
         }
@@ -142,14 +142,14 @@ public class FriendsCommands : BaseCommandModule
     [Examples("removefriends fm-bot @user", "removefriend 356268235697553409")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Friends)]
-    public async Task RemoveFriends([Summary("Friend names")] params string[] enteredFriends)
+    public async Task RemoveFriends(params string[] enteredFriends)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? this._botSettings.Bot.Prefix;
 
         if (enteredFriends.Length == 0)
         {
-            await ReplyAsync("Please enter at least one friend to remove. You can use their Last.fm usernames, Discord mention or discord id.");
+            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Please enter at least one friend to remove. You can use their Last.fm usernames, Discord mention or discord id." });
             this.Context.LogCommandUsed(CommandResponse.WrongInput);
             return;
         }
@@ -179,7 +179,7 @@ public class FriendsCommands : BaseCommandModule
         {
             await this._friendsService.RemoveAllFriendsAsync(userSettings.UserId);
 
-            await ReplyAsync("Removed all your friends.");
+            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Removed all your friends." });
             this.Context.LogCommandUsed();
         }
         catch (Exception e)

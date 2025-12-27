@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 
 using Fergun.Interactive.Selection;
@@ -13,29 +12,42 @@ public class MultiSelection<T> : BaseSelection<MultiSelectionOption<T>>
     {
     }
 
-    public override ComponentBuilder GetOrAddComponents(bool disableAll, ComponentBuilder builder = null)
+    public override List<IMessageComponentProperties> GetOrAddComponents(bool disableAll, List<IMessageComponentProperties> builder = null)
     {
-        builder ??= new ActionRowProperties();
-        var selectMenus = new Dictionary<int, SelectMenuBuilder>();
+        builder ??= new List<IMessageComponentProperties>();
+        var selectMenus = new Dictionary<int, StringMenuProperties>();
 
         foreach (var option in Options)
         {
             if (!selectMenus.ContainsKey(option.Row))
             {
                 selectMenus[option.Row] = new StringMenuProperties($"selectmenu{option.Row}")
-                    .WithDisabled(disableAll);
+                {
+                    Disabled = disableAll
+                };
             }
 
             var optionBuilder = new StringMenuSelectOptionProperties(option.Option, option.Value)
-                .WithDescription(option.Description)
-                .WithDefault(option.IsDefault);
+            {
+                Description = option.Description,
+                Default = option.IsDefault
+            };
 
-            selectMenus[option.Row].AddOption(optionBuilder);
+            selectMenus[option.Row].Options.Add(optionBuilder);
         }
 
         foreach ((int row, var selectMenu) in selectMenus)
         {
-            builder.WithSelectMenu(selectMenu, row);
+            // Ensure we have enough action rows
+            while (builder.Count <= row)
+            {
+                builder.Add(new ActionRowProperties());
+            }
+
+            if (builder[row] is ActionRowProperties actionRow)
+            {
+                actionRow.AddComponent(selectMenu);
+            }
         }
 
         return builder;

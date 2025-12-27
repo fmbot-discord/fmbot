@@ -9,12 +9,12 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain.Models;
 using NetCord.Services.ApplicationCommands;
-using NetCord;
 using Fergun.Interactive;
+using NetCord.Rest;
 
 namespace FMBot.Bot.SlashCommands;
 
-[Group("server", "Server billboard commands")]
+[SlashCommand("server", "Server billboard commands")]
 public class ServerSlashCommands : ApplicationCommandModule<ApplicationCommandContext>
 {
     private readonly UserService _userService;

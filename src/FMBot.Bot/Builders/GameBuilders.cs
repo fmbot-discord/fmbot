@@ -19,6 +19,7 @@ using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using NetCord;
 using NetCord.Gateway;
+using DiscordGuild = NetCord.Gateway.Guild;
 using NetCord.Rest;
 using NetCord.Services.Commands;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;

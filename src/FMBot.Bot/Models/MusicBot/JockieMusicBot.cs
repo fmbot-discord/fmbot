@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 
-using Discord.WebSocket;
 using NetCord.Gateway;
 
 namespace FMBot.Bot.Models.MusicBot;
@@ -49,9 +48,9 @@ internal class JockieMusicBot : MusicBot
             return songByArtist.Replace("\\", "");
         }
 
-        if (msg.Embeds.First().Author.HasValue &&
-            msg.Embeds.First().Author?.Name != null &&
-            msg.Embeds.First().Author.Value.Name.Contains("Started playing", StringComparison.OrdinalIgnoreCase))
+        if (msg.Embeds.First().Author != null &&
+            msg.Embeds.First().Author.Name != null &&
+            msg.Embeds.First().Author.Name.Contains("Started playing", StringComparison.OrdinalIgnoreCase))
         {
             var field = msg.Embeds.First().Fields
                 .FirstOrDefault(f => f.Name.Contains("Playing", StringComparison.OrdinalIgnoreCase));

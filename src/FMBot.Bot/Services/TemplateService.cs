@@ -121,7 +121,7 @@ public partial class TemplateService
             );
     }
 
-    public record TemplateResult(EmbedProperties EmbedBuilder, Dictionary<EmbedOption, string> Content);
+    public record TemplateResult(EmbedProperties EmbedProperties, Dictionary<EmbedOption, string> Content);
 
     private static async Task<TemplateResult> TemplateToEmbed(Template template, TemplateContext context)
     {
@@ -429,7 +429,7 @@ public partial class TemplateService
 
         var result = await TemplateToEmbed(template, context);
 
-        return result.EmbedBuilder;
+        return result.EmbedProperties;
     }
 
     public async Task<List<Template>> GetTemplates(int userId)

@@ -397,7 +397,7 @@ public class ArtistSlashCommands : ApplicationCommandModule<ApplicationCommandCo
         [SlashCommandParameter(Name = "Private", Description = "Only show response to you")] bool privateResponse = false,
         [SlashCommandParameter(Name = "Redirects", Description = "Toggle Last.fm artist name redirects (defaults to enabled)")] bool redirectsEnabled = true)
     {
-        await DeferAsync(privateResponse);
+        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
 
         var contextUser = await this._userService.GetUserWithFriendsAsync(this.Context.User);
 
@@ -477,7 +477,7 @@ public class ArtistSlashCommands : ApplicationCommandModule<ApplicationCommandCo
             return;
         }
 
-        await DeferAsync(privateResponse);
+        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
 
         var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.Quarterly, timeZone: userSettings.TimeZone);
 
@@ -505,7 +505,7 @@ public class ArtistSlashCommands : ApplicationCommandModule<ApplicationCommandCo
         [SlashCommandParameter(Name = "Private", Description = "Only show response to you")] bool privateResponse = false,
         [SlashCommandParameter(Name = "Size", Description = "Amount of comparisons to show")] EmbedSize? embedSize = null)
     {
-        await DeferAsync(privateResponse);
+        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
@@ -560,7 +560,7 @@ public class ArtistSlashCommands : ApplicationCommandModule<ApplicationCommandCo
         [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")] string user = null,
         [SlashCommandParameter(Name = "Private", Description = "Only show response to you")] bool privateResponse = false)
     {
-        await DeferAsync(privateResponse);
+        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);

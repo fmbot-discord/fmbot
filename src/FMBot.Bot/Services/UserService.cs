@@ -297,7 +297,7 @@ public class UserService
         }
     }
 
-    public async Task AddUserTextCommandInteraction(ShardedCommandContext context, string commandName)
+    public async Task AddUserTextCommandInteraction(CommandContext context, string commandName)
     {
         var user = await GetUserSettingsAsync(context.User);
         PublicProperties.UsedCommandDiscordUserIds.TryAdd(context.Message.Id, context.User.Id);
@@ -990,7 +990,7 @@ public class UserService
 
         var guildUser = await guild.GetUserAsync(user.Id, CacheMode.CacheOnly);
 
-        return guildUser?.DisplayName ?? user.GlobalName ?? user.Username;
+        return guildUser?.Nickname ?? user.GlobalName ?? user.Username;
     }
 
     public async Task<UserType> GetRankAsync(NetCord.User discordUser)

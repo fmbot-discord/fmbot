@@ -20,7 +20,7 @@ using NetCord.Services.ApplicationCommands;
 
 namespace FMBot.Bot.SlashCommands;
 
-[Group("import", "Manage your data imports")]
+[SlashCommand("import", "Manage your data imports")]
 public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationCommandContext>
 {
     private readonly UserService _userService;
@@ -140,11 +140,12 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
             return;
         }
 
-        await DeferAsync(ephemeral: noAttachments);
+        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(noAttachments ? MessageFlags.Ephemeral : default));
 
         embed.AddField($"{DiscordConstants.Spotify} Importing history into .fmbot..",
             $"- {DiscordConstants.Loading} Loading import files...");
-        var message = await FollowupAsync(embed: embed.Build());
+        var message = await this.Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
+            .WithEmbeds([embed]));
 
         try
         {
@@ -177,8 +178,8 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
             if (imports.result == null || imports.result.Count == 0 || imports.result.All(a => a.MsPlayed == 0))
             {
                 if (attachments != null &&
-                    attachments.Any(a => a.Filename != null) &&
-                    attachments.Any(a => a.Filename.ToLower().Contains("streaminghistory")))
+                    attachments.Any(a => a.FileName != null) &&
+                    attachments.Any(a => a.FileName.ToLower().Contains("streaminghistory")))
                 {
                     embed.WithColor(DiscordConstants.WarningColorOrange);
                     await UpdateSpotifyImportEmbed(this.Context.Interaction, embed, description,
@@ -282,12 +283,12 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
 
             if (importActivated.Length > 0)
             {
-                embed.AddField("✅ Importing service activated", importActivated);
+                embed.AddField("✅ Importing service activated", importActivated.ToString());
             }
 
             if (importSetting.Length > 0)
             {
-                embed.AddField("⚙️ Current import setting", importSetting);
+                embed.AddField("⚙️ Current import setting", importSetting.ToString());
             }
 
             var components = new ActionRowProperties()
@@ -349,12 +350,13 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
             return;
         }
 
-        await DeferAsync(ephemeral: false);
+        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage());
 
         embed.AddField($"{DiscordConstants.AppleMusic} Importing history into .fmbot..",
             $"- {DiscordConstants.Loading} Loading import files...");
 
-        var message = await FollowupAsync(embed: embed.Build());
+        var message = await this.Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
+            .WithEmbeds([embed]));
 
         try
         {
@@ -472,12 +474,12 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
 
             if (importActivated.Length > 0)
             {
-                embed.AddField("✅ Importing service activated", importActivated);
+                embed.AddField("✅ Importing service activated", importActivated.ToString());
             }
 
             if (importSetting.Length > 0)
             {
-                embed.AddField("⚙️ Current import setting", importSetting);
+                embed.AddField("⚙️ Current import setting", importSetting.ToString());
             }
 
             embed.WithColor(DiscordConstants.AppleMusicRed);
@@ -501,25 +503,25 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
         }
     }
 
-    private static async Task UpdateSpotifyImportEmbed(IDiscordInteraction interaction, EmbedBuilder embed,
+    private static async Task UpdateSpotifyImportEmbed(Interaction interaction, EmbedProperties embed,
         StringBuilder builder,
-        string lineToAdd, bool lastLine = false, ComponentBuilder components = null, string image = null)
+        string lineToAdd, bool lastLine = false, ActionRowProperties components = null, string image = null)
     {
         await UpdateImportEmbed(interaction, embed, builder, lineToAdd, lastLine, components, image,
             PlaySource.SpotifyImport);
     }
 
-    private static async Task UpdateAppleMusicImportEmbed(IDiscordInteraction interaction, EmbedBuilder embed,
+    private static async Task UpdateAppleMusicImportEmbed(Interaction interaction, EmbedProperties embed,
         StringBuilder builder,
-        string lineToAdd, bool lastLine = false, ComponentBuilder components = null, string image = null)
+        string lineToAdd, bool lastLine = false, ActionRowProperties components = null, string image = null)
     {
         await UpdateImportEmbed(interaction, embed, builder, lineToAdd, lastLine, components, image,
             PlaySource.AppleMusicImport);
     }
 
-    private static async Task UpdateImportEmbed(IDiscordInteraction interaction, EmbedBuilder embed,
+    private static async Task UpdateImportEmbed(Interaction interaction, EmbedProperties embed,
         StringBuilder builder,
-        string lineToAdd, bool lastLine = false, ComponentBuilder components = null, string image = null,
+        string lineToAdd, bool lastLine = false, ActionRowProperties components = null, string image = null,
         PlaySource playSource = PlaySource.SpotifyImport)
     {
         builder.AppendLine(lineToAdd);
@@ -538,13 +540,13 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
 
         if (image != null)
         {
-            embed.WithImageUrl(image);
+            embed.WithImage(image);
         }
 
-        await interaction.ModifyOriginalResponseAsync(m =>
+        await interaction.ModifyResponseAsync(m =>
         {
-            m.Embed = embed.Build();
-            m.Components = components?.Build();
+            m.Embeds = [embed];
+            m.Components = [components];
         });
     }
 
@@ -563,7 +565,7 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
             return;
         }
 
-        await DeferAsync(ephemeral: true);
+        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
 
         try
         {
@@ -594,7 +596,7 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
             return;
         }
 
-        await DeferAsync(ephemeral: true);
+        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
 
         if (this.Context.Guild != null)
         {
@@ -602,7 +604,9 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
                 .WithColor(DiscordConstants.InformationColorBlue)
                 .WithDescription("Check your DMs to continue with modifying your .fmbot imports.");
 
-            await FollowupAsync(embed: serverEmbed.Build(), ephemeral: true);
+            await this.Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
+                .WithEmbeds([serverEmbed])
+                .WithFlags(MessageFlags.Ephemeral));
         }
         else if (this.Context.Channel != null)
         {
@@ -614,8 +618,12 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
             var response =
                 await this._importBuilders.ImportModify(new ContextModel(this.Context, contextUser),
                     contextUser.UserId);
-            await this.Context.User.SendMessageAsync("", false, response.Embed,
-                components: response.Components);
+            var dmChannel = await this.Context.User.GetDMChannelAsync();
+            await dmChannel.SendMessageAsync(new MessageProperties
+            {
+                Embeds = [response.Embed],
+                Components = [response.Components]
+            });
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)

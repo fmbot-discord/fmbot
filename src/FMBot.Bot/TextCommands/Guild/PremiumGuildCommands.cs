@@ -1,6 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using CsvHelper.Configuration.Attributes;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
@@ -12,6 +11,7 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
+using NetCord.Rest;
 using NetCord.Services.Commands;
 
 namespace FMBot.Bot.TextCommands.Guild;
@@ -56,7 +56,7 @@ public class PremiumGuildCommands : BaseCommandModule
     {
         if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
         {
-            await ReplyAsync(Constants.GetPremiumServer);
+            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = Constants.GetPremiumServer });
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
@@ -85,7 +85,7 @@ public class PremiumGuildCommands : BaseCommandModule
     {
         if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
         {
-            await ReplyAsync(Constants.GetPremiumServer);
+            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = Constants.GetPremiumServer });
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
@@ -114,7 +114,7 @@ public class PremiumGuildCommands : BaseCommandModule
     {
         if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
         {
-            await ReplyAsync(Constants.GetPremiumServer);
+            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = Constants.GetPremiumServer });
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
@@ -143,7 +143,7 @@ public class PremiumGuildCommands : BaseCommandModule
     {
         if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
         {
-            await ReplyAsync(Constants.GetPremiumServer);
+            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = Constants.GetPremiumServer });
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
@@ -172,7 +172,7 @@ public class PremiumGuildCommands : BaseCommandModule
     {
         if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
         {
-            await ReplyAsync(Constants.GetPremiumServer);
+            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = Constants.GetPremiumServer });
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }

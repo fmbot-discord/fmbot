@@ -78,7 +78,7 @@ public class GameSlashCommands : ApplicationCommandModule<ApplicationCommandCont
             await this.Context.UpdateInteractionEmbed(response);
         }
 
-        var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+        var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
         if (message != null &&
             PublicProperties.UsedCommandsResponseContextId.TryGetValue(message.Id, out var contextId))
         {
@@ -122,7 +122,7 @@ public class GameSlashCommands : ApplicationCommandModule<ApplicationCommandCont
 
             if (response.CommandResponse == CommandResponse.Ok)
             {
-                var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+                var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
                 if (message == null)
                 {
                     return;
@@ -131,7 +131,7 @@ public class GameSlashCommands : ApplicationCommandModule<ApplicationCommandCont
                 var name = await UserService.GetNameAsync(this.Context.Guild, this.Context.User);
                 var components = new ActionRowProperties().WithButton($"{name} is playing again!", customId: "1",
                     url: null, disabled: true, style: ButtonStyle.Secondary);
-                _ = Task.Run(() => message.ModifyAsync(m => m.Components = components.Build()));
+                _ = Task.Run(() => message.ModifyAsync(m => m.Components = components));
 
                 if (responseId.HasValue && response.GameSessionId.HasValue)
                 {
@@ -173,7 +173,7 @@ public class GameSlashCommands : ApplicationCommandModule<ApplicationCommandCont
         }
 
         var msg = await this.Context.Channel.GetMessageAsync(responseId);
-        if (msg is not IUserMessage message)
+        if (msg is not Message message)
         {
             return;
         }

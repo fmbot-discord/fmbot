@@ -2,8 +2,9 @@ using System;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Fergun.Interactive;
 using FMBot.Bot.Extensions;
-using FMBot.Bot.Interfaces;
+using FMBot.Bot.Factories;
 using FMBot.Bot.Models.Modals;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
@@ -16,10 +17,10 @@ using FMBot.Domain.Flags;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using NetCord;
+using NetCord.Gateway;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using NetCord.Services.ComponentInteractions;
-using Serilog;
 
 namespace FMBot.Bot.SlashCommands;
 
@@ -35,14 +36,23 @@ public class AdminSlashCommands : ApplicationCommandModule<ApplicationCommandCon
     private readonly FriendsService _friendsService;
     private readonly UserService _userService;
     private readonly SupporterService _supporterService;
-    private readonly IndexService _indexService;
     private readonly GuildService _guildService;
+    private InteractiveService Interactivity { get; }
 
-    public AdminSlashCommands(AdminService adminService, CensorService censorService, AlbumService albumService,
-        ArtistsService artistService, IDataSourceFactory dataSourceFactory, AliasService aliasService,
-        PlayService playService, FriendsService friendsService, UserService userService,
-        SupporterService supporterService, IndexService indexService, GuildService guildService)
+    public AdminSlashCommands(AdminService adminService,
+        CensorService censorService,
+        AlbumService albumService,
+        ArtistsService artistService,
+        IDataSourceFactory dataSourceFactory,
+        AliasService aliasService,
+        PlayService playService,
+        FriendsService friendsService,
+        UserService userService,
+        SupporterService supporterService,
+        GuildService guildService,
+        InteractiveService interactivity)
     {
+        this.Interactivity = interactivity;
         this._adminService = adminService;
         this._censorService = censorService;
         this._albumService = albumService;
@@ -53,7 +63,6 @@ public class AdminSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         this._friendsService = friendsService;
         this._userService = userService;
         this._supporterService = supporterService;
-        this._indexService = indexService;
         this._guildService = guildService;
     }
 
@@ -113,7 +122,8 @@ public class AdminSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         embed.WithDescription(description.ToString());
         embed.WithColor(DiscordConstants.InformationColorBlue);
         embed.WithFooter($"Adjusted by {this.Context.Interaction.User.Username}");
-        await RespondAsync(embed: embed.Build());
+        await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+            .WithEmbeds([embed])));
     }
 
     [ComponentInteraction(InteractionConstants.ModerationCommands.ArtistAlias)]
@@ -168,59 +178,29 @@ public class AdminSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         embed.WithDescription(description.ToString());
         embed.WithColor(DiscordConstants.InformationColorBlue);
         embed.WithFooter($"Adjusted by {this.Context.Interaction.User.Username}");
-        await RespondAsync(embed: embed.Build());
+        await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+            .WithEmbeds([embed])));
     }
 
     [ComponentInteraction(InteractionConstants.ModerationCommands.GlobalWhoKnowsReport)]
     public async Task ReportGlobalWhoKnowsButton()
     {
-        await this.Context.Interaction.RespondWithModalAsync<ReportGlobalWhoKnowsModal>(InteractionConstants
-            .ModerationCommands.GlobalWhoKnowsReportModal);
-    }
-
-    [ModalInteraction(InteractionConstants.ModerationCommands.GlobalWhoKnowsReportModal)]
-    public async Task ReportGlobalWhoKnowsButton(ReportGlobalWhoKnowsModal modal)
-    {
-        var positiveResponse = $"Thanks, your report for the user `{modal.UserNameLastFM}` has been received. \n" +
-                               $"You will currently not be notified if your report is processed.";
-
-        var existingBottedUser = await this._adminService.GetBottedUserAsync(modal.UserNameLastFM);
-        if (existingBottedUser is { BanActive: true })
-        {
-            await RespondAsync(positiveResponse, ephemeral: true);
-            this.Context.LogCommandUsed(CommandResponse.Censored);
-            return;
-        }
-
-        var existingReport = await this._adminService.UserReportAlreadyExists(modal.UserNameLastFM);
-        if (existingReport)
-        {
-            await RespondAsync($"Thanks, but there is already a pending report for the user you reported.",
-                ephemeral: true);
-            this.Context.LogCommandUsed(CommandResponse.Cooldown);
-            return;
-        }
-
-        await RespondAsync(positiveResponse, ephemeral: true);
-
-        var report =
-            await this._adminService.CreateBottedUserReportAsync(this.Context.User.Id, modal.UserNameLastFM,
-                modal.Note);
-        await this._adminService.PostReport(report);
+        await RespondAsync(InteractionCallback.Modal(ModalFactory.CreateReportGlobalWhoKnowsModal(InteractionConstants
+            .ModerationCommands.GlobalWhoKnowsReportModal)));
     }
 
     [ComponentInteraction("gwk-report-ban-*")]
     public async Task GwkReportBan(string reportId)
     {
-        var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+        var message = (this.Context.Interaction as ComponentInteraction)?.Message;
 
         if (message == null)
         {
             return;
         }
 
-        await this.Context.Interaction.RespondWithModalAsync<ReportGlobalWhoKnowsBanModal>(
-            $"gwk-report-ban-confirmed-{reportId}-{message.Id}");
+        await RespondAsync(InteractionCallback.Modal(ModalFactory.CreateReportGlobalWhoKnowsBanModal(
+            $"gwk-report-ban-confirmed:{reportId}:{message.Id}")));
     }
 
     [ComponentInteraction("gwk-report-deny-*")]
@@ -236,15 +216,19 @@ public class AdminSlashCommands : ApplicationCommandModule<ApplicationCommandCon
 
         if (report.ReportStatus != ReportStatus.Pending)
         {
-            await RespondAsync("Error, report was already processed.", ephemeral: true);
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("Error, report was already processed.")
+                .WithFlags(MessageFlags.Ephemeral)));
             return;
         }
 
         await this._adminService.UpdateReport(report, ReportStatus.Denied, this.Context.User.Id);
 
-        await RespondAsync("Report response processed, thank you.", ephemeral: true);
+        await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("Report response processed, thank you.")
+                .WithFlags(MessageFlags.Ephemeral)));
 
-        var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+        var message = (this.Context.Interaction as ComponentInteraction)?.Message;
 
         if (message == null)
         {
@@ -253,11 +237,11 @@ public class AdminSlashCommands : ApplicationCommandModule<ApplicationCommandCon
 
         var components =
             new ActionRowProperties().WithButton($"Denied by {this.Context.Interaction.User.Username}", customId: "1",
-                url: null, disabled: true, style: ButtonStyle.Danger);
-        await message.ModifyAsync(m => m.Components = components.Build());
+                disabled: true, style: ButtonStyle.Danger);
+        await message.ModifyAsync(m => m.Components = [components]);
     }
 
-    [ModalInteraction("gwk-report-ban-confirmed-*-*")]
+    [ComponentInteraction("gwk-report-ban-confirmed:*:*")]
     public async Task GwkReportBanConfirmed(string reportId, string messageId, ReportGlobalWhoKnowsBanModal modal)
     {
         if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
@@ -270,7 +254,9 @@ public class AdminSlashCommands : ApplicationCommandModule<ApplicationCommandCon
 
         if (report.ReportStatus != ReportStatus.Pending)
         {
-            await RespondAsync("Error, report was already processed.", ephemeral: true);
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("Error, report was already processed.")
+                .WithFlags(MessageFlags.Ephemeral)));
             return;
         }
 
@@ -287,18 +273,21 @@ public class AdminSlashCommands : ApplicationCommandModule<ApplicationCommandCon
 
         if (result)
         {
-            await RespondAsync("Report response processed, thank you.", ephemeral: true);
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("Report response processed, thank you.")
+                .WithFlags(MessageFlags.Ephemeral)));
         }
         else
         {
-            await RespondAsync($"Something went wrong. Try checking with `.checkbotted {report.UserNameLastFM}`",
-                ephemeral: true);
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent($"Something went wrong. Try checking with `.checkbotted {report.UserNameLastFM}`")
+                .WithFlags(MessageFlags.Ephemeral)));
         }
 
         var parsedMessageId = ulong.Parse(messageId);
         var msg = await this.Context.Channel.GetMessageAsync(parsedMessageId);
 
-        if (msg is not IUserMessage message)
+        if (msg is not Message message)
         {
             return;
         }
@@ -306,7 +295,7 @@ public class AdminSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         var components =
             new ActionRowProperties().WithButton($"Banned by {this.Context.Interaction.User.Username}", customId: "1",
                 url: null, disabled: true, style: ButtonStyle.Success);
-        await message.ModifyAsync(m => m.Components = components.Build());
+        await message.ModifyAsync(m => m.Components = [components]);
     }
 
     [ComponentInteraction("gwk-filtered-user-to-ban-*")]
@@ -335,15 +324,18 @@ public class AdminSlashCommands : ApplicationCommandModule<ApplicationCommandCon
 
         if (result)
         {
-            await RespondAsync($"Converted filter for `{filteredUser.UserNameLastFm}` into gwk ban, thank you.",
-                ephemeral: true);
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+            .WithContent($"Converted filter for `{filteredUser.UserNameLastFm}` into gwk ban, thank you.")
+            .WithFlags(MessageFlags.Ephemeral)));
         }
         else
         {
-            await RespondAsync($"Something went wrong. Try checking again", ephemeral: true);
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("Something went wrong. Try checking again")
+                .WithFlags(MessageFlags.Ephemeral)));
         }
 
-        var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+        var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
 
         if (message == null)
         {
@@ -353,104 +345,22 @@ public class AdminSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         var components =
             new ActionRowProperties().WithButton($"Converted to ban by {this.Context.Interaction.User.Username}",
                 customId: "1", url: null, disabled: true, style: ButtonStyle.Success);
-        await message.ModifyAsync(m => m.Components = components.Build());
+        await message.ModifyAsync(m => m.Components = components);
     }
 
     [ComponentInteraction(InteractionConstants.ModerationCommands.ReportAlbum)]
-    public async Task ReportAlbum()
+    public async Task<InteractionCallbackProperties<ModalProperties>> ReportAlbum()
     {
-        await this.Context.Interaction.RespondWithModalAsync<ReportAlbumModal>(InteractionConstants.ModerationCommands
-            .ReportAlbumModal);
-    }
-
-    [ModalInteraction(InteractionConstants.ModerationCommands.ReportAlbumModal)]
-    public async Task ReportAlbumButton(ReportAlbumModal modal)
-    {
-        var existingCensor = await this._censorService.AlbumResult(modal.AlbumName, modal.ArtistName);
-        if (existingCensor != CensorService.CensorResult.Safe)
-        {
-            await RespondAsync(
-                $"Thanks for your report, but the album cover you reported has already been marked as NSFW or censored.",
-                ephemeral: true);
-            this.Context.LogCommandUsed(CommandResponse.Censored);
-            return;
-        }
-
-        var album = await this._albumService.GetAlbumFromDatabase(modal.ArtistName, modal.AlbumName);
-
-        if (album == null)
-        {
-            await RespondAsync(
-                $"The album you tried to report does not exist in the .fmbot database (`{modal.AlbumName}` by `{modal.ArtistName}`). Someone needs to run the `album` command on it first.",
-                ephemeral: true);
-            this.Context.LogCommandUsed(CommandResponse.WrongInput);
-            return;
-        }
-
-        var alreadyExists = await this._censorService.AlbumReportAlreadyExists(modal.ArtistName, modal.AlbumName);
-        if (alreadyExists)
-        {
-            await RespondAsync($"Thanks, but there is already a pending report for the album you reported.",
-                ephemeral: true);
-            this.Context.LogCommandUsed(CommandResponse.Cooldown);
-            return;
-        }
-
-        await RespondAsync(
-            $"Thanks, your report for the album `{modal.AlbumName}` by `{modal.ArtistName}` has been received.\n" +
-            $"You will currently not be notified if your report is processed.", ephemeral: true);
-
-        var report = await this._censorService.CreateAlbumReport(this.Context.User.Id, modal.AlbumName,
-            modal.ArtistName, modal.Note, album);
-        await this._censorService.PostReport(report);
+        return InteractionCallback.Modal(
+            new ModalProperties(InteractionConstants.ModerationCommands.ReportAlbumModal, "Report album")
+                .WithComponents(ModalFactory.CreateReportAlbumModal(InteractionConstants.ModerationCommands.ReportAlbumModal)));
     }
 
     [ComponentInteraction(InteractionConstants.ModerationCommands.ReportArtist)]
     public async Task ReportArtist()
     {
-        await this.Context.Interaction.RespondWithModalAsync<ReportArtistModal>(InteractionConstants.ModerationCommands
-            .ReportArtistModal);
-    }
-
-    [ModalInteraction(InteractionConstants.ModerationCommands.ReportArtistModal)]
-    public async Task ReportArtistButton(ReportArtistModal modal)
-    {
-        var existingCensor = await this._censorService.ArtistResult(modal.ArtistName);
-        if (existingCensor != CensorService.CensorResult.Safe)
-        {
-            await RespondAsync(
-                $"Thanks for your report, but the artist image you reported has already been marked as NSFW or censored.",
-                ephemeral: true);
-            this.Context.LogCommandUsed(CommandResponse.Censored);
-            return;
-        }
-
-        var artist = await this._artistService.GetArtistFromDatabase(modal.ArtistName);
-
-        if (artist == null)
-        {
-            await RespondAsync(
-                $"The artist you tried to report does not exist in the .fmbot database (`{modal.ArtistName}`). Someone needs to run the `artist` command on them first.",
-                ephemeral: true);
-            this.Context.LogCommandUsed(CommandResponse.WrongInput);
-            return;
-        }
-
-        var alreadyExists = await this._censorService.ArtistReportAlreadyExists(modal.ArtistName);
-        if (alreadyExists)
-        {
-            await RespondAsync($"Thanks, but there is already a pending report for the artist image you reported.",
-                ephemeral: true);
-            this.Context.LogCommandUsed(CommandResponse.Cooldown);
-            return;
-        }
-
-        await RespondAsync($"Thanks, your report for the artist `{modal.ArtistName}` has been received.\n" +
-                           $"You will currently not be notified if your report is processed.", ephemeral: true);
-
-        var report =
-            await this._censorService.CreateArtistReport(this.Context.User.Id, modal.ArtistName, modal.Note, artist);
-        await this._censorService.PostReport(report);
+        await this.Context.Interaction.RespondWithModalAsync(ModalFactory.CreateReportArtistModal(InteractionConstants.ModerationCommands
+            .ReportArtistModal));
     }
 
     [ComponentInteraction("censor-report-mark-nsfw-*")]
@@ -474,8 +384,9 @@ public class AdminSlashCommands : ApplicationCommandModule<ApplicationCommandCon
             var existing = await this._censorService.GetCurrentArtist(report.ArtistName);
             if (existing != null)
             {
-                await RespondAsync("This artist already exists in the censor db, use `.checkartist` instead!",
-                    ephemeral: true);
+                await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("This artist already exists in the censor db, use `.checkartist` instead!")
+                .WithFlags(MessageFlags.Ephemeral)));
                 return;
             }
 
@@ -486,8 +397,9 @@ public class AdminSlashCommands : ApplicationCommandModule<ApplicationCommandCon
             var existing = await this._censorService.GetCurrentAlbum(report.AlbumName, report.ArtistName);
             if (existing != null)
             {
-                await RespondAsync("This album already exists in the censor db, use `.checkalbum` instead!",
-                    ephemeral: true);
+                await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("This album already exists in the censor db, use `.checkalbum` instead!")
+                .WithFlags(MessageFlags.Ephemeral)));
                 return;
             }
 
@@ -496,9 +408,11 @@ public class AdminSlashCommands : ApplicationCommandModule<ApplicationCommandCon
 
         await this._censorService.UpdateReport(report, ReportStatus.Accepted, this.Context.User.Id);
 
-        await RespondAsync("Report response processed, thank you.", ephemeral: true);
+        await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("Report response processed, thank you.")
+                .WithFlags(MessageFlags.Ephemeral)));
 
-        var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+        var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
 
         if (message == null)
         {
@@ -508,7 +422,7 @@ public class AdminSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         var components =
             new ActionRowProperties().WithButton($"Marked NSFW by {this.Context.Interaction.User.Username}", customId: "1",
                 url: null, disabled: true, style: ButtonStyle.Success);
-        await message.ModifyAsync(m => m.Components = components.Build());
+        await message.ModifyAsync(m => m.Components = components);
     }
 
     [ComponentInteraction("censor-report-mark-censored-*")]
@@ -532,8 +446,9 @@ public class AdminSlashCommands : ApplicationCommandModule<ApplicationCommandCon
             var existing = await this._censorService.GetCurrentArtist(report.ArtistName);
             if (existing != null)
             {
-                await RespondAsync("This artist already exists in the censor db, use `.checkartist` instead!",
-                    ephemeral: true);
+                await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("This artist already exists in the censor db, use `.checkartist` instead!")
+                .WithFlags(MessageFlags.Ephemeral)));
                 return;
             }
 
@@ -544,8 +459,9 @@ public class AdminSlashCommands : ApplicationCommandModule<ApplicationCommandCon
             var existing = await this._censorService.GetCurrentAlbum(report.AlbumName, report.ArtistName);
             if (existing != null)
             {
-                await RespondAsync("This album already exists in the censor db, use `.checkalbum` instead!",
-                    ephemeral: true);
+                await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("This album already exists in the censor db, use `.checkalbum` instead!")
+                .WithFlags(MessageFlags.Ephemeral)));
                 return;
             }
 
@@ -554,9 +470,11 @@ public class AdminSlashCommands : ApplicationCommandModule<ApplicationCommandCon
 
         await this._censorService.UpdateReport(report, ReportStatus.Accepted, this.Context.User.Id);
 
-        await RespondAsync("Report processed, thank you.", ephemeral: true);
+        await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("Report processed, thank you.")
+                .WithFlags(MessageFlags.Ephemeral)));
 
-        var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+        var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
 
         if (message == null)
         {
@@ -566,7 +484,7 @@ public class AdminSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         var components =
             new ActionRowProperties().WithButton($"Marked Censored by {this.Context.Interaction.User.Username}",
                 customId: "1", url: null, disabled: true, style: ButtonStyle.Success);
-        await message.ModifyAsync(m => m.Components = components.Build());
+        await message.ModifyAsync(m => m.Components = components);
     }
 
     [ComponentInteraction("censor-report-deny-*")]
@@ -587,9 +505,11 @@ public class AdminSlashCommands : ApplicationCommandModule<ApplicationCommandCon
 
         await this._censorService.UpdateReport(report, ReportStatus.Denied, this.Context.User.Id);
 
-        await RespondAsync("Report processed, thank you.", ephemeral: true);
+        await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("Report processed, thank you.")
+                .WithFlags(MessageFlags.Ephemeral)));
 
-        var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+        var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
 
         if (message == null)
         {
@@ -599,7 +519,7 @@ public class AdminSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         var components =
             new ActionRowProperties().WithButton($"Denied by {this.Context.Interaction.User.Username}", customId: "1",
                 url: null, disabled: true, style: ButtonStyle.Danger);
-        await message.ModifyAsync(m => m.Components = components.Build());
+        await message.ModifyAsync(m => m.Components = components);
     }
 
     [ComponentInteraction(InteractionConstants.ModerationCommands.MoveUserData)]
@@ -610,16 +530,20 @@ public class AdminSlashCommands : ApplicationCommandModule<ApplicationCommandCon
             return;
         }
 
-        await RespondAsync("Moving data...", ephemeral: true);
+        await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("Moving data...")
+                .WithFlags(MessageFlags.Ephemeral)));
         await this.Context.DisableInteractionButtons();
 
         try
         {
             await this._playService.MoveData(int.Parse(oldUserId), int.Parse(newUserId));
 
-            await FollowupAsync("Moving data completed.", ephemeral: true);
+            await this.Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
+                .WithContent("Moving data completed.")
+                .WithFlags(MessageFlags.Ephemeral));
 
-            var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+            var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
 
             if (message == null)
             {
@@ -629,7 +553,7 @@ public class AdminSlashCommands : ApplicationCommandModule<ApplicationCommandCon
             var components =
                 new ActionRowProperties().WithButton($"Moved by {this.Context.Interaction.User.Username}", customId: "1",
                     url: null, disabled: true, style: ButtonStyle.Danger);
-            await message.ModifyAsync(m => m.Components = components.Build());
+            await message.ModifyAsync(m => m.Components = components);
         }
         catch (Exception e)
         {
@@ -645,16 +569,20 @@ public class AdminSlashCommands : ApplicationCommandModule<ApplicationCommandCon
             return;
         }
 
-        await RespondAsync("Moving supporter...", ephemeral: true);
+        await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("Moving supporter...")
+                .WithFlags(MessageFlags.Ephemeral)));
         await this.Context.DisableInteractionButtons();
 
         try
         {
             await this._supporterService.MigrateDiscordForSupporter(ulong.Parse(oldUserId), ulong.Parse(newUserId));
 
-            await FollowupAsync("Moving supporter completed.", ephemeral: true);
+            await this.Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
+                .WithContent("Moving supporter completed.")
+                .WithFlags(MessageFlags.Ephemeral));
 
-            var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+            var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
 
             if (message == null)
             {
@@ -664,7 +592,7 @@ public class AdminSlashCommands : ApplicationCommandModule<ApplicationCommandCon
             var components =
                 new ActionRowProperties().WithButton($"Moved by {this.Context.Interaction.User.Username}", customId: "1",
                     url: null, disabled: true, style: ButtonStyle.Danger);
-            await message.ModifyAsync(m => m.Components = components.Build());
+            await message.ModifyAsync(m => m.Components = components);
         }
         catch (Exception e)
         {
@@ -680,7 +608,9 @@ public class AdminSlashCommands : ApplicationCommandModule<ApplicationCommandCon
             return;
         }
 
-        await RespondAsync("Deleting user...", ephemeral: true);
+        await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("Deleting user...")
+                .WithFlags(MessageFlags.Ephemeral)));
         await this.Context.DisableInteractionButtons();
 
         await this._friendsService.RemoveAllFriendsAsync(int.Parse(userId));
@@ -688,9 +618,11 @@ public class AdminSlashCommands : ApplicationCommandModule<ApplicationCommandCon
 
         await this._userService.DeleteUser(int.Parse(userId));
 
-        await FollowupAsync("Deleting user completed.", ephemeral: true);
+        await this.Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
+            .WithContent("Deleting user completed.")
+            .WithFlags(MessageFlags.Ephemeral));
 
-        var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+        var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
         if (message == null)
         {
             return;
@@ -699,7 +631,7 @@ public class AdminSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         var components =
             new ActionRowProperties().WithButton($"Deleted by {this.Context.Interaction.User.Username}", customId: "1",
                 url: null, disabled: true, style: ButtonStyle.Danger);
-        await message.ModifyAsync(m => m.Components = components.Build());
+        await message.ModifyAsync(m => m.Components = components);
     }
 
     [ComponentInteraction(InteractionConstants.ModerationCommands.GuildFlags)]
@@ -707,7 +639,9 @@ public class AdminSlashCommands : ApplicationCommandModule<ApplicationCommandCon
     {
         if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
         {
-            await RespondAsync(Constants.FmbotStaffOnly, ephemeral: true);
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent(Constants.FmbotStaffOnly)
+                .WithFlags(MessageFlags.Ephemeral)));
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
@@ -716,7 +650,9 @@ public class AdminSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         var guild = await this._guildService.GetGuildAsync(discordId);
         if (guild == null)
         {
-            await RespondAsync("Guild not found in database", ephemeral: true);
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("Guild not found in database")
+                .WithFlags(MessageFlags.Ephemeral)));
             return;
         }
 
@@ -739,6 +675,8 @@ public class AdminSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         await this._guildService.SetGuildFlags(guild.GuildId, newFlags);
 
         var flagsDescription = newFlags == 0 ? "None" : string.Join(", ", inputs);
-        await RespondAsync($"Guild flags updated to: {flagsDescription}", ephemeral: true);
+        await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+            .WithContent($"Guild flags updated to: {flagsDescription}")
+            .WithFlags(MessageFlags.Ephemeral)));
     }
 }

@@ -1,21 +1,11 @@
-﻿
+﻿namespace FMBot.Bot.Models.Modals;
 
-namespace FMBot.Bot.Models.Modals;
-
-public class TemplateViewScriptModal : IModal
+public class TemplateViewScriptModal
 {
-    public string Title { get; set; }
-
-    [InputLabel("Content")]
-    [ModalTextInput("content", TextInputStyle.Paragraph)]
     public string Content { get; set; }
 }
 
-public class TemplateNameModal : IModal
+public class TemplateNameModal
 {
-    public string Title { get; set; }
-
-    [InputLabel("Name")]
-    [ModalTextInput("name", maxLength: 32)]
     public string Name { get; set; }
 }

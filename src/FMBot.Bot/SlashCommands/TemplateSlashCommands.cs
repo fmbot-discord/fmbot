@@ -13,12 +13,11 @@ using FMBot.Bot.Models.TemplateOptions;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
-using FMBot.Domain.Models;
 using NetCord.Services.ApplicationCommands;
 using NetCord.Services.ComponentInteractions;
-using Serilog;
 using NetCord;
 using Fergun.Interactive;
+using NetCord.Rest;
 
 namespace FMBot.Bot.SlashCommands;
 
@@ -116,25 +115,7 @@ public class TemplateSlashCommands : ApplicationCommandModule<ApplicationCommand
                 .WithCustomId($"{InteractionConstants.Template.ViewScriptModal}-{parsedTemplateId}")
                 .AddTextInput("Content", "content", TextInputStyle.Paragraph, value: template.Content);
 
-            await Context.Interaction.RespondWithModalAsync(mb.Build());
-            this.Context.LogCommandUsed();
-        }
-        catch (Exception e)
-        {
-            await this.Context.HandleCommandException(e);
-        }
-    }
-
-    [ModalInteraction($"{InteractionConstants.Template.ViewScriptModal}-*")]
-    [UsernameSetRequired]
-    public async Task TemplateViewScriptSubmit(string templateId, TemplateViewScriptModal modal)
-    {
-        try
-        {
-            var parsedTemplateId = int.Parse(templateId);
-            var template = await this._templateService.GetTemplate(parsedTemplateId);
-
-            await this._templateService.UpdateTemplateContent(template.Id, modal.Content);
+            await Context.Interaction.RespondWithModalAsync(mb);
             this.Context.LogCommandUsed();
         }
         catch (Exception e)
@@ -157,25 +138,7 @@ public class TemplateSlashCommands : ApplicationCommandModule<ApplicationCommand
                 .WithCustomId($"{InteractionConstants.Template.RenameModal}-{parsedTemplateId}")
                 .AddTextInput("Name", "name", value: template.Name, maxLength: 32);
 
-            await Context.Interaction.RespondWithModalAsync(mb.Build());
-            this.Context.LogCommandUsed();
-        }
-        catch (Exception e)
-        {
-            await this.Context.HandleCommandException(e);
-        }
-    }
-
-    [ModalInteraction($"{InteractionConstants.Template.RenameModal}-*")]
-    [UsernameSetRequired]
-    public async Task TemplateRenameSubmit(string templateId, TemplateNameModal modal)
-    {
-        try
-        {
-            var parsedTemplateId = int.Parse(templateId);
-            var template = await this._templateService.GetTemplate(parsedTemplateId);
-
-            await this._templateService.UpdateTemplateName(template.Id, modal.Name);
+            await Context.Interaction.RespondWithModalAsync(mb);
             this.Context.LogCommandUsed();
         }
         catch (Exception e)
@@ -200,7 +163,10 @@ public class TemplateSlashCommands : ApplicationCommandModule<ApplicationCommand
             var components = new ActionRowProperties()
                 .WithButton("Yes, delete", $"{InteractionConstants.Template.DeleteConfirmed}-{templateId}", ButtonStyle.Danger);
 
-            await Context.Interaction.RespondAsync(null, [embed.Build()], components: components.Build(), ephemeral: true);
+            await Context.Interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithEmbeds([embed])
+                .WithComponents([components])
+                .WithFlags(MessageFlags.Ephemeral)));
             this.Context.LogCommandUsed();
         }
         catch (Exception e)
@@ -220,9 +186,11 @@ public class TemplateSlashCommands : ApplicationCommandModule<ApplicationCommand
 
             var embed = new EmbedProperties()
                 .WithColor(DiscordConstants.WarningColorOrange)
-                .WithDescription($"Template has been deleted.");
+                .WithDescription("Template has been deleted.");
 
-            await Context.Interaction.RespondAsync(null, [embed.Build()], ephemeral: true);
+            await Context.Interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithEmbeds([embed])
+                .WithFlags(MessageFlags.Ephemeral)));
             this.Context.LogCommandUsed();
         }
         catch (Exception e)

@@ -7,12 +7,14 @@ using FMBot.Bot.Attributes;
 using FMBot.Bot.AutoCompleteHandlers;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
+using FMBot.Bot.Factories;
 using FMBot.Bot.Models;
 using FMBot.Bot.Models.Modals;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
+using FMBot.Domain.Attributes;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
@@ -109,9 +111,9 @@ public class PlaySlashCommands : ApplicationCommandModule<ApplicationCommandCont
                         .AddSeconds(existingFmCooldown.Value) - DateTimeOffset.Now).TotalSeconds;
                     if (secondsLeft <= existingFmCooldown.Value - 2)
                     {
-                        await RespondAsync(
-                            $"This channel has a `{existingFmCooldown.Value}` second cooldown on `/fm`. Please wait for this to expire before using this command again.",
-                            ephemeral: true);
+                        await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                            .WithContent($"This channel has a `{existingFmCooldown.Value}` second cooldown on `/fm`. Please wait for this to expire before using this command again.")
+                            .WithFlags(MessageFlags.Ephemeral)));
                     }
 
                     return;
@@ -140,22 +142,21 @@ public class PlaySlashCommands : ApplicationCommandModule<ApplicationCommandCont
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
 
-            var message = await this.Context.Interaction.GetOriginalResponseAsync();
+            var message = await this.Context.Interaction.GetResponseAsync();
 
             try
             {
                 if (message != null &&
                     this.Context.Channel != null &&
                     response.CommandResponse == CommandResponse.Ok &&
-                    this.Context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall))
+                    this.Context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall))
                 {
                 }
             }
             catch (Exception e)
             {
                 await this.Context.HandleCommandException(e, "Could not add emote reactions", sendReply: false);
-                await ReplyAsync(
-                    $"Could not add automatic emoji reactions to `/fm`. Make sure the emojis still exist, the bot is the same server as where the emojis come from and the bot has permission to `Add Reactions`.");
+                await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Could not add automatic emoji reactions to `/fm`. Make sure the emojis still exist, the bot is the same server as where the emojis come from and the bot has permission to `Add Reactions`." });
             }
         }
         catch (Exception e)
@@ -250,24 +251,7 @@ public class PlaySlashCommands : ApplicationCommandModule<ApplicationCommandCont
     [ComponentInteraction(InteractionConstants.DeleteStreak)]
     public async Task StreakDeleteButton()
     {
-        await this.Context.Interaction.RespondWithModalAsync<DeleteStreakModal>(InteractionConstants.DeleteStreakModal);
-    }
-
-    [ModalInteraction(InteractionConstants.DeleteStreakModal)]
-    public async Task StreakDeleteButton(DeleteStreakModal modal)
-    {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-
-        if (!long.TryParse(modal.StreakId, out var streakId))
-        {
-            await RespondAsync("Invalid input. Please enter the ID of the streak you want to delete.", ephemeral: true);
-            return;
-        }
-
-        var response = await this._playBuilder.DeleteStreakAsync(new ContextModel(this.Context, contextUser), streakId);
-
-        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.Interaction.RespondWithModalAsync(ModalFactory.CreateDeleteStreakModal(InteractionConstants.DeleteStreakModal));
     }
 
     [SlashCommand("overview", "Shows a daily overview", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,     InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
@@ -409,8 +393,9 @@ public class PlaySlashCommands : ApplicationCommandModule<ApplicationCommandCont
 
         if (this.Context.User.Id != requesterDiscordUserId)
         {
-            await RespondAsync("🎲 Sorry, only the user that requested the random milestone can reroll.",
-                ephemeral: true);
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("🎲 Sorry, only the user that requested the random milestone can reroll.")
+                .WithFlags(MessageFlags.Ephemeral)));
             return;
         }
 
@@ -434,7 +419,7 @@ public class PlaySlashCommands : ApplicationCommandModule<ApplicationCommandCont
             await this.Context.UpdateInteractionEmbed(response, this.Interactivity, false);
             this.Context.LogCommandUsed(response.CommandResponse);
 
-            var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+            var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
             if (message != null && response.ReferencedMusic != null &&
                 PublicProperties.UsedCommandsResponseContextId.TryGetValue(message.Id, out var contextId))
             {
@@ -584,7 +569,7 @@ public class PlaySlashCommands : ApplicationCommandModule<ApplicationCommandCont
 
             await RespondAsync(InteractionCallback.DeferredMessage());
 
-            var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+            var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
             if (message == null)
             {
                 return;
@@ -593,7 +578,7 @@ public class PlaySlashCommands : ApplicationCommandModule<ApplicationCommandCont
             var name = viewType.GetAttribute<OptionAttribute>().Name;
             var components =
                 new ActionRowProperties().WithButton($"{name} for {timeSettings.Description} loading...", customId: "1",
-                    emote: EmojiProperties.Custom("<a:loading:821676038102056991>"), disabled: true, style: ButtonStyle.Secondary);
+                    emote: EmojiProperties.Custom(DiscordConstants.Loading), disabled: true, style: ButtonStyle.Secondary);
             await Context.ModifyComponents(message, components);
 
             var response =
@@ -639,7 +624,7 @@ public class PlaySlashCommands : ApplicationCommandModule<ApplicationCommandCont
             return;
         }
 
-        await DeferAsync(privateResponse);
+        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
 
         var topListSettings = new TopListSettings(embedSize ?? EmbedSize.Default);
 
@@ -672,7 +657,7 @@ public class PlaySlashCommands : ApplicationCommandModule<ApplicationCommandCont
             var components =
                 new ActionRowProperties().WithButton($"Loading {viewType.ToString().ToLower()} gaps...", customId: "1",
                     emote: EmojiProperties.Custom(DiscordConstants.Loading), disabled: true, style: ButtonStyle.Secondary);
-            await this.Context.Interaction.ModifyOriginalResponseAsync(m => m.Components = components.Build());
+            await this.Context.Interaction.ModifyResponseAsync(m => m.Components = components);
 
             var discordUserId = ulong.Parse(splitInput[2]);
             var requesterDiscordUserId = ulong.Parse(splitInput[3]);
@@ -682,7 +667,7 @@ public class PlaySlashCommands : ApplicationCommandModule<ApplicationCommandCont
             var userSettings = await this._settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId,
                 this.Context.Guild, this.Context.User);
 
-            var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+            var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
             if (message == null)
             {
                 return;

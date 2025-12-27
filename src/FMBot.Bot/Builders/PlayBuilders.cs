@@ -26,6 +26,9 @@ using SkiaSharp;
 using IPage = PuppeteerSharp.IPage;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 using User = FMBot.Persistence.Domain.Models.User;
+using NetCord.Gateway;
+using DiscordGuild = NetCord.Gateway.Guild;
+using Guild = FMBot.Persistence.Domain.Models.Guild;
 
 namespace FMBot.Bot.Builders;
 
@@ -277,7 +280,7 @@ public class PlayBuilder
 
         // var embed = await this._userService.GetTemplateFmAsync(context.ContextUser.UserId, userSettings, currentTrack,
         //     previousTrack, totalPlaycount, guild, guildUsers);
-        // response.Embed = embed.EmbedBuilder;
+        // response.Embeds = [embed.EmbedProperties];
         // return response;
 
         var fmText = "";
@@ -396,7 +399,7 @@ public class PlayBuilder
 
                 if (embedType != FmEmbedType.EmbedTiny)
                 {
-                    response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl().ToString());
+                    response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl()?.ToString());
                     response.Embed.WithAuthor(response.EmbedAuthor);
                     response.Embed.WithUrl(recentTracks.Content.UserUrl);
                 }
@@ -527,7 +530,7 @@ public class PlayBuilder
 
         return response;
 
-        IPage GeneratePage(IComponentPaginator p)
+        Fergun.Interactive.IPage GeneratePage(IComponentPaginator p)
         {
             var pageIndex = p.CurrentPageIndex;
             var trackPage = trackPages.ElementAtOrDefault(pageIndex);
@@ -549,7 +552,7 @@ public class PlayBuilder
                             new TextDisplayProperties(StringService
                                 .TrackToLinkedStringWithTimestamp(track, context.ContextUser.RymEnabled))
                         ],
-                        new ThumbnailBuilder(track.AlbumCoverUrl));
+                        track.AlbumCoverUrl);
                 }
                 else
                 {
@@ -590,10 +593,10 @@ public class PlayBuilder
                 .WithContainer(container);
 
             var pageBuilder = new PageBuilder()
-                .WithAllowedMentions(AllowedMentions.None)
-                .WithComponents(components.Build());
+                .WithAllowedMentions(AllowedMentionsProperties.None)
+                .WithComponents(components);
 
-            return pageBuilder.Build();
+            return pageBuilder;
         }
     }
 
@@ -827,7 +830,7 @@ public class PlayBuilder
             if (editMode)
             {
                 response.Components = new ActionRowProperties()
-                    .WithButton(emote: EmojiProperties.Standard("🗑️"), customId: InteractionConstants.DeleteStreak);
+                    .WithButton(null, InteractionConstants.DeleteStreak, ButtonStyle.Secondary, EmojiProperties.Standard("🗑️"));
             }
 
             return response;
@@ -916,12 +919,12 @@ public class PlayBuilder
 
         return response;
 
-        IPage GeneratePage(IComponentPaginator p)
+        PageBuilder GeneratePage(IComponentPaginator p)
         {
             var page = dayPages.ElementAtOrDefault(p.CurrentPageIndex);
             var plays = new List<UserPlay>();
 
-            var container = new ContainerBuilder();
+            var container = new ComponentContainerProperties();
 
             container.WithTextDisplay(
                 userSettings.DisplayName.ContainsEmoji()
@@ -997,9 +1000,8 @@ public class PlayBuilder
                 .WithContainer(container);
 
             return new PageBuilder()
-                .WithComponents(components.Build())
-                .WithAllowedMentions(AllowedMentions.None)
-                .Build();
+                .WithComponents(components)
+                .WithAllowedMentions(AllowedMentionsProperties.None);
         }
     }
 

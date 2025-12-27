@@ -110,9 +110,7 @@ public class GuildCommands : BaseCommandModule
     {
         this._cache.Set($"{this.Context.Guild.Id}-keep-data", true, TimeSpan.FromMinutes(30));
 
-        await ReplyAsync(
-            "You can now kick this bot from your server in the next 30 minutes without losing the stored .fmbot data, like server settings and crown history.\n\n" +
-            "If you still wish to remove all server data from the bot you can kick the bot after the time period is over.");
+        await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "You can now kick this bot from your server in the next 30 minutes without losing the stored .fmbot data, like server settings and crown history.\n\nIf you still wish to remove all server data from the bot you can kick the bot after the time period is over." });
     }
 
     [Command("servermode", "guildmode")]
@@ -145,7 +143,7 @@ public class GuildCommands : BaseCommandModule
 
         if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
         {
-            await ReplyAsync(GuildSettingBuilder.UserNotAllowedResponseText());
+            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = GuildSettingBuilder.UserNotAllowedResponseText() });
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
@@ -168,7 +166,7 @@ public class GuildCommands : BaseCommandModule
             }
 
             this._embed.WithColor(DiscordConstants.InformationColorBlue);
-            await ReplyAsync(embed: this._embed.Build());
+            await this.Context.Channel.SendMessageAsync(new MessageProperties { Embeds = [this._embed] });
 
             this.Context.LogCommandUsed();
 
@@ -182,7 +180,7 @@ public class GuildCommands : BaseCommandModule
         {
             this._embed.WithColor(DiscordConstants.WarningColorOrange);
             this._embed.WithDescription("Sorry, you can't set more then 3 emoji reacts. Please try again.");
-            await ReplyAsync(embed: this._embed.Build());
+            await this.Context.Channel.SendMessageAsync(new MessageProperties { Embeds = [this._embed] });
             this.Context.LogCommandUsed(CommandResponse.WrongInput);
 
             return;
@@ -193,7 +191,7 @@ public class GuildCommands : BaseCommandModule
             this._embed.WithColor(DiscordConstants.WarningColorOrange);
             this._embed.WithDescription("Sorry, one or multiple of your reactions seems invalid. Please try again.\n" +
                                         "Please check if you have a space between every emoji.");
-            await ReplyAsync(embed: this._embed.Build());
+            await this.Context.Channel.SendMessageAsync(new MessageProperties { Embeds = [this._embed] });
             this.Context.LogCommandUsed(CommandResponse.WrongInput);
 
             return;
@@ -214,7 +212,7 @@ public class GuildCommands : BaseCommandModule
         this._embed.WithDescription(description.ToString());
         this._embed.WithColor(DiscordConstants.InformationColorBlue);
 
-        var message = await ReplyAsync(embed: this._embed.Build());
+        var message = await this.Context.Channel.SendMessageAsync(new MessageProperties { Embeds = [this._embed] });
         this.Context.LogCommandUsed();
 
         try
@@ -242,7 +240,7 @@ public class GuildCommands : BaseCommandModule
                                             "Make sure the permissions are set correctly and the emoji are from this server.");
             }
 
-            await ReplyAsync(embed: this._embed.Build());
+            await this.Context.Channel.SendMessageAsync(new MessageProperties { Embeds = [this._embed] });
             this.Context.LogCommandUsed(CommandResponse.Error);
         }
     }
@@ -334,7 +332,7 @@ public class GuildCommands : BaseCommandModule
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
         {
-            await ReplyAsync(GuildSettingBuilder.UserNotAllowedResponseText());
+            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = GuildSettingBuilder.UserNotAllowedResponseText() });
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
@@ -368,7 +366,7 @@ public class GuildCommands : BaseCommandModule
                                "Min 2 seconds - Max 1200 seconds - Cooldown is per-user.\n" +
                                "Note that this cooldown can also expire after a bot restart.");
 
-        await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
+        await this.Context.Channel.SendMessageAsync(new MessageProperties { Embeds = [this._embed] });
         this.Context.LogCommandUsed();
     }
 }

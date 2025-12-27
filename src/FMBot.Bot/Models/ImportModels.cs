@@ -107,80 +107,41 @@ public enum ImportStatus
 
 public enum ImportModifyPick
 {
-    [Option("Artist")]
     Artist,
-    [Option("Album")]
     Album,
-    [Option("Track")]
     Track
 }
 
-public class ModifyArtistModal : IModal
+public class ModifyArtistModal
 {
-    public string Title => "Select artist";
-
-    [InputLabel("Artist name")]
-    [ModalTextInput("artist_name", placeholder: "The Beatles", minLength: 1)]
     public string ArtistName { get; set; }
 }
 
-public class ModifyAlbumModal : IModal
+public class ModifyAlbumModal
 {
-    public string Title => "Select album";
-
-    [InputLabel("Artist name")]
-    [ModalTextInput("artist_name", placeholder: "The Beatles", minLength: 1)]
     public string ArtistName { get; set; }
-
-    [InputLabel("Album name")]
-    [ModalTextInput("album_name", placeholder: "Abbey Road", minLength: 1)]
     public string AlbumName { get; set; }
 }
 
-public class ModifyTrackModal : IModal
+public class ModifyTrackModal
 {
-    public string Title => "Select track";
-
-    [InputLabel("Artist name")]
-    [ModalTextInput("artist_name", placeholder: "The Beatles", minLength: 1)]
     public string ArtistName { get; set; }
-
-    [InputLabel("Track name")]
-    [ModalTextInput("track_name", placeholder: "Yesterday", minLength: 1)]
     public string TrackName { get; set; }
 }
 
-public class RenameArtistModal : IModal
+public class RenameArtistModal
 {
-    public string Title => "Editing imports";
-
-    [InputLabel("Artist name")]
-    [ModalTextInput("artist_name", placeholder: "The Beatles", minLength: 1)]
     public string ArtistName { get; set; }
 }
 
-public class RenameAlbumModal : IModal
+public class RenameAlbumModal
 {
-    public string Title => "Editing imports";
-
-    [InputLabel("Artist name")]
-    [ModalTextInput("artist_name", placeholder: "The Beatles", minLength: 1)]
     public string ArtistName { get; set; }
-
-    [InputLabel("Album name")]
-    [ModalTextInput("album_name", placeholder: "Abbey Road", minLength: 1)]
     public string AlbumName { get; set; }
 }
 
-public class RenameTrackModal : IModal
+public class RenameTrackModal
 {
-    public string Title => "Editing imports";
-
-    [InputLabel("Artist name")]
-    [ModalTextInput("artist_name", placeholder: "The Beatles", minLength: 1)]
     public string ArtistName { get; set; }
-
-    [InputLabel("Track name")]
-    [ModalTextInput("track_name", placeholder: "Yesterday", minLength: 1)]
     public string TrackName { get; set; }
 }

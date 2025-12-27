@@ -42,6 +42,9 @@ using GraphQL.Client.Serializer.SystemTextJson;
 using NetCord;
 using NetCord.Gateway;
 using NetCord.Rest;
+using NetCord.Services.ApplicationCommands;
+using NetCord.Services.Commands;
+using NetCord.Services.ComponentInteractions;
 using GatewayIntents = NetCord.Gateway.GatewayIntents;
 
 namespace FMBot.Bot;
@@ -199,10 +202,15 @@ public class Startup
     {
         services
             .AddSingleton(discordClient)
-            .AddSingleton<InteractionService>()
             .AddSingleton<StartupService>()
             .AddSingleton<Random>()
             .AddSingleton(this.Configuration);
+
+        // NetCord command services
+        services.AddSingleton<CommandService<CommandContext>>();
+        services.AddSingleton<ApplicationCommandService<ApplicationCommandContext, AutocompleteInteractionContext>>();
+        services.AddSingleton<ComponentInteractionService<ComponentInteractionContext>>();
+        services.AddSingleton<ComponentInteractionService<ModalInteractionContext>>();
     }
 
     private static void RegisterHandlerServices(IServiceCollection services)

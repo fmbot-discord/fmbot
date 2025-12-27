@@ -528,7 +528,9 @@ public class GuildSettingBuilder
 
     public static async Task UserNotAllowedResponse(IInteractionContext context, bool managersAllowed = true)
     {
-        await context.Interaction.RespondAsync(UserNotAllowedResponseText(managersAllowed), ephemeral: true);
+        await context.Interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties()
+            .WithContent(UserNotAllowedResponseText(managersAllowed))
+            .WithFlags(MessageFlags.Ephemeral)));
     }
 
     public async Task<ResponseModel> BlockedUsersAsync(
@@ -766,16 +768,19 @@ public class GuildSettingBuilder
             ResponseType = ResponseType.Embed
         };
 
-        var selectedChannel = await context.DiscordGuild.GetChannelAsync(selectedChannelId);
+        var selectedChannel = context.DiscordGuild.Channels.TryGetValue(selectedChannelId, out var ch) ? ch : null;
 
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
-        response.Embed.WithTitle($"Toggle channel commands - #{selectedChannel.Name}");
+        response.Embed.WithTitle($"Toggle channel commands - #{selectedChannel?.Name}");
 
         var footer = new StringBuilder();
 
         var channelDescription = new StringBuilder();
 
-        var categories = await context.DiscordGuild.GetCategoriesAsync();
+        var categories = context.DiscordGuild.Channels.Values
+            .OfType<CategoryGuildChannel>()
+            .OrderBy(c => c.Position)
+            .ToList();
 
         ulong previousChannelId = 0;
         ulong previousCategoryId = 0;
@@ -791,12 +796,12 @@ public class GuildSettingBuilder
             var currentCategory = categories.OrderBy(o => o.Position).ElementAt(i);
             var nextCategory = categories.OrderBy(o => o.Position).ElementAtOrDefault(i + 1);
 
-            if (currentCategory is not SocketCategoryChannel currentSocketCategory)
+            if (currentCategory is not CategoryGuildChannel currentSocketCategory)
             {
                 break;
             }
 
-            var categoryChannels = currentSocketCategory.GetCategoryChannelPositions();
+            var categoryChannels = currentSocketCategory.GetCategoryChannelPositions(context.DiscordGuild);
 
             if (!selectedCategoryId.HasValue && categoryChannels.Any(a => a.Key.Id == selectedChannelId))
             {
@@ -832,9 +837,9 @@ public class GuildSettingBuilder
                             previousChannelId = previousChannel.Id;
                             previousCategoryId = currentCategory.Id;
                         }
-                        else if (previousCategory is SocketCategoryChannel previousSocketCategory)
+                        else if (previousCategory is CategoryGuildChannel previousSocketCategory)
                         {
-                            var previousCategoryChannels = previousSocketCategory.GetCategoryChannelPositions();
+                            var previousCategoryChannels = previousSocketCategory.GetCategoryChannelPositions(context.DiscordGuild);
                             if (previousCategoryChannels.Keys.Any())
                             {
                                 previousCategoryId = previousSocketCategory.Id;
@@ -847,9 +852,9 @@ public class GuildSettingBuilder
                             nextChannelId = nextChannel.Id;
                             nextCategoryId = currentCategory.Id;
                         }
-                        else if (nextCategory is SocketCategoryChannel nextSocketCategory)
+                        else if (nextCategory is CategoryGuildChannel nextSocketCategory)
                         {
-                            var nextCategoryChannels = nextSocketCategory.GetCategoryChannelPositions();
+                            var nextCategoryChannels = nextSocketCategory.GetCategoryChannelPositions(context.DiscordGuild);
                             if (nextCategoryChannels.Keys.Any())
                             {
                                 nextCategoryId = nextSocketCategory.Id;

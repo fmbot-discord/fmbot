@@ -1,7 +1,5 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
@@ -13,10 +11,10 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Extensions;
-using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
-using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
+using NetCord;
+using NetCord.Rest;
 using NetCord.Services.Commands;
 using Fergun.Interactive;
 
@@ -129,21 +127,27 @@ public class UserCommands : BaseCommandModule
 
             if (userSettings.DifferentUser && guildUsers.ContainsKey(userSettings.UserId))
             {
-                await this.Context.Channel.SendMessageAsync(
-                    $"<@{userSettings.DiscordUserId}>'s Last.fm profile: {LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}",
-                    allowedMentions: AllowedMentions.None);
+                await this.Context.Channel.SendMessageAsync(new MessageProperties
+                {
+                    Content = $"<@{userSettings.DiscordUserId}>'s Last.fm profile: {LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}",
+                    AllowedMentions = AllowedMentionsProperties.None
+                });
             }
             else if (userSettings.DifferentUser)
             {
-                await this.Context.Channel.SendMessageAsync(
-                    $"Their Last.fm profile: {LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}",
-                    allowedMentions: AllowedMentions.None);
+                await this.Context.Channel.SendMessageAsync(new MessageProperties
+                {
+                    Content = $"Their Last.fm profile: {LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}",
+                    AllowedMentions = AllowedMentionsProperties.None
+                });
             }
             else
             {
-                await this.Context.Channel.SendMessageAsync(
-                    $"Your Last.fm profile: {LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}",
-                    allowedMentions: AllowedMentions.None);
+                await this.Context.Channel.SendMessageAsync(new MessageProperties
+                {
+                    Content = $"Your Last.fm profile: {LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}",
+                    AllowedMentions = AllowedMentionsProperties.None
+                });
             }
 
             this.Context.LogCommandUsed();
@@ -217,7 +221,7 @@ public class UserCommands : BaseCommandModule
             }
 
             this._embed.WithColor(DiscordConstants.InformationColorBlue);
-            await ReplyAsync(embed: this._embed.Build());
+            await this.Context.Channel.SendMessageAsync(new MessageProperties { Embeds = [this._embed] });
 
             this.Context.LogCommandUsed();
 
@@ -231,7 +235,7 @@ public class UserCommands : BaseCommandModule
         {
             this._embed.WithColor(DiscordConstants.WarningColorOrange);
             this._embed.WithDescription("Sorry, you can't set more then 5 emoji reacts. Please try again.");
-            await ReplyAsync(embed: this._embed.Build());
+            await this.Context.Channel.SendMessageAsync(new MessageProperties { Embeds = [this._embed] });
             this.Context.LogCommandUsed(CommandResponse.WrongInput);
 
             return;
@@ -242,7 +246,7 @@ public class UserCommands : BaseCommandModule
             this._embed.WithColor(DiscordConstants.WarningColorOrange);
             this._embed.WithDescription("Sorry, one or multiple of your reactions seems invalid. Please try again.\n" +
                                         "Please check if you have a space between every emoji.");
-            await ReplyAsync(embed: this._embed.Build());
+            await this.Context.Channel.SendMessageAsync(new MessageProperties { Embeds = [this._embed] });
             this.Context.LogCommandUsed(CommandResponse.WrongInput);
 
             return;
@@ -257,7 +261,7 @@ public class UserCommands : BaseCommandModule
         this._embed.WithColor(DiscordConstants.InformationColorBlue);
         this._embed.WithFooter("⭐ Supporter perk");
 
-        var message = await ReplyAsync(embed: this._embed.Build());
+        var message = await this.Context.Channel.SendMessageAsync(new MessageProperties { Embeds = [this._embed] });
         this.Context.LogCommandUsed();
 
         try
@@ -285,7 +289,7 @@ public class UserCommands : BaseCommandModule
                                             "Make sure the permissions are set correctly and the emojis are from a server that .fmbot is in.");
             }
 
-            await ReplyAsync(embed: this._embed.Build());
+            await this.Context.Channel.SendMessageAsync(new MessageProperties { Embeds = [this._embed] });
             this.Context.LogCommandUsed(CommandResponse.Error);
         }
     }
@@ -304,14 +308,14 @@ public class UserCommands : BaseCommandModule
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
             var response = await this._userBuilder.FeaturedAsync(new ContextModel(this.Context, prfx, contextUser));
 
-            IUserMessage message;
+            RestMessage message;
             if (response.ResponseType == ResponseType.Embed)
             {
-                message = await ReplyAsync("", false, response.Embed);
+                message = await this.Context.Channel.SendMessageAsync(new MessageProperties { Embeds = [response.Embed] });
             }
             else
             {
-                message = await ReplyAsync(response.Text);
+                message = await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = response.Text });
             }
 
             if (message != null && response.CommandResponse == CommandResponse.Ok)
@@ -344,9 +348,7 @@ public class UserCommands : BaseCommandModule
         catch (Exception e)
         {
             await this.Context.HandleCommandException(e, sendReply: false);
-            await ReplyAsync(
-                "Unable to show the featured avatar on FMBot due to an internal error. \n" +
-                "The bot might not have changed its avatar since its last startup. Please wait until a new featured user is chosen.");
+            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Unable to show the featured avatar on FMBot due to an internal error. \nThe bot might not have changed its avatar since its last startup. Please wait until a new featured user is chosen." });
         }
     }
 
@@ -410,8 +412,8 @@ public class UserCommands : BaseCommandModule
                     "To re-enable the integration, simply do this command again.");
             }
 
-            this._embed.WithColor(32, 62, 121);
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            this._embed.WithColor(new Color(32, 62, 121));
+            await this.Context.Channel.SendMessageAsync(new MessageProperties().AddEmbeds(this._embed));
 
             this.Context.LogCommandUsed();
         }
@@ -460,20 +462,19 @@ public class UserCommands : BaseCommandModule
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
             var response = UserBuilder.FmMode(new ContextModel(this.Context, prfx, contextUser), guild);
 
-            await this.Context.User.SendMessageAsync(embed: response.Embed,
-                components: response.Components);
+            var dmChannel = await this.Context.User.GetDMChannelAsync();
+            await dmChannel.SendMessageAsync(new MessageProperties().AddEmbeds(response.Embed).WithComponents(response.Components));
 
             if (this.Context.Guild != null)
             {
-                await ReplyAsync("Check your DMs to configure your `fm` settings!");
+                await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Check your DMs to configure your `fm` settings!" });
             }
 
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
         {
-            await ReplyAsync("Error occurred while trying to send DM, maybe you have DMs disabled. \n" +
-                             "Try using the slash command version `/fmmode` instead.");
+            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Error occurred while trying to send DM, maybe you have DMs disabled. \nTry using the slash command version `/fmmode` instead." });
             await this.Context.HandleCommandException(e, sendReply: false);
         }
     }
@@ -570,8 +571,7 @@ public class UserCommands : BaseCommandModule
         }
         catch (Exception e)
         {
-            await ReplyAsync("Error occurred while trying to send DM, maybe you have DMs disabled. \n" +
-                             "Try using the slash command version `/fmmode` instead.");
+            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Error occurred while trying to send DM, maybe you have DMs disabled. \nTry using the slash command version `/fmmode` instead." });
             await this.Context.HandleCommandException(e, sendReply: false);
         }
     }
@@ -600,7 +600,7 @@ public class UserCommands : BaseCommandModule
 
         if (contextUser == null)
         {
-            await ReplyAsync("Sorry, but we don't have any data from you in our database.");
+            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Sorry, but we don't have any data from you in our database." });
             this.Context.LogCommandUsed(CommandResponse.NotFound);
             return;
         }
@@ -611,12 +611,12 @@ public class UserCommands : BaseCommandModule
                 .WithColor(DiscordConstants.WarningColorOrange)
                 .WithDescription("Check your DMs to continue with your .fmbot account deletion.");
 
-            await ReplyAsync(embed: serverEmbed.Build());
+            await this.Context.Channel.SendMessageAsync(new MessageProperties { Embeds = [serverEmbed] });
         }
 
         var response = UserBuilder.RemoveDataResponse(new ContextModel(this.Context, prfx, contextUser));
-        await this.Context.User.SendMessageAsync("", false, response.Embed,
-            components: response.Components);
+        var dmChannel = await this.Context.User.GetDMChannelAsync();
+        await dmChannel.SendMessageAsync(new MessageProperties().AddEmbeds(response.Embed).WithComponents(response.Components));
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 

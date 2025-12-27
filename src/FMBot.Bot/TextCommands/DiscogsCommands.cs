@@ -10,6 +10,7 @@ using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
+using NetCord.Rest;
 using NetCord.Services.Commands;
 using static System.Text.RegularExpressions.Regex;
 using Fergun.Interactive;
@@ -60,13 +61,17 @@ public class DiscogsCommands : BaseCommandModule
                     .WithColor(DiscordConstants.InformationColorBlue);
 
                 serverEmbed.WithDescription("Check your DMs for a link to connect your Discogs account to .fmbot!");
-                await this.Context.Channel.SendMessageAsync("", false, serverEmbed.Build());
+                await this.Context.Channel.SendMessageAsync(new MessageProperties().AddEmbeds(serverEmbed));
             }
 
             var response =
                 this._discogsBuilder.DiscogsLoginGetLinkAsync(new ContextModel(this.Context, prfx, contextUser));
-            await this.Context.User.SendMessageAsync("", false, response.Embed,
-                components: response.Components);
+            var dmChannel = await this.Context.User.GetDMChannelAsync();
+            await dmChannel.SendMessageAsync(new MessageProperties
+            {
+                Embeds = [response.Embed],
+                Components = [response.Components]
+            });
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         else
@@ -77,11 +82,16 @@ public class DiscogsCommands : BaseCommandModule
                     .WithColor(DiscordConstants.InformationColorBlue);
 
                 serverEmbed.WithDescription("Check your DMs for a message to manage your connected Discogs account!");
-                await this.Context.Channel.SendMessageAsync("", embed: serverEmbed.Build());
+                await this.Context.Channel.SendMessageAsync(new MessageProperties { Embeds = [serverEmbed] });
             }
 
             var response = DiscogsBuilder.DiscogsManage(new ContextModel(this.Context, prfx, contextUser));
-            await this.Context.User.SendMessageAsync("", false, response.Embed, components: response.Components);
+            var manageDmChannel = await this.Context.User.GetDMChannelAsync();
+            await manageDmChannel.SendMessageAsync(new MessageProperties
+            {
+                Embeds = [response.Embed],
+                Components = [response.Components]
+            });
             this.Context.LogCommandUsed(response.CommandResponse);
         }
     }

@@ -1,12 +1,12 @@
 using System.Threading.Tasks;
 using System;
+using System.Collections.Generic;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Services.Guild;
 using Serilog;
 using System.Text;
-
 using FMBot.Bot.Builders;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
@@ -15,6 +15,7 @@ using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 using NetCord.Services.ApplicationCommands;
 using NetCord;
+using NetCord.Rest;
 using Fergun.Interactive;
 
 namespace FMBot.Bot.SlashCommands;
@@ -50,14 +51,19 @@ public class IndexSlashCommands : ApplicationCommandModule<ApplicationCommandCon
             {
                 embed.WithColor(DiscordConstants.InformationColorBlue);
                 embed.WithDescription("This server has already been updated in the last minute, please wait.");
-                await FollowupAsync(null, [embed.Build()]);
+                await this.Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
+                    .WithEmbeds([embed]));
                 this.Context.LogCommandUsed(CommandResponse.Cooldown);
                 return;
             }
 
             await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow);
 
-            var guildUsers = await this.Context.Guild.GetUsersAsync();
+            var guildUsers = new List<GuildUser>();
+            await foreach (var user in this.Context.Guild.GetUsersAsync())
+            {
+                guildUsers.Add(user);
+            }
 
             Log.Information("Downloaded {guildUserCount} users for guild {guildId} / {guildName} from Discord",
                 guildUsers.Count, this.Context.Guild.Id, this.Context.Guild.Name);
@@ -76,12 +82,13 @@ public class IndexSlashCommands : ApplicationCommandModule<ApplicationCommandCon
             embed.WithColor(DiscordConstants.InformationColorBlue);
             embed.WithDescription(reply.ToString());
 
-            await FollowupAsync(null, [embed.Build()]);
+            await this.Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
+                .WithEmbeds([embed]));
 
-            if (this.Context.Guild is SocketGuild socketGuild)
-            {
-                socketGuild.PurgeUserCache();
-            }
+            // if (this.Context.Guild is Guild socketGuild)
+            // {
+            //     socketGuild.PurgeUserCache();
+            // }
 
             this.Context.LogCommandUsed();
         }
@@ -106,10 +113,10 @@ public class IndexSlashCommands : ApplicationCommandModule<ApplicationCommandCon
             await this.Context.SendResponse(this.Interactivity, initialResponse);
 
             var updatedResponse = await this._userBuilder.UpdatePlays(new ContextModel(this.Context, contextUser));
-            await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
+            await this.Context.Interaction.ModifyResponseAsync(e =>
             {
-                e.Embed = updatedresponse.Embed;
-                e.Components = updatedResponse.Components?.Build();
+                e.Embeds = [updatedResponse.Embed];
+                e.Components = [updatedResponse.Components];
             });
             this.Context.LogCommandUsed(updatedResponse.CommandResponse);
         }
@@ -129,10 +136,10 @@ public class IndexSlashCommands : ApplicationCommandModule<ApplicationCommandCon
             var updatedResponse =
                 await this._userBuilder.UpdateOptions(new ContextModel(this.Context, contextUser),
                     updateType.updateType);
-            await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
+            await this.Context.Interaction.ModifyResponseAsync(e =>
             {
-                e.Embed = updatedresponse.Embed;
-                e.Components = updatedResponse.Components?.Build();
+                e.Embeds = [updatedResponse.Embed];
+                e.Components = [updatedResponse.Components];
             });
             this.Context.LogCommandUsed(updatedResponse.CommandResponse);
         }

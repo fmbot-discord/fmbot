@@ -11,6 +11,7 @@ using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using NetCord.Services.ApplicationCommands;
 using NetCord;
+using NetCord.Rest;
 using Fergun.Interactive;
 
 namespace FMBot.Bot.SlashCommands;
@@ -38,7 +39,7 @@ public class AppleMusicSlashCommands : ApplicationCommandModule<ApplicationComma
         [SlashCommandParameter(Name = "Private", Description = "Only show response to you")]
         bool privateResponse = false)
     {
-        await DeferAsync(privateResponse);
+        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -94,7 +95,6 @@ public class AppleMusicSlashCommands : ApplicationCommandModule<ApplicationComma
             }
             else
             {
-
                 response.Text = $"Sorry, Apple Music returned no results for *`{StringExtensions.Sanitize(querystring)}`*.";
                 response.CommandResponse = CommandResponse.NotFound;
             }

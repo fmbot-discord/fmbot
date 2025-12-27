@@ -12,7 +12,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using NetCord;
-using NetCord.Services;
+using NetCord.Rest;
+using NetCord.Services.ApplicationCommands;
 using NetCord.Services.Commands;
 using Npgsql;
 using Serilog;
@@ -264,18 +265,30 @@ public class GuildService
         return (stats, users);
     }
 
-    public static async Task<Permissions> GetGuildPermissionsAsync(ICommandContext context)
+    public static async Task<Permissions> GetGuildPermissionsAsync(CommandContext context)
     {
-        var socketCommandContext = (SocketCommandContext)context;
-        var guildUser = await context.Guild.GetUserAsync(socketCommandContext.Client.CurrentUser.Id);
-        return guildUser.GuildPermissions;
+        var botUserId = context.Client.Id;
+        var cachedUsers = context.Client.Cache.Guilds[context.Guild.Id]?.Users;
+        if (cachedUsers != null && cachedUsers.TryGetValue(botUserId, out var cachedGuildUser))
+        {
+            return cachedGuildUser.Permissions;
+        }
+
+        var guildUser = await context.Guild.GetUserAsync(botUserId);
+        return guildUser.Permissions;
     }
 
-    public static async Task<Permissions> GetGuildPermissionsAsync(IInteractionContext context)
+    public static async Task<Permissions> GetGuildPermissionsAsync(ApplicationCommandContext context)
     {
-        var socketCommandContext = (ShardedInteractionContext)context;
-        var guildUser = await context.Guild.GetUserAsync(socketCommandContext.Client.CurrentUser.Id);
-        return guildUser.GuildPermissions;
+        var botUserId = context.Client.Id;
+        var cachedUsers = context.Client.Cache.Guilds[context.Guild.Id]?.Users;
+        if (cachedUsers != null && cachedUsers.TryGetValue(botUserId, out var cachedGuildUser))
+        {
+            return cachedGuildUser.Permissions;
+        }
+
+        var guildUser = await context.Guild.GetUserAsync(botUserId);
+        return guildUser.Permissions;
     }
 
     public static GuildUser GetUserFromGuild(Persistence.Domain.Models.Guild guild, int userId)
@@ -1146,7 +1159,7 @@ public class GuildService
             {
                 try
                 {
-                    var unused = new Emoji(emote);
+                    var unused = EmojiProperties.Standard(emote);
                 }
                 catch
                 {
@@ -1169,7 +1182,7 @@ public class GuildService
         return true;
     }
 
-    public async Task AddGuildReactionsAsync(IUserMessage message, NetCord.Gateway.Guild guild, bool partyingFace = false)
+    public async Task AddGuildReactionsAsync(RestMessage message, NetCord.Gateway.Guild guild, bool partyingFace = false)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var dbGuild = await db.Guilds
@@ -1185,7 +1198,7 @@ public class GuildService
 
         if (partyingFace)
         {
-            var emote = EmojiProperties.Standard("🥳");
+            var emote = new ReactionEmojiProperties("🥳");
             await message.AddReactionAsync(emote);
         }
     }
@@ -1205,18 +1218,18 @@ public class GuildService
         return dbGuild.EmoteReactions;
     }
 
-    public static async Task AddReactionsAsync(IUserMessage message, IEnumerable<string> reactions)
+    public static async Task AddReactionsAsync(RestMessage message, IEnumerable<string> reactions)
     {
         foreach (var emoteString in reactions)
         {
             if (emoteString.Length is 1 or 2 or 3)
             {
-                var emote = new Emoji(emoteString);
+                var emote = new ReactionEmojiProperties(emoteString);
                 await message.AddReactionAsync(emote);
             }
             else
             {
-                var emote = EmojiProperties.Custom(emoteString);
+                var emote = ReactionEmojiProperties.Parse(emoteString);
                 await message.AddReactionAsync(emote);
             }
         }
@@ -1244,7 +1257,7 @@ public class GuildService
             .CountAsync();
     }
 
-    public async Task UpdateGuildUserLastMessageDate(IGuildUser discordGuildUser, int userId, int guildId)
+    public async Task UpdateGuildUserLastMessageDate(NetCord.GuildUser discordGuildUser, int userId, int guildId)
     {
         try
         {

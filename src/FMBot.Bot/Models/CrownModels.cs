@@ -21,10 +21,7 @@ public class CurrentCrownHolderDto
 
 public enum CrownViewType
 {
-    [Option("Active crowns ordered by playcount")]
     Playcount = 1,
-    [Option("Recently obtained crowns")]
     Recent = 2,
-    [Option("Recently stolen crowns")]
     Stolen = 3
 }

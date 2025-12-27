@@ -1,28 +1,21 @@
 using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using CsvHelper.Configuration.Attributes;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
-using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
-using FMBot.Domain.Enums;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
-using FMBot.Domain.Types;
-using FMBot.LastFM.Repositories;
 using Microsoft.Extensions.Options;
 using NetCord.Services.Commands;
 using TimePeriod = FMBot.Domain.Models.TimePeriod;
 using Fergun.Interactive;
+using NetCord.Rest;
 
 namespace FMBot.Bot.TextCommands.LastFM;
 
@@ -389,8 +382,7 @@ public class TrackCommands : BaseCommandModule
                 e.Message.Contains("The server responded with error 50013: Missing Permissions"))
             {
                 await this.Context.HandleCommandException(e, sendReply: false);
-                await ReplyAsync("Error while replying: The bot is missing permissions.\n" +
-                                 "Make sure it has permission to 'Embed links' and 'Attach Images'");
+                await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Error while replying: The bot is missing permissions.\nMake sure it has permission to 'Embed links' and 'Attach Images'" });
             }
             else
             {
@@ -436,8 +428,7 @@ public class TrackCommands : BaseCommandModule
                 e.Message.Contains("The server responded with error 50013: Missing Permissions"))
             {
                 await this.Context.HandleCommandException(e, sendReply: false);
-                await ReplyAsync("Error while replying: The bot is missing permissions.\n" +
-                                 "Make sure it has permission to 'Embed links' and 'Attach Images'");
+                await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Error while replying: The bot is missing permissions.\nMake sure it has permission to 'Embed links' and 'Attach Images'" });
             }
             else
             {

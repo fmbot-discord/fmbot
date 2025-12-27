@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.AutoCompleteHandlers;
 using FMBot.Bot.Builders;
@@ -50,6 +51,7 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
     private readonly TrackService _trackService;
 
     private readonly BotSettings _botSettings;
+    private InteractiveService Interactivity { get; }
 
 
     public UserSlashCommands(UserService userService,
@@ -67,8 +69,10 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
         AdminService adminService,
         TimerService timerService,
         PlayService playService,
-        TrackService trackService)
+        TrackService trackService,
+        InteractiveService interactivity)
     {
+        this.Interactivity = interactivity;
         this._userService = userService;
         this._dataSourceFactory = dataSourceFactory;
         this._guildService = guildService;
@@ -211,11 +215,13 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
                             .WithColor(DiscordConstants.InformationColorBlue)
                             .WithDescription("Check your DMs to continue with configuring your command shortcuts.");
 
-                        await this.Context.Interaction.RespondAsync("", embed: serverEmbed.Build(), ephemeral: true);
+                        await this.Context.Interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                            .WithEmbeds([serverEmbed])
+                            .WithFlags(MessageFlags.Ephemeral)));
 
                         response = await this._userBuilder.ListShortcutsAsync(new ContextModel(this.Context,
                             contextUser));
-                        await this.Context.User.SendMessageAsync("", components: response.ComponentsV2.Build());
+                        await this.Context.User.SendMessageAsync(new MessageProperties { Components = response.ComponentsV2 });
                         break;
                     }
                     case UserSetting.UserReactions:
@@ -270,11 +276,17 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
                             .WithColor(DiscordConstants.WarningColorOrange)
                             .WithDescription("Check your DMs to continue with your .fmbot account deletion.");
 
-                        await this.Context.Interaction.RespondAsync("", embed: serverEmbed.Build(), ephemeral: true);
+                        await this.Context.Interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                            .WithEmbeds([serverEmbed])
+                            .WithFlags(MessageFlags.Ephemeral)));
 
                         response = UserBuilder.RemoveDataResponse(new ContextModel(this.Context, contextUser));
-                        await this.Context.User.SendMessageAsync("", false, response.Embed,
-                            components: response.Components);
+                        var dmChannel = await this.Context.User.GetDMChannelAsync();
+                        await dmChannel.SendMessageAsync(new MessageProperties
+                        {
+                            Embeds = [response.Embed],
+                            Components = response.Components != null ? [response.Components] : null
+                        });
                         break;
                     }
                     default:
@@ -325,8 +337,10 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
             var loginUrlResponse =
                 UserBuilder.StartLogin(contextUser, token.Content.Token, this._botSettings.LastFm.PublicKey);
 
-            await RespondAsync(null, [loginUrlresponse.Embed], ephemeral: true,
-                components: loginUrlresponse.Components);
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithEmbeds([loginUrlResponse.Embed])
+                .WithComponents(loginUrlResponse.Components != null ? [loginUrlResponse.Components] : null)
+                .WithFlags(MessageFlags.Ephemeral)));
             this.Context.LogCommandUsed(CommandResponse.UsernameNotSet);
 
             var loginResult = await this._userService.GetAndStoreAuthSession(this.Context.User, token.Content.Token);
@@ -343,10 +357,10 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
                     UserBuilder.LoginSuccess(newUserSettings,
                         indexUser ? UserBuilder.LoginState.SuccessPendingIndex : UserBuilder.LoginState.SuccessNoIndex);
 
-                await this.Context.Interaction.ModifyOriginalResponseAsync(m =>
+                await this.Context.Interaction.ModifyResponseAsync(m =>
                 {
-                    m.Components = loginSuccessresponse.Components;
-                    m.Embed = loginSuccessresponse.Embed;
+                    m.Components = [loginSuccessResponse.Components];
+                    m.Embeds = [loginSuccessResponse.Embed];
                 });
                 this.Context.LogCommandUsed();
 
@@ -357,10 +371,10 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
                     loginSuccessResponse =
                         UserBuilder.LoginSuccess(newUserSettings, UserBuilder.LoginState.SuccessIndexComplete);
 
-                    await this.Context.Interaction.ModifyOriginalResponseAsync(m =>
+                    await this.Context.Interaction.ModifyResponseAsync(m =>
                     {
-                        m.Components = loginSuccessresponse.Components;
-                        m.Embed = loginSuccessresponse.Embed;
+                        m.Components = [loginSuccessResponse.Components];
+                        m.Embeds = [loginSuccessResponse.Embed];
                     });
                 }
 
@@ -391,15 +405,19 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
             else if (loginResult.Status == UserService.LoginStatus.TooManyAccounts)
             {
                 var loginFailure = UserBuilder.LoginTooManyAccounts(loginResult.AltCount);
-                await FollowupAsync(null, [loginFailure.Embed.Build()], components: loginFailure.Components.Build(),
-                    ephemeral: true);
+                await this.Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
+                    .WithEmbeds([loginFailure.Embed])
+                    .WithComponents(loginFailure.Components != null ? [loginFailure.Components] : null)
+                    .WithFlags(MessageFlags.Ephemeral));
 
                 this.Context.LogCommandUsed(CommandResponse.RateLimited);
             }
             else
             {
                 var loginFailure = UserBuilder.LoginFailure();
-                await FollowupAsync(null, [loginFailure.Embed.Build()], ephemeral: true);
+                await this.Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
+                    .WithEmbeds([loginFailure.Embed])
+                    .WithFlags(MessageFlags.Ephemeral));
 
                 this.Context.LogCommandUsed(CommandResponse.WrongInput);
             }
@@ -528,7 +546,9 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
             }
 
             embed.WithColor(DiscordConstants.InformationColorBlue);
-            await RespondAsync(embed: embed.Build(), ephemeral: true);
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithEmbeds([embed])
+                .WithFlags(MessageFlags.Ephemeral)));
         }
     }
 
@@ -590,7 +610,9 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
             embed.WithDescription($"Your `fm` mode has been set to **{name}**.");
             embed.WithFooter(description);
             embed.WithColor(DiscordConstants.InformationColorBlue);
-            await RespondAsync(embed: embed.Build(), ephemeral: true);
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithEmbeds([embed])
+                .WithFlags(MessageFlags.Ephemeral)));
         }
     }
 
@@ -692,7 +714,9 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
 
         embed.WithDescription(description.ToString());
         embed.WithColor(DiscordConstants.InformationColorBlue);
-        await RespondAsync(embed: embed.Build(), ephemeral: true);
+        await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+            .WithEmbeds([embed])
+            .WithFlags(MessageFlags.Ephemeral)));
     }
 
     [SlashCommand("responsemode", "Changes your default whoknows and top list mode")]
@@ -736,7 +760,9 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
             embed.WithColor(DiscordConstants.InformationColorBlue);
             embed.WithDescription(reply.ToString());
 
-            await RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithEmbeds([embed])
+                .WithFlags(MessageFlags.Ephemeral)));
             this.Context.LogCommandUsed();
         }
     }
@@ -761,9 +787,9 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-            var embeds = new List<Embed>();
-            EmbedBuilder timezoneEmbed = null;
-            EmbedBuilder numberFormatEmbed = null;
+            var embeds = new List<EmbedProperties>();
+            EmbedProperties timezoneEmbed = null;
+            EmbedProperties numberFormatEmbed = null;
             if (timezone != null)
             {
                 timezoneEmbed = new EmbedProperties();
@@ -786,7 +812,7 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
 
                 timezoneEmbed.WithColor(DiscordConstants.InformationColorBlue);
                 timezoneEmbed.WithDescription(reply.ToString());
-                embeds.Add(timezoneEmbed.Build());
+                embeds.Add(timezoneEmbed);
             }
 
             if (numberFormat.HasValue)
@@ -804,26 +830,28 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
 
                 numberFormatEmbed.WithColor(DiscordConstants.InformationColorBlue);
                 numberFormatEmbed.WithDescription(reply.ToString());
-                embeds.Add(numberFormatEmbed.Build());
+                embeds.Add(numberFormatEmbed);
             }
 
             if (!embeds.Any())
             {
-                await RespondAsync(
-                    "No options set. Select one of the slash command options to configure your localization settings.",
-                    ephemeral: true);
+                await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                    .WithContent("No options set. Select one of the slash command options to configure your localization settings.")
+                    .WithFlags(MessageFlags.Ephemeral)));
                 this.Context.LogCommandUsed(CommandResponse.WrongInput);
                 return;
             }
 
-            await RespondAsync(null, embeds.ToArray(), ephemeral: true);
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithEmbeds(embeds.ToArray())
+                .WithFlags(MessageFlags.Ephemeral)));
             this.Context.LogCommandUsed();
         }
         catch (Exception e)
         {
-            await RespondAsync(
-                "Something went wrong while setting localization. Please check if you entered a valid timezone.",
-                ephemeral: true);
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("Something went wrong while setting localization. Please check if you entered a valid timezone.")
+                .WithFlags(MessageFlags.Ephemeral)));
             this.Context.LogCommandUsed(CommandResponse.WrongInput);
             await this.Context.HandleCommandException(e, sendReply: false);
         }
@@ -849,7 +877,9 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
                 .WithColor(DiscordConstants.WarningColorOrange)
                 .WithDescription("Check your DMs to continue with your .fmbot account deletion.");
 
-            await this.Context.Interaction.RespondAsync("", embed: serverEmbed.Build(), ephemeral: true);
+            await this.Context.Interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithEmbeds([serverEmbed])
+                .WithFlags(MessageFlags.Ephemeral)));
         }
         else
         {
@@ -857,12 +887,18 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
                 .WithColor(DiscordConstants.WarningColorOrange)
                 .WithDescription("Check the message below to continue with your .fmbot account deletion.");
 
-            await this.Context.Interaction.RespondAsync("", embed: serverEmbed.Build(), ephemeral: true);
+            await this.Context.Interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithEmbeds([serverEmbed])
+                .WithFlags(MessageFlags.Ephemeral)));
         }
 
         var response = UserBuilder.RemoveDataResponse(new ContextModel(this.Context, userSettings));
-        await this.Context.User.SendMessageAsync("", false, response.Embed,
-            components: response.Components);
+        var dmChannel = await this.Context.User.GetDMChannelAsync();
+        await dmChannel.SendMessageAsync(new MessageProperties
+        {
+            Embeds = [response.Embed],
+            Components = response.Components != null ? [response.Components] : null
+        });
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
@@ -873,7 +909,9 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
         var parsedId = ulong.Parse(discordUserId);
         if (parsedId != this.Context.User.Id)
         {
-            await RespondAsync("Hey, this button is not for you. At least you tried.", ephemeral: true);
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("Hey, this button is not for you. At least you tried.")
+                .WithFlags(MessageFlags.Ephemeral)));
             return;
         }
 
@@ -887,62 +925,6 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
             $"{InteractionConstants.RemoveFmbotAccountModal}-{discordUserId}-{message.Id}");
     }
 
-    [ModalInteraction($"{InteractionConstants.RemoveFmbotAccountModal}-*-*")]
-    [UsernameSetRequired]
-    public async Task RemoveConfirmAsync(string discordUserId, string messageId, RemoveAccountConfirmModal modal)
-    {
-        var parsedId = ulong.Parse(discordUserId);
-        if (parsedId != this.Context.User.Id)
-        {
-            await RespondAsync("Hey, this button is not for you. At least you tried.", ephemeral: true);
-            return;
-        }
-
-        if (modal.Confirmation?.ToLower() != "confirm")
-        {
-            await RespondAsync("Account deletion cancelled, wrong modal input", ephemeral: true);
-            return;
-        }
-
-        var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-
-        if (userSettings == null)
-        {
-            await RespondAsync("We don't have any data from you in our database", ephemeral: true);
-            return;
-        }
-
-        var parsedMessageId = ulong.Parse(messageId);
-        var msg = await this.Context.Channel.GetMessageAsync(parsedMessageId);
-
-        if (msg is not IUserMessage message)
-        {
-            return;
-        }
-
-        try
-        {
-            await message.ModifyAsync(m => m.Components = new ActionRowProperties().Build());
-
-            await this.DeferAsync(true);
-
-            await this._friendsService.RemoveAllFriendsAsync(userSettings.UserId);
-            await this._friendsService.RemoveUserFromOtherFriendsAsync(userSettings.UserId);
-
-            await this._userService.DeleteUser(userSettings.UserId);
-
-            var followUpEmbed = new EmbedProperties();
-            followUpEmbed.WithTitle("Removal successful");
-            followUpEmbed.WithDescription(
-                "Your settings, friends and any other data have been successfully deleted from .fmbot.");
-            await FollowupAsync(embed: followUpEmbed.Build(), ephemeral: true);
-        }
-        catch (Exception e)
-        {
-            await this.Context.HandleCommandException(e);
-        }
-    }
-
     [MessageCommand("Delete response")]
     [UsernameSetRequired]
     public async Task DeleteResponseAsync(IMessage message)
@@ -951,15 +933,18 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
 
         if (interactionToDelete == null)
         {
-            await RespondAsync("No .fmbot response to delete or interaction wasn't stored. \n" +
-                               "You can only use this option on the command itself or on the .fmbot response.",
-                ephemeral: true);
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("No .fmbot response to delete or interaction wasn't stored. \n" +
+                             "You can only use this option on the command itself or on the .fmbot response.")
+                .WithFlags(MessageFlags.Ephemeral)));
             return;
         }
 
         if (interactionToDelete.DiscordUserId != this.Context.User.Id)
         {
-            await RespondAsync("You can only delete .fmbot responses to your own commands.", ephemeral: true);
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("You can only delete .fmbot responses to your own commands.")
+                .WithFlags(MessageFlags.Ephemeral)));
             return;
         }
 
@@ -967,7 +952,9 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
 
         if (fetchedMessage == null)
         {
-            await RespondAsync("Sorry, .fmbot couldn't fetch the message you want to delete.", ephemeral: true);
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("Sorry, .fmbot couldn't fetch the message you want to delete.")
+                .WithFlags(MessageFlags.Ephemeral)));
             return;
         }
 
@@ -980,7 +967,9 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
         await fetchedMessage.DeleteAsync(options: new RequestOptions
             { AuditLogReason = "Deleted by user through message command" });
 
-        await RespondAsync("Removed .fmbot response.", ephemeral: true);
+        await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("Removed .fmbot response.")
+                .WithFlags(MessageFlags.Ephemeral)));
         this.Context.LogCommandUsed();
     }
 
@@ -1033,7 +1022,7 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
                 discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
 
             var descriptor = userSettings.DifferentUser ? $"**{userSettings.DisplayName}**'s" : "your";
-            EmbedBuilder loaderEmbed;
+            EmbedProperties loaderEmbed;
             if (result == "compliment")
             {
                 loaderEmbed = new EmbedProperties()
@@ -1048,9 +1037,9 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
                     .WithColor(new Color(255, 122, 1));
             }
 
-            await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
+            await this.Context.Interaction.ModifyResponseAsync(e =>
             {
-                e.Embed = loaderEmbed.Build();
+                e.Embeds = [loaderEmbed];
                 e.Components = null;
             });
 
@@ -1089,9 +1078,9 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
                 embed.WithDescription(
                     $"Sorry, you or the user you're searching for don't have any top artists or top tracks in the selected time period.");
                 this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
-                await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
+                await this.Context.Interaction.ModifyResponseAsync(e =>
                 {
-                    e.Embed = embed.Build();
+                    e.Embeds = [embed];
                     e.Components = null;
                 });
                 return;
@@ -1101,9 +1090,9 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
                 new ContextModel(this.Context, contextUser),
                 userSettings, result, topArtists, topTracks);
 
-            await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
+            await this.Context.Interaction.ModifyResponseAsync(e =>
             {
-                e.Embed = response.Embed;
+                e.Embeds = [response.Embed];
                 e.Components = null;
             });
 
@@ -1211,7 +1200,9 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
         embed.WithDescription(reply.ToString());
         embed.WithColor(DiscordConstants.SuccessColorGreen);
 
-        await RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
+        await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+            .WithEmbeds([embed])
+            .WithFlags(MessageFlags.Ephemeral)));
         this.Context.LogCommandUsed();
     }
 
@@ -1236,7 +1227,9 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
         embed.WithDescription(reply.ToString());
         embed.WithColor(DiscordConstants.LastFmColorRed);
 
-        await RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
+        await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+            .WithEmbeds([embed])
+            .WithFlags(MessageFlags.Ephemeral)));
         this.Context.LogCommandUsed();
     }
 
@@ -1389,7 +1382,9 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
 
             if (contextUser == null)
             {
-                await RespondAsync("Session expired. Login again to manage your alts.", ephemeral: true);
+                await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("Session expired. Login again to manage your alts.")
+                .WithFlags(MessageFlags.Ephemeral)));
                 this.Context.LogCommandUsed(CommandResponse.UsernameNotSet);
                 return;
             }
@@ -1398,7 +1393,9 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
 
             if (targetUser == null)
             {
-                await RespondAsync("The .fmbot account you want to manage doesn't exist (anymore).", ephemeral: true);
+                await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("The .fmbot account you want to manage doesn't exist (anymore).")
+                .WithFlags(MessageFlags.Ephemeral)));
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
                 return;
             }
@@ -1457,7 +1454,10 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
 
             embed.WithDescription(description.ToString());
 
-            await RespondAsync(null, [embed.Build()], ephemeral: true, components: components?.Build());
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithEmbeds([embed])
+                .WithComponents([components])
+                .WithFlags(MessageFlags.Ephemeral)));
             this.Context.LogCommandUsed();
         }
         catch (Exception e)
@@ -1473,7 +1473,9 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
 
         if (contextUser == null)
         {
-            await RespondAsync("Session expired. Login again to manage your alts.", ephemeral: true);
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("Session expired. Login again to manage your alts.")
+                .WithFlags(MessageFlags.Ephemeral)));
             this.Context.LogCommandUsed(CommandResponse.UsernameNotSet);
             return;
         }
@@ -1482,7 +1484,9 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
 
         if (userToDelete == null)
         {
-            await RespondAsync("The .fmbot account you want to manage doesn't exist (anymore).", ephemeral: true);
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("The .fmbot account you want to manage doesn't exist (anymore).")
+                .WithFlags(MessageFlags.Ephemeral)));
             this.Context.LogCommandUsed(CommandResponse.NotFound);
             return;
         }
@@ -1524,7 +1528,10 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
                 $"{InteractionConstants.ManageAlts.ManageAltsDeleteAltConfirm}-{transferData}-{userToDelete.UserId}",
                 style: ButtonStyle.Danger);
 
-        await RespondAsync(null, [embed.Build()], ephemeral: true, components: components?.Build());
+        await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+            .WithEmbeds([embed])
+            .WithComponents([components])
+            .WithFlags(MessageFlags.Ephemeral)));
         this.Context.LogCommandUsed();
     }
 
@@ -1533,14 +1540,16 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
     {
         try
         {
-            _ = DeferAsync(true);
+            _ = Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
             await this.Context.DisableInteractionButtons(interactionEdit: true);
 
             var contextUser = await this._userService.GetUserOrTempUser(this.Context.User);
 
             if (contextUser == null)
             {
-                await RespondAsync("Session expired. Login again to manage your alts.", ephemeral: true);
+                await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("Session expired. Login again to manage your alts.")
+                .WithFlags(MessageFlags.Ephemeral)));
                 this.Context.LogCommandUsed(CommandResponse.UsernameNotSet);
                 return;
             }
@@ -1549,7 +1558,9 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
 
             if (userToDelete == null)
             {
-                await RespondAsync("The .fmbot account you want to delete doesn't exist (anymore).", ephemeral: true);
+                await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("The .fmbot account you want to delete doesn't exist (anymore).")
+                .WithFlags(MessageFlags.Ephemeral)));
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
                 return;
             }
@@ -1574,7 +1585,7 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
                         ? "Successfully transferred data and deleted alt"
                         : "Successfully deleted alt",
                     customId: "0", disabled: true, style: ButtonStyle.Success);
-            await this.Context.Interaction.ModifyOriginalResponseAsync(m => { m.Components = components.Build(); });
+            await this.Context.Interaction.ModifyResponseAsync(m => { m.Components = components; });
 
             this.Context.LogCommandUsed();
         }
@@ -1596,14 +1607,18 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
         {
             embed.WithDescription("Click the 'Authorize .fmbot' button first to get started.");
             embed.WithColor(DiscordConstants.WarningColorOrange);
-            await RespondAsync(embed: embed.Build(), ephemeral: true);
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithEmbeds([embed])
+                .WithFlags(MessageFlags.Ephemeral)));
             this.Context.LogCommandUsed(CommandResponse.NotFound);
             return;
         }
 
         await this._userService.UpdateLinkedRole(Context.User.Id);
         embed.WithDescription("✅ Refreshed linked role data");
-        await RespondAsync(embed: embed.Build(), ephemeral: true);
+        await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+            .WithEmbeds([embed])
+            .WithFlags(MessageFlags.Ephemeral)));
         this.Context.LogCommandUsed();
     }
 
@@ -1614,12 +1629,14 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
 
         if (contextUser == null)
         {
-            await RespondAsync("Session expired. Login again to manage your alts.", ephemeral: true);
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("Session expired. Login again to manage your alts.")
+                .WithFlags(MessageFlags.Ephemeral)));
             this.Context.LogCommandUsed(CommandResponse.UsernameNotSet);
             return;
         }
 
-        await DeferAsync(true);
+        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
 
         try
         {
@@ -1656,46 +1673,15 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
                 var embed = new EmbedProperties();
                 embed.WithColor(DiscordConstants.WarningColorOrange);
                 embed.WithDescription("Please run the command yourself if you want to create shortcuts.");
-                await this.Context.Interaction.RespondAsync(embed: embed.Build(), ephemeral: true);
+                await this.Context.Interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                    .WithEmbeds([embed])
+                    .WithFlags(MessageFlags.Ephemeral)));
                 this.Context.LogCommandUsed(CommandResponse.WrongInput);
             }
 
             var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
             await this.Context.Interaction.RespondWithModalAsync<CreateShortcutModal>(
                 $"{InteractionConstants.Shortcuts.CreateModal}-{message?.Id ?? 0}");
-        }
-        catch (Exception e)
-        {
-            await this.Context.HandleCommandException(e);
-        }
-    }
-
-    [ModalInteraction($"{InteractionConstants.Shortcuts.CreateModal}-*")]
-    public async Task CreateShortcutModal(string messageId, CreateShortcutModal modal)
-    {
-        try
-        {
-            var contextUser = await this._userService.GetUserAsync(this.Context.User.Id);
-
-            var response = await this._userBuilder.CreateShortcutAsync(
-                new ContextModel(this.Context, contextUser),
-                modal.Input,
-                modal.Output);
-
-            if (response == null)
-            {
-                var parsedMessageId = ulong.Parse(messageId);
-                if (parsedMessageId != 0)
-                {
-                    var list = await this._userBuilder.ListShortcutsAsync(new ContextModel(this.Context, contextUser));
-                    await this.Context.UpdateMessageEmbed(list, messageId);
-                }
-            }
-            else
-            {
-                await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
-                this.Context.LogCommandUsed(response.CommandResponse);
-            }
         }
         catch (Exception e)
         {
@@ -1718,50 +1704,7 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
                     minLength: 1,
                     maxLength: 200);
 
-            await this.Context.Interaction.RespondWithModalAsync(mb.Build());
-        }
-        catch (Exception e)
-        {
-            await this.Context.HandleCommandException(e);
-        }
-    }
-
-    [ModalInteraction($"{InteractionConstants.Shortcuts.ModifyModal}-*-*")]
-    public async Task ModifyShortcutModal(string shortcutId, string overviewMessageId, ModifyShortcutModal modal)
-    {
-        try
-        {
-            await DeferAsync(ephemeral: true);
-
-            var contextUser = await this._userService.GetUserAsync(this.Context.User.Id);
-            var id = int.Parse(shortcutId);
-
-            var response = await this._userBuilder.ModifyShortcutAsync(
-                new ContextModel(this.Context, contextUser),
-                id,
-                modal.Input,
-                modal.Output);
-
-            if (response == null)
-            {
-                var parsedOverviewMessageId = ulong.Parse(overviewMessageId);
-                if (parsedOverviewMessageId != 0)
-                {
-                    var list = await this._userBuilder.ListShortcutsAsync(new ContextModel(this.Context, contextUser));
-                    await this.Context.UpdateMessageEmbed(list, overviewMessageId, defer: false);
-                }
-
-                var manage = await this._userBuilder.ManageShortcutAsync(new ContextModel(this.Context, contextUser),
-                    id,
-                    parsedOverviewMessageId);
-                await this.Context.Interaction.ModifyOriginalResponseAsync(m =>
-                    m.Components = manage.ComponentsV2.Build());
-            }
-            else
-            {
-                await this.Context.SendFollowUpResponse(this.Interactivity, response, ephemeral: true);
-                this.Context.LogCommandUsed(response.CommandResponse);
-            }
+            await this.Context.Interaction.RespondWithModalAsync(mb);
         }
         catch (Exception e)
         {
@@ -1804,7 +1747,7 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
     {
         try
         {
-            await DeferAsync(ephemeral: true);
+            await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
 
             var contextUser = await this._userService.GetUserAsync(this.Context.User.Id);
             var id = int.Parse(shortcutId);
@@ -1822,7 +1765,7 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
                     await this.Context.UpdateMessageEmbed(list, overviewMessageId, defer: false);
                 }
 
-                await this.Context.Interaction.DeleteOriginalResponseAsync();
+                await this.Context.Interaction.DeleteResponseAsync();
             }
             else
             {

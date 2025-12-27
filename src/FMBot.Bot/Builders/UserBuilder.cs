@@ -19,6 +19,7 @@ using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
+using Guild = FMBot.Persistence.Domain.Models.Guild;
 using NetCord;
 using NetCord.Rest;
 using NetCord.Services.Commands;
@@ -47,7 +48,7 @@ public class UserBuilder
     private readonly ShortcutService _shortcutService;
     private readonly CensorService _censorService;
 
-    private readonly CommandService<> _commands;
+    private readonly CommandService<CommandContext> _commands;
 
     public UserBuilder(UserService userService,
         GuildService guildService,
@@ -65,7 +66,7 @@ public class UserBuilder
         UpdateService updateService,
         IndexService indexService,
         ShortcutService shortcutService,
-        CommandService commands,
+        CommandService<CommandContext> commands,
         CensorService censorService)
     {
         this._userService = userService;
@@ -892,7 +893,7 @@ public class UserBuilder
             response.ComponentsContainer.WithSection([
                     new TextDisplayProperties(initialDescription.ToString())
                 ],
-                new ThumbnailBuilder(userInfo.Image));
+                userInfo.Image);
         }
 
 
@@ -1091,7 +1092,7 @@ public class UserBuilder
             response.ComponentsContainer.WithSection([
                     new TextDisplayProperties(initialDescription.ToString())
                 ],
-                new ThumbnailBuilder(userInfo.Image));
+                userInfo.Image);
         }
 
         var anyHistoryStored = false;
@@ -1217,7 +1218,7 @@ public class UserBuilder
                 style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("ℹ"))
             .WithButton("Last.fm",
                 url: LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm),
-                emote: EmojiProperties.Custom("<:lastfm:882227627287515166>"));
+                emote: EmojiProperties.Custom(DiscordConstants.LastFm));
 
         response.ComponentsV2.AddComponent(actionRow);
 
@@ -1575,9 +1576,8 @@ public class UserBuilder
             ResponseType = ResponseType.Embed,
         };
 
-        var importSetting = new StringMenuProperties()
+        var importSetting = new StringMenuProperties(InteractionConstants.ImportSetting)
             .WithPlaceholder("Select import setting")
-            .WithCustomId(InteractionConstants.ImportSetting)
             .WithMinValues(1)
             .WithMaxValues(1);
 
@@ -1587,7 +1587,7 @@ public class UserBuilder
 
         if (!hasImported && context.ContextUser.DataSource == DataSource.LastFm)
         {
-            importSetting.IsDisabled = true;
+            importSetting.Disabled = true;
         }
 
         foreach (var option in ((DataSource[])Enum.GetValues(typeof(DataSource))))
@@ -1708,9 +1708,8 @@ public class UserBuilder
 
         if (alts.Count > 1)
         {
-            var altSelector = new StringMenuProperties()
+            var altSelector = new StringMenuProperties(InteractionConstants.ManageAlts.ManageAltsPicker)
                 .WithPlaceholder("Select alt to manage")
-                .WithCustomId(InteractionConstants.ManageAlts.ManageAltsPicker)
                 .WithMinValues(1)
                 .WithMaxValues(1);
 

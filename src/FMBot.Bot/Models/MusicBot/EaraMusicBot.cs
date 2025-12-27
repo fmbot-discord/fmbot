@@ -19,22 +19,22 @@ internal class EaraMusicBot : MusicBot
             return true;
         }
 
-        var container = msg.Components.FirstOrDefault(c => c.Type == ComponentType.Container);
-        if (container is not ContainerComponent containerComponent)
+        var container = msg.Components.OfType<ComponentContainer>().FirstOrDefault();
+        if (container is null)
         {
             return true;
         }
 
-        var section = containerComponent.Components.FirstOrDefault(c => c.Type == ComponentType.Section);
-        if (section is not SectionComponent sectionComponent)
+        var section = container.Components.OfType<ComponentSection>().FirstOrDefault();
+        if (section is null)
         {
             return true;
         }
 
-        var textComponents = sectionComponent.Components.Where(f => f.Type == ComponentType.TextDisplay);
-        foreach (var text in textComponents)
+        var textComponents = section.Components.OfType<TextDisplay>();
+        foreach (var textComponent in textComponents)
         {
-            if (text is TextDisplayComponent textComponent && textComponent.Content.Contains("—"))
+            if (textComponent.Content.Contains("—"))
             {
                 return false;
             }
@@ -52,23 +52,23 @@ internal class EaraMusicBot : MusicBot
      */
     public override string GetTrackQuery(Message msg)
     {
-        var container = msg.Components.FirstOrDefault(c => c.Type == ComponentType.Container);
-        if (container is not ContainerComponent containerComponent)
+        var container = msg.Components.OfType<ComponentContainer>().FirstOrDefault();
+        if (container is null)
         {
             return string.Empty;
         }
 
-        var section = containerComponent.Components.FirstOrDefault(c => c.Type == ComponentType.Section);
-        if (section is not SectionComponent sectionComponent)
+        var section = container.Components.OfType<ComponentSection>().FirstOrDefault();
+        if (section is null)
         {
             return string.Empty;
         }
 
-        var textComponents = sectionComponent.Components.Where(f => f.Type == ComponentType.TextDisplay);
+        var textComponents = section.Components.OfType<TextDisplay>();
 
-        foreach (var text in textComponents)
+        foreach (var textComponent in textComponents)
         {
-            if (text is not TextDisplayComponent textComponent || !textComponent.Content.Contains("—"))
+            if (!textComponent.Content.Contains("—"))
             {
                 continue;
             }

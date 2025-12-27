@@ -10,13 +10,12 @@ using FMBot.Bot.Services;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using NetCord;
+using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 
 namespace FMBot.Bot.SlashCommands;
 
-[Group("chart", "Generate charts with album covers or artist images")]
-[CommandContextType(InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild)]
-[IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
+[SlashCommand("chart", "Generate charts with album covers or artist images", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
 public class ChartSlashCommands : ApplicationCommandModule<ApplicationCommandContext>
 {
     private readonly UserService _userService;
@@ -50,7 +49,7 @@ public class ChartSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         [SlashCommandParameter(Name = "Rainbow", Description = "Experimental rainbow setting")] bool rainbow = false,
         [SlashCommandParameter(Name = "Private", Description = "Only show response to you")] bool privateResponse = false)
     {
-       await DeferAsync(privateResponse);
+       await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
 
         Artist filteredArtist = null;
         if (!string.IsNullOrWhiteSpace(artist))
@@ -109,7 +108,7 @@ public class ChartSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         [SlashCommandParameter(Name = "Rainbow", Description = "Experimental rainbow setting")] bool rainbow = false,
         [SlashCommandParameter(Name = "Private", Description = "Only show response to you")] bool privateResponse = false)
     {
-       await DeferAsync(privateResponse);
+       await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);

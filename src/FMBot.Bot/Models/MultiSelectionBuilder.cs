@@ -1,4 +1,4 @@
-using System.Linq;
+using Fergun.Interactive;
 using Fergun.Interactive.Selection;
 
 namespace FMBot.Bot.Models;

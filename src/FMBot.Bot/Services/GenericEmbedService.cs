@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -13,7 +14,6 @@ using NetCord;
 using NetCord.Rest;
 using NetCord.Services.Commands;
 using Serilog;
-using ICommandContext = NetCord.Discord.Commands.ICommandContext;
 
 namespace FMBot.Bot.Services;
 
@@ -187,7 +187,10 @@ public static class GenericEmbedService
         {
             embed.ErrorResponse(recentScrobbles.Error, recentScrobbles.Message, context.Message.Content, context.User);
             context.LogCommandUsed(CommandResponse.LastFmError);
-            await context.Channel.SendMessageAsync("", false, embed.Build());
+            await context.Channel.SendMessageAsync(new MessageProperties
+            {
+                Embeds = [embed]
+            });
             return true;
         }
 
@@ -195,8 +198,11 @@ public static class GenericEmbedService
         {
             embed.NoScrobblesFoundErrorResponse(lastFmUserName);
             context.LogCommandUsed(CommandResponse.NoScrobbles);
-            await context.Channel.SendMessageAsync("", false, embed.Build(),
-                components: NoScrobblesFoundComponents().Build());
+            await context.Channel.SendMessageAsync(new MessageProperties
+            {
+                Embeds = [embed],
+                Components = [NoScrobblesFoundComponents()]
+            });
             return true;
         }
 
@@ -249,7 +255,7 @@ public static class GenericEmbedService
     }
 
     public static (EmbedProperties EmbedProperties, bool showPurchaseButtons) HelpResponse(EmbedProperties embed,
-        CommandInfo<> commandInfo, string prfx, string userName)
+        CommandInfo<CommandContext> commandInfo, string prfx, string userName)
     {
         embed.WithColor(DiscordConstants.InformationColorBlue);
         embed.WithTitle($"Information about '{prfx}{commandInfo.Name}' for {userName}");
@@ -323,7 +329,7 @@ public static class GenericEmbedService
         return (embed, showPurchaseButtons);
     }
 
-    public static ActionRowProperties PurchaseButtons(CommandInfo commandInfo)
+    public static ActionRowProperties PurchaseButtons(CommandInfo<CommandContext> commandInfo)
     {
         return new ActionRowProperties()
             .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
@@ -390,6 +396,36 @@ public static class GenericEmbedService
         return actionRow;
     }
 
+    public static ActionRowProperties WithSelectMenu(this ActionRowProperties actionRow, StringMenuProperties selectMenu, int row = 0)
+    {
+        actionRow.Add(selectMenu);
+        return actionRow;
+    }
+
+    public static ActionRowProperties WithSelectMenu(this ActionRowProperties actionRow, RoleMenuProperties selectMenu, int row = 0)
+    {
+        actionRow.Add(selectMenu);
+        return actionRow;
+    }
+
+    public static ActionRowProperties WithSelectMenu(this ActionRowProperties actionRow, UserMenuProperties selectMenu, int row = 0)
+    {
+        actionRow.Add(selectMenu);
+        return actionRow;
+    }
+
+    public static ActionRowProperties WithSelectMenu(this ActionRowProperties actionRow, ChannelMenuProperties selectMenu, int row = 0)
+    {
+        actionRow.Add(selectMenu);
+        return actionRow;
+    }
+
+    public static List<ActionRowProperties> AddComponent(this List<ActionRowProperties> components, ActionRowProperties actionRow)
+    {
+        components.Add(actionRow);
+        return components;
+    }
+
     public static StringMenuProperties AddOption(this StringMenuProperties menu,
         StringMenuSelectOptionProperties properties)
     {
@@ -414,6 +450,42 @@ public static class GenericEmbedService
         IComponentContainerComponentProperties properties)
     {
         component.AddComponents(properties);
+        return component;
+    }
+
+    public static ComponentContainerProperties WithSection(this ComponentContainerProperties component,
+        IEnumerable<TextDisplayProperties> textDisplays, string thumbnailUrl)
+    {
+        var section = new ComponentSectionProperties(
+            new ComponentSectionThumbnailProperties(new ComponentMediaProperties(thumbnailUrl)),
+            textDisplays);
+        component.AddComponents(section);
+        return component;
+    }
+
+    public static ComponentContainerProperties WithSection(this ComponentContainerProperties component,
+        IEnumerable<TextDisplayProperties> textDisplays, ComponentSectionThumbnailProperties thumbnail)
+    {
+        var section = new ComponentSectionProperties(thumbnail, textDisplays);
+        component.AddComponents(section);
+        return component;
+    }
+
+    public static ComponentContainerProperties WithTextDisplay(this ComponentContainerProperties component, string text)
+    {
+        component.AddComponents(new TextDisplayProperties(text));
+        return component;
+    }
+
+    public static ComponentContainerProperties WithSeparator(this ComponentContainerProperties component)
+    {
+        component.AddComponents(new ComponentSeparatorProperties());
+        return component;
+    }
+
+    public static ComponentContainerProperties WithActionRow(this ComponentContainerProperties component, ActionRowProperties actionRow)
+    {
+        component.AddComponents(actionRow);
         return component;
     }
 }

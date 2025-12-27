@@ -99,7 +99,7 @@ public class ImportCommands : BaseCommandModule
                 .WithColor(DiscordConstants.InformationColorBlue)
                 .WithDescription("Check your DMs to continue with modifying your .fmbot imports.");
 
-            await ReplyAsync(embed: serverEmbed.Build());
+            await this.Context.Channel.SendMessageAsync(new MessageProperties { Embeds = [serverEmbed] });
         }
         else
         {
@@ -109,7 +109,12 @@ public class ImportCommands : BaseCommandModule
         try
         {
             var response = await this._importBuilders.ImportModify(new ContextModel(this.Context, prfx, contextUser), contextUser.UserId);
-            await this.Context.User.SendMessageAsync("", false, response.Embed, components: response.Components);
+            var dmChannel = await this.Context.User.GetDMChannelAsync();
+            await dmChannel.SendMessageAsync(new MessageProperties
+            {
+                Embeds = [response.Embed],
+                Components = [response.Components]
+            });
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)

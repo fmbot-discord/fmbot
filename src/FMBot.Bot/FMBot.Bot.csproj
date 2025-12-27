@@ -48,10 +48,10 @@
         <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.7" />
         <PackageReference Include="Microsoft.Extensions.Http.Polly" Version="9.0.7" />
         <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
-        <PackageReference Include="NetCord" Version="1.0.0-alpha.444" />
-        <PackageReference Include="NetCord.Hosting" Version="1.0.0-alpha.444" />
-        <PackageReference Include="NetCord.Hosting.Services" Version="1.0.0-alpha.444" />
-        <PackageReference Include="NetCord.Services" Version="1.0.0-alpha.444" />
+        <PackageReference Include="NetCord" Version="1.0.0-alpha.451" />
+        <PackageReference Include="NetCord.Hosting" Version="1.0.0-alpha.451" />
+        <PackageReference Include="NetCord.Hosting.Services" Version="1.0.0-alpha.451" />
+        <PackageReference Include="NetCord.Services" Version="1.0.0-alpha.451" />
         <PackageReference Include="Npgsql" Version="9.0.3"/>
         <PackageReference Include="PostgreSQLCopyHelper" Version="2.8.0"/>
         <PackageReference Include="prometheus-net" Version="8.2.1"/>

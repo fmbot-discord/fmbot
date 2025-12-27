@@ -9,7 +9,6 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain.Enums;
-using FMBot.Domain.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Builders;
 using FMBot.Domain.Attributes;
@@ -76,8 +75,10 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
                         style: ButtonStyle.Danger, row: 0);
             }
 
-            await this.Context.Interaction.RespondAsync(null, [embed.Build()], ephemeral: true,
-                components: components?.Build());
+            await this.Context.Interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithEmbeds([embed])
+                .WithFlags(MessageFlags.Ephemeral)
+                .WithComponents(components != null ? [components] : null)));
             this.Context.LogCommandUsed();
 
             await this._indexService.RecalculateTopLists(newUserSettings);
@@ -85,7 +86,7 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
             embed.WithColor(DiscordConstants.SuccessColorGreen);
             embed.WithDescription(description +
                                   "✅ Your stored top artist/albums/tracks have successfully been recalculated.");
-            await this.Context.Interaction.ModifyOriginalResponseAsync(msg => { msg.Embed = embed.Build(); });
+            await this.Context.Interaction.ModifyResponseAsync(msg => { msg.Embeds = [embed]; });
         }
     }
 
@@ -98,10 +99,12 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
         await this._importService.RemoveImportedSpotifyPlays(contextUser);
 
         var embed = new EmbedProperties();
-        embed.WithDescription($"All your imported Spotify history has been removed from .fmbot.");
+        embed.WithDescription("All your imported Spotify history has been removed from .fmbot.");
         embed.WithColor(DiscordConstants.SuccessColorGreen);
 
-        await RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
+        await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+            .WithEmbeds([embed])
+            .WithFlags(MessageFlags.Ephemeral)));
         this.Context.LogCommandUsed();
     }
 
@@ -114,10 +117,12 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
         await this._importService.RemoveImportedAppleMusicPlays(contextUser);
 
         var embed = new EmbedProperties();
-        embed.WithDescription($"All your imported Apple Music history has been removed from .fmbot.");
+        embed.WithDescription("All your imported Apple Music history has been removed from .fmbot.");
         embed.WithColor(DiscordConstants.SuccessColorGreen);
 
-        await RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
+        await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+            .WithEmbeds([embed])
+            .WithFlags(MessageFlags.Ephemeral)));
         this.Context.LogCommandUsed();
     }
 
@@ -126,7 +131,7 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
     public async Task ImportManage()
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        await DeferAsync(true);
+        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
 
         try
         {
@@ -206,96 +211,21 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
                 switch (modifyPick)
                 {
                     case ImportModifyPick.Artist:
-                        await this.Context.Interaction.RespondWithModalAsync<ModifyArtistModal>(InteractionConstants
-                            .ImportModify.PickArtistModal);
+                        await this.Context.Interaction.RespondWithModalAsync(ModalFactory.CreateModifyArtistModal(InteractionConstants
+                            .ImportModify.PickArtistModal));
                         break;
                     case ImportModifyPick.Album:
-                        await this.Context.Interaction.RespondWithModalAsync<ModifyAlbumModal>(InteractionConstants
-                            .ImportModify.PickAlbumModal);
+                        await this.Context.Interaction.RespondWithModalAsync(ModalFactory.CreateModifyAlbumModal(InteractionConstants
+                            .ImportModify.PickAlbumModal));
                         break;
                     case ImportModifyPick.Track:
-                        await this.Context.Interaction.RespondWithModalAsync<ModifyTrackModal>(InteractionConstants
-                            .ImportModify.PickTrackModal);
+                        await this.Context.Interaction.RespondWithModalAsync(ModalFactory.CreateModifyTrackModal(InteractionConstants
+                            .ImportModify.PickTrackModal));
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
             }
-        }
-        catch (Exception e)
-        {
-            await this.Context.HandleCommandException(e);
-        }
-    }
-
-    [ModalInteraction(InteractionConstants.ImportModify.PickArtistModal)]
-    public async Task PickArtist(ModifyArtistModal modal)
-    {
-        try
-        {
-            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
-            await RespondAsync(InteractionCallback.DeferredMessage());
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-
-            var importRef = this._importService.StoreImportReference(new ReferencedMusic { Artist = modal.ArtistName });
-
-            var response = await this._importBuilders.PickArtist(contextUser.UserId,
-                contextUser.NumberFormat ?? NumberFormat.NoSeparator, importRef);
-
-            await this.Context.SendFollowUpResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
-        }
-        catch (Exception e)
-        {
-            await this.Context.HandleCommandException(e);
-        }
-    }
-
-    [ModalInteraction(InteractionConstants.ImportModify.PickAlbumModal)]
-    public async Task PickAlbum(ModifyAlbumModal modal)
-    {
-        try
-        {
-            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
-            await RespondAsync(InteractionCallback.DeferredMessage());
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-
-            var importRef = this._importService.StoreImportReference(new ReferencedMusic
-                { Artist = modal.ArtistName, Album = modal.AlbumName });
-
-            var response = await this._importBuilders.PickAlbum(
-                contextUser.UserId,
-                contextUser.NumberFormat ?? NumberFormat.NoSeparator,
-                importRef);
-
-            await this.Context.SendFollowUpResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
-        }
-        catch (Exception e)
-        {
-            await this.Context.HandleCommandException(e);
-        }
-    }
-
-    [ModalInteraction(InteractionConstants.ImportModify.PickTrackModal)]
-    public async Task PickTrack(ModifyTrackModal modal)
-    {
-        try
-        {
-            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
-            await RespondAsync(InteractionCallback.DeferredMessage());
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-
-            var importRef = this._importService.StoreImportReference(new ReferencedMusic
-                { Artist = modal.ArtistName, Track = modal.TrackName });
-
-            var response = await this._importBuilders.PickTrack(
-                contextUser.UserId,
-                contextUser.NumberFormat ?? NumberFormat.NoSeparator,
-                importRef);
-
-            await this.Context.SendFollowUpResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
         {
@@ -315,44 +245,12 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
                 .WithCustomId($"{InteractionConstants.ImportModify.ArtistRenameModal}——{selectedArtistRef}")
                 .AddTextInput("New artist name", "artist_name", placeholder: "The Beatles", value: selectedArtist);
 
-            await Context.Interaction.RespondWithModalAsync(mb.Build());
+            await Context.Interaction.RespondWithModalAsync(mb);
             this.Context.LogCommandUsed();
         }
         catch (Exception e)
         {
             await this.Context.HandleCommandException(e, deferFirst: true);
-        }
-    }
-
-    [ModalInteraction($"{InteractionConstants.ImportModify.ArtistRenameModal}——*")]
-    public async Task RenameArtist(string selectedArtistRef, RenameArtistModal modal)
-    {
-        try
-        {
-            await RespondAsync(InteractionCallback.DeferredMessage());
-            await EditToLoader();
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-
-            var newArtistRef =
-                this._importService.StoreImportReference(new ReferencedMusic { Artist = modal.ArtistName });
-
-            var response = await this._importBuilders.PickArtist(
-                contextUser.UserId,
-                contextUser.NumberFormat ?? NumberFormat.NoSeparator,
-                selectedArtistRef,
-                newArtistRef);
-
-            await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
-            {
-                e.Embed = response.Embed;
-                e.Components = response.Components?.Build();
-            });
-
-            this.Context.LogCommandUsed(response.CommandResponse);
-        }
-        catch (Exception e)
-        {
-            await this.Context.HandleCommandException(e);
         }
     }
 
@@ -384,10 +282,10 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
                 newArtistRef,
                 selectedArtistRef);
 
-            await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
+            await this.Context.Interaction.ModifyResponseAsync(e =>
             {
-                e.Embed = response.Embed;
-                e.Components = response.Components?.Build();
+                e.Embeds = [response.Embed];
+                e.Components = response.Components;
             });
 
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -413,10 +311,10 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
                 artistRef,
                 deletion: false);
 
-            await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
+            await this.Context.Interaction.ModifyResponseAsync(e =>
             {
-                e.Embed = response.Embed;
-                e.Components = response.Components?.Build();
+                e.Embeds = [response.Embed];
+                e.Components = response.Components;
             });
 
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -453,10 +351,10 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
                 artistRef,
                 deletion: true);
 
-            await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
+            await this.Context.Interaction.ModifyResponseAsync(e =>
             {
-                e.Embed = response.Embed;
-                e.Components = response.Components?.Build();
+                e.Embeds = [response.Embed];
+                e.Components = response.Components;
             });
 
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -480,44 +378,12 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
                 .AddTextInput("Artist name", "artist_name", placeholder: "The Beatles", value: selectedAlbum?.Artist)
                 .AddTextInput("Album name", "album_name", placeholder: "Abbey Road", value: selectedAlbum?.Album);
 
-            await Context.Interaction.RespondWithModalAsync(mb.Build());
+            await Context.Interaction.RespondWithModalAsync(mb);
             this.Context.LogCommandUsed();
         }
         catch (Exception e)
         {
             await this.Context.HandleCommandException(e, deferFirst: true);
-        }
-    }
-
-    [ModalInteraction($"{InteractionConstants.ImportModify.AlbumRenameModal}——*")]
-    public async Task RenameAlbum(string selectedAlbumRef, RenameAlbumModal modal)
-    {
-        try
-        {
-            await RespondAsync(InteractionCallback.DeferredMessage());
-            await EditToLoader();
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-
-            var newAlbumRef = this._importService.StoreImportReference(new ReferencedMusic
-                { Artist = modal.ArtistName, Album = modal.AlbumName });
-
-            var response = await this._importBuilders.PickAlbum(
-                contextUser.UserId,
-                contextUser.NumberFormat ?? NumberFormat.NoSeparator,
-                selectedAlbumRef,
-                newAlbumRef);
-
-            await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
-            {
-                e.Embed = response.Embed;
-                e.Components = response.Components?.Build();
-            });
-
-            this.Context.LogCommandUsed(response.CommandResponse);
-        }
-        catch (Exception e)
-        {
-            await this.Context.HandleCommandException(e);
         }
     }
 
@@ -550,10 +416,10 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
                 newAlbumRef,
                 selectedAlbumRef);
 
-            await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
+            await this.Context.Interaction.ModifyResponseAsync(e =>
             {
-                e.Embed = response.Embed;
-                e.Components = response.Components?.Build();
+                e.Embeds = [response.Embed];
+                e.Components = response.Components;
             });
 
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -579,10 +445,10 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
                 albumRef,
                 deletion: false);
 
-            await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
+            await this.Context.Interaction.ModifyResponseAsync(e =>
             {
-                e.Embed = response.Embed;
-                e.Components = response.Components?.Build();
+                e.Embeds = [response.Embed];
+                e.Components = response.Components;
             });
 
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -619,10 +485,10 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
                 albumRef,
                 deletion: true);
 
-            await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
+            await this.Context.Interaction.ModifyResponseAsync(e =>
             {
-                e.Embed = response.Embed;
-                e.Components = response.Components?.Build();
+                e.Embeds = [response.Embed];
+                e.Components = response.Components;
             });
 
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -646,44 +512,12 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
                 .AddTextInput("Artist name", "artist_name", placeholder: "The Beatles", value: selectedTrack?.Artist)
                 .AddTextInput("Track name", "track_name", placeholder: "Yesterday", value: selectedTrack?.Track);
 
-            await Context.Interaction.RespondWithModalAsync(mb.Build());
+            await Context.Interaction.RespondWithModalAsync(mb);
             this.Context.LogCommandUsed();
         }
         catch (Exception e)
         {
             await this.Context.HandleCommandException(e, deferFirst: true);
-        }
-    }
-
-    [ModalInteraction($"{InteractionConstants.ImportModify.TrackRenameModal}——*")]
-    public async Task RenameTrack(string selectedTrackRef, RenameTrackModal modal)
-    {
-        try
-        {
-            await RespondAsync(InteractionCallback.DeferredMessage());
-            await EditToLoader();
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-
-            var newTrackRef = this._importService.StoreImportReference(new ReferencedMusic
-                { Artist = modal.ArtistName, Track = modal.TrackName });
-
-            var response = await this._importBuilders.PickTrack(
-                contextUser.UserId,
-                contextUser.NumberFormat ?? NumberFormat.NoSeparator,
-                selectedTrackRef,
-                newTrackRef);
-
-            await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
-            {
-                e.Embed = response.Embed;
-                e.Components = response.Components?.Build();
-            });
-
-            this.Context.LogCommandUsed(response.CommandResponse);
-        }
-        catch (Exception e)
-        {
-            await this.Context.HandleCommandException(e);
         }
     }
 
@@ -716,10 +550,10 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
                 newTrackRef,
                 selectedTrackRef);
 
-            await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
+            await this.Context.Interaction.ModifyResponseAsync(e =>
             {
-                e.Embed = response.Embed;
-                e.Components = response.Components?.Build();
+                e.Embeds = [response.Embed];
+                e.Components = response.Components;
             });
 
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -745,10 +579,10 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
                 trackRef,
                 deletion: false);
 
-            await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
+            await this.Context.Interaction.ModifyResponseAsync(e =>
             {
-                e.Embed = response.Embed;
-                e.Components = response.Components?.Build();
+                e.Embeds = [response.Embed];
+                e.Components = response.Components;
             });
 
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -785,10 +619,10 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
                 trackRef,
                 deletion: true);
 
-            await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
+            await this.Context.Interaction.ModifyResponseAsync(e =>
             {
-                e.Embed = response.Embed;
-                e.Components = response.Components?.Build();
+                e.Embeds = [response.Embed];
+                e.Components = response.Components;
             });
 
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -801,10 +635,10 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
 
     private async Task EditToLoader(string text = "Loading...")
     {
-        await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
+        await this.Context.Interaction.ModifyResponseAsync(e =>
         {
             e.Components = new ActionRowProperties().WithButton(text, customId: "0",
-                emote: EmojiProperties.Custom(DiscordConstants.Loading), disabled: true, style: ButtonStyle.Secondary).Build();
+                emote: EmojiProperties.Custom(DiscordConstants.Loading), disabled: true, style: ButtonStyle.Secondary);
         });
     }
 }
