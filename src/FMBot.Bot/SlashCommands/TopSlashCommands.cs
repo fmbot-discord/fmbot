@@ -59,21 +59,21 @@ public class TopSlashCommands : ApplicationCommandModule<ApplicationCommandConte
     [SubSlashCommand("artists", "Your top artists")]
     [UsernameSetRequired]
     public async Task TopArtistsAsync(
-        [SlashCommandParameter(Name = "Time-period", Description = "Time period",
+        [SlashCommandParameter(Name = "time-period", Description = "Time period",
             AutocompleteProviderType = typeof(DateTimeAutoComplete))]
         string timePeriod = null,
-        [SlashCommandParameter(Name = "Billboard", Description = "Show top artists billboard-style")]
+        [SlashCommandParameter(Name = "billboard", Description = "Show top artists billboard-style")]
         bool billboard = false,
-        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
         string user = null,
-        [SlashCommandParameter(Name = "Mode",
+        [SlashCommandParameter(Name = "mode",
             Description = "The type of response you want - change default with /responsemode")]
         ResponseMode? mode = null,
-        [SlashCommandParameter(Name = "Size", Description = "Amount of artists to show")]
+        [SlashCommandParameter(Name = "size", Description = "Amount of artists to show")]
         EmbedSize? embedSize = null,
-        [SlashCommandParameter(Name = "Private", Description = "Only show response to you")]
+        [SlashCommandParameter(Name = "private", Description = "Only show response to you")]
         bool privateResponse = false,
-        [SlashCommandParameter(Name = "Discogs", Description = "Show top artists in Discogs collection")]
+        [SlashCommandParameter(Name = "discogs", Description = "Show top artists in Discogs collection")]
         bool discogs = false)
     {
         await Context.Interaction.SendResponseAsync(
@@ -103,25 +103,25 @@ public class TopSlashCommands : ApplicationCommandModule<ApplicationCommandConte
     [SubSlashCommand("albums", "Shows your top albums")]
     [UsernameSetRequired]
     public async Task TopAlbumsAsync(
-        [SlashCommandParameter(Name = "Time-period", Description = "Time period",
+        [SlashCommandParameter(Name = "time-period", Description = "Time period",
             AutocompleteProviderType = typeof(DateTimeAutoComplete))]
         string timePeriod = null,
-        [SlashCommandParameter(Name = "Released", Description = "Filter to albums released in year",
+        [SlashCommandParameter(Name = "released", Description = "Filter to albums released in year",
             AutocompleteProviderType = typeof(YearAutoComplete))]
         string year = null,
-        [SlashCommandParameter(Name = "Decade", Description = "Filter to albums released in decade",
+        [SlashCommandParameter(Name = "decade", Description = "Filter to albums released in decade",
             AutocompleteProviderType = typeof(DecadeAutoComplete))]
         string decade = null,
-        [SlashCommandParameter(Name = "Billboard", Description = "Show top albums billboard-style")]
+        [SlashCommandParameter(Name = "billboard", Description = "Show top albums billboard-style")]
         bool billboard = false,
-        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
         string user = null,
-        [SlashCommandParameter(Name = "Mode",
+        [SlashCommandParameter(Name = "mode",
             Description = "The type of response you want - change default with /responsemode")]
         ResponseMode? mode = null,
-        [SlashCommandParameter(Name = "Size", Description = "Amount of albums to show")]
+        [SlashCommandParameter(Name = "size", Description = "Amount of albums to show")]
         EmbedSize? embedSize = null,
-        [SlashCommandParameter(Name = "Private", Description = "Only show response to you")]
+        [SlashCommandParameter(Name = "private", Description = "Only show response to you")]
         bool privateResponse = false)
     {
         await Context.Interaction.SendResponseAsync(
@@ -150,19 +150,19 @@ public class TopSlashCommands : ApplicationCommandModule<ApplicationCommandConte
     [SubSlashCommand("tracks", "Shows your top tracks")]
     [UsernameSetRequired]
     public async Task TopTracksAsync(
-        [SlashCommandParameter(Name = "Time-period", Description = "Time period",
+        [SlashCommandParameter(Name = "time-period", Description = "Time period",
             AutocompleteProviderType = typeof(DateTimeAutoComplete))]
         string timePeriod = null,
-        [SlashCommandParameter(Name = "Billboard", Description = "Show top tracks billboard-style")]
+        [SlashCommandParameter(Name = "billboard", Description = "Show top tracks billboard-style")]
         bool billboard = false,
-        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
         string user = null,
-        [SlashCommandParameter(Name = "Mode",
+        [SlashCommandParameter(Name = "mode",
             Description = "The type of response you want - change default with /responsemode")]
         ResponseMode? mode = null,
-        [SlashCommandParameter(Name = "Size", Description = "Amount of tracks to show")]
+        [SlashCommandParameter(Name = "size", Description = "Amount of tracks to show")]
         EmbedSize? embedSize = null,
-        [SlashCommandParameter(Name = "Private", Description = "Only show response to you")]
+        [SlashCommandParameter(Name = "private", Description = "Only show response to you")]
         bool privateResponse = false)
     {
         await Context.Interaction.SendResponseAsync(
@@ -187,19 +187,19 @@ public class TopSlashCommands : ApplicationCommandModule<ApplicationCommandConte
     [SubSlashCommand("genres", "Shows your top genres")]
     [UsernameSetRequired]
     public async Task TopGenresAsync(
-        [SlashCommandParameter(Name = "Time-period", Description = "Time period",
+        [SlashCommandParameter(Name = "time-period", Description = "Time period",
             AutocompleteProviderType = typeof(DateTimeAutoComplete))]
         string timePeriod = null,
-        [SlashCommandParameter(Name = "Billboard", Description = "Show top genres billboard-style")]
+        [SlashCommandParameter(Name = "billboard", Description = "Show top genres billboard-style")]
         bool billboard = false,
-        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
         string user = null,
-        [SlashCommandParameter(Name = "Mode",
+        [SlashCommandParameter(Name = "mode",
             Description = "The type of response you want - change default with /responsemode")]
         ResponseMode? mode = null,
-        [SlashCommandParameter(Name = "Size", Description = "Amount of genres to show")]
+        [SlashCommandParameter(Name = "size", Description = "Amount of genres to show")]
         EmbedSize? embedSize = null,
-        [SlashCommandParameter(Name = "Private", Description = "Only show response to you")]
+        [SlashCommandParameter(Name = "private", Description = "Only show response to you")]
         bool privateResponse = false)
     {
         await Context.Interaction.SendResponseAsync(
@@ -224,19 +224,19 @@ public class TopSlashCommands : ApplicationCommandModule<ApplicationCommandConte
     [SubSlashCommand("countries", "Shows your top countries")]
     [UsernameSetRequired]
     public async Task TopCountriesAsync(
-        [SlashCommandParameter(Name = "Time-period", Description = "Time period",
+        [SlashCommandParameter(Name = "time-period", Description = "Time period",
             AutocompleteProviderType = typeof(DateTimeAutoComplete))]
         string timePeriod = null,
-        [SlashCommandParameter(Name = "Billboard", Description = "Show top countries billboard-style")]
+        [SlashCommandParameter(Name = "billboard", Description = "Show top countries billboard-style")]
         bool billboard = false,
-        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
         string user = null,
-        [SlashCommandParameter(Name = "Mode",
+        [SlashCommandParameter(Name = "mode",
             Description = "The type of response you want - change default with /responsemode")]
         ResponseMode? mode = null,
-        [SlashCommandParameter(Name = "Size", Description = "Amount of countries to show")]
+        [SlashCommandParameter(Name = "size", Description = "Amount of countries to show")]
         EmbedSize? embedSize = null,
-        [SlashCommandParameter(Name = "Private", Description = "Only show response to you")]
+        [SlashCommandParameter(Name = "private", Description = "Only show response to you")]
         bool privateResponse = false)
     {
         await Context.Interaction.SendResponseAsync(

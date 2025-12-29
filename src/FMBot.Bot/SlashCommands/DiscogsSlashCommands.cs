@@ -95,9 +95,9 @@ public class DiscogsSlashCommands : ApplicationCommandModule<ApplicationCommandC
     [SlashCommand("collection", "You or someone else's Discogs collection", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task AlbumAsync(
-        [SlashCommandParameter(Name = "Search", Description = "Search query to filter on")] string search = null,
-        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")] string user = null,
-        [SlashCommandParameter(Name = "Format", Description = "Media format to include")] DiscogsFormat? format = null)
+        [SlashCommandParameter(Name = "search", Description = "Search query to filter on")] string search = null,
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")] string user = null,
+        [SlashCommandParameter(Name = "format", Description = "Media format to include")] DiscogsFormat? format = null)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
 

@@ -37,17 +37,17 @@ public class ChartSlashCommands : ApplicationCommandModule<ApplicationCommandCon
     [SubSlashCommand("albums", "Generates an album image chart")]
     [UsernameSetRequired]
     public async Task AlbumChartAsync(
-        [SlashCommandParameter(Name = "Time-period", Description = "Time period", AutocompleteProviderType = typeof(DateTimeAutoComplete))] string timePeriod = null,
-        [SlashCommandParameter(Name = "Artist", Description = "Filter to a specific artist", AutocompleteProviderType = typeof(ArtistAutoComplete))] string artist = null,
-        [SlashCommandParameter(Name = "Released", Description = "Filter to albums released in year", AutocompleteProviderType = typeof(YearAutoComplete))] string year = null,
-        [SlashCommandParameter(Name = "Decade", Description = "Filter to albums released in decade", AutocompleteProviderType = typeof(DecadeAutoComplete))] string decade = null,
-        [SlashCommandParameter(Name = "Size", Description = "Chart size", AutocompleteProviderType = typeof(ChartSizeAutoComplete))] string size = "3x3",
-        [SlashCommandParameter(Name = "Titles", Description = "Title display setting")] TitleSetting titleSetting = TitleSetting.Titles,
-        [SlashCommandParameter(Name = "Skip", Description = "Skip albums without an image")] bool skip = false,
-        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")] string user = null,
-        [SlashCommandParameter(Name = "Sfw", Description = "Safe for work images only")] bool sfwOnly = false,
-        [SlashCommandParameter(Name = "Rainbow", Description = "Experimental rainbow setting")] bool rainbow = false,
-        [SlashCommandParameter(Name = "Private", Description = "Only show response to you")] bool privateResponse = false)
+        [SlashCommandParameter(Name = "time-period", Description = "Time period", AutocompleteProviderType = typeof(DateTimeAutoComplete))] string timePeriod = null,
+        [SlashCommandParameter(Name = "artist", Description = "Filter to a specific artist", AutocompleteProviderType = typeof(ArtistAutoComplete))] string artist = null,
+        [SlashCommandParameter(Name = "released", Description = "Filter to albums released in year", AutocompleteProviderType = typeof(YearAutoComplete))] string year = null,
+        [SlashCommandParameter(Name = "decade", Description = "Filter to albums released in decade", AutocompleteProviderType = typeof(DecadeAutoComplete))] string decade = null,
+        [SlashCommandParameter(Name = "size", Description = "Chart size", AutocompleteProviderType = typeof(ChartSizeAutoComplete))] string size = "3x3",
+        [SlashCommandParameter(Name = "titles", Description = "Title display setting")] TitleSetting titleSetting = TitleSetting.Titles,
+        [SlashCommandParameter(Name = "skip", Description = "Skip albums without an image")] bool skip = false,
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")] string user = null,
+        [SlashCommandParameter(Name = "sfw", Description = "Safe for work images only")] bool sfwOnly = false,
+        [SlashCommandParameter(Name = "rainbow", Description = "Experimental rainbow setting")] bool rainbow = false,
+        [SlashCommandParameter(Name = "private", Description = "Only show response to you")] bool privateResponse = false)
     {
        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
 
@@ -100,13 +100,13 @@ public class ChartSlashCommands : ApplicationCommandModule<ApplicationCommandCon
     [SubSlashCommand("artists", "Generates an artist image chart")]
     [UsernameSetRequired]
     public async Task ArtistChartAsync(
-        [SlashCommandParameter(Name = "Time-period", Description = "Time period", AutocompleteProviderType = typeof(DateTimeAutoComplete))] string timePeriod = null,
-        [SlashCommandParameter(Name = "Size", Description = "Chart size", AutocompleteProviderType = typeof(ChartSizeAutoComplete))] string size = "3x3",
-        [SlashCommandParameter(Name = "Titles", Description = "Title display setting")] TitleSetting titleSetting = TitleSetting.Titles,
-        [SlashCommandParameter(Name = "Skip", Description = "Skip albums without an image")] bool skip = false,
-        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")] string user = null,
-        [SlashCommandParameter(Name = "Rainbow", Description = "Experimental rainbow setting")] bool rainbow = false,
-        [SlashCommandParameter(Name = "Private", Description = "Only show response to you")] bool privateResponse = false)
+        [SlashCommandParameter(Name = "time-period", Description = "Time period", AutocompleteProviderType = typeof(DateTimeAutoComplete))] string timePeriod = null,
+        [SlashCommandParameter(Name = "size", Description = "Chart size", AutocompleteProviderType = typeof(ChartSizeAutoComplete))] string size = "3x3",
+        [SlashCommandParameter(Name = "titles", Description = "Title display setting")] TitleSetting titleSetting = TitleSetting.Titles,
+        [SlashCommandParameter(Name = "skip", Description = "Skip albums without an image")] bool skip = false,
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")] string user = null,
+        [SlashCommandParameter(Name = "rainbow", Description = "Experimental rainbow setting")] bool rainbow = false,
+        [SlashCommandParameter(Name = "private", Description = "Only show response to you")] bool privateResponse = false)
     {
        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
 

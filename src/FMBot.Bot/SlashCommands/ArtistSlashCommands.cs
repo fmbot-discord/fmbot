@@ -50,8 +50,8 @@ public class ArtistSlashCommands : ApplicationCommandModule<ApplicationCommandCo
     [SlashCommand("artist", "General info for current artist or one you're searching for", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task ArtistAsync(
-        [SlashCommandParameter(Name = "Artist", Description = "The artist your want to search for (defaults to currently playing)", AutocompleteProviderType = typeof(ArtistAutoComplete))] string name = null,
-        [SlashCommandParameter(Name = "Redirects", Description = "Toggle Last.fm artist name redirects (defaults to enabled)")] bool redirectsEnabled = true)
+        [SlashCommandParameter(Name = "artist", Description = "The artist your want to search for (defaults to currently playing)", AutocompleteProviderType = typeof(ArtistAutoComplete))] string name = null,
+        [SlashCommandParameter(Name = "redirects", Description = "Toggle Last.fm artist name redirects (defaults to enabled)")] bool redirectsEnabled = true)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
 
@@ -74,9 +74,9 @@ public class ArtistSlashCommands : ApplicationCommandModule<ApplicationCommandCo
     [SlashCommand("artistoverview", "Shows overview for current artist or the one you're searching for", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task ArtistOverviewAsync(
-        [SlashCommandParameter(Name = "Artist", Description = "The artist your want to search for (defaults to currently playing)", AutocompleteProviderType = typeof(ArtistAutoComplete))] string name = null,
-        [SlashCommandParameter(Name = "Redirects", Description = "Toggle Last.fm artist name redirects (defaults to enabled)")] bool redirectsEnabled = true,
-        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")] string user = null)
+        [SlashCommandParameter(Name = "artist", Description = "The artist your want to search for (defaults to currently playing)", AutocompleteProviderType = typeof(ArtistAutoComplete))] string name = null,
+        [SlashCommandParameter(Name = "redirects", Description = "Toggle Last.fm artist name redirects (defaults to enabled)")] bool redirectsEnabled = true,
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")] string user = null)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
 
@@ -99,9 +99,9 @@ public class ArtistSlashCommands : ApplicationCommandModule<ApplicationCommandCo
     [SlashCommand("artistplays", "Shows playcount for current artist or the one you're searching for", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task ArtistPlaysAsync(
-        [SlashCommandParameter(Name = "Artist", Description = "The artist your want to search for (defaults to currently playing)", AutocompleteProviderType = typeof(ArtistAutoComplete))] string name = null,
-        [SlashCommandParameter(Name = "Redirects", Description = "Toggle Last.fm artist name redirects (defaults to enabled)")] bool redirectsEnabled = true,
-        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")] string user = null)
+        [SlashCommandParameter(Name = "artist", Description = "The artist your want to search for (defaults to currently playing)", AutocompleteProviderType = typeof(ArtistAutoComplete))] string name = null,
+        [SlashCommandParameter(Name = "redirects", Description = "Toggle Last.fm artist name redirects (defaults to enabled)")] bool redirectsEnabled = true,
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")] string user = null)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
 
@@ -124,10 +124,10 @@ public class ArtistSlashCommands : ApplicationCommandModule<ApplicationCommandCo
     [SlashCommand("artisttracks", "Shows your top tracks for an artist", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task ArtistTracksAsync(
-        [SlashCommandParameter(Name = "Artist", Description = "The artist your want to search for (defaults to currently playing)", AutocompleteProviderType = typeof(ArtistAutoComplete))]string name = null,
-        [SlashCommandParameter(Name = "Time-period", Description = "Time period to base show tracks for")] PlayTimePeriod timePeriod = PlayTimePeriod.AllTime,
-        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")] string user = null,
-        [SlashCommandParameter(Name = "Redirects", Description = "Toggle Last.fm artist name redirects (defaults to enabled)")] bool redirectsEnabled = true)
+        [SlashCommandParameter(Name = "artist", Description = "The artist your want to search for (defaults to currently playing)", AutocompleteProviderType = typeof(ArtistAutoComplete))]string name = null,
+        [SlashCommandParameter(Name = "time-period", Description = "Time period to base show tracks for")] PlayTimePeriod timePeriod = PlayTimePeriod.AllTime,
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")] string user = null,
+        [SlashCommandParameter(Name = "redirects", Description = "Toggle Last.fm artist name redirects (defaults to enabled)")] bool redirectsEnabled = true)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
@@ -144,9 +144,9 @@ public class ArtistSlashCommands : ApplicationCommandModule<ApplicationCommandCo
     [SlashCommand("artistalbums", "Shows your top albums for an artist", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task ArtistAlbumsAsync(
-        [SlashCommandParameter(Name = "Artist", Description = "The artist your want to search for (defaults to currently playing)", AutocompleteProviderType = typeof(ArtistAutoComplete))]string name = null,
-        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")] string user = null,
-        [SlashCommandParameter(Name = "Redirects", Description = "Toggle Last.fm artist name redirects (defaults to enabled)")] bool redirectsEnabled = true)
+        [SlashCommandParameter(Name = "artist", Description = "The artist your want to search for (defaults to currently playing)", AutocompleteProviderType = typeof(ArtistAutoComplete))]string name = null,
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")] string user = null,
+        [SlashCommandParameter(Name = "redirects", Description = "Toggle Last.fm artist name redirects (defaults to enabled)")] bool redirectsEnabled = true)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
@@ -161,11 +161,11 @@ public class ArtistSlashCommands : ApplicationCommandModule<ApplicationCommandCo
     [SlashCommand("artistpace", "Shows estimated date you reach a certain amount of plays on an artist", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task ArtistPaceAsync(
-        [SlashCommandParameter(Name = "Artist", Description = "The artist your want to search for (defaults to currently playing)", AutocompleteProviderType = typeof(ArtistAutoComplete))]string name = null,
-        [SlashCommandParameter(Name = "Amount", Description = "Goal play amount")] int amount = 1,
-        [SlashCommandParameter(Name = "Time-period", Description = "Time period to base average playcount on")] ArtistPaceTimePeriod timePeriod = ArtistPaceTimePeriod.Monthly,
-        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")] string user = null,
-        [SlashCommandParameter(Name = "Redirects", Description = "Toggle Last.fm artist name redirects (defaults to enabled)")] bool redirectsEnabled = true)
+        [SlashCommandParameter(Name = "artist", Description = "The artist your want to search for (defaults to currently playing)", AutocompleteProviderType = typeof(ArtistAutoComplete))]string name = null,
+        [SlashCommandParameter(Name = "amount", Description = "Goal play amount")] int amount = 1,
+        [SlashCommandParameter(Name = "time-period", Description = "Time period to base average playcount on")] ArtistPaceTimePeriod timePeriod = ArtistPaceTimePeriod.Monthly,
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")] string user = null,
+        [SlashCommandParameter(Name = "redirects", Description = "Toggle Last.fm artist name redirects (defaults to enabled)")] bool redirectsEnabled = true)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
 
@@ -200,10 +200,10 @@ public class ArtistSlashCommands : ApplicationCommandModule<ApplicationCommandCo
     [RequiresIndex]
     [GuildOnly]
     public async Task WhoKnowsAsync(
-        [SlashCommandParameter(Name = "Artist", Description = "The artist your want to search for (defaults to currently playing)", AutocompleteProviderType = typeof(ArtistAutoComplete))] string name = null,
-        [SlashCommandParameter(Name = "Mode", Description = "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
-        [SlashCommandParameter(Name = "Role-picker", Description = "Display a rolepicker to filter with roles")] bool displayRoleFilter = false,
-        [SlashCommandParameter(Name = "Redirects", Description = "Toggle Last.fm artist name redirects (defaults to enabled)")] bool redirectsEnabled = true)
+        [SlashCommandParameter(Name = "artist", Description = "The artist your want to search for (defaults to currently playing)", AutocompleteProviderType = typeof(ArtistAutoComplete))] string name = null,
+        [SlashCommandParameter(Name = "mode", Description = "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
+        [SlashCommandParameter(Name = "role-picker", Description = "Display a rolepicker to filter with roles")] bool displayRoleFilter = false,
+        [SlashCommandParameter(Name = "redirects", Description = "Toggle Last.fm artist name redirects (defaults to enabled)")] bool redirectsEnabled = true)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
 
@@ -229,10 +229,10 @@ public class ArtistSlashCommands : ApplicationCommandModule<ApplicationCommandCo
     [UsernameSetRequired]
     [RequiresIndex]
     public async Task FriendsWhoKnowAsync(
-        [SlashCommandParameter(Name = "Artist", Description = "The artist your want to search for (defaults to currently playing)", AutocompleteProviderType = typeof(ArtistAutoComplete))] string name = null,
-        [SlashCommandParameter(Name = "Mode", Description = "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
-        [SlashCommandParameter(Name = "Private", Description = "Only show response to you")] bool privateResponse = false,
-        [SlashCommandParameter(Name = "Redirects", Description = "Toggle Last.fm artist name redirects (defaults to enabled)")] bool redirectsEnabled = true)
+        [SlashCommandParameter(Name = "artist", Description = "The artist your want to search for (defaults to currently playing)", AutocompleteProviderType = typeof(ArtistAutoComplete))] string name = null,
+        [SlashCommandParameter(Name = "mode", Description = "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
+        [SlashCommandParameter(Name = "private", Description = "Only show response to you")] bool privateResponse = false,
+        [SlashCommandParameter(Name = "redirects", Description = "Toggle Last.fm artist name redirects (defaults to enabled)")] bool redirectsEnabled = true)
     {
         await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
 
@@ -258,10 +258,10 @@ public class ArtistSlashCommands : ApplicationCommandModule<ApplicationCommandCo
     [UsernameSetRequired]
     [RequiresIndex]
     public async Task GlobalWhoKnowsAsync(
-        [SlashCommandParameter(Name = "Artist", Description = "The artist your want to search for (defaults to currently playing)", AutocompleteProviderType = typeof(ArtistAutoComplete))] string name = null,
-        [SlashCommandParameter(Name = "Mode", Description = "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
-        [SlashCommandParameter(Name = "Hide-private", Description = "Hide or show private users")] bool hidePrivate = false,
-        [SlashCommandParameter(Name = "Redirects", Description = "Toggle Last.fm artist name redirects (defaults to enabled)")] bool redirectsEnabled = true)
+        [SlashCommandParameter(Name = "artist", Description = "The artist your want to search for (defaults to currently playing)", AutocompleteProviderType = typeof(ArtistAutoComplete))] string name = null,
+        [SlashCommandParameter(Name = "mode", Description = "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
+        [SlashCommandParameter(Name = "hide-private", Description = "Hide or show private users")] bool hidePrivate = false,
+        [SlashCommandParameter(Name = "redirects", Description = "Toggle Last.fm artist name redirects (defaults to enabled)")] bool redirectsEnabled = true)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
 
@@ -293,11 +293,11 @@ public class ArtistSlashCommands : ApplicationCommandModule<ApplicationCommandCo
     [SlashCommand("discoveries", "⭐ Shows artists you've recently discovered", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task ArtistDiscoveriesAsync(
-        [SlashCommandParameter(Name = "Time-period", Description = "Time period", AutocompleteProviderType = typeof(DateTimeAutoComplete))] string timePeriod = null,
-        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")] string user = null,
-        [SlashCommandParameter(Name = "Mode", Description = "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
-        [SlashCommandParameter(Name = "Size", Description = "Amount of artists discoveries to show per page")] EmbedSize? embedSize = null,
-        [SlashCommandParameter(Name = "Private", Description = "Only show response to you")] bool privateResponse = false)
+        [SlashCommandParameter(Name = "time-period", Description = "Time period", AutocompleteProviderType = typeof(DateTimeAutoComplete))] string timePeriod = null,
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")] string user = null,
+        [SlashCommandParameter(Name = "mode", Description = "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
+        [SlashCommandParameter(Name = "size", Description = "Amount of artists discoveries to show per page")] EmbedSize? embedSize = null,
+        [SlashCommandParameter(Name = "private", Description = "Only show response to you")] bool privateResponse = false)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
@@ -336,11 +336,11 @@ public class ArtistSlashCommands : ApplicationCommandModule<ApplicationCommandCo
     [SlashCommand("taste", "Compares your top artist, genres and countries to those from another user.", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task TasteAsync(
-        [SlashCommandParameter(Name = "User", Description = "The user to compare your taste with")] string user,
-        [SlashCommandParameter(Name = "Time-period", Description = "Time period", AutocompleteProviderType = typeof(DateTimeAutoComplete))] string timePeriod = null,
-        [SlashCommandParameter(Name = "Type", Description = "Taste view type")] TasteType tasteType = TasteType.Table,
-        [SlashCommandParameter(Name = "Private", Description = "Only show response to you")] bool privateResponse = false,
-        [SlashCommandParameter(Name = "Size", Description = "Amount of comparisons to show")] EmbedSize? embedSize = null)
+        [SlashCommandParameter(Name = "user", Description = "The user to compare your taste with")] string user,
+        [SlashCommandParameter(Name = "time-period", Description = "Time period", AutocompleteProviderType = typeof(DateTimeAutoComplete))] string timePeriod = null,
+        [SlashCommandParameter(Name = "type", Description = "Taste view type")] TasteType tasteType = TasteType.Table,
+        [SlashCommandParameter(Name = "private", Description = "Only show response to you")] bool privateResponse = false,
+        [SlashCommandParameter(Name = "size", Description = "Amount of comparisons to show")] EmbedSize? embedSize = null)
     {
         await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
 
@@ -367,7 +367,7 @@ public class ArtistSlashCommands : ApplicationCommandModule<ApplicationCommandCo
     [UsernameSetRequired]
     [RequiresIndex]
     [GuildOnly]
-    public async Task AffinityAsync([SlashCommandParameter(Name = "User", Description = "The user to get the affinity for")] string user = null)
+    public async Task AffinityAsync([SlashCommandParameter(Name = "user", Description = "The user to get the affinity for")] string user = null)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
 
@@ -393,9 +393,9 @@ public class ArtistSlashCommands : ApplicationCommandModule<ApplicationCommandCo
     [SlashCommand("iceberg", "Shows your iceberg, based on artists popularity.", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task IcebergAsync(
-        [SlashCommandParameter(Name = "Time-period", Description = "Time period", AutocompleteProviderType = typeof(DateTimeAutoComplete))] string timePeriod = null,
-        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")] string user = null,
-        [SlashCommandParameter(Name = "Private", Description = "Only show response to you")] bool privateResponse = false)
+        [SlashCommandParameter(Name = "time-period", Description = "Time period", AutocompleteProviderType = typeof(DateTimeAutoComplete))] string timePeriod = null,
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")] string user = null,
+        [SlashCommandParameter(Name = "private", Description = "Only show response to you")] bool privateResponse = false)
     {
         await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
 

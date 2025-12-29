@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 
 using FMBot.Bot.Attributes;
@@ -34,8 +34,8 @@ public class YoutubeSlashCommands: ApplicationCommandModule<ApplicationCommandCo
     [SlashCommand("youtube", "Search through YouTube", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,     InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task YoutubeAsync(
-        [SlashCommandParameter(Name = "Search", Description = "Search value")] string searchValue = null,
-        [SlashCommandParameter(Name = "Private", Description = "Only show response to you")] bool privateResponse = false)
+        [SlashCommandParameter(Name = "search", Description = "Search value")] string searchValue = null,
+        [SlashCommandParameter(Name = "private", Description = "Only show response to you")] bool privateResponse = false)
     {
         try
         {

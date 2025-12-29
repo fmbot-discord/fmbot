@@ -245,16 +245,15 @@ public class PlayBuilder
                 embedType = channel.FmEmbedType.Value;
             }
 
-            // TODO: check if still needed and there is no performance impact
-            // if (guild != null)
-            // {
-            //     guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
-            //     var discordGuildUser =
-            //         await context.DiscordGuild.GetUserAsync(context.ContextUser.DiscordUserId);
-            //
-            //     await this._indexService.UpdateGuildUser(guildUsers, discordGuildUser, context.ContextUser.UserId,
-            //         guild);
-            // }
+            if (guild != null)
+            {
+                guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
+                var discordGuildUser =
+                    await context.DiscordGuild.GetUserAsync(context.ContextUser.DiscordUserId);
+
+                await this._indexService.UpdateGuildUser(guildUsers, discordGuildUser, context.ContextUser.UserId,
+                    guild);
+            }
         }
 
         var totalPlaycount = recentTracks.Content.TotalAmount;
@@ -591,7 +590,8 @@ public class PlayBuilder
 
             var pageBuilder = new PageBuilder()
                 .WithAllowedMentions(AllowedMentionsProperties.None)
-                .WithComponents(new List<IMessageComponentProperties> { container });
+                .WithMessageFlags(MessageFlags.IsComponentsV2)
+                .WithComponents([container]);
 
             return pageBuilder.Build();
         }
@@ -996,6 +996,7 @@ public class PlayBuilder
             return new PageBuilder()
                 .WithComponents(new List<IMessageComponentProperties> { container })
                 .WithAllowedMentions(AllowedMentionsProperties.None)
+                .WithMessageFlags(MessageFlags.IsComponentsV2)
                 .Build();
         }
     }

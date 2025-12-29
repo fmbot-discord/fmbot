@@ -55,7 +55,7 @@ public class FriendSlashCommands : ApplicationCommandModule<ApplicationCommandCo
 
     [SlashCommand("addfriend", "Add a friend to your .fmbot friends", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
-    public async Task AddFriendAsync([SlashCommandParameter(Name = "User", Description = "The user to add")] NetCord.User user)
+    public async Task AddFriendAsync([SlashCommandParameter(Name = "user", Description = "The user to add")] NetCord.User user)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -93,7 +93,7 @@ public class FriendSlashCommands : ApplicationCommandModule<ApplicationCommandCo
 
     [SlashCommand("removefriend", "Remove a friend from your .fmbot friends", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
-    public async Task RemoveFriendAsync([SlashCommandParameter(Name = "User", Description = "The user to remove")] NetCord.User user)
+    public async Task RemoveFriendAsync([SlashCommandParameter(Name = "user", Description = "The user to remove")] NetCord.User user)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 

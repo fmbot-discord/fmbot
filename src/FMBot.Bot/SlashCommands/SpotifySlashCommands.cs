@@ -43,9 +43,9 @@ public class SpotifySlashCommands : ApplicationCommandModule<ApplicationCommandC
     [SlashCommand("spotify", "Search through Spotify", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task SpotifyAsync(
-        [SlashCommandParameter(Name = "Search", Description = "Search value")] string searchValue = null,
-        [SlashCommandParameter(Name = "Type", Description = "What you want to search for on Spotify (defaults to track)")] SpotifySearch type = SpotifySearch.Track,
-        [SlashCommandParameter(Name = "Private", Description = "Only show response to you")] bool privateResponse = false)
+        [SlashCommandParameter(Name = "search", Description = "Search value")] string searchValue = null,
+        [SlashCommandParameter(Name = "type", Description = "What you want to search for on Spotify (defaults to track)")] SpotifySearch type = SpotifySearch.Track,
+        [SlashCommandParameter(Name = "private", Description = "Only show response to you")] bool privateResponse = false)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         await RespondAsync(InteractionCallback.DeferredMessage());

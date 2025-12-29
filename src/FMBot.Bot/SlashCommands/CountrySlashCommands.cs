@@ -61,9 +61,9 @@ public class CountrySlashCommands : ApplicationCommandModule<ApplicationCommandC
     [SlashCommand("countrychart", "Generates a map of the location from your top artists", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task CountryChartAsync(
-        [SlashCommandParameter(Name = "Time-period", Description = "Time period", AutocompleteProviderType = typeof(DateTimeAutoComplete))] string timePeriod = null,
-        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")] string user = null,
-        [SlashCommandParameter(Name = "Private", Description = "Only show response to you")] bool privateResponse = false)
+        [SlashCommandParameter(Name = "time-period", Description = "Time period", AutocompleteProviderType = typeof(DateTimeAutoComplete))] string timePeriod = null,
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")] string user = null,
+        [SlashCommandParameter(Name = "private", Description = "Only show response to you")] bool privateResponse = false)
     {
         await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
 

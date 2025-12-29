@@ -205,7 +205,10 @@ public class Startup
             .AddSingleton(this.Configuration);
 
         // NetCord command services
-        services.AddSingleton<CommandService<CommandContext>>();
+        services.AddSingleton(new CommandService<CommandContext>(CommandServiceConfiguration<CommandContext>.Default with
+        {
+            ParameterSeparators = [] // Remove space from separators to allow multi-word aliases like "login discogs"
+        }));
         services.AddSingleton<ApplicationCommandService<ApplicationCommandContext, AutocompleteInteractionContext>>();
         services.AddSingleton<ComponentInteractionService<ComponentInteractionContext>>();
         services.AddSingleton<ComponentInteractionService<ModalInteractionContext>>();

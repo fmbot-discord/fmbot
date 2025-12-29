@@ -41,7 +41,7 @@ public class GenreSlashCommands : ApplicationCommandModule<ApplicationCommandCon
     [UsernameSetRequired]
     public async Task GenreAsync(
         [SlashCommandParameter(Name = "search", Description = "The genre or artist you want to view", AutocompleteProviderType = typeof(GenreArtistAutoComplete))] string search = null,
-        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")] string user = null)
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")] string user = null)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
 
@@ -67,7 +67,7 @@ public class GenreSlashCommands : ApplicationCommandModule<ApplicationCommandCon
     [RequiresIndex]
     public async Task FriendsWhoKnowGenreAsync(
         [SlashCommandParameter(Name = "search", Description = "The genre or artist you want to view", AutocompleteProviderType = typeof(GenreArtistAutoComplete))] string search = null,
-        [SlashCommandParameter(Name = "Private", Description = "Only show response to you")] bool privateResponse = false)
+        [SlashCommandParameter(Name = "private", Description = "Only show response to you")] bool privateResponse = false)
     {
         await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
 

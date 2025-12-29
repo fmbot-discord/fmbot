@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 
 using FMBot.Bot.Attributes;
@@ -35,8 +35,8 @@ public class AppleMusicSlashCommands : ApplicationCommandModule<ApplicationComma
     [SlashCommand("applemusic", "Search through Apple Music.", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,     InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task AppleMusicAsync(
-        [SlashCommandParameter(Name = "Search", Description = "Search value")] string searchValue = null,
-        [SlashCommandParameter(Name = "Private", Description = "Only show response to you")]
+        [SlashCommandParameter(Name = "search", Description = "Search value")] string searchValue = null,
+        [SlashCommandParameter(Name = "private", Description = "Only show response to you")]
         bool privateResponse = false)
     {
         await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));

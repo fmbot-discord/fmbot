@@ -63,7 +63,7 @@ public class GuildSettingSlashCommands : ApplicationCommandModule<ApplicationCom
     [RequiresIndex]
     [GuildOnly]
     public async Task MemberOverviewAsync(
-        [SlashCommandParameter(Name = "View", Description = "Statistic you want to view")]
+        [SlashCommandParameter(Name = "view", Description = "Statistic you want to view")]
         GuildViewType viewType)
     {
         try

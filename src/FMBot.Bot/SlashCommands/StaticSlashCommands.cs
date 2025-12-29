@@ -90,7 +90,7 @@ public class StaticSlashCommands : ApplicationCommandModule<ApplicationCommandCo
         ApplicationIntegrationType.GuildInstall,
         ApplicationIntegrationType.UserInstall
     ])]
-    public async Task GiftSupporterAsync([SlashCommandParameter(Name = "User", Description = "The user you want to gift supporter")] NetCord.User user)
+    public async Task GiftSupporterAsync([SlashCommandParameter(Name = "user", Description = "The user you want to gift supporter")] NetCord.User user)
     {
         await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
 

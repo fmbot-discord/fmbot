@@ -155,7 +155,8 @@ public class PlayInteractions : ComponentInteractionModule<ComponentInteractionC
     {
         try
         {
-            var splitInput = inputs.First().Split("-");
+            var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
+            var splitInput = stringMenuInteraction.Data.SelectedValues.First().Split("-");
             if (!Enum.TryParse(splitInput[0], out RecapPage viewType))
             {
                 return;
@@ -225,7 +226,8 @@ public class PlayInteractions : ComponentInteractionModule<ComponentInteractionC
         try
         {
             await RespondAsync(InteractionCallback.DeferredMessage());
-            var splitInput = inputs.First().Split("-");
+            var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
+            var splitInput = stringMenuInteraction.Data.SelectedValues.First().Split("-");
             if (!Enum.TryParse(splitInput[0], out GapEntityType viewType))
             {
                 return;

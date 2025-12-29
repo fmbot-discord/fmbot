@@ -121,7 +121,8 @@ public class GenreInteractions : ComponentInteractionModule<ComponentInteraction
     {
         try
         {
-            var options = inputs.First().Split("~");
+            var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
+            var options = stringMenuInteraction.Data.SelectedValues.First().Split("~");
 
             await RespondAsync(InteractionCallback.DeferredMessage());
 

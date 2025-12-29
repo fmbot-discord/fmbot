@@ -9,6 +9,7 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
+using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ComponentInteractions;
 
@@ -77,7 +78,8 @@ public class CrownInteractions : ComponentInteractionModule<ComponentInteraction
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
 
-        var options = inputs.First().Split("-");
+        var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
+        var options = stringMenuInteraction.Data.SelectedValues.First().Split("-");
 
         var discordUserId = ulong.Parse(options[0]);
         var requesterDiscordUserId = ulong.Parse(options[1]);
