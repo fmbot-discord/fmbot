@@ -268,15 +268,15 @@ public class ImportBuilders
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
         response.Components = new ActionRowProperties()
             .WithButton("Artist",
-                $"{InteractionConstants.ImportModify.Modify}-{nameof(ImportModifyPick.Artist)}",
+                $"{InteractionConstants.ImportModify.Modify}:{nameof(ImportModifyPick.Artist)}",
                 ButtonStyle.Secondary,
                 disabled: !hasImported)
             .WithButton("Album",
-                $"{InteractionConstants.ImportModify.Modify}-{nameof(ImportModifyPick.Album)}",
+                $"{InteractionConstants.ImportModify.Modify}:{nameof(ImportModifyPick.Album)}",
                 ButtonStyle.Secondary,
                 disabled: !hasImported)
             .WithButton("Track",
-                $"{InteractionConstants.ImportModify.Modify}-{nameof(ImportModifyPick.Track)}",
+                $"{InteractionConstants.ImportModify.Modify}:{nameof(ImportModifyPick.Track)}",
                 ButtonStyle.Secondary,
                 disabled: !hasImported)
             .WithButton("Manage import settings", InteractionConstants.ImportManage, style: ButtonStyle.Secondary,
@@ -392,7 +392,7 @@ public class ImportBuilders
                 response.Components = new ActionRowProperties()
                     .WithButton("Confirm deletion", style: ButtonStyle.Danger,
                         customId:
-                        $"{InteractionConstants.ImportModify.ArtistDeleteConfirmed}——{importRef}");
+                        $"{InteractionConstants.ImportModify.ArtistDeleteConfirmed}:{importRef}");
             }
         }
         else
@@ -405,9 +405,9 @@ public class ImportBuilders
                 response.Embed.WithColor(DiscordConstants.InformationColorBlue);
                 response.Components = new ActionRowProperties()
                     .WithButton("Edit artist imports", style: ButtonStyle.Secondary,
-                        customId: $"{InteractionConstants.ImportModify.ArtistRename}——{importRef}")
+                        customId: $"{InteractionConstants.ImportModify.ArtistRename}:{importRef}")
                     .WithButton("Delete imports", style: ButtonStyle.Danger,
-                        customId: $"{InteractionConstants.ImportModify.ArtistDelete}——{importRef}");
+                        customId: $"{InteractionConstants.ImportModify.ArtistDelete}:{importRef}");
             }
             else if (oldArtistName == null)
             {
@@ -418,7 +418,7 @@ public class ImportBuilders
                 response.Components = new ActionRowProperties()
                     .WithButton("Confirm edit", style: ButtonStyle.Secondary,
                         customId:
-                        $"{InteractionConstants.ImportModify.ArtistRenameConfirmed}——{importRef}——{newImportRef}");
+                        $"{InteractionConstants.ImportModify.ArtistRenameConfirmed}:{importRef}:{newImportRef}");
             }
             else
             {
@@ -496,7 +496,7 @@ public class ImportBuilders
                 response.Components = new ActionRowProperties()
                     .WithButton("Confirm deletion", style: ButtonStyle.Danger,
                         customId:
-                        $"{InteractionConstants.ImportModify.AlbumDeleteConfirmed}——{importRef}");
+                        $"{InteractionConstants.ImportModify.AlbumDeleteConfirmed}:{importRef}");
             }
             else
             {
@@ -516,9 +516,9 @@ public class ImportBuilders
                 response.Embed.WithColor(DiscordConstants.InformationColorBlue);
                 response.Components = new ActionRowProperties()
                     .WithButton("Edit album imports", style: ButtonStyle.Secondary,
-                        customId: $"{InteractionConstants.ImportModify.AlbumRename}——{importRef}")
+                        customId: $"{InteractionConstants.ImportModify.AlbumRename}:{importRef}")
                     .WithButton("Delete imports", style: ButtonStyle.Danger,
-                        customId: $"{InteractionConstants.ImportModify.AlbumDelete}——{importRef}");
+                        customId: $"{InteractionConstants.ImportModify.AlbumDelete}:{importRef}");
             }
             else if (oldAlbumRef == null)
             {
@@ -529,7 +529,7 @@ public class ImportBuilders
                 response.Components = new ActionRowProperties()
                     .WithButton("Confirm edit", style: ButtonStyle.Secondary,
                         customId:
-                        $"{InteractionConstants.ImportModify.AlbumRenameConfirmed}——{importRef}——{newImportRef}");
+                        $"{InteractionConstants.ImportModify.AlbumRenameConfirmed}:{importRef}:{newImportRef}");
             }
             else
             {
@@ -607,7 +607,7 @@ public class ImportBuilders
                 response.Components = new ActionRowProperties()
                     .WithButton("Confirm deletion", style: ButtonStyle.Danger,
                         customId:
-                        $"{InteractionConstants.ImportModify.TrackDeleteConfirmed}——{importRef}");
+                        $"{InteractionConstants.ImportModify.TrackDeleteConfirmed}:{importRef}");
             }
             else
             {
@@ -626,9 +626,9 @@ public class ImportBuilders
             {
                 response.Components = new ActionRowProperties()
                     .WithButton("Edit track imports", style: ButtonStyle.Secondary,
-                        customId: $"{InteractionConstants.ImportModify.TrackRename}——{importRef}")
+                        customId: $"{InteractionConstants.ImportModify.TrackRename}:{importRef}")
                     .WithButton("Delete imports", style: ButtonStyle.Danger,
-                        customId: $"{InteractionConstants.ImportModify.TrackDelete}——{importRef}");
+                        customId: $"{InteractionConstants.ImportModify.TrackDelete}:{importRef}");
             }
             else if (oldTrackRef == null)
             {
@@ -639,7 +639,7 @@ public class ImportBuilders
                 response.Components = new ActionRowProperties()
                     .WithButton("Confirm edit", style: ButtonStyle.Secondary,
                         customId:
-                        $"{InteractionConstants.ImportModify.TrackRenameConfirmed}——{importRef}——{newImportRef}");
+                        $"{InteractionConstants.ImportModify.TrackRenameConfirmed}:{importRef}:{newImportRef}");
             }
             else
             {

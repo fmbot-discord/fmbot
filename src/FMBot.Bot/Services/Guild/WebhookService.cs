@@ -53,7 +53,7 @@ public class WebhookService
 
     public async Task<Webhook> CreateWebhook(CommandContext context, int guildId)
     {
-        await using var fs = File.OpenRead(this._avatarImagePath);
+        var avatarBytes = await File.ReadAllBytesAsync(this._avatarImagePath);
 
         var botType = context.GetBotType();
         var botTypeName = botType == BotType.Production ? "" : botType == BotType.Beta ? " develop" : " local";
@@ -65,28 +65,42 @@ public class WebhookService
             Created = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc)
         };
 
-        if (context.Channel.GetChannelType() != ChannelType.PublicThread)
+        var webhookName = $".fmbot{botTypeName} featured";
+
+        // Check if this is a thread channel
+        if (context.Channel is GuildThread threadChannel)
         {
-            var socketTextChannel = context.Channel as SocketTextChannel;
+            // Thread channel - need to create webhook on parent channel
+            if (!threadChannel.ParentId.HasValue)
+            {
+                throw new InvalidOperationException("Could not determine parent channel for thread.");
+            }
 
-            var newWebhook = await socketTextChannel.CreateWebhookAsync($".fmbot{botTypeName} featured", fs,
-                new RequestOptions { AuditLogReason = "Created webhook for .fmbot featured feed." });
-
-            webhook.DiscordWebhookId = newWebhook.Id;
-            webhook.Token = newWebhook.Token;
-        }
-        else
-        {
-            var socketThreadChannel = context.Channel as SocketThreadChannel;
-
-            var parentChannel = socketThreadChannel.ParentChannel as SocketTextChannel;
-
-            var newWebhook = await parentChannel.CreateWebhookAsync($".fmbot{botTypeName} featured", fs,
-            new RequestOptions { AuditLogReason = "Created webhook for .fmbot featured feed." });
+            var newWebhook = await context.Client.Rest.CreateWebhookAsync(
+                threadChannel.ParentId.Value,
+                new WebhookProperties(webhookName)
+                {
+                    Avatar = new ImageProperties(ImageFormat.Png, avatarBytes)
+                },
+                new RestRequestProperties { AuditLogReason = "Created webhook for .fmbot featured feed." });
 
             webhook.DiscordWebhookId = newWebhook.Id;
             webhook.Token = newWebhook.Token;
             webhook.DiscordThreadId = context.Channel.Id;
+        }
+        else
+        {
+            // Regular text channel - create webhook directly on it
+            var newWebhook = await context.Client.Rest.CreateWebhookAsync(
+                context.Channel.Id,
+                new WebhookProperties(webhookName)
+                {
+                    Avatar = new ImageProperties(ImageFormat.Png, avatarBytes)
+                },
+                new RestRequestProperties { AuditLogReason = "Created webhook for .fmbot featured feed." });
+
+            webhook.DiscordWebhookId = newWebhook.Id;
+            webhook.Token = newWebhook.Token;
         }
 
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -205,8 +219,10 @@ public class WebhookService
 
         if (this._botSettings.Bot.BaseServerId != 0 && this._botSettings.Bot.FeaturedChannelId != 0)
         {
-            var guild = client.Cache.Guilds.GetValueOrDefault(this._botSettings.Bot.BaseServerId);
-            var channel = guild?.GetTextChannel(this._botSettings.Bot.FeaturedChannelId);
+            // Find the shard that has this guild
+            var shard = client.FirstOrDefault(s => s.Cache.Guilds.ContainsKey(this._botSettings.Bot.BaseServerId));
+            var guild = shard?.Cache.Guilds.GetValueOrDefault(this._botSettings.Bot.BaseServerId);
+            var channel = guild?.Channels.GetValueOrDefault(this._botSettings.Bot.FeaturedChannelId) as TextGuildChannel;
 
             if (channel != null)
             {
@@ -335,18 +351,24 @@ public class WebhookService
                 Log.Information($"ChangeToNewAvatar: Content-Type: {contentType}");
 
                 var imageData = await response.Content.ReadAsByteArrayAsync();
+                var imageFormat = ImageFormat.Png;
 
                 if (contentType?.ToLower() == "image/webp")
                 {
                     imageData = ConvertWebPToPng(imageData);
                     Log.Information("ChangeToNewAvatar: Converted WebP to PNG");
                 }
-
-                using (var imageStream = new MemoryStream(imageData))
+                else if (contentType?.ToLower() == "image/jpeg" || contentType?.ToLower() == "image/jpg")
                 {
-                    await client.CurrentUser.ModifyAsync(u => u.Avatar = new Discord.Image(imageStream));
-                    Log.Information("ChangeToNewAvatar: Avatar successfully changed");
+                    imageFormat = ImageFormat.Jpeg;
                 }
+                else if (contentType?.ToLower() == "image/gif")
+                {
+                    imageFormat = ImageFormat.Gif;
+                }
+
+                await client.Rest.ModifyCurrentUserAsync(o => o.Avatar = new ImageProperties(imageFormat, imageData));
+                Log.Information("ChangeToNewAvatar: Avatar successfully changed");
             }
 
             await Task.Delay(3000);

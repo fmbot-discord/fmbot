@@ -267,8 +267,8 @@ public class InteractionHandler
             {
                 var embed = new EmbedProperties()
                     .WithColor(DiscordConstants.LastFmColorRed);
-                var userNickname = (context.User as GuildUser)?.Nickname;
-                embed.UsernameNotSetErrorResponse("/", userNickname ?? context.User.GlobalName ?? context.User.Username);
+                var guildUser = context.User as GuildUser;
+                embed.UsernameNotSetErrorResponse("/", guildUser?.GetDisplayName() ?? context.User.GetDisplayName());
 
                 await context.Interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties
                 {

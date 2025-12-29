@@ -21,7 +21,6 @@ using FMBot.Domain.Models;
 using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
-using NetCord.Services.ComponentInteractions;
 
 namespace FMBot.Bot.SlashCommands;
 
@@ -248,12 +247,6 @@ public class PlaySlashCommands : ApplicationCommandModule<ApplicationCommandCont
         }
     }
 
-    [ComponentInteraction(InteractionConstants.DeleteStreak)]
-    public async Task StreakDeleteButton()
-    {
-        await this.Context.Interaction.RespondWithModalAsync(ModalFactory.CreateDeleteStreakModal(InteractionConstants.DeleteStreakModal));
-    }
-
     [SlashCommand("overview", "Shows a daily overview", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,     InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task OverviewAsync(
@@ -384,54 +377,6 @@ public class PlaySlashCommands : ApplicationCommandModule<ApplicationCommandCont
         }
     }
 
-    [ComponentInteraction($"{InteractionConstants.RandomMilestone}-*-*")]
-    [UsernameSetRequired]
-    public async Task RandomMilestoneAsync(string discordUser, string requesterDiscordUser)
-    {
-        var discordUserId = ulong.Parse(discordUser);
-        var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
-
-        if (this.Context.User.Id != requesterDiscordUserId)
-        {
-            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
-                .WithContent("🎲 Sorry, only the user that requested the random milestone can reroll.")
-                .WithFlags(MessageFlags.Ephemeral)));
-            return;
-        }
-
-        await RespondAsync(InteractionCallback.DeferredMessage());
-        await this.Context.DisableInteractionButtons();
-
-        var contextUser = await this._userService.GetUserWithDiscogs(requesterDiscordUserId);
-        var userSettings = await this._settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId,
-            this.Context.Guild, this.Context.User);
-        var targetUser = await this._userService.GetUserWithDiscogs(requesterDiscordUserId);
-
-        try
-        {
-            var mileStoneAmount =
-                SettingService.GetMilestoneAmount("random", targetUser.TotalPlaycount.GetValueOrDefault());
-
-            var response = await this._playBuilder.MileStoneAsync(new ContextModel(this.Context, contextUser),
-                userSettings, mileStoneAmount.amount, targetUser.TotalPlaycount.GetValueOrDefault(),
-                mileStoneAmount.isRandom);
-
-            await this.Context.UpdateInteractionEmbed(response, this.Interactivity, false);
-            this.Context.LogCommandUsed(response.CommandResponse);
-
-            var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
-            if (message != null && response.ReferencedMusic != null &&
-                PublicProperties.UsedCommandsResponseContextId.TryGetValue(message.Id, out var contextId))
-            {
-                await this._userService.UpdateInteractionContext(contextId, response.ReferencedMusic);
-            }
-        }
-        catch (Exception e)
-        {
-            await this.Context.HandleCommandException(e);
-        }
-    }
-
     [SlashCommand("year", "Shows an overview of your year")]
     [UsernameSetRequired]
     public async Task YearAsync(
@@ -494,107 +439,6 @@ public class PlaySlashCommands : ApplicationCommandModule<ApplicationCommandCont
         }
     }
 
-    [ComponentInteraction($"{InteractionConstants.RecapAlltime}-*")]
-    [UsernameSetRequired]
-    public async Task RecapAllTime(string userId)
-    {
-        await RespondAsync(InteractionCallback.DeferredMessage());
-        _ = this.Context.DisableInteractionButtons(specificButtonOnly: $"{InteractionConstants.RecapAlltime}-{userId}",
-            addLoaderToSpecificButton: true);
-
-        var contextUser = await this._userService.GetUserForIdAsync(int.Parse(userId));
-        var userSettings =
-            await this._settingService.GetUser(null, contextUser, this.Context.Guild, this.Context.User, true);
-
-        try
-        {
-            var timeSettings =
-                SettingService.GetTimePeriod("alltime", TimePeriod.AllTime, timeZone: userSettings.TimeZone);
-
-            var response = await this._recapBuilders.RecapAsync(new ContextModel(this.Context, contextUser),
-                userSettings, timeSettings, RecapPage.Overview);
-
-            await this.Context.SendFollowUpResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
-
-            _ = this.Context.DisableInteractionButtons(
-                specificButtonOnly: $"{InteractionConstants.RecapAlltime}-{userId}");
-        }
-        catch (Exception e)
-        {
-            await this.Context.HandleCommandException(e);
-        }
-    }
-
-    [ComponentInteraction(InteractionConstants.RecapPicker)]
-    [RequiresIndex]
-    [GuildOnly]
-    public async Task RecapAsync(string[] inputs)
-    {
-        try
-        {
-            var splitInput = inputs.First().Split("-");
-            if (!Enum.TryParse(splitInput[0], out RecapPage viewType))
-            {
-                return;
-            }
-
-            var discordUserId = ulong.Parse(splitInput[1]);
-            var requesterDiscordUserId = ulong.Parse(splitInput[2]);
-
-            var contextUser = await this._userService.GetUserWithDiscogs(requesterDiscordUserId);
-            var discordContextUser = await this.Context.Client.GetUserAsync(requesterDiscordUserId);
-            var userSettings = await this._settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId,
-                this.Context.Guild, this.Context.User);
-
-            var timeSettings = SettingService.GetTimePeriod(splitInput[3],
-                registeredLastFm: userSettings.RegisteredLastFm,
-                timeZone: userSettings.TimeZone, defaultTimePeriod: TimePeriod.Yearly);
-
-            if (userSettings.DiscordUserId != this.Context.User.Id &&
-                (viewType == RecapPage.BotStats ||
-                 viewType == RecapPage.BotStatsArtists ||
-                 viewType == RecapPage.BotStatsCommands))
-            {
-                var noPermResponse = new ResponseModel();
-                noPermResponse.Embed.WithDescription(
-                    "Sorry, due to privacy reasons only the user themselves can look up their bot usage stats.");
-                noPermResponse.CommandResponse = CommandResponse.NoPermission;
-                noPermResponse.ResponseType = ResponseType.Embed;
-                noPermResponse.Embed.WithColor(DiscordConstants.WarningColorOrange);
-                await this.Context.SendResponse(this.Interactivity, noPermResponse, true);
-                this.Context.LogCommandUsed(noPermResponse.CommandResponse);
-                return;
-            }
-
-            await RespondAsync(InteractionCallback.DeferredMessage());
-
-            var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
-            if (message == null)
-            {
-                return;
-            }
-
-            var name = viewType.GetAttribute<OptionAttribute>().Name;
-            var components =
-                new ActionRowProperties().WithButton($"{name} for {timeSettings.Description} loading...", customId: "1",
-                    emote: EmojiProperties.Custom(DiscordConstants.Loading), disabled: true, style: ButtonStyle.Secondary);
-            await Context.ModifyComponents(message, components);
-
-            var response =
-                await this._recapBuilders.RecapAsync(
-                    new ContextModel(this.Context, contextUser, discordContextUser), userSettings, timeSettings,
-                    viewType);
-
-            await this.Context.UpdateInteractionEmbed(response, this.Interactivity, false);
-            this.Context.LogCommandUsed(response.CommandResponse);
-        }
-        catch (Exception e)
-        {
-            await this.Context.HandleCommandException(e);
-        }
-    }
-
     [SlashCommand("gaps", "⭐ Music you've returned to after a gap in listening", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,     InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task ListeningGapsAsync(
@@ -633,57 +477,5 @@ public class PlaySlashCommands : ApplicationCommandModule<ApplicationCommandCont
 
         await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);
         this.Context.LogCommandUsed(response.CommandResponse);
-    }
-
-    [ComponentInteraction(InteractionConstants.GapView)]
-    [RequiresIndex]
-    [GuildOnly]
-    public async Task ListeningGapsPickerAsync(string[] inputs)
-    {
-        try
-        {
-            await RespondAsync(InteractionCallback.DeferredMessage());
-            var splitInput = inputs.First().Split("-");
-            if (!Enum.TryParse(splitInput[0], out GapEntityType viewType))
-            {
-                return;
-            }
-
-            if (!Enum.TryParse(splitInput[1], out ResponseMode responseMode))
-            {
-                return;
-            }
-
-            var components =
-                new ActionRowProperties().WithButton($"Loading {viewType.ToString().ToLower()} gaps...", customId: "1",
-                    emote: EmojiProperties.Custom(DiscordConstants.Loading), disabled: true, style: ButtonStyle.Secondary);
-            await this.Context.Interaction.ModifyResponseAsync(m => m.Components = components);
-
-            var discordUserId = ulong.Parse(splitInput[2]);
-            var requesterDiscordUserId = ulong.Parse(splitInput[3]);
-
-            var contextUser = await this._userService.GetUserWithDiscogs(requesterDiscordUserId);
-            var discordContextUser = await this.Context.Client.GetUserAsync(requesterDiscordUserId);
-            var userSettings = await this._settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId,
-                this.Context.Guild, this.Context.User);
-
-            var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
-            if (message == null)
-            {
-                return;
-            }
-
-            var response =
-                await this._playBuilder.ListeningGapsAsync(
-                    new ContextModel(this.Context, contextUser, discordContextUser), new TopListSettings(),
-                    userSettings, responseMode, viewType);
-
-            await this.Context.UpdateInteractionEmbed(response, this.Interactivity, false);
-            this.Context.LogCommandUsed(response.CommandResponse);
-        }
-        catch (Exception e)
-        {
-            await this.Context.HandleCommandException(e);
-        }
     }
 }

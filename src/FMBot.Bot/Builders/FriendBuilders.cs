@@ -103,12 +103,9 @@ public class FriendBuilders
                     friendNameToDisplay = guildUser.UserName;
 
                     var user = await this._userService.GetUserForIdAsync(guildUser.UserId);
-                    if (context.CachedGuildUsers != null)
+                    if (context.DiscordGuild?.Users.TryGetValue(user.DiscordUserId, out var discordGuildUser) == true)
                     {
-                        if (context.CachedGuildUsers.TryGetValue(user.DiscordUserId, out var discordGuildUser))
-                        {
-                            friendNameToDisplay = discordGuildUser.Nickname ?? discordGuildUser.GlobalName ?? discordGuildUser.Username;
-                        }
+                        friendNameToDisplay = discordGuildUser.GetDisplayName();
                     }
                 }
             }

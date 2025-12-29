@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Data;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -8,6 +9,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using FMBot.Bot.Configurations;
+using FMBot.Bot.Extensions;
 using FMBot.Bot.Handlers;
 using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.ThirdParty;
@@ -138,7 +140,7 @@ public class TimerService : IDisposable
             Log.Warning($"No {nameof(this._botSettings.LastFm.UserUpdateFrequencyInHours)} set in config, not queuing user update job");
         }
 
-        if (this._client.CurrentUser.Id == Constants.BotBetaId &&
+        if (this._client.GetCurrentUser()!.Id == Constants.BotBetaId &&
             (ConfigData.Data.Shards == null ||
              ConfigData.Data.Shards.MainInstance == true))
         {
@@ -146,8 +148,8 @@ public class TimerService : IDisposable
             RecurringJob.AddOrUpdate(nameof(UpdateGlobalWhoKnowsFilters), () => UpdateGlobalWhoKnowsFilters(), "0 10 * * *");
         }
 
-        var mainGuildConnected = this._client.Guilds.Any(a => a.Id == ConfigData.Data.Bot.BaseServerId);
-        if (this._client.CurrentUser.Id == Constants.BotProductionId && mainGuildConnected)
+        var mainGuildConnected = this._client.Any(shard => shard.Cache.Guilds.ContainsKey(ConfigData.Data.Bot.BaseServerId));
+        if (this._client.GetCurrentUser()!.Id == Constants.BotProductionId && mainGuildConnected)
         {
             QueueMasterJobs();
         }
@@ -160,8 +162,8 @@ public class TimerService : IDisposable
 
     public void MakeSureMasterJobsAreQueued()
     {
-        var mainGuildConnected = this._client.Guilds.Any(a => a.Id == ConfigData.Data.Bot.BaseServerId);
-        if (this._client.CurrentUser.Id == Constants.BotProductionId && mainGuildConnected)
+        var mainGuildConnected = this._client.Any(shard => shard.Cache.Guilds.ContainsKey(ConfigData.Data.Bot.BaseServerId));
+        if (this._client.GetCurrentUser()!.Id == Constants.BotProductionId && mainGuildConnected)
         {
             QueueMasterJobs();
         }
@@ -210,18 +212,29 @@ public class TimerService : IDisposable
         {
             if (this.CurrentFeatured?.Status != null)
             {
-                await this._client.SetCustomStatusAsync(this.CurrentFeatured.Status);
+                var featuredPresence = new PresenceProperties(UserStatusType.DoNotDisturb)
+                {
+                    Activities =
+                    [
+                        new UserActivityProperties(this.CurrentFeatured.Status, UserActivityType.Custom)
+                    ]
+                };
+
+                foreach (var client in this._client)
+                {
+                    await client.UpdatePresenceAsync(featuredPresence);
+                }
                 return;
             }
 
-            if (this._client?.Guilds?.Count == null)
+            if (this._client?.Count == null || this._client.Count == 0)
             {
                 Log.Information($"Client guild count is null, cancelling {nameof(UpdateStatus)}");
                 return;
             }
 
-            Statistics.ConnectedShards.Set(this._client.Shards.Count(c => c.ConnectionState == ConnectionState.Connected));
-            Statistics.ConnectedDiscordServerCount.Set(this._client.Guilds.Count);
+            Statistics.ConnectedShards.Set(this._client.Count(c => c.Status == WebSocketStatus.Ready));
+            Statistics.ConnectedDiscordServerCount.Set(this._client.Sum(shard => shard.Cache.Guilds.Count));
 
             if (string.IsNullOrEmpty(this._botSettings.Bot.Status) &&
                 !string.IsNullOrWhiteSpace(this._botSettings.ApiConfig?.InternalEndpoint))
@@ -289,14 +302,14 @@ public class TimerService : IDisposable
 
         try
         {
-            if (this._client?.Guilds?.Count == null)
+            if (this._client?.Count == null || this._client.Count == 0)
             {
                 Log.Information($"Client guild count is null, cancelling {nameof(UpdateMetrics)}");
                 return;
             }
 
-            Statistics.ConnectedShards.Set(this._client.Shards.Count(c => c.ConnectionState == ConnectionState.Connected));
-            Statistics.ConnectedDiscordServerCount.Set(this._client.Guilds.Count);
+            Statistics.ConnectedShards.Set(this._client.Count(c => c.Status == WebSocketStatus.Ready));
+            Statistics.ConnectedDiscordServerCount.Set(this._client.Sum(shard => shard.Cache.Guilds.Count));
         }
         catch (Exception e)
         {
@@ -313,7 +326,7 @@ public class TimerService : IDisposable
         {
             Statistics.UpdateQueueSize.Set(_updateQueueHandler.GetQueueSize());
 
-            var allShardsConnected = this._client.Shards.All(shard => shard.ConnectionState == ConnectionState.Connected);
+            var allShardsConnected = this._client.All(shard => shard.Status == WebSocketStatus.Ready);
 
             var currentProcess = Process.GetCurrentProcess();
             var uptime = DateTime.Now - currentProcess.StartTime;
@@ -321,9 +334,9 @@ public class TimerService : IDisposable
 
             if (!allShardsConnected && uptime.TotalMinutes >= 1)
             {
-                var problematicShards = this._client.Shards
-                    .Where(s => s.ConnectionState != ConnectionState.Connected)
-                    .Select(s => $"Shard {s.ShardId}: {s.ConnectionState}")
+                var problematicShards = this._client
+                    .Where(s => s.Status != WebSocketStatus.Ready)
+                    .Select(s => $"Shard {s.Id}: {s.Status}")
                     .ToList();
 
                 Log.Warning("Not all shards connected: {problematicShards}", string.Join(", ", problematicShards));
@@ -341,10 +354,10 @@ public class TimerService : IDisposable
                 await this._statusHandler.SendHeartbeatAsync(new InstanceHeartbeat
                 {
                     InstanceName = ConfigData.Data.Shards?.InstanceName ?? "unknown",
-                    ConnectedGuilds = this._client?.Guilds?.Count(c => c.IsConnected) ?? 0,
-                    TotalGuilds = this._client?.Guilds?.Count ?? 0,
-                    ConnectedShards = this._client?.Shards?.Count(c => c.ConnectionState == ConnectionState.Connected) ?? 0,
-                    TotalShards = this._client?.Shards?.Count ?? 0,
+                    ConnectedGuilds = this._client?.Sum(shard => shard.Cache.Guilds.Count) ?? 0,
+                    TotalGuilds = this._client?.Sum(shard => shard.Cache.Guilds.Count) ?? 0,
+                    ConnectedShards = this._client?.Count(c => c.Status == WebSocketStatus.Ready) ?? 0,
+                    TotalShards = this._client?.Count ?? 0,
                     MemoryBytesUsed = currentMemoryUsage
                 });
             }
@@ -479,7 +492,7 @@ public class TimerService : IDisposable
 
         var cached = (string)this._cache.Get("avatar");
 
-        var mainGuildConnected = this._client.Guilds.Any(a => a.Id == ConfigData.Data.Bot.BaseServerId);
+        var mainGuildConnected = this._client.Any(shard => shard.Cache.Guilds.ContainsKey(ConfigData.Data.Bot.BaseServerId));
         if (mainGuildConnected && cached != newFeatured.ImageUrl)
         {
             try
@@ -493,7 +506,7 @@ public class TimerService : IDisposable
             }
         }
 
-        if (this._client.CurrentUser.Id == Constants.BotProductionId && mainGuildConnected && !newFeatured.HasFeatured && newFeatured.NoUpdate != true)
+        if (this._client.GetCurrentUser()!.Id == Constants.BotProductionId && mainGuildConnected && !newFeatured.HasFeatured && newFeatured.NoUpdate != true)
         {
             Log.Information("Featured: Posting new featured to webhooks");
 
@@ -502,7 +515,7 @@ public class TimerService : IDisposable
 
             if (newFeatured.FeaturedMode == FeaturedMode.RecentPlays)
             {
-                await this._featuredService.ScrobbleTrack(this._client.CurrentUser.Id, newFeatured);
+                await this._featuredService.ScrobbleTrack(this._client.GetCurrentUser()!.Id, newFeatured);
             }
 
             _ = this._webhookService.SendFeaturedWebhooks(newFeatured);
@@ -595,17 +608,17 @@ public class TimerService : IDisposable
             return;
         }
 
-        var shards = this._client.Shards;
+        var shards = this._client;
 
-        foreach (var shard in shards.Where(w => w.ConnectionState == ConnectionState.Disconnected))
+        foreach (var shard in shards.Where(w => w.Status == WebSocketStatus.Disconnected))
         {
-            var cacheKey = $"{shard.ShardId}-shard-disconnected";
+            var cacheKey = $"{shard.Id}-shard-disconnected";
             if (this._cache.TryGetValue(cacheKey, out int shardDisconnected))
             {
                 if (shardDisconnected >= 6 && !this._cache.TryGetValue("shard-connecting", out _))
                 {
                     this._cache.Set("shard-connecting", 1, TimeSpan.FromSeconds(15));
-                    Log.Information("ShardReconnectTimer: Reconnecting shard #{shardId}", shard.ShardId);
+                    Log.Information("ShardReconnectTimer: Reconnecting shard #{shardId}", shard.Id);
                     _ = shard.StartAsync();
                     this._cache.Remove(cacheKey);
                 }
@@ -613,12 +626,12 @@ public class TimerService : IDisposable
                 {
                     shardDisconnected++;
                     this._cache.Set(cacheKey, shardDisconnected, TimeSpan.FromMinutes(25 - shardDisconnected));
-                    Log.Information("ShardReconnectTimer: Shard #{shardId} has been disconnected {shardDisconnected} times", shard.ShardId, shardDisconnected);
+                    Log.Information("ShardReconnectTimer: Shard #{shardId} has been disconnected {shardDisconnected} times", shard.Id, shardDisconnected);
                 }
             }
             else
             {
-                Log.Information("ShardReconnectTimer: Shard #{shardId} has been disconnected one time", shard.ShardId);
+                Log.Information("ShardReconnectTimer: Shard #{shardId} has been disconnected one time", shard.Id);
                 this._cache.Set(cacheKey, 1, TimeSpan.FromMinutes(25));
             }
         }
@@ -635,12 +648,6 @@ public class TimerService : IDisposable
         UpdateCacheMetrics();
         var usersBefore = Statistics.DiscordCachedUsersTotal.Value;
 
-        var clients = this._client.Shards;
-        foreach (var socketClient in clients)
-        {
-            socketClient.PurgeUserCache();
-        }
-
         UpdateCacheMetrics();
         var usersAfter = Statistics.DiscordCachedUsersTotal.Value;
 
@@ -655,20 +662,20 @@ public class TimerService : IDisposable
             var totalCachedUsers = 0;
             var totalCachedGuilds = 0;
 
-            foreach (var shard in this._client.Shards)
+            foreach (var shard in this._client)
             {
                 var shardCachedUsers = 0;
-                var shardCachedGuilds = shard.Guilds.Count;
+                var shardCachedGuilds = shard.Cache.Guilds.Count;
 
-                foreach (var guild in shard.Guilds)
+                foreach (var guild in shard.Cache.Guilds.Values)
                 {
-                    shardCachedUsers += guild.Users.Count;
+                    shardCachedUsers += guild.Users?.Count ?? 0;
                 }
 
                 totalCachedUsers += shardCachedUsers;
                 totalCachedGuilds += shardCachedGuilds;
 
-                Statistics.DiscordCachedUsersPerShard.WithLabels(shard.ShardId.ToString()).Set(shardCachedUsers);
+                Statistics.DiscordCachedUsersPerShard.WithLabels(shard.Id.ToString()).Set(shardCachedUsers);
             }
 
             Statistics.DiscordCachedUsersTotal.Set(totalCachedUsers);

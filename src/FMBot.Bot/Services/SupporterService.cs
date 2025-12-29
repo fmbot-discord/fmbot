@@ -4,6 +4,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using FMBot.Bot.Extensions;
 using FMBot.Bot.Resources;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
@@ -1097,7 +1098,7 @@ public class SupporterService
     {
         var discordSupporters =
             await this._discordSkuService.GetGroupedEntitlements(
-                after: SnowflakeUtils.ToSnowflake(DateTime.UtcNow.AddDays(-1)));
+                after: DateTime.UtcNow.AddDays(-1).ToSnowflake());
 
         await UpdateDiscordSupporters(discordSupporters);
     }
@@ -1783,7 +1784,7 @@ public class SupporterService
 
     public async Task ModifyGuildRole(ulong discordUserId, bool add = true)
     {
-        var baseGuild = await this._client.Rest.GetGuildAsync(this._botSettings.Bot.BaseServerId);
+        var baseGuild = await this._client.GetGuildAsync(this._botSettings.Bot.BaseServerId);
 
         if (baseGuild != null)
         {
@@ -1794,11 +1795,11 @@ public class SupporterService
                 {
                     var supporterRole = baseGuild.Roles.FirstOrDefault(x => x.Value.Name == "Supporter");
 
-                    if (add && supporterRole != null)
+                    if (add && supporterRole.Key != 0)
                     {
                         if (guildUser.RoleIds.All(a => a != supporterRole.Key))
                         {
-                            await guildUser.AddRoleAsync(supporterRole.Key, new RequestOptions
+                            await guildUser.AddRoleAsync(supporterRole.Key, new RestRequestProperties
                             {
                                 AuditLogReason = "Automated supporter integration"
                             });
@@ -1808,9 +1809,9 @@ public class SupporterService
                             return;
                         }
                     }
-                    else if (supporterRole != null)
+                    else if (supporterRole.Key != 0)
                     {
-                        await guildUser.RemoveRoleAsync(supporterRole.Key, new RequestOptions
+                        await guildUser.RemoveRoleAsync(supporterRole.Key, new RestRequestProperties
                         {
                             AuditLogReason = "Automated supporter integration"
                         });

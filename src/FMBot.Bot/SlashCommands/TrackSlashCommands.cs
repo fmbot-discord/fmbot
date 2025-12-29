@@ -12,7 +12,6 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain.Models;
 using NetCord.Services.ApplicationCommands;
-using NetCord.Services.ComponentInteractions;
 using NetCord;
 using NetCord.Rest;
 using Fergun.Interactive;
@@ -95,39 +94,6 @@ public class TrackSlashCommands : ApplicationCommandModule<ApplicationCommandCon
                     name, displayRoleFilter);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
-        }
-        catch (Exception e)
-        {
-            await this.Context.HandleCommandException(e);
-        }
-    }
-
-    [ComponentInteraction($"{InteractionConstants.WhoKnowsTrackRolePicker}-*")]
-    [UsernameSetRequired]
-    [RequiresIndex]
-    public async Task WhoKnowsFilteringAsync(string trackId, string[] inputs)
-    {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-
-        var track = await this._trackService.GetTrackForId(int.Parse(trackId));
-
-        var roleIds = new List<ulong>();
-        if (inputs != null)
-        {
-            foreach (var input in inputs)
-            {
-                var roleId = ulong.Parse(input);
-                roleIds.Add(roleId);
-            }
-        }
-
-        try
-        {
-            var response = await this._trackBuilders.WhoKnowsTrackAsync(new ContextModel(this.Context, contextUser),
-                ResponseMode.Embed, $"{track.ArtistName} | {track.Name}", true, roleIds);
-
-            await this.Context.UpdateInteractionEmbed(response);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
@@ -247,73 +213,6 @@ public class TrackSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         {
             var response = await this._trackBuilders.TrackDetails(new ContextModel(this.Context, contextUser), name);
 
-            await this.Context.SendFollowUpResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
-        }
-        catch (Exception e)
-        {
-            await this.Context.HandleCommandException(e);
-        }
-    }
-
-    [ComponentInteraction($"{InteractionConstants.TrackPreview}-*")]
-    [UsernameSetRequired]
-    public async Task TrackPreviewAsync(string trackId)
-    {
-        await RespondAsync(InteractionCallback.DeferredMessage());
-
-        await this.Context.DisableInteractionButtons();
-
-        var parsedTrackId = int.Parse(trackId);
-        var dbTrack = await this._trackService.GetTrackForId(parsedTrackId);
-
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-
-        var linkButton = new LinkButtonProperties(
-            "https://open.spotify.com/track/" + dbTrack.SpotifyId,
-            "Open on Spotify",
-            EmojiProperties.Custom(DiscordConstants.Spotify));
-
-        await this.Context.AddLinkButton(linkButton);
-
-        try
-        {
-            var response = await this._trackBuilders.TrackPreviewAsync(new ContextModel(this.Context, contextUser),
-                $"{dbTrack.ArtistName} | {dbTrack.Name}", Context.Interaction.Token);
-            this.Context.LogCommandUsed(response.CommandResponse);
-        }
-        catch (Exception e)
-        {
-            await this.Context.HandleCommandException(e);
-        }
-    }
-
-    [ComponentInteraction($"{InteractionConstants.TrackLyrics}-*")]
-    [UsernameSetRequired]
-    public async Task TrackLyricsAsync(string trackId)
-    {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var context = new ContextModel(this.Context, contextUser);
-        var supporterRequiredResponse = TrackBuilders.LyricsSupporterRequired(context);
-
-        if (supporterRequiredResponse != null)
-        {
-            await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse, true);
-            this.Context.LogCommandUsed(supporterRequiredResponse.CommandResponse);
-            return;
-        }
-
-        await RespondAsync(InteractionCallback.DeferredMessage());
-
-        await this.Context.DisableInteractionButtons(specificButtonOnly: $"{InteractionConstants.TrackLyrics}-{trackId}");
-
-        var parsedTrackId = int.Parse(trackId);
-        var dbTrack = await this._trackService.GetTrackForId(parsedTrackId);
-
-        try
-        {
-            var response =
-                await this._trackBuilders.TrackLyricsAsync(context, $"{dbTrack.ArtistName} | {dbTrack.Name}");
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
         }

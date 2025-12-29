@@ -104,7 +104,7 @@ public class DiscogsBuilder
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
         response.Components = new ActionRowProperties()
-            .WithButton(discogsAuth.LoginUrl, "Login to Discogs");
+            .WithButton("Login to Discogs", url: discogsAuth.LoginUrl);
 
         var dmChannel = await context.DiscordUser.GetDMChannelAsync();
         var dm = await dmChannel.SendMessageAsync(new MessageProperties

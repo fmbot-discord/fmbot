@@ -103,7 +103,7 @@ public class ImportService
             }
         }
 
-        if (attachment.Filename.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
+        if (attachment.FileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
         {
             await using var stream = await this._httpClient.GetStreamAsync(attachment.Url);
             using var innerCsvStreamReader = new StreamReader(stream);
@@ -125,7 +125,7 @@ public class ImportService
             {
                 Log.Information(
                     "Importing: {userId} / {discordUserId} - HandleAppleMusicFiles - Failed to parse csv - {zipName}",
-                    user.UserId, user.DiscordUserId, attachment.Filename);
+                    user.UserId, user.DiscordUserId, attachment.FileName);
                 return (ImportStatus.WrongCsvFailure, appleMusicPlays);
             }
         }

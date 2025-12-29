@@ -406,13 +406,13 @@ public class GameBuilders
         return new ActionRowProperties()
             .WithButton(addHintDisabled && offerUnblur ? "Unblur" : "Add hint",
                 addHintDisabled && offerUnblur
-                    ? $"{InteractionConstants.Game.JumbleUnblur}-{gameId}"
-                    : $"{InteractionConstants.Game.AddJumbleHint}-{gameId}",
+                    ? $"{InteractionConstants.Game.JumbleUnblur}:{gameId}"
+                    : $"{InteractionConstants.Game.AddJumbleHint}:{gameId}",
                 ButtonStyle.Secondary,
                 disabled: addHintDisabled && !offerUnblur)
             .WithButton(shuffledHidden ? "Jumbled name" : "Reshuffle",
-                $"{InteractionConstants.Game.JumbleReshuffle}-{gameId}", ButtonStyle.Secondary)
-            .WithButton("Give up", $"{InteractionConstants.Game.JumbleGiveUp}-{gameId}", ButtonStyle.Secondary);
+                $"{InteractionConstants.Game.JumbleReshuffle}:{gameId}", ButtonStyle.Secondary)
+            .WithButton("Give up", $"{InteractionConstants.Game.JumbleGiveUp}:{gameId}", ButtonStyle.Secondary);
     }
 
     public async Task<ResponseModel> JumbleAddHint(ContextModel context, int parsedGameId)
@@ -590,7 +590,7 @@ public class GameBuilders
         response.Embed.WithColor(DiscordConstants.AppleMusicRed);
 
         var playAgainButton = new ActionRowProperties().WithButton("Play again",
-            $"{InteractionConstants.Game.JumblePlayAgain}-{currentGame.JumbleType}",
+            $"{InteractionConstants.Game.JumblePlayAgain}:{currentGame.JumbleType}",
             ButtonStyle.Secondary);
 
         if (currentGame.Answers is { Count: >= 1 })
@@ -730,7 +730,7 @@ public class GameBuilders
                     separateResponse.WithFooter(footer.ToString());
                     separateResponse.WithColor(DiscordConstants.SpotifyColorGreen);
                     var playAgainComponent = new ActionRowProperties().WithButton("Play again",
-                        $"{InteractionConstants.Game.JumblePlayAgain}-{currentGame.JumbleType}",
+                        $"{InteractionConstants.Game.JumblePlayAgain}:{currentGame.JumbleType}",
                         ButtonStyle.Secondary);
                     if (context.DiscordChannel is TextChannel msgChannel)
                     {
@@ -841,7 +841,7 @@ public class GameBuilders
         response.Embed.WithColor(DiscordConstants.AppleMusicRed);
 
         var playAgainComponent = new ActionRowProperties().WithButton("Play again",
-            $"{InteractionConstants.Game.JumblePlayAgain}-{currentGame.JumbleType}",
+            $"{InteractionConstants.Game.JumblePlayAgain}:{currentGame.JumbleType}",
             ButtonStyle.Secondary);
 
         if (currentGame.Answers is { Count: >= 1 })

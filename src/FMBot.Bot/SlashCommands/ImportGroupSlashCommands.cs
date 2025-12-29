@@ -20,7 +20,9 @@ using NetCord.Services.ApplicationCommands;
 
 namespace FMBot.Bot.SlashCommands;
 
-[SlashCommand("import", "Manage your data imports")]
+[SlashCommand("import", "Manage your data imports",
+    Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild],
+    IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
 public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationCommandContext>
 {
     private readonly UserService _userService;
@@ -56,15 +58,7 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
 
     private const string SpotifyFileDescription = "Spotify history package (.zip) or history files (.json) ";
 
-[SlashCommand("spotify", "⭐ Import your Spotify history into .fmbot", Contexts =
-[
-    InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,
-    InteractionContextType.Guild
-], IntegrationTypes =
-[
-    ApplicationIntegrationType.GuildInstall,
-    ApplicationIntegrationType.UserInstall
-]),]
+    [SubSlashCommand("spotify", "⭐ Import your Spotify history into .fmbot")]
     [UsernameSetRequired]
     public async Task SpotifyAsync(
         [SlashCommandParameter(Name = "file-1", Description = SpotifyFileDescription)]
@@ -140,7 +134,8 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
             return;
         }
 
-        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(noAttachments ? MessageFlags.Ephemeral : default));
+        await Context.Interaction.SendResponseAsync(
+            InteractionCallback.DeferredMessage(noAttachments ? MessageFlags.Ephemeral : default));
 
         embed.AddField($"{DiscordConstants.Spotify} Importing history into .fmbot..",
             $"- {DiscordConstants.Loading} Loading import files...");
@@ -292,7 +287,7 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
             }
 
             var components = new ActionRowProperties()
-                .WithButton("View your stats", $"{InteractionConstants.RecapAlltime}-{contextUser.UserId}",
+                .WithButton("View your stats", $"{InteractionConstants.RecapAlltime}:{contextUser.UserId}",
                     style: ButtonStyle.Primary)
                 .WithButton("Manage import settings", InteractionConstants.ImportManage, style: ButtonStyle.Secondary);
 
@@ -311,7 +306,7 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
         }
     }
 
-    [SlashCommand("applemusic", "⭐ Import your Apple Music history into .fmbot", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,     InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
+    [SubSlashCommand("applemusic", "⭐ Import your Apple Music history into .fmbot")]
     [UsernameSetRequired]
     public async Task AppleMusicAsync(
         [SlashCommandParameter(Name = "file",
@@ -485,7 +480,7 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
             embed.WithColor(DiscordConstants.AppleMusicRed);
 
             var components = new ActionRowProperties()
-                .WithButton("View your stats", $"{InteractionConstants.RecapAlltime}-{contextUser.UserId}",
+                .WithButton("View your stats", $"{InteractionConstants.RecapAlltime}:{contextUser.UserId}",
                     style: ButtonStyle.Primary)
                 .WithButton("Manage import settings", InteractionConstants.ImportManage, style: ButtonStyle.Secondary);
 
@@ -526,17 +521,19 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
     {
         builder.AppendLine(lineToAdd);
 
-        const string loadingLine = $"- {DiscordConstants.Loading} Processing...";
+        var loadingLine = $"- {DiscordConstants.Loading} Processing...";
 
         var title = playSource == PlaySource.SpotifyImport
             ? $"{DiscordConstants.Spotify} Importing history into .fmbot.."
             : $"{DiscordConstants.AppleMusic} Importing history into .fmbot..";
 
-        var index = embed.Fields.FindIndex(f => f.Name == title);
-        embed.Fields[index] = new EmbedFieldProperties()
+        var fieldsList = embed.Fields.ToList();
+        var index = fieldsList.FindIndex(f => f.Name == title);
+        fieldsList[index] = new EmbedFieldProperties()
             .WithName(title)
             .WithValue(builder + (lastLine ? null : loadingLine))
             .WithInline(true);
+        embed.Fields = fieldsList;
 
         if (image != null)
         {
@@ -550,7 +547,7 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
         });
     }
 
-    [SlashCommand("manage", "⭐ Manage your imports and configure how they are used", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,     InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
+    [SubSlashCommand("manage", "⭐ Manage your imports and configure how they are used")]
     [UsernameSetRequired]
     public async Task ManageImportAsync()
     {
@@ -581,7 +578,7 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
         }
     }
 
-    [SlashCommand("modify", "⭐ Edit and delete artists, albums and tracks in your .fmbot imports", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,     InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
+    [SubSlashCommand("modify", "⭐ Edit and delete artists, albums and tracks in your .fmbot imports")]
     [UsernameSetRequired]
     public async Task ModifyImportAsync()
     {

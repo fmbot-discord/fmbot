@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
+using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain;
 using FMBot.Domain.Models;
@@ -268,27 +269,29 @@ public class GuildService
     public static async Task<Permissions> GetGuildPermissionsAsync(CommandContext context)
     {
         var botUserId = context.Client.Id;
-        var cachedUsers = context.Client.Cache.Guilds[context.Guild.Id]?.Users;
+        var guild = context.Guild;
+        var cachedUsers = context.Client.Cache.Guilds[guild.Id]?.Users;
         if (cachedUsers != null && cachedUsers.TryGetValue(botUserId, out var cachedGuildUser))
         {
-            return cachedGuildUser.Permissions;
+            return cachedGuildUser.GetPermissions(guild);
         }
 
-        var guildUser = await context.Guild.GetUserAsync(botUserId);
-        return guildUser.Permissions;
+        var guildUser = await guild.GetUserAsync(botUserId);
+        return guildUser.GetPermissions(guild);
     }
 
     public static async Task<Permissions> GetGuildPermissionsAsync(ApplicationCommandContext context)
     {
         var botUserId = context.Client.Id;
-        var cachedUsers = context.Client.Cache.Guilds[context.Guild.Id]?.Users;
+        var guild = context.Guild;
+        var cachedUsers = context.Client.Cache.Guilds[guild.Id]?.Users;
         if (cachedUsers != null && cachedUsers.TryGetValue(botUserId, out var cachedGuildUser))
         {
-            return cachedGuildUser.Permissions;
+            return cachedGuildUser.GetPermissions(guild);
         }
 
-        var guildUser = await context.Guild.GetUserAsync(botUserId);
-        return guildUser.Permissions;
+        var guildUser = await guild.GetUserAsync(botUserId);
+        return guildUser.GetPermissions(guild);
     }
 
     public static GuildUser GetUserFromGuild(Persistence.Domain.Models.Guild guild, int userId)
@@ -1017,7 +1020,7 @@ public class GuildService
         await db.SaveChangesAsync();
     }
 
-    public async Task EnableChannelAsync(NetCord.Channel discordChannel, ulong discordGuildId)
+    public async Task EnableChannelAsync(IGuildChannel discordChannel, ulong discordGuildId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var existingChannel = await db.Channels
@@ -1170,7 +1173,7 @@ public class GuildService
             {
                 try
                 {
-                    EmojiProperties.Custom(emote);
+                    var unused = new ReactionEmojiProperties(emote);
                 }
                 catch
                 {
@@ -1229,7 +1232,11 @@ public class GuildService
             }
             else
             {
-                var emote = ReactionEmojiProperties.Parse(emoteString);
+                // Custom emote format: <:name:id> or <a:name:id>
+                var parts = emoteString.Trim('<', '>').Split(':');
+                var name = parts[^2];
+                var id = ulong.Parse(parts[^1]);
+                var emote = new ReactionEmojiProperties(name, id);
                 await message.AddReactionAsync(emote);
             }
         }
@@ -1271,7 +1278,7 @@ public class GuildService
 
             await connection.ExecuteAsync(sql, new
             {
-                UserName = discordGuildUser.DisplayName,
+                UserName = discordGuildUser.GetDisplayName(),
                 LastMessage = DateTime.UtcNow,
                 GuildId = guildId,
                 UserId = userId

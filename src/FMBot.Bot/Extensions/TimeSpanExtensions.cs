@@ -4,6 +4,18 @@ namespace FMBot.Bot.Extensions;
 
 public static class TimeSpanExtensions
 {
+    private static readonly DateTimeOffset DiscordEpoch = new(2015, 1, 1, 0, 0, 0, TimeSpan.Zero);
+
+    public static ulong ToSnowflake(this DateTime dateTime)
+    {
+        return ToSnowflake(new DateTimeOffset(dateTime, TimeSpan.Zero));
+    }
+
+    public static ulong ToSnowflake(this DateTimeOffset dateTimeOffset)
+    {
+        return (ulong)(dateTimeOffset - DiscordEpoch).TotalMilliseconds << 22;
+    }
+
     public static string ToReadableAgeString(this TimeSpan span)
     {
         return string.Format("{0:0}", span.Days / 365.25);

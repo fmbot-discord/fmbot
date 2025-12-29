@@ -44,7 +44,7 @@ public class ServerSlashCommands : ApplicationCommandModule<ApplicationCommandCo
         this._genreBuilders = genreBuilders;
     }
 
-    [SlashCommand("artists", "Top artists for your server")]
+    [SubSlashCommand("artists", "Top artists for your server")]
     [UsernameSetRequired]
     [RequiresIndex]
     public async Task GuildArtistsAsync(
@@ -77,7 +77,7 @@ public class ServerSlashCommands : ApplicationCommandModule<ApplicationCommandCo
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [SlashCommand("albums", "Top albums for your server")]
+    [SubSlashCommand("albums", "Top albums for your server")]
     [UsernameSetRequired]
     [RequiresIndex]
     public async Task GuildAlbumsAsync(
@@ -113,7 +113,7 @@ public class ServerSlashCommands : ApplicationCommandModule<ApplicationCommandCo
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [SlashCommand("tracks", "Top tracks for your server")]
+    [SubSlashCommand("tracks", "Top tracks for your server")]
     [UsernameSetRequired]
     [RequiresIndex]
     public async Task GuildTracksAsync(
@@ -149,7 +149,7 @@ public class ServerSlashCommands : ApplicationCommandModule<ApplicationCommandCo
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [SlashCommand("genres", "Top genres for your server")]
+    [SubSlashCommand("genres", "Top genres for your server")]
     [UsernameSetRequired]
     [RequiresIndex]
     public async Task GuildGenresAsync(

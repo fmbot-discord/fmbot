@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
-
+using FMBot.Bot.Extensions;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
@@ -376,8 +376,9 @@ public class CensorService
                 return;
             }
 
-            var guild = this._client.Cache.Guilds.GetValueOrDefault(this._botSettings.Bot.BaseServerId);
-            var channel = guild?.GetTextChannel(this._botSettings.Bot.CensorReportChannelId);
+            var guild = await this._client.GetGuildAsync(this._botSettings.Bot.BaseServerId);
+            var channels = await guild.GetChannelsAsync();
+            var channel = channels?.FirstOrDefault(f => f.Id == this._botSettings.Bot.CensorReportChannelId) as TextGuildChannel;
 
             if (channel == null)
             {
@@ -420,15 +421,15 @@ public class CensorService
                 embed.AddField("Provided note", report.ProvidedNote);
             }
 
-            var reporter = guild.GetUser(report.ReportedByDiscordUserId);
+            var reporter = await this._client.GetUserAsync(report.ReportedByDiscordUserId);
             embed.AddField("Reporter",
-                $"**{reporter?.DisplayName}** - <@{report.ReportedByDiscordUserId}> - `{report.ReportedByDiscordUserId}`");
+                $"**{reporter?.GetDisplayName()}** - <@{report.ReportedByDiscordUserId}> - `{report.ReportedByDiscordUserId}`");
 
             embed.WithFooter(
                 "Reports might contain images that are not nice to see. \n" +
                 "Feel free to skip handling these if you don't feel comfortable doing so.");
 
-            await channel.SendMessageAsync(embed: embed, components: components);
+            await channel.SendMessageAsync(new MessageProperties { Embeds = [embed], Components = [components] });
         }
         catch (Exception e)
         {

@@ -374,7 +374,7 @@ public class ArtistBuilders
 
         response.Components = response.Components
             .WithButton("Overview",
-                $"{InteractionConstants.Artist.Overview}-{fullArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}",
+                $"{InteractionConstants.Artist.Overview}:{fullArtist.Id}:{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}",
                 style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("\ud83d\udcca"));
 
         if (context.ContextUser.RymEnabled == true && fullArtist.ArtistLinks != null &&
@@ -620,15 +620,15 @@ public class ArtistBuilders
 
         var components = new ActionRowProperties()
             .WithButton("Artist",
-                $"{InteractionConstants.Artist.Info}-{fullArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}",
+                $"{InteractionConstants.Artist.Info}:{fullArtist.Id}:{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}",
                 style: ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.Info));
 
         components.WithButton("All top tracks",
-            $"{InteractionConstants.Artist.Tracks}-{fullArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}",
+            $"{InteractionConstants.Artist.Tracks}:{fullArtist.Id}:{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}",
             style: ButtonStyle.Secondary, disabled: !artistTracksButton, emote: EmojiProperties.Standard("🎶"));
 
         components.WithButton("All top albums",
-            $"{InteractionConstants.Artist.Albums}-{fullArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}",
+            $"{InteractionConstants.Artist.Albums}:{fullArtist.Id}:{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}",
             style: ButtonStyle.Secondary, disabled: !artistAlbumsButton, emote: EmojiProperties.Standard("💽"));
 
         response.Components = components;
@@ -777,7 +777,7 @@ public class ArtistBuilders
         }
 
         var optionId =
-            $"{InteractionConstants.Artist.Overview}-{dbArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}";
+            $"{InteractionConstants.Artist.Overview}:{dbArtist.Id}:{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}";
         var optionEmote = EmojiProperties.Standard("\ud83d\udcca");
 
         if (pages.Count == 1)
@@ -908,7 +908,7 @@ public class ArtistBuilders
         }
 
         var optionId =
-            $"{InteractionConstants.Artist.Overview}-{dbArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}";
+            $"{InteractionConstants.Artist.Overview}:{dbArtist.Id}:{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}";
         var optionEmote = EmojiProperties.Standard("\ud83d\udcca");
 
         if (pages.Count == 1)
@@ -1581,7 +1581,7 @@ public class ArtistBuilders
         {
             var stolen = crownModel?.Stolen == true;
             response.Components = new ActionRowProperties()
-                .WithButton("Crown history", $"{InteractionConstants.Artist.Crown}-{cachedArtist.Id}-{stolen}",
+                .WithButton("Crown history", $"{InteractionConstants.Artist.Crown}:{cachedArtist.Id}:{stolen}",
                     style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("👑"));
         }
 
@@ -1689,7 +1689,7 @@ public class ArtistBuilders
             if (PublicProperties.PremiumServers.ContainsKey(context.DiscordGuild.Id))
             {
                 var allowedRoles =
-                    new RoleMenuProperties($"{InteractionConstants.WhoKnowsRolePicker}-{cachedArtist.Id}")
+                    new RoleMenuProperties($"{InteractionConstants.WhoKnowsRolePicker}:{cachedArtist.Id}")
                         .WithPlaceholder("Apply role filter..")
                         .WithMinValues(0)
                         .WithMaxValues(25);
@@ -2097,15 +2097,12 @@ public class ArtistBuilders
 
         var url = LastfmUrlExtensions.GetUserUrl(lastfmToCompare, $"/library/artists?{timeSettings.UrlParameter}");
 
-        var ownName = context.DiscordUser.GlobalName ?? context.DiscordUser.Username;
+        var ownName = context.DiscordUser.GetDisplayName();
         var otherName = userSettings.DisplayName;
 
-        if (context.CachedGuildUsers != null)
+        if (context.DiscordGuild?.Users.TryGetValue(context.ContextUser.DiscordUserId, out var discordGuildUser) == true)
         {
-            if (context.CachedGuildUsers.TryGetValue(context.ContextUser.DiscordUserId, out var discordGuildUser))
-            {
-                ownName = discordGuildUser.Nickname ?? discordGuildUser.GlobalName ?? discordGuildUser.Username;
-            }
+            ownName = discordGuildUser.GetDisplayName();
         }
 
         var ownTopArtists =

@@ -16,7 +16,6 @@ using FMBot.Domain.Models;
 using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
-using NetCord.Services.ComponentInteractions;
 
 namespace FMBot.Bot.SlashCommands;
 
@@ -72,35 +71,6 @@ public class ArtistSlashCommands : ApplicationCommandModule<ApplicationCommandCo
         }
     }
 
-    [ComponentInteraction($"{InteractionConstants.Artist.Info}-*-*-*")]
-    [UsernameSetRequired]
-    public async Task ArtistInfoAsync(string artistId, string discordUser, string requesterDiscordUser)
-    {
-        await RespondAsync(InteractionCallback.DeferredMessage());
-        await this.Context.DisableInteractionButtons();
-
-        var discordUserId = ulong.Parse(discordUser);
-        var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
-
-        var contextUser = await this._userService.GetUserWithDiscogs(requesterDiscordUserId);
-        var discordContextUser = await this.Context.Client.GetUserAsync(requesterDiscordUserId);
-        var userSettings = await this._settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
-
-        var artist = await this._artistsService.GetArtistForId(int.Parse(artistId));
-
-        try
-        {
-            var response = await this._artistBuilders.ArtistInfoAsync(new ContextModel(this.Context, contextUser, discordContextUser), userSettings, artist.Name, false);
-
-            await this.Context.UpdateInteractionEmbed(response, this.Interactivity, false);
-            this.Context.LogCommandUsed(response.CommandResponse);
-        }
-        catch (Exception e)
-        {
-            await this.Context.HandleCommandException(e);
-        }
-    }
-
     [SlashCommand("artistoverview", "Shows overview for current artist or the one you're searching for", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task ArtistOverviewAsync(
@@ -118,36 +88,6 @@ public class ArtistSlashCommands : ApplicationCommandModule<ApplicationCommandCo
             var response = await this._artistBuilders.ArtistOverviewAsync(new ContextModel(this.Context, contextUser), userSettings, name, redirectsEnabled);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
-        }
-        catch (Exception e)
-        {
-            await this.Context.HandleCommandException(e);
-        }
-    }
-
-    [ComponentInteraction($"{InteractionConstants.Artist.Overview}-*-*-*")]
-    [UsernameSetRequired]
-    public async Task ArtistOverviewAsync(string artistId, string discordUser, string requesterDiscordUser)
-    {
-        await RespondAsync(InteractionCallback.DeferredMessage());
-        await this.Context.DisableInteractionButtons();
-
-        var discordUserId = ulong.Parse(discordUser);
-        var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
-
-        var contextUser = await this._userService.GetUserWithDiscogs(requesterDiscordUserId);
-        var discordContextUser = await this.Context.Client.GetUserAsync(requesterDiscordUserId);
-        var userSettings = await this._settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
-
-        var artist = await this._artistsService.GetArtistForId(int.Parse(artistId));
-
-        try
-        {
-            var response = await this._artistBuilders.ArtistOverviewAsync(new ContextModel(this.Context, contextUser, discordContextUser), userSettings,
-                artist.Name, false);
-
-            await this.Context.UpdateInteractionEmbed(response, this.Interactivity, false);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
@@ -201,29 +141,6 @@ public class ArtistSlashCommands : ApplicationCommandModule<ApplicationCommandCo
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [ComponentInteraction($"{InteractionConstants.Artist.Tracks}-*-*-*")]
-    public async Task ArtistTracksAsync(string artistId, string discordUser, string requesterDiscordUser)
-    {
-        await RespondAsync(InteractionCallback.DeferredMessage());
-        await this.Context.DisableInteractionButtons();
-
-        var discordUserId = ulong.Parse(discordUser);
-        var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
-
-        var contextUser = await this._userService.GetUserAsync(requesterDiscordUserId);
-        var discordContextUser = await this.Context.Client.GetUserAsync(requesterDiscordUserId);
-        var userSettings = await this._settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
-
-        var artist = await this._artistsService.GetArtistForId(int.Parse(artistId));
-        var timeSettings = SettingService.GetTimePeriod(Enum.GetName(typeof(PlayTimePeriod), PlayTimePeriod.AllTime), TimePeriod.AllTime);
-
-        var response = await this._artistBuilders.ArtistTracksAsync(new ContextModel(this.Context, contextUser, discordContextUser), timeSettings,
-            userSettings, artist.Name, false);
-
-        await this.Context.UpdateInteractionEmbed(response, this.Interactivity, false);
-        this.Context.LogCommandUsed(response.CommandResponse);
-    }
-
     [SlashCommand("artistalbums", "Shows your top albums for an artist", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task ArtistAlbumsAsync(
@@ -238,28 +155,6 @@ public class ArtistSlashCommands : ApplicationCommandModule<ApplicationCommandCo
             userSettings, name, redirectsEnabled);
 
         await this.Context.SendResponse(this.Interactivity, response);
-        this.Context.LogCommandUsed(response.CommandResponse);
-    }
-
-    [ComponentInteraction($"{InteractionConstants.Artist.Albums}-*-*-*")]
-    public async Task ArtistAlbumsAsync(string artistId, string discordUser, string requesterDiscordUser)
-    {
-        await RespondAsync(InteractionCallback.DeferredMessage());
-        await this.Context.DisableInteractionButtons();
-
-        var discordUserId = ulong.Parse(discordUser);
-        var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
-
-        var contextUser = await this._userService.GetUserAsync(requesterDiscordUserId);
-        var discordContextUser = await this.Context.Client.GetUserAsync(requesterDiscordUserId);
-        var userSettings = await this._settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
-
-        var artist = await this._artistsService.GetArtistForId(int.Parse(artistId));
-
-        var response = await this._artistBuilders.ArtistAlbumsAsync(new ContextModel(this.Context, contextUser, discordContextUser),
-            userSettings, artist.Name, false);
-
-        await this.Context.UpdateInteractionEmbed(response, this.Interactivity, false);
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
@@ -322,64 +217,6 @@ public class ArtistSlashCommands : ApplicationCommandModule<ApplicationCommandCo
                 mode.Value, name, displayRoleFilter, redirectsEnabled: redirectsEnabled);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
-        }
-        catch (Exception e)
-        {
-            await this.Context.HandleCommandException(e);
-        }
-    }
-
-    [ComponentInteraction($"{InteractionConstants.WhoKnowsRolePicker}-*")]
-    [UsernameSetRequired]
-    [RequiresIndex]
-    public async Task WhoKnowsFilteringAsync(string artistId, string[] inputs)
-    {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-
-        var artist = await this._artistsService.GetArtistForId(int.Parse(artistId));
-
-        var roleIds = new List<ulong>();
-        if (inputs != null)
-        {
-            foreach (var input in inputs)
-            {
-                var roleId = ulong.Parse(input);
-                roleIds.Add(roleId);
-            }
-        }
-
-        try
-        {
-            // TODO add redirects
-            var response = await this._artistBuilders.WhoKnowsArtistAsync(new ContextModel(this.Context, contextUser), ResponseMode.Embed, artist.Name, true, roleIds);
-
-            await this.Context.UpdateInteractionEmbed(response);
-            this.Context.LogCommandUsed(response.CommandResponse);
-        }
-        catch (Exception e)
-        {
-            await this.Context.HandleCommandException(e);
-        }
-    }
-
-    [ComponentInteraction($"{InteractionConstants.Artist.WhoKnows}-*")]
-    [UsernameSetRequired]
-    [RequiresIndex]
-    public async Task WhoKnowsAsync(string artistId)
-    {
-        await RespondAsync(InteractionCallback.DeferredMessage());
-        await this.Context.DisableInteractionButtons();
-
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var artist = await this._artistsService.GetArtistForId(int.Parse(artistId));
-        var mode = contextUser.Mode ?? ResponseMode.Embed;
-
-        try
-        {
-            var response = await this._artistBuilders.WhoKnowsArtistAsync(new ContextModel(this.Context, contextUser), mode, artist.Name, showCrownButton: true);
-
-            await this.Context.UpdateInteractionEmbed(response, defer: false);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)

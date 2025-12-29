@@ -755,10 +755,9 @@ public class PlayService
 
             if (i <= 10)
             {
-                var discordUser = await discordGuild.GetUserAsync(guildUser.DiscordUserId, CacheMode.CacheOnly);
-                if (discordUser != null)
+                if (discordGuild.Users.TryGetValue(guildUser.DiscordUserId, out var discordUser))
                 {
-                    userName = discordUser.DisplayName;
+                    userName = discordUser.GetDisplayName();
                 }
             }
 

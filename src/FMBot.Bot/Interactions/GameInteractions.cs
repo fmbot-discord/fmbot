@@ -1,7 +1,6 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
@@ -12,30 +11,32 @@ using FMBot.Bot.Services;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using NetCord;
+using NetCord.Gateway;
 using NetCord.Rest;
-using NetCord.Services.ApplicationCommands;
 using NetCord.Services.ComponentInteractions;
 
-namespace FMBot.Bot.SlashCommands;
+namespace FMBot.Bot.Interactions;
 
-public class GameSlashCommands : ApplicationCommandModule<ApplicationCommandContext>
+public class GameInteractions : ComponentInteractionModule<ComponentInteractionContext>
 {
     private readonly GameBuilders _gameBuilders;
     private readonly UserService _userService;
     private readonly GameService _gameService;
+    private readonly InteractiveService _interactivity;
 
-    private InteractiveService Interactivity { get; }
-
-    public GameSlashCommands(GameBuilders gameBuilders, UserService userService, InteractiveService interactivity,
-        GameService gameService)
+    public GameInteractions(
+        GameBuilders gameBuilders,
+        UserService userService,
+        GameService gameService,
+        InteractiveService interactivity)
     {
         this._gameBuilders = gameBuilders;
         this._userService = userService;
-        this.Interactivity = interactivity;
         this._gameService = gameService;
+        this._interactivity = interactivity;
     }
 
-    [ComponentInteraction($"{InteractionConstants.Game.AddJumbleHint}-*")]
+    [ComponentInteraction(InteractionConstants.Game.AddJumbleHint)]
     public async Task JumbleAddHint(string gameId)
     {
         var parsedGameId = int.Parse(gameId);
@@ -44,7 +45,7 @@ public class GameSlashCommands : ApplicationCommandModule<ApplicationCommandCont
         await this.Context.UpdateInteractionEmbed(response);
     }
 
-    [ComponentInteraction($"{InteractionConstants.Game.JumbleUnblur}-*")]
+    [ComponentInteraction(InteractionConstants.Game.JumbleUnblur)]
     public async Task JumbleUnblur(string gameId)
     {
         var parsedGameId = int.Parse(gameId);
@@ -53,7 +54,7 @@ public class GameSlashCommands : ApplicationCommandModule<ApplicationCommandCont
         await this.Context.UpdateInteractionEmbed(response);
     }
 
-    [ComponentInteraction($"{InteractionConstants.Game.JumbleReshuffle}-*")]
+    [ComponentInteraction(InteractionConstants.Game.JumbleReshuffle)]
     public async Task JumbleReshuffle(string gameId)
     {
         var parsedGameId = int.Parse(gameId);
@@ -62,7 +63,7 @@ public class GameSlashCommands : ApplicationCommandModule<ApplicationCommandCont
         await this.Context.UpdateInteractionEmbed(response);
     }
 
-    [ComponentInteraction($"{InteractionConstants.Game.JumbleGiveUp}-*")]
+    [ComponentInteraction(InteractionConstants.Game.JumbleGiveUp)]
     public async Task JumbleGiveUp(string gameId)
     {
         var parsedGameId = int.Parse(gameId);
@@ -71,7 +72,7 @@ public class GameSlashCommands : ApplicationCommandModule<ApplicationCommandCont
 
         if (response.CommandResponse == CommandResponse.NoPermission)
         {
-            await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+            await this.Context.SendResponse(this._interactivity, response, ephemeral: true);
         }
         else
         {
@@ -86,7 +87,7 @@ public class GameSlashCommands : ApplicationCommandModule<ApplicationCommandCont
         }
     }
 
-    [ComponentInteraction($"{InteractionConstants.Game.JumblePlayAgain}-*")]
+    [ComponentInteraction(InteractionConstants.Game.JumblePlayAgain)]
     [UsernameSetRequired]
     public async Task JumblePlayAgain(string jumbleType)
     {
@@ -116,7 +117,7 @@ public class GameSlashCommands : ApplicationCommandModule<ApplicationCommandCont
                     cancellationTokenSource);
             }
 
-            var responseId = await this.Context.SendFollowUpResponse(this.Interactivity, response,
+            var responseId = await this.Context.SendFollowUpResponse(this._interactivity, response,
                 ephemeral: response.CommandResponse != CommandResponse.Ok);
             this.Context.LogCommandUsed(response.CommandResponse);
 
@@ -131,7 +132,7 @@ public class GameSlashCommands : ApplicationCommandModule<ApplicationCommandCont
                 var name = await UserService.GetNameAsync(this.Context.Guild, this.Context.User);
                 var components = new ActionRowProperties().WithButton($"{name} is playing again!", customId: "1",
                     url: null, disabled: true, style: ButtonStyle.Secondary);
-                _ = Task.Run(() => message.ModifyAsync(m => m.Components = components));
+                _ = Task.Run(() => message.ModifyAsync(m => m.Components = [components]));
 
                 if (responseId.HasValue && response.GameSessionId.HasValue)
                 {
@@ -173,7 +174,7 @@ public class GameSlashCommands : ApplicationCommandModule<ApplicationCommandCont
         }
 
         var msg = await this.Context.Channel.GetMessageAsync(responseId);
-        if (msg is not Message message)
+        if (msg is not RestMessage message)
         {
             return;
         }

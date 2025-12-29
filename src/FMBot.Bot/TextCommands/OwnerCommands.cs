@@ -150,39 +150,39 @@ public class OwnerCommands : BaseCommandModule
         }
     }
 
-    [Command("serverlist"),
-     Summary("Displays a list showing information related to every server the bot has joined.")]
-    public async Task ServerListAsync()
-    {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
-        {
-            var client = this.Context.Client as ShardedGatewayClient;
-            string desc = null;
-
-            foreach (var guild in client.Guilds.OrderByDescending(o => o.MemberCount).Take(100))
-            {
-                desc += $"{guild.Name} - Users: {guild.MemberCount}, Owner: {guild.Owner}\n";
-            }
-
-            if (!string.IsNullOrWhiteSpace(desc))
-            {
-                var dmChannel = await this.Context.User.GetDMChannelAsync();
-                string[] descChunks = desc.SplitByMessageLength().ToArray();
-                foreach (string chunk in descChunks)
-                {
-                    await dmChannel.SendMessageAsync(new MessageProperties { Content = chunk });
-                }
-            }
-
-            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Check your DMs!" });
-            this.Context.LogCommandUsed();
-        }
-        else
-        {
-            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Only .fmbot owners can execute this command." });
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
-        }
-    }
+    // [Command("serverlist"),
+    //  Summary("Displays a list showing information related to every server the bot has joined.")]
+    // public async Task ServerListAsync()
+    // {
+    //     if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+    //     {
+    //         var client = this.Context.Client as ShardedGatewayClient;
+    //         string desc = null;
+    //
+    //         foreach (var guild in client.SelectMany(shard => shard.Cache.Guilds.Values).OrderByDescending(o => o.ApproximateUserCount ?? 0).Take(100))
+    //         {
+    //             desc += $"{guild.Name} - Users: {guild.ApproximateUserCount}, Owner: {guild.OwnerId}\n";
+    //         }
+    //
+    //         if (!string.IsNullOrWhiteSpace(desc))
+    //         {
+    //             var dmChannel = await this.Context.User.GetDMChannelAsync();
+    //             string[] descChunks = desc.SplitByMessageLength().ToArray();
+    //             foreach (string chunk in descChunks)
+    //             {
+    //                 await dmChannel.SendMessageAsync(new MessageProperties { Content = chunk });
+    //             }
+    //         }
+    //
+    //         await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Check your DMs!" });
+    //         this.Context.LogCommandUsed();
+    //     }
+    //     else
+    //     {
+    //         await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Only .fmbot owners can execute this command." });
+    //         this.Context.LogCommandUsed(CommandResponse.NoPermission);
+    //     }
+    // }
 
     [Command("deleteinactiveusers")]
     [Summary("Removes users who have deleted their Last.fm account from .fmbot")]
@@ -355,7 +355,7 @@ public class OwnerCommands : BaseCommandModule
         embed.AddField("Performance", perfInfo.ToString());
 
         var cacheStats = GetCacheStatistics();
-        cacheStats += $"\n**Downloaded members**: {this._client.Guilds.Sum(s => s.DownloadedMemberCount)}";
+        cacheStats += $"\n**Downloaded members**: {this._client.Sum(shard => shard.Cache.Guilds.Values.Sum(g => g.Users?.Count ?? 0))}";
         if (!string.IsNullOrEmpty(cacheStats))
         {
             embed.AddField("Cache Statistics", cacheStats);

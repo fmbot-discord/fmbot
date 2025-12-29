@@ -34,7 +34,7 @@ public class ChartSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         this._artistsService = artistsService;
     }
 
-    [SlashCommand("albums", "Generates an album image chart")]
+    [SubSlashCommand("albums", "Generates an album image chart")]
     [UsernameSetRequired]
     public async Task AlbumChartAsync(
         [SlashCommandParameter(Name = "Time-period", Description = "Time period", AutocompleteProviderType = typeof(DateTimeAutoComplete))] string timePeriod = null,
@@ -97,7 +97,7 @@ public class ChartSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         }
     }
 
-    [SlashCommand("artists", "Generates an artist image chart")]
+    [SubSlashCommand("artists", "Generates an artist image chart")]
     [UsernameSetRequired]
     public async Task ArtistChartAsync(
         [SlashCommandParameter(Name = "Time-period", Description = "Time period", AutocompleteProviderType = typeof(DateTimeAutoComplete))] string timePeriod = null,

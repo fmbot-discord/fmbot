@@ -33,7 +33,7 @@ public class MultiSelection<T> : BaseSelection<MultiSelectionOption<T>>
                 Default = option.IsDefault
             };
 
-            selectMenus[option.Row].Options.Add(optionBuilder);
+            selectMenus[option.Row].Add(optionBuilder);
         }
 
         foreach ((int row, var selectMenu) in selectMenus)
@@ -44,10 +44,9 @@ public class MultiSelection<T> : BaseSelection<MultiSelectionOption<T>>
                 builder.Add(new ActionRowProperties());
             }
 
-            if (builder[row] is ActionRowProperties actionRow)
-            {
-                actionRow.AddComponent(selectMenu);
-            }
+            // In NetCord, select menus are top-level message components, not action row children
+            // Replace the action row with the select menu directly
+            builder[row] = selectMenu;
         }
 
         return builder;

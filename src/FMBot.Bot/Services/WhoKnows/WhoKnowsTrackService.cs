@@ -1,9 +1,8 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
-
+using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -64,10 +63,9 @@ public class WhoKnowsTrackService
 
             if (i < 15 && discordGuild != null)
             {
-                var discordUser = await discordGuild.GetUserAsync(guildUser.DiscordUserId, CacheMode.CacheOnly);
-                if (discordUser != null)
+                if (discordGuild.Users.TryGetValue(guildUser.DiscordUserId, out var discordUser))
                 {
-                    userName = discordUser.DisplayName;
+                    userName = discordUser.GetDisplayName();
                 }
             }
 
@@ -123,13 +121,9 @@ public class WhoKnowsTrackService
 
             if (i < 15)
             {
-                if (discordGuild != null)
+                if (discordGuild != null && discordGuild.Users.TryGetValue(userTrack.DiscordUserId, out var discordUser))
                 {
-                    var discordUser = await discordGuild.GetUserAsync(userTrack.DiscordUserId, CacheMode.CacheOnly);
-                    if (discordUser != null)
-                    {
-                        userName = discordUser.DisplayName;
-                    }
+                    userName = discordUser.GetDisplayName();
                 }
             }
 
@@ -186,10 +180,9 @@ public class WhoKnowsTrackService
             {
                 userName = guildUser.UserName;
 
-                var discordGuildUser = await discordGuild.GetUserAsync(guildUser.DiscordUserId, CacheMode.CacheOnly);
-                if (discordGuildUser != null)
+                if (discordGuild.Users.TryGetValue(guildUser.DiscordUserId, out var discordGuildUser))
                 {
-                    userName = discordGuildUser.DisplayName;
+                    userName = discordGuildUser.GetDisplayName();
                 }
             }
 

@@ -101,7 +101,7 @@ public class CrownBuilders
         var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
 
         response.Components = new ActionRowProperties()
-            .WithButton("WhoKnows", $"{InteractionConstants.Artist.WhoKnows}-{cachedArtist.Id}", style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("📋"));
+            .WithButton("WhoKnows", $"{InteractionConstants.Artist.WhoKnows}:{cachedArtist.Id}", style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("📋"));
 
         if (!artistCrowns.Any(a => a.Active))
         {
@@ -239,7 +239,7 @@ public class CrownBuilders
 
             response.ResponseType = ResponseType.Embed;
             response.CommandResponse = CommandResponse.NotFound;
-            response.StringMenu = viewType;
+            response.StringMenus.Add(viewType);
             return response;
         }
 

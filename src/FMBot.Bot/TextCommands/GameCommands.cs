@@ -131,10 +131,9 @@ public class GameCommands : BaseCommandModule
         {
             m.Components = null;
             m.Embeds = [response.Embed];
-            m.Attachments = response.Stream != null ? new Optional<IEnumerable<FileAttachment>>(new List<FileAttachment>
-            {
-                new(response.Stream, response.Spoiler ? $"SPOILER_{response.FileName}" : $"{response.FileName}")
-            }) : null;
+            m.Attachments = response.Stream != null
+                ? [new AttachmentProperties(response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName, response.Stream)]
+                : null;
         });
     }
 

@@ -182,10 +182,9 @@ public class TimeService
             {
                 var userName = guildUser.UserName ?? guildUser.UserNameLastFM;
 
-                var discordUser = await discordGuild.GetUserAsync(guildUser.DiscordUserId, CacheMode.CacheOnly);
-                if (discordUser != null)
+                if (discordGuild.Users.TryGetValue(guildUser.DiscordUserId, out var discordUser))
                 {
-                    userName = discordUser.DisplayName;
+                    userName = discordUser.GetDisplayName();
                 }
 
                 whoKnowsAlbumList.Add(new WhoKnowsObjectWithUser

@@ -125,7 +125,7 @@ public class UserBuilder
             });
         }
 
-        response.StringMenu = guildSettings;
+        response.StringMenus.Add(guildSettings);
 
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
@@ -462,16 +462,13 @@ public class UserBuilder
             }
         }
 
-        var builder = new ActionRowProperties()
-            .WithSelectMenu(fmType)
-            .WithSelectMenu(fmOptions, 1);
+        response.StringMenus.Add(fmType);
+        response.StringMenus.Add(fmOptions);
 
         if (context.ContextUser.UserType != UserType.User)
         {
-            builder.WithSelectMenu(fmSupporterOptions, 2);
+            response.StringMenus.Add(fmSupporterOptions);
         }
-
-        response.Components = builder;
 
         response.Embed.WithAuthor("Configuring your 'fm' command");
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
@@ -540,7 +537,7 @@ public class UserBuilder
             });
         }
 
-        response.StringMenu = fmType;
+        response.StringMenus.Add(fmType);
 
         var description = new StringBuilder();
 
@@ -597,7 +594,7 @@ public class UserBuilder
             });
         }
 
-        response.StringMenu = privacySetting;
+        response.StringMenus.Add(privacySetting);
 
         response.Embed.WithAuthor("Configuring your Global WhoKnows visibility");
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
@@ -1021,14 +1018,14 @@ public class UserBuilder
         var actionRow = new ActionRowProperties();
 
         actionRow.WithButton("History",
-            $"{InteractionConstants.User.History}-{user.DiscordUserId}-{context.ContextUser.DiscordUserId}",
+            $"{InteractionConstants.User.History}:{user.DiscordUserId}:{context.ContextUser.DiscordUserId}",
             style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("📖"));
 
         if (discogs)
         {
             actionRow
                 .WithButton("Collection",
-                    $"{InteractionConstants.Discogs.Collection}-{user.DiscordUserId}-{context.ContextUser.DiscordUserId}",
+                    $"{InteractionConstants.Discogs.Collection}:{user.DiscordUserId}:{context.ContextUser.DiscordUserId}",
                     style: ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.Vinyl));
         }
 
@@ -1214,7 +1211,7 @@ public class UserBuilder
 
         actionRow
             .WithButton("Profile",
-                $"{InteractionConstants.User.Profile}-{user.DiscordUserId}-{context.ContextUser.DiscordUserId}",
+                $"{InteractionConstants.User.Profile}:{user.DiscordUserId}:{context.ContextUser.DiscordUserId}",
                 style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("ℹ"))
             .WithButton("Last.fm",
                 url: LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm),
@@ -1311,10 +1308,10 @@ public class UserBuilder
             response.Components = new ActionRowProperties()
                 .WithButton("Compliment", emote: EmojiProperties.Standard("🙂"), style: ButtonStyle.Primary,
                     customId:
-                    $"{InteractionConstants.Judge}~{timeSettings.Description}~compliment~{userSettings.DiscordUserId}~{context.DiscordUser.Id}")
+                    $"{InteractionConstants.Judge}:{timeSettings.Description}:compliment:{userSettings.DiscordUserId}:{context.DiscordUser.Id}")
                 .WithButton("Roast", emote: EmojiProperties.Standard("🔥"), style: ButtonStyle.Primary,
                     customId:
-                    $"{InteractionConstants.Judge}~{timeSettings.Description}~roast~{userSettings.DiscordUserId}~{context.DiscordUser.Id}");
+                    $"{InteractionConstants.Judge}:{timeSettings.Description}:roast:{userSettings.DiscordUserId}:{context.DiscordUser.Id}");
         }
 
         return response;
@@ -1488,7 +1485,7 @@ public class UserBuilder
         description.AppendLine("Note: This will not delete any data from Last.fm, just from .fmbot.");
 
         response.Components = new ActionRowProperties().WithButton("Delete my .fmbot account",
-            $"{InteractionConstants.RemoveFmbotAccount}-{context.DiscordUser.Id}", ButtonStyle.Danger);
+            $"{InteractionConstants.RemoveFmbotAccount}:{context.DiscordUser.Id}", ButtonStyle.Danger);
 
         response.Embed.WithDescription(description.ToString());
         response.Embed.WithColor(DiscordConstants.WarningColorOrange);
@@ -1598,10 +1595,15 @@ public class UserBuilder
 
             var active = context.ContextUser.DataSource == option;
 
-            importSetting.AddOption(new StringMenuSelectOptionProperties(name, value, description, isDefault: active));
+            var menuOption = new StringMenuSelectOptionProperties(name, value).WithDescription(description);
+            if (active)
+            {
+                menuOption = menuOption.WithDefault();
+            }
+            importSetting.AddOption(menuOption);
         }
 
-        response.Components = new ActionRowProperties().WithSelectMenu(importSetting);
+        response.StringMenus.Add(importSetting);
 
         response.Embed.WithAuthor("Configuring how imports are combined with your Last.fm");
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
@@ -1746,14 +1748,17 @@ public class UserBuilder
                     description.Append($"Last used {StringExtensions.GetTimeAgoShortString(alt.LastUsed.Value)} ago");
                 }
 
-                altSelector.AddOption(description.Length > 0
-                    ? new StringMenuSelectOptionProperties(displayName, alt.UserId.ToString(), description.ToString())
-                    : new StringMenuSelectOptionProperties(displayName, alt.UserId.ToString()));
+                var menuOption = new StringMenuSelectOptionProperties(displayName, alt.UserId.ToString());
+                if (description.Length > 0)
+                {
+                    menuOption = menuOption.WithDescription(description.ToString());
+                }
+                altSelector.AddOption(menuOption);
 
                 amount++;
             }
 
-            response.Components = new ActionRowProperties().WithSelectMenu(altSelector);
+            response.StringMenus.Add(altSelector);
         }
         else
         {
@@ -2084,30 +2089,30 @@ public class UserBuilder
             response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
             foreach (var shortcut in shortcuts)
             {
-                response.ComponentsContainer.AddComponent(new SectionBuilder
+                response.ComponentsContainer.AddComponent(new ComponentSectionProperties(
+                    new ButtonProperties($"{InteractionConstants.Shortcuts.Manage}:{shortcut.Id}",
+                        EmojiProperties.Standard("📝"), ButtonStyle.Secondary))
                 {
                     Components =
                     [
                         new TextDisplayProperties(
                             $"**Input:** `{StringExtensions.Sanitize(shortcut.Input)}`\n**Output:** `{StringExtensions.Sanitize(shortcut.Output)}`")
-                    ],
-                    Accessory = new ButtonBuilder(emote: EmojiProperties.Standard("📝"), style: ButtonStyle.Secondary,
-                        customId: $"{InteractionConstants.Shortcuts.Manage}-{shortcut.Id}")
+                    ]
                 });
             }
         }
 
         response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
-        response.ComponentsContainer.AddComponent(new SectionBuilder
+        response.ComponentsContainer.AddComponent(new ComponentSectionProperties(
+            new ButtonProperties($"{InteractionConstants.Shortcuts.Create}:{context.DiscordUser.Id}",
+                "Create", ButtonStyle.Primary))
         {
             Components =
             [
                 new TextDisplayProperties(
                     $"-# ⭐ Supporter perk - {shortcuts.Count}/10 shortcut slots used\n" +
                     $"-# Any change takes a minute to apply in all servers")
-            ],
-            Accessory = new ButtonBuilder("Create", style: ButtonStyle.Primary,
-                customId: $"{InteractionConstants.Shortcuts.Create}-{context.DiscordUser.Id}")
+            ]
         });
 
         return response;
@@ -2148,10 +2153,10 @@ public class UserBuilder
 
         response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
         var actionRow = new ActionRowProperties();
-        actionRow.AddComponent(new ButtonBuilder("Modify", style: ButtonStyle.Secondary,
-            customId: $"{InteractionConstants.Shortcuts.Modify}-{shortcut.Id}-{overviewMessageId}"));
-        actionRow.AddComponent(new ButtonBuilder("Delete", style: ButtonStyle.Danger,
-            customId: $"{InteractionConstants.Shortcuts.Delete}-{shortcut.Id}-{overviewMessageId}"));
+        actionRow.Add(new ButtonProperties($"{InteractionConstants.Shortcuts.Modify}:{shortcut.Id}:{overviewMessageId}",
+            "Modify", ButtonStyle.Secondary));
+        actionRow.Add(new ButtonProperties($"{InteractionConstants.Shortcuts.Delete}:{shortcut.Id}:{overviewMessageId}",
+            "Delete", ButtonStyle.Danger));
         response.ComponentsContainer.AddComponent(actionRow);
 
         return response;
@@ -2297,7 +2302,7 @@ public class UserBuilder
         }
 
         var inputCommands = this._commands.Search(input);
-        if (inputCommands.IsSuccess && inputCommands.Commands.Any(a => a.Command.Name.Equals("shortcuts")))
+        if (inputCommands.IsSuccess && inputCommands.Command?.Aliases[0].Equals("shortcuts", StringComparison.OrdinalIgnoreCase) == true)
         {
             response.Embed.WithDescription($"❌ You can't use this input for a shortcut\n\n" +
                                            $"`{input}`");
@@ -2307,7 +2312,7 @@ public class UserBuilder
         }
 
         var outputCommands = this._commands.Search(output);
-        if (!outputCommands.IsSuccess || outputCommands.Commands.Count == 0)
+        if (!outputCommands.IsSuccess || outputCommands.Command == null)
         {
             if (output.Contains('.'))
             {

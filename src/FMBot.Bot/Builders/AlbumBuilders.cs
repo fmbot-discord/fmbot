@@ -322,12 +322,12 @@ public class AlbumBuilders
         response.Components = new ActionRowProperties()
             .WithButton(
                 "Album tracks",
-                $"{InteractionConstants.Album.Tracks}-{databaseAlbum.Id}-{userSettings?.DiscordUserId ?? context.ContextUser.DiscordUserId}-{context.ContextUser.DiscordUserId}",
+                $"{InteractionConstants.Album.Tracks}:{databaseAlbum.Id}:{userSettings?.DiscordUserId ?? context.ContextUser.DiscordUserId}:{context.ContextUser.DiscordUserId}",
                 style: ButtonStyle.Secondary,
                 emote: EmojiProperties.Standard("🎶"))
             .WithButton(
                 "Cover",
-                $"{InteractionConstants.Album.Cover}-{databaseAlbum.Id}-{userSettings?.DiscordUserId ?? context.ContextUser.DiscordUserId}-{context.ContextUser.DiscordUserId}-motion",
+                $"{InteractionConstants.Album.Cover}:{databaseAlbum.Id}:{userSettings?.DiscordUserId ?? context.ContextUser.DiscordUserId}:{context.ContextUser.DiscordUserId}:motion",
                 style: ButtonStyle.Secondary,
                 emote: EmojiProperties.Standard("🖼️"));
 
@@ -482,7 +482,7 @@ public class AlbumBuilders
         {
             if (PublicProperties.PremiumServers.ContainsKey(context.DiscordGuild.Id))
             {
-                var allowedRoles = new RoleMenuProperties($"{InteractionConstants.WhoKnowsAlbumRolePicker}-{cachedAlbum.Id}")
+                var allowedRoles = new RoleMenuProperties($"{InteractionConstants.WhoKnowsAlbumRolePicker}:{cachedAlbum.Id}")
                     .WithPlaceholder("Apply role filter..")
                     .WithMinValues(0)
                     .WithMaxValues(25);
@@ -1030,7 +1030,7 @@ public class AlbumBuilders
             albumSearch.Album.AlbumName);
 
         var optionId =
-            $"{InteractionConstants.Album.Info}-{dbAlbum.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}";
+            $"{InteractionConstants.Album.Info}:{dbAlbum.Id}:{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}";
         var optionEmote = EmojiProperties.Standard("💽");
 
         if (pages.Count == 1)
@@ -1132,7 +1132,7 @@ public class AlbumBuilders
 
         response.Components = response.Components
             .WithButton("Album",
-                $"{InteractionConstants.Album.Info}-{databaseAlbum.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}",
+                $"{InteractionConstants.Album.Info}:{databaseAlbum.Id}:{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}",
                 style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("💽"));
 
         if (albumSearch.IsRandom)
@@ -1140,7 +1140,7 @@ public class AlbumBuilders
             response.Embed.WithFooter(
                 $"Random album #{albumSearch.RandomAlbumPosition} ({albumSearch.RandomAlbumPlaycount} {StringExtensions.GetPlaysString(albumSearch.RandomAlbumPlaycount)})");
             response.Components.WithButton("Reroll",
-                $"{InteractionConstants.Album.RandomCover}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}",
+                $"{InteractionConstants.Album.RandomCover}:{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}",
                 style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("🎲"));
         }
 
@@ -1150,13 +1150,13 @@ public class AlbumBuilders
             albumCoverUrl = albumImages.First(f => f.ImageType == ImageType.VideoSquare).Url;
             gifResult = true;
             response.Components.WithButton("Still",
-                $"{InteractionConstants.Album.Cover}-{databaseAlbum.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}-still",
+                $"{InteractionConstants.Album.Cover}:{databaseAlbum.Id}:{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}:still",
                 ButtonStyle.Secondary, EmojiProperties.Standard("🖼️"));
         }
         else if (albumImages.Any(a => a.ImageType == ImageType.VideoSquare))
         {
             response.Components.WithButton("Motion",
-                $"{InteractionConstants.Album.Cover}-{databaseAlbum.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}-motion",
+                $"{InteractionConstants.Album.Cover}:{databaseAlbum.Id}:{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}:motion",
                 ButtonStyle.Secondary, EmojiProperties.Standard("▶️"));
         }
 

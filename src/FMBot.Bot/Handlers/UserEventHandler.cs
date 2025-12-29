@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using FMBot.Bot.Extensions;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
@@ -77,7 +78,7 @@ public class UserEventHandler
                 var embed = new EmbedProperties();
 
                 embed.WithTitle("User without .fmbot account joined");
-                embed.WithDescription($"<@{socketGuildUser.Id}> - `{socketGuildUser.Username}` - **{socketGuildUser.GlobalName ?? socketGuildUser.Username}**");
+                embed.WithDescription($"<@{socketGuildUser.Id}> - `{socketGuildUser.Username}` - **{socketGuildUser.GetDisplayName()}**");
                 embed.WithTimestamp(DateTimeOffset.UtcNow);
                 embed.WithFooter($"{socketGuildUser.Id}");
 

@@ -1,12 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Eventing.Reader;
 using System.IO;
-using System.Linq;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Services.Guild;
@@ -34,7 +30,6 @@ public class StartupService
     private readonly CommandService<CommandContext> _textCommands;
     private readonly ApplicationCommandService<ApplicationCommandContext, AutocompleteInteractionContext> _appCommands;
     private readonly ComponentInteractionService<ComponentInteractionContext> _componentCommands;
-    private readonly ComponentInteractionService<ModalInteractionContext> _modalCommands;
     private readonly GuildDisabledCommandService _guildDisabledCommands;
     private readonly ChannelToggledCommandService _channelToggledCommands;
     private readonly DisabledChannelService _disabledChannelService;
@@ -67,8 +62,7 @@ public class StartupService
         ShortcutService shortcutService,
         CommandService<CommandContext> textCommands,
         ApplicationCommandService<ApplicationCommandContext, AutocompleteInteractionContext> appCommands,
-        ComponentInteractionService<ComponentInteractionContext> componentCommands,
-        ComponentInteractionService<ModalInteractionContext> modalCommands)
+        ComponentInteractionService<ComponentInteractionContext> componentCommands)
     {
         this._provider = provider;
         this._client = discord;
@@ -86,7 +80,6 @@ public class StartupService
         this._textCommands = textCommands;
         this._appCommands = appCommands;
         this._componentCommands = componentCommands;
-        this._modalCommands = modalCommands;
         this._botSettings = botSettings.Value;
     }
 
@@ -134,7 +127,6 @@ public class StartupService
 
         Log.Information("Loading component interaction modules");
         this._componentCommands.AddModules(typeof(Program).Assembly);
-        this._modalCommands.AddModules(typeof(Program).Assembly);
 
         Log.Information("Loading command modules");
         this._textCommands.AddModules(typeof(Program).Assembly);
@@ -194,8 +186,6 @@ public class StartupService
         // {
         //     await Task.Delay(100);
         // }
-
-        await this._client.StartAsync();
 
         Log.Information("ShardStarter: Done");
 

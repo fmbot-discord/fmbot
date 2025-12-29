@@ -55,7 +55,7 @@ public class ClientLogHandler
         this._client.Resume += ShardResumed;
 
         // Guild events
-        this._client.GuildCreate += ClientJoinedGuildEveßnt;
+        this._client.GuildCreate += ClientJoinedGuildEvent;
         this._client.GuildDelete += ClientLeftGuildEvent;
     }
 
@@ -105,7 +105,7 @@ public class ClientLogHandler
     private async Task ClientJoinedGuild(DiscordGuild guild)
     {
         Log.Information(
-            "JoinedGuild: {guildName} / {guildId} | {memberCount} members", guild.Name, guild.Id, guild.MemberCount);
+            "JoinedGuild: {guildName} / {guildId} | {memberCount} members", guild.Name, guild.Id, guild.ApproximateUserCount);
 
         var dbGuild = await this._guildService.GetGuildAsync(guild.Id);
         if (dbGuild?.GuildFlags.HasValue == true && dbGuild.GuildFlags.Value.HasFlag(GuildFlags.Banned))
@@ -128,9 +128,9 @@ public class ClientLogHandler
         try
         {
             var users = new List<DiscordGuildUser>();
-            await foreach (var awaitedUsers in guild.GetUsersAsync())
+            await foreach (var user in guild.GetUsersAsync())
             {
-                users.AddRange(awaitedUsers);
+                users.Add(user);
             }
 
             Log.Information(
@@ -157,7 +157,7 @@ public class ClientLogHandler
             keepData = true;
         }
 
-        if (BotTypeExtension.GetBotType(this._client.CurrentUser.Id) == BotType.Beta)
+        if (BotTypeExtension.GetBotType(this._client.GetCurrentUser()!.Id) == BotType.Beta)
         {
             keepData = true;
         }

@@ -26,12 +26,12 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using NetCord;
 using NetCord.Gateway;
+using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using NetCord.Services.Commands;
 using Npgsql;
 using Serilog;
 using Shared.Domain.Models;
-using Swan.Parsers;
 using User = FMBot.Persistence.Domain.Models.User;
 
 namespace FMBot.Bot.Services;
@@ -240,14 +240,7 @@ public class UserService
 
     public async Task<NetCord.User> GetUserFromDiscord(ulong discordUserId)
     {
-        var user = this._client.GetUser(discordUserId);
-
-        if (user == null)
-        {
-            return await this._client.Rest.GetUserAsync(discordUserId);
-        }
-
-        return user;
+        return await this._client.GetUserAsync(discordUserId);
     }
 
     public async Task<bool> UserHasSessionAsync(NetCord.User discordUser)
@@ -985,12 +978,15 @@ public class UserService
     {
         if (guild == null)
         {
-            return user.GlobalName ?? user.Username;
+            return user.GetDisplayName();
         }
 
-        var guildUser = await guild.GetUserAsync(user.Id, CacheMode.CacheOnly);
+        if (guild.Users.TryGetValue(user.Id, out var guildUser))
+        {
+            return guildUser.GetDisplayName();
+        }
 
-        return guildUser?.Nickname ?? user.GlobalName ?? user.Username;
+        return user.GetDisplayName();
     }
 
     public async Task<UserType> GetRankAsync(NetCord.User discordUser)
@@ -1820,7 +1816,7 @@ public class UserService
     public async Task UpdateLinkedRole(ulong discordUserId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
-        var botType = BotTypeExtension.GetBotType(this._client.CurrentUser.Id);
+        var botType = BotTypeExtension.GetBotType(this._client.GetCurrentUser()!.Id);
         var userToken =
             await db.UserTokens.FirstOrDefaultAsync(f => f.BotType == botType && f.DiscordUserId == discordUserId);
 
@@ -1831,7 +1827,11 @@ public class UserService
 
         if (DateTime.UtcNow >= userToken.TokenExpiresAt)
         {
-            await RefreshDiscordToken(userToken, db);
+            var refreshed = await RefreshDiscordToken(userToken, db);
+            if (!refreshed)
+            {
+                return;
+            }
         }
 
         var userSettings = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
@@ -1842,22 +1842,26 @@ public class UserService
 
         try
         {
-            await using var client = new DiscordRestClient();
-            await client.LoginAsync(TokenType.Bearer, userToken.AccessToken);
+            using var client = new RestClient(new BearerToken(userToken.AccessToken));
 
             DateTimeOffset registeredDate =
                 TimeZoneInfo.ConvertTime((DateTime)userSettings.RegisteredLastFm.GetValueOrDefault(), TimeZoneInfo.Utc);
 
-            var properties = new RoleConnectionProperties("Last.fm", userSettings.UserNameLastFM)
-                .WithNumber("total_scrobbles", (int)userSettings.TotalPlaycount.GetValueOrDefault())
-                .WithDate("registered", registeredDate);
+            var properties = new ApplicationRoleConnectionProperties
+            {
+                PlatformName = "Last.fm",
+                PlatformUsername = userSettings.UserNameLastFM,
+                Metadata = new Dictionary<string, string>
+                {
+                    { "total_scrobbles", ((int)userSettings.TotalPlaycount.GetValueOrDefault()).ToString() },
+                    { "registered", registeredDate.ToString("o") }
+                }
+            };
 
-            await client.ModifyUserApplicationRoleConnectionAsync(
+            await client.UpdateCurrentUserApplicationRoleConnectionAsync(
                 this._botSettings.Discord.ApplicationId.GetValueOrDefault(), properties);
 
             Log.Information("Updated linked roles for {discordUserId}", discordUserId);
-
-            await client.DisposeAsync();
         }
         catch (Exception ex)
         {
@@ -1865,7 +1869,7 @@ public class UserService
         }
     }
 
-    private async Task RefreshDiscordToken(UserToken userToken, FMBotDbContext db)
+    private async Task<bool> RefreshDiscordToken(UserToken userToken, FMBotDbContext db)
     {
         try
         {
@@ -1893,6 +1897,7 @@ public class UserService
                 db.Update(userToken);
 
                 await db.SaveChangesAsync();
+                return true;
             }
             else
             {
@@ -1903,16 +1908,18 @@ public class UserService
                     db.UserTokens.Remove(userToken);
                     await db.SaveChangesAsync();
                     Log.Information("Removed discord token for {discordUserId}", userToken.DiscordUserId);
-                    return;
+                    return false;
                 }
 
                 Log.Error("Failed to refresh Discord token for {discordUserId}: {ErrorContent}",
                     userToken.DiscordUserId, errorContent);
+                return false;
             }
         }
         catch (Exception ex)
         {
             Log.Error(ex, "Exception while refreshing Discord token for user {discordUserId}", userToken.DiscordUserId);
+            return false;
         }
     }
 

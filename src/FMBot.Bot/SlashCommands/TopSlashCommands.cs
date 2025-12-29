@@ -1,6 +1,5 @@
 using System;
 using System.Threading.Tasks;
-
 using FMBot.Bot.Attributes;
 using FMBot.Bot.AutoCompleteHandlers;
 using FMBot.Bot.Builders;
@@ -17,7 +16,9 @@ using NetCord.Services.Commands;
 
 namespace FMBot.Bot.SlashCommands;
 
-[SlashCommand("top", "Top lists - Artist/Albums/Tracks/Genres/Countries", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
+[SlashCommand("top", "Top lists - Artist/Albums/Tracks/Genres/Countries",
+    Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild],
+    IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
 public class TopSlashCommands : ApplicationCommandModule<ApplicationCommandContext>
 {
     private readonly UserService _userService;
@@ -55,26 +56,38 @@ public class TopSlashCommands : ApplicationCommandModule<ApplicationCommandConte
         this._indexService = indexService;
     }
 
-    [SlashCommand("artists", "Your top artists")]
+    [SubSlashCommand("artists", "Your top artists")]
     [UsernameSetRequired]
     public async Task TopArtistsAsync(
-        [SlashCommandParameter(Name = "Time-period", Description = "Time period", AutocompleteProviderType = typeof(DateTimeAutoComplete))] string timePeriod = null,
-        [SlashCommandParameter(Name = "Billboard", Description = "Show top artists billboard-style")] bool billboard = false,
-        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")] string user = null,
-        [SlashCommandParameter(Name = "Mode", Description = "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
-        [SlashCommandParameter(Name = "Size", Description = "Amount of artists to show")] EmbedSize? embedSize = null,
-        [SlashCommandParameter(Name = "Private", Description = "Only show response to you")] bool privateResponse = false,
-        [SlashCommandParameter(Name = "Discogs", Description = "Show top artists in Discogs collection")] bool discogs = false)
+        [SlashCommandParameter(Name = "Time-period", Description = "Time period",
+            AutocompleteProviderType = typeof(DateTimeAutoComplete))]
+        string timePeriod = null,
+        [SlashCommandParameter(Name = "Billboard", Description = "Show top artists billboard-style")]
+        bool billboard = false,
+        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")]
+        string user = null,
+        [SlashCommandParameter(Name = "Mode",
+            Description = "The type of response you want - change default with /responsemode")]
+        ResponseMode? mode = null,
+        [SlashCommandParameter(Name = "Size", Description = "Amount of artists to show")]
+        EmbedSize? embedSize = null,
+        [SlashCommandParameter(Name = "Private", Description = "Only show response to you")]
+        bool privateResponse = false,
+        [SlashCommandParameter(Name = "Discogs", Description = "Show top artists in Discogs collection")]
+        bool discogs = false)
     {
-        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
+        await Context.Interaction.SendResponseAsync(
+            InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+        var userSettings =
+            await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
         userSettings.RegisteredLastFm ??= await this._indexService.AddUserRegisteredLfmDate(userSettings.UserId);
 
         mode ??= contextUser.Mode ?? ResponseMode.Embed;
 
-        var timeSettings = SettingService.GetTimePeriod(timePeriod, discogs ? TimePeriod.AllTime : TimePeriod.Weekly, userSettings.RegisteredLastFm, timeZone: userSettings.TimeZone);
+        var timeSettings = SettingService.GetTimePeriod(timePeriod, discogs ? TimePeriod.AllTime : TimePeriod.Weekly,
+            userSettings.RegisteredLastFm, timeZone: userSettings.TimeZone);
         var topListSettings = new TopListSettings(embedSize ?? EmbedSize.Default, billboard, discogs);
 
         var response = topListSettings.Discogs
@@ -87,27 +100,45 @@ public class TopSlashCommands : ApplicationCommandModule<ApplicationCommandConte
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [SlashCommand("albums", "Shows your top albums")]
+    [SubSlashCommand("albums", "Shows your top albums")]
     [UsernameSetRequired]
     public async Task TopAlbumsAsync(
-        [SlashCommandParameter(Name = "Time-period", Description = "Time period", AutocompleteProviderType = typeof(DateTimeAutoComplete))] string timePeriod = null,
-        [SlashCommandParameter(Name = "Released", Description = "Filter to albums released in year", AutocompleteProviderType = typeof(YearAutoComplete))] string year = null,
-        [SlashCommandParameter(Name = "Decade", Description = "Filter to albums released in decade", AutocompleteProviderType = typeof(DecadeAutoComplete))] string decade = null,
-        [SlashCommandParameter(Name = "Billboard", Description = "Show top albums billboard-style")] bool billboard = false,
-        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")] string user = null,
-        [SlashCommandParameter(Name = "Mode", Description = "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
-        [SlashCommandParameter(Name = "Size", Description = "Amount of albums to show")] EmbedSize? embedSize = null,
-        [SlashCommandParameter(Name = "Private", Description = "Only show response to you")] bool privateResponse = false)
+        [SlashCommandParameter(Name = "Time-period", Description = "Time period",
+            AutocompleteProviderType = typeof(DateTimeAutoComplete))]
+        string timePeriod = null,
+        [SlashCommandParameter(Name = "Released", Description = "Filter to albums released in year",
+            AutocompleteProviderType = typeof(YearAutoComplete))]
+        string year = null,
+        [SlashCommandParameter(Name = "Decade", Description = "Filter to albums released in decade",
+            AutocompleteProviderType = typeof(DecadeAutoComplete))]
+        string decade = null,
+        [SlashCommandParameter(Name = "Billboard", Description = "Show top albums billboard-style")]
+        bool billboard = false,
+        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")]
+        string user = null,
+        [SlashCommandParameter(Name = "Mode",
+            Description = "The type of response you want - change default with /responsemode")]
+        ResponseMode? mode = null,
+        [SlashCommandParameter(Name = "Size", Description = "Amount of albums to show")]
+        EmbedSize? embedSize = null,
+        [SlashCommandParameter(Name = "Private", Description = "Only show response to you")]
+        bool privateResponse = false)
     {
-        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
+        await Context.Interaction.SendResponseAsync(
+            InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+        var userSettings =
+            await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
         mode ??= contextUser.Mode ?? ResponseMode.Embed;
 
-        var timeSettings = SettingService.GetTimePeriod(timePeriod, !string.IsNullOrWhiteSpace(year) || !string.IsNullOrWhiteSpace(decade) ? TimePeriod.AllTime : TimePeriod.Weekly, timeZone: userSettings.TimeZone);
+        var timeSettings = SettingService.GetTimePeriod(timePeriod,
+            !string.IsNullOrWhiteSpace(year) || !string.IsNullOrWhiteSpace(decade)
+                ? TimePeriod.AllTime
+                : TimePeriod.Weekly, timeZone: userSettings.TimeZone);
 
-        var topListSettings = new TopListSettings(embedSize ?? EmbedSize.Default, billboard, year: year != null ? int.Parse(year) : null, decade: decade != null ? int.Parse(decade) : null);
+        var topListSettings = new TopListSettings(embedSize ?? EmbedSize.Default, billboard,
+            year: year != null ? int.Parse(year) : null, decade: decade != null ? int.Parse(decade) : null);
 
         var response = await this._albumBuilders.TopAlbumsAsync(new ContextModel(this.Context, contextUser),
             topListSettings, timeSettings, userSettings, mode.Value);
@@ -116,20 +147,30 @@ public class TopSlashCommands : ApplicationCommandModule<ApplicationCommandConte
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [SlashCommand("tracks", "Shows your top tracks")]
+    [SubSlashCommand("tracks", "Shows your top tracks")]
     [UsernameSetRequired]
     public async Task TopTracksAsync(
-        [SlashCommandParameter(Name = "Time-period", Description = "Time period", AutocompleteProviderType = typeof(DateTimeAutoComplete))] string timePeriod = null,
-        [SlashCommandParameter(Name = "Billboard", Description = "Show top tracks billboard-style")] bool billboard = false,
-        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")] string user = null,
-        [SlashCommandParameter(Name = "Mode", Description = "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
-        [SlashCommandParameter(Name = "Size", Description = "Amount of tracks to show")] EmbedSize? embedSize = null,
-        [SlashCommandParameter(Name = "Private", Description = "Only show response to you")] bool privateResponse = false)
+        [SlashCommandParameter(Name = "Time-period", Description = "Time period",
+            AutocompleteProviderType = typeof(DateTimeAutoComplete))]
+        string timePeriod = null,
+        [SlashCommandParameter(Name = "Billboard", Description = "Show top tracks billboard-style")]
+        bool billboard = false,
+        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")]
+        string user = null,
+        [SlashCommandParameter(Name = "Mode",
+            Description = "The type of response you want - change default with /responsemode")]
+        ResponseMode? mode = null,
+        [SlashCommandParameter(Name = "Size", Description = "Amount of tracks to show")]
+        EmbedSize? embedSize = null,
+        [SlashCommandParameter(Name = "Private", Description = "Only show response to you")]
+        bool privateResponse = false)
     {
-        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
+        await Context.Interaction.SendResponseAsync(
+            InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+        var userSettings =
+            await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
         mode ??= contextUser.Mode ?? ResponseMode.Embed;
 
         var timeSettings = SettingService.GetTimePeriod(timePeriod, timeZone: userSettings.TimeZone);
@@ -143,20 +184,30 @@ public class TopSlashCommands : ApplicationCommandModule<ApplicationCommandConte
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [SlashCommand("genres", "Shows your top genres")]
+    [SubSlashCommand("genres", "Shows your top genres")]
     [UsernameSetRequired]
     public async Task TopGenresAsync(
-        [SlashCommandParameter(Name = "Time-period", Description = "Time period", AutocompleteProviderType = typeof(DateTimeAutoComplete))] string timePeriod = null,
-        [SlashCommandParameter(Name = "Billboard", Description = "Show top genres billboard-style")] bool billboard = false,
-        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")] string user = null,
-        [SlashCommandParameter(Name = "Mode", Description = "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
-        [SlashCommandParameter(Name = "Size", Description = "Amount of genres to show")] EmbedSize? embedSize = null,
-        [SlashCommandParameter(Name = "Private", Description = "Only show response to you")] bool privateResponse = false)
+        [SlashCommandParameter(Name = "Time-period", Description = "Time period",
+            AutocompleteProviderType = typeof(DateTimeAutoComplete))]
+        string timePeriod = null,
+        [SlashCommandParameter(Name = "Billboard", Description = "Show top genres billboard-style")]
+        bool billboard = false,
+        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")]
+        string user = null,
+        [SlashCommandParameter(Name = "Mode",
+            Description = "The type of response you want - change default with /responsemode")]
+        ResponseMode? mode = null,
+        [SlashCommandParameter(Name = "Size", Description = "Amount of genres to show")]
+        EmbedSize? embedSize = null,
+        [SlashCommandParameter(Name = "Private", Description = "Only show response to you")]
+        bool privateResponse = false)
     {
-        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
+        await Context.Interaction.SendResponseAsync(
+            InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+        var userSettings =
+            await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
         mode ??= contextUser.Mode ?? ResponseMode.Embed;
 
         var timeSettings = SettingService.GetTimePeriod(timePeriod, timeZone: userSettings.TimeZone);
@@ -170,20 +221,30 @@ public class TopSlashCommands : ApplicationCommandModule<ApplicationCommandConte
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [SlashCommand("countries", "Shows your top countries")]
+    [SubSlashCommand("countries", "Shows your top countries")]
     [UsernameSetRequired]
     public async Task TopCountriesAsync(
-        [SlashCommandParameter(Name = "Time-period", Description = "Time period", AutocompleteProviderType = typeof(DateTimeAutoComplete))] string timePeriod = null,
-        [SlashCommandParameter(Name = "Billboard", Description = "Show top countries billboard-style")] bool billboard = false,
-        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")] string user = null,
-        [SlashCommandParameter(Name = "Mode", Description = "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
-        [SlashCommandParameter(Name = "Size", Description = "Amount of countries to show")] EmbedSize? embedSize = null,
-        [SlashCommandParameter(Name = "Private", Description = "Only show response to you")] bool privateResponse = false)
+        [SlashCommandParameter(Name = "Time-period", Description = "Time period",
+            AutocompleteProviderType = typeof(DateTimeAutoComplete))]
+        string timePeriod = null,
+        [SlashCommandParameter(Name = "Billboard", Description = "Show top countries billboard-style")]
+        bool billboard = false,
+        [SlashCommandParameter(Name = "User", Description = "The user to show (defaults to self)")]
+        string user = null,
+        [SlashCommandParameter(Name = "Mode",
+            Description = "The type of response you want - change default with /responsemode")]
+        ResponseMode? mode = null,
+        [SlashCommandParameter(Name = "Size", Description = "Amount of countries to show")]
+        EmbedSize? embedSize = null,
+        [SlashCommandParameter(Name = "Private", Description = "Only show response to you")]
+        bool privateResponse = false)
     {
-        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
+        await Context.Interaction.SendResponseAsync(
+            InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+        var userSettings =
+            await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
         mode ??= contextUser.Mode ?? ResponseMode.Embed;
 
         var timeSettings = SettingService.GetTimePeriod(timePeriod, timeZone: userSettings.TimeZone);

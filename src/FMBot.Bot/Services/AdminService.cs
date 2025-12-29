@@ -377,8 +377,9 @@ public class AdminService
                 return;
             }
 
-            var guild = this._client.Cache.Guilds.GetValueOrDefault(this._botSettings.Bot.BaseServerId);
-            var channel = guild?.GetTextChannel(this._botSettings.Bot.GlobalWhoKnowsReportChannelId);
+            var guild = await this._client.GetGuildAsync(this._botSettings.Bot.BaseServerId);
+            var channels = await guild.GetChannelsAsync();
+            var channel = channels?.FirstOrDefault(f => f.Id == this._botSettings.Bot.GlobalWhoKnowsReportChannelId) as TextGuildChannel;
 
             if (channel == null)
             {
@@ -411,11 +412,13 @@ public class AdminService
                 components.WithButton($"Convert filter to ban", $"gwk-filtered-user-to-ban-{filteredUser.GlobalFilteredUserId}", style: ButtonStyle.Secondary, row: 2);
             }
 
-            var reporter = guild.GetUser(report.ReportedByDiscordUserId);
+            var reporter = await guild.GetUserAsync(report.ReportedByDiscordUserId);
             embed.AddField("Reporter",
-                $"**{reporter?.DisplayName}** - <@{report.ReportedByDiscordUserId}> - `{report.ReportedByDiscordUserId}`");
+                $"**{reporter?.GetDisplayName()}** - <@{report.ReportedByDiscordUserId}> - `{report.ReportedByDiscordUserId}`");
 
-            await channel.SendMessageAsync(embed: embed, components: components);
+            await channel.SendMessageAsync(new MessageProperties()
+                .WithEmbeds([embed])
+                .WithComponents([components]));
         }
         catch (Exception e)
         {

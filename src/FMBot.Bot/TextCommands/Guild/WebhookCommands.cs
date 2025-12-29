@@ -8,6 +8,8 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
+using NetCord;
+using NetCord.Gateway;
 using NetCord.Rest;
 using NetCord.Services.Commands;
 
@@ -21,18 +23,21 @@ public class WebhookCommands : BaseCommandModule
     private readonly WebhookService _webhookService;
     private readonly GuildSettingBuilder _guildSettingBuilder;
     private readonly IPrefixService _prefixService;
+    private readonly ShardedGatewayClient _client;
 
     public WebhookCommands(
         WebhookService webhookService,
         GuildService guildService,
         IOptions<BotSettings> botSettings,
         GuildSettingBuilder guildSettingBuilder,
-        IPrefixService prefixService) : base(botSettings)
+        IPrefixService prefixService,
+        ShardedGatewayClient client) : base(botSettings)
     {
         this._webhookService = webhookService;
         this._guildService = guildService;
         this._guildSettingBuilder = guildSettingBuilder;
         this._prefixService = prefixService;
+        this._client = client;
     }
 
     [Command("addwebhook", "addfeaturedwebhook")]
@@ -51,11 +56,11 @@ public class WebhookCommands : BaseCommandModule
             return;
         }
 
-        var socketCommandContext = (SocketCommandContext)this.Context;
-        var user = await this.Context.Guild.GetUserAsync(socketCommandContext.Client.CurrentUser.Id);
-        if (!user.GuildPermissions.ManageWebhooks)
+        var permissions = await GuildService.GetGuildPermissionsAsync(this.Context);
+        if (!permissions.HasFlag(Permissions.ManageWebhooks))
         {
-            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = $"In order to create the featured webhook, I need permission to add webhooks.\n\nYou can add this permission by going to `Server Settings` > `Roles` > `{socketCommandContext.Client.CurrentUser.Username}` and enabling the `Manage Webhooks` permission." });
+            var currentUser = this._client.GetCurrentUser();
+            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = $"In order to create the featured webhook, I need permission to add webhooks.\n\nYou can add this permission by going to `Server Settings` > `Roles` > `{currentUser?.Username}` and enabling the `Manage Webhooks` permission." });
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }

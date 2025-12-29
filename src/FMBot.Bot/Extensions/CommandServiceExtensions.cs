@@ -10,10 +10,10 @@ namespace FMBot.Bot.Extensions;
 public class CommandSearchResult
 {
     public bool IsSuccess { get; init; }
-    public CommandInfo<CommandContext>? Command { get; init; }
+    public ICommandInfo<CommandContext>? Command { get; init; }
     public string? ErrorReason { get; init; }
 
-    public static CommandSearchResult Success(CommandInfo<CommandContext> command) =>
+    public static CommandSearchResult Success(ICommandInfo<CommandContext> command) =>
         new() { IsSuccess = true, Command = command };
 
     public static CommandSearchResult Failure(string reason) =>
@@ -39,10 +39,10 @@ public static class CommandServiceExtensions
             return CommandSearchResult.Failure("No command name found");
         }
 
-        // Search through all commands
-        var commands = commandService.GetCommands();
+        // Search through all commands - flatten the dictionary values
+        var allCommands = commandService.GetCommands().SelectMany(kvp => kvp.Value);
 
-        foreach (var command in commands)
+        foreach (var command in allCommands)
         {
             // Check if any alias matches (aliases include the primary name)
             if (command.Aliases.Any(alias =>

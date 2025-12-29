@@ -203,14 +203,14 @@ public static class InteractionContextExtensions
                         .WithContent(response.Text)
                         .WithAllowedMentions(AllowedMentionsProperties.None)
                         .WithFlags(flags)
-                        .WithComponents(response.Components != null ? [response.Components] : null)));
+                        .WithComponents(response.GetMessageComponents())));
                 break;
             case ResponseType.Embed:
                 await context.Interaction.SendResponseAsync(InteractionCallback.Message(
                     new InteractionMessageProperties()
                         .WithEmbeds(embeds)
                         .WithFlags(flags)
-                        .WithComponents(response.Components != null ? [response.Components] : null)));
+                        .WithComponents(response.GetMessageComponents())));
                 break;
             case ResponseType.ComponentsV2:
                 await context.Interaction.SendResponseAsync(InteractionCallback.Message(
@@ -229,7 +229,7 @@ public static class InteractionContextExtensions
                             response.Stream).WithDescription(response.FileDescription))
                         .WithEmbeds([response.Embed])
                         .WithFlags(flags)
-                        .WithComponents(response.Components != null ? [response.Components] : null)));
+                        .WithComponents(response.GetMessageComponents())));
                 break;
             case ResponseType.Paginator:
                 _ = interactiveService.SendPaginatorAsync(
@@ -293,14 +293,14 @@ public static class InteractionContextExtensions
                     .WithContent(response.Text)
                     .WithAllowedMentions(AllowedMentionsProperties.None)
                     .WithFlags(flags)
-                    .WithComponents(response.Components != null ? [response.Components] : null));
+                    .WithComponents(response.GetMessageComponents()));
                 responseId = text.Id;
                 break;
             case ResponseType.Embed:
                 var embed = await context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
                     .WithEmbeds([response.Embed])
                     .WithFlags(flags)
-                    .WithComponents(response.Components != null ? [response.Components] : null));
+                    .WithComponents(response.GetMessageComponents()));
                 responseId = embed.Id;
                 break;
             case ResponseType.ComponentsV2:
@@ -351,7 +351,7 @@ public static class InteractionContextExtensions
                         response.Stream).WithDescription(response.FileDescription))
                     .WithEmbeds([response.Embed])
                     .WithFlags(flags)
-                    .WithComponents(response.Components != null ? [response.Components] : null));
+                    .WithComponents(response.GetMessageComponents()));
 
                 await response.Stream.DisposeAsync();
                 responseId = imageWithEmbed.Id;
@@ -461,59 +461,58 @@ public static class InteractionContextExtensions
             return;
         }
 
-        var newRows = new List<ActionRowProperties>();
+        var newComponents = new List<IMessageComponentProperties>();
         foreach (var component in message.Components)
         {
-            if (component is not ActionRow actionRow)
+            if (component is ActionRow actionRow)
             {
-                continue;
-            }
-
-            var newRow = new ActionRowProperties();
-            foreach (var rowComponent in actionRow.Components)
-            {
-                if (rowComponent is Button button)
+                var newRow = new ActionRowProperties();
+                foreach (var rowComponent in actionRow.Components)
                 {
-                    var shouldDisable = specificButtonOnly == null || button.CustomId == specificButtonOnly;
-                    newRow.AddComponents(new ButtonProperties(button.Label, button.CustomId, button.Style)
+                    if (rowComponent is Button button)
                     {
-                        Emoji = ToEmojiProperties(button.Emoji),
-                        Disabled = shouldDisable
-                    });
-                }
-                else if (rowComponent is LinkButton linkButton)
-                {
-                    newRow.AddComponents(new LinkButtonProperties(linkButton.Label, linkButton.Url)
-                    {
-                        Emoji = ToEmojiProperties(linkButton.Emoji),
-                        Disabled = specificButtonOnly == null
-                    });
-                }
-                else if (rowComponent is StringMenu stringMenu)
-                {
-                    newRow.AddComponents(new StringMenuProperties(stringMenu.CustomId, stringMenu.Options.Select(o =>
-                        new StringMenuSelectOptionProperties(o.Label, o.Value)
+                        var shouldDisable = specificButtonOnly == null || button.CustomId == specificButtonOnly;
+                        newRow.AddComponents(new ButtonProperties(button.Label, button.CustomId, button.Style)
                         {
-                            Description = o.Description,
-                            Emoji = ToEmojiProperties(o.Emoji),
-                            Default = o.Default
-                        }))
+                            Emoji = ToEmojiProperties(button.Emoji),
+                            Disabled = shouldDisable
+                        });
+                    }
+                    else if (rowComponent is LinkButton linkButton)
                     {
-                        Placeholder = stringMenu.Placeholder,
-                        MinValues = stringMenu.MinValues,
-                        MaxValues = stringMenu.MaxValues,
-                        Disabled = true
-                    });
+                        newRow.AddComponents(new LinkButtonProperties(linkButton.Label, linkButton.Url)
+                        {
+                            Emoji = ToEmojiProperties(linkButton.Emoji),
+                            Disabled = specificButtonOnly == null
+                        });
+                    }
+                }
+
+                if (newRow.Count() > 0)
+                {
+                    newComponents.Add(newRow);
                 }
             }
-
-            if (newRow.Count() > 0)
+            else if (component is StringMenu stringMenu)
             {
-                newRows.Add(newRow);
+                // In NetCord, select menus are added directly as top-level components
+                newComponents.Add(new StringMenuProperties(stringMenu.CustomId, stringMenu.Options.Select(o =>
+                    new StringMenuSelectOptionProperties(o.Label, o.Value)
+                    {
+                        Description = o.Description,
+                        Emoji = ToEmojiProperties(o.Emoji),
+                        Default = o.Default
+                    }))
+                {
+                    Placeholder = stringMenu.Placeholder,
+                    MinValues = stringMenu.MinValues,
+                    MaxValues = stringMenu.MaxValues,
+                    Disabled = true
+                });
             }
         }
 
-        await ModifyComponents(context, message, newRows, interactionEdit);
+        await ModifyComponentsList(context, message, newComponents, interactionEdit);
     }
 
     public static async Task DisableInteractionButtons(this IInteractionContext context, bool interactionEdit = false,
@@ -731,12 +730,27 @@ public static class InteractionContextExtensions
         }
     }
 
+    public static async Task ModifyComponentsList(this IInteractionContext context, RestMessage message,
+        IEnumerable<IMessageComponentProperties> newComponents, bool interactionEdit = false)
+    {
+        if ((context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
+             !context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall)) ||
+            interactionEdit)
+        {
+            await context.Interaction.ModifyResponseAsync(m => m.Components = newComponents);
+        }
+        else
+        {
+            await message.ModifyAsync(m => m.Components = newComponents);
+        }
+    }
+
     public static async Task ModifyMessage(this IInteractionContext context, RestMessage message,
         ResponseModel response, bool defer = true, bool interactionEdit = false)
     {
-        var components = response.ResponseType == ResponseType.ComponentsV2
+        IEnumerable<IMessageComponentProperties> components = response.ResponseType == ResponseType.ComponentsV2
             ? response.ComponentsV2
-            : response.Components != null ? [response.Components] : null;
+            : response.GetMessageComponents();
 
         var attachments = response.Stream != null
             ? new List<AttachmentProperties>

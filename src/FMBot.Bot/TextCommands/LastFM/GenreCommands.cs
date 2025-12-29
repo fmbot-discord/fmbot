@@ -13,6 +13,7 @@ using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
 using TimePeriod = FMBot.Domain.Models.TimePeriod;
 using Fergun.Interactive;
+using NetCord.Rest;
 using NetCord.Services.Commands;
 
 namespace FMBot.Bot.TextCommands.LastFM;

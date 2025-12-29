@@ -463,7 +463,7 @@ public class UserCommands : BaseCommandModule
             var response = UserBuilder.FmMode(new ContextModel(this.Context, prfx, contextUser), guild);
 
             var dmChannel = await this.Context.User.GetDMChannelAsync();
-            await dmChannel.SendMessageAsync(new MessageProperties().AddEmbeds(response.Embed).WithComponents(response.Components));
+            await dmChannel.SendMessageAsync(new MessageProperties().AddEmbeds(response.Embed).WithComponents(response.Components != null ? [response.Components] : null));
 
             if (this.Context.Guild != null)
             {
@@ -616,7 +616,7 @@ public class UserCommands : BaseCommandModule
 
         var response = UserBuilder.RemoveDataResponse(new ContextModel(this.Context, prfx, contextUser));
         var dmChannel = await this.Context.User.GetDMChannelAsync();
-        await dmChannel.SendMessageAsync(new MessageProperties().AddEmbeds(response.Embed).WithComponents(response.Components));
+        await dmChannel.SendMessageAsync(new MessageProperties().AddEmbeds(response.Embed).WithComponents(response.Components != null ? [response.Components] : null));
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 

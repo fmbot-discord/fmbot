@@ -255,17 +255,19 @@ public static class GenericEmbedService
     }
 
     public static (EmbedProperties EmbedProperties, bool showPurchaseButtons) HelpResponse(EmbedProperties embed,
-        CommandInfo<CommandContext> commandInfo, string prfx, string userName)
+        ICommandInfo<CommandContext> commandInfo, string prfx, string userName)
     {
         embed.WithColor(DiscordConstants.InformationColorBlue);
-        embed.WithTitle($"Information about '{prfx}{commandInfo.Name}' for {userName}");
+        embed.WithTitle($"Information about '{prfx}{commandInfo.Aliases[0]}' for {userName}");
 
-        if (!string.IsNullOrWhiteSpace(commandInfo.Summary))
+        var allAttributes = commandInfo.Attributes.Values.SelectMany(x => x);
+        var summary = allAttributes.OfType<SummaryAttribute>().FirstOrDefault()?.Summary;
+        if (!string.IsNullOrWhiteSpace(summary))
         {
-            embed.WithDescription(commandInfo.Summary.Replace("{{prfx}}", prfx));
+            embed.WithDescription(summary.Replace("{{prfx}}", prfx));
         }
 
-        var options = commandInfo.Attributes.OfType<OptionsAttribute>()
+        var options = allAttributes.OfType<OptionsAttribute>()
             .FirstOrDefault();
         if (options?.Options != null && options.Options.Any())
         {
@@ -278,7 +280,7 @@ public static class GenericEmbedService
             embed.AddField("Options", optionsString.ToString());
         }
 
-        var examples = commandInfo.Attributes.OfType<ExamplesAttribute>()
+        var examples = allAttributes.OfType<ExamplesAttribute>()
             .FirstOrDefault();
         if (examples?.Examples != null && examples.Examples.Any())
         {
@@ -291,7 +293,7 @@ public static class GenericEmbedService
             embed.AddField("Examples", examplesString.ToString());
         }
 
-        var aliases = commandInfo.Aliases.Where(a => a != commandInfo.Name).ToList();
+        var aliases = commandInfo.Aliases.Skip(1).ToList();
         if (aliases.Any())
         {
             var aliasesString = new StringBuilder();
@@ -310,7 +312,7 @@ public static class GenericEmbedService
         }
 
         var showPurchaseButtons = false;
-        var supporterEnhanced = commandInfo.Attributes.OfType<SupporterEnhancedAttribute>()
+        var supporterEnhanced = allAttributes.OfType<SupporterEnhancedAttribute>()
             .FirstOrDefault();
         if (supporterEnhanced?.Explainer != null)
         {
@@ -318,7 +320,7 @@ public static class GenericEmbedService
             embed.AddField("⭐ Enhanced for .fmbot supporters", supporterEnhanced.Explainer);
         }
 
-        var supporterExclusive = commandInfo.Attributes.OfType<SupporterExclusiveAttribute>()
+        var supporterExclusive = allAttributes.OfType<SupporterExclusiveAttribute>()
             .FirstOrDefault();
         if (supporterExclusive?.Explainer != null)
         {
@@ -329,12 +331,12 @@ public static class GenericEmbedService
         return (embed, showPurchaseButtons);
     }
 
-    public static ActionRowProperties PurchaseButtons(CommandInfo<CommandContext> commandInfo)
+    public static ActionRowProperties PurchaseButtons(ICommandInfo<CommandContext> commandInfo)
     {
         return new ActionRowProperties()
             .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
                 customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(
-                    source: $"help-{commandInfo.Name}"));
+                    source: $"help-{commandInfo.Aliases[0]}"));
     }
 
     extension(EmbedProperties embed)
@@ -366,58 +368,58 @@ public static class GenericEmbedService
         }
     }
 
-    public static ActionRowProperties WithButton(this ActionRowProperties actionRow, string label, string customId,
-        ButtonStyle style, EmojiProperties emote = null, bool disabled = false)
+    public static ActionRowProperties WithButton(this ActionRowProperties actionRow, EmojiProperties emote,
+        string url = null, string label = null)
     {
-        var button = emote == null
-            ? new ButtonProperties(customId, label, style)
-            : new ButtonProperties(customId, label, emote, style);
-
-        button.Disabled = disabled;
-
-        actionRow.Add(button);
+        var linkButton = label == null
+            ? new LinkButtonProperties(url, emote)
+            : new LinkButtonProperties(url, label, emote);
+        actionRow.Add(linkButton);
         return actionRow;
     }
 
-    public static ActionRowProperties WithButton(this ActionRowProperties actionRow, string label = null,
-        string url = null, EmojiProperties emote = null, int row = 1)
+    public static ActionRowProperties WithButton(this ActionRowProperties actionRow, string label,
+        string customId = null, ButtonStyle style = ButtonStyle.Secondary, EmojiProperties emote = null,
+        bool disabled = false, string url = null, int row = 0)
     {
-        if (label == null && emote != null)
+        if (url != null)
         {
-            actionRow.Add(new LinkButtonProperties(url, emote));
-        }
-        else
-        {
-            actionRow.Add(emote == null
+            var linkButton = emote == null
                 ? new LinkButtonProperties(url, label)
-                : new LinkButtonProperties(url, label, emote));
+                : new LinkButtonProperties(url, label, emote);
+            actionRow.Add(linkButton);
+        }
+        else if (customId != null)
+        {
+            var button = emote == null
+                ? new ButtonProperties(customId, label, style)
+                : new ButtonProperties(customId, label, emote, style);
+            button.Disabled = disabled;
+            actionRow.Add(button);
         }
 
         return actionRow;
     }
 
-    public static ActionRowProperties WithSelectMenu(this ActionRowProperties actionRow, StringMenuProperties selectMenu, int row = 0)
+    public static List<ActionRowProperties> WithButton(this List<ActionRowProperties> rows, string label,
+        string customId = null, ButtonStyle style = ButtonStyle.Secondary, EmojiProperties emote = null,
+        bool disabled = false, string url = null, int row = 0)
     {
-        actionRow.Add(selectMenu);
-        return actionRow;
-    }
+        while (rows.Count <= row)
+        {
+            rows.Add(new ActionRowProperties());
+        }
 
-    public static ActionRowProperties WithSelectMenu(this ActionRowProperties actionRow, RoleMenuProperties selectMenu, int row = 0)
-    {
-        actionRow.Add(selectMenu);
-        return actionRow;
-    }
+        if (url != null)
+        {
+            rows[row].WithButton(label, url: url, emote: emote);
+        }
+        else if (customId != null)
+        {
+            rows[row].WithButton(label, customId, style, emote, disabled);
+        }
 
-    public static ActionRowProperties WithSelectMenu(this ActionRowProperties actionRow, UserMenuProperties selectMenu, int row = 0)
-    {
-        actionRow.Add(selectMenu);
-        return actionRow;
-    }
-
-    public static ActionRowProperties WithSelectMenu(this ActionRowProperties actionRow, ChannelMenuProperties selectMenu, int row = 0)
-    {
-        actionRow.Add(selectMenu);
-        return actionRow;
+        return rows;
     }
 
     public static List<ActionRowProperties> AddComponent(this List<ActionRowProperties> components, ActionRowProperties actionRow)

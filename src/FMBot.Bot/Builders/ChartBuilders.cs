@@ -285,7 +285,7 @@ public class ChartBuilders
             response.Embed.WithDescription($"**{embedTitle}**");
             response.Spoiler = chartSettings.ContainsNsfw;
             response.ResponseType = ResponseType.Embed;
-            response.StringMenu = context.SelectMenu;
+            response.StringMenus.Add(context.SelectMenu);
         }
 
         if (supporter != null)
@@ -462,7 +462,7 @@ public class ChartBuilders
             response.Embed.WithDescription($"**{embedTitle}**");
             response.Spoiler = chartSettings.ContainsNsfw;
             response.ResponseType = ResponseType.Embed;
-            response.StringMenu = context.SelectMenu;
+            response.StringMenus.Add(context.SelectMenu);
         }
 
         return response;

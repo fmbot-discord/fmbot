@@ -5,6 +5,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
@@ -730,14 +731,13 @@ public class SettingService
         bool allowNonFmbot = false)
     {
         string discordUserName;
-        if (discordGuild != null)
+        if (discordGuild != null && discordGuild.Users.TryGetValue(user.DiscordUserId, out var discordGuildUser))
         {
-            var discordGuildUser = await discordGuild.GetUserAsync(user.DiscordUserId, CacheMode.CacheOnly);
-            discordUserName = discordGuildUser?.Nickname ?? discordUser.GlobalName ?? discordUser.Username;
+            discordUserName = discordGuildUser.GetDisplayName();
         }
         else
         {
-            discordUserName = discordUser.GlobalName ?? discordUser.Username;
+            discordUserName = discordUser.GetDisplayName();
         }
 
         var settingsModel = new UserSettingsModel
@@ -815,10 +815,9 @@ public class SettingService
                     otherUser.UserNameLastFM.ToLower()
                 }, true);
 
-                if (discordGuild != null)
+                if (discordGuild != null && discordGuild.Users.TryGetValue(otherUser.DiscordUserId, out var discordGuildUser2))
                 {
-                    var discordGuildUser = await discordGuild.GetUserAsync(otherUser.DiscordUserId, CacheMode.CacheOnly);
-                    settingsModel.DisplayName = discordGuildUser != null ? discordGuildUser.DisplayName : otherUser.UserNameLastFM;
+                    settingsModel.DisplayName = discordGuildUser2.GetDisplayName();
                 }
                 else
                 {
@@ -836,7 +835,7 @@ public class SettingService
 
             if (option.StartsWith("lfm:") && option.Length > 4)
             {
-                settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, new[] { "lfm:" }, true);
+                settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, ["lfm:"], true);
 
                 var lfmUserName = option.ToLower().Replace("lfm:", "");
 
@@ -881,10 +880,10 @@ public class SettingService
     public async Task<UserSettingsModel> GetOriginalContextUser(
         ulong discordUserId, ulong requesterUserId, NetCord.Gateway.Guild discordGuild, NetCord.User contextDiscordUser)
     {
-        GuildUser guildUser = null;
+        NetCord.GuildUser guildUser = null;
         if (discordGuild != null)
         {
-            guildUser = await discordGuild.GetUserAsync(discordUserId, CacheMode.CacheOnly);
+            discordGuild.Users.TryGetValue(discordUserId, out guildUser);
         }
 
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -898,8 +897,8 @@ public class SettingService
             DifferentUser = differentUser,
             TimeZone = targetUser.TimeZone,
             UserId = targetUser.UserId,
-            DisplayName = guildUser?.DisplayName ??
-                          (differentUser ? targetUser.UserNameLastFM : contextDiscordUser.GlobalName ?? contextDiscordUser.Username),
+            DisplayName = guildUser?.GetDisplayName() ??
+                          (differentUser ? targetUser.UserNameLastFM : contextDiscordUser.GetDisplayName()),
             RegisteredLastFm = targetUser.RegisteredLastFm,
             SessionKeyLastFm = targetUser.SessionKeyLastFm,
             UserNameLastFm = targetUser.UserNameLastFM,

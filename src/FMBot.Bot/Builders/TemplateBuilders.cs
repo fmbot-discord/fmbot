@@ -53,7 +53,7 @@ public class TemplateBuilders
 
         foreach (var template in templates)
         {
-            templateManagePicker.AddOption(new StringMenuSelectOptionProperties(template.Name, $"{InteractionConstants.Template.ManagePicker}-{template.Id}"));
+            templateManagePicker.AddOption(new StringMenuSelectOptionProperties(template.Name, $"{InteractionConstants.Template.ManagePicker}:{template.Id}"));
         }
 
         var templateGlobalPicker = new StringMenuProperties(InteractionConstants.Template.SetGlobalDefaultPicker)
@@ -70,7 +70,7 @@ public class TemplateBuilders
         response.Embed.WithDescription("Select the template you want to change, or pick which one you want used as a default.");
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
-        response.StringMenu = templateManagePicker;
+        response.StringMenus.Add(templateManagePicker);
         response.Components = new ActionRowProperties()
             .WithButton("Create", InteractionConstants.Template.Create, ButtonStyle.Secondary)
             .WithButton("Import sharecode", InteractionConstants.Template.ImportCode, ButtonStyle.Secondary)
@@ -125,13 +125,13 @@ public class TemplateBuilders
             });
         }
 
-        response.StringMenu = templateOptionPicker;
+        response.StringMenus.Add(templateOptionPicker);
         response.Components = new ActionRowProperties()
-            .WithButton("Rename", $"{InteractionConstants.Template.Rename}-{template.Id}", ButtonStyle.Secondary)
-            .WithButton("Copy", $"{InteractionConstants.Template.Copy}-{template.Id}", ButtonStyle.Secondary)
-            .WithButton("Script", $"{InteractionConstants.Template.ViewScript}-{template.Id}", ButtonStyle.Secondary)
+            .WithButton("Rename", $"{InteractionConstants.Template.Rename}:{template.Id}", ButtonStyle.Secondary)
+            .WithButton("Copy", $"{InteractionConstants.Template.Copy}:{template.Id}", ButtonStyle.Secondary)
+            .WithButton("Script", $"{InteractionConstants.Template.ViewScript}:{template.Id}", ButtonStyle.Secondary)
             .WithButton("Variables", $"{InteractionConstants.Template.ViewVariables}", ButtonStyle.Secondary)
-            .WithButton("Delete", $"{InteractionConstants.Template.Delete}-{template.Id}", ButtonStyle.Danger);
+            .WithButton("Delete", $"{InteractionConstants.Template.Delete}:{template.Id}", ButtonStyle.Danger);
 
         response.Embed.WithAuthor($"Editing template '{template.Name}'");
         response.Embed.WithDescription($"Sharecode: `{template.ShareCode}`");

@@ -183,7 +183,7 @@ public class GuildSettingBuilder
             guildSettings.AddOption(name, $"gs-view-{value}", description: description);
         }
 
-        response.StringMenu = guildSettings;
+        response.StringMenus.Add(guildSettings);
 
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
@@ -685,7 +685,7 @@ public class GuildSettingBuilder
             response.Embed.WithFooter($"Last modified by {lastModifier.Username}");
         }
 
-        response.StringMenu = fmType;
+        response.StringMenus.Add(fmType);
 
         return response;
     }
@@ -888,7 +888,7 @@ public class GuildSettingBuilder
             }
         }
 
-        var fmType = new StringMenuProperties($"{InteractionConstants.ToggleCommand.ToggleCommandChannelFmType}-{selectedChannel.Id}-{selectedCategoryId}")
+        var fmType = new StringMenuProperties($"{InteractionConstants.ToggleCommand.ToggleCommandChannelFmType}:{selectedChannel.Id}:{selectedCategoryId}")
             .WithPlaceholder("Forced channel 'fm' mode")
             .WithMinValues(0)
             .WithMaxValues(1);
@@ -935,23 +935,23 @@ public class GuildSettingBuilder
         var downDisabled = nextCategoryId == 0 || nextChannelId == 0;
 
         var components = new ActionRowProperties()
-            .WithButton(null, $"{InteractionConstants.ToggleCommand.ToggleCommandMove}-{previousChannelId}-{previousCategoryId}-up", style: ButtonStyle.Secondary, EmojiProperties.Custom(DiscordConstants.OneToFiveUp), disabled: upDisabled)
-            .WithButton(null, $"{InteractionConstants.ToggleCommand.ToggleCommandMove}-{nextChannelId}-{nextCategoryId}-down", style: ButtonStyle.Secondary, EmojiProperties.Custom(DiscordConstants.OneToFiveDown), disabled: downDisabled, row: 1)
-            .WithButton("Add", $"{InteractionConstants.ToggleCommand.ToggleCommandAdd}-{selectedChannel.Id}-{selectedCategoryId}", style: ButtonStyle.Secondary)
-            .WithButton("Remove", $"{InteractionConstants.ToggleCommand.ToggleCommandRemove}-{selectedChannel.Id}-{selectedCategoryId}", style: ButtonStyle.Secondary, disabled: currentlyDisabled.Length == 0)
-            .WithButton("Clear", $"{InteractionConstants.ToggleCommand.ToggleCommandClear}-{selectedChannel.Id}-{selectedCategoryId}", style: ButtonStyle.Secondary, disabled: currentlyDisabled.Length == 0);
+            .WithButton(null, $"{InteractionConstants.ToggleCommand.ToggleCommandMove}:{previousChannelId}:{previousCategoryId}:up", style: ButtonStyle.Secondary, EmojiProperties.Custom(DiscordConstants.OneToFiveUp), disabled: upDisabled)
+            .WithButton(null, $"{InteractionConstants.ToggleCommand.ToggleCommandMove}:{nextChannelId}:{nextCategoryId}:down", style: ButtonStyle.Secondary, EmojiProperties.Custom(DiscordConstants.OneToFiveDown), disabled: downDisabled, row: 1)
+            .WithButton("Add", $"{InteractionConstants.ToggleCommand.ToggleCommandAdd}:{selectedChannel.Id}:{selectedCategoryId}", style: ButtonStyle.Secondary)
+            .WithButton("Remove", $"{InteractionConstants.ToggleCommand.ToggleCommandRemove}:{selectedChannel.Id}:{selectedCategoryId}", style: ButtonStyle.Secondary, disabled: currentlyDisabled.Length == 0)
+            .WithButton("Clear", $"{InteractionConstants.ToggleCommand.ToggleCommandClear}:{selectedChannel.Id}:{selectedCategoryId}", style: ButtonStyle.Secondary, disabled: currentlyDisabled.Length == 0);
 
         if (!botDisabled)
         {
-            components.WithSelectMenu(fmType);
+            response.StringMenus.Add(fmType);
 
             components
-                .WithButton("Disable all commands", $"{InteractionConstants.ToggleCommand.ToggleCommandDisableAll}-{selectedChannel.Id}-{selectedCategoryId}", style: ButtonStyle.Secondary, row: 1);
+                .WithButton("Disable all commands", $"{InteractionConstants.ToggleCommand.ToggleCommandDisableAll}:{selectedChannel.Id}:{selectedCategoryId}", style: ButtonStyle.Secondary, row: 1);
         }
         else
         {
             components
-                .WithButton("Enable all commands", $"{InteractionConstants.ToggleCommand.ToggleCommandEnableAll}-{selectedChannel.Id}-{selectedCategoryId}", style: ButtonStyle.Secondary, row: 1);
+                .WithButton("Enable all commands", $"{InteractionConstants.ToggleCommand.ToggleCommandEnableAll}:{selectedChannel.Id}:{selectedCategoryId}", style: ButtonStyle.Secondary, row: 1);
         }
 
         footer.AppendLine("Use the up and down selector to browse through channels");

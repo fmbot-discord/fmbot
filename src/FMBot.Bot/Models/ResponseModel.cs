@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Fergun.Interactive.Pagination;
 using FMBot.Bot.Resources;
 using FMBot.Domain.Models;
@@ -18,6 +19,7 @@ public class ResponseModel
         this.EmbedFooter = new EmbedFooterProperties();
         this.Components = new ActionRowProperties();
         this.ComponentsV2 = [];
+        this.StringMenus = [];
         this.Spoiler = false;
         this.ReferencedMusic = null;
     }
@@ -27,11 +29,39 @@ public class ResponseModel
     public EmbedFooterProperties EmbedFooter { get; set; }
     public ActionRowProperties Components { get; set; }
     public RoleMenuProperties RoleMenu { get; set; }
-    public StringMenuProperties StringMenu { get; set; }
+    public List<StringMenuProperties> StringMenus { get; set; }
 
     public List<ActionRowProperties> ComponentsV2 { get; set; }
 
     public ComponentContainerProperties ComponentsContainer { get; set; }
+
+    /// <summary>
+    /// Gets all message components (buttons, menus) combined into a single array for sending.
+    /// </summary>
+    public IMessageComponentProperties[] GetMessageComponents()
+    {
+        var components = new List<IMessageComponentProperties>();
+
+        // Add action row with buttons if it has any
+        if (Components?.Any() == true)
+        {
+            components.Add(Components);
+        }
+
+        // Add all string menus (each is its own component)
+        if (StringMenus?.Count > 0)
+        {
+            components.AddRange(StringMenus);
+        }
+
+        // Add role menu if present
+        if (RoleMenu != null)
+        {
+            components.Add(RoleMenu);
+        }
+
+        return components.Count > 0 ? components.ToArray() : null;
+    }
 
     public ResponseType ResponseType { get; set; }
 

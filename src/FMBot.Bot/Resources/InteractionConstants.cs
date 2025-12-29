@@ -52,6 +52,7 @@ public static class InteractionConstants
     {
         public const string Modify = "user-import-modify";
 
+        public const string PickSelect = "im-ps";
         public const string PickArtistModal = "im-pa";
         public const string PickAlbumModal = "im-pab";
         public const string PickTrackModal = "im-ptr";

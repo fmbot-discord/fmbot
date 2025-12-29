@@ -14,6 +14,7 @@ using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
 using Fergun.Interactive;
 using NetCord;
+using NetCord.Rest;
 using NetCord.Services.Commands;
 
 namespace FMBot.Bot.TextCommands.LastFM;

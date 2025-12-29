@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain.Enums;
@@ -12,8 +11,6 @@ using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
-using NetCord.Gateway;
-using DiscordGuild = NetCord.Gateway.Guild;
 
 namespace FMBot.Bot.Services.WhoKnows;
 
@@ -35,16 +32,16 @@ public class WhoKnowsService
             return users;
         }
 
-        GuildUser discordGuildUser = null;
+        NetCord.GuildUser netcordGuildUser = null;
         if (discordGuild != null)
         {
-            discordGuildUser = await discordGuild.GetUserAsync(contextUser.DiscordUserId);
+            netcordGuildUser = await discordGuild.GetUserAsync(contextUser.DiscordUserId);
         }
 
         var guildUser = new GuildUser
         {
-            UserName = discordGuildUser != null ? discordGuildUser.DisplayName : contextUser.UserNameLastFM,
-            Roles = discordGuildUser?.RoleIds?.ToArray(),
+            UserName = netcordGuildUser != null ? netcordGuildUser.GetDisplayName() : contextUser.UserNameLastFM,
+            Roles = netcordGuildUser?.RoleIds?.ToArray(),
             LastMessage = DateTime.UtcNow,
             User = contextUser
         };

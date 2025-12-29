@@ -419,7 +419,7 @@ public class IndexService
         {
             var discordUser = discordGuildUsers.First(f => f.Id == user.User.DiscordUserId);
 
-            user.UserName = discordUser.Nickname ?? discordUser.GlobalName ?? discordUser.Username;
+            user.UserName = discordUser.GetDisplayName();
             user.Bot = discordUser.IsBot;
 
             if (PublicProperties.PremiumServers.ContainsKey(discordGuild.Id))
@@ -475,7 +475,7 @@ public class IndexService
                 {
                     GuildId = guild.GuildId,
                     UserId = user.UserId,
-                    UserName = discordGuildUser.DisplayName
+                    UserName = discordGuildUser.GetDisplayName()
                 };
 
                 if (PublicProperties.PremiumServers.ContainsKey(guild.DiscordGuildId))
@@ -491,13 +491,13 @@ public class IndexService
             }
             else
             {
-                guildUser.UserName = discordGuildUser.DisplayName;
+                guildUser.UserName = discordGuildUser.GetDisplayName();
 
                 return new GuildUser
                 {
                     GuildId = guild.GuildId,
                     UserId = user.UserId,
-                    UserName = discordGuildUser.DisplayName,
+                    UserName = discordGuildUser.GetDisplayName(),
                     Roles = discordGuildUser.RoleIds.ToArray(),
                     Bot = false,
                     LastMessage = DateTime.UtcNow,
@@ -513,7 +513,7 @@ public class IndexService
                 GuildId = guild.GuildId,
                 UserId = user.UserId,
                 User = user,
-                UserName = discordGuildUser?.DisplayName ?? user.UserNameLastFM
+                UserName = discordGuildUser?.GetDisplayName() ?? user.UserNameLastFM
             };
         }
     }
@@ -552,7 +552,7 @@ public class IndexService
 
             fullGuildUsers.TryGetValue(userId, out var existingGuildUser);
             if (existingGuildUser != null &&
-                existingGuildUser.UserName == discordGuildUser.DisplayName &&
+                existingGuildUser.UserName == discordGuildUser.GetDisplayName() &&
                 !PublicProperties.PremiumServers.ContainsKey(guild.DiscordGuildId))
             {
                 return;
@@ -569,7 +569,7 @@ public class IndexService
 
             var dto = new IndexedUserUpdateDto
             {
-                UserName = discordGuildUser.DisplayName,
+                UserName = discordGuildUser.GetDisplayName(),
                 GuildId = guild.GuildId,
                 UserId = userId
             };
@@ -624,7 +624,7 @@ public class IndexService
                     Bot = false,
                     GuildId = guild.GuildId,
                     UserId = userId,
-                    UserName = discordGuildUser?.DisplayName,
+                    UserName = discordGuildUser?.GetDisplayName(),
                 };
 
                 if (PublicProperties.PremiumServers.ContainsKey(guild.DiscordGuildId))
@@ -647,7 +647,7 @@ public class IndexService
 
             var dto = new IndexedUserUpdateDto
             {
-                UserName = discordGuildUser.DisplayName,
+                UserName = discordGuildUser.GetDisplayName(),
                 GuildId = guild.GuildId,
                 UserId = userId
             };

@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
+using Fergun.Interactive;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Handlers;
@@ -32,8 +33,6 @@ using FMBot.Bot.Factories;
 using FMBot.Persistence.Interfaces;
 using System.Linq;
 using System.Net.Http;
-using System.Runtime.CompilerServices;
-using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using Web.InternalApi;
 using FMBot.AppleMusic;
@@ -41,7 +40,6 @@ using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.SystemTextJson;
 using NetCord;
 using NetCord.Gateway;
-using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using NetCord.Services.Commands;
 using NetCord.Services.ComponentInteractions;
@@ -186,7 +184,7 @@ public class Startup
             // TODO override shard IDs here when NetCord supports it
             return new ShardedGatewayClient(new BotToken(ConfigData.Data.Discord.Token), new ShardedGatewayClientConfiguration
             {
-                ShardCount = ConfigData.Data.Shards.TotalShards,
+                TotalShardCount = ConfigData.Data.Shards.TotalShards,
                 IntentsFactory = _ => intents
             });
         }
@@ -316,7 +314,7 @@ public class Startup
 
         // Interactive configuration
         services
-            .AddSingleton(new InteractiveConfig
+            .AddSingleton(new InteractiveServiceOptions
             {
                 ReturnAfterSendingPaginator = true,
                 ProcessSinglePagePaginators = true

@@ -99,37 +99,33 @@ public class MusicBotService
     private async Task SendScrobbleMessage(CommandContext context, MusicBot musicBot, TrackSearchResult trackResult,
         int listenerCount, ulong botMessageId)
     {
-        var componentBuilder = new ComponentBuilderV2();
-        var container = new ContainerBuilder();
-        container.WithAccentColor(DiscordConstants.LastFmColorRed);
-        componentBuilder.WithContainer(container);
-
-        var description = new StringBuilder();
-        description.Append(
-            $"<a:now_scrobbling:1374003167838081136> Scrobbling **{trackResult.TrackName}** by **{trackResult.ArtistName}** for {listenerCount} {StringExtensions.GetListenersString(listenerCount)}");
-        container.AddComponent(new TextDisplayProperties(description.ToString()));
-
-        var footer = new StringBuilder();
-        if (trackResult.DurationMs.HasValue)
+        var container = new ComponentContainerProperties
         {
-            footer.Append($"Length {StringExtensions.GetTrackLength(trackResult.DurationMs.GetValueOrDefault())} — ");
-        }
-
-        footer.Append($"{musicBot.Name}");
-
-        container.AddComponent(new SectionBuilder
-        {
+            AccentColor = DiscordConstants.LastFmColorRed,
             Components =
             [
-                new TextDisplayProperties(footer.ToString())
-            ],
-            Accessory = new ButtonBuilder("Manage", style: ButtonStyle.Secondary,
-                customId: InteractionConstants.BotScrobblingManage)
-        });
+                new TextDisplayProperties(
+                    $"<a:now_scrobbling:1374003167838081136> Scrobbling **{trackResult.TrackName}** by **{trackResult.ArtistName}** for {listenerCount} {StringExtensions.GetListenersString(listenerCount)}"),
+                new ComponentSectionProperties(new ButtonProperties(InteractionConstants.BotScrobblingManage, "Manage", ButtonStyle.Secondary))
+                {
+                    Components =
+                    [
+                        new TextDisplayProperties(
+                            (trackResult.DurationMs.HasValue
+                                ? $"Length {StringExtensions.GetTrackLength(trackResult.DurationMs.GetValueOrDefault())} — "
+                                : "") + musicBot.Name)
+                    ]
+                }
+            ]
+        };
 
         var scrobbleMessage =
-            await context.Channel.SendMessageAsync(components: componentBuilder, allowedMentions: AllowedMentionsProperties.None,
-                flags: MessageFlags.SuppressNotification | MessageFlags.ComponentsV2);
+            await context.Channel.SendMessageAsync(new MessageProperties
+            {
+                Components = [container],
+                Flags = MessageFlags.SuppressNotifications | MessageFlags.IsComponentsV2,
+                AllowedMentions = AllowedMentionsProperties.None
+            });
 
         var referencedMusic = new ReferencedMusic
         {
@@ -225,16 +221,24 @@ public class MusicBotService
             }
 
 
-            if (!context.Guild.VoiceStates.TryGetValue(context.User.Id, out var voiceState))
+            if (!context.Guild.VoiceStates.TryGetValue(botId, out var botVoiceState) || botVoiceState.ChannelId is null)
             {
-                Log.Debug("BotScrobbling: Skipped scrobble for {guildName} / {guildId} because no found voice channels", context.Guild.Name,
+                Log.Debug("BotScrobbling: Skipped scrobble for {guildName} / {guildId} because bot not in voice channel", context.Guild.Name,
                     context.Guild.Id);
                 this.BotScrobblingLogs.Add(new BotScrobblingLog(context.Guild.Id, DateTime.UtcNow,
-                    $"Skipped scrobble because no found voice channel"));
+                    $"Skipped scrobble because bot not in voice channel"));
                 return null;
             }
 
-            if (voiceChannel.ConnectedUsers?.Any() == null)
+            var channelId = botVoiceState.ChannelId.Value;
+
+            // Get all users in the same voice channel that are not deafened
+            var usersInChannel = context.Guild.VoiceStates.Values
+                .Where(vs => vs.ChannelId == channelId && !vs.IsDeafened && !vs.IsSelfDeafened)
+                .Select(vs => vs.UserId)
+                .ToList();
+
+            if (usersInChannel.Count == 0)
             {
                 Log.Debug("BotScrobbling: Skipped scrobble for {guildName} / {guildId} because no connected users in voice channel",
                     context.Guild.Name, context.Guild.Id, botId);
@@ -245,22 +249,18 @@ public class MusicBotService
 
             await using var db = await this._contextFactory.CreateDbContextAsync();
 
-            var userIds = voiceChannel.ConnectedUsers
-                .Where(w => !w.IsDeafened && !w.IsSelfDeafened)
-                .Select(s => s.Id);
-
             var users = await db.Users
                 .AsQueryable()
-                .Where(w => userIds.Contains(w.DiscordUserId) &&
+                .Where(w => usersInChannel.Contains(w.DiscordUserId) &&
                             w.MusicBotTrackingDisabled != true &&
                             w.SessionKeyLastFm != null)
                 .ToListAsync();
 
             Log.Debug(
-                "BotScrobbling: Found voice channel {channelName} / {channelId} in {guildName} / {guildId} with {listenerCount} .fmbot listeners",
-                voiceChannel.Name, voiceChannel.Id, context.Guild.Name, context.Guild.Id, users.Count);
+                "BotScrobbling: Found voice channel {channelId} in {guildName} / {guildId} with {listenerCount} .fmbot listeners",
+                channelId, context.Guild.Name, context.Guild.Id, users.Count);
             this.BotScrobblingLogs.Add(new BotScrobblingLog(context.Guild.Id, DateTime.UtcNow,
-                $"Found vc `{voiceChannel.Name}` with `{users.Count}` fmbot listeners"));
+                $"Found vc `{channelId}` with `{users.Count}` fmbot listeners"));
 
             return users;
         }

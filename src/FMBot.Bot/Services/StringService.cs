@@ -233,7 +233,6 @@ public static class StringService
         response.Embed.WithUrl(page.Url);
         response.Embed.WithThumbnail(page.Thumbnail);
         response.Embed.WithFooter(page.Footer);
-        response.Embed.Color = null;
 
         if (customOptionId != null || selectMenu != null)
         {
@@ -248,7 +247,7 @@ public static class StringService
 
         if (selectMenu != null)
         {
-            response.Components.WithSelectMenu(selectMenu);
+            response.StringMenus.Add(selectMenu);
         }
     }
 
@@ -282,7 +281,7 @@ public static class StringService
 
         if (selectMenuBuilder != null)
         {
-            builder.WithSelectMenus(new List<SelectMenuBuilder> { selectMenuBuilder });
+            builder.WithSelectMenus(new List<StringMenuProperties> { selectMenuBuilder });
         }
 
         return builder;
@@ -318,7 +317,7 @@ public static class StringService
 
         if (selectMenuBuilder != null)
         {
-            builder.WithSelectMenus(new List<SelectMenuBuilder> { selectMenuBuilder });
+            builder.WithSelectMenus(new List<StringMenuProperties> { selectMenuBuilder });
         }
 
         return builder;

@@ -227,12 +227,9 @@ public class AdminCommands : BaseCommandModule
             guildFlagsOptions.AddOption(flagName, flagName, isActive, $"Toggle {flagName} flag");
         }
 
-        var builder = new ActionRowProperties()
-            .WithSelectMenu(guildFlagsOptions);
-
         await this.Context.Channel.SendMessageAsync(new MessageProperties()
             .AddEmbeds(this._embed)
-            .WithComponents([builder]));
+            .WithComponents([guildFlagsOptions]));
         this.Context.LogCommandUsed();
     }
 
@@ -282,7 +279,7 @@ public class AdminCommands : BaseCommandModule
                 return;
             }
 
-            var guildToLeave = await this._client.Rest.GetGuildAsync(id);
+            var guildToLeave = await this._client.GetGuildAsync(id);
             await guildToLeave.LeaveAsync();
 
             await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Left guild (if the bot was in there)" });
@@ -325,7 +322,7 @@ public class AdminCommands : BaseCommandModule
             await this._guildService.SetGuildFlags(dbGuild.GuildId, newFlags);
 
             // Leave the guild
-            var guildToLeave = await this._client.Rest.GetGuildAsync(id);
+            var guildToLeave = await this._client.GetGuildAsync(id);
             if (guildToLeave != null)
             {
                 await guildToLeave.LeaveAsync();
@@ -523,8 +520,7 @@ public class AdminCommands : BaseCommandModule
         {
             _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-            var client = this.Context.Client as ShardedGatewayClient;
-            if (client == null)
+            if (this._client == null)
             {
                 await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Client is null" });
                 return;
@@ -536,11 +532,6 @@ public class AdminCommands : BaseCommandModule
 
             reply.AppendLine("Purged user cache and ran garbage collector.");
             reply.AppendLine($"Memory before purge: `{currentMemoryUsage.ToFormattedByteString()}`");
-
-            foreach (var socketClient in client.Shards)
-            {
-                socketClient.PurgeUserCache();
-            }
 
             GC.Collect();
 
@@ -730,9 +721,6 @@ public class AdminCommands : BaseCommandModule
                 }
             }
 
-            var builder = new ActionRowProperties()
-                .WithSelectMenu(censorOptions);
-
             this._embed.WithTitle("Album - Censor information");
 
             this._embed.AddField("Album name", existingAlbum.AlbumName);
@@ -742,7 +730,7 @@ public class AdminCommands : BaseCommandModule
 
             await this.Context.Channel.SendMessageAsync(new MessageProperties()
                 .AddEmbeds(this._embed)
-                .WithComponents([builder]));
+                .WithComponents([censorOptions]));
             this.Context.LogCommandUsed();
         }
         catch (Exception e)
@@ -793,9 +781,6 @@ public class AdminCommands : BaseCommandModule
                 aliasOptions.AddOption(name, value, active, description);
             }
 
-            var builder = new ActionRowProperties()
-                .WithSelectMenu(aliasOptions);
-
             this._embed.WithTitle("Artist alias - Option information");
 
             var artist = await this._artistsService.GetArtistForId(artistAlias.ArtistId);
@@ -810,7 +795,7 @@ public class AdminCommands : BaseCommandModule
 
             await this.Context.Channel.SendMessageAsync(new MessageProperties()
                 .AddEmbeds(this._embed)
-                .WithComponents([builder]));
+                .WithComponents([aliasOptions]));
             this.Context.LogCommandUsed();
         }
         catch (Exception e)
@@ -898,9 +883,6 @@ public class AdminCommands : BaseCommandModule
                 }
             }
 
-            var builder = new ActionRowProperties()
-                .WithSelectMenu(censorOptions);
-
             this._embed.WithTitle("Artist - Censor information");
 
             this._embed.AddField("Name", existingArtist.ArtistName);
@@ -909,7 +891,7 @@ public class AdminCommands : BaseCommandModule
 
             await this.Context.Channel.SendMessageAsync(new MessageProperties()
                 .AddEmbeds(this._embed)
-                .WithComponents([builder]));
+                .WithComponents([censorOptions]));
             this.Context.LogCommandUsed();
         }
         catch (Exception e)
@@ -1312,7 +1294,7 @@ public class AdminCommands : BaseCommandModule
 
             this._embed.WithFooter("Name changes go through OpenCollective and apply within 24h");
 
-            var discordUser = await this.Context.Client.GetUserAsync(discordUserId);
+            var discordUser = await this.Context.GetUserAsync(discordUserId);
             if (discordUser != null && sendDm == null)
             {
                 await SupporterService.SendSupporterWelcomeMessage(discordUser, userSettings.UserDiscogs != null,
@@ -1363,7 +1345,7 @@ public class AdminCommands : BaseCommandModule
             }
 
             var supporter = await this._supporterService.GetSupporter(discordUserId);
-            var discordUser = await this.Context.Client.GetUserAsync(discordUserId);
+            var discordUser = await this.Context.GetUserAsync(discordUserId);
 
             if (discordUser == null)
             {
@@ -1391,7 +1373,7 @@ public class AdminCommands : BaseCommandModule
                 return;
             }
 
-            var discordUser = await this.Context.Client.GetUserAsync(discordUserId);
+            var discordUser = await this.Context.GetUserAsync(discordUserId);
 
             if (discordUser == null)
             {
@@ -1508,7 +1490,7 @@ public class AdminCommands : BaseCommandModule
             description.AppendLine(removedRole ? "✅ Supporter role removed" : "❌ Unable to remove supporter role");
             description.AppendLine("✅ Full update started");
 
-            var discordUser = await this.Context.Client.GetUserAsync(discordUserId);
+            var discordUser = await this.Context.GetUserAsync(discordUserId);
             if (discordUser != null && sendDm == null)
             {
                 await SupporterService.SendSupporterGoodbyeMessage(discordUser, hadImported);
@@ -1696,31 +1678,33 @@ public class AdminCommands : BaseCommandModule
 
         var client = this._client;
 
-        GatewayClient shard;
+        GatewayClient shard = null;
 
         if (guildId is < 1000 and >= 0)
         {
-            shard = client.GetShard(int.Parse(guildId.Value.ToString()));
+            var shardIndex = (int)guildId.Value;
+            if (shardIndex < client.Count)
+            {
+                shard = client[shardIndex];
+            }
         }
         else
         {
-            var guild = client.Cache.Guilds.GetValueOrDefault(guildId.Value);
-            shard = client.GetShardFor(guild);
+            shard = client.FirstOrDefault(s => s.Cache.Guilds.ContainsKey(guildId.Value));
         }
 
         if (shard != null)
         {
-            if (shard.ConnectionState == ConnectionState.Disconnected ||
-                shard.ConnectionState == ConnectionState.Disconnecting ||
-                shard.ConnectionState == ConnectionState.Connecting)
+            var shardId = shard.Shard?.Id ?? 0;
+            if (shard.Status != WebSocketStatus.Ready)
             {
-                await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = $"Connecting Shard #{shard.ShardId}" });
+                await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = $"Connecting Shard #{shardId}" });
                 await shard.StartAsync();
-                await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = $"Connected Shard #{shard.ShardId}" });
+                await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = $"Connected Shard #{shardId}" });
             }
             else
             {
-                await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = $"Shard #{shard.ShardId} is not in a disconnected state." });
+                await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = $"Shard #{shardId} is not in a disconnected state." });
             }
         }
         else
@@ -1758,97 +1742,6 @@ public class AdminCommands : BaseCommandModule
 
         if (type == "rules")
         {
-            var components = new ComponentBuilderV2();
-            components.AddComponent(new ContainerBuilder
-            {
-                Components =
-                [
-                    new TextDisplayProperties(
-                        "Welcome to the .fmbot support server!\n" +
-                        "Get help with .fmbot, chat with other music enthusiasts and more."),
-                    new SeparatorBuilder { Spacing = SeparatorSpacingSize.Large },
-                    new TextDisplayProperties(@"## 📜 Server rules:
-1. **Be nice to each other.** Treat everyone with respect. No bigotry allowed, including but not limited to racism, sexism, homophobia, transphobia, ableism, and use of slurs (reclaimed or otherwise).
-2. **Remember that music taste is subjective.** Criticism is fine, music elitism is not. Respect the music taste of others.
-3. **Don't be spammy or annoying in general.** This can include repeatedly interrupting others, flooding the chat, immaturity, personal attacks, instigating or prolonging drama, and other behaviour that sucks the air out of the chat.
-4. **No self promotion or marketing.** Established community members may do it in moderation. DM ads are never allowed.
-5. **Safe for work content and chat only.** Keep it family friendly. An exception is made for spoilered album covers.
-6. **English only.** We can't moderate other languages.
-7. **Don't mention or DM other members without reason.** Mentions and DMs should be for a purpose, such as continuing conversations.
-8. **No political discussion**, except for when it directly relates to music. This includes social issues or discussions about religion.
-
-Not following these rules might lead to a mute, kick or ban. Staff members can ban, kick or mute you for any reason if they feel it is needed."),
-                    new SeparatorBuilder { Spacing = SeparatorSpacingSize.Large },
-                    new TextDisplayProperties(@"Role pings:
-- Ping <@&1083762942144688198> for issues that require immediate staff attention, like someone disrupting the server or a raid
-- Ping <@&1083762904924434442> if the bot is down (not responding)
-
-For anything else, you must use <#856212952305893376> and after that ask in <#1006526334316576859>. Someone will get to you when they have time."),
-                    new SeparatorBuilder { Spacing = SeparatorSpacingSize.Large },
-                    new TextDisplayProperties(@"## 🔗 Links:
-- Documentation: <https://fm.bot/>
-- Link to this server: <http://discord.gg/fmbot>
-- Bluesky: <https://bsky.app/profile/fm.bot>
-- Feature requests or bug reports: <#1006526334316576859> or [GitHub](<https://github.com/fmbot-discord/fmbot/issues/new/choose>)
-- Frequently Asked Questions: <#856212952305893376>
-- Configure your notification roles in <id:customize>"),
-                    new SeparatorBuilder { Spacing = SeparatorSpacingSize.Large },
-                    new SectionBuilder
-                    {
-                        Components =
-                        [
-                            new TextDisplayProperties("### Get .fmbot in your server")
-                        ],
-                        Accessory = new ButtonBuilder("Add to server",
-                            url:
-                            "https://discord.com/oauth2/authorize?client_id=356268235697553409&permissions=275415092288&scope=applications.commands%20bot")
-                    },
-                    new SectionBuilder
-                    {
-                        Components =
-                        [
-                            new TextDisplayProperties("### Use .fmbot slash commands everywhere")
-                        ],
-                        Accessory = new ButtonBuilder("Add to account",
-                            url:
-                            "https://discord.com/oauth2/authorize?client_id=356268235697553409&scope=applications.commands&integration_type=1")
-                    },
-                    new SeparatorBuilder { Spacing = SeparatorSpacingSize.Large },
-                    new SectionBuilder
-                    {
-                        Components =
-                        [
-                            new TextDisplayProperties("### Support us and unlock extra perks")
-                        ],
-                        Accessory = new ButtonBuilder("Get .fmbot supporter", style: ButtonStyle.Primary,
-                            customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(true, false,
-                                false, source: "rulespromo"))
-                    },
-                ],
-            }.WithAccentColor(DiscordConstants.InformationColorBlue));
-
-            components.AddComponent(new ContainerBuilder
-            {
-                Components =
-                [
-                    new TextDisplayProperties("## 🚨 NSFW and NSFL artwork report form"),
-                    new TextDisplayProperties(
-                        "Found album artwork or an artist image that should be marked NSFW or censored entirely? Please report that here. \n\n" +
-                        "Note that artwork is censored according to Discord guidelines and only as required by Discord. .fmbot is fundamentally opposed to artistic censorship."),
-                    new TextDisplayProperties("**Marked NSFW**\n" +
-                                           "Frontal nudity [genitalia, exposed anuses, and 'female presenting nipples,' which is not our terminology], furry art in an erotic context and people covered in blood and/or wounds"),
-                    new TextDisplayProperties(
-                        "**Fully censored / NSFL**\n" +
-                        "Hate speech [imagery or text promoting prejudice against a group], gore [detailed, realistic, or semi realistic depictions of viscera or extreme bodily harm, not blood alone] and pornographic content [depictions of sex]"),
-                    new ComponentSeparatorProperties(),
-                    new ActionRowProperties()
-                        .WithButton("Report artist image", style: ButtonStyle.Secondary,
-                            customId: InteractionConstants.ModerationCommands.ReportArtist)
-                        .WithButton("Report album cover", style: ButtonStyle.Secondary,
-                            customId: InteractionConstants.ModerationCommands.ReportAlbum)
-                ]
-            }.WithAccentColor(DiscordConstants.InformationColorBlue));
-
             var globalWhoKnowsDescription = new StringBuilder();
             globalWhoKnowsDescription.AppendLine(
                 "Want staff to take a look at someone that might be adding artificial or fake scrobbles? Or someone that is spamming short tracks? Report their profile here.");
@@ -1860,23 +1753,108 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                 "Note that we don't take reports for sleep or 24/7 scrobbling, those get filtered automatically with temporary bans.");
             this._embed.WithDescription(globalWhoKnowsDescription.ToString());
 
-            components.AddComponent(new ContainerBuilder
+            var containers = new List<ComponentContainerProperties>
             {
-                Components =
-                [
-                    new TextDisplayProperties("## 🌐 GlobalWhoKnows report form"),
-                    new TextDisplayProperties(globalWhoKnowsDescription.ToString()),
-                    new ComponentSeparatorProperties(),
-                    new ActionRowProperties()
-                        .WithButton("Report user", style: ButtonStyle.Secondary,
-                            customId: InteractionConstants.ModerationCommands.GlobalWhoKnowsReport)
-                ]
-            }.WithAccentColor(DiscordConstants.InformationColorBlue));
+                new()
+                {
+                    AccentColor = DiscordConstants.InformationColorBlue,
+                    Components =
+                    [
+                        new TextDisplayProperties(
+                            "Welcome to the .fmbot support server!\n" +
+                            "Get help with .fmbot, chat with other music enthusiasts and more."),
+                        new ComponentSeparatorProperties { Spacing = ComponentSeparatorSpacingSize.Large },
+                        new TextDisplayProperties(@"## 📜 Server rules:
+1. **Be nice to each other.** Treat everyone with respect. No bigotry allowed, including but not limited to racism, sexism, homophobia, transphobia, ableism, and use of slurs (reclaimed or otherwise).
+2. **Remember that music taste is subjective.** Criticism is fine, music elitism is not. Respect the music taste of others.
+3. **Don't be spammy or annoying in general.** This can include repeatedly interrupting others, flooding the chat, immaturity, personal attacks, instigating or prolonging drama, and other behaviour that sucks the air out of the chat.
+4. **No self promotion or marketing.** Established community members may do it in moderation. DM ads are never allowed.
+5. **Safe for work content and chat only.** Keep it family friendly. An exception is made for spoilered album covers.
+6. **English only.** We can't moderate other languages.
+7. **Don't mention or DM other members without reason.** Mentions and DMs should be for a purpose, such as continuing conversations.
+8. **No political discussion**, except for when it directly relates to music. This includes social issues or discussions about religion.
 
-            await this.Context.Channel.SendMessageAsync(new MessageProperties()
-                .WithComponents(components)
-                .WithFlags(MessageFlags.ComponentsV2)
-                .WithAllowedMentions(AllowedMentionsProperties.None));
+Not following these rules might lead to a mute, kick or ban. Staff members can ban, kick or mute you for any reason if they feel it is needed."),
+                        new ComponentSeparatorProperties { Spacing = ComponentSeparatorSpacingSize.Large },
+                        new TextDisplayProperties(@"Role pings:
+- Ping <@&1083762942144688198> for issues that require immediate staff attention, like someone disrupting the server or a raid
+- Ping <@&1083762904924434442> if the bot is down (not responding)
+
+For anything else, you must use <#856212952305893376> and after that ask in <#1006526334316576859>. Someone will get to you when they have time."),
+                        new ComponentSeparatorProperties { Spacing = ComponentSeparatorSpacingSize.Large },
+                        new TextDisplayProperties(@"## 🔗 Links:
+- Documentation: <https://fm.bot/>
+- Link to this server: <http://discord.gg/fmbot>
+- Bluesky: <https://bsky.app/profile/fm.bot>
+- Feature requests or bug reports: <#1006526334316576859> or [GitHub](<https://github.com/fmbot-discord/fmbot/issues/new/choose>)
+- Frequently Asked Questions: <#856212952305893376>
+- Configure your notification roles in <id:customize>"),
+                        new ComponentSeparatorProperties { Spacing = ComponentSeparatorSpacingSize.Large },
+                        new ComponentSectionProperties(new LinkButtonProperties(
+                            "https://discord.com/oauth2/authorize?client_id=356268235697553409&permissions=275415092288&scope=applications.commands%20bot",
+                            "Add to server"))
+                        {
+                            Components = [new TextDisplayProperties("### Get .fmbot in your server")]
+                        },
+                        new ComponentSectionProperties(new LinkButtonProperties(
+                            "https://discord.com/oauth2/authorize?client_id=356268235697553409&scope=applications.commands&integration_type=1",
+                            "Add to account"))
+                        {
+                            Components = [new TextDisplayProperties("### Use .fmbot slash commands everywhere")]
+                        },
+                        new ComponentSeparatorProperties { Spacing = ComponentSeparatorSpacingSize.Large },
+                        new ComponentSectionProperties(new ButtonProperties(
+                            InteractionConstants.SupporterLinks.GeneratePurchaseButtons(true, false,
+                                false, source: "rulespromo"),
+                            "Get .fmbot supporter", ButtonStyle.Primary))
+                        {
+                            Components = [new TextDisplayProperties("### Support us and unlock extra perks")]
+                        }
+                    ]
+                },
+                new()
+                {
+                    AccentColor = DiscordConstants.InformationColorBlue,
+                    Components =
+                    [
+                        new TextDisplayProperties("## 🚨 NSFW and NSFL artwork report form"),
+                        new TextDisplayProperties(
+                            "Found album artwork or an artist image that should be marked NSFW or censored entirely? Please report that here. \n\n" +
+                            "Note that artwork is censored according to Discord guidelines and only as required by Discord. .fmbot is fundamentally opposed to artistic censorship."),
+                        new TextDisplayProperties("**Marked NSFW**\n" +
+                                               "Frontal nudity [genitalia, exposed anuses, and 'female presenting nipples,' which is not our terminology], furry art in an erotic context and people covered in blood and/or wounds"),
+                        new TextDisplayProperties(
+                            "**Fully censored / NSFL**\n" +
+                            "Hate speech [imagery or text promoting prejudice against a group], gore [detailed, realistic, or semi realistic depictions of viscera or extreme bodily harm, not blood alone] and pornographic content [depictions of sex]"),
+                        new ComponentSeparatorProperties(),
+                        new ActionRowProperties()
+                            .WithButton("Report artist image", style: ButtonStyle.Secondary,
+                                customId: InteractionConstants.ModerationCommands.ReportArtist)
+                            .WithButton("Report album cover", style: ButtonStyle.Secondary,
+                                customId: InteractionConstants.ModerationCommands.ReportAlbum)
+                    ]
+                },
+                new()
+                {
+                    AccentColor = DiscordConstants.InformationColorBlue,
+                    Components =
+                    [
+                        new TextDisplayProperties("## 🌐 GlobalWhoKnows report form"),
+                        new TextDisplayProperties(globalWhoKnowsDescription.ToString()),
+                        new ComponentSeparatorProperties(),
+                        new ActionRowProperties()
+                            .WithButton("Report user", style: ButtonStyle.Secondary,
+                                customId: InteractionConstants.ModerationCommands.GlobalWhoKnowsReport)
+                    ]
+                }
+            };
+
+            await this.Context.Channel.SendMessageAsync(new MessageProperties
+            {
+                Components = containers,
+                Flags = MessageFlags.IsComponentsV2,
+                AllowedMentions = AllowedMentionsProperties.None
+            });
         }
 
         if (type == "buysupporter")
@@ -2161,7 +2139,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                     if (member.RoleIds.All(a => a != role.Value.Id))
                     {
                         await member.AddRoleAsync(role.Key);
-                        reply.AppendLine($"{member.Id} - <@{member.Id}> - {member.DisplayName}");
+                        reply.AppendLine($"{member.Id} - <@{member.Id}> - {member.GetDisplayName()}");
 
                         count++;
                     }
@@ -2184,7 +2162,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                 {
                     if (member.RoleIds.Any(a => a == role.Key))
                     {
-                        reply.AppendLine($"{member.Id} - <@{member.Id}> - {member.Nickname ?? member.GlobalName ?? member.Username}");
+                        reply.AppendLine($"{member.Id} - <@{member.Id}> - {member.GetDisplayName()}");
                     }
                 }
 
@@ -2653,7 +2631,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
             {
                 var components = new ActionRowProperties()
                     .WithButton("Get .fmbot supporter",
-                        $"{InteractionConstants.SupporterLinks.GetPurchaseButtons}-true-false-true-testlink",
+                        $"{InteractionConstants.SupporterLinks.GetPurchaseButtons}:true:false:true:testlink",
                         ButtonStyle.Primary);
 
                 var embed = new EmbedProperties();

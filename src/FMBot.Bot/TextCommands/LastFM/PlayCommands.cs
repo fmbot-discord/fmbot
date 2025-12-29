@@ -39,7 +39,7 @@ public class PlayCommands : BaseCommandModule
     private InteractiveService Interactivity { get; }
 
     private static readonly List<DateTimeOffset> StackCooldownTimer = new();
-    private static readonly List<User> StackCooldownTarget = new();
+    private static readonly List<NetCord.User> StackCooldownTarget = new();
 
 
     public PlayCommands(
@@ -116,11 +116,11 @@ public class PlayCommands : BaseCommandModule
 
         if (contextUser?.UserNameLastFM == null)
         {
-            var userNickname = (this.Context.User as GuildUser)?.DisplayName;
+            var discordGuildUser = this.Context.User as NetCord.GuildUser;
             this._embed.UsernameNotSetErrorResponse(prfx,
-                userNickname ?? this.Context.User.GlobalName ?? this.Context.User.Username);
+                discordGuildUser?.GetDisplayName() ?? this.Context.User.GetDisplayName());
 
-            await this.Context.Channel.SendMessageAsync(new MessageProperties { Embeds = [this._embed], Components = GenericEmbedService.UsernameNotSetErrorComponents() });
+            await this.Context.Channel.SendMessageAsync(new MessageProperties { Embeds = [this._embed], Components = [GenericEmbedService.UsernameNotSetErrorComponents()] });
             this.Context.LogCommandUsed(CommandResponse.UsernameNotSet);
             return;
         }
@@ -159,14 +159,14 @@ public class PlayCommands : BaseCommandModule
             var existingFmCooldown = await this._guildService.GetChannelCooldown(this.Context.Channel.Id);
             if (existingFmCooldown.HasValue)
             {
-                var msg = this.Context.Message as UserMessage;
-                if (StackCooldownTarget.Contains(this.Context.Message.Author))
+                var author = this.Context.Message.Author;
+                if (StackCooldownTarget.Contains(author))
                 {
-                    if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)]
+                    if (StackCooldownTimer[StackCooldownTarget.IndexOf(author)]
                             .AddSeconds(existingFmCooldown.Value) >= DateTimeOffset.Now)
                     {
                         var secondsLeft = (int)(StackCooldownTimer[
-                                StackCooldownTarget.IndexOf(this.Context.Message.Author as GuildUser)]
+                                StackCooldownTarget.IndexOf(author)]
                             .AddSeconds(existingFmCooldown.Value) - DateTimeOffset.Now).TotalSeconds;
                         if (secondsLeft <= existingFmCooldown.Value - 2)
                         {
@@ -180,11 +180,11 @@ public class PlayCommands : BaseCommandModule
                         return;
                     }
 
-                    StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)] = DateTimeOffset.Now;
+                    StackCooldownTimer[StackCooldownTarget.IndexOf(author)] = DateTimeOffset.Now;
                 }
                 else
                 {
-                    StackCooldownTarget.Add(msg.Author);
+                    StackCooldownTarget.Add(author);
                     StackCooldownTimer.Add(DateTimeOffset.Now);
                 }
             }

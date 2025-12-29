@@ -19,6 +19,7 @@ using Microsoft.Extensions.Options;
 using NetCord;
 using NetCord.Gateway;
 using NetCord.Rest;
+using NetCord.Services;
 using NetCord.Services.Commands;
 using Prometheus;
 using Serilog;
@@ -185,15 +186,16 @@ public class CommandHandler
         }
 
         // Mention - check if message starts with mention
-        if (this._discord?.User != null && message.Content.StartsWith($"<@{this._discord.User.Id}>"))
+        var currentUser = this._discord?.GetCurrentUser();
+        if (currentUser != null && message.Content.StartsWith($"<@{currentUser.Id}>"))
         {
-            argPos = $"<@{this._discord.User.Id}>".Length;
+            argPos = $"<@{currentUser.Id}>".Length;
             _ = Task.Run(async () => await ExecuteCommand(message, commandContext, argPos, prfx, update));
             return true;
         }
-        if (this._discord?.User != null && message.Content.StartsWith($"<@!{this._discord.User.Id}>"))
+        if (currentUser != null && message.Content.StartsWith($"<@!{currentUser.Id}>"))
         {
-            argPos = $"<@!{this._discord.User.Id}>".Length;
+            argPos = $"<@!{currentUser.Id}>".Length;
             _ = Task.Run(async () => await ExecuteCommand(message, commandContext, argPos, prfx, update));
             return true;
         }
@@ -273,21 +275,21 @@ public class CommandHandler
                     return;
                 }
 
-                var commandPrefixResult = await this._commands.ExecuteAsync(context, msg.Content[1..], this._provider);
+                var commandPrefixResult = await this._commands.ExecuteAsync(1, context, this._provider);
 
-                if (commandPrefixResult.IsSuccess)
+                if (commandPrefixResult is not IFailResult)
                 {
                     Statistics.CommandsExecuted.WithLabels("fm").Inc();
 
                     _ = Task.Run(async () => await this._userService.UpdateUserLastUsedAsync(context.User.Id));
                     _ = Task.Run(async () => await this._userService.AddUserTextCommandInteraction(context, "fm"));
                 }
-                else
+                else if (commandPrefixResult is IFailResult failResult)
                 {
                     Log.Error(
                         "CommandHandler error (.fm): {discordUserName} / {discordUserId} | {guildName} / {guildId}  | {messageContent} | Error: {error}",
                         context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, context.Message.Content,
-                        commandPrefixResult.ToString());
+                        failResult.Message);
                 }
 
                 return;
@@ -321,10 +323,10 @@ public class CommandHandler
                 {
                     var embed = new EmbedProperties()
                         .WithColor(DiscordConstants.LastFmColorRed);
-                    var userNickname = (context.User as GuildUser)?.Nickname;
+                    var guildUser = context.User as GuildUser;
 
                     embed.UsernameNotSetErrorResponse(prfx ?? this._botSettings.Bot.Prefix,
-                        userNickname ?? context.User.GlobalName ?? context.User.Username);
+                        guildUser?.GetDisplayName() ?? context.User.GetDisplayName());
                     await context.Channel.SendMessageAsync(new MessageProperties
                     {
                         Embeds = [embed],
@@ -408,12 +410,12 @@ public class CommandHandler
                 }
             }
 
-            var commandName = searchResult.Command.Name;
+            var commandName = searchResult.Command.Aliases[0];
             if (msg.Content.EndsWith(" help", StringComparison.OrdinalIgnoreCase) && commandName != "help")
             {
                 var embed = new EmbedProperties();
-                var userName = (context.Message.Author as GuildUser)?.Nickname ??
-                               context.User.GlobalName ?? context.User.Username;
+                var guildUser = context.Message.Author as GuildUser;
+                var userName = guildUser?.GetDisplayName() ?? context.User.GetDisplayName();
 
                 var helpResponse =
                     GenericEmbedService.HelpResponse(embed, searchResult.Command, prfx, userName);
@@ -433,9 +435,9 @@ public class CommandHandler
                 return;
             }
 
-            var result = await this._commands.ExecuteAsync(context, messageContent, this._provider);
+            var result = await this._commands.ExecuteAsync(argPos, context, this._provider);
 
-            if (result.IsSuccess)
+            if (result is not IFailResult)
             {
                 Statistics.CommandsExecuted.WithLabels(commandName).Inc();
 
@@ -451,12 +453,12 @@ public class CommandHandler
                         await this._userService.UpdateInteractionContextThroughReference(context.Message.Id, true, false));
                 }
             }
-            else
+            else if (result is IFailResult failResult)
             {
                 Log.Error(
                     "CommandHandler error: {discordUserName} / {discordUserId} | {guildName} / {guildId}  | {messageContent} | Error: {error}",
                     context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, context.Message.Content,
-                    result.ToString());
+                    failResult.Message);
             }
         }
     }
@@ -523,7 +525,7 @@ public class CommandHandler
             var guildUser = context.User as GuildUser;
             if (guildUser != null)
             {
-                var permissions = await guildUser.GetPermissionsAsync();
+                var permissions = guildUser.GetPermissions(context.Guild);
                 if (permissions.HasFlag(Permissions.BanUsers) ||
                     permissions.HasFlag(Permissions.Administrator))
                 {
@@ -532,8 +534,8 @@ public class CommandHandler
             }
 
             if (searchResult.IsSuccess &&
-                (searchResult.Command.Name.Equals("togglecommand", StringComparison.OrdinalIgnoreCase) ||
-                 searchResult.Command.Name.Equals("toggleservercommand", StringComparison.OrdinalIgnoreCase)))
+                (searchResult.Command.Aliases[0].Equals("togglecommand", StringComparison.OrdinalIgnoreCase) ||
+                 searchResult.Command.Aliases[0].Equals("toggleservercommand", StringComparison.OrdinalIgnoreCase)))
             {
                 return true;
             }
@@ -545,7 +547,7 @@ public class CommandHandler
                 if (searchResult.IsSuccess &&
                     toggledChannelCommands != null &&
                     toggledChannelCommands.Any() &&
-                    toggledChannelCommands.Any(searchResult.Command.Name.Equals) &&
+                    toggledChannelCommands.Any(searchResult.Command.Aliases[0].Equals) &&
                     context.Channel != null)
                 {
                     return true;
@@ -583,7 +585,7 @@ public class CommandHandler
             var disabledGuildCommands = GuildDisabledCommandService.GetToggledCommands(context.Guild?.Id);
             if (searchResult.IsSuccess &&
                 disabledGuildCommands != null &&
-                disabledGuildCommands.Any(searchResult.Command.Name.Equals))
+                disabledGuildCommands.Any(searchResult.Command.Aliases[0].Equals))
             {
                 if (!update)
                 {
@@ -601,7 +603,7 @@ public class CommandHandler
             if (searchResult.IsSuccess &&
                 disabledChannelCommands != null &&
                 disabledChannelCommands.Any() &&
-                disabledChannelCommands.Any(searchResult.Command.Name.Equals) &&
+                disabledChannelCommands.Any(searchResult.Command.Aliases[0].Equals) &&
                 context.Channel != null)
             {
                 if (!update)

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -14,6 +15,8 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using NetCord;
+using NetCord.Rest;
 using NetCord.Services.Commands;
 
 namespace FMBot.Bot.TextCommands.Guild;
@@ -302,9 +305,9 @@ public class GuildCommands : BaseCommandModule
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             var id = this.Context.Channel.Id;
-            if (this.Context.Channel is SocketThreadChannel threadChannel)
+            if (this.Context.Channel is GuildThread threadChannel)
             {
-                id = threadChannel.ParentChannel.Id;
+                id = threadChannel.ParentId ?? this.Context.Channel.Id;
             }
 
             var response =
@@ -356,13 +359,14 @@ public class GuildCommands : BaseCommandModule
         this._embed.AddField("Previous .fm cooldown",
             existingFmCooldown.HasValue ? $"{existingFmCooldown.Value} seconds" : "No cooldown");
 
+        this.Context.Guild.Channels.TryGetValue(this.Context.Channel.Id, out var guildChannel);
         var newFmCooldown =
-            await this._guildService.SetChannelCooldownAsync(this.Context.Channel, guild.GuildId, newCooldown, this.Context.Guild.Id);
+            await this._guildService.SetChannelCooldownAsync(guildChannel, guild.GuildId, newCooldown, this.Context.Guild.Id);
 
         this._embed.AddField("New .fm cooldown",
             newFmCooldown.HasValue ? $"{newFmCooldown.Value} seconds" : "No cooldown");
 
-        this._embed.WithFooter($"Adjusting .fm cooldown for #{this.Context.Channel.Name}.\n" +
+        this._embed.WithFooter($"Adjusting .fm cooldown for #{guildChannel?.Name ?? "unknown"}.\n" +
                                "Min 2 seconds - Max 1200 seconds - Cooldown is per-user.\n" +
                                "Note that this cooldown can also expire after a bot restart.");
 

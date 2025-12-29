@@ -12,7 +12,6 @@ using FMBot.Bot.Services;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using NetCord.Services.ApplicationCommands;
-using NetCord.Services.ComponentInteractions;
 using NetCord;
 using NetCord.Rest;
 using NetCord.Services.Commands;
@@ -59,37 +58,6 @@ public class AlbumSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         }
     }
 
-    [ComponentInteraction($"{InteractionConstants.Album.Info}-*-*-*")]
-    [UsernameSetRequired]
-    public async Task AlbumAsync(string album, string discordUser, string requesterDiscordUser)
-    {
-        await RespondAsync(InteractionCallback.DeferredMessage());
-        await this.Context.DisableInteractionButtons();
-
-        var discordUserId = ulong.Parse(discordUser);
-        var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
-        var albumId = int.Parse(album);
-
-        var contextUser = await this._userService.GetUserWithDiscogs(requesterDiscordUserId);
-        var discordContextUser = await this.Context.Client.GetUserAsync(requesterDiscordUserId);
-        var userSettings = await this._settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
-
-        var dbAlbum = await this._albumService.GetAlbumForId(albumId);
-
-        try
-        {
-            var response = await this._albumBuilders.AlbumAsync(
-                new ContextModel(this.Context, contextUser, discordContextUser), $"{dbAlbum.ArtistName} | {dbAlbum.Name}", userSettings);
-
-            await this.Context.UpdateInteractionEmbed(response, this.Interactivity, false);
-            this.Context.LogCommandUsed(response.CommandResponse);
-        }
-        catch (Exception e)
-        {
-            await this.Context.HandleCommandException(e);
-        }
-    }
-
     [SlashCommand("wkalbum", "Shows what other users listen to an album in your server")]
     [UsernameSetRequired]
     public async Task WhoKnowsAlbumAsync(
@@ -108,38 +76,6 @@ public class AlbumSlashCommands : ApplicationCommandModule<ApplicationCommandCon
             var response = await this._albumBuilders.WhoKnowsAlbumAsync(new ContextModel(this.Context, contextUser), mode.Value, name);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
-        }
-        catch (Exception e)
-        {
-            await this.Context.HandleCommandException(e);
-        }
-    }
-
-    [ComponentInteraction($"{InteractionConstants.WhoKnowsAlbumRolePicker}-*")]
-    [UsernameSetRequired]
-    [RequiresIndex]
-    public async Task WhoKnowsFilteringAsync(string albumId, string[] inputs)
-    {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-
-        var album = await this._albumService.GetAlbumForId(int.Parse(albumId));
-
-        var roleIds = new List<ulong>();
-        if (inputs != null)
-        {
-            foreach (var input in inputs)
-            {
-                var roleId = ulong.Parse(input);
-                roleIds.Add(roleId);
-            }
-        }
-
-        try
-        {
-            var response = await this._albumBuilders.WhoKnowsAlbumAsync(new ContextModel(this.Context, contextUser), ResponseMode.Embed, $"{album.ArtistName} | {album.Name}", true, roleIds);
-
-            await this.Context.UpdateInteractionEmbed(response);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
@@ -232,77 +168,6 @@ public class AlbumSlashCommands : ApplicationCommandModule<ApplicationCommandCon
         }
     }
 
-    [ComponentInteraction($"{InteractionConstants.Album.Cover}-*-*-*-*")]
-    [UsernameSetRequired]
-    public async Task AlbumCoverAsync(string album, string discordUser, string requesterDiscordUser, string type)
-    {
-        await RespondAsync(InteractionCallback.DeferredMessage());
-        await this.Context.DisableInteractionButtons();
-
-        var discordUserId = ulong.Parse(discordUser);
-        var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
-        var albumId = int.Parse(album);
-
-        var contextUser = await this._userService.GetUserWithDiscogs(requesterDiscordUserId);
-        var discordContextUser = await this.Context.Client.GetUserAsync(requesterDiscordUserId);
-        var userSettings = await this._settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
-
-        var dbAlbum = await this._albumService.GetAlbumForId(albumId);
-
-        try
-        {
-            var response = await this._albumBuilders.CoverAsync(new ContextModel(this.Context, contextUser, discordContextUser), userSettings, $"{dbAlbum.ArtistName} | {dbAlbum.Name}", type == "motion");
-
-            await this.Context.UpdateInteractionEmbed(response, this.Interactivity, false);
-            this.Context.LogCommandUsed(response.CommandResponse);
-        }
-        catch (Exception e)
-        {
-            await this.Context.HandleCommandException(e);
-        }
-    }
-
-    [ComponentInteraction($"{InteractionConstants.Album.RandomCover}-*-*")]
-    [UsernameSetRequired]
-    public async Task RandomAlbumCoverAsync(string discordUser, string requesterDiscordUser)
-    {
-        var discordUserId = ulong.Parse(discordUser);
-        var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
-
-        if (this.Context.User.Id != requesterDiscordUserId)
-        {
-            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
-                .WithContent("🎲 Sorry, only the user that requested the random cover can reroll.")
-                .WithFlags(MessageFlags.Ephemeral)));
-            return;
-        }
-
-        await RespondAsync(InteractionCallback.DeferredMessage());
-        await this.Context.DisableInteractionButtons();
-
-        var contextUser = await this._userService.GetUserWithDiscogs(requesterDiscordUserId);
-        var discordContextUser = await this.Context.Client.GetUserAsync(requesterDiscordUserId);
-        var userSettings = await this._settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
-
-        try
-        {
-            var response = await this._albumBuilders.CoverAsync(new ContextModel(this.Context, contextUser, discordContextUser), userSettings, "random");
-
-            await this.Context.UpdateInteractionEmbed(response, this.Interactivity, false);
-            this.Context.LogCommandUsed(response.CommandResponse);
-
-            var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
-            if (message != null && response.ReferencedMusic != null && PublicProperties.UsedCommandsResponseContextId.TryGetValue(message.Id, out var contextId))
-            {
-                await this._userService.UpdateInteractionContext(contextId, response.ReferencedMusic);
-            }
-        }
-        catch (Exception e)
-        {
-            await this.Context.HandleCommandException(e);
-        }
-    }
-
     [SlashCommand("albumtracks", "Shows album info for the album you're currently listening to or searching for", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task AlbumTracksAsync(
@@ -320,37 +185,6 @@ public class AlbumSlashCommands : ApplicationCommandModule<ApplicationCommandCon
             var response = await this._albumBuilders.AlbumTracksAsync(new ContextModel(this.Context, contextUser), userSettings, name, orderByPlaycount);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
-        }
-        catch (Exception e)
-        {
-            await this.Context.HandleCommandException(e);
-        }
-    }
-
-    [ComponentInteraction($"{InteractionConstants.Album.Tracks}-*-*-*")]
-    [UsernameSetRequired]
-    public async Task AlbumTracksAsync(string album, string discordUser, string requesterDiscordUser)
-    {
-        await RespondAsync(InteractionCallback.DeferredMessage());
-        await this.Context.DisableInteractionButtons();
-
-        var discordUserId = ulong.Parse(discordUser);
-        var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
-        var albumId = int.Parse(album);
-
-        var contextUser = await this._userService.GetUserWithDiscogs(requesterDiscordUserId);
-        var discordContextUser = await this.Context.Client.GetUserAsync(requesterDiscordUserId);
-        var userSettings = await this._settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
-
-        var dbAlbum = await this._albumService.GetAlbumForId(albumId);
-
-        try
-        {
-            var response = await this._albumBuilders.AlbumTracksAsync(
-                new ContextModel(this.Context, contextUser, discordContextUser), userSettings, $"{dbAlbum.ArtistName} | {dbAlbum.Name}");
-
-            await this.Context.UpdateInteractionEmbed(response, this.Interactivity, false);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)

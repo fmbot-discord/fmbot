@@ -638,7 +638,7 @@ public class ArtistCommands : BaseCommandModule
 
                 _ = this.Interactivity.SendPaginatorAsync(
                     response.StaticPaginator.Build(),
-                    message,
+                    this.Context.Channel,
                     TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
             }
             else

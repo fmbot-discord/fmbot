@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
-
+using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
@@ -72,10 +72,9 @@ public class WhoKnowsArtistService
 
             if (i < 15 && discordGuild != null)
             {
-                var discordGuildUser = await discordGuild.GetUserAsync(guildUser.DiscordUserId, CacheMode.CacheOnly);
-                if (discordGuildUser != null)
+                if (discordGuild.Users.TryGetValue(guildUser.DiscordUserId, out var discordGuildUser))
                 {
-                    userName = discordGuildUser.DisplayName;
+                    userName = discordGuildUser.GetDisplayName();
                 }
             }
 
@@ -130,13 +129,9 @@ public class WhoKnowsArtistService
 
             if (i < 15)
             {
-                if (discordGuild != null)
+                if (discordGuild != null && discordGuild.Users.TryGetValue(userArtist.DiscordUserId, out var discordUser))
                 {
-                    var discordUser = await discordGuild.GetUserAsync(userArtist.DiscordUserId, CacheMode.CacheOnly);
-                    if (discordUser != null)
-                    {
-                        userName = discordUser.DisplayName;
-                    }
+                    userName = discordUser.GetDisplayName();
                 }
             }
 
@@ -193,10 +188,9 @@ public class WhoKnowsArtistService
             {
                 userName = guildUser.UserName;
 
-                var discordGuildUser = await discordGuild.GetUserAsync(guildUser.DiscordUserId, CacheMode.CacheOnly);
-                if (discordGuildUser != null)
+                if (discordGuild.Users.TryGetValue(guildUser.DiscordUserId, out var discordGuildUser))
                 {
-                    userName = discordGuildUser.DisplayName;
+                    userName = discordGuildUser.GetDisplayName();
                 }
             }
 

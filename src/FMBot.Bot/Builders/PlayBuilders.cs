@@ -589,14 +589,11 @@ public class PlayBuilder
                 ? StringService.GetPaginationActionRow(p)
                 : StringService.GetSimplePaginationActionRow(p));
 
-            var components = new ComponentBuilderV2()
-                .WithContainer(container);
-
             var pageBuilder = new PageBuilder()
                 .WithAllowedMentions(AllowedMentionsProperties.None)
-                .WithComponents(components);
+                .WithComponents(new List<IMessageComponentProperties> { container });
 
-            return pageBuilder;
+            return pageBuilder.Build();
         }
     }
 
@@ -919,7 +916,7 @@ public class PlayBuilder
 
         return response;
 
-        PageBuilder GeneratePage(IComponentPaginator p)
+        Fergun.Interactive.IPage GeneratePage(IComponentPaginator p)
         {
             var page = dayPages.ElementAtOrDefault(p.CurrentPageIndex);
             var plays = new List<UserPlay>();
@@ -965,8 +962,8 @@ public class PlayBuilder
                                    $"{StringExtensions.GetListeningTimeString(day.ListeningTime)} — " +
                                    $"{day.Playcount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(day.Playcount)}**");
                 content.AppendLine(fieldContent.ToString());
-                container.Components.Add(new TextDisplayProperties(content.ToString()));
-                container.Components.Add(new ComponentSeparatorProperties());
+                container.WithTextDisplay(content.ToString());
+                container.WithSeparator();
 
                 plays.AddRange(day.Plays);
             }
@@ -996,12 +993,10 @@ public class PlayBuilder
                 .WithTextDisplay(footer.ToString())
                 .WithActionRow(StringService.GetPaginationActionRow(p));
 
-            var components = new ComponentBuilderV2()
-                .WithContainer(container);
-
             return new PageBuilder()
-                .WithComponents(components)
-                .WithAllowedMentions(AllowedMentionsProperties.None);
+                .WithComponents(new List<IMessageComponentProperties> { container })
+                .WithAllowedMentions(AllowedMentionsProperties.None)
+                .Build();
         }
     }
 
@@ -1153,7 +1148,7 @@ public class PlayBuilder
         if (isRandom)
         {
             response.Components = new ActionRowProperties().WithButton("Reroll",
-                $"{InteractionConstants.RandomMilestone}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}",
+                $"{InteractionConstants.RandomMilestone}:{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}",
                 style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("🎲"));
         }
 
@@ -1674,9 +1669,8 @@ public class PlayBuilder
             .OrderByDescending(o => o.GapDuration.TotalDays)
             .ToList();
 
-        var viewType = new StringMenuProperties()
+        var viewType = new StringMenuProperties(InteractionConstants.GapView)
             .WithPlaceholder("Select gap view")
-            .WithCustomId(InteractionConstants.GapView)
             .WithMinValues(1)
             .WithMaxValues(1);
 
@@ -1687,7 +1681,12 @@ public class PlayBuilder
                 $"{Enum.GetName(option)}-{Enum.GetName(mode)}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}";
 
             var active = option == entityType;
-            viewType.AddOption(new StringMenuSelectOptionProperties(name, value, null, isDefault: active));
+            var menuOption = new StringMenuSelectOptionProperties(name, value);
+            if (active)
+            {
+                menuOption = menuOption.WithDefault();
+            }
+            viewType.AddOption(menuOption);
         }
 
         if (mode == ResponseMode.Image && sortedEntitiesWithGaps.Count != 0)
@@ -1727,7 +1726,7 @@ public class PlayBuilder
             response.FileName = $"{entityTypeDisplay.ToLower()}-gaps-{userSettings.DiscordUserId}.png";
             response.ResponseType = ResponseType.ImageOnly;
             response.Embed = null;
-            response.Components = new ActionRowProperties().WithSelectMenu(viewType);
+            response.StringMenus.Add(viewType);
 
             return response;
         }

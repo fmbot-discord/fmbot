@@ -199,7 +199,7 @@ public class StaticCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Other)]
     public async Task StatusAsync()
     {
-        var selfUser = this._client.FirstOrDefault()?.User;
+        var selfUser = this._client.GetCurrentUser();
         this._embed.WithColor(DiscordConstants.InformationColorBlue);
 
         this._embedAuthor.WithIconUrl(selfUser?.GetAvatarUrl()?.ToString());
@@ -219,7 +219,7 @@ public class StaticCommands : BaseCommandModule
         var upTimeInSeconds = TimeSpan.FromSeconds(upTime);
 
         var totalGuilds = this._client.Sum(shard => shard.Cache.Guilds.Count);
-        var totalMembers = this._client.SelectMany(shard => shard.Cache.Guilds.Values).Sum(g => g.ApproximateMemberCount ?? 0);
+        var totalMembers = this._client.SelectMany(shard => shard.Cache.Guilds.Values).Sum(g => g.ApproximateUserCount ?? 0);
         var shardCount = this._client.Count();
         var currentShardId = this.Context.Guild != null ? GetShardIdForGuild(this.Context.Guild.Id, shardCount) : 0;
 
@@ -428,7 +428,7 @@ public class StaticCommands : BaseCommandModule
             if (shard != null)
             {
                 var guild = shard.Cache.Guilds[guildId.Value];
-                this._embed.WithFooter($"{guild.Name} - {guild.ApproximateMemberCount ?? 0} members");
+                this._embed.WithFooter($"{guild.Name} - {guild.ApproximateUserCount ?? 0} members");
             }
         }
 
@@ -522,7 +522,7 @@ public class StaticCommands : BaseCommandModule
                         Enum.TryParse(selectedCategoryOrCommand, out CommandCategory selectedCategory);
 
                         var selectedCommands = allCommands.Where(w =>
-                            w.Attributes.OfType<CommandCategoriesAttribute>().Select(s => s.Categories)
+                            GetAllAttributes(w).OfType<CommandCategoriesAttribute>().Select(s => s.Categories)
                                 .Any(a => a.Contains(selectedCategory))).ToList();
 
                         if (selectedCommands.Any())
@@ -538,7 +538,7 @@ public class StaticCommands : BaseCommandModule
 
                             var totalCategories = new List<CommandCategory>();
                             foreach (var selectedCommand in selectedCommands.Select(s =>
-                                             s.Attributes.OfType<CommandCategoriesAttribute>()
+                                             GetAllAttributes(s).OfType<CommandCategoriesAttribute>()
                                                  .Select(se => se.Categories))
                                          .Distinct())
                             {
@@ -551,7 +551,7 @@ public class StaticCommands : BaseCommandModule
                             var usedCommands = new List<ICommandInfo<CommandContext>>();
 
                             foreach (var selectedCommand in selectedCommands.Where(w =>
-                                         w.Attributes.OfType<CommandCategoriesAttribute>().Select(s => s.Categories)
+                                         GetAllAttributes(w).OfType<CommandCategoriesAttribute>().Select(s => s.Categories)
                                              .Any(a => a.Length == 1 && a.Contains(selectedCategory))))
                             {
                                 if (!usedCommands.Contains(selectedCommand))
@@ -566,7 +566,7 @@ public class StaticCommands : BaseCommandModule
                                 commands += "\n";
 
                                 foreach (var selectedCommand in selectedCommands.Where(w =>
-                                             w.Attributes.OfType<CommandCategoriesAttribute>().Select(s => s.Categories)
+                                             GetAllAttributes(w).OfType<CommandCategoriesAttribute>().Select(s => s.Categories)
                                                  .Any(a => a.Contains(CommandCategory.WhoKnows) && a.Length > 1)))
                                 {
                                     if (!usedCommands.Contains(selectedCommand))
@@ -582,7 +582,7 @@ public class StaticCommands : BaseCommandModule
                             foreach (var category in totalCategories.Distinct())
                             {
                                 foreach (var selectedCommand in selectedCommands.Where(w =>
-                                             w.Attributes.OfType<CommandCategoriesAttribute>().Select(s => s.Categories)
+                                             GetAllAttributes(w).OfType<CommandCategoriesAttribute>().Select(s => s.Categories)
                                                  .Any(a => a.Contains(category) && a.Length > 1)))
                                 {
                                     if (!usedCommands.Contains(selectedCommand))
@@ -641,17 +641,34 @@ public class StaticCommands : BaseCommandModule
                     }
                 }
 
+                var selectionPageBuilder = new PageBuilder()
+                    .WithTitle(this._embed.Title)
+                    .WithDescription(this._embed.Description);
+
+                if (this._embed.Footer != null)
+                {
+                    selectionPageBuilder.WithFooter(this._embed.Footer.Text);
+                }
+
+                if (this._embed.Fields != null)
+                {
+                    foreach (var field in this._embed.Fields)
+                    {
+                        selectionPageBuilder.AddField(field.Name, field.Value, field.Inline);
+                    }
+                }
+
                 var multiSelection = new MultiSelectionBuilder<string>()
                     .WithOptions(options)
                     .WithActionOnSuccess(ActionOnStop.None)
                     .WithActionOnTimeout(ActionOnStop.DisableInput)
-                    .WithSelectionPage(new PageBuilder().WithEmbedProperties(this._embed))
+                    .WithSelectionPage(selectionPageBuilder)
                     ;
 
                 selectedResult = message is null
                     ? await this.Interactivity.SendSelectionAsync(multiSelection.Build(), this.Context.Channel,
                         TimeSpan.FromSeconds(DiscordConstants.PaginationTimeoutInSeconds * 2))
-                    : await this.Interactivity.SendSelectionAsync(multiSelection.Build(), message,
+                    : await this.Interactivity.SendSelectionAsync(multiSelection.Build(), this.Context.Channel,
                         TimeSpan.FromSeconds(DiscordConstants.PaginationTimeoutInSeconds * 2));
 
                 message = selectedResult.Message;
@@ -667,7 +684,7 @@ public class StaticCommands : BaseCommandModule
 
     private async Task SetGeneralHelpEmbed(string prefix)
     {
-        this._embedAuthor.WithIconUrl(this._client.FirstOrDefault()?.User?.GetAvatarUrl()?.ToString());
+        this._embedAuthor.WithIconUrl(this._client.GetCurrentUser()?.GetAvatarUrl()?.ToString());
         this._embedAuthor.WithName(".fmbot help & command overview");
         this._embed.WithAuthor(this._embedAuthor);
 
@@ -956,13 +973,13 @@ public class StaticCommands : BaseCommandModule
                                     $"Use `{prfx}serverhelp` to view all your configurable server settings.");
 
         var allCommands = this._service.GetCommands().SelectMany(kvp => kvp.Value)
-            .Where(w => !w.Attributes.OfType<ExcludeFromHelp>().Any() &&
-                        !w.Attributes.OfType<ServerStaffOnly>().Any())
+            .Where(w => !GetAllAttributes(w).OfType<ExcludeFromHelp>().Any() &&
+                        !GetAllAttributes(w).OfType<ServerStaffOnly>().Any())
             .ToList();
 
         // Group commands by their module name attribute
         var commandsByModule = allCommands
-            .GroupBy(c => c.Module?.Attributes.OfType<ModuleNameAttribute>().FirstOrDefault()?.Name ?? "Other")
+            .GroupBy(c => GetAllAttributes(c).OfType<ModuleNameAttribute>().FirstOrDefault()?.ModuleName ?? "Other")
             .OrderByDescending(g => g.Count());
 
         foreach (var moduleGroup in commandsByModule)
@@ -1006,13 +1023,13 @@ public class StaticCommands : BaseCommandModule
                                     "These commands require either the `Admin` or the `Ban Members` permission.");
 
         var allCommands = this._service.GetCommands().SelectMany(kvp => kvp.Value)
-            .Where(w => !w.Attributes.OfType<ExcludeFromHelp>().Any() &&
-                        w.Attributes.OfType<ServerStaffOnly>().Any())
+            .Where(w => !GetAllAttributes(w).OfType<ExcludeFromHelp>().Any() &&
+                        GetAllAttributes(w).OfType<ServerStaffOnly>().Any())
             .ToList();
 
         // Group commands by their module name attribute
         var commandsByModule = allCommands
-            .GroupBy(c => c.Module?.Attributes.OfType<ModuleNameAttribute>().FirstOrDefault()?.Name ?? "Server Settings")
+            .GroupBy(c => GetAllAttributes(c).OfType<ModuleNameAttribute>().FirstOrDefault()?.ModuleName ?? "Server Settings")
             .OrderByDescending(g => g.Count());
 
         foreach (var moduleGroup in commandsByModule)
@@ -1052,12 +1069,12 @@ public class StaticCommands : BaseCommandModule
                                     "These commands require .fmbot admin or owner.");
 
         var allCommands = this._service.GetCommands().SelectMany(kvp => kvp.Value)
-            .Where(w => w.Attributes.OfType<ExcludeFromHelp>().Any())
+            .Where(w => GetAllAttributes(w).OfType<ExcludeFromHelp>().Any())
             .ToList();
 
         // Group commands by their module name attribute
         var commandsByModule = allCommands
-            .GroupBy(c => c.Module?.Attributes.OfType<ModuleNameAttribute>().FirstOrDefault()?.Name ?? "Staff")
+            .GroupBy(c => GetAllAttributes(c).OfType<ModuleNameAttribute>().FirstOrDefault()?.ModuleName ?? "Staff")
             .OrderByDescending(g => g.Count());
 
         foreach (var moduleGroup in commandsByModule)
@@ -1097,7 +1114,7 @@ public class StaticCommands : BaseCommandModule
 
     private static string GetUserDisplayName(GuildUser guildUser, User user)
     {
-        return guildUser?.Nickname ?? user?.GlobalName ?? user?.Username ?? "Unknown";
+        return guildUser?.GetDisplayName() ?? user?.GetDisplayName() ?? "Unknown";
     }
 
     private static ICommandInfo<CommandContext> FindCommand(IEnumerable<ICommandInfo<CommandContext>> commands, string name)
@@ -1107,10 +1124,15 @@ public class StaticCommands : BaseCommandModule
             GetCommandAliases(c).Any(a => a.Equals(name, StringComparison.OrdinalIgnoreCase)));
     }
 
+    private static IEnumerable<Attribute> GetAllAttributes(ICommandInfo<CommandContext> commandInfo)
+    {
+        return commandInfo.Attributes.Values.SelectMany(x => x);
+    }
+
     private static string GetCommandName(ICommandInfo<CommandContext> commandInfo)
     {
         // NetCord stores name differently - check for Name property via reflection or use aliases
-        var nameAttr = commandInfo.Attributes.OfType<CommandAttribute>().FirstOrDefault();
+        var nameAttr = GetAllAttributes(commandInfo).OfType<CommandAttribute>().FirstOrDefault();
         if (nameAttr != null && nameAttr.Aliases.Length > 0)
         {
             return nameAttr.Aliases[0];
@@ -1120,12 +1142,12 @@ public class StaticCommands : BaseCommandModule
 
     private static IEnumerable<string> GetCommandAliases(ICommandInfo<CommandContext> commandInfo)
     {
-        var nameAttr = commandInfo.Attributes.OfType<CommandAttribute>().FirstOrDefault();
+        var nameAttr = GetAllAttributes(commandInfo).OfType<CommandAttribute>().FirstOrDefault();
         return nameAttr?.Aliases ?? Array.Empty<string>();
     }
 
     private static string GetCommandSummary(ICommandInfo<CommandContext> commandInfo)
     {
-        return commandInfo.Attributes.OfType<SummaryAttribute>().FirstOrDefault()?.Summary;
+        return GetAllAttributes(commandInfo).OfType<SummaryAttribute>().FirstOrDefault()?.Summary;
     }
 }

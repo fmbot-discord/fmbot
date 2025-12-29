@@ -237,7 +237,7 @@ public class CrownGuildSettingCommands : BaseCommandModule
 
             if (result.IsSuccess)
             {
-                await result.Value.DeferAsync();
+                await result.Value.SendResponseAsync(InteractionCallback.DeferredModifyMessage);
                 await this._crownService.RemoveAllCrownsFromDiscordUser(userToBlock.DiscordUserId, this.Context.Guild.Id);
 
                 this._embed.WithTitle("Crowns have been removed for:");

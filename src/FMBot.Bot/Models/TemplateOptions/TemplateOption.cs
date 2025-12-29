@@ -14,6 +14,7 @@ using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.Repositories;
+using NetCord;
 using Npgsql;
 
 namespace FMBot.Bot.Models.TemplateOptions;
@@ -288,7 +289,7 @@ public static class TemplateOptions
             VariableType = VariableType.ImageUrl,
             ExecutionLogic = context =>
                 Task.FromResult(context.DiscordContextGuild != null
-                    ? new VariableResult(context.DiscordContextGuild.IconUrl)
+                    ? new VariableResult(context.DiscordContextGuild.GetIconUrl()?.ToString())
                     : null)
         },
         new ComplexTemplateOption
@@ -298,7 +299,7 @@ public static class TemplateOptions
             VariableType = VariableType.ImageUrl,
             ExecutionLogic = context =>
                 Task.FromResult(context.DiscordContextGuild != null
-                    ? new VariableResult(context.DiscordContextGuild.BannerUrl)
+                    ? new VariableResult(context.DiscordContextGuild.GetBannerUrl()?.ToString())
                     : null)
         },
         new ComplexTemplateOption
@@ -816,8 +817,8 @@ public static class TemplateOptions
                     var currentPlaycount = await reader.GetFieldValueAsync<int>(0);
                     var userName = await reader.GetFieldValueAsync<string>(2);
                     return new VariableResult(
-                        $"👑 {Format.Sanitize(userName)} ({currentPlaycount.Format(context.NumberFormat)} plays)",
-                        Format.Sanitize(userName));
+                        $"👑 {StringExtensions.Sanitize(userName)} ({currentPlaycount.Format(context.NumberFormat)} plays)",
+                        StringExtensions.Sanitize(userName));
                 }
 
                 return null;

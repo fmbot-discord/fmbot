@@ -71,6 +71,20 @@ public static class ModalFactory
             ]
         };
 
+    public static ModalProperties CreateRenameArtistModal(string customId, string artistValue) =>
+        new(customId, "Editing artist")
+        {
+            Components =
+            [
+                new LabelProperties("New artist name", new TextInputProperties("artist_name", TextInputStyle.Short)
+                {
+                    Placeholder = "The Beatles",
+                    Value = artistValue,
+                    MinLength = 1
+                })
+            ]
+        };
+
     public static ModalProperties CreateRenameAlbumModal(string customId) =>
         new(customId, "Editing imports")
         {
@@ -89,6 +103,26 @@ public static class ModalFactory
             ]
         };
 
+    public static ModalProperties CreateRenameAlbumModal(string customId, string artistValue, string albumValue) =>
+        new(customId, "Editing album")
+        {
+            Components =
+            [
+                new LabelProperties("Artist name", new TextInputProperties("artist_name", TextInputStyle.Short)
+                {
+                    Placeholder = "The Beatles",
+                    Value = artistValue,
+                    MinLength = 1
+                }),
+                new LabelProperties("Album name", new TextInputProperties("album_name", TextInputStyle.Short)
+                {
+                    Placeholder = "Abbey Road",
+                    Value = albumValue,
+                    MinLength = 1
+                })
+            ]
+        };
+
     public static ModalProperties CreateRenameTrackModal(string customId) =>
         new(customId, "Editing imports")
         {
@@ -102,6 +136,26 @@ public static class ModalFactory
                 new LabelProperties("Track name", new TextInputProperties("track_name", TextInputStyle.Short)
                 {
                     Placeholder = "Yesterday",
+                    MinLength = 1
+                })
+            ]
+        };
+
+    public static ModalProperties CreateRenameTrackModal(string customId, string artistValue, string trackValue) =>
+        new(customId, "Editing track")
+        {
+            Components =
+            [
+                new LabelProperties("Artist name", new TextInputProperties("artist_name", TextInputStyle.Short)
+                {
+                    Placeholder = "The Beatles",
+                    Value = artistValue,
+                    MinLength = 1
+                }),
+                new LabelProperties("Track name", new TextInputProperties("track_name", TextInputStyle.Short)
+                {
+                    Placeholder = "Yesterday",
+                    Value = trackValue,
                     MinLength = 1
                 })
             ]
@@ -285,6 +339,26 @@ public static class ModalFactory
             ]
         };
 
+    public static ModalProperties CreateModifyShortcutModal(string customId, string inputValue, string outputValue) =>
+        new(customId, "Modify shortcut")
+        {
+            Components =
+            [
+                new LabelProperties("Input (what you'll type)", new TextInputProperties("input", TextInputStyle.Short)
+                {
+                    Value = inputValue,
+                    MinLength = 1,
+                    MaxLength = 50
+                }),
+                new LabelProperties("Output (command to run)", new TextInputProperties("output", TextInputStyle.Paragraph)
+                {
+                    Value = outputValue,
+                    MinLength = 1,
+                    MaxLength = 200
+                })
+            ]
+        };
+
     // Admin Modals
     public static ModalProperties CreateReportGlobalWhoKnowsModal(string customId) =>
         new(customId, "Report GlobalWhoKnows user")
@@ -386,6 +460,18 @@ public static class ModalFactory
             ]
         };
 
+    public static ModalProperties CreateTemplateViewScriptModal(string customId, string title, string contentValue) =>
+        new(customId, title)
+        {
+            Components =
+            [
+                new LabelProperties("Content", new TextInputProperties("content", TextInputStyle.Paragraph)
+                {
+                    Value = contentValue
+                })
+            ]
+        };
+
     public static ModalProperties CreateTemplateNameModal(string customId, string title) =>
         new(customId, title)
         {
@@ -393,6 +479,19 @@ public static class ModalFactory
             [
                 new LabelProperties("Name", new TextInputProperties("name", TextInputStyle.Short)
                 {
+                    MaxLength = 32
+                })
+            ]
+        };
+
+    public static ModalProperties CreateTemplateNameModal(string customId, string title, string nameValue) =>
+        new(customId, title)
+        {
+            Components =
+            [
+                new LabelProperties("Name", new TextInputProperties("name", TextInputStyle.Short)
+                {
+                    Value = nameValue,
                     MaxLength = 32
                 })
             ]

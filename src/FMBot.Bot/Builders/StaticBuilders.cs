@@ -140,7 +140,7 @@ public class StaticBuilders
                     ? "Manage your supporter"
                     : "Get .fmbot supporter",
                 style: ButtonStyle.Secondary,
-                customId: $"{InteractionConstants.SupporterLinks.GetPurchaseButtons}-true-false-false-{source}");
+                customId: $"{InteractionConstants.SupporterLinks.GetPurchaseButtons}:true:false:false:{source}");
         }
         else
         {
@@ -181,10 +181,10 @@ public class StaticBuilders
 
                 response.Components = new ActionRowProperties()
                     .AddComponents(new ButtonProperties(
-                        $"{InteractionConstants.SupporterLinks.GetPurchaseLink}-monthly-{source}", "Get monthly",
+                        $"{InteractionConstants.SupporterLinks.GetPurchaseLink}:monthly:{source}", "Get monthly",
                         ButtonStyle.Primary))
                     .AddComponents(new ButtonProperties(
-                        $"{InteractionConstants.SupporterLinks.GetPurchaseLink}-yearly-{source}", "Get yearly",
+                        $"{InteractionConstants.SupporterLinks.GetPurchaseLink}:yearly:{source}", "Get yearly",
                         ButtonStyle.Primary));
 
                 if (pricing.LifetimePriceId != null &&
@@ -195,7 +195,7 @@ public class StaticBuilders
                         $"-# {pricing.LifetimeSubText}", true);
 
                     response.Components.AddComponents(new ButtonProperties(
-                        $"{InteractionConstants.SupporterLinks.GetPurchaseLink}-lifetime-{source}", "Get lifetime",
+                        $"{InteractionConstants.SupporterLinks.GetPurchaseLink}:lifetime:{source}", "Get lifetime",
                         ButtonStyle.Primary));
                 }
             }
@@ -206,12 +206,12 @@ public class StaticBuilders
             if (expandWithPerks)
             {
                 response.Components.WithButton("Hide all perks", style: ButtonStyle.Secondary,
-                    customId: $"{InteractionConstants.SupporterLinks.GetPurchaseButtons}-false-false-true-{source}");
+                    customId: $"{InteractionConstants.SupporterLinks.GetPurchaseButtons}:false:false:true:{source}");
             }
             else
             {
                 response.Components.WithButton("View all perks", style: ButtonStyle.Secondary,
-                    customId: $"{InteractionConstants.SupporterLinks.GetPurchaseButtons}-false-true-true-{source}");
+                    customId: $"{InteractionConstants.SupporterLinks.GetPurchaseButtons}:false:true:true:{source}");
             }
         }
 
