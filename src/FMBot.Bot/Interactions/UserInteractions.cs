@@ -141,14 +141,9 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
         var parsedMessageId = ulong.Parse(messageId);
         var msg = await this.Context.Channel.GetMessageAsync(parsedMessageId);
 
-        if (msg is not RestMessage message)
-        {
-            return;
-        }
-
         try
         {
-            await message.ModifyAsync(m => m.Components = []);
+            await msg.ModifyAsync(m => m.Components = []);
 
             await this.Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
 
@@ -330,9 +325,10 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
 
     [ComponentInteraction(InteractionConstants.UserSetting)]
     [UsernameSetRequired]
-    public async Task GetUserSetting(params string[] inputs)
+    public async Task GetUserSetting()
     {
-        var setting = inputs.First().Replace("us-", "");
+        var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
+        var setting = stringMenuInteraction.Data.SelectedValues[0].Replace("us-", "");
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -596,12 +592,15 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
 
     [ComponentInteraction(InteractionConstants.FmPrivacySetting)]
     [UsernameSetRequired]
-    public async Task SetPrivacy(params string[] inputs)
+    public async Task SetPrivacy()
     {
         var embed = new EmbedProperties();
         var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-        if (Enum.TryParse(inputs.FirstOrDefault(), out PrivacyLevel privacyLevel))
+        var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
+        var selectedValue = stringMenuInteraction.Data.SelectedValues[0];
+
+        if (Enum.TryParse(selectedValue, out PrivacyLevel privacyLevel))
         {
             var newPrivacyLevel = await this._userService.SetPrivacyLevel(userSettings.UserId, privacyLevel);
 
@@ -720,12 +719,15 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
 
     [ComponentInteraction(InteractionConstants.FmCommand.FmSettingType)]
     [UsernameSetRequired]
-    public async Task SetEmbedType(params string[] inputs)
+    public async Task SetEmbedType()
     {
         var embed = new EmbedProperties();
         var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-        if (Enum.TryParse(inputs.FirstOrDefault(), out FmEmbedType embedType))
+        var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
+        var selectedValue = stringMenuInteraction.Data.SelectedValues[0];
+
+        if (Enum.TryParse(selectedValue, out FmEmbedType embedType))
         {
             await this._userService.SetSettings(userSettings, embedType, FmCountType.None);
 
@@ -743,10 +745,13 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
 
     [ComponentInteraction(InteractionConstants.FmCommand.FmSettingFooter)]
     [UsernameSetRequired]
-    public async Task SetFooterOptions(params string[] inputs)
+    public async Task SetFooterOptions()
     {
         var embed = new EmbedProperties();
         var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
+        var selectedValues = stringMenuInteraction.Data.SelectedValues;
 
         var maxOptions = userSettings.UserType == UserType.User
             ? Constants.MaxFooterOptions
@@ -760,7 +765,7 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
                 var supporterOnly = flag.GetAttribute<OptionAttribute>().SupporterOnly;
                 if (!supporterOnly)
                 {
-                    if (inputs.Any(a => a == option) && amountSelected <= maxOptions)
+                    if (selectedValues.Any(a => a == option) && amountSelected <= maxOptions)
                     {
                         userSettings.FmFooterOptions |= flag;
                         amountSelected++;
@@ -777,7 +782,7 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
     }
 
     [ComponentInteraction(InteractionConstants.FmCommand.FmSettingFooterSupporter)]
-    public async Task SetSupporterFooterOptions(params string[] inputs)
+    public async Task SetSupporterFooterOptions()
     {
         var embed = new EmbedProperties();
         var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -786,6 +791,9 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
         {
             return;
         }
+
+        var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
+        var selectedValues = stringMenuInteraction.Data.SelectedValues;
 
         var maxOptions = userSettings.UserType == UserType.User ? 0 : 1;
         var amountSelected = 0;
@@ -797,7 +805,7 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
                 var supporterOnly = flag.GetAttribute<OptionAttribute>().SupporterOnly;
                 if (supporterOnly)
                 {
-                    if (inputs.Any(a => a == option) && amountSelected <= maxOptions && option != "none")
+                    if (selectedValues.Any(a => a == option) && amountSelected <= maxOptions && option != "none")
                     {
                         userSettings.FmFooterOptions |= flag;
                         amountSelected++;
@@ -858,11 +866,14 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
 
     [ComponentInteraction(InteractionConstants.ResponseModeSetting)]
     [UsernameSetRequired]
-    public async Task SetResponseModeAsync(params string[] inputs)
+    public async Task SetResponseModeAsync()
     {
         var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-        if (Enum.TryParse(inputs.FirstOrDefault(), out ResponseMode mode))
+        var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
+        var selectedValue = stringMenuInteraction.Data.SelectedValues[0];
+
+        if (Enum.TryParse(selectedValue, out ResponseMode mode))
         {
             var newUserSettings = await this._userService.SetResponseMode(userSettings, mode);
 
@@ -887,7 +898,7 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
     {
         try
         {
-            await RespondAsync(InteractionCallback.DeferredMessage());
+            await RespondAsync(InteractionCallback.DeferredModifyMessage);
             await this.Context.DisableInteractionButtons();
 
             var discordUserId = ulong.Parse(discordUser);
@@ -916,7 +927,7 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
             await this.Context.Interaction.ModifyResponseAsync(e =>
             {
                 e.Embeds = [loaderEmbed];
-                e.Components = null;
+                e.Components = [];
             });
 
             var timeSettings = SettingService.GetTimePeriod(timeOption, TimePeriod.AllTime);
@@ -957,7 +968,7 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
                 await this.Context.Interaction.ModifyResponseAsync(e =>
                 {
                     e.Embeds = [embed];
-                    e.Components = null;
+                    e.Components = [];
                 });
                 return;
             }
@@ -969,7 +980,7 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
             await this.Context.Interaction.ModifyResponseAsync(e =>
             {
                 e.Embeds = [response.Embed];
-                e.Components = null;
+                e.Components = [];
             });
 
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -1025,7 +1036,7 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
     [ComponentInteraction(InteractionConstants.User.Profile)]
     public async Task ProfileAsync(string discordUser, string requesterDiscordUser)
     {
-        await RespondAsync(InteractionCallback.DeferredMessage());
+        await RespondAsync(InteractionCallback.DeferredModifyMessage);
         await this.Context.DisableActionRows();
 
         var discordUserId = ulong.Parse(discordUser);
@@ -1050,7 +1061,7 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
     {
         try
         {
-            await RespondAsync(InteractionCallback.DeferredMessage());
+            await RespondAsync(InteractionCallback.DeferredModifyMessage);
             await this.Context.DisableActionRows();
 
             var discordUserId = ulong.Parse(discordUser);
@@ -1077,7 +1088,7 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
 
     [ComponentInteraction(InteractionConstants.ManageAlts.ManageAltsPicker)]
     [UserSessionRequired]
-    public async Task ManageAltsPicker(params string[] inputs)
+    public async Task ManageAltsPicker()
     {
         try
         {
@@ -1092,7 +1103,10 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
                 return;
             }
 
-            var targetUser = await this._userService.GetUserForIdAsync(int.Parse(inputs.First()));
+            var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
+            var selectedValue = stringMenuInteraction.Data.SelectedValues[0];
+
+            var targetUser = await this._userService.GetUserForIdAsync(int.Parse(selectedValue));
 
             if (targetUser == null)
             {

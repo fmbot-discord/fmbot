@@ -42,7 +42,7 @@ public class GenreInteractions : ComponentInteractionModule<ComponentInteraction
     [ComponentInteraction(InteractionConstants.Genre.GenreGuild)]
     public async Task GuildGenresAsync(string discordUser, string requesterDiscordUser, string genre, string originalSearch)
     {
-        await RespondAsync(InteractionCallback.DeferredMessage());
+        await RespondAsync(InteractionCallback.DeferredModifyMessage);
 
         var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
         if (message == null)
@@ -80,7 +80,7 @@ public class GenreInteractions : ComponentInteractionModule<ComponentInteraction
     [ComponentInteraction(InteractionConstants.Genre.GenreUser)]
     public async Task UserGenresAsync(string discordUser, string requesterDiscordUser, string genre, string originalSearch)
     {
-        await RespondAsync(InteractionCallback.DeferredMessage());
+        await RespondAsync(InteractionCallback.DeferredModifyMessage);
 
         var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
         if (message == null)
@@ -124,7 +124,7 @@ public class GenreInteractions : ComponentInteractionModule<ComponentInteraction
             var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
             var options = stringMenuInteraction.Data.SelectedValues.First().Split("~");
 
-            await RespondAsync(InteractionCallback.DeferredMessage());
+            await RespondAsync(InteractionCallback.DeferredModifyMessage);
 
             var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
             if (message == null)

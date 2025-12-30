@@ -110,7 +110,7 @@ public class ImportBuilders
         requestDescription.AppendLine("5. Press request data");
         requestDescription.AppendLine("6. Confirm your data request through your email");
         requestDescription.AppendLine("7. Wait up to 30 days for Spotify to deliver your files");
-        response.Embed.AddField($"{DiscordConstants.Spotify} Requesting your data from Spotify",
+        response.Embed.AddField($"{EmojiProperties.Custom(DiscordConstants.Spotify).ToDiscordString("spotify")} Requesting your data from Spotify",
             requestDescription.ToString());
 
         var importDescription = new StringBuilder();
@@ -119,7 +119,7 @@ public class ImportBuilders
         importDescription.AppendLine(
             $"2. Use the `/import spotify` slash command and add the `.zip` file as an attachment through the options");
         importDescription.AppendLine("3. Having issues? You can also attach each `.json` file separately");
-        response.Embed.AddField($"{DiscordConstants.Imports} Importing your data into .fmbot",
+        response.Embed.AddField($"{EmojiProperties.Custom(DiscordConstants.Imports).ToDiscordString("imports")} Importing your data into .fmbot",
             importDescription.ToString());
 
         var notesDescription = new StringBuilder();
@@ -179,7 +179,7 @@ public class ImportBuilders
         requestDescription.AppendLine("6. Press **Continue**");
         requestDescription.AppendLine("7. Press **Complete request**");
         requestDescription.AppendLine("8. Wait up to 7 days for Apple to deliver your files");
-        response.Embed.AddField($"{DiscordConstants.AppleMusic} Requesting your data from Apple",
+        response.Embed.AddField($"{EmojiProperties.Custom(DiscordConstants.AppleMusic).ToDiscordString("apple_music")} Requesting your data from Apple",
             requestDescription.ToString());
 
         var importDescription = new StringBuilder();
@@ -191,7 +191,7 @@ public class ImportBuilders
         importDescription.AppendLine(
             "4. Having issues? You can also attach the `Apple Music Play Activity.csv` file separately");
 
-        response.Embed.AddField($"{DiscordConstants.Imports} Importing your data into .fmbot",
+        response.Embed.AddField($"{EmojiProperties.Custom(DiscordConstants.Imports).ToDiscordString("imports")} Importing your data into .fmbot",
             importDescription.ToString());
 
         var notes = new StringBuilder();
@@ -316,7 +316,7 @@ public class ImportBuilders
                     $"- {allPlays.Count(c => c.PlaySource == PlaySource.SpotifyImport).Format(context.NumberFormat)} imported Spotify plays");
             }
 
-            response.Embed.AddField($"{DiscordConstants.Imports} Your stored imports", storedDescription.ToString());
+            response.Embed.AddField($"{EmojiProperties.Custom(DiscordConstants.Imports).ToDiscordString("imports")} Your stored imports", storedDescription.ToString());
 
             var noteDescription = new StringBuilder();
             if (context.ContextUser.DataSource == DataSource.ImportThenFullLastFm)

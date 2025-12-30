@@ -153,34 +153,34 @@ public static class StringService
             {
                 if ((Math.Abs(oldPosition.Value - newPosition)) < 5)
                 {
-                    line.Append($"{DiscordConstants.OneToFiveDown}");
+                    line.Append($"{EmojiProperties.Custom(DiscordConstants.OneToFiveDown).ToDiscordString("one_to_five_down")}");
                 }
                 else
                 {
-                    line.Append($"{DiscordConstants.FiveOrMoreDown}");
+                    line.Append($"{EmojiProperties.Custom(DiscordConstants.FiveOrMoreDown).ToDiscordString("five_or_more_down")}");
                 }
             }
             else if (oldPosition > newPosition)
             {
                 if ((Math.Abs(oldPosition.Value - newPosition)) < 5)
                 {
-                    line.Append($"{DiscordConstants.OneToFiveUp}");
+                    line.Append($"{EmojiProperties.Custom(DiscordConstants.OneToFiveUp).ToDiscordString("one_to_five_up")}");
                 }
                 else
                 {
-                    line.Append($"{DiscordConstants.FiveOrMoreUp}");
+                    line.Append($"{EmojiProperties.Custom(DiscordConstants.FiveOrMoreUp).ToDiscordString("five_or_more_up")}");
                 }
             }
             else
             {
-                line.Append($"{DiscordConstants.SamePosition}");
+                line.Append($"{EmojiProperties.Custom(DiscordConstants.SamePosition).ToDiscordString("same_position")}");
             }
 
             line.Append(" ");
         }
         else
         {
-            line.Append($"{DiscordConstants.New} ");
+            line.Append($"{EmojiProperties.Custom(DiscordConstants.New).ToDiscordString("new")} ");
         }
 
         if (counter)

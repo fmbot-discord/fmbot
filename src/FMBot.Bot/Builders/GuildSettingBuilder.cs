@@ -822,14 +822,14 @@ public class GuildSettingBuilder
                     {
                         if (previousChannel != null)
                         {
-                            channelDescription.AppendLine($"{DiscordConstants.OneToFiveUp} **<#{previousChannel.Id}>**");
+                            channelDescription.AppendLine($"{EmojiProperties.Custom(DiscordConstants.OneToFiveUp).ToDiscordString("one_to_five_up")} **<#{previousChannel.Id}>**");
                         }
 
-                        channelDescription.AppendLine($"{DiscordConstants.SamePosition} **<#{currentChannel.Id}>** **<**");
+                        channelDescription.AppendLine($"{EmojiProperties.Custom(DiscordConstants.SamePosition).ToDiscordString("same_position")} **<#{currentChannel.Id}>** **<**");
 
                         if (nextChannel != null)
                         {
-                            channelDescription.AppendLine($"{DiscordConstants.OneToFiveDown} **<#{nextChannel.Id}>**");
+                            channelDescription.AppendLine($"{EmojiProperties.Custom(DiscordConstants.OneToFiveDown).ToDiscordString("one_to_five_down")} **<#{nextChannel.Id}>**");
                         }
 
                         if (previousChannel != null)
@@ -934,23 +934,23 @@ public class GuildSettingBuilder
         var upDisabled = previousCategoryId == 0 || previousChannelId == 0;
         var downDisabled = nextCategoryId == 0 || nextChannelId == 0;
 
-        var components = new ActionRowProperties()
-            .WithButton(null, $"{InteractionConstants.ToggleCommand.ToggleCommandMove}:{previousChannelId}:{previousCategoryId}:up", style: ButtonStyle.Secondary, EmojiProperties.Custom(DiscordConstants.OneToFiveUp), disabled: upDisabled)
-            .WithButton(null, $"{InteractionConstants.ToggleCommand.ToggleCommandMove}:{nextChannelId}:{nextCategoryId}:down", style: ButtonStyle.Secondary, EmojiProperties.Custom(DiscordConstants.OneToFiveDown), disabled: downDisabled, row: 1)
-            .WithButton("Add", $"{InteractionConstants.ToggleCommand.ToggleCommandAdd}:{selectedChannel.Id}:{selectedCategoryId}", style: ButtonStyle.Secondary)
-            .WithButton("Remove", $"{InteractionConstants.ToggleCommand.ToggleCommandRemove}:{selectedChannel.Id}:{selectedCategoryId}", style: ButtonStyle.Secondary, disabled: currentlyDisabled.Length == 0)
-            .WithButton("Clear", $"{InteractionConstants.ToggleCommand.ToggleCommandClear}:{selectedChannel.Id}:{selectedCategoryId}", style: ButtonStyle.Secondary, disabled: currentlyDisabled.Length == 0);
+        response.ButtonRows
+            .WithButton(null, $"{InteractionConstants.ToggleCommand.ToggleCommandMove}:{previousChannelId}:{previousCategoryId}:up", style: ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.OneToFiveUp), disabled: upDisabled, row: 0)
+            .WithButton(null, $"{InteractionConstants.ToggleCommand.ToggleCommandMove}:{nextChannelId}:{nextCategoryId}:down", style: ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.OneToFiveDown), disabled: downDisabled, row: 1)
+            .WithButton("Add", $"{InteractionConstants.ToggleCommand.ToggleCommandAdd}:{selectedChannel.Id}:{selectedCategoryId}", style: ButtonStyle.Secondary, row: 0)
+            .WithButton("Remove", $"{InteractionConstants.ToggleCommand.ToggleCommandRemove}:{selectedChannel.Id}:{selectedCategoryId}", style: ButtonStyle.Secondary, disabled: currentlyDisabled.Length == 0, row: 0)
+            .WithButton("Clear", $"{InteractionConstants.ToggleCommand.ToggleCommandClear}:{selectedChannel.Id}:{selectedCategoryId}", style: ButtonStyle.Secondary, disabled: currentlyDisabled.Length == 0, row: 0);
 
         if (!botDisabled)
         {
             response.StringMenus.Add(fmType);
 
-            components
+            response.ButtonRows
                 .WithButton("Disable all commands", $"{InteractionConstants.ToggleCommand.ToggleCommandDisableAll}:{selectedChannel.Id}:{selectedCategoryId}", style: ButtonStyle.Secondary, row: 1);
         }
         else
         {
-            components
+            response.ButtonRows
                 .WithButton("Enable all commands", $"{InteractionConstants.ToggleCommand.ToggleCommandEnableAll}:{selectedChannel.Id}:{selectedCategoryId}", style: ButtonStyle.Secondary, row: 1);
         }
 
@@ -961,8 +961,6 @@ public class GuildSettingBuilder
         }
 
         response.Embed.WithFooter(footer.ToString());
-
-        response.Components = components;
 
         return response;
     }

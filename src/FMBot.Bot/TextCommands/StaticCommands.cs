@@ -251,12 +251,12 @@ public class StaticCommands : BaseCommandModule
                 else if (instance.LastHeartbeat.ToDateTime() >= DateTime.UtcNow.AddMinutes(-1))
                 {
                     instanceOverviewDescription.Append(
-                        $"{DiscordConstants.SamePosition}");
+                        $"{EmojiProperties.Custom(DiscordConstants.SamePosition).ToDiscordString("same_position")}");
                 }
                 else
                 {
                     instanceOverviewDescription.Append(
-                        $"{DiscordConstants.OneToFiveDown}");
+                        $"{EmojiProperties.Custom(DiscordConstants.OneToFiveDown).ToDiscordString("one_to_five_down")}");
                 }
 
                 instanceOverviewDescription.Append(

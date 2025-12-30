@@ -117,19 +117,15 @@ public class GameCommands : BaseCommandModule
         }
 
         var msg = await this.Context.Channel.GetMessageAsync(responseId);
-        if (msg is not Message message)
-        {
-            return;
-        }
 
-        if (PublicProperties.UsedCommandsResponseContextId.TryGetValue(message.Id, out var contextId))
+        if (PublicProperties.UsedCommandsResponseContextId.TryGetValue(msg.Id, out var contextId))
         {
             await this._userService.UpdateInteractionContext(contextId, response.ReferencedMusic);
         }
 
-        await message.ModifyAsync(m =>
+        await msg.ModifyAsync(m =>
         {
-            m.Components = null;
+            m.Components = [];
             m.Embeds = [response.Embed];
             m.Attachments = response.Stream != null
                 ? [new AttachmentProperties(response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName, response.Stream)]

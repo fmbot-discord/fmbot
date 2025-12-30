@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -59,28 +60,28 @@ public class ClientLogHandler
         this._client.GuildDelete += ClientLeftGuildEvent;
     }
 
-    private ValueTask ShardReady(GatewayClient client, ReadyEventArgs args)
+    private static ValueTask ShardReady(GatewayClient client, ReadyEventArgs args)
     {
         Log.Information("ShardReady: Shard #{shardId} is ready with {guildCount} guilds",
             client.Shard?.Id ?? 0, args.GuildIds.Count);
         return ValueTask.CompletedTask;
     }
 
-    private ValueTask ShardConnected(GatewayClient client)
+    private static ValueTask ShardConnected(GatewayClient client)
     {
         Log.Information("ShardConnected: Shard #{shardId} connected",
             client.Shard?.Id ?? 0);
         return ValueTask.CompletedTask;
     }
 
-    private ValueTask ShardDisconnected(GatewayClient client, DisconnectEventArgs args)
+    private static ValueTask ShardDisconnected(GatewayClient client, DisconnectEventArgs args)
     {
         Log.Warning("ShardDisconnected: Shard #{shardId} disconnected",
             client.Shard?.Id ?? 0);
         return ValueTask.CompletedTask;
     }
 
-    private ValueTask ShardResumed(GatewayClient client)
+    private static ValueTask ShardResumed(GatewayClient client)
     {
         Log.Information("ShardResumed: Shard #{shardId} resumed session",
             client.Shard?.Id ?? 0);
@@ -89,7 +90,19 @@ public class ClientLogHandler
 
     private ValueTask ClientJoinedGuildEvent(GatewayClient client, GuildCreateEventArgs guildCreateEventArgs)
     {
-        _ = Task.Run(() => ClientJoinedGuild(guildCreateEventArgs.Guild));
+        var guild = guildCreateEventArgs.Guild;
+        if (guild == null)
+        {
+            return ValueTask.CompletedTask;
+        }
+
+        var isNewJoin = guild.JoinedAt > DateTimeOffset.UtcNow.AddMinutes(-10);
+        if (!isNewJoin)
+        {
+            return ValueTask.CompletedTask;
+        }
+
+        _ = Task.Run(() => ClientJoinedGuild(guild));
         return ValueTask.CompletedTask;
     }
 

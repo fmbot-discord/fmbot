@@ -61,7 +61,7 @@ public class AdminInteractions : ComponentInteractionModule<ComponentInteraction
     }
 
     [ComponentInteraction(InteractionConstants.ModerationCommands.CensorTypes)]
-    public async Task SetCensoredArtist(string censoredId, params string[] inputs)
+    public async Task SetCensoredArtist(string censoredId)
     {
         var embed = new EmbedProperties();
 
@@ -73,11 +73,14 @@ public class AdminInteractions : ComponentInteractionModule<ComponentInteraction
             return;
         }
 
+        var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
+        var selectedValues = stringMenuInteraction.Data.SelectedValues;
+
         foreach (var option in Enum.GetNames(typeof(CensorType)))
         {
             if (Enum.TryParse(option, out CensorType flag))
             {
-                if (inputs.Any(a => a == option))
+                if (selectedValues.Any(a => a == option))
                 {
                     censoredMusic.CensorType |= flag;
                 }
@@ -121,7 +124,7 @@ public class AdminInteractions : ComponentInteractionModule<ComponentInteraction
     }
 
     [ComponentInteraction(InteractionConstants.ModerationCommands.ArtistAlias)]
-    public async Task SetArtistAliasOptions(string censoredId, params string[] inputs)
+    public async Task SetArtistAliasOptions(string censoredId)
     {
         var embed = new EmbedProperties();
 
@@ -133,11 +136,14 @@ public class AdminInteractions : ComponentInteractionModule<ComponentInteraction
             return;
         }
 
+        var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
+        var selectedValues = stringMenuInteraction.Data.SelectedValues;
+
         foreach (var option in Enum.GetNames(typeof(AliasOption)))
         {
             if (Enum.TryParse(option, out AliasOption flag))
             {
-                if (inputs.Any(a => a == option))
+                if (selectedValues.Any(a => a == option))
                 {
                     artistAlias.Options |= flag;
                 }
@@ -321,15 +327,10 @@ public class AdminInteractions : ComponentInteractionModule<ComponentInteraction
         var parsedMessageId = ulong.Parse(messageId);
         var msg = await this.Context.Channel.GetMessageAsync(parsedMessageId);
 
-        if (msg is not RestMessage message)
-        {
-            return;
-        }
-
         var components =
             new ActionRowProperties().WithButton($"Banned by {this.Context.Interaction.User.Username}", customId: "1",
                 url: null, disabled: true, style: ButtonStyle.Success);
-        await message.ModifyAsync(m => m.Components = [components]);
+        await msg.ModifyAsync(m => m.Components = [components]);
     }
 
     [ComponentInteraction("gwk-filtered-user-to-ban")]
@@ -764,7 +765,7 @@ public class AdminInteractions : ComponentInteractionModule<ComponentInteraction
     }
 
     [ComponentInteraction(InteractionConstants.ModerationCommands.GuildFlags)]
-    public async Task SetGuildFlags(string discordGuildId, params string[] inputs)
+    public async Task SetGuildFlags(string discordGuildId)
     {
         if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
         {
@@ -785,12 +786,15 @@ public class AdminInteractions : ComponentInteractionModule<ComponentInteraction
             return;
         }
 
+        var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
+        var selectedValues = stringMenuInteraction.Data.SelectedValues;
+
         var newFlags = (GuildFlags)0;
         foreach (var option in Enum.GetNames<GuildFlags>())
         {
             if (Enum.TryParse(option, out GuildFlags flag))
             {
-                if (inputs.Any(a => a == option))
+                if (selectedValues.Any(a => a == option))
                 {
                     newFlags |= flag;
                 }
@@ -803,7 +807,7 @@ public class AdminInteractions : ComponentInteractionModule<ComponentInteraction
 
         await this._guildService.SetGuildFlags(guild.GuildId, newFlags);
 
-        var flagsDescription = newFlags == 0 ? "None" : string.Join(", ", inputs);
+        var flagsDescription = newFlags == 0 ? "None" : string.Join(", ", selectedValues);
         await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
             .WithContent($"Guild flags updated to: {flagsDescription}")
             .WithFlags(MessageFlags.Ephemeral)));

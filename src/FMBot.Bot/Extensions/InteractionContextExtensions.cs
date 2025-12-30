@@ -29,7 +29,10 @@ public static class InteractionContextExtensions
         if (context.Interaction is not ModalInteraction modal)
             return null;
 
+        // In NetCord, modal TextInput components are wrapped in Label containers
         return modal.Data.Components
+            .OfType<Label>()
+            .Select(l => l.Component)
             .OfType<TextInput>()
             .FirstOrDefault(t => string.Equals(t.CustomId, customId, StringComparison.OrdinalIgnoreCase))
             ?.Value;
@@ -127,25 +130,30 @@ public static class InteractionContextExtensions
 
         Log.Error(exception,
             "InteractionUsed: Error {referenceId} | {discordUserName} / {discordUserId} | {guildName} / {guildId} | {commandResponse} ({message}) | {messageContent}",
-            referenceId, context.Interaction.User?.Username, context.Interaction.User?.Id, context.Interaction.GuildId, context.Interaction.GuildId,
+            referenceId, context.Interaction.User?.Username, context.Interaction.User?.Id, context.Interaction.GuildId,
+            context.Interaction.GuildId,
             CommandResponse.Error, message, commandName);
 
         if (sendReply)
         {
             if (deferFirst)
             {
-                await context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
+                await context.Interaction.SendResponseAsync(
+                    InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
             }
 
             if (exception?.Message != null &&
                 exception.Message.Contains("50013: Missing Permissions", StringComparison.OrdinalIgnoreCase))
             {
-                if (context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
-                    !context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall))
+                if (context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType
+                        .UserInstall) &&
+                    !context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType
+                        .GuildInstall))
                 {
                     await context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
-                        .WithContent("Error while replying: You are missing permissions, so the bot can't reply to your commands.\n" +
-                        "Make sure you have permission to 'Embed links' and 'Attach Images'")
+                        .WithContent(
+                            "Error while replying: You are missing permissions, so the bot can't reply to your commands.\n" +
+                            "Make sure you have permission to 'Embed links' and 'Attach Images'")
                         .WithFlags(MessageFlags.Ephemeral));
                 }
                 else
@@ -159,8 +167,9 @@ public static class InteractionContextExtensions
             else
             {
                 await context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
-                    .WithContent($"Sorry, something went wrong while trying to process `{commandName}`. Please try again later.\n" +
-                    $"*Reference id: `{referenceId}`*")
+                    .WithContent(
+                        $"Sorry, something went wrong while trying to process `{commandName}`. Please try again later.\n" +
+                        $"*Reference id: `{referenceId}`*")
                     .WithFlags(MessageFlags.Ephemeral));
             }
         }
@@ -168,262 +177,233 @@ public static class InteractionContextExtensions
         PublicProperties.UsedCommandsErrorReferences.TryAdd(context.Interaction.Id, referenceId);
     }
 
-    public static void LogCommandWithLastFmError(this ApplicationCommandContext context, ResponseStatus? responseStatus)
+    extension(IInteractionContext context)
     {
-        string commandName = null;
-        if (context.Interaction is SlashCommandInteraction socketSlashCommand)
+        public async Task SendResponse(InteractiveService interactiveService,
+            ResponseModel response, bool ephemeral = false, ResponseModel extraResponse = null)
         {
-            commandName = socketSlashCommand.Data.Name;
+            var embeds = new[] { response.Embed };
+            if (extraResponse != null)
+            {
+                embeds = [response.Embed, extraResponse.Embed];
+            }
+
+            var flags = ephemeral ? MessageFlags.Ephemeral : (MessageFlags?)null;
+
+            switch (response.ResponseType)
+            {
+                case ResponseType.Text:
+                    await context.Interaction.SendResponseAsync(InteractionCallback.Message(
+                        new InteractionMessageProperties()
+                            .WithContent(response.Text)
+                            .WithAllowedMentions(AllowedMentionsProperties.None)
+                            .WithFlags(flags)
+                            .WithComponents(response.GetMessageComponents())));
+                    break;
+                case ResponseType.Embed:
+                    await context.Interaction.SendResponseAsync(InteractionCallback.Message(
+                        new InteractionMessageProperties()
+                            .WithEmbeds(embeds)
+                            .WithFlags(flags)
+                            .WithComponents(response.GetMessageComponents())));
+                    break;
+                case ResponseType.ComponentsV2:
+                    await context.Interaction.SendResponseAsync(InteractionCallback.Message(
+                        new InteractionMessageProperties()
+                            .WithComponents(response.ComponentsV2)
+                            .WithFlags(flags)
+                            .WithAllowedMentions(AllowedMentionsProperties.None)));
+                    break;
+                case ResponseType.ImageWithEmbed:
+                    response.FileName =
+                        StringExtensions.ReplaceInvalidChars(response.FileName);
+                    await context.Interaction.SendResponseAsync(InteractionCallback.Message(
+                        new InteractionMessageProperties()
+                            .AddAttachments(new AttachmentProperties(
+                                response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName,
+                                response.Stream).WithDescription(response.FileDescription))
+                            .WithEmbeds([response.Embed])
+                            .WithFlags(flags)
+                            .WithComponents(response.GetMessageComponents())));
+                    break;
+                case ResponseType.Paginator:
+                    _ = interactiveService.SendPaginatorAsync(
+                        response.StaticPaginator.Build(),
+                        context.Interaction,
+                        TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
+                        ephemeral: ephemeral);
+                    break;
+                case ResponseType.ComponentPaginator:
+                    _ = interactiveService.SendPaginatorAsync(
+                        response.ComponentPaginator.Build(),
+                        context.Interaction,
+                        TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
+                        ephemeral: ephemeral);
+                    break;
+                case ResponseType.SupporterRequired:
+                    await context.Interaction.SendResponseAsync(InteractionCallback.Message(
+                        new InteractionMessageProperties()
+                            .WithContent(
+                                "This feature requires .fmbot supporter status. Use `/getsupporter` for more information.")
+                            .WithFlags(MessageFlags.Ephemeral)));
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+
+            if (response.HintShown == true && !PublicProperties.UsedCommandsHintShown.Contains(context.Interaction.Id))
+            {
+                PublicProperties.UsedCommandsHintShown.Add(context.Interaction.Id);
+            }
+
+            if (response.EmoteReactions != null && response.EmoteReactions.Length != 0 &&
+                response.EmoteReactions.FirstOrDefault()?.Length > 0 &&
+                response.CommandResponse == CommandResponse.Ok &&
+                context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall))
+            {
+                try
+                {
+                    var message = await context.Interaction.GetResponseAsync();
+                    await GuildService.AddReactionsAsync(message, response.EmoteReactions);
+                }
+                catch (Exception e)
+                {
+                    await context.HandleCommandException(e, "Could not add emote reactions", sendReply: false);
+                    _ = (await context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
+                            .WithContent("Could not add automatic emoji reactions.\n" +
+                                         "-# Make sure the emojis still exist, the bot is the same server as where the emojis come from and the bot has permission to `Add Reactions`.")))
+                        .DeleteAfterAsync(30);
+                }
+            }
         }
 
-        Log.Error(
-            "SlashCommandUsed: {discordUserName} / {discordUserId} | {guildName} / {guildId} | {commandResponse} | {messageContent} | Last.fm error: {responseStatus}",
-            context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id,
-            CommandResponse.LastFmError, commandName);
-
-        PublicProperties.UsedCommandsResponses.TryAdd(context.Interaction.Id, CommandResponse.LastFmError);
-    }
-
-    public static async Task SendResponse(this IInteractionContext context, InteractiveService interactiveService,
-        ResponseModel response, bool ephemeral = false, ResponseModel extraResponse = null)
-    {
-        var embeds = new[] { response.Embed };
-        if (extraResponse != null)
+        public async Task<ulong?> SendFollowUpResponse(InteractiveService interactiveService, ResponseModel response, bool ephemeral = false)
         {
-            embeds = [response.Embed, extraResponse.Embed];
-        }
+            ulong? responseId = null;
+            var flags = ephemeral ? MessageFlags.Ephemeral : (MessageFlags?)null;
 
-        var flags = ephemeral ? MessageFlags.Ephemeral : (MessageFlags?)null;
-
-        switch (response.ResponseType)
-        {
-            case ResponseType.Text:
-                await context.Interaction.SendResponseAsync(InteractionCallback.Message(
-                    new InteractionMessageProperties()
+            switch (response.ResponseType)
+            {
+                case ResponseType.Text:
+                    var text = await context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
                         .WithContent(response.Text)
                         .WithAllowedMentions(AllowedMentionsProperties.None)
                         .WithFlags(flags)
-                        .WithComponents(response.GetMessageComponents())));
-                break;
-            case ResponseType.Embed:
-                await context.Interaction.SendResponseAsync(InteractionCallback.Message(
-                    new InteractionMessageProperties()
-                        .WithEmbeds(embeds)
-                        .WithFlags(flags)
-                        .WithComponents(response.GetMessageComponents())));
-                break;
-            case ResponseType.ComponentsV2:
-                await context.Interaction.SendResponseAsync(InteractionCallback.Message(
-                    new InteractionMessageProperties()
-                        .WithComponents(response.ComponentsV2)
-                        .WithFlags(flags)
-                        .WithAllowedMentions(AllowedMentionsProperties.None)));
-                break;
-            case ResponseType.ImageWithEmbed:
-                response.FileName =
-                    StringExtensions.ReplaceInvalidChars(response.FileName);
-                await context.Interaction.SendResponseAsync(InteractionCallback.Message(
-                    new InteractionMessageProperties()
-                        .AddAttachments(new AttachmentProperties(
-                            response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName,
-                            response.Stream).WithDescription(response.FileDescription))
+                        .WithComponents(response.GetMessageComponents()));
+                    responseId = text.Id;
+                    break;
+                case ResponseType.Embed:
+                    var embed = await context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
                         .WithEmbeds([response.Embed])
                         .WithFlags(flags)
-                        .WithComponents(response.GetMessageComponents())));
-                break;
-            case ResponseType.Paginator:
-                _ = interactiveService.SendPaginatorAsync(
-                    response.StaticPaginator.Build(),
-                    context.Interaction,
-                    TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
-                    ephemeral: ephemeral);
-                break;
-            case ResponseType.ComponentPaginator:
-                _ = interactiveService.SendPaginatorAsync(
-                    response.ComponentPaginator.Build(),
-                    context.Interaction,
-                    TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
-                    ephemeral: ephemeral);
-                break;
-            case ResponseType.SupporterRequired:
-                await context.Interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties()
-                    .WithContent("This feature requires .fmbot supporter status. Use `/getsupporter` for more information.")
-                    .WithFlags(MessageFlags.Ephemeral)));
-                break;
-            default:
-                throw new ArgumentOutOfRangeException();
-        }
+                        .WithComponents(response.GetMessageComponents()));
+                    responseId = embed.Id;
+                    break;
+                case ResponseType.ComponentsV2:
+                    if (response.Stream is { Length: > 0 })
+                    {
+                        response.FileName = StringExtensions.ReplaceInvalidChars(response.FileName);
+                        var componentImage = await context.Interaction.SendFollowupMessageAsync(
+                            new InteractionMessageProperties()
+                                .AddAttachments(new AttachmentProperties(
+                                    response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName,
+                                    response.Stream).WithDescription(response.FileDescription))
+                                .WithComponents(response.ComponentsV2)
+                                .WithFlags(flags)
+                                .WithAllowedMentions(AllowedMentionsProperties.None));
 
-        if (response.HintShown == true && !PublicProperties.UsedCommandsHintShown.Contains(context.Interaction.Id))
-        {
-            PublicProperties.UsedCommandsHintShown.Add(context.Interaction.Id);
-        }
+                        await response.Stream.DisposeAsync();
+                        responseId = componentImage.Id;
+                    }
+                    else
+                    {
+                        var components = await context.Interaction.SendFollowupMessageAsync(
+                            new InteractionMessageProperties()
+                                .WithComponents(response.ComponentsV2)
+                                .WithFlags(flags)
+                                .WithAllowedMentions(AllowedMentionsProperties.None));
+                        responseId = components.Id;
+                    }
 
-        if (response.EmoteReactions != null && response.EmoteReactions.Length != 0 &&
-            response.EmoteReactions.FirstOrDefault()?.Length > 0 &&
-            response.CommandResponse == CommandResponse.Ok &&
-            context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall))
-        {
-            try
-            {
-                var message = await context.Interaction.GetResponseAsync();
-                await GuildService.AddReactionsAsync(message, response.EmoteReactions);
-            }
-            catch (Exception e)
-            {
-                await context.HandleCommandException(e, "Could not add emote reactions", sendReply: false);
-                _ = (await context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
-                        .WithContent("Could not add automatic emoji reactions.\n" +
-                            "-# Make sure the emojis still exist, the bot is the same server as where the emojis come from and the bot has permission to `Add Reactions`.")))
-                    .DeleteAfterAsync(30);
-            }
-        }
-    }
+                    break;
+                case ResponseType.Paginator:
+                    _ = interactiveService.SendPaginatorAsync(
+                        response.StaticPaginator.Build(),
+                        context.Interaction,
+                        TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
+                        ephemeral: ephemeral);
+                    break;
+                case ResponseType.ComponentPaginator:
+                    _ = interactiveService.SendPaginatorAsync(
+                        response.ComponentPaginator.Build(),
+                        context.Interaction,
+                        TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
+                        ephemeral: ephemeral);
+                    break;
+                case ResponseType.ImageWithEmbed:
+                    response.FileName =
+                        StringExtensions.ReplaceInvalidChars(response.FileName);
+                    var imageWithEmbed = await context.Interaction.SendFollowupMessageAsync(
+                        new InteractionMessageProperties()
+                            .AddAttachments(new AttachmentProperties(
+                                response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName,
+                                response.Stream).WithDescription(response.FileDescription))
+                            .WithEmbeds([response.Embed])
+                            .WithFlags(flags)
+                            .WithComponents(response.GetMessageComponents()));
 
-    public static async Task<ulong?> SendFollowUpResponse(this IInteractionContext context,
-        InteractiveService interactiveService, ResponseModel response, bool ephemeral = false)
-    {
-        ulong? responseId = null;
-        var flags = ephemeral ? MessageFlags.Ephemeral : (MessageFlags?)null;
-
-        switch (response.ResponseType)
-        {
-            case ResponseType.Text:
-                var text = await context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
-                    .WithContent(response.Text)
-                    .WithAllowedMentions(AllowedMentionsProperties.None)
-                    .WithFlags(flags)
-                    .WithComponents(response.GetMessageComponents()));
-                responseId = text.Id;
-                break;
-            case ResponseType.Embed:
-                var embed = await context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
-                    .WithEmbeds([response.Embed])
-                    .WithFlags(flags)
-                    .WithComponents(response.GetMessageComponents()));
-                responseId = embed.Id;
-                break;
-            case ResponseType.ComponentsV2:
-                if (response.Stream is { Length: > 0 })
-                {
-                    response.FileName = StringExtensions.ReplaceInvalidChars(response.FileName);
-                    var componentImage = await context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
+                    await response.Stream.DisposeAsync();
+                    responseId = imageWithEmbed.Id;
+                    break;
+                case ResponseType.ImageOnly:
+                    response.FileName =
+                        StringExtensions.ReplaceInvalidChars(response.FileName);
+                    var image = await context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
                         .AddAttachments(new AttachmentProperties(
                             response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName,
                             response.Stream).WithDescription(response.FileDescription))
-                        .WithComponents(response.ComponentsV2)
-                        .WithFlags(flags)
-                        .WithAllowedMentions(AllowedMentionsProperties.None));
+                        .WithFlags(flags));
 
                     await response.Stream.DisposeAsync();
-                    responseId = componentImage.Id;
-                }
-                else
+                    responseId = image.Id;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+
+            if (responseId.HasValue)
+            {
+                PublicProperties.UsedCommandsResponseMessageId.TryAdd(context.Interaction.Id, responseId.Value);
+                PublicProperties.UsedCommandsResponseContextId.TryAdd(responseId.Value, context.Interaction.Id);
+            }
+
+            if (response.HintShown == true && !PublicProperties.UsedCommandsHintShown.Contains(context.Interaction.Id))
+            {
+                PublicProperties.UsedCommandsHintShown.Add(context.Interaction.Id);
+            }
+
+            if (response.EmoteReactions != null && response.EmoteReactions.Length != 0 &&
+                response.EmoteReactions.FirstOrDefault()?.Length > 0 &&
+                response.CommandResponse == CommandResponse.Ok &&
+                context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall))
+            {
+                try
                 {
-                    var components = await context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
-                        .WithComponents(response.ComponentsV2)
-                        .WithFlags(flags)
-                        .WithAllowedMentions(AllowedMentionsProperties.None));
-                    responseId = components.Id;
+                    var message = await context.Interaction.GetResponseAsync();
+                    await GuildService.AddReactionsAsync(message, response.EmoteReactions);
                 }
-
-                break;
-            case ResponseType.Paginator:
-                _ = interactiveService.SendPaginatorAsync(
-                    response.StaticPaginator.Build(),
-                    context.Interaction,
-                    TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
-                    ephemeral: ephemeral);
-                break;
-            case ResponseType.ComponentPaginator:
-                _ = interactiveService.SendPaginatorAsync(
-                    response.ComponentPaginator.Build(),
-                    context.Interaction,
-                    TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
-                    ephemeral: ephemeral);
-                break;
-            case ResponseType.ImageWithEmbed:
-                response.FileName =
-                    StringExtensions.ReplaceInvalidChars(response.FileName);
-                var imageWithEmbed = await context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
-                    .AddAttachments(new AttachmentProperties(
-                        response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName,
-                        response.Stream).WithDescription(response.FileDescription))
-                    .WithEmbeds([response.Embed])
-                    .WithFlags(flags)
-                    .WithComponents(response.GetMessageComponents()));
-
-                await response.Stream.DisposeAsync();
-                responseId = imageWithEmbed.Id;
-                break;
-            case ResponseType.ImageOnly:
-                response.FileName =
-                    StringExtensions.ReplaceInvalidChars(response.FileName);
-                var image = await context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
-                    .AddAttachments(new AttachmentProperties(
-                        response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName,
-                        response.Stream).WithDescription(response.FileDescription))
-                    .WithFlags(flags));
-
-                await response.Stream.DisposeAsync();
-                responseId = image.Id;
-                break;
-            default:
-                throw new ArgumentOutOfRangeException();
-        }
-
-        if (responseId.HasValue)
-        {
-            PublicProperties.UsedCommandsResponseMessageId.TryAdd(context.Interaction.Id, responseId.Value);
-            PublicProperties.UsedCommandsResponseContextId.TryAdd(responseId.Value, context.Interaction.Id);
-        }
-
-        if (response.HintShown == true && !PublicProperties.UsedCommandsHintShown.Contains(context.Interaction.Id))
-        {
-            PublicProperties.UsedCommandsHintShown.Add(context.Interaction.Id);
-        }
-
-        if (response.EmoteReactions != null && response.EmoteReactions.Length != 0 &&
-            response.EmoteReactions.FirstOrDefault()?.Length > 0 &&
-            response.CommandResponse == CommandResponse.Ok &&
-            context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall))
-        {
-            try
-            {
-                var message = await context.Interaction.GetResponseAsync();
-                await GuildService.AddReactionsAsync(message, response.EmoteReactions);
+                catch (Exception e)
+                {
+                    await context.HandleCommandException(e, "Could not add emote reactions", sendReply: false);
+                    _ = (await context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
+                            .WithContent("Could not add automatic emoji reactions.\n" +
+                                         "-# Make sure the emojis still exist, the bot is the same server as where the emojis come from and the bot has permission to `Add Reactions`.")))
+                        .DeleteAfterAsync(30);
+                }
             }
-            catch (Exception e)
-            {
-                await context.HandleCommandException(e, "Could not add emote reactions", sendReply: false);
-                _ = (await context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
-                        .WithContent("Could not add automatic emoji reactions.\n" +
-                            "-# Make sure the emojis still exist, the bot is the same server as where the emojis come from and the bot has permission to `Add Reactions`.")))
-                    .DeleteAfterAsync(30);
-            }
+
+            return responseId;
         }
-
-        return responseId;
-    }
-
-    public static async Task UpdateInteractionEmbed(this ApplicationCommandContext context, ResponseModel response,
-        InteractiveService interactiveService = null, bool defer = true)
-    {
-        // For ApplicationCommandContext, update the original response
-        var message = await context.Interaction.GetResponseAsync();
-
-        if (message == null)
-        {
-            return;
-        }
-
-        if (response.ResponseType == ResponseType.Paginator)
-        {
-            await context.ModifyPaginator(interactiveService, message as Message, response);
-            return;
-        }
-
-        await context.ModifyMessage(message, response, defer, interactionEdit: true);
     }
 
     public static async Task UpdateInteractionEmbed(this ComponentInteractionContext context, ResponseModel response,
@@ -451,122 +431,197 @@ public static class InteractionContextExtensions
     }
 
 
-    public static async Task DisableActionRows(this IInteractionContext context, bool interactionEdit = false,
-        string specificButtonOnly = null)
+    extension(IInteractionContext context)
     {
-        var message = (context.Interaction as MessageComponentInteraction)?.Message;
-
-        if (message == null)
+        public async Task DisableActionRows(bool interactionEdit = false,
+            string specificButtonOnly = null)
         {
-            return;
-        }
+            var message = (context.Interaction as MessageComponentInteraction)?.Message;
 
-        var newComponents = new List<IMessageComponentProperties>();
-        foreach (var component in message.Components)
-        {
-            if (component is ActionRow actionRow)
+            if (message == null)
             {
-                var newRow = new ActionRowProperties();
-                foreach (var rowComponent in actionRow.Components)
-                {
-                    if (rowComponent is Button button)
-                    {
-                        var shouldDisable = specificButtonOnly == null || button.CustomId == specificButtonOnly;
-                        newRow.AddComponents(new ButtonProperties(button.Label, button.CustomId, button.Style)
-                        {
-                            Emoji = ToEmojiProperties(button.Emoji),
-                            Disabled = shouldDisable
-                        });
-                    }
-                    else if (rowComponent is LinkButton linkButton)
-                    {
-                        newRow.AddComponents(new LinkButtonProperties(linkButton.Label, linkButton.Url)
-                        {
-                            Emoji = ToEmojiProperties(linkButton.Emoji),
-                            Disabled = specificButtonOnly == null
-                        });
-                    }
-                }
-
-                if (newRow.Count() > 0)
-                {
-                    newComponents.Add(newRow);
-                }
-            }
-            else if (component is StringMenu stringMenu)
-            {
-                // In NetCord, select menus are added directly as top-level components
-                newComponents.Add(new StringMenuProperties(stringMenu.CustomId, stringMenu.Options.Select(o =>
-                    new StringMenuSelectOptionProperties(o.Label, o.Value)
-                    {
-                        Description = o.Description,
-                        Emoji = ToEmojiProperties(o.Emoji),
-                        Default = o.Default
-                    }))
-                {
-                    Placeholder = stringMenu.Placeholder,
-                    MinValues = stringMenu.MinValues,
-                    MaxValues = stringMenu.MaxValues,
-                    Disabled = true
-                });
-            }
-        }
-
-        await ModifyComponentsList(context, message, newComponents, interactionEdit);
-    }
-
-    public static async Task DisableInteractionButtons(this IInteractionContext context, bool interactionEdit = false,
-        string specificButtonOnly = null, bool addLoaderToSpecificButton = false)
-    {
-        var message = (context.Interaction as MessageComponentInteraction)?.Message;
-
-        if (message == null)
-        {
-            return;
-        }
-
-        var newComponents = new ActionRowProperties();
-        foreach (var component in message.Components)
-        {
-            if (component is not ActionRow actionRow)
-            {
-                continue;
+                return;
             }
 
-            foreach (var subComponent in actionRow.Components)
+            var newComponents = new List<IMessageComponentProperties>();
+            foreach (var component in message.Components)
             {
-                if (subComponent is Button button)
+                if (component is ActionRow actionRow)
                 {
-                    if (specificButtonOnly != null && specificButtonOnly == button.CustomId)
+                    var newRow = new ActionRowProperties();
+                    foreach (var rowComponent in actionRow.Components)
                     {
-                        if (addLoaderToSpecificButton)
+                        if (rowComponent is Button button)
                         {
-                            newComponents.AddComponents(new ButtonProperties(button.Label, button.CustomId, button.Style)
+                            var shouldDisable = specificButtonOnly == null || button.CustomId == specificButtonOnly;
+                            newRow.AddComponents(new ButtonProperties(button.CustomId, button.Label, button.Style)
                             {
-                                Emoji = EmojiProperties.Custom(DiscordConstants.Loading),
-                                Disabled = true
+                                Emoji = ToEmojiProperties(button.Emoji),
+                                Disabled = shouldDisable
                             });
+                        }
+                        else if (rowComponent is LinkButton linkButton)
+                        {
+                            newRow.AddComponents(new LinkButtonProperties(linkButton.Url, linkButton.Label)
+                            {
+                                Emoji = ToEmojiProperties(linkButton.Emoji),
+                                Disabled = specificButtonOnly == null
+                            });
+                        }
+                    }
+
+                    if (newRow.Any())
+                    {
+                        newComponents.Add(newRow);
+                    }
+                }
+                else if (component is StringMenu stringMenu)
+                {
+                    // In NetCord, select menus are added directly as top-level components
+                    newComponents.Add(new StringMenuProperties(stringMenu.CustomId, stringMenu.Options.Select(o =>
+                        new StringMenuSelectOptionProperties(o.Label, o.Value)
+                        {
+                            Description = o.Description,
+                            Emoji = ToEmojiProperties(o.Emoji),
+                            Default = o.Default
+                        }))
+                    {
+                        Placeholder = stringMenu.Placeholder,
+                        MinValues = stringMenu.MinValues,
+                        MaxValues = stringMenu.MaxValues,
+                        Disabled = true
+                    });
+                }
+            }
+
+            await context.ModifyComponentsList(message, newComponents, interactionEdit);
+        }
+
+        public async Task DisableInteractionButtons(bool interactionEdit = false,
+            string specificButtonOnly = null, bool addLoaderToSpecificButton = false)
+        {
+            var message = (context.Interaction as MessageComponentInteraction)?.Message;
+
+            if (message == null)
+            {
+                return;
+            }
+
+            var newComponents = new ActionRowProperties();
+            foreach (var component in message.Components)
+            {
+                if (component is not ActionRow actionRow)
+                {
+                    continue;
+                }
+
+                foreach (var subComponent in actionRow.Components)
+                {
+                    if (subComponent is Button button)
+                    {
+                        if (specificButtonOnly != null && specificButtonOnly == button.CustomId)
+                        {
+                            if (addLoaderToSpecificButton)
+                            {
+                                newComponents.AddComponents(
+                                    new ButtonProperties(button.CustomId, button.Label, button.Style)
+                                    {
+                                        Emoji = EmojiProperties.Custom(DiscordConstants.Loading),
+                                        Disabled = true
+                                    });
+                            }
+                            else
+                            {
+                                newComponents.AddComponents(
+                                    new ButtonProperties(button.CustomId, button.Label, button.Style)
+                                    {
+                                        Emoji = ToEmojiProperties(button.Emoji),
+                                        Disabled = true
+                                    });
+                            }
+                        }
+                        else if (specificButtonOnly == null)
+                        {
+                            newComponents.AddComponents(
+                                new ButtonProperties(button.CustomId, button.Label, button.Style)
+                                {
+                                    Emoji = ToEmojiProperties(button.Emoji),
+                                    Disabled = true
+                                });
                         }
                         else
                         {
-                            newComponents.AddComponents(new ButtonProperties(button.Label, button.CustomId, button.Style)
-                            {
-                                Emoji = ToEmojiProperties(button.Emoji),
-                                Disabled = true
-                            });
+                            newComponents.AddComponents(
+                                new ButtonProperties(button.CustomId, button.Label, button.Style)
+                                {
+                                    Emoji = ToEmojiProperties(button.Emoji),
+                                    Disabled = false
+                                });
                         }
                     }
-                    else if (specificButtonOnly == null)
+                }
+            }
+
+            await context.ModifyComponents(message, newComponents, interactionEdit);
+        }
+
+        public async Task AddLinkButton(LinkButtonProperties extraButton)
+        {
+            var message = (context.Interaction as MessageComponentInteraction)?.Message;
+
+            if (message == null)
+            {
+                return;
+            }
+
+            var newComponents = new ActionRowProperties();
+            foreach (var component in message.Components)
+            {
+                if (component is not ActionRow actionRow)
+                {
+                    continue;
+                }
+
+                foreach (var subComponent in actionRow.Components)
+                {
+                    if (subComponent is Button button)
                     {
-                        newComponents.AddComponents(new ButtonProperties(button.Label, button.CustomId, button.Style)
+                        newComponents.AddComponents(new ButtonProperties(button.CustomId, button.Label, button.Style)
                         {
                             Emoji = ToEmojiProperties(button.Emoji),
                             Disabled = true
                         });
                     }
-                    else
+                }
+            }
+
+            newComponents.AddComponents(extraButton);
+
+            await context.ModifyComponents(message, newComponents);
+        }
+
+        public async Task EnableInteractionButtons()
+        {
+            var message = (context.Interaction as MessageComponentInteraction)?.Message;
+
+            if (message == null)
+            {
+                return;
+            }
+
+            var newComponents = new ActionRowProperties();
+            foreach (var component in message.Components)
+            {
+                if (component is not ActionRow actionRow)
+                {
+                    continue;
+                }
+
+                foreach (var subComponent in actionRow.Components)
+                {
+                    if (subComponent is Button button)
                     {
-                        newComponents.AddComponents(new ButtonProperties(button.Label, button.CustomId, button.Style)
+                        newComponents.AddComponents(new ButtonProperties(button.CustomId, button.Label, button.Style)
                         {
                             Emoji = ToEmojiProperties(button.Emoji),
                             Disabled = false
@@ -574,242 +629,133 @@ public static class InteractionContextExtensions
                     }
                 }
             }
+
+            await context.ModifyComponents(message, newComponents);
         }
 
-        await ModifyComponents(context, message, newComponents, interactionEdit);
-    }
-
-    public static async Task AddButton(this IInteractionContext context, ButtonProperties extraButton = null)
-    {
-        var message = (context.Interaction as MessageComponentInteraction)?.Message;
-
-        if (message == null)
+        public async Task UpdateMessageEmbed(ResponseModel response,
+            string messageId, bool interactionEdit = false, bool defer = true)
         {
-            return;
-        }
+            var parsedMessageId = ulong.Parse(messageId);
+            var msg = await context.Interaction.Channel.GetMessageAsync(parsedMessageId);
 
-        var newComponents = new ActionRowProperties();
-        foreach (var component in message.Components)
-        {
-            if (component is not ActionRow actionRow)
+            if (msg is not Message message)
             {
-                continue;
+                return;
             }
 
-            foreach (var subComponent in actionRow.Components)
+            await context.ModifyMessage(message, response, defer);
+        }
+
+        public async Task ModifyComponents(RestMessage message,
+            ActionRowProperties newComponents, bool interactionEdit = false)
+        {
+            var components = newComponents != null ? new[] { newComponents } : null;
+            var isUserInstalledApp =
+                context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
+                !context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall);
+            var isComponentInteraction = context.Interaction is MessageComponentInteraction or ModalInteraction;
+
+            if (isUserInstalledApp || interactionEdit || isComponentInteraction)
             {
-                if (subComponent is Button button)
+                await context.Interaction.ModifyResponseAsync(m => m.Components = components);
+            }
+            else
+            {
+                await message.ModifyAsync(m => m.Components = components);
+            }
+        }
+
+        private async Task ModifyComponentsList(RestMessage message,
+            IEnumerable<IMessageComponentProperties> newComponents, bool interactionEdit = false)
+        {
+            var isUserInstalledApp =
+                context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
+                !context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall);
+            var isComponentInteraction = context.Interaction is MessageComponentInteraction or ModalInteraction;
+
+            if (isUserInstalledApp || interactionEdit || isComponentInteraction)
+            {
+                await context.Interaction.ModifyResponseAsync(m => m.Components = newComponents);
+            }
+            else
+            {
+                await message.ModifyAsync(m => m.Components = newComponents);
+            }
+        }
+
+        public async Task ModifyMessage(RestMessage message,
+            ResponseModel response, bool defer = true, bool interactionEdit = false)
+        {
+            if (defer)
+            {
+                await context.Interaction.SendResponseAsync(InteractionCallback.DeferredModifyMessage);
+            }
+
+            IEnumerable<IMessageComponentProperties> components = response.ResponseType == ResponseType.ComponentsV2
+                ? response.ComponentsV2
+                : response.GetMessageComponents();
+
+            var attachments = response.Stream != null
+                ? new List<AttachmentProperties>
                 {
-                    newComponents.AddComponents(new ButtonProperties(button.Label, button.CustomId, button.Style)
-                    {
-                        Emoji = ToEmojiProperties(button.Emoji),
-                        Disabled = true
-                    });
+                    new(response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName, response.Stream)
                 }
-            }
-        }
+                : null;
 
-        if (extraButton != null)
-        {
-            newComponents.AddComponents(extraButton);
-        }
+            var isUserInstalledApp =
+                context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
+                !context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall);
 
-        await ModifyComponents(context, message, newComponents);
-    }
+            // For component interactions (buttons, select menus, modals), always use ModifyResponseAsync
+            // since we typically defer first and need to complete the deferred response
+            var isComponentInteraction = context.Interaction is MessageComponentInteraction or ModalInteraction;
 
-    public static async Task AddLinkButton(this IInteractionContext context, LinkButtonProperties extraButton)
-    {
-        var message = (context.Interaction as MessageComponentInteraction)?.Message;
-
-        if (message == null)
-        {
-            return;
-        }
-
-        var newComponents = new ActionRowProperties();
-        foreach (var component in message.Components)
-        {
-            if (component is not ActionRow actionRow)
+            if (isUserInstalledApp || interactionEdit || isComponentInteraction)
             {
-                continue;
-            }
-
-            foreach (var subComponent in actionRow.Components)
-            {
-                if (subComponent is Button button)
+                await context.Interaction.ModifyResponseAsync(m =>
                 {
-                    newComponents.AddComponents(new ButtonProperties(button.Label, button.CustomId, button.Style)
-                    {
-                        Emoji = ToEmojiProperties(button.Emoji),
-                        Disabled = true
-                    });
-                }
+                    m.Components = components;
+                    m.Embeds = response.ResponseType == ResponseType.ComponentsV2 ? null : [response.Embed];
+                    m.Attachments = attachments;
+                    m.AllowedMentions = AllowedMentionsProperties.None;
+                });
             }
-        }
-
-        newComponents.AddComponents(extraButton);
-
-        await ModifyComponents(context, message, newComponents);
-    }
-
-    public static async Task EnableInteractionButtons(this IInteractionContext context)
-    {
-        var message = (context.Interaction as MessageComponentInteraction)?.Message;
-
-        if (message == null)
-        {
-            return;
-        }
-
-        var newComponents = new ActionRowProperties();
-        foreach (var component in message.Components)
-        {
-            if (component is not ActionRow actionRow)
+            else
             {
-                continue;
-            }
-
-            foreach (var subComponent in actionRow.Components)
-            {
-                if (subComponent is Button button)
+                await message.ModifyAsync(m =>
                 {
-                    newComponents.AddComponents(new ButtonProperties(button.Label, button.CustomId, button.Style)
-                    {
-                        Emoji = ToEmojiProperties(button.Emoji),
-                        Disabled = false
-                    });
+                    m.Components = components;
+                    m.Embeds = response.ResponseType == ResponseType.ComponentsV2 ? null : [response.Embed];
+                    m.Attachments = attachments;
+                    m.AllowedMentions = AllowedMentionsProperties.None;
+                });
+            }
+        }
+
+        private async Task ModifyPaginator(InteractiveService interactiveService,
+            Message message, ResponseModel response)
+        {
+            if (context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
+                !context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall))
+            {
+                _ = interactiveService.SendPaginatorAsync(
+                    response.StaticPaginator.Build(),
+                    context.Interaction,
+                    TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
+            }
+            else
+            {
+                if (message.Attachments != null && message.Attachments.Any())
+                {
+                    await message.ModifyAsync(m => { m.Attachments = null; });
                 }
+
+                _ = interactiveService.SendPaginatorAsync(
+                    response.StaticPaginator.Build(),
+                    message,
+                    TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
             }
-        }
-
-        await ModifyComponents(context, message, newComponents);
-    }
-
-    public static async Task UpdateMessageEmbed(this IInteractionContext context, ResponseModel response,
-        string messageId, bool interactionEdit = false, bool defer = true)
-    {
-        var parsedMessageId = ulong.Parse(messageId);
-        var msg = await context.Interaction.Channel.GetMessageAsync(parsedMessageId);
-
-        if (msg is not Message message)
-        {
-            return;
-        }
-
-        await context.ModifyMessage(message, response, defer);
-    }
-
-    public static async Task ModifyComponents(this IInteractionContext context, RestMessage message,
-        ActionRowProperties newComponents, bool interactionEdit = false)
-    {
-        var components = newComponents != null ? new[] { newComponents } : null;
-        if ((context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
-             !context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall)) ||
-            interactionEdit)
-        {
-            await context.Interaction.ModifyResponseAsync(m => m.Components = components);
-        }
-        else
-        {
-            await message.ModifyAsync(m => m.Components = components);
-        }
-    }
-
-    public static async Task ModifyComponents(this IInteractionContext context, RestMessage message,
-        IEnumerable<ActionRowProperties> newComponents, bool interactionEdit = false)
-    {
-        if ((context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
-             !context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall)) ||
-            interactionEdit)
-        {
-            await context.Interaction.ModifyResponseAsync(m => m.Components = newComponents);
-        }
-        else
-        {
-            await message.ModifyAsync(m => m.Components = newComponents);
-        }
-    }
-
-    public static async Task ModifyComponentsList(this IInteractionContext context, RestMessage message,
-        IEnumerable<IMessageComponentProperties> newComponents, bool interactionEdit = false)
-    {
-        if ((context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
-             !context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall)) ||
-            interactionEdit)
-        {
-            await context.Interaction.ModifyResponseAsync(m => m.Components = newComponents);
-        }
-        else
-        {
-            await message.ModifyAsync(m => m.Components = newComponents);
-        }
-    }
-
-    public static async Task ModifyMessage(this IInteractionContext context, RestMessage message,
-        ResponseModel response, bool defer = true, bool interactionEdit = false)
-    {
-        IEnumerable<IMessageComponentProperties> components = response.ResponseType == ResponseType.ComponentsV2
-            ? response.ComponentsV2
-            : response.GetMessageComponents();
-
-        var attachments = response.Stream != null
-            ? new List<AttachmentProperties>
-            {
-                new(response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName, response.Stream)
-            }
-            : null;
-
-        if ((context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
-             !context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall)) ||
-            interactionEdit)
-        {
-            await context.Interaction.ModifyResponseAsync(m =>
-            {
-                m.Components = components;
-                m.Embeds = response.ResponseType == ResponseType.ComponentsV2 ? null : [response.Embed];
-                m.Attachments = attachments;
-                m.AllowedMentions = AllowedMentionsProperties.None;
-            });
-        }
-        else
-        {
-            await message.ModifyAsync(m =>
-            {
-                m.Components = components;
-                m.Embeds = response.ResponseType == ResponseType.ComponentsV2 ? null : [response.Embed];
-                m.Attachments = attachments;
-                m.AllowedMentions = AllowedMentionsProperties.None;
-            });
-        }
-
-        if (defer)
-        {
-            await context.Interaction.SendResponseAsync(InteractionCallback.DeferredModifyMessage);
-        }
-    }
-
-    private static async Task ModifyPaginator(this IInteractionContext context, InteractiveService interactiveService,
-        Message message, ResponseModel response)
-    {
-        if (context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
-            !context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall))
-        {
-            _ = interactiveService.SendPaginatorAsync(
-                response.StaticPaginator.Build(),
-                context.Interaction,
-                TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
-        }
-        else
-        {
-            if (message.Attachments != null && message.Attachments.Any())
-            {
-                await message.ModifyAsync(m => { m.Attachments = null; });
-            }
-
-            _ = interactiveService.SendPaginatorAsync(
-                response.StaticPaginator.Build(),
-                message,
-                TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
         }
     }
 }

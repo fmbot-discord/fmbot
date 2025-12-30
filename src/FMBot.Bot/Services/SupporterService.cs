@@ -291,7 +291,7 @@ public class SupporterService
 
             if (hadImported)
             {
-                goodbyeEmbed.AddField($"{DiscordConstants.Imports} Importing service deactivated",
+                goodbyeEmbed.AddField($"{EmojiProperties.Custom(DiscordConstants.Imports).ToDiscordString("imports")} Importing service deactivated",
                     "The import service is no longer active, so the bot will now only use your Last.fm stats without imported .fmbot data. Your imports are however saved and will be available again if you resubscribe in the future.");
             }
 
@@ -403,7 +403,7 @@ public class SupporterService
                 {
                     SetGuildSupporterPromoCache(guildId);
                     message =
-                        $"*{DiscordConstants.Discoveries} View which artists you recently discovered with .fmbot supporter*";
+                        $"*{EmojiProperties.Custom(DiscordConstants.Discoveries).ToDiscordString("discoveries")} View which artists you recently discovered with .fmbot supporter*";
                     showUpgradeButton = true;
                     supporterSource = "updatepromo-discoveries";
                     break;
@@ -421,7 +421,7 @@ public class SupporterService
                 {
                     SetGuildSupporterPromoCache(guildId);
                     message =
-                        $"*{DiscordConstants.Discoveries} View which artists you recently returned to with .fmbot supporter*";
+                        $"*{EmojiProperties.Custom(DiscordConstants.Discoveries).ToDiscordString("discoveries")} View which artists you recently returned to with .fmbot supporter*";
                     showUpgradeButton = true;
                     supporterSource = "updatepromo-gaps";
                     break;
@@ -430,7 +430,7 @@ public class SupporterService
                 {
                     SetGuildSupporterPromoCache(guildId);
                     message =
-                        $"*{DiscordConstants.Discoveries} See your discovery date for an artist, album and track with `{prfx}discoverydate`/`{prfx}dd`*";
+                        $"*{EmojiProperties.Custom(DiscordConstants.Discoveries).ToDiscordString("discoveries")} See your discovery date for an artist, album and track with `{prfx}discoverydate`/`{prfx}dd`*";
                     showUpgradeButton = true;
                     supporterSource = "updatepromo-discoverydate";
                     break;
@@ -466,7 +466,7 @@ public class SupporterService
                 {
                     SetGuildSupporterPromoCache(guildId);
                     message =
-                        $"*{DiscordConstants.Shortcut} Supporters can set up up to 10 text command shortcuts*";
+                        $"*{EmojiProperties.Custom(DiscordConstants.Shortcut).ToDiscordString("shortcut")} Supporters can set up up to 10 text command shortcuts*";
                     showUpgradeButton = true;
                     supporterSource = "updatepromo-usershortcuts";
                     break;
@@ -572,7 +572,7 @@ public class SupporterService
                 case 8:
                 {
                     message =
-                        $"*{DiscordConstants.Discoveries} View when you discovered an artist, album and track with `{prfx}discoverydate` / `{prfx}dd`*";
+                        $"*{EmojiProperties.Custom(DiscordConstants.Discoveries).ToDiscordString("discoveries")} View when you discovered an artist, album and track with `{prfx}discoverydate` / `{prfx}dd`*";
 
                     break;
                 }

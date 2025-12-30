@@ -41,14 +41,17 @@ public class TemplateInteractions : ComponentInteractionModule<ComponentInteract
 
     [ComponentInteraction(InteractionConstants.Template.ManagePicker)]
     [UsernameSetRequired]
-    public async Task TemplateManageAsync(params string[] inputs)
+    public async Task TemplateManageAsync()
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var guild = await this._guildService.GetGuildAsync(this.Context.Guild?.Id);
 
+        var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
+        var selectedValue = stringMenuInteraction.Data.SelectedValues[0];
+
         try
         {
-            var templateId = int.Parse(inputs.First().Replace($"{InteractionConstants.Template.ManagePicker}:", ""));
+            var templateId = int.Parse(selectedValue.Replace($"{InteractionConstants.Template.ManagePicker}:", ""));
 
             var response =
                 await this._templateBuilders.TemplateManage(new ContextModel(this.Context, contextUser), templateId,
@@ -154,12 +157,15 @@ public class TemplateInteractions : ComponentInteractionModule<ComponentInteract
 
     [ComponentInteraction(InteractionConstants.Template.SetOptionPicker)]
     [UsernameSetRequired]
-    public async Task SetOption(params string[] inputs)
+    public async Task SetOption()
     {
         var embed = new EmbedProperties();
         var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-        if (Enum.TryParse(inputs.FirstOrDefault(), out EmbedOption embedOption))
+        var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
+        var selectedValue = stringMenuInteraction.Data.SelectedValues[0];
+
+        if (Enum.TryParse(selectedValue, out EmbedOption embedOption))
         {
 
         }

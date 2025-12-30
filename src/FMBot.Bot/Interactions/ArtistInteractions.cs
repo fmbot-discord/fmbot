@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
@@ -10,6 +11,7 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
+using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ComponentInteractions;
 
@@ -41,7 +43,7 @@ public class ArtistInteractions : ComponentInteractionModule<ComponentInteractio
     [UsernameSetRequired]
     public async Task ArtistInfoAsync(string artistId, string discordUser, string requesterDiscordUser)
     {
-        await RespondAsync(InteractionCallback.DeferredMessage());
+        await RespondAsync(InteractionCallback.DeferredModifyMessage);
         await this.Context.DisableInteractionButtons();
 
         var discordUserId = ulong.Parse(discordUser);
@@ -70,7 +72,7 @@ public class ArtistInteractions : ComponentInteractionModule<ComponentInteractio
     [UsernameSetRequired]
     public async Task ArtistOverviewAsync(string artistId, string discordUser, string requesterDiscordUser)
     {
-        await RespondAsync(InteractionCallback.DeferredMessage());
+        await RespondAsync(InteractionCallback.DeferredModifyMessage);
         await this.Context.DisableInteractionButtons();
 
         var discordUserId = ulong.Parse(discordUser);
@@ -99,7 +101,7 @@ public class ArtistInteractions : ComponentInteractionModule<ComponentInteractio
     [ComponentInteraction(InteractionConstants.Artist.Tracks)]
     public async Task ArtistTracksAsync(string artistId, string discordUser, string requesterDiscordUser)
     {
-        await RespondAsync(InteractionCallback.DeferredMessage());
+        await RespondAsync(InteractionCallback.DeferredModifyMessage);
         await this.Context.DisableInteractionButtons();
 
         var discordUserId = ulong.Parse(discordUser);
@@ -122,7 +124,7 @@ public class ArtistInteractions : ComponentInteractionModule<ComponentInteractio
     [ComponentInteraction(InteractionConstants.Artist.Albums)]
     public async Task ArtistAlbumsAsync(string artistId, string discordUser, string requesterDiscordUser)
     {
-        await RespondAsync(InteractionCallback.DeferredMessage());
+        await RespondAsync(InteractionCallback.DeferredModifyMessage);
         await this.Context.DisableInteractionButtons();
 
         var discordUserId = ulong.Parse(discordUser);
@@ -144,21 +146,14 @@ public class ArtistInteractions : ComponentInteractionModule<ComponentInteractio
     [ComponentInteraction(InteractionConstants.WhoKnowsRolePicker)]
     [UsernameSetRequired]
     [RequiresIndex]
-    public async Task WhoKnowsFilteringAsync(string artistId, params string[] inputs)
+    public async Task WhoKnowsFilteringAsync(string artistId)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
         var artist = await this._artistsService.GetArtistForId(int.Parse(artistId));
 
-        var roleIds = new List<ulong>();
-        if (inputs != null)
-        {
-            foreach (var input in inputs)
-            {
-                var roleId = ulong.Parse(input);
-                roleIds.Add(roleId);
-            }
-        }
+        var entityMenuInteraction = (EntityMenuInteraction)this.Context.Interaction;
+        var roleIds = entityMenuInteraction.Data.SelectedValues.ToList();
 
         try
         {
@@ -179,7 +174,7 @@ public class ArtistInteractions : ComponentInteractionModule<ComponentInteractio
     [RequiresIndex]
     public async Task WhoKnowsAsync(string artistId)
     {
-        await RespondAsync(InteractionCallback.DeferredMessage());
+        await RespondAsync(InteractionCallback.DeferredModifyMessage);
         await this.Context.DisableInteractionButtons();
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);

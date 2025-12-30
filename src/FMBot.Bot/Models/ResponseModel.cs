@@ -18,6 +18,7 @@ public class ResponseModel
         this.EmbedAuthor = new EmbedAuthorProperties();
         this.EmbedFooter = new EmbedFooterProperties();
         this.Components = new ActionRowProperties();
+        this.ButtonRows = [];
         this.ComponentsV2 = [];
         this.StringMenus = [];
         this.Spoiler = false;
@@ -28,6 +29,7 @@ public class ResponseModel
     public EmbedProperties Embed { get; set; }
     public EmbedFooterProperties EmbedFooter { get; set; }
     public ActionRowProperties Components { get; set; }
+    public Dictionary<int, ActionRowProperties> ButtonRows { get; set; }
     public RoleMenuProperties RoleMenu { get; set; }
     public List<StringMenuProperties> StringMenus { get; set; }
 
@@ -42,8 +44,19 @@ public class ResponseModel
     {
         var components = new List<IMessageComponentProperties>();
 
-        // Add action row with buttons if it has any
-        if (Components?.Any() == true)
+        // Add button rows if any (sorted by row number)
+        if (ButtonRows?.Count > 0)
+        {
+            foreach (var row in ButtonRows.OrderBy(r => r.Key))
+            {
+                if (row.Value?.Any() == true)
+                {
+                    components.Add(row.Value);
+                }
+            }
+        }
+        // Fall back to single Components property for backward compatibility
+        else if (Components?.Any() == true)
         {
             components.Add(Components);
         }

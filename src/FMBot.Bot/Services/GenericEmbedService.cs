@@ -422,6 +422,27 @@ public static class GenericEmbedService
         return rows;
     }
 
+    public static Dictionary<int, ActionRowProperties> WithButton(this Dictionary<int, ActionRowProperties> rows, string label,
+        string customId = null, ButtonStyle style = ButtonStyle.Secondary, EmojiProperties emote = null,
+        bool disabled = false, string url = null, int row = 0)
+    {
+        if (!rows.ContainsKey(row))
+        {
+            rows[row] = new ActionRowProperties();
+        }
+
+        if (url != null)
+        {
+            rows[row].WithButton(label, url: url, emote: emote);
+        }
+        else if (customId != null)
+        {
+            rows[row].WithButton(label, customId, style, emote, disabled);
+        }
+
+        return rows;
+    }
+
     public static List<ActionRowProperties> AddComponent(this List<ActionRowProperties> components, ActionRowProperties actionRow)
     {
         components.Add(actionRow);

@@ -329,13 +329,16 @@ public class GuildSettingInteractions : ComponentInteractionModule<ComponentInte
     [ComponentInteraction(InteractionConstants.GuildMembers)]
     [RequiresIndex]
     [GuildOnly]
-    public async Task MemberOverviewAsync(params string[] inputs)
+    public async Task MemberOverviewAsync()
     {
         try
         {
-            await RespondAsync(InteractionCallback.DeferredMessage());
+            await RespondAsync(InteractionCallback.DeferredModifyMessage);
 
-            if (!Enum.TryParse(inputs.First(), out GuildViewType viewType))
+            var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
+            var selectedValue = stringMenuInteraction.Data.SelectedValues[0];
+
+            if (!Enum.TryParse(selectedValue, out GuildViewType viewType))
             {
                 return;
             }
@@ -371,7 +374,7 @@ public class GuildSettingInteractions : ComponentInteractionModule<ComponentInte
 
     [ComponentInteraction(InteractionConstants.GuildSetting)]
     [ServerStaffOnly]
-    public async Task GetGuildSetting(params string[] inputs)
+    public async Task GetGuildSetting()
     {
         if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
         {
@@ -379,7 +382,8 @@ public class GuildSettingInteractions : ComponentInteractionModule<ComponentInte
             return;
         }
 
-        var setting = inputs.First().Replace("gs-", "");
+        var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
+        var setting = stringMenuInteraction.Data.SelectedValues[0].Replace("gs-", "");
 
         var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -503,7 +507,7 @@ public class GuildSettingInteractions : ComponentInteractionModule<ComponentInte
 
     [ComponentInteraction(InteractionConstants.FmGuildSettingType)]
     [ServerStaffOnly]
-    public async Task SetGuildEmbedType(params string[] inputs)
+    public async Task SetGuildEmbedType()
     {
         if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
         {
@@ -512,9 +516,12 @@ public class GuildSettingInteractions : ComponentInteractionModule<ComponentInte
             return;
         }
 
+        var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
+        var selectedValue = stringMenuInteraction.Data.SelectedValues[0];
+
         try
         {
-            if (Enum.TryParse(inputs.FirstOrDefault(), out FmEmbedType embedType))
+            if (Enum.TryParse(selectedValue, out FmEmbedType embedType))
             {
                 await this._guildService.ChangeGuildSettingAsync(this.Context.Guild, embedType);
             }
@@ -540,7 +547,7 @@ public class GuildSettingInteractions : ComponentInteractionModule<ComponentInte
 
     [ComponentInteraction(InteractionConstants.ToggleCommand.ToggleCommandChannelFmType)]
     [ServerStaffOnly]
-    public async Task SetChannelEmbedType(string channelId, string categoryId, params string[] inputs)
+    public async Task SetChannelEmbedType(string channelId, string categoryId)
     {
         var parsedChannelId = ulong.Parse(channelId);
         var parsedCategoryId = ulong.Parse(categoryId);
@@ -552,10 +559,13 @@ public class GuildSettingInteractions : ComponentInteractionModule<ComponentInte
             return;
         }
 
+        var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
+        var selectedValue = stringMenuInteraction.Data.SelectedValues[0];
+
         var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
         var selectedChannel = this.Context.Guild.Channels.TryGetValue(parsedChannelId, out var ch) ? ch : null;
 
-        if (Enum.TryParse(inputs.FirstOrDefault(), out FmEmbedType embedType))
+        if (Enum.TryParse(selectedValue, out FmEmbedType embedType))
         {
             await this._guildService.SetChannelEmbedType(selectedChannel, guild.GuildId, embedType,
                 this.Context.Guild.Id);

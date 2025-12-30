@@ -8,6 +8,7 @@ using System.Text.RegularExpressions;
 using System.Web;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
+using NetCord;
 
 namespace FMBot.Bot.Extensions;
 
@@ -559,4 +560,15 @@ public static partial class StringExtensions
 
     [GeneratedRegex(@"\s*-\s*(The \d+(st|nd|rd|th) (Mini )?Album( Repackage)?)\s*$", RegexOptions.IgnoreCase)]
     private static partial Regex KpopRegex();
+
+    public static string ToDiscordString(this EmojiProperties emoji, string name, bool animated = false)
+    {
+        if (!emoji.Id.HasValue)
+        {
+            return emoji.Name ?? string.Empty;
+        }
+
+        var prefix = animated ? "a" : "";
+        return $"<{prefix}:{name}:{emoji.Id.Value}>";
+    }
 }

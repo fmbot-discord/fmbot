@@ -47,11 +47,12 @@ public class ImportInteractions : ComponentInteractionModule<ComponentInteractio
     }
 
     [ComponentInteraction(InteractionConstants.ImportModify.Modify)]
-    public async Task SelectImportModifyPickButton(params string[] pickedOptions)
+    public async Task SelectImportModifyPickButton()
     {
         try
         {
-            var pickedOption = pickedOptions.FirstOrDefault();
+            var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
+            var pickedOption = stringMenuInteraction.Data.SelectedValues[0];
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
             var supporterRequired = ImportBuilders.ImportSupporterRequired(new ContextModel(this.Context, contextUser));
 
@@ -154,7 +155,7 @@ public class ImportInteractions : ComponentInteractionModule<ComponentInteractio
             var artistName = this.Context.GetModalValue("artist_name");
 
             _ = this.Context.Channel?.TriggerTypingStateAsync()!;
-            await RespondAsync(InteractionCallback.DeferredMessage());
+            await RespondAsync(InteractionCallback.DeferredModifyMessage);
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
             var importRef = this._importService.StoreImportReference(new ReferencedMusic { Artist = artistName });
@@ -180,7 +181,7 @@ public class ImportInteractions : ComponentInteractionModule<ComponentInteractio
             var albumName = this.Context.GetModalValue("album_name");
 
             _ = this.Context.Channel?.TriggerTypingStateAsync()!;
-            await RespondAsync(InteractionCallback.DeferredMessage());
+            await RespondAsync(InteractionCallback.DeferredModifyMessage);
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
             var importRef = this._importService.StoreImportReference(new ReferencedMusic
@@ -209,7 +210,7 @@ public class ImportInteractions : ComponentInteractionModule<ComponentInteractio
             var trackName = this.Context.GetModalValue("track_name");
 
             _ = this.Context.Channel?.TriggerTypingStateAsync()!;
-            await RespondAsync(InteractionCallback.DeferredMessage());
+            await RespondAsync(InteractionCallback.DeferredModifyMessage);
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
             var importRef = this._importService.StoreImportReference(new ReferencedMusic
@@ -236,7 +237,7 @@ public class ImportInteractions : ComponentInteractionModule<ComponentInteractio
         {
             var artistName = this.Context.GetModalValue("artist_name");
 
-            await RespondAsync(InteractionCallback.DeferredMessage());
+            await RespondAsync(InteractionCallback.DeferredModifyMessage);
             await EditToLoader();
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -271,7 +272,7 @@ public class ImportInteractions : ComponentInteractionModule<ComponentInteractio
             var artistName = this.Context.GetModalValue("artist_name");
             var albumName = this.Context.GetModalValue("album_name");
 
-            await RespondAsync(InteractionCallback.DeferredMessage());
+            await RespondAsync(InteractionCallback.DeferredModifyMessage);
             await EditToLoader();
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -306,7 +307,7 @@ public class ImportInteractions : ComponentInteractionModule<ComponentInteractio
             var artistName = this.Context.GetModalValue("artist_name");
             var trackName = this.Context.GetModalValue("track_name");
 
-            await RespondAsync(InteractionCallback.DeferredMessage());
+            await RespondAsync(InteractionCallback.DeferredModifyMessage);
             await EditToLoader();
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -344,11 +345,14 @@ public class ImportInteractions : ComponentInteractionModule<ComponentInteractio
 
     [ComponentInteraction(InteractionConstants.ImportSetting)]
     [UsernameSetRequired]
-    public async Task SetImport(params string[] inputs)
+    public async Task SetImport()
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-        if (Enum.TryParse(inputs.FirstOrDefault(), out DataSource dataSource))
+        var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
+        var selectedValue = stringMenuInteraction.Data.SelectedValues[0];
+
+        if (Enum.TryParse(selectedValue, out DataSource dataSource))
         {
             var newUserSettings = await this._userService.SetDataSource(contextUser, dataSource);
 
@@ -360,7 +364,7 @@ public class ImportInteractions : ComponentInteractionModule<ComponentInteractio
 
             var embed = new EmbedProperties();
             embed.WithDescription(description +
-                                  $"{DiscordConstants.Loading} Your stored top artist/albums/tracks are being recalculated, please wait for this to complete...");
+                                  $"{EmojiProperties.Custom(DiscordConstants.Loading).ToDiscordString("loading", true)} Your stored top artist/albums/tracks are being recalculated, please wait for this to complete...");
             embed.WithColor(DiscordConstants.WarningColorOrange);
 
             List<ActionRowProperties> components = null;
@@ -495,7 +499,7 @@ public class ImportInteractions : ComponentInteractionModule<ComponentInteractio
     {
         try
         {
-            await RespondAsync(InteractionCallback.DeferredMessage());
+            await RespondAsync(InteractionCallback.DeferredModifyMessage);
             await EditToLoaderButton("Editing selected imports...");
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -537,7 +541,7 @@ public class ImportInteractions : ComponentInteractionModule<ComponentInteractio
     {
         try
         {
-            await RespondAsync(InteractionCallback.DeferredMessage());
+            await RespondAsync(InteractionCallback.DeferredModifyMessage);
             await EditToLoaderButton();
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -566,7 +570,7 @@ public class ImportInteractions : ComponentInteractionModule<ComponentInteractio
     {
         try
         {
-            await RespondAsync(InteractionCallback.DeferredMessage());
+            await RespondAsync(InteractionCallback.DeferredModifyMessage);
             await EditToLoaderButton("Deleting selected imports...");
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -606,7 +610,7 @@ public class ImportInteractions : ComponentInteractionModule<ComponentInteractio
     {
         try
         {
-            await RespondAsync(InteractionCallback.DeferredMessage());
+            await RespondAsync(InteractionCallback.DeferredModifyMessage);
             await EditToLoaderButton("Editing selected imports...");
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -649,7 +653,7 @@ public class ImportInteractions : ComponentInteractionModule<ComponentInteractio
     {
         try
         {
-            await RespondAsync(InteractionCallback.DeferredMessage());
+            await RespondAsync(InteractionCallback.DeferredModifyMessage);
             await EditToLoaderButton();
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -678,7 +682,7 @@ public class ImportInteractions : ComponentInteractionModule<ComponentInteractio
     {
         try
         {
-            await RespondAsync(InteractionCallback.DeferredMessage());
+            await RespondAsync(InteractionCallback.DeferredModifyMessage);
             await EditToLoaderButton("Deleting selected imports...");
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -718,7 +722,7 @@ public class ImportInteractions : ComponentInteractionModule<ComponentInteractio
     {
         try
         {
-            await RespondAsync(InteractionCallback.DeferredMessage());
+            await RespondAsync(InteractionCallback.DeferredModifyMessage);
             await EditToLoaderButton("Editing selected imports...");
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -761,7 +765,7 @@ public class ImportInteractions : ComponentInteractionModule<ComponentInteractio
     {
         try
         {
-            await RespondAsync(InteractionCallback.DeferredMessage());
+            await RespondAsync(InteractionCallback.DeferredModifyMessage);
             await EditToLoaderButton();
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -790,7 +794,7 @@ public class ImportInteractions : ComponentInteractionModule<ComponentInteractio
     {
         try
         {
-            await RespondAsync(InteractionCallback.DeferredMessage());
+            await RespondAsync(InteractionCallback.DeferredModifyMessage);
             await EditToLoaderButton("Deleting selected imports...");
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 

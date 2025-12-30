@@ -1,5 +1,5 @@
 using System;
-using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
@@ -37,21 +37,14 @@ public class TrackInteractions : ComponentInteractionModule<ComponentInteraction
     [ComponentInteraction(InteractionConstants.WhoKnowsTrackRolePicker)]
     [UsernameSetRequired]
     [RequiresIndex]
-    public async Task WhoKnowsFilteringAsync(string trackId, params string[] inputs)
+    public async Task WhoKnowsFilteringAsync(string trackId)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
         var track = await this._trackService.GetTrackForId(int.Parse(trackId));
 
-        var roleIds = new List<ulong>();
-        if (inputs != null)
-        {
-            foreach (var input in inputs)
-            {
-                var roleId = ulong.Parse(input);
-                roleIds.Add(roleId);
-            }
-        }
+        var entityMenuInteraction = (EntityMenuInteraction)this.Context.Interaction;
+        var roleIds = entityMenuInteraction.Data.SelectedValues.ToList();
 
         try
         {
@@ -71,7 +64,7 @@ public class TrackInteractions : ComponentInteractionModule<ComponentInteraction
     [UsernameSetRequired]
     public async Task TrackPreviewAsync(string trackId)
     {
-        await RespondAsync(InteractionCallback.DeferredMessage());
+        await RespondAsync(InteractionCallback.DeferredModifyMessage);
 
         await this.Context.DisableInteractionButtons();
 
@@ -114,7 +107,7 @@ public class TrackInteractions : ComponentInteractionModule<ComponentInteraction
             return;
         }
 
-        await RespondAsync(InteractionCallback.DeferredMessage());
+        await RespondAsync(InteractionCallback.DeferredModifyMessage);
 
         await this.Context.DisableInteractionButtons(specificButtonOnly: $"{InteractionConstants.TrackLyrics}:{trackId}");
 

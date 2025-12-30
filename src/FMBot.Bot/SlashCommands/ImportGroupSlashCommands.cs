@@ -137,8 +137,8 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
         await Context.Interaction.SendResponseAsync(
             InteractionCallback.DeferredMessage(noAttachments ? MessageFlags.Ephemeral : default));
 
-        embed.AddField($"{DiscordConstants.Spotify} Importing history into .fmbot..",
-            $"- {DiscordConstants.Loading} Loading import files...");
+        embed.AddField($"{EmojiProperties.Custom(DiscordConstants.Spotify).ToDiscordString("spotify")} Importing history into .fmbot..",
+            $"- {EmojiProperties.Custom(DiscordConstants.Loading).ToDiscordString("loading", true)} Loading import files...");
         var message = await this.Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
             .WithEmbeds([embed]));
 
@@ -347,8 +347,8 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
 
         await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage());
 
-        embed.AddField($"{DiscordConstants.AppleMusic} Importing history into .fmbot..",
-            $"- {DiscordConstants.Loading} Loading import files...");
+        embed.AddField($"{EmojiProperties.Custom(DiscordConstants.AppleMusic).ToDiscordString("apple_music")} Importing history into .fmbot..",
+            $"- {EmojiProperties.Custom(DiscordConstants.Loading).ToDiscordString("loading", true)} Loading import files...");
 
         var message = await this.Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
             .WithEmbeds([embed]));
@@ -521,11 +521,11 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
     {
         builder.AppendLine(lineToAdd);
 
-        var loadingLine = $"- {DiscordConstants.Loading} Processing...";
+        var loadingLine = $"- {EmojiProperties.Custom(DiscordConstants.Loading).ToDiscordString("loading", true)} Processing...";
 
         var title = playSource == PlaySource.SpotifyImport
-            ? $"{DiscordConstants.Spotify} Importing history into .fmbot.."
-            : $"{DiscordConstants.AppleMusic} Importing history into .fmbot..";
+            ? $"{EmojiProperties.Custom(DiscordConstants.Spotify).ToDiscordString("spotify")} Importing history into .fmbot.."
+            : $"{EmojiProperties.Custom(DiscordConstants.AppleMusic).ToDiscordString("apple_music")} Importing history into .fmbot..";
 
         var fieldsList = embed.Fields.ToList();
         var index = fieldsList.FindIndex(f => f.Name == title);

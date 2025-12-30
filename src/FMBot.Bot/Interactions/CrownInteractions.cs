@@ -76,7 +76,7 @@ public class CrownInteractions : ComponentInteractionModule<ComponentInteraction
     [UsernameSetRequired]
     public async Task CrownSelectMenu(params string[] inputs)
     {
-        await RespondAsync(InteractionCallback.DeferredMessage());
+        await RespondAsync(InteractionCallback.DeferredModifyMessage);
 
         var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
         var options = stringMenuInteraction.Data.SelectedValues.First().Split("-");

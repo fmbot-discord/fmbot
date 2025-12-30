@@ -83,7 +83,7 @@ public class PlayInteractions : ComponentInteractionModule<ComponentInteractionC
             return;
         }
 
-        await RespondAsync(InteractionCallback.DeferredMessage());
+        await RespondAsync(InteractionCallback.DeferredModifyMessage);
         await this.Context.DisableInteractionButtons();
 
         var contextUser = await this._userService.GetUserWithDiscogs(requesterDiscordUserId);
@@ -120,7 +120,7 @@ public class PlayInteractions : ComponentInteractionModule<ComponentInteractionC
     [UsernameSetRequired]
     public async Task RecapAllTime(string userId)
     {
-        await RespondAsync(InteractionCallback.DeferredMessage());
+        await RespondAsync(InteractionCallback.DeferredModifyMessage);
         _ = this.Context.DisableInteractionButtons(specificButtonOnly: $"{InteractionConstants.RecapAlltime}:{userId}",
             addLoaderToSpecificButton: true);
 
@@ -190,7 +190,7 @@ public class PlayInteractions : ComponentInteractionModule<ComponentInteractionC
                 return;
             }
 
-            await RespondAsync(InteractionCallback.DeferredMessage());
+            await RespondAsync(InteractionCallback.DeferredModifyMessage);
 
             var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
             if (message == null)
@@ -225,7 +225,7 @@ public class PlayInteractions : ComponentInteractionModule<ComponentInteractionC
     {
         try
         {
-            await RespondAsync(InteractionCallback.DeferredMessage());
+            await RespondAsync(InteractionCallback.DeferredModifyMessage);
             var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
             var splitInput = stringMenuInteraction.Data.SelectedValues.First().Split("-");
             if (!Enum.TryParse(splitInput[0], out GapEntityType viewType))

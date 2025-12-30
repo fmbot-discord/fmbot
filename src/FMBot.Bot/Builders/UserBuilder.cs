@@ -292,7 +292,7 @@ public class UserBuilder
                 break;
             case LoginState.SuccessPendingIndex:
                 description.AppendLine(
-                    $"{DiscordConstants.Loading} Fetching Last.fm data for [{newContextUser.UserNameLastFM}]({LastfmUrlExtensions.GetUserUrl(newContextUser.UserNameLastFM)})...");
+                    $"{EmojiProperties.Custom(DiscordConstants.Loading).ToDiscordString("loading", true)} Fetching Last.fm data for [{newContextUser.UserNameLastFM}]({LastfmUrlExtensions.GetUserUrl(newContextUser.UserNameLastFM)})...");
                 break;
             case LoginState.SuccessIndexComplete:
                 description.AppendLine(
@@ -1198,7 +1198,7 @@ public class UserBuilder
                     case DataSource.ImportThenFullLastFm:
                         response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
                         response.ComponentsContainer.AddComponent(
-                            new TextDisplayProperties($"{DiscordConstants.Imports} .fmbot imports: {name}"));
+                            new TextDisplayProperties($"{EmojiProperties.Custom(DiscordConstants.Imports).ToDiscordString("imports")} .fmbot imports: {name}"));
                         break;
                     case DataSource.LastFm:
                     default:
@@ -2066,7 +2066,7 @@ public class UserBuilder
 
         var name = await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser);
         response.ComponentsContainer.AddComponent(
-            new TextDisplayProperties($"## {DiscordConstants.Shortcut} {name}'s command shortcuts"));
+            new TextDisplayProperties($"## {EmojiProperties.Custom(DiscordConstants.Shortcut).ToDiscordString("shortcut")} {name}'s command shortcuts"));
         var prfx = context.Prefix == "/" ? "." : context.Prefix;
 
         if (shortcuts.Count == 0)

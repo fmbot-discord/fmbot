@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
@@ -32,7 +33,7 @@ public class PremiumSettingInteractions : ComponentInteractionModule<ComponentIn
 
     [ComponentInteraction(InteractionConstants.SetAllowedRoleMenu)]
     [ServerStaffOnly]
-    public async Task SetGuildAllowedRoles(params string[] inputs)
+    public async Task SetGuildAllowedRoles()
     {
         if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
         {
@@ -41,28 +42,18 @@ public class PremiumSettingInteractions : ComponentInteractionModule<ComponentIn
             return;
         }
 
-        if (inputs != null)
-        {
-            var roleIds = new List<ulong>();
-            foreach (var input in inputs)
-            {
-                var roleId = ulong.Parse(input);
-                roleIds.Add(roleId);
-            }
+        var entityMenuInteraction = (EntityMenuInteraction)this.Context.Interaction;
+        var selectedRoleIds = entityMenuInteraction.Data.SelectedValues;
 
-            await this._guildService.ChangeGuildAllowedRoles(this.Context.Guild, roleIds.ToArray());
-        }
+        await this._guildService.ChangeGuildAllowedRoles(this.Context.Guild, selectedRoleIds.ToArray());
 
         var response = await this._premiumSettingBuilder.AllowedRoles(new ContextModel(this.Context), this.Context.User);
-
-        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage());
-
         await this.Context.UpdateInteractionEmbed(response);
     }
 
     [ComponentInteraction(InteractionConstants.SetBlockedRoleMenu)]
     [ServerStaffOnly]
-    public async Task SetGuildBlockedRoles(params string[] inputs)
+    public async Task SetGuildBlockedRoles()
     {
         if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
         {
@@ -71,28 +62,18 @@ public class PremiumSettingInteractions : ComponentInteractionModule<ComponentIn
             return;
         }
 
-        if (inputs != null)
-        {
-            var roleIds = new List<ulong>();
-            foreach (var input in inputs)
-            {
-                var roleId = ulong.Parse(input);
-                roleIds.Add(roleId);
-            }
+        var entityMenuInteraction = (EntityMenuInteraction)this.Context.Interaction;
+        var selectedRoleIds = entityMenuInteraction.Data.SelectedValues;
 
-            await this._guildService.ChangeGuildBlockedRoles(this.Context.Guild, roleIds.ToArray());
-        }
+        await this._guildService.ChangeGuildBlockedRoles(this.Context.Guild, selectedRoleIds.ToArray());
 
         var response = await this._premiumSettingBuilder.BlockedRoles(new ContextModel(this.Context), this.Context.User);
-
-        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage());
-
         await this.Context.UpdateInteractionEmbed(response);
     }
 
     [ComponentInteraction(InteractionConstants.SetBotManagementRoleMenu)]
     [ServerStaffOnly]
-    public async Task SetBotManagementRoles(params string[] inputs)
+    public async Task SetBotManagementRoles()
     {
         if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context), managersAllowed: false))
         {
@@ -101,22 +82,12 @@ public class PremiumSettingInteractions : ComponentInteractionModule<ComponentIn
             return;
         }
 
-        if (inputs != null)
-        {
-            var roleIds = new List<ulong>();
-            foreach (var input in inputs)
-            {
-                var roleId = ulong.Parse(input);
-                roleIds.Add(roleId);
-            }
+        var entityMenuInteraction = (EntityMenuInteraction)this.Context.Interaction;
+        var selectedRoleIds = entityMenuInteraction.Data.SelectedValues;
 
-            await this._guildService.ChangeGuildBotManagementRoles(this.Context.Guild, roleIds.ToArray());
-        }
+        await this._guildService.ChangeGuildBotManagementRoles(this.Context.Guild, selectedRoleIds.ToArray());
 
         var response = await this._premiumSettingBuilder.BotManagementRoles(new ContextModel(this.Context), this.Context.User);
-
-        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage());
-
         await this.Context.UpdateInteractionEmbed(response);
     }
 

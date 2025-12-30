@@ -18,6 +18,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using NetCord;
 using NetCord.Gateway;
+using NetCord.JsonModels;
 using NetCord.Rest;
 using NetCord.Services;
 using NetCord.Services.Commands;
@@ -128,11 +129,6 @@ public class CommandHandler
     private ValueTask MessageUpdated(GatewayClient client, Message message)
     {
         Statistics.DiscordEvents.WithLabels("MessageUpdated").Inc();
-
-        if (message.Author == null)
-        {
-            return ValueTask.CompletedTask;
-        }
 
         var context = new CommandContext(message, client);
 
@@ -516,7 +512,7 @@ public class CommandHandler
         return (false, errorSent);
     }
 
-    private async Task<bool> CommandEnabled(CommandContext context, CommandSearchResult searchResult, string prfx,
+    private static async Task<bool> CommandEnabled(CommandContext context, CommandSearchResult searchResult, string prfx,
         bool update = false)
     {
         if (context.Guild != null)

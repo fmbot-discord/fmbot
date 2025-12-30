@@ -15,11 +15,9 @@ using FMBot.Domain.Interfaces;
 using Serilog;
 using FMBot.Persistence.Domain.Models;
 using SkiaSharp;
-using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using NetCord;
 using NetCord.Gateway;
-using DiscordGuild = NetCord.Gateway.Guild;
 using NetCord.Rest;
 using NetCord.Services.Commands;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
@@ -33,19 +31,16 @@ public class GameBuilders
     private readonly ArtistsService _artistsService;
     private readonly CountryService _countryService;
     private readonly AlbumService _albumService;
-    private readonly IDataSourceFactory _dataSourceFactory;
     private readonly CensorService _censorService;
 
     public GameBuilders(UserService userService, GameService gameService, ArtistsService artistsService,
-        CountryService countryService, AlbumService albumService, IDataSourceFactory dataSourceFactory,
-        CensorService censorService)
+        CountryService countryService, AlbumService albumService, CensorService censorService)
     {
         this._userService = userService;
         this._gameService = gameService;
         this._artistsService = artistsService;
         this._countryService = countryService;
         this._albumService = albumService;
-        this._dataSourceFactory = dataSourceFactory;
         this._censorService = censorService;
     }
 
@@ -775,7 +770,7 @@ public class GameBuilders
 
                         await message.ModifyAsync(m =>
                         {
-                            m.Components = null;
+                            m.Components = [];
                             m.Embeds = [response.Embed];
                             m.Attachments = response.Stream != null
                                 ? [new AttachmentProperties(response.Spoiler

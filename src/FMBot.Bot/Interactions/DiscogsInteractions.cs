@@ -127,7 +127,7 @@ public class DiscogsInteractions : ComponentInteractionModule<ComponentInteracti
     [ComponentInteraction(InteractionConstants.Discogs.Collection)]
     public async Task CollectionAsync(string discordUser, string requesterDiscordUser)
     {
-        await RespondAsync(InteractionCallback.DeferredMessage());
+        await RespondAsync(InteractionCallback.DeferredModifyMessage);
         await this.Context.DisableActionRows(specificButtonOnly:$"{InteractionConstants.Discogs.Collection}:{discordUser}:{requesterDiscordUser}");
 
         var discordUserId = ulong.Parse(discordUser);

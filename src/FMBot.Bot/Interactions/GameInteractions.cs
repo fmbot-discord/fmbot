@@ -93,7 +93,7 @@ public class GameInteractions : ComponentInteractionModule<ComponentInteractionC
     {
         try
         {
-            await RespondAsync(InteractionCallback.DeferredMessage());
+            await RespondAsync(InteractionCallback.DeferredModifyMessage);
             await this.Context.DisableInteractionButtons();
 
             var jumbleTypeEnum = (JumbleType)Enum.Parse(typeof(JumbleType), jumbleType);
