@@ -72,7 +72,8 @@ public class TimeZoneAutoComplete : AutocompleteHandler
                 .ToDictionary(d => d.Key, d => d.Value));
 
             results.ReplaceOrAddToDictionary(this._allTimeZones
-                .Where(w => w.Value.Contains(searchValue, StringComparison.OrdinalIgnoreCase))
+                .Where(w => w.Value.Contains(searchValue, StringComparison.OrdinalIgnoreCase) ||
+                            w.Key.Contains(searchValue, StringComparison.OrdinalIgnoreCase))
                 .Take(5)
                 .ToDictionary(d => d.Key, d => d.Value));
         }
