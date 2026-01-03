@@ -71,6 +71,11 @@ public class LastFmRepository : ILastfmRepository
             {
                 break;
             }
+
+            if (response.Error != ResponseStatus.Failure && response.Error != ResponseStatus.TemporaryError)
+            {
+                break;
+            }
         }
 
         return response;
@@ -78,7 +83,7 @@ public class LastFmRepository : ILastfmRepository
 
     public async Task<Response<RecentTrackList>> GetRecentTracksAsync(string lastFmUserName, int count = 2,
         bool useCache = false, string sessionKey = null, long? fromUnixTimestamp = null, int amountOfPages = 1,
-        int errorRetries = 2)
+        int errorRetries = 1)
     {
         var cacheKey = $"{lastFmUserName}-lastfm-recent-tracks";
         var queryParams = new Dictionary<string, string>
@@ -1163,22 +1168,18 @@ public class LastFmRepository : ILastfmRepository
             { "period", period },
         };
 
-        Response<TopTracksLfmResponse> topTracksCall;
-        if (amountOfPages == 1)
+        var topTracksCall = await CallApiWithRetryAsync<TopTracksLfmResponse>(
+            queryParams, Call.TopTracks, false, 1, lastFmUserName);
+        if (amountOfPages != 1)
         {
-            topTracksCall = await this._lastFmApi.CallApiAsync<TopTracksLfmResponse>(queryParams, Call.TopTracks);
-        }
-        else
-        {
-            topTracksCall = await this._lastFmApi.CallApiAsync<TopTracksLfmResponse>(queryParams, Call.TopTracks);
             if (topTracksCall.Success && topTracksCall.Content.TopTracks.Track.Count > 998)
             {
                 for (var i = 2; i <= amountOfPages; i++)
                 {
                     queryParams.Remove("page");
                     queryParams.Add("page", i.ToString());
-                    var pageResponse =
-                        await this._lastFmApi.CallApiAsync<TopTracksLfmResponse>(queryParams, Call.TopTracks);
+                    var pageResponse = await CallApiWithRetryAsync<TopTracksLfmResponse>(
+                        queryParams, Call.TopTracks, false, 1, $"{lastFmUserName} page {i}");
 
                     if (pageResponse.Success)
                     {
