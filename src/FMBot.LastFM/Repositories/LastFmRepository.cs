@@ -71,6 +71,11 @@ public class LastFmRepository : ILastfmRepository
             {
                 break;
             }
+
+            if (response.Error != ResponseStatus.Failure && response.Error != ResponseStatus.TemporaryError)
+            {
+                break;
+            }
         }
 
         return response;
