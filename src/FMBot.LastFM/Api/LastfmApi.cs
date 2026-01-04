@@ -113,6 +113,17 @@ public class LastfmApi : ILastfmApi
             };
         }
 
+        if (httpResponse.StatusCode is HttpStatusCode.InternalServerError or HttpStatusCode.BadGateway or HttpStatusCode.ServiceUnavailable or HttpStatusCode.GatewayTimeout)
+        {
+            Statistics.LastfmErrors.WithLabels(call).Inc();
+            return new Response<T>
+            {
+                Success = false,
+                Error = ResponseStatus.Failure,
+                Message = $"Last.fm returned a server error ({(int)httpResponse.StatusCode}). Please try again later."
+            };
+        }
+
         var response = new Response<T>();
         var requestBody = await httpResponse.Content.ReadAsStringAsync();
 
