@@ -1019,9 +1019,11 @@ public class GameService
             AvgCorrectAnsweringTime = correctAnswers.Any()
                 ? (decimal)correctAnswers.Average(a => (a.DateAnswered - a.JumbleSession.DateStarted).TotalSeconds)
                 : 0,
-            AvgAttemptsUntilCorrect = (decimal)jumbleSessions
-                .Where(s => s.Answers.Any(a => a.Correct))
-                .Average(s => s.Answers.Count(a => a.DateAnswered <= s.Answers.First(ca => ca.Correct).DateAnswered)),
+            AvgAttemptsUntilCorrect = jumbleSessions.Any(s => s.Answers.Any(a => a.Correct))
+                ? (decimal)jumbleSessions
+                    .Where(s => s.Answers.Any(a => a.Correct))
+                    .Average(s => s.Answers.Count(a => a.DateAnswered <= s.Answers.First(ca => ca.Correct).DateAnswered))
+                : 0,
             Channels = channels.Select(s => new JumbleGuildStatChannel
             {
                 Id = s.Key.GetValueOrDefault(),
