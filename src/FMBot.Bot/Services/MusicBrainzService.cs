@@ -14,11 +14,12 @@ namespace FMBot.Bot.Services;
 
 public class MusicBrainzService
 {
-    private readonly HttpClient _httpClient;
+    private readonly Query _query;
 
-    public MusicBrainzService(HttpClient httpClient)
+    public MusicBrainzService(IHttpClientFactory httpClientFactory)
     {
-        this._httpClient = httpClient;
+        var httpClient = httpClientFactory.CreateClient("MusicBrainz");
+        this._query = new Query(httpClient);
     }
 
     public async Task<ArtistUpdated> AddMusicBrainzDataToArtistAsync(Artist artist)
@@ -32,18 +33,17 @@ public class MusicBrainzService
                 return new ArtistUpdated(artist);
             }
 
-            var api = new Query(this._httpClient);
-            var musicBrainzResults = await api.FindArtistsAsync(artist.Name, simple: true);
+            var musicBrainzResults = await this._query.FindArtistsAsync(artist.Name, simple: true);
             Statistics.MusicBrainzApiCalls.Inc();
 
             var musicBrainzArtist =
                 musicBrainzResults.Results
                     .OrderByDescending(o => o.Score)
-                    .Select(s => s.Item).FirstOrDefault(f => f.Name?.ToLower() == artist.Name.ToLower());
+                    .Select(s => s.Item).FirstOrDefault(f => f.Name != null && f.Name.Equals(artist.Name, StringComparison.OrdinalIgnoreCase));
 
             if (musicBrainzArtist != null)
             {
-                musicBrainzArtist = await api.LookupArtistAsync(musicBrainzArtist.Id, Include.UrlRelationships);
+                musicBrainzArtist = await this._query.LookupArtistAsync(musicBrainzArtist.Id, Include.UrlRelationships);
                 Statistics.MusicBrainzApiCalls.Inc();
 
                 var startDate = musicBrainzArtist.LifeSpan?.Begin?.NearestDate;
