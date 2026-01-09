@@ -344,11 +344,15 @@ public class Startup
 
         services.AddHttpClient<SpotifyService>(client => { client.Timeout = TimeSpan.FromSeconds(10); });
 
-        services.AddHttpClient<MusicBrainzService>(client =>
+        MetaBrainz.MusicBrainz.Query.DelayBetweenRequests = 1.5;
+        MetaBrainz.MusicBrainz.Query.DefaultUserAgent.Add(new ProductInfoHeaderValue("fmbot", "1.0"));
+        MetaBrainz.MusicBrainz.Query.DefaultUserAgent.Add(new ProductInfoHeaderValue("(+contact@fm.bot)"));
+
+        services.AddHttpClient("MusicBrainz", client =>
         {
-            client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("fmbot-discord", "1.0"));
-            client.Timeout = TimeSpan.FromSeconds(10);
+            client.Timeout = TimeSpan.FromSeconds(8);
         });
+        services.AddSingleton<MusicBrainzService>();
     }
 
     private void RegisterThirdPartyServices(IServiceCollection services)

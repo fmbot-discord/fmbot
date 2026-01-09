@@ -1566,7 +1566,7 @@ public class SupporterService
         }
         else
         {
-            var expiredDate = DateTime.UtcNow.AddDays(-10);
+            var expiredDate = DateTime.UtcNow.AddDays(-1);
             possiblyExpiredSupporters = await db.StripeSupporters
                 .Where(w =>
                     w.DateEnding.HasValue &&
