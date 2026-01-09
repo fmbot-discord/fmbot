@@ -20,6 +20,7 @@ public class ResponseModel
         this.Components = new ActionRowProperties();
         this.ButtonRows = [];
         this.ComponentsV2 = [];
+        this.ComponentsContainer = new ComponentContainerProperties();
         this.StringMenus = [];
         this.Spoiler = false;
         this.ReferencedMusic = null;
@@ -36,6 +37,29 @@ public class ResponseModel
     public List<ActionRowProperties> ComponentsV2 { get; set; }
 
     public ComponentContainerProperties ComponentsContainer { get; set; }
+
+    /// <summary>
+    /// Gets all V2 components combined into a single array for sending.
+    /// Includes ComponentsContainer if it has any components, plus any ComponentsV2 action rows.
+    /// </summary>
+    public IMessageComponentProperties[] GetComponentsV2()
+    {
+        var components = new List<IMessageComponentProperties>();
+
+        // Add ComponentsContainer if it has content
+        if (ComponentsContainer?.Any() == true)
+        {
+            components.Add(ComponentsContainer);
+        }
+
+        // Add all ComponentsV2 action rows
+        if (ComponentsV2?.Count > 0)
+        {
+            components.AddRange(ComponentsV2);
+        }
+
+        return components.Count > 0 ? components.ToArray() : null;
+    }
 
     /// <summary>
     /// Gets all message components (buttons, menus) combined into a single array for sending.

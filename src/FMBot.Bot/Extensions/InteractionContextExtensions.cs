@@ -210,7 +210,7 @@ public static class InteractionContextExtensions
                 case ResponseType.ComponentsV2:
                     await context.Interaction.SendResponseAsync(InteractionCallback.Message(
                         new InteractionMessageProperties()
-                            .WithComponents(response.ComponentsV2)
+                            .WithComponents(response.GetComponentsV2())
                             .WithFlags(flags)
                             .WithAllowedMentions(AllowedMentionsProperties.None)));
                     break;

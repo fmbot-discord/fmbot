@@ -127,6 +127,7 @@ public class RecapBuilders
         }
 
         context.SelectMenu = viewType;
+        response.StringMenus.Add(viewType);
 
         switch (view)
         {

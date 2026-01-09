@@ -164,35 +164,32 @@ public class Startup
                                                        GatewayIntents.Guilds |
                                                        GatewayIntents.GuildVoiceStates;
 
-        if (ConfigData.Data.Shards != null && ConfigData.Data.Discord.MaxConcurrency.HasValue)
-        {
-            // TODO override max concurrency here when NetCord supports it
-        }
+        var maxConcurrency = ConfigData.Data.Discord.MaxConcurrency;
 
         if (ConfigData.Data.Shards != null && ConfigData.Data.Shards.StartShard.HasValue &&
             ConfigData.Data.Shards.EndShard.HasValue)
         {
             var startShard = ConfigData.Data.Shards.StartShard.Value;
             var endShard = ConfigData.Data.Shards.EndShard.Value;
-            var arrayLength = endShard - startShard + 1;
-            var shards = Enumerable.Range(startShard, arrayLength).ToArray();
 
             Log.Warning(
-                "Initializing Discord sharded client with {totalShards} total shards, starting at shard {startingShard} til {endingShard} - {shards}",
-                ConfigData.Data.Shards.TotalShards, startShard, endShard, shards);
+                "Initializing Discord sharded client with {totalShards} total shards, running shards {startingShard} to {endingShard}",
+                ConfigData.Data.Shards.TotalShards, startShard, endShard);
 
-            // TODO override shard IDs here when NetCord supports it
             return new ShardedGatewayClient(new BotToken(ConfigData.Data.Discord.Token), new ShardedGatewayClientConfiguration
             {
+                IntentsFactory = _ => intents,
                 TotalShardCount = ConfigData.Data.Shards.TotalShards,
-                IntentsFactory = _ => intents
+                ShardRange = startShard..(endShard + 1), // End is exclusive in NetCord
+                MaxConcurrency = maxConcurrency
             });
         }
 
         Log.Warning("Initializing normal Discord sharded client");
         return new ShardedGatewayClient(new BotToken(ConfigData.Data.Discord.Token), new ShardedGatewayClientConfiguration
         {
-            IntentsFactory = _ => intents
+            IntentsFactory = _ => intents,
+            MaxConcurrency = maxConcurrency
         });
     }
 

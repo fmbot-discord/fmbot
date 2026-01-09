@@ -253,7 +253,7 @@ public static class CommandContextExtensions
                             .AddAttachments(new AttachmentProperties(
                                 response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName,
                                 response.Stream).WithDescription(response.FileDescription))
-                            .WithComponents(response.ComponentsV2)
+                            .WithComponents(response.GetComponentsV2())
                             .WithFlags(MessageFlags.IsComponentsV2)
                             .WithAllowedMentions(AllowedMentionsProperties.None));
 
@@ -263,7 +263,7 @@ public static class CommandContextExtensions
                     else
                     {
                         var components = await context.Channel.SendMessageAsync(new MessageProperties()
-                            .WithComponents(response.ComponentsV2)
+                            .WithComponents(response.GetComponentsV2())
                             .WithFlags(MessageFlags.IsComponentsV2)
                             .WithAllowedMentions(AllowedMentionsProperties.None));
                         responseMessage = components;
