@@ -753,8 +753,7 @@ public class GameBuilders
                         }
 
                         var msg = await commandContext.Channel.GetMessageAsync(currentGame.DiscordResponseId.Value);
-                        // TODO: check if right type of message
-                        if (msg is not Message message)
+                        if (msg is not RestMessage message)
                         {
                             return;
                         }
