@@ -637,6 +637,7 @@ public class StaticBuilders
                     commands.AppendLine("**`/import spotify`** | *Starts your Spotify import*");
                     commands.AppendLine("**`/import applemusic`** | *Starts your Apple Music import*");
                     commands.AppendLine("**`/import manage`** | *Manage and configure your existing imports*");
+                    commands.AppendLine("**`/import modify`** | *Modify your existing imports*");
                 }
 
                 response.Embed.WithTitle($"Overview of all {selectedCategory.Value} commands");
