@@ -251,6 +251,12 @@ public static class InteractionConstants
         public const string JumblePlayAgain = "jumble-playagain";
     }
 
+    public static class Help
+    {
+        public const string CategoryMenu = "help-category";
+        public const string CommandMenu = "help-command";
+    }
+
     public static class Template
     {
         public const string Create = "fm-template-create";

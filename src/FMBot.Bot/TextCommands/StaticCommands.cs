@@ -462,326 +462,41 @@ public class StaticCommands : BaseCommandModule
     public async Task HelpAsync([CommandParameter(Remainder = true)] string extraValues = null)
     {
         var prefix = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        // GetCommands returns dictionary - flatten to get all command infos
         var allCommands = this._service.GetCommands().SelectMany(kvp => kvp.Value).ToList();
-
-        if (!string.IsNullOrWhiteSpace(extraValues))
-        {
-            if (extraValues.Length > prefix.Length && extraValues.Contains(prefix))
-            {
-                extraValues = extraValues.Replace(prefix, "");
-            }
-
-            var foundCommand = FindCommand(allCommands, extraValues);
-            if (foundCommand != null)
-            {
-                var userName = GetUserDisplayName(this.Context.Message.Author as GuildUser, this.Context.User);
-                var helpResponse =
-                    GenericEmbedService.HelpResponse(this._embed, foundCommand, prefix, userName);
-                var components = helpResponse.showPurchaseButtons && !await this._userService.UserIsSupporter(this.Context.User)
-                    ? GenericEmbedService.PurchaseButtons(foundCommand)
-                    : null;
-                await this.Context.Channel.SendMessageAsync(new MessageProperties
-                {
-                    Embeds = [this._embed],
-                    Components = components != null ? [components] : null
-                });
-                this.Context.LogCommandUsed(CommandResponse.Help);
-                return;
-            }
-        }
+        var userName = GetUserDisplayName(this.Context.Message.Author as GuildUser, this.Context.User);
 
         try
         {
-            RestMessage message = null;
-            InteractiveMessageResult<MultiSelectionOption<string>> selectedResult = null;
-
-            this._embed.WithColor(DiscordConstants.InformationColorBlue);
-
-            var options = new List<MultiSelectionOption<string>>();
-            foreach (var commandCategory in (CommandCategory[])Enum.GetValues(typeof(CommandCategory)))
+            string selectedCommand = null;
+            if (!string.IsNullOrWhiteSpace(extraValues))
             {
-                var description = StringExtensions.CommandCategoryToString(commandCategory);
-                options.Add(new MultiSelectionOption<string>(commandCategory.ToString(), commandCategory.ToString(), 1,
-                    description?.ToLower() != commandCategory.ToString().ToLower() ? description : null));
-                options.First(x => x.Option == CommandCategory.General.ToString()).IsDefault = true;
+                if (extraValues.Length > prefix.Length && extraValues.Contains(prefix))
+                {
+                    extraValues = extraValues.Replace(prefix, "");
+                }
+                selectedCommand = extraValues.Trim();
             }
 
-            while (selectedResult is null || selectedResult.Status == InteractiveStatus.Success)
+            var response = await this._staticBuilders.BuildHelpResponse(
+                allCommands,
+                prefix,
+                null,
+                selectedCommand,
+                userName,
+                this.Context.User.Id);
+
+            await this.Context.Channel.SendMessageAsync(new MessageProperties
             {
-                var commands = "**Commands:** \n";
-                var selectedCategoryOrCommand = selectedResult?.Value?.Value;
+                Embeds = [response.Embed],
+                Components = response.GetMessageComponents()
+            });
 
-                await SetGeneralHelpEmbed(prefix);
-
-                if (selectedResult?.Value == null || selectedResult.Value.Row == 1)
-                {
-                    options = options.Where(w => w.Row == 1).ToList();
-                    if (selectedCategoryOrCommand != null)
-                    {
-                        Enum.TryParse(selectedCategoryOrCommand, out CommandCategory selectedCategory);
-
-                        var selectedCommands = allCommands.Where(w =>
-                            GetAllAttributes(w).OfType<CommandCategoriesAttribute>().Select(s => s.Categories)
-                                .Any(a => a.Contains(selectedCategory))).ToList();
-
-                        if (selectedCommands.Any())
-                        {
-                            options.ForEach(x => x.IsDefault = false); // Reset to default
-                            options.First(x => x.Option == selectedCategoryOrCommand).IsDefault = true;
-
-                            foreach (var selectedCommand in selectedCommands.Take(25))
-                            {
-                                var cmdName = GetCommandName(selectedCommand);
-                                options.Add(new MultiSelectionOption<string>(cmdName, cmdName, 2, null));
-                            }
-
-                            var totalCategories = new List<CommandCategory>();
-                            foreach (var selectedCommand in selectedCommands.Select(s =>
-                                             GetAllAttributes(s).OfType<CommandCategoriesAttribute>()
-                                                 .Select(se => se.Categories))
-                                         .Distinct())
-                            {
-                                foreach (var test in selectedCommand)
-                                {
-                                    totalCategories.AddRange(test);
-                                }
-                            }
-
-                            var usedCommands = new List<ICommandInfo<CommandContext>>();
-
-                            foreach (var selectedCommand in selectedCommands.Where(w =>
-                                         GetAllAttributes(w).OfType<CommandCategoriesAttribute>().Select(s => s.Categories)
-                                             .Any(a => a.Length == 1 && a.Contains(selectedCategory))))
-                            {
-                                if (!usedCommands.Contains(selectedCommand))
-                                {
-                                    commands += await CommandInfoToHelpString(prefix, selectedCommand);
-                                    usedCommands.Add(selectedCommand);
-                                }
-                            }
-
-                            if (selectedCategory != CommandCategory.WhoKnows)
-                            {
-                                commands += "\n";
-
-                                foreach (var selectedCommand in selectedCommands.Where(w =>
-                                             GetAllAttributes(w).OfType<CommandCategoriesAttribute>().Select(s => s.Categories)
-                                                 .Any(a => a.Contains(CommandCategory.WhoKnows) && a.Length > 1)))
-                                {
-                                    if (!usedCommands.Contains(selectedCommand))
-                                    {
-                                        commands += await CommandInfoToHelpString(prefix, selectedCommand);
-                                        usedCommands.Add(selectedCommand);
-                                    }
-                                }
-
-                                commands += "\n";
-                            }
-
-                            foreach (var category in totalCategories.Distinct())
-                            {
-                                foreach (var selectedCommand in selectedCommands.Where(w =>
-                                             GetAllAttributes(w).OfType<CommandCategoriesAttribute>().Select(s => s.Categories)
-                                                 .Any(a => a.Contains(category) && a.Length > 1)))
-                                {
-                                    if (!usedCommands.Contains(selectedCommand))
-                                    {
-                                        commands += await CommandInfoToHelpString(prefix, selectedCommand);
-                                        usedCommands.Add(selectedCommand);
-                                    }
-                                }
-                            }
-                        }
-
-                        if (selectedCategory == CommandCategory.General)
-                        {
-                            options.ForEach(x => x.IsDefault = false); // Reset to default
-                            options.First(x => x.Option == selectedCategoryOrCommand).IsDefault = true;
-                            this._embed.Fields = new List<EmbedFieldProperties>();
-                            await SetGeneralHelpEmbed(prefix);
-                        }
-                        else
-                        {
-                            this._embed.WithTitle(
-                                $"Overview of all {selectedCategory} commands");
-                            this._embed.WithDescription(commands);
-                            this._embed.Footer = null;
-                            this._embed.Fields = new List<EmbedFieldProperties>();
-                            if (selectedCategory == CommandCategory.Importing)
-                            {
-                                this._embed.AddField("Slash commands:",
-                                    "**`/import spotify`** | *Starts your Spotify import*\n" +
-                                    "**`/import applemusic`** | *Starts your Apple Music import*\n" +
-                                    "**`/import manage`** | *Manage and configure your existing imports*");
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    options.Where(w => w.Row == 2).ToList().ForEach(x => x.IsDefault = false); // Reset to default
-                    options.First(x => x.Row == 2 && x.Option == selectedCategoryOrCommand).IsDefault = true;
-
-                    var foundCommand = FindCommand(allCommands, selectedCategoryOrCommand);
-                    if (foundCommand != null)
-                    {
-                        var userName = GetUserDisplayName(this.Context.Message.Author as GuildUser, this.Context.User);
-                        this._embed.Fields = new List<EmbedFieldProperties>();
-                        var helpResponse =
-                            GenericEmbedService.HelpResponse(this._embed, foundCommand, prefix, userName);
-                        var helpComponents = helpResponse.showPurchaseButtons && !await this._userService.UserIsSupporter(this.Context.User)
-                            ? GenericEmbedService.PurchaseButtons(foundCommand)
-                            : null;
-                        await this.Context.Channel.SendMessageAsync(new MessageProperties
-                        {
-                            Embeds = [this._embed],
-                            Components = helpComponents != null ? [helpComponents] : null
-                        });
-                    }
-                }
-
-                var selectionPageBuilder = new PageBuilder()
-                    .WithTitle(this._embed.Title)
-                    .WithDescription(this._embed.Description);
-
-                if (this._embed.Footer != null)
-                {
-                    selectionPageBuilder.WithFooter(this._embed.Footer.Text);
-                }
-
-                if (this._embed.Fields != null)
-                {
-                    foreach (var field in this._embed.Fields)
-                    {
-                        selectionPageBuilder.AddField(field.Name, field.Value, field.Inline);
-                    }
-                }
-
-                var multiSelection = new MultiSelectionBuilder<string>()
-                    .WithOptions(options)
-                    .WithActionOnSuccess(ActionOnStop.None)
-                    .WithActionOnTimeout(ActionOnStop.DisableInput)
-                    .WithSelectionPage(selectionPageBuilder)
-                    ;
-
-                selectedResult = message is null
-                    ? await this.Interactivity.SendSelectionAsync(multiSelection.Build(), this.Context.Channel,
-                        TimeSpan.FromSeconds(DiscordConstants.PaginationTimeoutInSeconds * 2))
-                    : await this.Interactivity.SendSelectionAsync(multiSelection.Build(), this.Context.Channel,
-                        TimeSpan.FromSeconds(DiscordConstants.PaginationTimeoutInSeconds * 2));
-
-                message = selectedResult.Message;
-            }
-
-            this.Context.LogCommandUsed();
+            this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
         {
             await this.Context.HandleCommandException(e);
         }
-    }
-
-    private async Task SetGeneralHelpEmbed(string prefix)
-    {
-        this._embedAuthor.WithIconUrl(this._client.GetCurrentUser()?.GetAvatarUrl()?.ToString());
-        this._embedAuthor.WithName(".fmbot help & command overview");
-        this._embed.WithAuthor(this._embedAuthor);
-
-        var description = new StringBuilder();
-        var footer = new StringBuilder();
-
-        description.AppendLine($"**Main command `{prefix}fm`**");
-        description.AppendLine($"*Displays last scrobbles, and looks different depending on the mode you've set.*");
-
-        description.AppendLine();
-
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        if (contextUser == null)
-        {
-            description.AppendLine($"**Connecting a Last.fm account**");
-            description.AppendLine(
-                $"To use .fmbot, you have to connect a Last.fm account. Last.fm is a website that tracks what music you listen to. Get started with `{prefix}login`.");
-        }
-        else
-        {
-            description.AppendLine($"**Customizing .fmbot**");
-            description.AppendLine($"- User settings: `{prefix}settings`");
-            description.AppendLine($"- Server config: `{prefix}configuration`");
-
-            footer.AppendLine($"Logged in to .fmbot with the Last.fm account '{contextUser.UserNameLastFM}'");
-        }
-
-        description.AppendLine();
-
-        description.AppendLine($"**Commands**");
-        description.AppendLine($"- View all commands on [our website](https://fm.bot/commands/)");
-        description.AppendLine($"- Or use the dropdown below this message to pick a category");
-
-        if (prefix != this._botSettings.Bot.Prefix)
-        {
-            description.AppendLine();
-            description.AppendLine($"**Custom prefix:**");
-            description.AppendLine($"*This server has the `{prefix}` prefix*");
-            description.AppendLine(
-                $"Some examples of commands with this prefix are `{prefix}whoknows`, `{prefix}chart` and `{prefix}artisttracks`.");
-        }
-
-        description.AppendLine();
-        description.AppendLine("**Links**");
-        description.Append("[Website](https://fm.bot/) - ");
-
-        var selfId = this._client.Id.ToString();
-        description.Append("[Add to server](" +
-                           "https://discord.com/oauth2/authorize?" +
-                           $"client_id={selfId}" +
-                           "&scope=bot%20applications.commands" +
-                           $"&permissions={Constants.InviteLinkPermissions})");
-        description.Append(" - [Add to user](" +
-                           "https://discord.com/oauth2/authorize?" +
-                           $"client_id={selfId}" +
-                           "&scope=applications.commands" +
-                           "&integration_type=1)");
-
-        description.Append($" - [Get Supporter]({Constants.GetSupporterDiscordLink})");
-        description.Append(" - [Support server](https://discord.gg/6y3jJjtDqK)");
-
-        if (PublicProperties.IssuesAtLastFm)
-        {
-            var issues = "";
-            if (PublicProperties.IssuesAtLastFm && PublicProperties.IssuesReason != null)
-            {
-                issues = "\n\n" +
-                         "Note:\n" +
-                         $"*\"{PublicProperties.IssuesReason}\"*";
-            }
-
-            this._embed.AddField("Note:",
-                "⚠️ [Last.fm](https://twitter.com/lastfmstatus) is currently experiencing issues.\n" +
-                $".fmbot is not affiliated with Last.fm.{issues}");
-        }
-
-        this._embed.WithDescription(description.ToString());
-        this._embed.WithFooter(footer.ToString());
-    }
-
-    private static async Task<string> CommandInfoToHelpString(string prefix, ICommandInfo<CommandContext> commandInfo)
-    {
-        var cmdName = GetCommandName(commandInfo);
-        var aliases = GetCommandAliases(commandInfo);
-        var firstAlias = aliases.FirstOrDefault(f => f != cmdName && f.Length <= 4);
-        var aliasText = firstAlias != null ? $" · `{firstAlias}`" : "";
-
-        var summary = GetCommandSummary(commandInfo);
-        if (summary != null)
-        {
-            using var reader = new StringReader(summary);
-            var firstLine = await reader.ReadLineAsync();
-
-            return $"**`{prefix}{cmdName}`{aliasText}** | *{firstLine}*\n";
-        }
-
-        return $"**`{prefix}{cmdName}`{aliasText}**\n";
     }
 
     [Command("supporters", "donators", "donors", "backers")]

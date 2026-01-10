@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Fergun.Interactive;
+using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
@@ -15,6 +16,7 @@ using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using NetCord;
 using NetCord.Rest;
+using NetCord.Services.Commands;
 using Shared.Domain.Enums;
 using User = FMBot.Persistence.Domain.Models.User;
 
@@ -548,5 +550,229 @@ public class StaticBuilders
         response.StaticPaginator = StringService.BuildStaticPaginator(pages);
 
         return response;
+    }
+
+    public async Task<ResponseModel> BuildHelpResponse(
+        IReadOnlyList<ICommandInfo<CommandContext>> allCommands,
+        string prefix,
+        CommandCategory? selectedCategory,
+        string selectedCommand,
+        string userName,
+        ulong userId)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed
+        };
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+
+        ICommandInfo<CommandContext> foundCommand = null;
+
+        if (!string.IsNullOrEmpty(selectedCommand))
+        {
+            foundCommand = HelpFindCommand(allCommands, selectedCommand);
+            if (foundCommand != null && !selectedCategory.HasValue)
+            {
+                var categories = HelpGetAllAttributes(foundCommand)
+                    .OfType<CommandCategoriesAttribute>()
+                    .SelectMany(s => s.Categories)
+                    .ToList();
+                if (categories.Count > 0)
+                {
+                    selectedCategory = categories.First();
+                }
+            }
+        }
+
+        var categoryMenu = new StringMenuProperties(InteractionConstants.Help.CategoryMenu)
+        {
+            Placeholder = "Select a category"
+        };
+
+        foreach (var category in Enum.GetValues<CommandCategory>())
+        {
+            var description = StringExtensions.CommandCategoryToString(category);
+            categoryMenu.Add(new StringMenuSelectOptionProperties(category.ToString(), category.ToString())
+            {
+                Description = description?.ToLower() != category.ToString().ToLower() ? description : null,
+                Default = selectedCategory == category || (selectedCategory == null && category == CommandCategory.General)
+            });
+        }
+
+        if (selectedCategory.HasValue && selectedCategory.Value != CommandCategory.General)
+        {
+            var categoryCommands = allCommands.Where(w =>
+                HelpGetAllAttributes(w).OfType<CommandCategoriesAttribute>().Select(s => s.Categories)
+                    .Any(a => a.Contains(selectedCategory.Value))).ToList();
+
+            if (foundCommand != null)
+            {
+                var helpResponse = GenericEmbedService.HelpResponse(response.Embed, foundCommand, prefix, userName);
+                var userSettings = await this._userService.GetUserAsync(userId);
+                var isSupporter = userSettings != null && SupporterService.IsSupporter(userSettings.UserType);
+                if (helpResponse.showPurchaseButtons && !isSupporter)
+                {
+                    response.Components = GenericEmbedService.PurchaseButtons(foundCommand);
+                }
+            }
+            else
+            {
+                var commands = new StringBuilder();
+                commands.AppendLine("**Commands:** \n");
+
+                var usedCommands = new HashSet<string>();
+                foreach (var command in categoryCommands)
+                {
+                    var cmdName = HelpGetCommandName(command);
+                    if (usedCommands.Add(cmdName))
+                    {
+                        commands.AppendLine(HelpCommandInfoToHelpString(prefix, command));
+                    }
+                }
+
+                if (selectedCategory == CommandCategory.Importing)
+                {
+                    commands.AppendLine();
+                    commands.AppendLine("**Slash commands:**");
+                    commands.AppendLine("**`/import spotify`** | *Starts your Spotify import*");
+                    commands.AppendLine("**`/import applemusic`** | *Starts your Apple Music import*");
+                    commands.AppendLine("**`/import manage`** | *Manage and configure your existing imports*");
+                }
+
+                response.Embed.WithTitle($"Overview of all {selectedCategory.Value} commands");
+                response.Embed.WithDescription(commands.ToString());
+            }
+
+            var commandMenu = new StringMenuProperties(InteractionConstants.Help.CommandMenu)
+            {
+                Placeholder = "Select a command for details"
+            };
+
+            var addedCommands = new HashSet<string>();
+            foreach (var command in categoryCommands)
+            {
+                var cmdName = HelpGetCommandName(command);
+                if (addedCommands.Add(cmdName))
+                {
+                    commandMenu.Add(new StringMenuSelectOptionProperties(cmdName, cmdName)
+                    {
+                        Default = cmdName.Equals(selectedCommand, StringComparison.OrdinalIgnoreCase)
+                    });
+                }
+                if (addedCommands.Count >= 25)
+                {
+                    break;
+                }
+            }
+
+            response.StringMenus.Add(categoryMenu);
+            if (addedCommands.Count > 0)
+            {
+                response.StringMenus.Add(commandMenu);
+            }
+        }
+        else
+        {
+            await SetGeneralHelpEmbed(response, prefix, userId);
+            response.StringMenus.Add(categoryMenu);
+        }
+
+        return response;
+    }
+
+    private async Task SetGeneralHelpEmbed(ResponseModel response, string prefix, ulong userId)
+    {
+        response.EmbedAuthor.WithName(".fmbot help & command overview");
+        response.Embed.WithAuthor(response.EmbedAuthor);
+
+        var description = new StringBuilder();
+        var footer = new StringBuilder();
+
+        description.AppendLine($"**Main command `{prefix}fm`**");
+        description.AppendLine("*Displays last scrobbles, and looks different depending on the mode you've set.*");
+
+        description.AppendLine();
+
+        var contextUser = await this._userService.GetUserAsync(userId);
+        if (contextUser == null)
+        {
+            description.AppendLine("**Connecting a Last.fm account**");
+            description.AppendLine(
+                $"To use .fmbot, you have to connect a Last.fm account. Last.fm is a website that tracks what music you listen to. Get started with `{prefix}login`.");
+        }
+        else
+        {
+            description.AppendLine("**Customizing .fmbot**");
+            description.AppendLine($"- User settings: `{prefix}settings`");
+            description.AppendLine($"- Server config: `{prefix}configuration`");
+
+            footer.AppendLine($"Logged in to .fmbot with the Last.fm account '{contextUser.UserNameLastFM}'");
+        }
+
+        description.AppendLine();
+
+        description.AppendLine("**Commands**");
+        description.AppendLine("- View all commands on [our website](https://fm.bot/commands/)");
+        description.AppendLine("- Or use the dropdown below this message to pick a category");
+
+        description.AppendLine();
+        description.AppendLine("**Links**");
+        description.Append("[Website](https://fm.bot/) - ");
+        description.Append($"[Get Supporter]({Constants.GetSupporterDiscordLink})");
+        description.Append(" - [Support server](https://discord.gg/6y3jJjtDqK)");
+
+        if (PublicProperties.IssuesAtLastFm)
+        {
+            var issues = "";
+            if (PublicProperties.IssuesAtLastFm && PublicProperties.IssuesReason != null)
+            {
+                issues = "\n\n" +
+                         "Note:\n" +
+                         $"*\"{PublicProperties.IssuesReason}\"*";
+            }
+
+            response.Embed.AddField("Note:",
+                "⚠️ [Last.fm](https://twitter.com/lastfmstatus) is currently experiencing issues.\n" +
+                $".fmbot is not affiliated with Last.fm.{issues}");
+        }
+
+        response.Embed.WithDescription(description.ToString());
+        response.Embed.WithFooter(new EmbedFooterProperties { Text = footer.ToString() });
+    }
+
+    private static ICommandInfo<CommandContext> HelpFindCommand(IReadOnlyList<ICommandInfo<CommandContext>> commands, string search)
+    {
+        search = search.ToLower().Trim();
+        return commands.FirstOrDefault(c =>
+        {
+            var attr = HelpGetAllAttributes(c).OfType<CommandAttribute>().FirstOrDefault();
+            return attr != null && attr.Aliases.Any(a => a.Equals(search, StringComparison.OrdinalIgnoreCase));
+        });
+    }
+
+    private static string HelpGetCommandName(ICommandInfo<CommandContext> commandInfo)
+    {
+        var nameAttr = HelpGetAllAttributes(commandInfo).OfType<CommandAttribute>().FirstOrDefault();
+        if (nameAttr != null && nameAttr.Aliases.Length > 0)
+        {
+            return nameAttr.Aliases[0];
+        }
+        return commandInfo.ToString() ?? "unknown";
+    }
+
+    private static string HelpCommandInfoToHelpString(string prefix, ICommandInfo<CommandContext> commandInfo)
+    {
+        var nameAttr = HelpGetAllAttributes(commandInfo).OfType<CommandAttribute>().FirstOrDefault();
+        var summaryAttr = HelpGetAllAttributes(commandInfo).OfType<SummaryAttribute>().FirstOrDefault();
+
+        var name = nameAttr?.Aliases.FirstOrDefault() ?? "unknown";
+        var summary = summaryAttr?.Summary ?? "";
+
+        return $"**`{prefix}{name}`** | *{summary}*";
+    }
+
+    private static IEnumerable<Attribute> HelpGetAllAttributes(ICommandInfo<CommandContext> commandInfo)
+    {
+        return commandInfo.Attributes.Values.SelectMany(x => x);
     }
 }

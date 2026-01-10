@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 
 using Fergun.Interactive.Selection;
 using NetCord.Rest;
@@ -36,17 +37,9 @@ public class MultiSelection<T> : BaseSelection<MultiSelectionOption<T>>
             selectMenus[option.Row].Add(optionBuilder);
         }
 
-        foreach ((int row, var selectMenu) in selectMenus)
+        foreach (var selectMenu in selectMenus.OrderBy(kvp => kvp.Key).Select(kvp => kvp.Value))
         {
-            // Ensure we have enough action rows
-            while (builder.Count <= row)
-            {
-                builder.Add(new ActionRowProperties());
-            }
-
-            // In NetCord, select menus are top-level message components, not action row children
-            // Replace the action row with the select menu directly
-            builder[row] = selectMenu;
+            builder.Add(selectMenu);
         }
 
         return builder;

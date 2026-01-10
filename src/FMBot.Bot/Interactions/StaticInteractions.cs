@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Fergun.Interactive;
@@ -7,11 +8,13 @@ using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
+using FMBot.Bot.Interfaces;
 using FMBot.Bot.Services;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using NetCord;
 using NetCord.Rest;
+using NetCord.Services.Commands;
 using NetCord.Services.ComponentInteractions;
 using Shared.Domain.Enums;
 
@@ -23,17 +26,23 @@ public class StaticInteractions : ComponentInteractionModule<ComponentInteractio
     private readonly StaticBuilders _staticBuilders;
     private readonly SupporterService _supporterService;
     private readonly InteractiveService _interactivity;
+    private readonly CommandService<CommandContext> _commandService;
+    private readonly IPrefixService _prefixService;
 
     public StaticInteractions(
         UserService userService,
         StaticBuilders staticBuilders,
         SupporterService supporterService,
-        InteractiveService interactivity)
+        InteractiveService interactivity,
+        CommandService<CommandContext> commandService,
+        IPrefixService prefixService)
     {
         this._userService = userService;
         this._staticBuilders = staticBuilders;
         this._supporterService = supporterService;
         this._interactivity = interactivity;
+        this._commandService = commandService;
+        this._prefixService = prefixService;
     }
 
     [ComponentInteraction(InteractionConstants.SupporterLinks.GetPurchaseButtons)]
@@ -319,6 +328,80 @@ public class StaticInteractions : ComponentInteractionModule<ComponentInteractio
         catch (Exception ex)
         {
             await this.Context.HandleCommandException(ex);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.Help.CategoryMenu)]
+    public async Task HelpCategorySelected()
+    {
+        try
+        {
+            await RespondAsync(InteractionCallback.DeferredModifyMessage);
+
+            var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
+            var selectedCategory = stringMenuInteraction.Data.SelectedValues.FirstOrDefault();
+
+            if (string.IsNullOrEmpty(selectedCategory))
+            {
+                return;
+            }
+
+            Enum.TryParse<CommandCategory>(selectedCategory, out var category);
+
+            var prefix = this._prefixService.GetPrefix(this.Context.Interaction.GuildId);
+            var allCommands = this._commandService.GetCommands().SelectMany(kvp => kvp.Value).ToList();
+            var userName = this.Context.User.GlobalName ?? this.Context.User.Username;
+
+            var response = await this._staticBuilders.BuildHelpResponse(
+                allCommands,
+                prefix,
+                category,
+                null,
+                userName,
+                this.Context.User.Id);
+
+            await this.Context.UpdateInteractionEmbed(response, this._interactivity, defer: false);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.Help.CommandMenu)]
+    public async Task HelpCommandSelected()
+    {
+        try
+        {
+            await RespondAsync(InteractionCallback.DeferredModifyMessage);
+
+            var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
+            var selectedCommand = stringMenuInteraction.Data.SelectedValues.FirstOrDefault();
+
+            if (string.IsNullOrEmpty(selectedCommand))
+            {
+                return;
+            }
+
+            var prefix = this._prefixService.GetPrefix(this.Context.Interaction.GuildId);
+            var allCommands = this._commandService.GetCommands().SelectMany(kvp => kvp.Value).ToList();
+            var userName = this.Context.User.GlobalName ?? this.Context.User.Username;
+
+            var response = await this._staticBuilders.BuildHelpResponse(
+                allCommands,
+                prefix,
+                null,
+                selectedCommand,
+                userName,
+                this.Context.User.Id);
+
+            await this.Context.UpdateInteractionEmbed(response, this._interactivity, defer: false);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
         }
     }
 }
