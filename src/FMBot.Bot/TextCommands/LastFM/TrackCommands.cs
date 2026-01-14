@@ -97,7 +97,7 @@ public class TrackCommands : BaseCommandModule
         }
     }
 
-    [Command("trackplays", "tp", "trackplay", "tplays", "trackp", "track plays")]
+    [Command("trackplays", "tp", "trackplay", "tplays", "trackp")]
     [Summary("Shows playcount for current track or the one you're searching for.\n\n" +
              "You can also mention another user to see their playcount.")]
     [Examples(
@@ -231,7 +231,7 @@ public class TrackCommands : BaseCommandModule
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [Command("toptracks", "tt", "tl", "tracklist", "tracks", "trackslist", "top tracks", "top track", "ttracks")]
+    [Command("toptracks", "tt", "tl", "tracklist", "tracks", "trackslist", "ttracks")]
     [Summary("Shows your or someone else's top tracks over a certain time period.")]
     [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample,
         Constants.BillboardExample, Constants.EmbedSizeExample)]
@@ -306,7 +306,7 @@ public class TrackCommands : BaseCommandModule
         }
     }
 
-    [Command("whoknowstrack", "wt", "wkt", "wktr", "wtr", "wktrack", "wk track", "whoknows track")]
+    [Command("whoknowstrack", "wt", "wkt", "wktr", "wtr", "wktrack")]
     [Summary("Shows what other users listen to a track in your server")]
     [Examples("wt", "whoknowstrack", "whoknowstrack Hothouse Flowers Don't Go",
         "whoknowstrack Natasha Bedingfield | Unwritten")]
@@ -345,7 +345,7 @@ public class TrackCommands : BaseCommandModule
         }
     }
 
-    [Command("globalwhoknowstrack", "gwt", "gwkt", "gwtr", "gwktr", "globalwkt", "globalwktrack", "globalwhoknows track")]
+    [Command("globalwhoknowstrack", "gwt", "gwkt", "gwtr", "gwktr", "globalwkt", "globalwktrack")]
     [Summary("Shows what other users listen to a track in .fmbot")]
     [Examples("gwt", "globalwhoknowstrack", "globalwhoknowstrack Hothouse Flowers Don't Go",
         "globalwhoknowstrack Natasha Bedingfield | Unwritten")]
@@ -391,8 +391,7 @@ public class TrackCommands : BaseCommandModule
         }
     }
 
-    [Command("friendwhoknowstrack", "fwt", "fwkt", "fwktr", "fwtrack", "friendwhoknows track", "friends whoknows track",
-        "friend whoknows track")]
+    [Command("friendwhoknowstrack", "fwt", "fwkt", "fwktr", "fwtrack")]
     [Summary("Shows who of your friends listen to an track in .fmbot")]
     [Examples("fwt", "fwkt The Beatles Yesterday", "friendwhoknowstrack",
         "friendwhoknowstrack Hothouse Flowers Don't Go", "friendwhoknowstrack Mall Grab | Sunflower")]
@@ -437,7 +436,7 @@ public class TrackCommands : BaseCommandModule
         }
     }
 
-    [Command("servertracks", "st", "stt", "servertoptracks", "servertrack", "server tracks", "billboard", "bb")]
+    [Command("servertracks", "st", "stt", "servertoptracks", "servertrack", "billboard", "bb")]
     [Summary("Top tracks for your server, optionally for an artist")]
     [Options("Time periods: `weekly`, `monthly` and `alltime`", "Order options: `plays` and `listeners`",
         "Artist name")]

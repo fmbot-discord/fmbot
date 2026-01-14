@@ -31,7 +31,6 @@ using Hangfire;
 using FMBot.Domain.Interfaces;
 using FMBot.Bot.Factories;
 using FMBot.Persistence.Interfaces;
-using System.Linq;
 using System.Net.Http;
 using FMBot.Bot.Extensions;
 using Web.InternalApi;
@@ -159,10 +158,10 @@ public class Startup
 
     private static ShardedGatewayClient ConfigureDiscordClient()
     {
-        const NetCord.Gateway.GatewayIntents intents = GatewayIntents.GuildUsers | GatewayIntents.MessageContent |
-                                                       GatewayIntents.DirectMessages | GatewayIntents.GuildMessages |
-                                                       GatewayIntents.Guilds |
-                                                       GatewayIntents.GuildVoiceStates;
+        const GatewayIntents intents = GatewayIntents.GuildUsers | GatewayIntents.MessageContent |
+                                       GatewayIntents.DirectMessages | GatewayIntents.GuildMessages |
+                                       GatewayIntents.Guilds |
+                                       GatewayIntents.GuildVoiceStates;
 
         var maxConcurrency = ConfigData.Data.Discord.MaxConcurrency;
 
@@ -204,7 +203,7 @@ public class Startup
         // NetCord command services
         services.AddSingleton(new CommandService<CommandContext>(CommandServiceConfiguration<CommandContext>.Default with
         {
-            ParameterSeparators = [] // Remove space from separators to allow multi-word aliases like "login discogs"
+            // ParameterSeparators = [] // Remove space from separators to allow multi-word aliases like "login discogs"
         }));
         services.AddSingleton<ApplicationCommandService<ApplicationCommandContext, AutocompleteInteractionContext>>();
         services.AddSingleton<ComponentInteractionService<ComponentInteractionContext>>();
@@ -327,7 +326,6 @@ public class Startup
         services.AddHttpClient<BotListService>();
         services.AddHttpClient<ILastfmApi, LastfmApi>();
         services.AddHttpClient<ChartService>();
-        services.AddHttpClient<InvidiousApi>();
         services.AddHttpClient<ImportService>();
         services.AddHttpClient<DiscogsApi>();
         services.AddHttpClient<GeniusService>();

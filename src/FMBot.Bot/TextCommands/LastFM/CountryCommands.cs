@@ -40,7 +40,7 @@ public class CountryCommands : BaseCommandModule
         this.Interactivity = interactivity;
     }
 
-    [Command("topcountries", "cl", "tc", "countrylist", "countries", "top countries", "countrieslist")]
+    [Command("topcountries", "cl", "tc", "countrylist", "countries", "countrieslist")]
     [Summary("Shows a list of your or someone else's top artist countries over a certain time period.")]
     [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample)]
     [Examples("tc", "topcountries", "tc a lfm:fm-bot", "topcountries weekly @user")]

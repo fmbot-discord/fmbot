@@ -517,11 +517,11 @@ public class GuildSettingInteractions : ComponentInteractionModule<ComponentInte
         }
 
         var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
-        var selectedValue = stringMenuInteraction.Data.SelectedValues[0];
+        var selectedValues = stringMenuInteraction.Data.SelectedValues;
 
         try
         {
-            if (Enum.TryParse(selectedValue, out FmEmbedType embedType))
+            if (selectedValues.Count > 0 && Enum.TryParse(selectedValues[0], out FmEmbedType embedType))
             {
                 await this._guildService.ChangeGuildSettingAsync(this.Context.Guild, embedType);
             }
@@ -532,12 +532,7 @@ public class GuildSettingInteractions : ComponentInteractionModule<ComponentInte
 
             var response = await this._guildSettingBuilder.GuildMode(new ContextModel(this.Context), this.Context.User);
 
-            await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
-            await this.Context.Interaction.ModifyResponseAsync(e =>
-            {
-                e.Embeds = [response.Embed];
-                e.Components = [response.Components];
-            });
+            await this.Context.UpdateInteractionEmbed(response);
         }
         catch (Exception e)
         {
@@ -560,12 +555,12 @@ public class GuildSettingInteractions : ComponentInteractionModule<ComponentInte
         }
 
         var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
-        var selectedValue = stringMenuInteraction.Data.SelectedValues[0];
+        var selectedValues = stringMenuInteraction.Data.SelectedValues;
 
         var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
         var selectedChannel = this.Context.Guild.Channels.TryGetValue(parsedChannelId, out var ch) ? ch : null;
 
-        if (Enum.TryParse(selectedValue, out FmEmbedType embedType))
+        if (selectedValues.Count > 0 && Enum.TryParse(selectedValues[0], out FmEmbedType embedType))
         {
             await this._guildService.SetChannelEmbedType(selectedChannel, guild.GuildId, embedType,
                 this.Context.Guild.Id);

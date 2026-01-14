@@ -208,10 +208,13 @@ public static class InteractionContextExtensions
                             .WithComponents(response.GetMessageComponents())));
                     break;
                 case ResponseType.ComponentsV2:
+                    var componentsV2Flags = ephemeral
+                        ? MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral
+                        : MessageFlags.IsComponentsV2;
                     await context.Interaction.SendResponseAsync(InteractionCallback.Message(
                         new InteractionMessageProperties()
                             .WithComponents(response.GetComponentsV2())
-                            .WithFlags(flags)
+                            .WithFlags(componentsV2Flags)
                             .WithAllowedMentions(AllowedMentionsProperties.None)));
                     break;
                 case ResponseType.ImageWithEmbed:
@@ -300,6 +303,9 @@ public static class InteractionContextExtensions
                     responseId = embed.Id;
                     break;
                 case ResponseType.ComponentsV2:
+                    var followUpComponentsV2Flags = ephemeral
+                        ? MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral
+                        : MessageFlags.IsComponentsV2;
                     if (response.Stream is { Length: > 0 })
                     {
                         response.FileName = StringExtensions.ReplaceInvalidChars(response.FileName);
@@ -309,7 +315,7 @@ public static class InteractionContextExtensions
                                     response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName,
                                     response.Stream).WithDescription(response.FileDescription))
                                 .WithComponents(response.ComponentsV2)
-                                .WithFlags(flags)
+                                .WithFlags(followUpComponentsV2Flags)
                                 .WithAllowedMentions(AllowedMentionsProperties.None));
 
                         await response.Stream.DisposeAsync();
@@ -320,7 +326,7 @@ public static class InteractionContextExtensions
                         var components = await context.Interaction.SendFollowupMessageAsync(
                             new InteractionMessageProperties()
                                 .WithComponents(response.ComponentsV2)
-                                .WithFlags(flags)
+                                .WithFlags(followUpComponentsV2Flags)
                                 .WithAllowedMentions(AllowedMentionsProperties.None));
                         responseId = components.Id;
                     }

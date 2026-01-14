@@ -511,7 +511,7 @@ public class PlayCommands : BaseCommandModule
         }
     }
 
-    [Command("playleaderboard", "sblb", "scrobblelb", "scrobbleleaderboard", "scrobble leaderboard")]
+    [Command("playleaderboard", "sblb", "scrobblelb", "scrobbleleaderboard")]
     [Summary("Shows users with the most plays in your server")]
     [UsernameSetRequired]
     [GuildOnly]

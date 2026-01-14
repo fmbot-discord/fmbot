@@ -83,7 +83,7 @@ public class AlbumCommands : BaseCommandModule
         }
     }
 
-    [Command("albumplays", "abp", "albumplay", "abplays", "albump", "album plays")]
+    [Command("albumplays", "abp", "albumplay", "abplays", "albump")]
     [Summary("Shows playcount for current album or the one you're searching for.\n\n" +
              "You can also mention another user to see their playcount.")]
     [Examples(
@@ -111,7 +111,7 @@ public class AlbumCommands : BaseCommandModule
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [Command("cover", "abc", "abco", "co", "albumcover", "album cover")]
+    [Command("cover", "abc", "abco", "co", "albumcover")]
     [Summary("Cover for current album or the one you're searching for.")]
     [Examples(
         "co",
@@ -142,7 +142,7 @@ public class AlbumCommands : BaseCommandModule
         }
     }
 
-    [Command("topalbums", "abl", "abs", "tab", "albumlist", "top albums", "albums", "albumslist", "talbum")]
+    [Command("topalbums", "abl", "abs", "tab", "albumlist", "albums", "albumslist", "talbum")]
     [Summary("Shows your or someone else's top albums over a certain time period.")]
     [Options(Constants.CompactTimePeriodList,
         "Albums released in year: `r:2023`, `released:2023`",
@@ -185,7 +185,7 @@ public class AlbumCommands : BaseCommandModule
         }
     }
 
-    [Command("whoknowsalbum", "wa", "wka", "wkab", "wab", "wkab","wkal", "wk album", "whoknows album", "wkalbum")]
+    [Command("whoknowsalbum", "wa", "wka", "wkab", "wab", "wkab", "wkal", "wkalbum")]
     [Summary("Shows what other users listen to an album in your server")]
     [Examples("wa", "whoknowsalbum", "whoknowsalbum the beatles abbey road",
         "whoknowsalbum Metallica & Lou Reed | Lulu")]
@@ -224,7 +224,7 @@ public class AlbumCommands : BaseCommandModule
         }
     }
 
-    [Command("globalwhoknowsalbum", "gwa", "gwka", "gwab", "gwkab", "globalwka", "globalwkalbum", "globalwhoknows album")]
+    [Command("globalwhoknowsalbum", "gwa", "gwka", "gwab", "gwkab", "globalwka", "globalwkalbum")]
     [Summary("Shows what other users listen to the an album on .fmbot")]
     [Examples("gwa", "globalwhoknowsalbum", "globalwhoknowsalbum the beatles abbey road",
         "globalwhoknowsalbum Metallica & Lou Reed | Lulu")]
@@ -270,7 +270,7 @@ public class AlbumCommands : BaseCommandModule
         }
     }
 
-    [Command("friendwhoknowsalbum", "fwa", "fwka", "fwkab", "fwab", "friendwhoknows album", "friends whoknows album", "friend whoknows album")]
+    [Command("friendwhoknowsalbum", "fwa", "fwka", "fwkab", "fwab")]
     [Summary("Who of your friends listen to an album")]
     [Examples("fwa", "fwka COMA", "friendwhoknows", "friendwhoknowsalbum the beatles abbey road",
         "friendwhoknowsalbum Metallica & Lou Reed | Lulu")]
@@ -348,7 +348,7 @@ public class AlbumCommands : BaseCommandModule
         }
     }
 
-    [Command("serveralbums", "sab", "stab", "servertopalbums", "serveralbum", "server albums")]
+    [Command("serveralbums", "sab", "stab", "servertopalbums", "serveralbum")]
     [Summary("Top albums for your server, optionally for a specific artist.")]
     [Options("Time periods: `weekly`, `monthly` and `alltime`", "Order options: `plays` and `listeners`",
         "Artist name")]

@@ -94,7 +94,7 @@ public class ArtistCommands : BaseCommandModule
         }
     }
 
-    [Command("artistoverview", "ao", "artist overview", "artistsoverview", "artists overview")]
+    [Command("artistoverview", "ao", "artistsoverview")]
     [Summary("Artist you're currently listening to or searching for.")]
     [Examples(
         "ao",
@@ -128,7 +128,7 @@ public class ArtistCommands : BaseCommandModule
         }
     }
 
-    [Command("artisttracks", "at", "att", "artisttrack", "artist track", "artist tracks", "artistrack", "artisttoptracks",
+    [Command("artisttracks", "at", "att", "artisttrack", "artistrack", "artisttoptracks",
         "artisttoptrack", "favs")]
     [Summary("Top tracks for an artist")]
     [Examples(
@@ -158,7 +158,7 @@ public class ArtistCommands : BaseCommandModule
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [Command("artistalbums", "aa", "aab", "atab", "artistalbum", "artist album", "artist albums", "artistopalbum", "artisttopalbums",
+    [Command("artistalbums", "aa", "aab", "atab", "artistalbum", "artistopalbum", "artisttopalbums",
         "artisttab")]
     [Summary("Top albums for an artist.")]
     [Examples(
@@ -185,7 +185,7 @@ public class ArtistCommands : BaseCommandModule
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [Command("artistplays", "ap", "artist plays")]
+    [Command("artistplays", "ap")]
     [Summary("Shows playcount for current artist or the one you're searching for.\n\n" +
              "You can also mention another user to see their playcount.")]
     [Examples(
@@ -253,7 +253,7 @@ public class ArtistCommands : BaseCommandModule
         }
     }
 
-    [Command("topartists", "al", "as", "ta", "artistlist", "artists", "top artists", "artistslist")]
+    [Command("topartists", "al", "as", "ta", "artistlist", "artists", "artistslist")]
     [Summary("Shows your or someone else's top artists over a certain time period.")]
     [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample,
         Constants.BillboardExample, Constants.EmbedSizeExample)]
@@ -392,7 +392,7 @@ public class ArtistCommands : BaseCommandModule
         }
     }
 
-    [Command("whoknows", "w", "wk", "whoknows artist", "thosewhoknow")]
+    [Command("whoknows", "w", "wk", "thosewhoknow")]
     [Summary("Shows what other users listen to an artist in your server")]
     [Examples("w", "wk COMA", "whoknows", "whoknows DJ Seinfeld")]
     [UsernameSetRequired]
@@ -444,7 +444,7 @@ public class ArtistCommands : BaseCommandModule
         }
     }
 
-    [Command("globalwhoknows", "gw", "gwk", "globalwk", "globalwhoknows artist")]
+    [Command("globalwhoknows", "gw", "gwk", "globalwk")]
     [Summary("Shows what other users listen to an artist in .fmbot")]
     [Examples("gw", "gwk COMA", "globalwhoknows", "globalwhoknows DJ Seinfeld")]
     [UsernameSetRequired]
@@ -491,8 +491,7 @@ public class ArtistCommands : BaseCommandModule
         }
     }
 
-    [Command("friendwhoknows", "fw", "fwk", "friendwhoknows artist", "friend whoknows", "friends whoknows", "friend whoknows artist",
-        "friends whoknows artist")]
+    [Command("friendwhoknows", "fw", "fwk")]
     [Summary("Who of your friends know an artist")]
     [Examples("fw", "fwk COMA", "friendwhoknows", "friendwhoknows DJ Seinfeld")]
     [UsernameSetRequired]
@@ -538,7 +537,7 @@ public class ArtistCommands : BaseCommandModule
         }
     }
 
-    [Command("serverartists", "sa", "sta", "servertopartists", "server artists", "serverartist")]
+    [Command("serverartists", "sa", "sta", "servertopartists", "serverartist")]
     [Summary("Top artists for your server")]
     [Options("Time periods: `weekly`, `monthly` and `alltime`", "Order options: `plays` and `listeners`")]
     [Examples("sa", "sa a p", "serverartists", "serverartists alltime", "serverartists listeners weekly")]

@@ -109,7 +109,7 @@ public class GuildCommands : BaseCommandModule
     [Summary("Allows you to keep your server data when removing the bot from your server")]
     [GuildOnly]
     [CommandCategories(CommandCategory.ServerSettings)]
-    public async Task KeepDataAsync(params string[] otherSettings)
+    public async Task KeepDataAsync([CommandParameter(Remainder = true)] string _ = null)
     {
         this._cache.Set($"{this.Context.Guild.Id}-keep-data", true, TimeSpan.FromMinutes(30));
 

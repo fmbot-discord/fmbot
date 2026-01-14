@@ -114,7 +114,7 @@ public class ChartCommands : BaseCommandModule
         }
     }
 
-    [Command("artistchart", "ac", "top", "c artist", "c artists", "chart artist", "chart artists")]
+    [Command("artistchart", "ac", "top")]
     [Summary("Generates an artist image chart.")]
     [Options(
         Constants.CompactTimePeriodList,

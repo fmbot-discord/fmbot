@@ -115,7 +115,7 @@ public class CrownCommands : BaseCommandModule
         }
     }
 
-    [Command("crownleaderboard", "cwlb", "crownlb", "cwleaderboard", "crown leaderboard")]
+    [Command("crownleaderboard", "cwlb", "crownlb", "cwleaderboard")]
     [Summary("Shows users with the most crowns in your server")]
     [UsernameSetRequired]
     [GuildOnly]

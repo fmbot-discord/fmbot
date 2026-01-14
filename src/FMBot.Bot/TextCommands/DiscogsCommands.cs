@@ -43,7 +43,7 @@ public class DiscogsCommands : BaseCommandModule
         this._prefixService = prefixService;
     }
 
-    [Command("discogs", "login discogs")]
+    [Command("discogs")]
     [Summary("Connects your Discogs account.\n\n" +
              "Not receiving a DM? Please check if you have direct messages from server members enabled.")]
     [CommandCategories(CommandCategory.ThirdParty)]

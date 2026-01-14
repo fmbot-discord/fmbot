@@ -452,7 +452,7 @@ public class UserCommands : BaseCommandModule
     [Examples("mode")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.UserSettings)]
-    public async Task ModeAsync(params string[] otherSettings)
+    public async Task ModeAsync([CommandParameter(Remainder = true)] string _ = null)
     {
         try
         {
@@ -484,7 +484,7 @@ public class UserCommands : BaseCommandModule
     [Examples("responsemode")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.UserSettings)]
-    public async Task ResponseModeAsync(params string[] otherSettings)
+    public async Task ResponseModeAsync([CommandParameter(Remainder = true)] string _ = null)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -498,7 +498,7 @@ public class UserCommands : BaseCommandModule
     [Command("mode", "md")]
     [UsernameSetRequired]
     [ExcludeFromHelp]
-    public async Task PickModeAsync(params string[] otherSettings)
+    public async Task PickModeAsync([CommandParameter(Remainder = true)] string _ = null)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -534,7 +534,7 @@ public class UserCommands : BaseCommandModule
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.UserSettings)]
     [ExcludeFromHelp]
-    public async Task TemplatesAsync(params string[] otherSettings)
+    public async Task TemplatesAsync([CommandParameter(Remainder = true)] string _ = null)
     {
         return;
 
@@ -576,7 +576,7 @@ public class UserCommands : BaseCommandModule
         }
     }
 
-    [Command("login", "set", "setusername", "fm set", "connect")]
+    [Command("login", "set", "setusername", "connect")]
     [Summary("Starts the login process for connecting a Last.fm account to .fmbot.")]
     [CommandCategories(CommandCategory.UserSettings)]
     public async Task LoginAsync([CommandParameter(Remainder = true)] string _ = null)

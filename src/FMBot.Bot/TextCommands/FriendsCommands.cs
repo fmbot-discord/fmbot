@@ -102,7 +102,7 @@ public class FriendsCommands : BaseCommandModule
         }
     }
 
-    [Command("addfriends", "friend", "friendsset", "setfriends", "friendsadd", "addfriend", "setfriend", "friends add", "add")]
+    [Command("addfriends", "friend", "friendsset", "setfriends", "friendsadd", "addfriend", "setfriend", "add")]
     [Summary("Adds users to your friend list")]
     [Options(Constants.UserMentionExample)]
     [Examples("addfriends fm-bot @user", "addfriends 356268235697553409")]
@@ -110,8 +110,12 @@ public class FriendsCommands : BaseCommandModule
     [GuildOnly]
     [CommandCategories(CommandCategory.Friends)]
     [SupporterEnhanced($"Supporters can add up to 18 friends (up from 12)")]
-    public async Task AddFriends(params string[] enteredFriends)
+    public async Task AddFriends([CommandParameter(Remainder = true)] string friendsInput = null)
     {
+        var enteredFriends = string.IsNullOrWhiteSpace(friendsInput)
+            ? []
+            : friendsInput.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
         if (enteredFriends.Length == 0)
         {
             await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Please enter at least one friend to add. You can use their Last.fm usernames, Discord mention or Discord id." });
@@ -137,14 +141,18 @@ public class FriendsCommands : BaseCommandModule
         }
     }
 
-    [Command("removefriends", "unfriend", "friendsremove", "deletefriend", "deletefriends", "removefriend", "friends remove", "friend remove", "unadd")]
+    [Command("removefriends", "unfriend", "friendsremove", "deletefriend", "deletefriends", "removefriend", "unadd")]
     [Summary("Removes users from your friend list")]
     [Options(Constants.UserMentionExample)]
     [Examples("removefriends fm-bot @user", "removefriend 356268235697553409")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Friends)]
-    public async Task RemoveFriends(params string[] enteredFriends)
+    public async Task RemoveFriends([CommandParameter(Remainder = true)] string friendsInput = null)
     {
+        var enteredFriends = string.IsNullOrWhiteSpace(friendsInput)
+            ? []
+            : friendsInput.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? this._botSettings.Bot.Prefix;
 
@@ -168,7 +176,7 @@ public class FriendsCommands : BaseCommandModule
         }
     }
 
-    [Command("removeallfriends", "friendsremoveall", "friends remove all")]
+    [Command("removeallfriends", "friendsremoveall")]
     [Summary("Remove all your friends")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Friends)]

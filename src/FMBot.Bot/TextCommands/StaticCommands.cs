@@ -722,7 +722,7 @@ public class StaticCommands : BaseCommandModule
         this.Context.LogCommandUsed();
     }
 
-    [Command("settinghelp", "serverhelp", "serversettings", "settings", "help server")]
+    [Command("settinghelp", "serverhelp", "serversettings", "settings")]
     [Summary("Displays a list of all server settings.")]
     [CommandCategories(CommandCategory.Other)]
     public async Task ServerHelpAsync()

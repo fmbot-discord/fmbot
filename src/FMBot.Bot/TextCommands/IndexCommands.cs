@@ -48,7 +48,7 @@ public class IndexCommands : BaseCommandModule
         this.Interactivity = interactivity;
     }
 
-    [Command("refreshmembers", "index", "refresh", "cachemembers", "refreshserver", "serverset", "refresh members")]
+    [Command("refreshmembers", "index", "refresh", "cachemembers", "refreshserver", "serverset")]
     [Summary("Refreshes the cached member list that .fmbot has for your server.")]
     [GuildOnly]
     [CommandCategories(CommandCategory.ServerSettings)]

@@ -35,7 +35,7 @@ public class ImportCommands : BaseCommandModule
         this.Interactivity = interactivity;
     }
 
-    [Command("import", "import spotify", "import apple", "import applemusic", "spotifyimport", "spotifyimport")]
+    [Command("import", "spotifyimport", "importspotify", "appleimport", "applemusicimport", "importapple", "importapplemusic", "imports")]
     [Summary("Imports your Spotify or Apple Music history into .fmbot")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Importing)]
@@ -73,7 +73,7 @@ public class ImportCommands : BaseCommandModule
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [Command("importmodify", "modifyimport", "importsmodify", "modifyimports", "import modify")]
+    [Command("importmodify", "modifyimport", "importsmodify", "modifyimports")]
     [Summary("Allows you to modify your .fmbot imports")]
     [CommandCategories(CommandCategory.UserSettings)]
     [UsernameSetRequired]

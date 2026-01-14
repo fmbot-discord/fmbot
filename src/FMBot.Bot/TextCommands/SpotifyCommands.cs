@@ -47,7 +47,7 @@ public class SpotifyCommands : BaseCommandModule
         this._dataSourceFactory = dataSourceFactory;
     }
 
-    [Command("spotify", "sp", "s", "spotifyfind", "spotifysearch", "alexa play", "hey siri", "hey google", "ok google")]
+    [Command("spotify", "sp", "s", "spotifyfind", "spotifysearch")]
     [Summary("Shares a link to a Spotify track based on what a user is listening to or searching for")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.ThirdParty)]

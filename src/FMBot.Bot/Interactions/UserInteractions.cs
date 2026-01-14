@@ -22,6 +22,7 @@ using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
 using NetCord;
+using NetCord.Gateway;
 using NetCord.Rest;
 using NetCord.Services.ComponentInteractions;
 using GuildUser = FMBot.Persistence.Domain.Models.GuildUser;
@@ -201,7 +202,7 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, deferFirst: true);
         }
     }
 
@@ -211,6 +212,14 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
         try
         {
             var shortcut = await this._userBuilder.GetShortcut(int.Parse(shortcutId));
+            if (shortcut == null)
+            {
+                await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                    .WithContent("This shortcut no longer exists.")
+                    .WithFlags(MessageFlags.Ephemeral)));
+                return;
+            }
+
             await RespondAsync(InteractionCallback.Modal(
                 ModalFactory.CreateModifyShortcutModal(
                     $"{InteractionConstants.Shortcuts.ModifyModal}:{shortcutId}:{overviewMessageId}",
@@ -219,7 +228,7 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, deferFirst: true);
         }
     }
 
@@ -254,7 +263,7 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, deferFirst: true);
         }
     }
 
@@ -266,7 +275,7 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
             var input = this.Context.GetModalValue("input");
             var output = this.Context.GetModalValue("output");
 
-            await this.Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
+            await this.Context.Interaction.SendResponseAsync(InteractionCallback.DeferredModifyMessage);
 
             var contextUser = await this._userService.GetUserAsync(this.Context.User.Id);
             var id = int.Parse(shortcutId);
@@ -283,14 +292,18 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
                 if (parsedOverviewMessageId != 0)
                 {
                     var list = await this._userBuilder.ListShortcutsAsync(new ContextModel(this.Context, contextUser));
-                    await this.Context.UpdateMessageEmbed(list, overviewMessageId, defer: false);
+                    var overviewMsg = await this.Context.Interaction.Channel.GetMessageAsync(parsedOverviewMessageId);
+                    await overviewMsg.ModifyAsync(m =>
+                    {
+                        m.Components = list.GetComponentsV2();
+                    });
                 }
 
                 var manage = await this._userBuilder.ManageShortcutAsync(new ContextModel(this.Context, contextUser),
                     id,
                     parsedOverviewMessageId);
                 await this.Context.Interaction.ModifyResponseAsync(m =>
-                    m.Components = manage.ComponentsV2);
+                    m.Components = manage.GetComponentsV2());
             }
             else
             {
@@ -1395,7 +1408,7 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, deferFirst: true);
         }
     }
 

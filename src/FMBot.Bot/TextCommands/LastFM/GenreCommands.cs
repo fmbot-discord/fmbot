@@ -57,7 +57,7 @@ public class GenreCommands : BaseCommandModule
         this._genreBuilders = genreBuilders;
     }
 
-    [Command("topgenres", "gl", "tg", "genrelist", "genres", "top genres", "genreslist")]
+    [Command("topgenres", "gl", "tg", "genrelist", "genres", "genreslist")]
     [Summary("Shows a list of your or someone else's top genres over a certain time period.")]
     [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample)]
     [Examples("tg", "topgenres", "tg a lfm:fm-bot", "topgenres weekly @user")]
@@ -122,7 +122,7 @@ public class GenreCommands : BaseCommandModule
         }
     }
 
-    [Command("whoknowsgenre", "wg", "wkg", "whoknows genre")]
+    [Command("whoknowsgenre", "wg", "wkg")]
     [Summary("Shows what other users listen to a genre in your server")]
     [Examples("wg", "wkg hip hop", "whoknowsgenre", "whoknowsgenre techno")]
     [UsernameSetRequired]
@@ -157,7 +157,7 @@ public class GenreCommands : BaseCommandModule
         }
     }
 
-    [Command("servergenres", "sg", "sgenres", "serverg", "server genre", "servergenre", "server genres")]
+    [Command("servergenres", "sg", "sgenres", "serverg", "servergenre")]
     [Summary("Top genres for your server")]
     [Options("Time periods: `weekly`, `monthly` and `alltime`", "Order options: `plays` and `listeners`")]
     [Examples("sg", "sg a p", "servergenres", "servergenres alltime", "servergenres listeners weekly")]
@@ -200,7 +200,7 @@ public class GenreCommands : BaseCommandModule
         }
     }
 
-    [Command("friendwhoknowgenre", "fwg", "fwkg", "friendwhoknows genre", "friendwhoknowsgenre", "friend whoknowsgenre", "friends whoknow genre", "friend whoknows genre", "friends whoknows genre")]
+    [Command("friendwhoknowgenre", "fwg", "fwkg", "friendwhoknowsgenre")]
     [Summary("Who of your friends listen to a genre")]
     [Examples("fwg", "fwg pop", "friendwhoknowgenre", "friendwhoknowgenre pov: indie")]
     [UsernameSetRequired]

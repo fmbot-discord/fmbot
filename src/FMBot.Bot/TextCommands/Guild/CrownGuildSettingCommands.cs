@@ -316,7 +316,7 @@ public class CrownGuildSettingCommands : BaseCommandModule
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [Command("killcrown", "kcw", "kcrown", "killcw", "kill crown", "crown kill")]
+    [Command("killcrown", "kcw", "kcrown", "killcw")]
     [Summary("Removes all crowns from a specific artist for your server.")]
     [GuildOnly]
     [RequiresIndex]
