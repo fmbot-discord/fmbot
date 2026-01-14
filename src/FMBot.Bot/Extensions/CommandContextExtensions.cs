@@ -117,7 +117,7 @@ public static class CommandContextExtensions
                             PublicProperties.UsedCommandsResponseMessageId[context.Message.Id], msg =>
                             {
                                 msg.Flags = MessageFlags.IsComponentsV2;
-                                msg.Components = response.ComponentsV2;
+                                msg.Components = response.GetComponentsV2();
                                 msg.Attachments = response.Stream != null
                                     ? new List<AttachmentProperties>
                                     {

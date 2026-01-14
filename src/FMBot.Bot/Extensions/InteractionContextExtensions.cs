@@ -314,7 +314,7 @@ public static class InteractionContextExtensions
                                 .AddAttachments(new AttachmentProperties(
                                     response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName,
                                     response.Stream).WithDescription(response.FileDescription))
-                                .WithComponents(response.ComponentsV2)
+                                .WithComponents(response.GetComponentsV2())
                                 .WithFlags(followUpComponentsV2Flags)
                                 .WithAllowedMentions(AllowedMentionsProperties.None));
 
@@ -325,7 +325,7 @@ public static class InteractionContextExtensions
                     {
                         var components = await context.Interaction.SendFollowupMessageAsync(
                             new InteractionMessageProperties()
-                                .WithComponents(response.ComponentsV2)
+                                .WithComponents(response.GetComponentsV2())
                                 .WithFlags(followUpComponentsV2Flags)
                                 .WithAllowedMentions(AllowedMentionsProperties.None));
                         responseId = components.Id;
@@ -699,7 +699,7 @@ public static class InteractionContextExtensions
             }
 
             IEnumerable<IMessageComponentProperties> components = response.ResponseType == ResponseType.ComponentsV2
-                ? response.ComponentsV2
+                ? response.GetComponentsV2()
                 : response.GetMessageComponents();
 
             var attachments = response.Stream != null
