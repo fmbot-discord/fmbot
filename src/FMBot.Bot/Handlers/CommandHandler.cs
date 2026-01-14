@@ -148,12 +148,15 @@ public class CommandHandler
         var argPos = 0;
         var prfx = this._prefixService.GetPrefix(commandContext.Guild?.Id) ?? this._botSettings.Bot.Prefix;
 
-        // New prefix '.' but user still uses the '.fm' prefix anyway
+        // New prefix '.' but user still uses the '.fm' prefix anyway (e.g., '.fmhelp' -> 'help')
+        // Only strip '.fm' if the next character is NOT a space (to distinguish '.fmhelp' from '.fm help')
+        var fmPrefixLength = (prfx + "fm").Length;
         if (prfx == this._botSettings.Bot.Prefix &&
             message.Content.StartsWith(prfx + "fm", StringComparison.OrdinalIgnoreCase) &&
-            message.Content.Length > $"{prfx}fm".Length)
+            message.Content.Length > fmPrefixLength &&
+            !char.IsWhiteSpace(message.Content[fmPrefixLength]))
         {
-            argPos = (prfx + "fm").Length;
+            argPos = fmPrefixLength;
             _ = Task.Run(async () => await ExecuteCommand(message, commandContext, argPos, prfx, update));
             return true;
         }
@@ -271,7 +274,7 @@ public class CommandHandler
                     return;
                 }
 
-                var commandPrefixResult = await this._commands.ExecuteAsync(1, context, this._provider);
+                var commandPrefixResult = await this._commands.ExecuteAsync(messageContent.AsMemory(), context, this._provider);
 
                 if (commandPrefixResult is not IFailResult)
                 {
@@ -431,7 +434,7 @@ public class CommandHandler
                 return;
             }
 
-            var result = await this._commands.ExecuteAsync(argPos, context, this._provider);
+            var result = await this._commands.ExecuteAsync(messageContent.AsMemory(), context, this._provider);
 
             if (result is not IFailResult)
             {
