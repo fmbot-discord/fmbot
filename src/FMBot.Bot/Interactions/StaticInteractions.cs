@@ -60,7 +60,7 @@ public class StaticInteractions(
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, deferFirst: true);
         }
     }
 

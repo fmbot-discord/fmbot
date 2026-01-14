@@ -392,9 +392,9 @@ public class CensorService
             embed.AddField("Artist", $"`{report.ArtistName}`");
 
             var components = new ActionRowProperties()
-                .WithButton("NSFW", $"censor-report-mark-nsfw-{report.Id}", style: ButtonStyle.Success)
-                .WithButton("Censor", $"censor-report-mark-censored-{report.Id}", style: ButtonStyle.Success)
-                .WithButton("Deny", $"censor-report-deny-{report.Id}", style: ButtonStyle.Danger);
+                .WithButton("NSFW", $"censor-report-mark-nsfw:{report.Id}", style: ButtonStyle.Success)
+                .WithButton("Censor", $"censor-report-mark-censored:{report.Id}", style: ButtonStyle.Success)
+                .WithButton("Deny", $"censor-report-deny:{report.Id}", style: ButtonStyle.Danger);
 
             if (!report.IsArtist)
             {

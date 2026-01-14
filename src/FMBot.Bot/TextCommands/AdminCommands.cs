@@ -163,7 +163,7 @@ public class AdminCommands(
         this._embed.WithDescription(description);
 
         // Add guild flags selectmenu
-        var guildFlagsOptions = new StringMenuProperties($"guild-flags-{guild.DiscordGuildId}")
+        var guildFlagsOptions = new StringMenuProperties($"guild-flags:{guild.DiscordGuildId}")
             .WithPlaceholder("Select guild flags")
             .WithMinValues(0)
             .WithMaxValues(Enum.GetValues<GuildFlags>().Length);
@@ -651,7 +651,7 @@ public class AdminCommands(
                 this._embed.WithDescription($"Showing existing album entry (no modifications made).");
             }
 
-            var censorOptions = new StringMenuProperties($"admin-censor-{existingAlbum.CensoredMusicId}")
+            var censorOptions = new StringMenuProperties($"admin-censor:{existingAlbum.CensoredMusicId}")
                 .WithPlaceholder("Select censor types")
                 .WithMinValues(0)
                 .WithMaxValues(2);
@@ -714,7 +714,7 @@ public class AdminCommands(
                 return;
             }
 
-            var aliasOptions = new StringMenuProperties($"artist-alias-{artistAlias.Id}")
+            var aliasOptions = new StringMenuProperties($"artist-alias:{artistAlias.Id}")
                 .WithPlaceholder("Select alias options")
                 .WithMinValues(0)
                 .WithMaxValues(5);
@@ -813,7 +813,7 @@ public class AdminCommands(
                 this._embed.WithDescription($"Showing existing artist entry (no modifications made).");
             }
 
-            var censorOptions = new StringMenuProperties($"admin-censor-{existingArtist.CensoredMusicId}")
+            var censorOptions = new StringMenuProperties($"admin-censor:{existingArtist.CensoredMusicId}")
                 .WithPlaceholder("Select censor types")
                 .WithMinValues(0)
                 .WithMaxValues(5);
@@ -2885,7 +2885,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                     "- After moving they can enable the imports with `/import manage`");
 
                 var components = new ActionRowProperties().WithButton("Move data",
-                    customId: $"move-user-data-{oldUser.UserId}-{newUser.UserId}", style: ButtonStyle.Danger);
+                    customId: $"move-user-data:{oldUser.UserId}:{newUser.UserId}", style: ButtonStyle.Danger);
 
                 await this.Context.Channel.SendMessageAsync(new MessageProperties()
                     .AddEmbeds(embed)
@@ -2990,7 +2990,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                     "This will move over Stripe supporter from one user to another and update their details within the Stripe dashboard. This can take a few seconds to complete.");
 
                 var components = new ActionRowProperties().WithButton("Move supporter",
-                    customId: $"move-supporter-{oldUser.DiscordUserId}-{newUser.DiscordUserId}", style: ButtonStyle.Danger);
+                    customId: $"move-supporter:{oldUser.DiscordUserId}:{newUser.DiscordUserId}", style: ButtonStyle.Danger);
 
                 await this.Context.Channel.SendMessageAsync(new MessageProperties()
                     .AddEmbeds(embed)
@@ -3053,7 +3053,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                 embed.WithFooter("⚠️ You cant revert this ⚠️ watch out whee oooo");
 
                 var components = new ActionRowProperties().WithButton("Delete user",
-                    customId: $"admin-delete-user-{user.UserId}", style: ButtonStyle.Danger);
+                    customId: $"admin-delete-user:{user.UserId}", style: ButtonStyle.Danger);
 
                 await this.Context.Channel.SendMessageAsync(new MessageProperties()
                     .AddEmbeds(embed)

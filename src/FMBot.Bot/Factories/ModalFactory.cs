@@ -365,7 +365,7 @@ public static class ModalFactory
         {
             Components =
             [
-                new LabelProperties("Enter Last.fm username", new TextInputProperties("lastfm_username", TextInputStyle.Short)
+                new LabelProperties("Enter Last.fm username", new TextInputProperties("username_lastfm", TextInputStyle.Short)
                 {
                     Placeholder = "fm-bot",
                     MinLength = 2,

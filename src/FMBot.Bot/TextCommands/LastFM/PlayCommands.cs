@@ -94,7 +94,7 @@ public class PlayCommands(
             this._embed.UsernameNotSetErrorResponse(prfx,
                 discordGuildUser?.GetDisplayName() ?? this.Context.User.GetDisplayName());
 
-            await this.Context.Channel.SendMessageAsync(new MessageProperties { Embeds = [this._embed], Components = [GenericEmbedService.UsernameNotSetErrorComponents()] });
+            await this.Context.Channel.SendMessageAsync(new () { Embeds = [this._embed], Components = [GenericEmbedService.UsernameNotSetErrorComponents()] });
             this.Context.LogCommandUsed(CommandResponse.UsernameNotSet);
             return;
         }

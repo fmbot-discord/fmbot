@@ -44,6 +44,9 @@ public class AdminInteractions(
 
         if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("You don't have permission to do this.")
+                .WithFlags(MessageFlags.Ephemeral)));
             return;
         }
 
@@ -107,6 +110,9 @@ public class AdminInteractions(
 
         if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("You don't have permission to do this.")
+                .WithFlags(MessageFlags.Ephemeral)));
             return;
         }
 
@@ -204,15 +210,18 @@ public class AdminInteractions(
     [ComponentInteraction("gwk-report-ban")]
     public async Task GwkReportBan(string reportId)
     {
-        var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
-
-        if (message == null)
+        if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("You don't have permission to do this.")
+                .WithFlags(MessageFlags.Ephemeral)));
             return;
         }
 
+        var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
+
         await RespondAsync(InteractionCallback.Modal(ModalFactory.CreateReportGlobalWhoKnowsBanModal(
-            $"gwk-report-ban-confirmed:{reportId}:{message.Id}")));
+            $"gwk-report-ban-confirmed:{reportId}:{message?.Id ?? 0}")));
     }
 
     [ComponentInteraction("gwk-report-deny")]
@@ -220,6 +229,9 @@ public class AdminInteractions(
     {
         if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("You don't have permission to do this.")
+                .WithFlags(MessageFlags.Ephemeral)));
             return;
         }
 
@@ -258,6 +270,9 @@ public class AdminInteractions(
     {
         if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("You don't have permission to do this.")
+                .WithFlags(MessageFlags.Ephemeral)));
             return;
         }
 
@@ -312,6 +327,9 @@ public class AdminInteractions(
     {
         if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("You don't have permission to do this.")
+                .WithFlags(MessageFlags.Ephemeral)));
             return;
         }
 
@@ -472,6 +490,9 @@ public class AdminInteractions(
     {
         if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("You don't have permission to do this.")
+                .WithFlags(MessageFlags.Ephemeral)));
             return;
         }
 
@@ -480,6 +501,9 @@ public class AdminInteractions(
 
         if (report.ReportStatus != ReportStatus.Pending)
         {
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("This report has already been processed.")
+                .WithFlags(MessageFlags.Ephemeral)));
             return;
         }
 
@@ -534,6 +558,9 @@ public class AdminInteractions(
     {
         if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("You don't have permission to do this.")
+                .WithFlags(MessageFlags.Ephemeral)));
             return;
         }
 
@@ -542,6 +569,9 @@ public class AdminInteractions(
 
         if (report.ReportStatus != ReportStatus.Pending)
         {
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("This report has already been processed.")
+                .WithFlags(MessageFlags.Ephemeral)));
             return;
         }
 
@@ -596,6 +626,9 @@ public class AdminInteractions(
     {
         if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("You don't have permission to do this.")
+                .WithFlags(MessageFlags.Ephemeral)));
             return;
         }
 
@@ -604,6 +637,9 @@ public class AdminInteractions(
 
         if (report.ReportStatus != ReportStatus.Pending)
         {
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("This report has already been processed.")
+                .WithFlags(MessageFlags.Ephemeral)));
             return;
         }
 
@@ -631,6 +667,9 @@ public class AdminInteractions(
     {
         if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("You don't have permission to do this.")
+                .WithFlags(MessageFlags.Ephemeral)));
             return;
         }
 
@@ -670,6 +709,9 @@ public class AdminInteractions(
     {
         if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("You don't have permission to do this.")
+                .WithFlags(MessageFlags.Ephemeral)));
             return;
         }
 
@@ -709,6 +751,9 @@ public class AdminInteractions(
     {
         if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
         {
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("You don't have permission to do this.")
+                .WithFlags(MessageFlags.Ephemeral)));
             return;
         }
 

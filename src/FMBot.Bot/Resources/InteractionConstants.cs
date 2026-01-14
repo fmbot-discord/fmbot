@@ -139,11 +139,11 @@ public static class InteractionConstants
 
     public static class ModerationCommands
     {
-        public const string CensorTypes = "admin-censor-*";
+        public const string CensorTypes = "admin-censor";
 
-        public const string ArtistAlias = "artist-alias-*";
+        public const string ArtistAlias = "artist-alias";
 
-        public const string GuildFlags = "guild-flags-*";
+        public const string GuildFlags = "guild-flags";
 
         public const string GlobalWhoKnowsReport = "gwk-report";
         public const string GlobalWhoKnowsReportModal = "gwk-report-modal";
@@ -154,8 +154,8 @@ public static class InteractionConstants
         public const string ReportAlbum = "report-album";
         public const string ReportAlbumModal = "report-album-modal";
 
-        public const string MoveUserData = "move-user-data-*-*";
-        public const string MoveSupporter = "move-supporter-*-*";
+        public const string MoveUserData = "move-user-data";
+        public const string MoveSupporter = "move-supporter";
     }
 
     public static class SupporterLinks
@@ -164,7 +164,7 @@ public static class InteractionConstants
             bool showExpandButton = true, string source = "unknown")
         {
             return
-                $"supporter-purchase-buttons-{newResponse.ToString()}-{expandWithPerks.ToString()}-{showExpandButton.ToString()}-{source}";
+                $"supporter-purchase-buttons:{newResponse.ToString()}:{expandWithPerks.ToString()}:{showExpandButton.ToString()}:{source}";
         }
 
         public const string GetPurchaseButtons = "supporter-purchase-buttons";

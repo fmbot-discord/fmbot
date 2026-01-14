@@ -391,8 +391,8 @@ public class AdminService
             embed.WithTitle($"New gwk botted user report");
 
             var components = new ActionRowProperties()
-                .WithButton("Ban", $"gwk-report-ban-{report.Id}", style: ButtonStyle.Success)
-                .WithButton("Deny", $"gwk-report-deny-{report.Id}", style: ButtonStyle.Danger);
+                .WithButton("Ban", $"gwk-report-ban:{report.Id}", style: ButtonStyle.Success)
+                .WithButton("Deny", $"gwk-report-deny:{report.Id}", style: ButtonStyle.Danger);
 
             components.WithButton("User", url: $"{Constants.LastFMUserUrl}{report.UserNameLastFM}", row: 1);
 
@@ -409,7 +409,7 @@ public class AdminService
             {
                 embed.AddField("User is currently filtered:", WhoKnowsFilterService.FilteredUserReason(filteredUser));
 
-                components.WithButton($"Convert filter to ban", $"gwk-filtered-user-to-ban-{filteredUser.GlobalFilteredUserId}", style: ButtonStyle.Secondary, row: 2);
+                components.WithButton($"Convert filter to ban", $"gwk-filtered-user-to-ban:{filteredUser.GlobalFilteredUserId}", style: ButtonStyle.Secondary, row: 2);
             }
 
             var reporter = await guild.GetUserAsync(report.ReportedByDiscordUserId);
