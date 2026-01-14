@@ -452,7 +452,7 @@ public class UserInteractions(
                         await dmChannel.SendMessageAsync(new MessageProperties
                         {
                             Embeds = [response.Embed],
-                            Components = response.Components != null ? [response.Components] : null
+                            Components = response.Components?.Any() == true ? [response.Components] : null
                         });
                         break;
                     }
@@ -480,7 +480,7 @@ public class UserInteractions(
 
             await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
                 .WithEmbeds([loginUrlResponse.Embed])
-                .WithComponents(loginUrlResponse.Components != null ? [loginUrlResponse.Components] : null)
+                .WithComponents(loginUrlResponse.Components?.Any() == true ? [loginUrlResponse.Components] : null)
                 .WithFlags(MessageFlags.Ephemeral)));
             this.Context.LogCommandUsed(CommandResponse.UsernameNotSet);
 
@@ -500,7 +500,7 @@ public class UserInteractions(
 
                 await this.Context.Interaction.ModifyResponseAsync(m =>
                 {
-                    m.Components = loginSuccessResponse.Components != null ? [loginSuccessResponse.Components] : [];
+                    m.Components = loginSuccessResponse.Components?.Any() == true ? [loginSuccessResponse.Components] : [];
                     m.Embeds = [loginSuccessResponse.Embed];
                 });
                 this.Context.LogCommandUsed();
@@ -514,7 +514,7 @@ public class UserInteractions(
 
                     await this.Context.Interaction.ModifyResponseAsync(m =>
                     {
-                        m.Components = loginSuccessResponse.Components != null ? [loginSuccessResponse.Components] : [];
+                        m.Components = loginSuccessResponse.Components?.Any() == true ? [loginSuccessResponse.Components] : [];
                         m.Embeds = [loginSuccessResponse.Embed];
                     });
                 }
@@ -548,7 +548,7 @@ public class UserInteractions(
                 var loginFailure = UserBuilder.LoginTooManyAccounts(loginResult.AltCount);
                 await this.Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
                     .WithEmbeds([loginFailure.Embed])
-                    .WithComponents(loginFailure.Components != null ? [loginFailure.Components] : null)
+                    .WithComponents(loginFailure.Components?.Any() == true ? [loginFailure.Components] : null)
                     .WithFlags(MessageFlags.Ephemeral));
 
                 this.Context.LogCommandUsed(CommandResponse.RateLimited);

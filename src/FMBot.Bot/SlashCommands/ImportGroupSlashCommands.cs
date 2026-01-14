@@ -523,7 +523,7 @@ public class ImportGroupSlashCommands(
         await interaction.ModifyFollowupMessageAsync(messageId, m =>
         {
             m.Embeds = [embed];
-            m.Components = components != null ? [components] : [];
+            m.Components = components?.Any() == true ? [components] : [];
         });
     }
 

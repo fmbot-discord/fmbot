@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Fergun.Interactive;
@@ -274,7 +275,7 @@ public class UserSlashCommands(
         await dmChannel.SendMessageAsync(new MessageProperties
         {
             Embeds = [response.Embed],
-            Components = response.Components != null ? [response.Components] : null
+            Components = response.Components?.Any() == true ? [response.Components] : null
         });
         this.Context.LogCommandUsed(response.CommandResponse);
     }

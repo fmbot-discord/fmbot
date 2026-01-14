@@ -17,7 +17,7 @@ public class ResponseModel
             .WithColor(DiscordConstants.LastFmColorRed);
         this.EmbedAuthor = new EmbedAuthorProperties();
         this.EmbedFooter = new EmbedFooterProperties();
-        this.Components = new ActionRowProperties();
+        this.Components = [];
         this.ButtonRows = [];
         this.ComponentsV2 = [];
         this.ComponentsContainer = new ComponentContainerProperties();

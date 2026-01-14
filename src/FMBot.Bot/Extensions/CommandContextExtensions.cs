@@ -100,7 +100,7 @@ public static class CommandContextExtensions
                             {
                                 msg.Content = response.Text;
                                 msg.Embeds = null;
-                                msg.Components = response.Components != null ? new[] { response.Components } : null;
+                                msg.Components = response.Components?.Any() == true ? new[] { response.Components } : null;
                             });
                         break;
                     case ResponseType.Embed:
@@ -113,7 +113,7 @@ public static class CommandContextExtensions
                                 msg.Embeds = response.ResponseType == ResponseType.ImageOnly
                                     ? null
                                     : new[] { response.Embed };
-                                msg.Components = response.Components != null ? new[] { response.Components } : null;
+                                msg.Components = response.Components?.Any() == true ? new[] { response.Components } : null;
                                 msg.Attachments = response.Stream != null
                                     ? new List<AttachmentProperties>
                                     {

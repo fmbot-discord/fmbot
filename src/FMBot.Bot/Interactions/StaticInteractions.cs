@@ -51,7 +51,7 @@ public class StaticInteractions(
 
                 await this.Context.Interaction.ModifyResponseAsync(m =>
                 {
-                    m.Components = response.Components != null ? [response.Components] : [];
+                    m.Components = response.Components?.Any() == true ? [response.Components] : [];
                     m.Embeds = [response.Embed];
                 });
             }

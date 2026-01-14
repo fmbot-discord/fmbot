@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Fergun.Interactive;
@@ -233,7 +234,7 @@ public class ImportInteractions(
             await this.Context.Interaction.ModifyResponseAsync(e =>
             {
                 e.Embeds = [response.Embed];
-                e.Components = response.Components != null ? [response.Components] : null;
+                e.Components = response.Components?.Any() == true ? [response.Components] : null;
             });
 
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -268,7 +269,7 @@ public class ImportInteractions(
             await this.Context.Interaction.ModifyResponseAsync(e =>
             {
                 e.Embeds = [response.Embed];
-                e.Components = response.Components != null ? [response.Components] : null;
+                e.Components = response.Components?.Any() == true ? [response.Components] : null;
             });
 
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -303,7 +304,7 @@ public class ImportInteractions(
             await this.Context.Interaction.ModifyResponseAsync(e =>
             {
                 e.Embeds = [response.Embed];
-                e.Components = response.Components != null ? [response.Components] : null;
+                e.Components = response.Components?.Any() == true ? [response.Components] : null;
             });
 
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -505,7 +506,7 @@ public class ImportInteractions(
             await this.Context.Interaction.ModifyResponseAsync(e =>
             {
                 e.Embeds = [response.Embed];
-                e.Components = response.Components != null ? [response.Components] : [];
+                e.Components = response.Components?.Any() == true ? [response.Components] : [];
             });
 
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -534,7 +535,7 @@ public class ImportInteractions(
             await this.Context.Interaction.ModifyResponseAsync(e =>
             {
                 e.Embeds = [response.Embed];
-                e.Components = response.Components != null ? [response.Components] : [];
+                e.Components = response.Components?.Any() == true ? [response.Components] : [];
             });
 
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -574,7 +575,7 @@ public class ImportInteractions(
             await this.Context.Interaction.ModifyResponseAsync(e =>
             {
                 e.Embeds = [response.Embed];
-                e.Components = response.Components != null ? [response.Components] : [];
+                e.Components = response.Components?.Any() == true ? [response.Components] : [];
             });
 
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -617,7 +618,7 @@ public class ImportInteractions(
             await this.Context.Interaction.ModifyResponseAsync(e =>
             {
                 e.Embeds = [response.Embed];
-                e.Components = response.Components != null ? [response.Components] : [];
+                e.Components = response.Components?.Any() == true ? [response.Components] : [];
             });
 
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -646,7 +647,7 @@ public class ImportInteractions(
             await this.Context.Interaction.ModifyResponseAsync(e =>
             {
                 e.Embeds = [response.Embed];
-                e.Components = response.Components != null ? [response.Components] : [];
+                e.Components = response.Components?.Any() == true ? [response.Components] : [];
             });
 
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -686,7 +687,7 @@ public class ImportInteractions(
             await this.Context.Interaction.ModifyResponseAsync(e =>
             {
                 e.Embeds = [response.Embed];
-                e.Components = response.Components != null ? [response.Components] : [];
+                e.Components = response.Components?.Any() == true ? [response.Components] : [];
             });
 
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -729,7 +730,7 @@ public class ImportInteractions(
             await this.Context.Interaction.ModifyResponseAsync(e =>
             {
                 e.Embeds = [response.Embed];
-                e.Components = response.Components != null ? [response.Components] : [];
+                e.Components = response.Components?.Any() == true ? [response.Components] : [];
             });
 
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -758,7 +759,7 @@ public class ImportInteractions(
             await this.Context.Interaction.ModifyResponseAsync(e =>
             {
                 e.Embeds = [response.Embed];
-                e.Components = response.Components != null ? [response.Components] : [];
+                e.Components = response.Components?.Any() == true ? [response.Components] : [];
             });
 
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -798,7 +799,7 @@ public class ImportInteractions(
             await this.Context.Interaction.ModifyResponseAsync(e =>
             {
                 e.Embeds = [response.Embed];
-                e.Components = response.Components != null ? [response.Components] : [];
+                e.Components = response.Components?.Any() == true ? [response.Components] : [];
             });
 
             this.Context.LogCommandUsed(response.CommandResponse);

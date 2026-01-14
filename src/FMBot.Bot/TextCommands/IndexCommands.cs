@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Fergun.Interactive;
@@ -127,7 +128,7 @@ public class IndexCommands(
             await message.ModifyAsync(m =>
             {
                 m.Embeds = [updatedResponse.Embed];
-                m.Components = updatedResponse.Components != null ? [updatedResponse.Components] : [];
+                m.Components = updatedResponse.Components != null && updatedResponse.Components.Any() ? [updatedResponse.Components] : [];
             });
 
             this.Context.LogCommandUsed(updatedResponse.CommandResponse);
@@ -151,7 +152,7 @@ public class IndexCommands(
             await message.ModifyAsync(m =>
             {
                 m.Embeds = [updatedResponse.Embed];
-                m.Components = updatedResponse.Components != null ? [updatedResponse.Components] : [];
+                m.Components = updatedResponse.Components != null && updatedResponse.Components.Any() ? [updatedResponse.Components] : [];
             });
 
             this.Context.LogCommandUsed(updatedResponse.CommandResponse);

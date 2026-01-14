@@ -1,6 +1,7 @@
 using System.Threading.Tasks;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Services.Guild;
@@ -111,7 +112,7 @@ public class IndexSlashCommands(
             await this.Context.Interaction.ModifyResponseAsync(e =>
             {
                 e.Embeds = [updatedResponse.Embed];
-                e.Components = updatedResponse.Components != null ? [updatedResponse.Components] : [];
+                e.Components = updatedResponse.Components?.Any() == true ? [updatedResponse.Components] : [];
             });
             this.Context.LogCommandUsed(updatedResponse.CommandResponse);
         }
@@ -134,7 +135,7 @@ public class IndexSlashCommands(
             await this.Context.Interaction.ModifyResponseAsync(e =>
             {
                 e.Embeds = [updatedResponse.Embed];
-                e.Components = updatedResponse.Components != null ? [updatedResponse.Components] : [];
+                e.Components = updatedResponse.Components?.Any() == true ? [updatedResponse.Components] : [];
             });
             this.Context.LogCommandUsed(updatedResponse.CommandResponse);
         }
