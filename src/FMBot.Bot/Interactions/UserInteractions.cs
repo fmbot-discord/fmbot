@@ -500,7 +500,7 @@ public class UserInteractions(
 
                 await this.Context.Interaction.ModifyResponseAsync(m =>
                 {
-                    m.Components = [loginSuccessResponse.Components];
+                    m.Components = loginSuccessResponse.Components != null ? [loginSuccessResponse.Components] : [];
                     m.Embeds = [loginSuccessResponse.Embed];
                 });
                 this.Context.LogCommandUsed();
@@ -514,7 +514,7 @@ public class UserInteractions(
 
                     await this.Context.Interaction.ModifyResponseAsync(m =>
                     {
-                        m.Components = [loginSuccessResponse.Components];
+                        m.Components = loginSuccessResponse.Components != null ? [loginSuccessResponse.Components] : [];
                         m.Embeds = [loginSuccessResponse.Embed];
                     });
                 }

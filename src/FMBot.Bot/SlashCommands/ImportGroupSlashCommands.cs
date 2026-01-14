@@ -130,7 +130,7 @@ public class ImportGroupSlashCommands(
             if (imports.status == ImportStatus.UnknownFailure)
             {
                 embed.WithColor(DiscordConstants.WarningColorOrange);
-                await UpdateSpotifyImportEmbed(this.Context.Interaction, embed, description,
+                await UpdateSpotifyImportEmbed(message.Id, this.Context.Interaction, embed, description,
                     $"❌ Invalid Spotify import file. Make sure you select the right files, for example `my_spotify_data.zip` or `Streaming_History_Audio_x.json`.",
                     true);
                 this.Context.LogCommandUsed(CommandResponse.WrongInput);
@@ -140,7 +140,7 @@ public class ImportGroupSlashCommands(
             if (imports.status == ImportStatus.WrongPackageFailure)
             {
                 embed.WithColor(DiscordConstants.WarningColorOrange);
-                await UpdateSpotifyImportEmbed(this.Context.Interaction, embed, description,
+                await UpdateSpotifyImportEmbed(message.Id, this.Context.Interaction, embed, description,
                     $"❌ Invalid Spotify import files. You have uploaded the wrong Spotify data package.\n\n" +
                     $"We can only process files that are from the ['Extended Streaming History'](https://www.spotify.com/us/account/privacy/) package. Instead you have uploaded the 'Account data' package.",
                     true,
@@ -158,7 +158,7 @@ public class ImportGroupSlashCommands(
                     attachments.Any(a => a.FileName.ToLower().Contains("streaminghistory")))
                 {
                     embed.WithColor(DiscordConstants.WarningColorOrange);
-                    await UpdateSpotifyImportEmbed(this.Context.Interaction, embed, description,
+                    await UpdateSpotifyImportEmbed(message.Id, this.Context.Interaction, embed, description,
                         $"❌ Invalid Spotify import file. We can only process files that are from the ['Extended Streaming History'](https://www.spotify.com/us/account/privacy/) package.\n\n" +
                         $"The files should have names like `my_spotify_data.zip` or `Streaming_History_Audio_x.json`.\n\n" +
                         $"The right files can take some more time to get, but actually contain your full Spotify history. Sorry for the inconvenience.",
@@ -168,7 +168,7 @@ public class ImportGroupSlashCommands(
                 }
 
                 embed.WithColor(DiscordConstants.WarningColorOrange);
-                await UpdateSpotifyImportEmbed(this.Context.Interaction, embed, description,
+                await UpdateSpotifyImportEmbed(message.Id, this.Context.Interaction, embed, description,
                     $"❌ Invalid Spotify import file (contains no plays). Make sure you select the right files, for example `my_spotify_data.zip` or `Streaming_History_Audio_x.json`.\n\n" +
                     $"If your `.zip` contains files like `Userdata.json` or `Identity.json` its the wrong package. We can only process files that are from the ['Extended Streaming History'](https://www.spotify.com/us/account/privacy/) package. ",
                     true);
@@ -176,22 +176,22 @@ public class ImportGroupSlashCommands(
                 return;
             }
 
-            await UpdateSpotifyImportEmbed(this.Context.Interaction, embed, description,
+            await UpdateSpotifyImportEmbed(message.Id, this.Context.Interaction, embed, description,
                 $"- **{imports.result.Count.Format(numberFormat)}** Spotify imports found");
 
             var plays = await importService.SpotifyImportToUserPlays(contextUser, imports.result);
-            await UpdateSpotifyImportEmbed(this.Context.Interaction, embed, description,
+            await UpdateSpotifyImportEmbed(message.Id, this.Context.Interaction, embed, description,
                 $"- **{plays.Count.Format(numberFormat)}** actual plays found");
 
             var playsWithoutDuplicates =
                 await importService.RemoveDuplicateImports(contextUser.UserId, plays);
-            await UpdateSpotifyImportEmbed(this.Context.Interaction, embed, description,
+            await UpdateSpotifyImportEmbed(message.Id, this.Context.Interaction, embed, description,
                 $"- **{playsWithoutDuplicates.Count.Format(numberFormat)}** new plays found");
 
             if (playsWithoutDuplicates.Count > 0)
             {
                 await importService.InsertImportPlays(contextUser, playsWithoutDuplicates);
-                await UpdateSpotifyImportEmbed(this.Context.Interaction, embed, description,
+                await UpdateSpotifyImportEmbed(message.Id, this.Context.Interaction, embed, description,
                     $"- Added plays to database");
 
                 if (contextUser.DataSource == DataSource.LastFm)
@@ -207,7 +207,7 @@ public class ImportGroupSlashCommands(
                         await userService.SetDataSource(contextUser, DataSource.ImportThenFullLastFm);
                     }
 
-                    await UpdateSpotifyImportEmbed(this.Context.Interaction, embed, description,
+                    await UpdateSpotifyImportEmbed(message.Id, this.Context.Interaction, embed, description,
                         $"- Updated import setting");
                 }
             }
@@ -215,7 +215,7 @@ public class ImportGroupSlashCommands(
             if (contextUser.DataSource != DataSource.LastFm)
             {
                 await indexService.RecalculateTopLists(contextUser);
-                await UpdateSpotifyImportEmbed(this.Context.Interaction, embed, description,
+                await UpdateSpotifyImportEmbed(message.Id, this.Context.Interaction, embed, description,
                     $"- Refreshed top list cache");
             }
 
@@ -273,14 +273,14 @@ public class ImportGroupSlashCommands(
                 .WithButton("Manage import settings", InteractionConstants.ImportManage, style: ButtonStyle.Secondary);
 
             embed.WithColor(DiscordConstants.SpotifyColorGreen);
-            await UpdateSpotifyImportEmbed(this.Context.Interaction, embed, description, $"- Import complete!", true,
+            await UpdateSpotifyImportEmbed(message.Id, this.Context.Interaction, embed, description, $"- Import complete!", true,
                 components);
 
             this.Context.LogCommandUsed();
         }
         catch (Exception e)
         {
-            await UpdateSpotifyImportEmbed(this.Context.Interaction, embed, description,
+            await UpdateSpotifyImportEmbed(message.Id, this.Context.Interaction, embed, description,
                 $"- ❌ Sorry, an internal error occured. Please try again later, or open a help thread on [our server](https://discord.gg/fmbot).",
                 true);
             await this.Context.HandleCommandException(e, sendReply: false);
@@ -342,7 +342,7 @@ public class ImportGroupSlashCommands(
             if (imports.status == ImportStatus.UnknownFailure)
             {
                 embed.WithColor(DiscordConstants.WarningColorOrange);
-                await UpdateAppleMusicImportEmbed(this.Context.Interaction, embed, description,
+                await UpdateAppleMusicImportEmbed(message.Id, this.Context.Interaction, embed, description,
                     $"❌ Invalid Apple Music import file, or something went wrong.\n\n" +
                     $"If you've uploaded a `.zip` file you can also try to find the `Apple Music Play Activity.csv` inside the .zip and attach that instead.\n\n" +
                     $"You can also open a help thread on [our server](https://discord.gg/fmbot).", true);
@@ -353,7 +353,7 @@ public class ImportGroupSlashCommands(
             if (imports.status == ImportStatus.WrongCsvFailure)
             {
                 embed.WithColor(DiscordConstants.WarningColorOrange);
-                await UpdateAppleMusicImportEmbed(this.Context.Interaction, embed, description,
+                await UpdateAppleMusicImportEmbed(message.Id, this.Context.Interaction, embed, description,
                     $"❌ We couldn't read the `.csv` file that was provided.\n\n" +
                     $"We can only read a `Apple Music Play Activity.csv` file. Other files do not contain the data required for importing.\n\n" +
                     $"Still having issues? You can also open a help thread on [our server](https://discord.gg/fmbot).",
@@ -362,28 +362,28 @@ public class ImportGroupSlashCommands(
                 return;
             }
 
-            await UpdateAppleMusicImportEmbed(this.Context.Interaction, embed, description,
+            await UpdateAppleMusicImportEmbed(message.Id, this.Context.Interaction, embed, description,
                 $"- **{imports.result.Count.Format(numberFormat)}** Apple Music imports found");
 
             var importsWithArtist = await importService.AppleMusicImportAddArtists(contextUser, imports.result);
-            await UpdateAppleMusicImportEmbed(this.Context.Interaction, embed, description,
+            await UpdateAppleMusicImportEmbed(message.Id, this.Context.Interaction, embed, description,
                 $"- **{importsWithArtist.matchFoundPercentage}** of artist names found for imports");
-            await UpdateAppleMusicImportEmbed(this.Context.Interaction, embed, description,
+            await UpdateAppleMusicImportEmbed(message.Id, this.Context.Interaction, embed, description,
                 $"- **{importsWithArtist.userPlays.Count(c => !string.IsNullOrWhiteSpace(c.ArtistName))}** with artist names");
 
             var plays = ImportService.AppleMusicImportsToValidUserPlays(contextUser, importsWithArtist.userPlays);
-            await UpdateAppleMusicImportEmbed(this.Context.Interaction, embed, description,
+            await UpdateAppleMusicImportEmbed(message.Id, this.Context.Interaction, embed, description,
                 $"- **{plays.Count.Format(numberFormat)}** actual plays found");
 
             var playsWithoutDuplicates =
                 await importService.RemoveDuplicateImports(contextUser.UserId, plays);
-            await UpdateAppleMusicImportEmbed(this.Context.Interaction, embed, description,
+            await UpdateAppleMusicImportEmbed(message.Id, this.Context.Interaction, embed, description,
                 $"- **{playsWithoutDuplicates.Count.Format(numberFormat)}** new plays found");
 
             if (playsWithoutDuplicates.Count > 0)
             {
                 await importService.InsertImportPlays(contextUser, playsWithoutDuplicates);
-                await UpdateAppleMusicImportEmbed(this.Context.Interaction, embed, description,
+                await UpdateAppleMusicImportEmbed(message.Id, this.Context.Interaction, embed, description,
                     $"- Added plays to database");
 
                 if (contextUser.DataSource == DataSource.LastFm)
@@ -399,7 +399,7 @@ public class ImportGroupSlashCommands(
                         await userService.SetDataSource(contextUser, DataSource.ImportThenFullLastFm);
                     }
 
-                    await UpdateAppleMusicImportEmbed(this.Context.Interaction, embed, description,
+                    await UpdateAppleMusicImportEmbed(message.Id, this.Context.Interaction, embed, description,
                         $"- Updated import setting");
                 }
             }
@@ -407,7 +407,7 @@ public class ImportGroupSlashCommands(
             if (contextUser.DataSource != DataSource.LastFm)
             {
                 await indexService.RecalculateTopLists(contextUser);
-                await UpdateAppleMusicImportEmbed(this.Context.Interaction, embed, description,
+                await UpdateAppleMusicImportEmbed(message.Id, this.Context.Interaction, embed, description,
                     $"- Refreshed top list cache");
             }
 
@@ -466,39 +466,36 @@ public class ImportGroupSlashCommands(
                     style: ButtonStyle.Primary)
                 .WithButton("Manage import settings", InteractionConstants.ImportManage, style: ButtonStyle.Secondary);
 
-            await UpdateAppleMusicImportEmbed(this.Context.Interaction, embed, description, $"- Import complete!", true,
+            await UpdateAppleMusicImportEmbed(message.Id, this.Context.Interaction, embed, description, $"- Import complete!", true,
                 components);
 
             this.Context.LogCommandUsed();
         }
         catch (Exception e)
         {
-            await UpdateAppleMusicImportEmbed(this.Context.Interaction, embed, description,
+            await UpdateAppleMusicImportEmbed(message.Id, this.Context.Interaction, embed, description,
                 $"- ❌ Sorry, an internal error occured. Please try again later, or open a help thread on [our server](https://discord.gg/fmbot).",
                 true);
             await this.Context.HandleCommandException(e, sendReply: false);
         }
     }
 
-    private static async Task UpdateSpotifyImportEmbed(Interaction interaction, EmbedProperties embed,
-        StringBuilder builder,
-        string lineToAdd, bool lastLine = false, ActionRowProperties components = null, string image = null)
+    private static async Task UpdateSpotifyImportEmbed(ulong messageId, Interaction interaction, EmbedProperties embed,
+        StringBuilder builder, string lineToAdd, bool lastLine = false, ActionRowProperties components = null, string image = null)
     {
-        await UpdateImportEmbed(interaction, embed, builder, lineToAdd, lastLine, components, image,
+        await UpdateImportEmbed(messageId, interaction, embed, builder, lineToAdd, lastLine, components, image,
             PlaySource.SpotifyImport);
     }
 
-    private static async Task UpdateAppleMusicImportEmbed(Interaction interaction, EmbedProperties embed,
-        StringBuilder builder,
-        string lineToAdd, bool lastLine = false, ActionRowProperties components = null, string image = null)
+    private static async Task UpdateAppleMusicImportEmbed(ulong messageId, Interaction interaction, EmbedProperties embed,
+        StringBuilder builder, string lineToAdd, bool lastLine = false, ActionRowProperties components = null, string image = null)
     {
-        await UpdateImportEmbed(interaction, embed, builder, lineToAdd, lastLine, components, image,
+        await UpdateImportEmbed(messageId, interaction, embed, builder, lineToAdd, lastLine, components, image,
             PlaySource.AppleMusicImport);
     }
 
-    private static async Task UpdateImportEmbed(Interaction interaction, EmbedProperties embed,
-        StringBuilder builder,
-        string lineToAdd, bool lastLine = false, ActionRowProperties components = null, string image = null,
+    private static async Task UpdateImportEmbed(ulong messageId, Interaction interaction, EmbedProperties embed,
+        StringBuilder builder, string lineToAdd, bool lastLine = false, ActionRowProperties components = null, string image = null,
         PlaySource playSource = PlaySource.SpotifyImport)
     {
         builder.AppendLine(lineToAdd);
@@ -516,17 +513,17 @@ public class ImportGroupSlashCommands(
             .WithName(title)
             .WithValue(builder + (lastLine ? null : loadingLine))
             .WithInline(true);
-        embed.Fields = fieldsList;
+        embed.WithFields(fieldsList);
 
         if (image != null)
         {
             embed.WithImage(image);
         }
 
-        await interaction.ModifyResponseAsync(m =>
+        await interaction.ModifyFollowupMessageAsync(messageId, m =>
         {
             m.Embeds = [embed];
-            m.Components = [components];
+            m.Components = components != null ? [components] : [];
         });
     }
 

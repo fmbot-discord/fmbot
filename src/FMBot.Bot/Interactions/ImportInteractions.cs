@@ -29,12 +29,10 @@ public class ImportInteractions(
     : ComponentInteractionModule<ComponentInteractionContext>
 {
     [ComponentInteraction(InteractionConstants.ImportModify.Modify)]
-    public async Task SelectImportModifyPickButton()
+    public async Task SelectImportModifyPickButton(string pickedOption)
     {
         try
         {
-            var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
-            var pickedOption = stringMenuInteraction.Data.SelectedValues[0];
             var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
             var supporterRequired = ImportBuilders.ImportSupporterRequired(new ContextModel(this.Context, contextUser));
 
@@ -320,8 +318,8 @@ public class ImportInteractions(
     {
         await this.Context.Interaction.ModifyResponseAsync(e =>
         {
-            e.Embeds = [new EmbedProperties().WithDescription(text)];
-            e.Components = [];
+            e.Components = [new ActionRowProperties().WithButton(text, customId: "0",
+                emote: EmojiProperties.Custom(DiscordConstants.Loading), disabled: true, style: ButtonStyle.Secondary)];
         });
     }
 
@@ -507,7 +505,7 @@ public class ImportInteractions(
             await this.Context.Interaction.ModifyResponseAsync(e =>
             {
                 e.Embeds = [response.Embed];
-                e.Components = [response.Components];
+                e.Components = response.Components != null ? [response.Components] : [];
             });
 
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -536,7 +534,7 @@ public class ImportInteractions(
             await this.Context.Interaction.ModifyResponseAsync(e =>
             {
                 e.Embeds = [response.Embed];
-                e.Components = [response.Components];
+                e.Components = response.Components != null ? [response.Components] : [];
             });
 
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -576,7 +574,7 @@ public class ImportInteractions(
             await this.Context.Interaction.ModifyResponseAsync(e =>
             {
                 e.Embeds = [response.Embed];
-                e.Components = [response.Components];
+                e.Components = response.Components != null ? [response.Components] : [];
             });
 
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -619,7 +617,7 @@ public class ImportInteractions(
             await this.Context.Interaction.ModifyResponseAsync(e =>
             {
                 e.Embeds = [response.Embed];
-                e.Components = [response.Components];
+                e.Components = response.Components != null ? [response.Components] : [];
             });
 
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -648,7 +646,7 @@ public class ImportInteractions(
             await this.Context.Interaction.ModifyResponseAsync(e =>
             {
                 e.Embeds = [response.Embed];
-                e.Components = [response.Components];
+                e.Components = response.Components != null ? [response.Components] : [];
             });
 
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -688,7 +686,7 @@ public class ImportInteractions(
             await this.Context.Interaction.ModifyResponseAsync(e =>
             {
                 e.Embeds = [response.Embed];
-                e.Components = [response.Components];
+                e.Components = response.Components != null ? [response.Components] : [];
             });
 
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -731,7 +729,7 @@ public class ImportInteractions(
             await this.Context.Interaction.ModifyResponseAsync(e =>
             {
                 e.Embeds = [response.Embed];
-                e.Components = [response.Components];
+                e.Components = response.Components != null ? [response.Components] : [];
             });
 
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -760,7 +758,7 @@ public class ImportInteractions(
             await this.Context.Interaction.ModifyResponseAsync(e =>
             {
                 e.Embeds = [response.Embed];
-                e.Components = [response.Components];
+                e.Components = response.Components != null ? [response.Components] : [];
             });
 
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -800,7 +798,7 @@ public class ImportInteractions(
             await this.Context.Interaction.ModifyResponseAsync(e =>
             {
                 e.Embeds = [response.Embed];
-                e.Components = [response.Components];
+                e.Components = response.Components != null ? [response.Components] : [];
             });
 
             this.Context.LogCommandUsed(response.CommandResponse);

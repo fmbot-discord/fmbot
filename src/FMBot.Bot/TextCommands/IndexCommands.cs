@@ -127,7 +127,7 @@ public class IndexCommands(
             await message.ModifyAsync(m =>
             {
                 m.Embeds = [updatedResponse.Embed];
-                m.Components = [updatedResponse.Components];
+                m.Components = updatedResponse.Components != null ? [updatedResponse.Components] : [];
             });
 
             this.Context.LogCommandUsed(updatedResponse.CommandResponse);
@@ -151,7 +151,7 @@ public class IndexCommands(
             await message.ModifyAsync(m =>
             {
                 m.Embeds = [updatedResponse.Embed];
-                m.Components = [updatedResponse.Components];
+                m.Components = updatedResponse.Components != null ? [updatedResponse.Components] : [];
             });
 
             this.Context.LogCommandUsed(updatedResponse.CommandResponse);

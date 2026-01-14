@@ -128,11 +128,12 @@ public static class InteractionContextExtensions
             _ => "Interaction"
         };
 
+        var displayCommandName = commandName?.Split(':')[0];
+
         Log.Error(exception,
             "InteractionUsed: Error {referenceId} | {discordUserName} / {discordUserId} | {guildName} / {guildId} | {commandResponse} ({message}) | {messageContent}",
             referenceId, context.Interaction.User?.Username, context.Interaction.User?.Id, context.Interaction.GuildId,
-            context.Interaction.GuildId,
-            CommandResponse.Error, message, commandName);
+            context.Interaction.GuildId, CommandResponse.Error, message, commandName);
 
         if (sendReply)
         {
@@ -168,7 +169,7 @@ public static class InteractionContextExtensions
             {
                 await context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
                     .WithContent(
-                        $"Sorry, something went wrong while trying to process `{commandName}`. Please try again later.\n" +
+                        $"Sorry, something went wrong while trying to process `{displayCommandName}`. Please try again later.\n" +
                         $"*Reference id: `{referenceId}`*")
                     .WithFlags(MessageFlags.Ephemeral));
             }
@@ -645,12 +646,7 @@ public static class InteractionContextExtensions
             var parsedMessageId = ulong.Parse(messageId);
             var msg = await context.Interaction.Channel.GetMessageAsync(parsedMessageId);
 
-            if (msg is not Message message)
-            {
-                return;
-            }
-
-            await context.ModifyMessage(message, response, defer);
+            await context.ModifyMessage(msg, response, defer);
         }
 
         public async Task ModifyComponents(RestMessage message,
@@ -699,8 +695,8 @@ public static class InteractionContextExtensions
             }
 
             IEnumerable<IMessageComponentProperties> components = response.ResponseType == ResponseType.ComponentsV2
-                ? response.GetComponentsV2()
-                : response.GetMessageComponents();
+                ? response.GetComponentsV2() ?? []
+                : response.GetMessageComponents() ?? [];
 
             var attachments = response.Stream != null
                 ? new List<AttachmentProperties>

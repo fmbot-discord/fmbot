@@ -111,7 +111,7 @@ public class IndexSlashCommands(
             await this.Context.Interaction.ModifyResponseAsync(e =>
             {
                 e.Embeds = [updatedResponse.Embed];
-                e.Components = [updatedResponse.Components];
+                e.Components = updatedResponse.Components != null ? [updatedResponse.Components] : [];
             });
             this.Context.LogCommandUsed(updatedResponse.CommandResponse);
         }
@@ -134,7 +134,7 @@ public class IndexSlashCommands(
             await this.Context.Interaction.ModifyResponseAsync(e =>
             {
                 e.Embeds = [updatedResponse.Embed];
-                e.Components = [updatedResponse.Components];
+                e.Components = updatedResponse.Components != null ? [updatedResponse.Components] : [];
             });
             this.Context.LogCommandUsed(updatedResponse.CommandResponse);
         }
