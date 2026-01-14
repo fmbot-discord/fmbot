@@ -7,9 +7,6 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services;
-using FMBot.Bot.Services.ThirdParty;
-using FMBot.Domain;
-using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
 using NetCord.Services.Commands;
@@ -17,27 +14,16 @@ using NetCord.Services.Commands;
 namespace FMBot.Bot.TextCommands;
 
 [ModuleName("Youtube")]
-public class YoutubeCommands : BaseCommandModule
+public class YoutubeCommands(
+    IPrefixService prefixService,
+    UserService userService,
+    IOptions<BotSettings> botSettings,
+    InteractiveService interactivity,
+    YoutubeBuilders youtubeBuilders)
+    : BaseCommandModule(botSettings)
 {
-    private readonly UserService _userService;
+    private InteractiveService Interactivity { get; } = interactivity;
 
-    private readonly IPrefixService _prefixService;
-
-    private readonly YoutubeBuilders _youtubeBuilders;
-    private InteractiveService Interactivity { get; }
-
-
-    public YoutubeCommands(
-        IPrefixService prefixService,
-        UserService userService,
-        IOptions<BotSettings> botSettings, InteractiveService interactivity,
-        YoutubeBuilders youtubeBuilders) : base(botSettings)
-    {
-        this._prefixService = prefixService;
-        this._userService = userService;
-        this.Interactivity = interactivity;
-        this._youtubeBuilders = youtubeBuilders;
-    }
 
     [Command("youtube", "yt", "y", "youtubesearch", "ytsearch", "yts")]
     [Summary("Shares a link to a YouTube video based on what a user is listening to or searching for")]
@@ -47,8 +33,8 @@ public class YoutubeCommands : BaseCommandModule
     {
         try
         {
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+            var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
             _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -57,7 +43,7 @@ public class YoutubeCommands : BaseCommandModule
                 var internalLookup =
                     CommandContextExtensions.GetReferencedMusic(this.Context.Message.ReferencedMessage.Id)
                     ??
-                    await this._userService.GetReferencedMusic(this.Context.Message.ReferencedMessage.Id);
+                    await userService.GetReferencedMusic(this.Context.Message.ReferencedMessage.Id);
 
                 if (internalLookup?.Track != null)
                 {
@@ -66,7 +52,7 @@ public class YoutubeCommands : BaseCommandModule
             }
 
             var response =
-                await this._youtubeBuilders.YoutubeAsync(new ContextModel(this.Context, prfx, contextUser),
+                await youtubeBuilders.YoutubeAsync(new ContextModel(this.Context, prfx, contextUser),
                     searchValue);
 
             await this.Context.SendResponse(this.Interactivity, response);

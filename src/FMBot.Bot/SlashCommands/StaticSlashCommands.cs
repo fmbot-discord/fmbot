@@ -1,38 +1,23 @@
-using System;
-using System.Text;
 using System.Threading.Tasks;
 using Fergun.Interactive;
-using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
-using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
-using FMBot.Domain.Models;
 using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
-using Shared.Domain.Enums;
 
 namespace FMBot.Bot.SlashCommands;
 
-public class StaticSlashCommands : ApplicationCommandModule<ApplicationCommandContext>
+public class StaticSlashCommands(
+    UserService userService,
+    StaticBuilders staticBuilders,
+    InteractiveService interactivity)
+    : ApplicationCommandModule<ApplicationCommandContext>
 {
-    private readonly UserService _userService;
-    private readonly StaticBuilders _staticBuilders;
-    private readonly SupporterService _supporterService;
+    private InteractiveService Interactivity { get; } = interactivity;
 
-    private InteractiveService Interactivity { get; }
-
-
-    public StaticSlashCommands(UserService userService, StaticBuilders staticBuilders, InteractiveService interactivity,
-        SupporterService supporterService)
-    {
-        this._userService = userService;
-        this._staticBuilders = staticBuilders;
-        this.Interactivity = interactivity;
-        this._supporterService = supporterService;
-    }
 
     [SlashCommand("outofsync", "What to do if your Last.fm isn't up to date with Spotify", Contexts =
     [
@@ -43,9 +28,10 @@ public class StaticSlashCommands : ApplicationCommandModule<ApplicationCommandCo
         ApplicationIntegrationType.GuildInstall,
         ApplicationIntegrationType.UserInstall
     ])]
-    public async Task OutOfSyncAsync([SlashCommandParameter(Name = "private", Description = "Show info privately?")] bool privateResponse = true)
+    public async Task OutOfSyncAsync(
+        [SlashCommandParameter(Name = "private", Description = "Show info privately?")] bool privateResponse = true)
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var response = StaticBuilders.OutOfSync(new ContextModel(this.Context, contextUser));
 
         await this.Context.SendResponse(this.Interactivity, response, ephemeral: privateResponse);
@@ -63,8 +49,8 @@ public class StaticSlashCommands : ApplicationCommandModule<ApplicationCommandCo
     ])]
     public async Task GetSupporterAsync()
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var response = await this._staticBuilders.SupporterButtons(new ContextModel(this.Context, contextUser),
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var response = await staticBuilders.SupporterButtons(new ContextModel(this.Context, contextUser),
             false, true, userLocale: this.Context.Interaction.UserLocale, source: "getsupporter");
 
         await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
@@ -74,8 +60,8 @@ public class StaticSlashCommands : ApplicationCommandModule<ApplicationCommandCo
     [SlashCommand("supporters", "⭐ Shows all current supporters")]
     public async Task SupportersAsync()
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var response = await this._staticBuilders.SupportersAsync(new ContextModel(this.Context, contextUser));
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var response = await staticBuilders.SupportersAsync(new ContextModel(this.Context, contextUser));
 
         await this.Context.SendResponse(this.Interactivity, response);
         this.Context.LogCommandUsed(response.CommandResponse);
@@ -90,12 +76,13 @@ public class StaticSlashCommands : ApplicationCommandModule<ApplicationCommandCo
         ApplicationIntegrationType.GuildInstall,
         ApplicationIntegrationType.UserInstall
     ])]
-    public async Task GiftSupporterAsync([SlashCommandParameter(Name = "user", Description = "The user you want to gift supporter")] NetCord.User user)
+    public async Task GiftSupporterAsync(
+        [SlashCommandParameter(Name = "user", Description = "The user you want to gift supporter")] NetCord.User user)
     {
         await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
 
-        var recipientUser = await this._userService.GetUserAsync(user.Id);
-        var response = await this._staticBuilders.BuildGiftSupporterResponse(this.Context.User.Id, recipientUser,
+        var recipientUser = await userService.GetUserAsync(user.Id);
+        var response = await staticBuilders.BuildGiftSupporterResponse(this.Context.User.Id, recipientUser,
             Context.Interaction.UserLocale);
 
         await Context.SendFollowUpResponse(this.Interactivity, response, ephemeral: true);
@@ -115,8 +102,8 @@ public class StaticSlashCommands : ApplicationCommandModule<ApplicationCommandCo
     {
         await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
 
-        var recipientUser = await this._userService.GetUserAsync(targetUser.Id);
-        var response = await this._staticBuilders.BuildGiftSupporterResponse(this.Context.User.Id, recipientUser,
+        var recipientUser = await userService.GetUserAsync(targetUser.Id);
+        var response = await staticBuilders.BuildGiftSupporterResponse(this.Context.User.Id, recipientUser,
             Context.Interaction.UserLocale);
 
         await Context.SendFollowUpResponse(this.Interactivity, response, ephemeral: true);

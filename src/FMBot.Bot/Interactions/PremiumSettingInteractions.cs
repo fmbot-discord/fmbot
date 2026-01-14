@@ -15,27 +15,17 @@ using NetCord.Services.ComponentInteractions;
 
 namespace FMBot.Bot.Interactions;
 
-public class PremiumSettingInteractions : ComponentInteractionModule<ComponentInteractionContext>
+public class PremiumSettingInteractions(
+    GuildService guildService,
+    PremiumSettingBuilder premiumSettingBuilder,
+    GuildSettingBuilder guildSettingBuilder)
+    : ComponentInteractionModule<ComponentInteractionContext>
 {
-    private readonly GuildService _guildService;
-    private readonly PremiumSettingBuilder _premiumSettingBuilder;
-    private readonly GuildSettingBuilder _guildSettingBuilder;
-
-    public PremiumSettingInteractions(
-        GuildService guildService,
-        PremiumSettingBuilder premiumSettingBuilder,
-        GuildSettingBuilder guildSettingBuilder)
-    {
-        this._guildService = guildService;
-        this._premiumSettingBuilder = premiumSettingBuilder;
-        this._guildSettingBuilder = guildSettingBuilder;
-    }
-
     [ComponentInteraction(InteractionConstants.SetAllowedRoleMenu)]
     [ServerStaffOnly]
     public async Task SetGuildAllowedRoles()
     {
-        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
+        if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
         {
             await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
@@ -45,9 +35,9 @@ public class PremiumSettingInteractions : ComponentInteractionModule<ComponentIn
         var entityMenuInteraction = (EntityMenuInteraction)this.Context.Interaction;
         var selectedRoleIds = entityMenuInteraction.Data.SelectedValues;
 
-        await this._guildService.ChangeGuildAllowedRoles(this.Context.Guild, selectedRoleIds.ToArray());
+        await guildService.ChangeGuildAllowedRoles(this.Context.Guild, selectedRoleIds.ToArray());
 
-        var response = await this._premiumSettingBuilder.AllowedRoles(new ContextModel(this.Context), this.Context.User);
+        var response = await premiumSettingBuilder.AllowedRoles(new ContextModel(this.Context), this.Context.User);
         await this.Context.UpdateInteractionEmbed(response);
     }
 
@@ -55,7 +45,7 @@ public class PremiumSettingInteractions : ComponentInteractionModule<ComponentIn
     [ServerStaffOnly]
     public async Task SetGuildBlockedRoles()
     {
-        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
+        if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
         {
             await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
@@ -65,9 +55,9 @@ public class PremiumSettingInteractions : ComponentInteractionModule<ComponentIn
         var entityMenuInteraction = (EntityMenuInteraction)this.Context.Interaction;
         var selectedRoleIds = entityMenuInteraction.Data.SelectedValues;
 
-        await this._guildService.ChangeGuildBlockedRoles(this.Context.Guild, selectedRoleIds.ToArray());
+        await guildService.ChangeGuildBlockedRoles(this.Context.Guild, selectedRoleIds.ToArray());
 
-        var response = await this._premiumSettingBuilder.BlockedRoles(new ContextModel(this.Context), this.Context.User);
+        var response = await premiumSettingBuilder.BlockedRoles(new ContextModel(this.Context), this.Context.User);
         await this.Context.UpdateInteractionEmbed(response);
     }
 
@@ -75,7 +65,7 @@ public class PremiumSettingInteractions : ComponentInteractionModule<ComponentIn
     [ServerStaffOnly]
     public async Task SetBotManagementRoles()
     {
-        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context), managersAllowed: false))
+        if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context), managersAllowed: false))
         {
             await GuildSettingBuilder.UserNotAllowedResponse(this.Context, managersAllowed: false);
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
@@ -85,9 +75,9 @@ public class PremiumSettingInteractions : ComponentInteractionModule<ComponentIn
         var entityMenuInteraction = (EntityMenuInteraction)this.Context.Interaction;
         var selectedRoleIds = entityMenuInteraction.Data.SelectedValues;
 
-        await this._guildService.ChangeGuildBotManagementRoles(this.Context.Guild, selectedRoleIds.ToArray());
+        await guildService.ChangeGuildBotManagementRoles(this.Context.Guild, selectedRoleIds.ToArray());
 
-        var response = await this._premiumSettingBuilder.BotManagementRoles(new ContextModel(this.Context), this.Context.User);
+        var response = await premiumSettingBuilder.BotManagementRoles(new ContextModel(this.Context), this.Context.User);
         await this.Context.UpdateInteractionEmbed(response);
     }
 
@@ -95,9 +85,9 @@ public class PremiumSettingInteractions : ComponentInteractionModule<ComponentIn
     [ServerStaffOnly]
     public async Task RemoveGuildActivityThreshold()
     {
-        await this._guildService.SetGuildActivityThresholdDaysAsync(this.Context.Guild, null);
+        await guildService.SetGuildActivityThresholdDaysAsync(this.Context.Guild, null);
 
-        var response = await this._premiumSettingBuilder.SetGuildActivityThreshold(new ContextModel(this.Context), this.Context.User);
+        var response = await premiumSettingBuilder.SetGuildActivityThreshold(new ContextModel(this.Context), this.Context.User);
         await this.Context.UpdateInteractionEmbed(response);
     }
 
@@ -119,7 +109,7 @@ public class PremiumSettingInteractions : ComponentInteractionModule<ComponentIn
     [ServerStaffOnly]
     public async Task SetGuildActivityThreshold(string messageId)
     {
-        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
+        if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
         {
             await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
             return;
@@ -135,9 +125,9 @@ public class PremiumSettingInteractions : ComponentInteractionModule<ComponentIn
             return;
         }
 
-        await this._guildService.SetGuildActivityThresholdDaysAsync(this.Context.Guild, result);
+        await guildService.SetGuildActivityThresholdDaysAsync(this.Context.Guild, result);
 
-        var response = await this._premiumSettingBuilder.SetGuildActivityThreshold(new ContextModel(this.Context), this.Context.User);
+        var response = await premiumSettingBuilder.SetGuildActivityThreshold(new ContextModel(this.Context), this.Context.User);
         await this.Context.UpdateMessageEmbed(response, messageId);
     }
 }

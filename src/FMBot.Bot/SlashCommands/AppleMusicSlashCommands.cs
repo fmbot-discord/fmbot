@@ -1,6 +1,5 @@
 using System;
 using System.Threading.Tasks;
-
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
@@ -16,32 +15,28 @@ using Fergun.Interactive;
 
 namespace FMBot.Bot.SlashCommands;
 
-public class AppleMusicSlashCommands : ApplicationCommandModule<ApplicationCommandContext>
+public class AppleMusicSlashCommands(
+    AppleMusicService appleMusicService,
+    UserService userService,
+    IDataSourceFactory dataSourceFactory,
+    InteractiveService interactivity)
+    : ApplicationCommandModule<ApplicationCommandContext>
 {
-    private readonly AppleMusicService _appleMusicService;
-    private readonly UserService _userService;
-    private readonly IDataSourceFactory _dataSourceFactory;
+    private InteractiveService Interactivity { get; } = interactivity;
 
-    private InteractiveService Interactivity { get; }
-
-    public AppleMusicSlashCommands(AppleMusicService appleMusicService, UserService userService, IDataSourceFactory dataSourceFactory, InteractiveService interactivity)
-    {
-        this._appleMusicService = appleMusicService;
-        this._userService = userService;
-        this._dataSourceFactory = dataSourceFactory;
-        this.Interactivity = interactivity;
-    }
-
-    [SlashCommand("applemusic", "Search through Apple Music.", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,     InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
+    [SlashCommand("applemusic", "Search through Apple Music.",
+        Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild],
+        IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task AppleMusicAsync(
-        [SlashCommandParameter(Name = "search", Description = "Search value")] string searchValue = null,
+        [SlashCommandParameter(Name = "search", Description = "Search value")]
+        string searchValue = null,
         [SlashCommandParameter(Name = "private", Description = "Only show response to you")]
         bool privateResponse = false)
     {
         await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
 
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
         try
         {
@@ -63,7 +58,7 @@ public class AppleMusicSlashCommands : ApplicationCommandModule<ApplicationComma
                     sessionKey = contextUser.SessionKeyLastFm;
                 }
 
-                var recentScrobbles = await this._dataSourceFactory.GetRecentTracksAsync(contextUser.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
+                var recentScrobbles = await dataSourceFactory.GetRecentTracksAsync(contextUser.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
 
                 if (GenericEmbedService.RecentScrobbleCallFailed(recentScrobbles))
                 {
@@ -80,7 +75,7 @@ public class AppleMusicSlashCommands : ApplicationCommandModule<ApplicationComma
                 querystring = $"{currentTrack.TrackName} {currentTrack.ArtistName} {currentTrack.AlbumName}";
             }
 
-            var item = await this._appleMusicService.SearchAppleMusicSong(querystring);
+            var item = await appleMusicService.SearchAppleMusicSong(querystring);
 
             var response = new ResponseModel
             {

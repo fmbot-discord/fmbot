@@ -20,55 +20,29 @@ using NetCord.Services.ComponentInteractions;
 
 namespace FMBot.Bot.Interactions;
 
-public class AdminInteractions : ComponentInteractionModule<ComponentInteractionContext>
+public class AdminInteractions(
+    AdminService adminService,
+    CensorService censorService,
+    AlbumService albumService,
+    ArtistsService artistService,
+    IDataSourceFactory dataSourceFactory,
+    AliasService aliasService,
+    PlayService playService,
+    FriendsService friendsService,
+    UserService userService,
+    SupporterService supporterService,
+    GuildService guildService)
+    : ComponentInteractionModule<ComponentInteractionContext>
 {
-    private readonly AdminService _adminService;
-    private readonly CensorService _censorService;
-    private readonly AlbumService _albumService;
-    private readonly ArtistsService _artistService;
-    private readonly IDataSourceFactory _dataSourceFactory;
-    private readonly AliasService _aliasService;
-    private readonly PlayService _playService;
-    private readonly FriendsService _friendsService;
-    private readonly UserService _userService;
-    private readonly SupporterService _supporterService;
-    private readonly GuildService _guildService;
-
-    public AdminInteractions(
-        AdminService adminService,
-        CensorService censorService,
-        AlbumService albumService,
-        ArtistsService artistService,
-        IDataSourceFactory dataSourceFactory,
-        AliasService aliasService,
-        PlayService playService,
-        FriendsService friendsService,
-        UserService userService,
-        SupporterService supporterService,
-        GuildService guildService)
-    {
-        this._adminService = adminService;
-        this._censorService = censorService;
-        this._albumService = albumService;
-        this._artistService = artistService;
-        this._dataSourceFactory = dataSourceFactory;
-        this._aliasService = aliasService;
-        this._playService = playService;
-        this._friendsService = friendsService;
-        this._userService = userService;
-        this._supporterService = supporterService;
-        this._guildService = guildService;
-    }
-
     [ComponentInteraction(InteractionConstants.ModerationCommands.CensorTypes)]
     public async Task SetCensoredArtist(string censoredId)
     {
         var embed = new EmbedProperties();
 
         var id = int.Parse(censoredId);
-        var censoredMusic = await this._censorService.GetForId(id);
+        var censoredMusic = await censorService.GetForId(id);
 
-        if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             return;
         }
@@ -91,7 +65,7 @@ public class AdminInteractions : ComponentInteractionModule<ComponentInteraction
             }
         }
 
-        censoredMusic = await this._censorService.SetCensorType(censoredMusic, censoredMusic.CensorType);
+        censoredMusic = await censorService.SetCensorType(censoredMusic, censoredMusic.CensorType);
 
         var description = new StringBuilder();
 
@@ -129,9 +103,9 @@ public class AdminInteractions : ComponentInteractionModule<ComponentInteraction
         var embed = new EmbedProperties();
 
         var id = int.Parse(censoredId);
-        var artistAlias = await this._aliasService.GetArtistAliasForId(id);
+        var artistAlias = await aliasService.GetArtistAliasForId(id);
 
-        if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             return;
         }
@@ -154,7 +128,7 @@ public class AdminInteractions : ComponentInteractionModule<ComponentInteraction
             }
         }
 
-        artistAlias = await this._aliasService.SetAliasOptions(artistAlias, artistAlias.Options);
+        artistAlias = await aliasService.SetAliasOptions(artistAlias, artistAlias.Options);
 
         var description = new StringBuilder();
 
@@ -173,7 +147,7 @@ public class AdminInteractions : ComponentInteractionModule<ComponentInteraction
             }
         }
 
-        this._aliasService.RemoveCache();
+        aliasService.RemoveCache();
 
         embed.WithDescription(description.ToString());
         embed.WithColor(DiscordConstants.InformationColorBlue);
@@ -198,7 +172,7 @@ public class AdminInteractions : ComponentInteractionModule<ComponentInteraction
         var positiveResponse = $"Thanks, your report for the user `{userNameLastFm}` has been received. \n" +
                                $"You will currently not be notified if your report is processed.";
 
-        var existingBottedUser = await this._adminService.GetBottedUserAsync(userNameLastFm);
+        var existingBottedUser = await adminService.GetBottedUserAsync(userNameLastFm);
         if (existingBottedUser is { BanActive: true })
         {
             await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
@@ -208,7 +182,7 @@ public class AdminInteractions : ComponentInteractionModule<ComponentInteraction
             return;
         }
 
-        var existingReport = await this._adminService.UserReportAlreadyExists(userNameLastFm);
+        var existingReport = await adminService.UserReportAlreadyExists(userNameLastFm);
         if (existingReport)
         {
             await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
@@ -223,8 +197,8 @@ public class AdminInteractions : ComponentInteractionModule<ComponentInteraction
             .WithFlags(MessageFlags.Ephemeral)));
 
         var report =
-            await this._adminService.CreateBottedUserReportAsync(this.Context.User.Id, userNameLastFm, note);
-        await this._adminService.PostReport(report);
+            await adminService.CreateBottedUserReportAsync(this.Context.User.Id, userNameLastFm, note);
+        await adminService.PostReport(report);
     }
 
     [ComponentInteraction("gwk-report-ban")]
@@ -244,13 +218,13 @@ public class AdminInteractions : ComponentInteractionModule<ComponentInteraction
     [ComponentInteraction("gwk-report-deny")]
     public async Task GwkReportDeny(string reportId)
     {
-        if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             return;
         }
 
         var id = int.Parse(reportId);
-        var report = await this._adminService.GetReportForId(id);
+        var report = await adminService.GetReportForId(id);
 
         if (report.ReportStatus != ReportStatus.Pending)
         {
@@ -260,7 +234,7 @@ public class AdminInteractions : ComponentInteractionModule<ComponentInteraction
             return;
         }
 
-        await this._adminService.UpdateReport(report, ReportStatus.Denied, this.Context.User.Id);
+        await adminService.UpdateReport(report, ReportStatus.Denied, this.Context.User.Id);
 
         await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
                 .WithContent("Report response processed, thank you.")
@@ -282,7 +256,7 @@ public class AdminInteractions : ComponentInteractionModule<ComponentInteraction
     [ComponentInteraction("gwk-report-ban-confirmed")]
     public async Task GwkReportBanConfirmed(string reportId, string messageId)
     {
-        if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             return;
         }
@@ -290,7 +264,7 @@ public class AdminInteractions : ComponentInteractionModule<ComponentInteraction
         var note = this.Context.GetModalValue("note");
 
         var id = int.Parse(reportId);
-        var report = await this._adminService.GetReportForId(id);
+        var report = await adminService.GetReportForId(id);
 
         if (report.ReportStatus != ReportStatus.Pending)
         {
@@ -300,16 +274,16 @@ public class AdminInteractions : ComponentInteractionModule<ComponentInteraction
             return;
         }
 
-        await this._adminService.UpdateReport(report, ReportStatus.AcceptedWithComment, this.Context.User.Id);
+        await adminService.UpdateReport(report, ReportStatus.AcceptedWithComment, this.Context.User.Id);
 
-        var userInfo = await this._dataSourceFactory.GetLfmUserInfoAsync(report.UserNameLastFM);
+        var userInfo = await dataSourceFactory.GetLfmUserInfoAsync(report.UserNameLastFM);
         DateTimeOffset? age = null;
         if (userInfo != null && userInfo.Subscriber)
         {
             age = DateTimeOffset.FromUnixTimeSeconds(userInfo.RegisteredUnix);
         }
 
-        var result = await this._adminService.AddBottedUserAsync(report.UserNameLastFM, note, age?.DateTime);
+        var result = await adminService.AddBottedUserAsync(report.UserNameLastFM, note, age?.DateTime);
 
         if (result)
         {
@@ -336,15 +310,15 @@ public class AdminInteractions : ComponentInteractionModule<ComponentInteraction
     [ComponentInteraction("gwk-filtered-user-to-ban")]
     public async Task GwkFilteredUserToBan(string filteredUserId)
     {
-        if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             return;
         }
 
         var id = int.Parse(filteredUserId);
-        var filteredUser = await this._adminService.GetFilteredUserForIdAsync(id);
+        var filteredUser = await adminService.GetFilteredUserForIdAsync(id);
 
-        var userInfo = await this._dataSourceFactory.GetLfmUserInfoAsync(filteredUser.UserNameLastFm);
+        var userInfo = await dataSourceFactory.GetLfmUserInfoAsync(filteredUser.UserNameLastFm);
         DateTimeOffset? age = null;
         if (userInfo != null && userInfo.Subscriber)
         {
@@ -354,7 +328,7 @@ public class AdminInteractions : ComponentInteractionModule<ComponentInteraction
         var filterInfo = WhoKnowsFilterService.FilteredUserReason(filteredUser);
 
         var result =
-            await this._adminService.AddBottedUserAsync(filteredUser.UserNameLastFm, filterInfo.ToString(),
+            await adminService.AddBottedUserAsync(filteredUser.UserNameLastFm, filterInfo.ToString(),
                 age?.DateTime);
 
         if (result)
@@ -398,7 +372,7 @@ public class AdminInteractions : ComponentInteractionModule<ComponentInteraction
         var artistName = this.Context.GetModalValue("artist_name");
         var note = this.Context.GetModalValue("note");
 
-        var existingCensor = await this._censorService.AlbumResult(albumName, artistName);
+        var existingCensor = await censorService.AlbumResult(albumName, artistName);
         if (existingCensor != CensorService.CensorResult.Safe)
         {
             await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
@@ -408,7 +382,7 @@ public class AdminInteractions : ComponentInteractionModule<ComponentInteraction
             return;
         }
 
-        var album = await this._albumService.GetAlbumFromDatabase(artistName, albumName);
+        var album = await albumService.GetAlbumFromDatabase(artistName, albumName);
 
         if (album == null)
         {
@@ -419,7 +393,7 @@ public class AdminInteractions : ComponentInteractionModule<ComponentInteraction
             return;
         }
 
-        var alreadyExists = await this._censorService.AlbumReportAlreadyExists(artistName, albumName);
+        var alreadyExists = await censorService.AlbumReportAlreadyExists(artistName, albumName);
         if (alreadyExists)
         {
             await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
@@ -434,9 +408,9 @@ public class AdminInteractions : ComponentInteractionModule<ComponentInteraction
                          "You will currently not be notified if your report is processed.")
             .WithFlags(MessageFlags.Ephemeral)));
 
-        var report = await this._censorService.CreateAlbumReport(this.Context.User.Id, albumName,
+        var report = await censorService.CreateAlbumReport(this.Context.User.Id, albumName,
             artistName, note, album);
-        await this._censorService.PostReport(report);
+        await censorService.PostReport(report);
     }
 
     [ComponentInteraction(InteractionConstants.ModerationCommands.ReportArtist)]
@@ -452,7 +426,7 @@ public class AdminInteractions : ComponentInteractionModule<ComponentInteraction
         var artistName = this.Context.GetModalValue("artist_name");
         var note = this.Context.GetModalValue("note");
 
-        var existingCensor = await this._censorService.ArtistResult(artistName);
+        var existingCensor = await censorService.ArtistResult(artistName);
         if (existingCensor != CensorService.CensorResult.Safe)
         {
             await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
@@ -462,7 +436,7 @@ public class AdminInteractions : ComponentInteractionModule<ComponentInteraction
             return;
         }
 
-        var artist = await this._artistService.GetArtistFromDatabase(artistName);
+        var artist = await artistService.GetArtistFromDatabase(artistName);
 
         if (artist == null)
         {
@@ -473,7 +447,7 @@ public class AdminInteractions : ComponentInteractionModule<ComponentInteraction
             return;
         }
 
-        var alreadyExists = await this._censorService.ArtistReportAlreadyExists(artistName);
+        var alreadyExists = await censorService.ArtistReportAlreadyExists(artistName);
         if (alreadyExists)
         {
             await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
@@ -489,20 +463,20 @@ public class AdminInteractions : ComponentInteractionModule<ComponentInteraction
             .WithFlags(MessageFlags.Ephemeral)));
 
         var report =
-            await this._censorService.CreateArtistReport(this.Context.User.Id, artistName, note, artist);
-        await this._censorService.PostReport(report);
+            await censorService.CreateArtistReport(this.Context.User.Id, artistName, note, artist);
+        await censorService.PostReport(report);
     }
 
     [ComponentInteraction("censor-report-mark-nsfw")]
     public async Task MarkReportNsfw(string reportId)
     {
-        if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             return;
         }
 
         var id = int.Parse(reportId);
-        var report = await this._censorService.GetReportForId(id);
+        var report = await censorService.GetReportForId(id);
 
         if (report.ReportStatus != ReportStatus.Pending)
         {
@@ -511,7 +485,7 @@ public class AdminInteractions : ComponentInteractionModule<ComponentInteraction
 
         if (report.IsArtist)
         {
-            var existing = await this._censorService.GetCurrentArtist(report.ArtistName);
+            var existing = await censorService.GetCurrentArtist(report.ArtistName);
             if (existing != null)
             {
                 await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
@@ -520,11 +494,11 @@ public class AdminInteractions : ComponentInteractionModule<ComponentInteraction
                 return;
             }
 
-            await this._censorService.AddArtist(report.ArtistName, CensorType.ArtistImageNsfw);
+            await censorService.AddArtist(report.ArtistName, CensorType.ArtistImageNsfw);
         }
         else
         {
-            var existing = await this._censorService.GetCurrentAlbum(report.AlbumName, report.ArtistName);
+            var existing = await censorService.GetCurrentAlbum(report.AlbumName, report.ArtistName);
             if (existing != null)
             {
                 await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
@@ -533,10 +507,10 @@ public class AdminInteractions : ComponentInteractionModule<ComponentInteraction
                 return;
             }
 
-            await this._censorService.AddAlbum(report.AlbumName, report.ArtistName, CensorType.AlbumCoverNsfw);
+            await censorService.AddAlbum(report.AlbumName, report.ArtistName, CensorType.AlbumCoverNsfw);
         }
 
-        await this._censorService.UpdateReport(report, ReportStatus.Accepted, this.Context.User.Id);
+        await censorService.UpdateReport(report, ReportStatus.Accepted, this.Context.User.Id);
 
         await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
                 .WithContent("Report response processed, thank you.")
@@ -558,13 +532,13 @@ public class AdminInteractions : ComponentInteractionModule<ComponentInteraction
     [ComponentInteraction("censor-report-mark-censored")]
     public async Task MarkReportCensored(string reportId)
     {
-        if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             return;
         }
 
         var id = int.Parse(reportId);
-        var report = await this._censorService.GetReportForId(id);
+        var report = await censorService.GetReportForId(id);
 
         if (report.ReportStatus != ReportStatus.Pending)
         {
@@ -573,7 +547,7 @@ public class AdminInteractions : ComponentInteractionModule<ComponentInteraction
 
         if (report.IsArtist)
         {
-            var existing = await this._censorService.GetCurrentArtist(report.ArtistName);
+            var existing = await censorService.GetCurrentArtist(report.ArtistName);
             if (existing != null)
             {
                 await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
@@ -582,11 +556,11 @@ public class AdminInteractions : ComponentInteractionModule<ComponentInteraction
                 return;
             }
 
-            await this._censorService.AddArtist(report.ArtistName, CensorType.ArtistImageCensored);
+            await censorService.AddArtist(report.ArtistName, CensorType.ArtistImageCensored);
         }
         else
         {
-            var existing = await this._censorService.GetCurrentAlbum(report.AlbumName, report.ArtistName);
+            var existing = await censorService.GetCurrentAlbum(report.AlbumName, report.ArtistName);
             if (existing != null)
             {
                 await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
@@ -595,10 +569,10 @@ public class AdminInteractions : ComponentInteractionModule<ComponentInteraction
                 return;
             }
 
-            await this._censorService.AddAlbum(report.AlbumName, report.ArtistName, CensorType.AlbumCoverCensored);
+            await censorService.AddAlbum(report.AlbumName, report.ArtistName, CensorType.AlbumCoverCensored);
         }
 
-        await this._censorService.UpdateReport(report, ReportStatus.Accepted, this.Context.User.Id);
+        await censorService.UpdateReport(report, ReportStatus.Accepted, this.Context.User.Id);
 
         await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
                 .WithContent("Report processed, thank you.")
@@ -620,20 +594,20 @@ public class AdminInteractions : ComponentInteractionModule<ComponentInteraction
     [ComponentInteraction("censor-report-deny")]
     public async Task MarkReportDenied(string reportId)
     {
-        if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             return;
         }
 
         var id = int.Parse(reportId);
-        var report = await this._censorService.GetReportForId(id);
+        var report = await censorService.GetReportForId(id);
 
         if (report.ReportStatus != ReportStatus.Pending)
         {
             return;
         }
 
-        await this._censorService.UpdateReport(report, ReportStatus.Denied, this.Context.User.Id);
+        await censorService.UpdateReport(report, ReportStatus.Denied, this.Context.User.Id);
 
         await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
                 .WithContent("Report processed, thank you.")
@@ -655,7 +629,7 @@ public class AdminInteractions : ComponentInteractionModule<ComponentInteraction
     [ComponentInteraction(InteractionConstants.ModerationCommands.MoveUserData)]
     public async Task MoveUserData(string oldUserId, string newUserId)
     {
-        if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             return;
         }
@@ -667,7 +641,7 @@ public class AdminInteractions : ComponentInteractionModule<ComponentInteraction
 
         try
         {
-            await this._playService.MoveData(int.Parse(oldUserId), int.Parse(newUserId));
+            await playService.MoveData(int.Parse(oldUserId), int.Parse(newUserId));
 
             await this.Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
                 .WithContent("Moving data completed.")
@@ -694,7 +668,7 @@ public class AdminInteractions : ComponentInteractionModule<ComponentInteraction
     [ComponentInteraction(InteractionConstants.ModerationCommands.MoveSupporter)]
     public async Task MoveSupporter(string oldUserId, string newUserId)
     {
-        if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             return;
         }
@@ -706,7 +680,7 @@ public class AdminInteractions : ComponentInteractionModule<ComponentInteraction
 
         try
         {
-            await this._supporterService.MigrateDiscordForSupporter(ulong.Parse(oldUserId), ulong.Parse(newUserId));
+            await supporterService.MigrateDiscordForSupporter(ulong.Parse(oldUserId), ulong.Parse(newUserId));
 
             await this.Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
                 .WithContent("Moving supporter completed.")
@@ -733,7 +707,7 @@ public class AdminInteractions : ComponentInteractionModule<ComponentInteraction
     [ComponentInteraction("admin-delete-user")]
     public async Task DeleteUser(string userId)
     {
-        if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+        if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
         {
             return;
         }
@@ -743,10 +717,10 @@ public class AdminInteractions : ComponentInteractionModule<ComponentInteraction
                 .WithFlags(MessageFlags.Ephemeral)));
         await this.Context.DisableInteractionButtons();
 
-        await this._friendsService.RemoveAllFriendsAsync(int.Parse(userId));
-        await this._friendsService.RemoveUserFromOtherFriendsAsync(int.Parse(userId));
+        await friendsService.RemoveAllFriendsAsync(int.Parse(userId));
+        await friendsService.RemoveUserFromOtherFriendsAsync(int.Parse(userId));
 
-        await this._userService.DeleteUser(int.Parse(userId));
+        await userService.DeleteUser(int.Parse(userId));
 
         await this.Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
             .WithContent("Deleting user completed.")
@@ -767,7 +741,7 @@ public class AdminInteractions : ComponentInteractionModule<ComponentInteraction
     [ComponentInteraction(InteractionConstants.ModerationCommands.GuildFlags)]
     public async Task SetGuildFlags(string discordGuildId)
     {
-        if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+        if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
         {
             await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
                 .WithContent(Constants.FmbotStaffOnly)
@@ -777,7 +751,7 @@ public class AdminInteractions : ComponentInteractionModule<ComponentInteraction
         }
 
         var discordId = ulong.Parse(discordGuildId);
-        var guild = await this._guildService.GetGuildAsync(discordId);
+        var guild = await guildService.GetGuildAsync(discordId);
         if (guild == null)
         {
             await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
@@ -805,7 +779,7 @@ public class AdminInteractions : ComponentInteractionModule<ComponentInteraction
             }
         }
 
-        await this._guildService.SetGuildFlags(guild.GuildId, newFlags);
+        await guildService.SetGuildFlags(guild.GuildId, newFlags);
 
         var flagsDescription = newFlags == 0 ? "None" : string.Join(", ", selectedValues);
         await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()

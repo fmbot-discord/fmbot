@@ -17,28 +17,14 @@ using NetCord.Services.ComponentInteractions;
 
 namespace FMBot.Bot.Interactions;
 
-public class ArtistInteractions : ComponentInteractionModule<ComponentInteractionContext>
+public class ArtistInteractions(
+    UserService userService,
+    ArtistBuilders artistBuilders,
+    SettingService settingService,
+    ArtistsService artistsService,
+    InteractiveService interactivity)
+    : ComponentInteractionModule<ComponentInteractionContext>
 {
-    private readonly UserService _userService;
-    private readonly ArtistBuilders _artistBuilders;
-    private readonly SettingService _settingService;
-    private readonly ArtistsService _artistsService;
-    private readonly InteractiveService _interactivity;
-
-    public ArtistInteractions(
-        UserService userService,
-        ArtistBuilders artistBuilders,
-        SettingService settingService,
-        ArtistsService artistsService,
-        InteractiveService interactivity)
-    {
-        this._userService = userService;
-        this._artistBuilders = artistBuilders;
-        this._settingService = settingService;
-        this._artistsService = artistsService;
-        this._interactivity = interactivity;
-    }
-
     [ComponentInteraction(InteractionConstants.Artist.Info)]
     [UsernameSetRequired]
     public async Task ArtistInfoAsync(string artistId, string discordUser, string requesterDiscordUser)
@@ -49,17 +35,17 @@ public class ArtistInteractions : ComponentInteractionModule<ComponentInteractio
         var discordUserId = ulong.Parse(discordUser);
         var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
 
-        var contextUser = await this._userService.GetUserWithDiscogs(requesterDiscordUserId);
+        var contextUser = await userService.GetUserWithDiscogs(requesterDiscordUserId);
         var discordContextUser = await this.Context.GetUserAsync(requesterDiscordUserId);
-        var userSettings = await this._settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
+        var userSettings = await settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
 
-        var artist = await this._artistsService.GetArtistForId(int.Parse(artistId));
+        var artist = await artistsService.GetArtistForId(int.Parse(artistId));
 
         try
         {
-            var response = await this._artistBuilders.ArtistInfoAsync(new ContextModel(this.Context, contextUser, discordContextUser), userSettings, artist.Name, false);
+            var response = await artistBuilders.ArtistInfoAsync(new ContextModel(this.Context, contextUser, discordContextUser), userSettings, artist.Name, false);
 
-            await this.Context.UpdateInteractionEmbed(response, this._interactivity, false);
+            await this.Context.UpdateInteractionEmbed(response, interactivity, false);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
@@ -78,18 +64,18 @@ public class ArtistInteractions : ComponentInteractionModule<ComponentInteractio
         var discordUserId = ulong.Parse(discordUser);
         var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
 
-        var contextUser = await this._userService.GetUserWithDiscogs(requesterDiscordUserId);
+        var contextUser = await userService.GetUserWithDiscogs(requesterDiscordUserId);
         var discordContextUser = await this.Context.GetUserAsync(requesterDiscordUserId);
-        var userSettings = await this._settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
+        var userSettings = await settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
 
-        var artist = await this._artistsService.GetArtistForId(int.Parse(artistId));
+        var artist = await artistsService.GetArtistForId(int.Parse(artistId));
 
         try
         {
-            var response = await this._artistBuilders.ArtistOverviewAsync(new ContextModel(this.Context, contextUser, discordContextUser), userSettings,
+            var response = await artistBuilders.ArtistOverviewAsync(new ContextModel(this.Context, contextUser, discordContextUser), userSettings,
                 artist.Name, false);
 
-            await this.Context.UpdateInteractionEmbed(response, this._interactivity, false);
+            await this.Context.UpdateInteractionEmbed(response, interactivity, false);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
@@ -107,17 +93,17 @@ public class ArtistInteractions : ComponentInteractionModule<ComponentInteractio
         var discordUserId = ulong.Parse(discordUser);
         var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
 
-        var contextUser = await this._userService.GetUserAsync(requesterDiscordUserId);
+        var contextUser = await userService.GetUserAsync(requesterDiscordUserId);
         var discordContextUser = await this.Context.GetUserAsync(requesterDiscordUserId);
-        var userSettings = await this._settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
+        var userSettings = await settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
 
-        var artist = await this._artistsService.GetArtistForId(int.Parse(artistId));
+        var artist = await artistsService.GetArtistForId(int.Parse(artistId));
         var timeSettings = SettingService.GetTimePeriod(Enum.GetName(typeof(PlayTimePeriod), PlayTimePeriod.AllTime), TimePeriod.AllTime);
 
-        var response = await this._artistBuilders.ArtistTracksAsync(new ContextModel(this.Context, contextUser, discordContextUser), timeSettings,
+        var response = await artistBuilders.ArtistTracksAsync(new ContextModel(this.Context, contextUser, discordContextUser), timeSettings,
             userSettings, artist.Name, false);
 
-        await this.Context.UpdateInteractionEmbed(response, this._interactivity, false);
+        await this.Context.UpdateInteractionEmbed(response, interactivity, false);
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
@@ -130,16 +116,16 @@ public class ArtistInteractions : ComponentInteractionModule<ComponentInteractio
         var discordUserId = ulong.Parse(discordUser);
         var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
 
-        var contextUser = await this._userService.GetUserAsync(requesterDiscordUserId);
+        var contextUser = await userService.GetUserAsync(requesterDiscordUserId);
         var discordContextUser = await this.Context.GetUserAsync(requesterDiscordUserId);
-        var userSettings = await this._settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
+        var userSettings = await settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
 
-        var artist = await this._artistsService.GetArtistForId(int.Parse(artistId));
+        var artist = await artistsService.GetArtistForId(int.Parse(artistId));
 
-        var response = await this._artistBuilders.ArtistAlbumsAsync(new ContextModel(this.Context, contextUser, discordContextUser),
+        var response = await artistBuilders.ArtistAlbumsAsync(new ContextModel(this.Context, contextUser, discordContextUser),
             userSettings, artist.Name, false);
 
-        await this.Context.UpdateInteractionEmbed(response, this._interactivity, false);
+        await this.Context.UpdateInteractionEmbed(response, interactivity, false);
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
@@ -148,9 +134,9 @@ public class ArtistInteractions : ComponentInteractionModule<ComponentInteractio
     [RequiresIndex]
     public async Task WhoKnowsFilteringAsync(string artistId)
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
-        var artist = await this._artistsService.GetArtistForId(int.Parse(artistId));
+        var artist = await artistsService.GetArtistForId(int.Parse(artistId));
 
         var entityMenuInteraction = (EntityMenuInteraction)this.Context.Interaction;
         var roleIds = entityMenuInteraction.Data.SelectedValues.ToList();
@@ -158,7 +144,7 @@ public class ArtistInteractions : ComponentInteractionModule<ComponentInteractio
         try
         {
             // TODO add redirects
-            var response = await this._artistBuilders.WhoKnowsArtistAsync(new ContextModel(this.Context, contextUser), ResponseMode.Embed, artist.Name, true, roleIds);
+            var response = await artistBuilders.WhoKnowsArtistAsync(new ContextModel(this.Context, contextUser), ResponseMode.Embed, artist.Name, true, roleIds);
 
             await this.Context.UpdateInteractionEmbed(response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -177,13 +163,13 @@ public class ArtistInteractions : ComponentInteractionModule<ComponentInteractio
         await RespondAsync(InteractionCallback.DeferredModifyMessage);
         await this.Context.DisableInteractionButtons();
 
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var artist = await this._artistsService.GetArtistForId(int.Parse(artistId));
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var artist = await artistsService.GetArtistForId(int.Parse(artistId));
         var mode = contextUser.Mode ?? ResponseMode.Embed;
 
         try
         {
-            var response = await this._artistBuilders.WhoKnowsArtistAsync(new ContextModel(this.Context, contextUser), mode, artist.Name, showCrownButton: true);
+            var response = await artistBuilders.WhoKnowsArtistAsync(new ContextModel(this.Context, contextUser), mode, artist.Name, showCrownButton: true);
 
             await this.Context.UpdateInteractionEmbed(response, defer: false);
             this.Context.LogCommandUsed(response.CommandResponse);

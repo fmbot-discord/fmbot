@@ -22,31 +22,19 @@ namespace FMBot.Bot.TextCommands;
 [ModuleName("Owner commands")]
 [Summary(".fmbot Owners Only")]
 [ExcludeFromHelp]
-public class OwnerCommands : BaseCommandModule
+public class OwnerCommands(
+    AdminService adminService,
+    UserService userService,
+    IOptions<BotSettings> botSettings,
+    IMemoryCache cache,
+    ShardedGatewayClient client)
+    : BaseCommandModule(botSettings)
 {
-    private readonly AdminService _adminService;
-    private readonly UserService _userService;
-    private readonly IMemoryCache _cache;
-    private readonly ShardedGatewayClient _client;
-
-    public OwnerCommands(
-        AdminService adminService,
-        UserService userService,
-        IOptions<BotSettings> botSettings,
-        IMemoryCache cache,
-        ShardedGatewayClient client) : base(botSettings)
-    {
-        this._adminService = adminService;
-        this._userService = userService;
-        this._cache = cache;
-        this._client = client;
-    }
-
     [Command("say"), Summary("Says something")]
     [UsernameSetRequired]
     public async Task SayAsync([CommandParameter(Remainder = true)] string say)
     {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
         {
             try
             {
@@ -64,7 +52,7 @@ public class OwnerCommands : BaseCommandModule
     [Summary("Reboots the bot.")]
     public async Task BotRestartAsync()
     {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
         {
             await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Restarting bot..." });
             this.Context.LogCommandUsed();
@@ -81,7 +69,7 @@ public class OwnerCommands : BaseCommandModule
     [UsernameSetRequired]
     public async Task SetUserTypeAsync(string userId = null, string userType = null)
     {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
         {
             if (userId == null || userType == null || userId == "help")
             {
@@ -97,7 +85,7 @@ public class OwnerCommands : BaseCommandModule
                 return;
             }
 
-            if (await this._adminService.SetUserTypeAsync(ulong.Parse(userId), userTypeEnum))
+            if (await adminService.SetUserTypeAsync(ulong.Parse(userId), userTypeEnum))
             {
                 await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "You got it. User perms changed." });
                 this.Context.LogCommandUsed();
@@ -119,7 +107,7 @@ public class OwnerCommands : BaseCommandModule
     [UsernameSetRequired]
     public async Task StorageCheckAsync()
     {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
         {
             try
             {
@@ -188,12 +176,12 @@ public class OwnerCommands : BaseCommandModule
     [Summary("Removes users who have deleted their Last.fm account from .fmbot")]
     public async Task TimerStatusAsync()
     {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
         {
             try
             {
                 await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Starting removed Last.fm user deleter." });
-                var deletedUsers = await this._userService.DeleteInactiveUsers();
+                var deletedUsers = await userService.DeleteInactiveUsers();
                 await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = $"Deleted {deletedUsers} users from the database with deleted Last.fm" });
             }
             catch (Exception e)
@@ -212,12 +200,12 @@ public class OwnerCommands : BaseCommandModule
     [Summary("Removes duplicate users and moves their data to their new account")]
     public async Task DeleteOldDuplicateUsersAsync()
     {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
         {
             try
             {
                 await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Starting inactive user deleter / de-duplicater." });
-                var deletedUsers = await this._userService.DeleteOldDuplicateUsers();
+                var deletedUsers = await userService.DeleteOldDuplicateUsers();
                 await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = $"Deleted {deletedUsers} inactive users from the database" });
             }
             catch (Exception e)
@@ -236,12 +224,12 @@ public class OwnerCommands : BaseCommandModule
     [Summary("Removes plays outside of last 1000 for inactive users")]
     public async Task PrunePlaysForInactiveUsers()
     {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
         {
             try
             {
                 await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Starting play pruner for inactive users." });
-                var usersPruned = await this._userService.PrunePlaysForInactiveUsers();
+                var usersPruned = await userService.PrunePlaysForInactiveUsers();
                 await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = $"Pruned plays for {usersPruned} inactive users" });
             }
             catch (Exception e)
@@ -261,9 +249,9 @@ public class OwnerCommands : BaseCommandModule
     [GuildOnly]
     public async Task ToggleSpecialGuildAsync()
     {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
         {
-            var specialGuild = await this._adminService.ToggleSpecialGuildAsync(this.Context.Guild);
+            var specialGuild = await adminService.ToggleSpecialGuildAsync(this.Context.Guild);
 
             if (specialGuild == true)
             {
@@ -287,7 +275,7 @@ public class OwnerCommands : BaseCommandModule
     [Summary("Displays detailed memory diagnostics.")]
     public async Task MemoryDiagnosticsAsync()
     {
-        if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             return;
         }
@@ -355,7 +343,7 @@ public class OwnerCommands : BaseCommandModule
         embed.AddField("Performance", perfInfo.ToString());
 
         var cacheStats = GetCacheStatistics();
-        cacheStats += $"\n**Downloaded members**: {this._client.Sum(shard => shard.Cache.Guilds.Values.Sum(g => g.Users?.Count ?? 0))}";
+        cacheStats += $"\n**Downloaded members**: {client.Sum(shard => shard.Cache.Guilds.Values.Sum(g => g.Users?.Count ?? 0))}";
         if (!string.IsNullOrEmpty(cacheStats))
         {
             embed.AddField("Cache Statistics", cacheStats);
@@ -387,7 +375,7 @@ public class OwnerCommands : BaseCommandModule
 
         try
         {
-            if (_cache is MemoryCache memoryCache)
+            if (cache is MemoryCache memoryCache)
             {
                 var stats = memoryCache.GetCurrentStatistics();
                 if (stats != null)
@@ -402,13 +390,13 @@ public class OwnerCommands : BaseCommandModule
                 }
                 else
                 {
-                    sb.AppendLine($"**Cache Type:** `{_cache.GetType().Name}`");
+                    sb.AppendLine($"**Cache Type:** `{cache.GetType().Name}`");
                     sb.AppendLine("**Statistics:** Not available (enable MemoryCacheOptions.TrackStatistics)");
                 }
             }
             else
             {
-                sb.AppendLine($"**Cache Type:** `{_cache.GetType().Name}`");
+                sb.AppendLine($"**Cache Type:** `{cache.GetType().Name}`");
             }
         }
         catch (Exception ex)

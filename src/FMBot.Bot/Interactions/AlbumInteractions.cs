@@ -17,28 +17,14 @@ using NetCord.Services.ComponentInteractions;
 
 namespace FMBot.Bot.Interactions;
 
-public class AlbumInteractions : ComponentInteractionModule<ComponentInteractionContext>
+public class AlbumInteractions(
+    UserService userService,
+    AlbumBuilders albumBuilders,
+    SettingService settingService,
+    AlbumService albumService,
+    InteractiveService interactivity)
+    : ComponentInteractionModule<ComponentInteractionContext>
 {
-    private readonly UserService _userService;
-    private readonly AlbumBuilders _albumBuilders;
-    private readonly SettingService _settingService;
-    private readonly AlbumService _albumService;
-    private readonly InteractiveService _interactivity;
-
-    public AlbumInteractions(
-        UserService userService,
-        AlbumBuilders albumBuilders,
-        SettingService settingService,
-        AlbumService albumService,
-        InteractiveService interactivity)
-    {
-        this._userService = userService;
-        this._albumBuilders = albumBuilders;
-        this._settingService = settingService;
-        this._albumService = albumService;
-        this._interactivity = interactivity;
-    }
-
     [ComponentInteraction(InteractionConstants.Album.Info)]
     [UsernameSetRequired]
     public async Task AlbumAsync(string album, string discordUser, string requesterDiscordUser)
@@ -50,18 +36,18 @@ public class AlbumInteractions : ComponentInteractionModule<ComponentInteraction
         var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
         var albumId = int.Parse(album);
 
-        var contextUser = await this._userService.GetUserWithDiscogs(requesterDiscordUserId);
+        var contextUser = await userService.GetUserWithDiscogs(requesterDiscordUserId);
         var discordContextUser = await this.Context.GetUserAsync(requesterDiscordUserId);
-        var userSettings = await this._settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
+        var userSettings = await settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
 
-        var dbAlbum = await this._albumService.GetAlbumForId(albumId);
+        var dbAlbum = await albumService.GetAlbumForId(albumId);
 
         try
         {
-            var response = await this._albumBuilders.AlbumAsync(
+            var response = await albumBuilders.AlbumAsync(
                 new ContextModel(this.Context, contextUser, discordContextUser), $"{dbAlbum.ArtistName} | {dbAlbum.Name}", userSettings);
 
-            await this.Context.UpdateInteractionEmbed(response, this._interactivity, false);
+            await this.Context.UpdateInteractionEmbed(response, interactivity, false);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
@@ -75,16 +61,16 @@ public class AlbumInteractions : ComponentInteractionModule<ComponentInteraction
     [RequiresIndex]
     public async Task WhoKnowsFilteringAsync(string albumId)
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
-        var album = await this._albumService.GetAlbumForId(int.Parse(albumId));
+        var album = await albumService.GetAlbumForId(int.Parse(albumId));
 
         var entityMenuInteraction = (EntityMenuInteraction)this.Context.Interaction;
         var roleIds = entityMenuInteraction.Data.SelectedValues.ToList();
 
         try
         {
-            var response = await this._albumBuilders.WhoKnowsAlbumAsync(new ContextModel(this.Context, contextUser), ResponseMode.Embed, $"{album.ArtistName} | {album.Name}", true, roleIds);
+            var response = await albumBuilders.WhoKnowsAlbumAsync(new ContextModel(this.Context, contextUser), ResponseMode.Embed, $"{album.ArtistName} | {album.Name}", true, roleIds);
 
             await this.Context.UpdateInteractionEmbed(response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -106,17 +92,17 @@ public class AlbumInteractions : ComponentInteractionModule<ComponentInteraction
         var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
         var albumId = int.Parse(album);
 
-        var contextUser = await this._userService.GetUserWithDiscogs(requesterDiscordUserId);
+        var contextUser = await userService.GetUserWithDiscogs(requesterDiscordUserId);
         var discordContextUser = await this.Context.GetUserAsync(requesterDiscordUserId);
-        var userSettings = await this._settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
+        var userSettings = await settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
 
-        var dbAlbum = await this._albumService.GetAlbumForId(albumId);
+        var dbAlbum = await albumService.GetAlbumForId(albumId);
 
         try
         {
-            var response = await this._albumBuilders.CoverAsync(new ContextModel(this.Context, contextUser, discordContextUser), userSettings, $"{dbAlbum.ArtistName} | {dbAlbum.Name}", type == "motion");
+            var response = await albumBuilders.CoverAsync(new ContextModel(this.Context, contextUser, discordContextUser), userSettings, $"{dbAlbum.ArtistName} | {dbAlbum.Name}", type == "motion");
 
-            await this.Context.UpdateInteractionEmbed(response, this._interactivity, false);
+            await this.Context.UpdateInteractionEmbed(response, interactivity, false);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
@@ -143,21 +129,21 @@ public class AlbumInteractions : ComponentInteractionModule<ComponentInteraction
         await RespondAsync(InteractionCallback.DeferredModifyMessage);
         await this.Context.DisableInteractionButtons();
 
-        var contextUser = await this._userService.GetUserWithDiscogs(requesterDiscordUserId);
+        var contextUser = await userService.GetUserWithDiscogs(requesterDiscordUserId);
         var discordContextUser = await this.Context.GetUserAsync(requesterDiscordUserId);
-        var userSettings = await this._settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
+        var userSettings = await settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
 
         try
         {
-            var response = await this._albumBuilders.CoverAsync(new ContextModel(this.Context, contextUser, discordContextUser), userSettings, "random");
+            var response = await albumBuilders.CoverAsync(new ContextModel(this.Context, contextUser, discordContextUser), userSettings, "random");
 
-            await this.Context.UpdateInteractionEmbed(response, this._interactivity, false);
+            await this.Context.UpdateInteractionEmbed(response, interactivity, false);
             this.Context.LogCommandUsed(response.CommandResponse);
 
             var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
             if (message != null && response.ReferencedMusic != null && PublicProperties.UsedCommandsResponseContextId.TryGetValue(message.Id, out var contextId))
             {
-                await this._userService.UpdateInteractionContext(contextId, response.ReferencedMusic);
+                await userService.UpdateInteractionContext(contextId, response.ReferencedMusic);
             }
         }
         catch (Exception e)
@@ -177,18 +163,18 @@ public class AlbumInteractions : ComponentInteractionModule<ComponentInteraction
         var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
         var albumId = int.Parse(album);
 
-        var contextUser = await this._userService.GetUserWithDiscogs(requesterDiscordUserId);
+        var contextUser = await userService.GetUserWithDiscogs(requesterDiscordUserId);
         var discordContextUser = await this.Context.GetUserAsync(requesterDiscordUserId);
-        var userSettings = await this._settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
+        var userSettings = await settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
 
-        var dbAlbum = await this._albumService.GetAlbumForId(albumId);
+        var dbAlbum = await albumService.GetAlbumForId(albumId);
 
         try
         {
-            var response = await this._albumBuilders.AlbumTracksAsync(
+            var response = await albumBuilders.AlbumTracksAsync(
                 new ContextModel(this.Context, contextUser, discordContextUser), userSettings, $"{dbAlbum.ArtistName} | {dbAlbum.Name}");
 
-            await this.Context.UpdateInteractionEmbed(response, this._interactivity, false);
+            await this.Context.UpdateInteractionEmbed(response, interactivity, false);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)

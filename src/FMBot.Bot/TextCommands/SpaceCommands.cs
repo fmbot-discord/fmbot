@@ -22,60 +22,36 @@ namespace FMBot.Bot.TextCommands;
 // Each command includes the original alias and usage count for reference.
 
 [Command("top")]
-public class TopSpaceCommands : BaseCommandModule
+public class TopSpaceCommands(
+    IPrefixService prefixService,
+    UserService userService,
+    SettingService settingService,
+    IndexService indexService,
+    ArtistBuilders artistBuilders,
+    AlbumBuilders albumBuilders,
+    TrackBuilders trackBuilders,
+    GenreBuilders genreBuilders,
+    CountryBuilders countryBuilders,
+    DiscogsBuilder discogsBuilders,
+    InteractiveService interactivity,
+    IOptions<BotSettings> botSettings)
+    : BaseCommandModule(botSettings)
 {
-    private readonly IPrefixService _prefixService;
-    private readonly UserService _userService;
-    private readonly SettingService _settingService;
-    private readonly IndexService _indexService;
-    private readonly ArtistBuilders _artistBuilders;
-    private readonly AlbumBuilders _albumBuilders;
-    private readonly TrackBuilders _trackBuilders;
-    private readonly GenreBuilders _genreBuilders;
-    private readonly CountryBuilders _countryBuilders;
-    private readonly DiscogsBuilder _discogsBuilders;
-    private InteractiveService Interactivity { get; }
-
-    public TopSpaceCommands(
-        IPrefixService prefixService,
-        UserService userService,
-        SettingService settingService,
-        IndexService indexService,
-        ArtistBuilders artistBuilders,
-        AlbumBuilders albumBuilders,
-        TrackBuilders trackBuilders,
-        GenreBuilders genreBuilders,
-        CountryBuilders countryBuilders,
-        DiscogsBuilder discogsBuilders,
-        InteractiveService interactivity,
-        IOptions<BotSettings> botSettings) : base(botSettings)
-    {
-        _prefixService = prefixService;
-        _userService = userService;
-        _settingService = settingService;
-        _indexService = indexService;
-        _artistBuilders = artistBuilders;
-        _albumBuilders = albumBuilders;
-        _trackBuilders = trackBuilders;
-        _genreBuilders = genreBuilders;
-        _countryBuilders = countryBuilders;
-        _discogsBuilders = discogsBuilders;
-        Interactivity = interactivity;
-    }
+    private InteractiveService Interactivity { get; } = interactivity;
 
     // Alias: ".top artists" (12680) -> Original: topartists
     [Command("artists")]
     public async Task ArtistsAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         _ = Context.Channel?.TriggerTypingStateAsync()!;
-        var contextUser = await _userService.GetUserSettingsAsync(Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(Context.User);
 
         try
         {
-            var prfx = _prefixService.GetPrefix(Context.Guild?.Id);
-            var userSettings = await _settingService.GetUser(extraOptions, contextUser, Context);
+            var prfx = prefixService.GetPrefix(Context.Guild?.Id);
+            var userSettings = await settingService.GetUser(extraOptions, contextUser, Context);
             var topListSettings = SettingService.SetTopListSettings(userSettings.NewSearchValue);
-            userSettings.RegisteredLastFm ??= await _indexService.AddUserRegisteredLfmDate(userSettings.UserId);
+            userSettings.RegisteredLastFm ??= await indexService.AddUserRegisteredLfmDate(userSettings.UserId);
 
             var timeSettings = SettingService.GetTimePeriod(topListSettings.NewSearchValue,
                 topListSettings.Discogs ? TimePeriod.AllTime : TimePeriod.Weekly,
@@ -83,9 +59,9 @@ public class TopSpaceCommands : BaseCommandModule
             var mode = SettingService.SetMode(extraOptions, contextUser.Mode);
 
             var response = topListSettings.Discogs
-                ? await _discogsBuilders.DiscogsTopArtistsAsync(new ContextModel(Context, prfx, contextUser),
+                ? await discogsBuilders.DiscogsTopArtistsAsync(new ContextModel(Context, prfx, contextUser),
                     topListSettings, timeSettings, userSettings)
-                : await _artistBuilders.TopArtistsAsync(new ContextModel(Context, prfx, contextUser),
+                : await artistBuilders.TopArtistsAsync(new ContextModel(Context, prfx, contextUser),
                     topListSettings, timeSettings, userSettings, mode.mode);
 
             await Context.SendResponse(Interactivity, response);
@@ -102,13 +78,13 @@ public class TopSpaceCommands : BaseCommandModule
     public async Task AlbumsAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         _ = Context.Channel?.TriggerTypingStateAsync()!;
-        var contextUser = await _userService.GetUserSettingsAsync(Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(Context.User);
 
         try
         {
-            var userSettings = await _settingService.GetUser(extraOptions, contextUser, Context);
+            var userSettings = await settingService.GetUser(extraOptions, contextUser, Context);
             var topListSettings = SettingService.SetTopListSettings(extraOptions);
-            userSettings.RegisteredLastFm ??= await _indexService.AddUserRegisteredLfmDate(userSettings.UserId);
+            userSettings.RegisteredLastFm ??= await indexService.AddUserRegisteredLfmDate(userSettings.UserId);
 
             var timeSettings = SettingService.GetTimePeriod(topListSettings.NewSearchValue,
                 topListSettings.ReleaseYearFilter.HasValue || topListSettings.ReleaseDecadeFilter.HasValue
@@ -116,10 +92,10 @@ public class TopSpaceCommands : BaseCommandModule
                     : TimePeriod.Weekly,
                 registeredLastFm: userSettings.RegisteredLastFm,
                 timeZone: userSettings.TimeZone);
-            var prfx = _prefixService.GetPrefix(Context.Guild?.Id);
+            var prfx = prefixService.GetPrefix(Context.Guild?.Id);
             var mode = SettingService.SetMode(timeSettings.NewSearchValue, contextUser.Mode);
 
-            var response = await _albumBuilders.TopAlbumsAsync(new ContextModel(Context, prfx, contextUser),
+            var response = await albumBuilders.TopAlbumsAsync(new ContextModel(Context, prfx, contextUser),
                 topListSettings, timeSettings, userSettings, mode.mode);
 
             await Context.SendResponse(Interactivity, response);
@@ -136,19 +112,19 @@ public class TopSpaceCommands : BaseCommandModule
     public async Task TracksAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         _ = Context.Channel?.TriggerTypingStateAsync()!;
-        var contextUser = await _userService.GetUserSettingsAsync(Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(Context.User);
 
         try
         {
-            var userSettings = await _settingService.GetUser(extraOptions, contextUser, Context);
+            var userSettings = await settingService.GetUser(extraOptions, contextUser, Context);
             var topListSettings = SettingService.SetTopListSettings(extraOptions);
-            userSettings.RegisteredLastFm ??= await _indexService.AddUserRegisteredLfmDate(userSettings.UserId);
+            userSettings.RegisteredLastFm ??= await indexService.AddUserRegisteredLfmDate(userSettings.UserId);
             var timeSettings = SettingService.GetTimePeriod(extraOptions,
                 registeredLastFm: userSettings.RegisteredLastFm, timeZone: userSettings.TimeZone);
-            var prfx = _prefixService.GetPrefix(Context.Guild?.Id);
+            var prfx = prefixService.GetPrefix(Context.Guild?.Id);
             var mode = SettingService.SetMode(extraOptions, contextUser.Mode);
 
-            var response = await _trackBuilders.TopTracksAsync(new ContextModel(Context, prfx, contextUser),
+            var response = await trackBuilders.TopTracksAsync(new ContextModel(Context, prfx, contextUser),
                 topListSettings, timeSettings, userSettings, mode.mode);
 
             await Context.SendResponse(Interactivity, response);
@@ -169,19 +145,20 @@ public class TopSpaceCommands : BaseCommandModule
     [Command("genres")]
     public async Task GenresAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
-        var prfx = _prefixService.GetPrefix(Context.Guild?.Id);
-        var contextUser = await _userService.GetUserSettingsAsync(Context.User);
+        var prfx = prefixService.GetPrefix(Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(Context.User);
         _ = Context.Channel?.TriggerTypingStateAsync()!;
 
         try
         {
-            var userSettings = await _settingService.GetUser(extraOptions, contextUser, Context);
+            var userSettings = await settingService.GetUser(extraOptions, contextUser, Context);
             var topListSettings = SettingService.SetTopListSettings(extraOptions);
-            userSettings.RegisteredLastFm ??= await _indexService.AddUserRegisteredLfmDate(userSettings.UserId);
-            var timeSettings = SettingService.GetTimePeriod(extraOptions, registeredLastFm: userSettings.RegisteredLastFm, timeZone: userSettings.TimeZone);
+            userSettings.RegisteredLastFm ??= await indexService.AddUserRegisteredLfmDate(userSettings.UserId);
+            var timeSettings = SettingService.GetTimePeriod(extraOptions,
+                registeredLastFm: userSettings.RegisteredLastFm, timeZone: userSettings.TimeZone);
             var mode = SettingService.SetMode(extraOptions, contextUser.Mode);
 
-            var response = await _genreBuilders.TopGenresAsync(new ContextModel(Context, prfx, contextUser),
+            var response = await genreBuilders.TopGenresAsync(new ContextModel(Context, prfx, contextUser),
                 userSettings, timeSettings, topListSettings, mode.mode);
             await Context.SendResponse(Interactivity, response);
             Context.LogCommandUsed(response.CommandResponse);
@@ -196,19 +173,20 @@ public class TopSpaceCommands : BaseCommandModule
     [Command("countries")]
     public async Task CountriesAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
-        var prfx = _prefixService.GetPrefix(Context.Guild?.Id);
-        var contextUser = await _userService.GetUserSettingsAsync(Context.User);
+        var prfx = prefixService.GetPrefix(Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(Context.User);
         _ = Context.Channel?.TriggerTypingStateAsync()!;
 
         try
         {
-            var userSettings = await _settingService.GetUser(extraOptions, contextUser, Context);
+            var userSettings = await settingService.GetUser(extraOptions, contextUser, Context);
             var topListSettings = SettingService.SetTopListSettings(extraOptions);
-            userSettings.RegisteredLastFm ??= await _indexService.AddUserRegisteredLfmDate(userSettings.UserId);
-            var timeSettings = SettingService.GetTimePeriod(extraOptions, registeredLastFm: userSettings.RegisteredLastFm, timeZone: userSettings.TimeZone);
+            userSettings.RegisteredLastFm ??= await indexService.AddUserRegisteredLfmDate(userSettings.UserId);
+            var timeSettings = SettingService.GetTimePeriod(extraOptions,
+                registeredLastFm: userSettings.RegisteredLastFm, timeZone: userSettings.TimeZone);
             var mode = SettingService.SetMode(extraOptions, contextUser.Mode);
 
-            var response = await _countryBuilders.TopCountriesAsync(new ContextModel(Context, prfx, contextUser),
+            var response = await countryBuilders.TopCountriesAsync(new ContextModel(Context, prfx, contextUser),
                 userSettings, timeSettings, topListSettings, mode.mode);
             await Context.SendResponse(Interactivity, response);
             Context.LogCommandUsed(response.CommandResponse);
@@ -221,36 +199,24 @@ public class TopSpaceCommands : BaseCommandModule
 }
 
 [Command("wk")]
-public class WkSpaceCommands : BaseCommandModule
+public class WkSpaceCommands(
+    IPrefixService prefixService,
+    UserService userService,
+    TrackBuilders trackBuilders,
+    AlbumBuilders albumBuilders,
+    InteractiveService interactivity,
+    IOptions<BotSettings> botSettings)
+    : BaseCommandModule(botSettings)
 {
-    private readonly IPrefixService _prefixService;
-    private readonly UserService _userService;
-    private readonly TrackBuilders _trackBuilders;
-    private readonly AlbumBuilders _albumBuilders;
-    private InteractiveService Interactivity { get; }
-
-    public WkSpaceCommands(
-        IPrefixService prefixService,
-        UserService userService,
-        TrackBuilders trackBuilders,
-        AlbumBuilders albumBuilders,
-        InteractiveService interactivity,
-        IOptions<BotSettings> botSettings) : base(botSettings)
-    {
-        _prefixService = prefixService;
-        _userService = userService;
-        _trackBuilders = trackBuilders;
-        _albumBuilders = albumBuilders;
-        Interactivity = interactivity;
-    }
+    private InteractiveService Interactivity { get; } = interactivity;
 
     // Alias: ".wk track" (4855) -> Original: whoknowstrack
     [Command("track")]
     public async Task TrackAsync([CommandParameter(Remainder = true)] string trackValues = null)
     {
         _ = Context.Channel?.TriggerTypingStateAsync()!;
-        var contextUser = await _userService.GetUserSettingsAsync(Context.User);
-        var prfx = _prefixService.GetPrefix(Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(Context.User);
+        var prfx = prefixService.GetPrefix(Context.Guild?.Id);
 
         try
         {
@@ -262,7 +228,7 @@ public class WkSpaceCommands : BaseCommandModule
             };
             var settings = SettingService.SetWhoKnowsSettings(currentSettings, trackValues, contextUser.UserType);
 
-            var response = await _trackBuilders.WhoKnowsTrackAsync(
+            var response = await trackBuilders.WhoKnowsTrackAsync(
                 new ContextModel(Context, prfx, contextUser), settings.ResponseMode, settings.NewSearchValue,
                 settings.DisplayRoleFilter);
 
@@ -280,8 +246,8 @@ public class WkSpaceCommands : BaseCommandModule
     public async Task AlbumAsync([CommandParameter(Remainder = true)] string albumValues = null)
     {
         _ = Context.Channel?.TriggerTypingStateAsync()!;
-        var prfx = _prefixService.GetPrefix(Context.Guild?.Id);
-        var contextUser = await _userService.GetUserSettingsAsync(Context.User);
+        var prfx = prefixService.GetPrefix(Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(Context.User);
 
         try
         {
@@ -293,7 +259,7 @@ public class WkSpaceCommands : BaseCommandModule
             };
             var settings = SettingService.SetWhoKnowsSettings(currentSettings, albumValues, contextUser.UserType);
 
-            var response = await _albumBuilders.WhoKnowsAlbumAsync(
+            var response = await albumBuilders.WhoKnowsAlbumAsync(
                 new ContextModel(Context, prfx, contextUser), settings.ResponseMode, settings.NewSearchValue,
                 settings.DisplayRoleFilter);
 
@@ -308,31 +274,17 @@ public class WkSpaceCommands : BaseCommandModule
 }
 
 [Command("c")]
-public class CSpaceCommands : BaseCommandModule
+public class CSpaceCommands(
+    IPrefixService prefixService,
+    UserService userService,
+    SettingService settingService,
+    ChartService chartService,
+    ChartBuilders chartBuilders,
+    InteractiveService interactivity,
+    IOptions<BotSettings> botSettings)
+    : BaseCommandModule(botSettings)
 {
-    private readonly IPrefixService _prefixService;
-    private readonly UserService _userService;
-    private readonly SettingService _settingService;
-    private readonly ChartService _chartService;
-    private readonly ChartBuilders _chartBuilders;
-    private InteractiveService Interactivity { get; }
-
-    public CSpaceCommands(
-        IPrefixService prefixService,
-        UserService userService,
-        SettingService settingService,
-        ChartService chartService,
-        ChartBuilders chartBuilders,
-        InteractiveService interactivity,
-        IOptions<BotSettings> botSettings) : base(botSettings)
-    {
-        _prefixService = prefixService;
-        _userService = userService;
-        _settingService = settingService;
-        _chartService = chartService;
-        _chartBuilders = chartBuilders;
-        Interactivity = interactivity;
-    }
+    private InteractiveService Interactivity { get; } = interactivity;
 
     // Alias: ".c artist" (2083) -> Original: artistchart
     [Command("artist")]
@@ -343,24 +295,27 @@ public class CSpaceCommands : BaseCommandModule
     [Command("artists")]
     public async Task ArtistsAsync([CommandParameter(Remainder = true)] string otherSettings = null)
     {
-        var prfx = _prefixService.GetPrefix(Context.Guild?.Id);
-        var user = await _userService.GetUserSettingsAsync(Context.User);
-        var chartCount = await _userService.GetCommandExecutedAmount(user.UserId, "artistchart", DateTime.UtcNow.AddSeconds(-45));
+        var prfx = prefixService.GetPrefix(Context.Guild?.Id);
+        var user = await userService.GetUserSettingsAsync(Context.User);
+        var chartCount =
+            await userService.GetCommandExecutedAmount(user.UserId, "artistchart", DateTime.UtcNow.AddSeconds(-45));
         if (chartCount >= 3)
         {
-            await Context.Channel.SendMessageAsync(new MessageProperties { Content = "Please wait a minute before generating charts again." });
+            await Context.Channel.SendMessageAsync(new MessageProperties
+                { Content = "Please wait a minute before generating charts again." });
             Context.LogCommandUsed(CommandResponse.Cooldown);
             return;
         }
 
-        var userSettings = await _settingService.GetUser(otherSettings, user, Context);
+        var userSettings = await settingService.GetUser(otherSettings, user, Context);
 
         if (Context.Guild != null)
         {
             var perms = await GuildService.GetGuildPermissionsAsync(Context);
             if (!perms.HasFlag(Permissions.AttachFiles))
             {
-                await Context.Channel.SendMessageAsync(new MessageProperties { Content = "I'm missing the 'Attach files' permission in this server, so I can't post a chart." });
+                await Context.Channel.SendMessageAsync(new MessageProperties
+                    { Content = "I'm missing the 'Attach files' permission in this server, so I can't post a chart." });
                 Context.LogCommandUsed(CommandResponse.NoPermission);
                 return;
             }
@@ -370,9 +325,9 @@ public class CSpaceCommands : BaseCommandModule
         {
             _ = Context.Channel?.TriggerTypingStateAsync()!;
             var chartSettings = new ChartSettings(Context.User) { ArtistChart = true };
-            chartSettings = await _chartService.SetSettings(chartSettings, userSettings);
+            chartSettings = await chartService.SetSettings(chartSettings, userSettings);
 
-            var response = await _chartBuilders.ArtistChartAsync(new ContextModel(Context, prfx, user), userSettings,
+            var response = await chartBuilders.ArtistChartAsync(new ContextModel(Context, prfx, user), userSettings,
                 chartSettings);
 
             await Context.SendResponse(Interactivity, response);
@@ -386,31 +341,17 @@ public class CSpaceCommands : BaseCommandModule
 }
 
 [Command("chart")]
-public class ChartSpaceCommands : BaseCommandModule
+public class ChartSpaceCommands(
+    IPrefixService prefixService,
+    UserService userService,
+    SettingService settingService,
+    ChartService chartService,
+    ChartBuilders chartBuilders,
+    InteractiveService interactivity,
+    IOptions<BotSettings> botSettings)
+    : BaseCommandModule(botSettings)
 {
-    private readonly IPrefixService _prefixService;
-    private readonly UserService _userService;
-    private readonly SettingService _settingService;
-    private readonly ChartService _chartService;
-    private readonly ChartBuilders _chartBuilders;
-    private InteractiveService Interactivity { get; }
-
-    public ChartSpaceCommands(
-        IPrefixService prefixService,
-        UserService userService,
-        SettingService settingService,
-        ChartService chartService,
-        ChartBuilders chartBuilders,
-        InteractiveService interactivity,
-        IOptions<BotSettings> botSettings) : base(botSettings)
-    {
-        _prefixService = prefixService;
-        _userService = userService;
-        _settingService = settingService;
-        _chartService = chartService;
-        _chartBuilders = chartBuilders;
-        Interactivity = interactivity;
-    }
+    private InteractiveService Interactivity { get; } = interactivity;
 
     // Alias: ".chart artist" (1042) -> Original: artistchart
     [Command("artist")]
@@ -421,24 +362,27 @@ public class ChartSpaceCommands : BaseCommandModule
     [Command("artists")]
     public async Task ArtistsAsync([CommandParameter(Remainder = true)] string otherSettings = null)
     {
-        var prfx = _prefixService.GetPrefix(Context.Guild?.Id);
-        var user = await _userService.GetUserSettingsAsync(Context.User);
-        var chartCount = await _userService.GetCommandExecutedAmount(user.UserId, "artistchart", DateTime.UtcNow.AddSeconds(-45));
+        var prfx = prefixService.GetPrefix(Context.Guild?.Id);
+        var user = await userService.GetUserSettingsAsync(Context.User);
+        var chartCount =
+            await userService.GetCommandExecutedAmount(user.UserId, "artistchart", DateTime.UtcNow.AddSeconds(-45));
         if (chartCount >= 3)
         {
-            await Context.Channel.SendMessageAsync(new MessageProperties { Content = "Please wait a minute before generating charts again." });
+            await Context.Channel.SendMessageAsync(new MessageProperties
+                { Content = "Please wait a minute before generating charts again." });
             Context.LogCommandUsed(CommandResponse.Cooldown);
             return;
         }
 
-        var userSettings = await _settingService.GetUser(otherSettings, user, Context);
+        var userSettings = await settingService.GetUser(otherSettings, user, Context);
 
         if (Context.Guild != null)
         {
             var perms = await GuildService.GetGuildPermissionsAsync(Context);
             if (!perms.HasFlag(Permissions.AttachFiles))
             {
-                await Context.Channel.SendMessageAsync(new MessageProperties { Content = "I'm missing the 'Attach files' permission in this server, so I can't post a chart." });
+                await Context.Channel.SendMessageAsync(new MessageProperties
+                    { Content = "I'm missing the 'Attach files' permission in this server, so I can't post a chart." });
                 Context.LogCommandUsed(CommandResponse.NoPermission);
                 return;
             }
@@ -448,9 +392,9 @@ public class ChartSpaceCommands : BaseCommandModule
         {
             _ = Context.Channel?.TriggerTypingStateAsync()!;
             var chartSettings = new ChartSettings(Context.User) { ArtistChart = true };
-            chartSettings = await _chartService.SetSettings(chartSettings, userSettings);
+            chartSettings = await chartService.SetSettings(chartSettings, userSettings);
 
-            var response = await _chartBuilders.ArtistChartAsync(new ContextModel(Context, prfx, user), userSettings,
+            var response = await chartBuilders.ArtistChartAsync(new ContextModel(Context, prfx, user), userSettings,
                 chartSettings);
 
             await Context.SendResponse(Interactivity, response);
@@ -464,39 +408,27 @@ public class ChartSpaceCommands : BaseCommandModule
 }
 
 [Command("album")]
-public class AlbumSpaceCommands : BaseCommandModule
+public class AlbumSpaceCommands(
+    IPrefixService prefixService,
+    UserService userService,
+    SettingService settingService,
+    AlbumBuilders albumBuilders,
+    InteractiveService interactivity,
+    IOptions<BotSettings> botSettings)
+    : BaseCommandModule(botSettings)
 {
-    private readonly IPrefixService _prefixService;
-    private readonly UserService _userService;
-    private readonly SettingService _settingService;
-    private readonly AlbumBuilders _albumBuilders;
-    private InteractiveService Interactivity { get; }
-
-    public AlbumSpaceCommands(
-        IPrefixService prefixService,
-        UserService userService,
-        SettingService settingService,
-        AlbumBuilders albumBuilders,
-        InteractiveService interactivity,
-        IOptions<BotSettings> botSettings) : base(botSettings)
-    {
-        _prefixService = prefixService;
-        _userService = userService;
-        _settingService = settingService;
-        _albumBuilders = albumBuilders;
-        Interactivity = interactivity;
-    }
+    private InteractiveService Interactivity { get; } = interactivity;
 
     // Alias: ".album plays" (1255) -> Original: albumplays
     [Command("plays")]
     public async Task PlaysAsync([CommandParameter(Remainder = true)] string albumValues = null)
     {
         _ = Context.Channel?.TriggerTypingStateAsync()!;
-        var contextUser = await _userService.GetUserSettingsAsync(Context.User);
-        var userSettings = await _settingService.GetUser(albumValues, contextUser, Context);
-        var prfx = _prefixService.GetPrefix(Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(Context.User);
+        var userSettings = await settingService.GetUser(albumValues, contextUser, Context);
+        var prfx = prefixService.GetPrefix(Context.Guild?.Id);
 
-        var response = await _albumBuilders.AlbumPlaysAsync(new ContextModel(Context, prfx, contextUser),
+        var response = await albumBuilders.AlbumPlaysAsync(new ContextModel(Context, prfx, contextUser),
             userSettings, userSettings.NewSearchValue);
 
         await Context.SendResponse(Interactivity, response);
@@ -508,13 +440,13 @@ public class AlbumSpaceCommands : BaseCommandModule
     public async Task CoverAsync([CommandParameter(Remainder = true)] string albumValues = null)
     {
         _ = Context.Channel?.TriggerTypingStateAsync()!;
-        var contextUser = await _userService.GetUserSettingsAsync(Context.User);
-        var prfx = _prefixService.GetPrefix(Context.Guild?.Id);
-        var userSettings = await _settingService.GetUser(albumValues, contextUser, Context);
+        var contextUser = await userService.GetUserSettingsAsync(Context.User);
+        var prfx = prefixService.GetPrefix(Context.Guild?.Id);
+        var userSettings = await settingService.GetUser(albumValues, contextUser, Context);
 
         try
         {
-            var response = await _albumBuilders.CoverAsync(new ContextModel(Context, prfx, contextUser),
+            var response = await albumBuilders.CoverAsync(new ContextModel(Context, prfx, contextUser),
                 userSettings, albumValues);
 
             await Context.SendResponse(Interactivity, response);
@@ -528,41 +460,29 @@ public class AlbumSpaceCommands : BaseCommandModule
 }
 
 [Command("artist")]
-public class ArtistSpaceCommands : BaseCommandModule
+public class ArtistSpaceCommands(
+    IPrefixService prefixService,
+    UserService userService,
+    SettingService settingService,
+    ArtistBuilders artistBuilders,
+    InteractiveService interactivity,
+    IOptions<BotSettings> botSettings)
+    : BaseCommandModule(botSettings)
 {
-    private readonly IPrefixService _prefixService;
-    private readonly UserService _userService;
-    private readonly SettingService _settingService;
-    private readonly ArtistBuilders _artistBuilders;
-    private InteractiveService Interactivity { get; }
-
-    public ArtistSpaceCommands(
-        IPrefixService prefixService,
-        UserService userService,
-        SettingService settingService,
-        ArtistBuilders artistBuilders,
-        InteractiveService interactivity,
-        IOptions<BotSettings> botSettings) : base(botSettings)
-    {
-        _prefixService = prefixService;
-        _userService = userService;
-        _settingService = settingService;
-        _artistBuilders = artistBuilders;
-        Interactivity = interactivity;
-    }
+    private InteractiveService Interactivity { get; } = interactivity;
 
     // Alias: ".artist plays" (734) -> Original: artistplays
     [Command("plays")]
     public async Task PlaysAsync([CommandParameter(Remainder = true)] string artistValues = null)
     {
-        var contextUser = await _userService.GetUserSettingsAsync(Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(Context.User);
         _ = Context.Channel?.TriggerTypingStateAsync()!;
 
-        var userSettings = await _settingService.GetUser(artistValues, contextUser, Context);
-        var prfx = _prefixService.GetPrefix(Context.Guild?.Id);
+        var userSettings = await settingService.GetUser(artistValues, contextUser, Context);
+        var prfx = prefixService.GetPrefix(Context.Guild?.Id);
         var redirectsEnabled = SettingService.RedirectsEnabled(userSettings.NewSearchValue);
 
-        var response = await _artistBuilders.ArtistPlaysAsync(new ContextModel(Context, prfx, contextUser),
+        var response = await artistBuilders.ArtistPlaysAsync(new ContextModel(Context, prfx, contextUser),
             userSettings, redirectsEnabled.NewSearchValue, redirectsEnabled.Enabled);
 
         await Context.SendResponse(Interactivity, response);
@@ -574,15 +494,15 @@ public class ArtistSpaceCommands : BaseCommandModule
     public async Task TracksAsync([CommandParameter(Remainder = true)] string artistValues = null)
     {
         _ = Context.Channel?.TriggerTypingStateAsync()!;
-        var contextUser = await _userService.GetUserSettingsAsync(Context.User);
-        var userSettings = await _settingService.GetUser(artistValues, contextUser, Context);
-        var prfx = _prefixService.GetPrefix(Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(Context.User);
+        var userSettings = await settingService.GetUser(artistValues, contextUser, Context);
+        var prfx = prefixService.GetPrefix(Context.Guild?.Id);
 
         var redirectsEnabled = SettingService.RedirectsEnabled(userSettings.NewSearchValue);
         var timeSettings = SettingService.GetTimePeriod(redirectsEnabled.NewSearchValue, TimePeriod.AllTime,
             cachedOrAllTimeOnly: true, dailyTimePeriods: false);
 
-        var response = await _artistBuilders.ArtistTracksAsync(new ContextModel(Context, prfx, contextUser),
+        var response = await artistBuilders.ArtistTracksAsync(new ContextModel(Context, prfx, contextUser),
             timeSettings, userSettings, redirectsEnabled.NewSearchValue, redirectsEnabled.Enabled);
 
         await Context.SendResponse(Interactivity, response);
@@ -599,13 +519,13 @@ public class ArtistSpaceCommands : BaseCommandModule
     public async Task AlbumsAsync([CommandParameter(Remainder = true)] string artistValues = null)
     {
         _ = Context.Channel?.TriggerTypingStateAsync()!;
-        var contextUser = await _userService.GetUserSettingsAsync(Context.User);
-        var userSettings = await _settingService.GetUser(artistValues, contextUser, Context);
-        var prfx = _prefixService.GetPrefix(Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(Context.User);
+        var userSettings = await settingService.GetUser(artistValues, contextUser, Context);
+        var prfx = prefixService.GetPrefix(Context.Guild?.Id);
 
         var redirectsEnabled = SettingService.RedirectsEnabled(userSettings.NewSearchValue);
 
-        var response = await _artistBuilders.ArtistAlbumsAsync(new ContextModel(Context, prfx, contextUser),
+        var response = await artistBuilders.ArtistAlbumsAsync(new ContextModel(Context, prfx, contextUser),
             userSettings, redirectsEnabled.NewSearchValue, redirectsEnabled.Enabled);
 
         await Context.SendResponse(Interactivity, response);
@@ -622,14 +542,14 @@ public class ArtistSpaceCommands : BaseCommandModule
     public async Task OverviewAsync([CommandParameter(Remainder = true)] string artistValues = null)
     {
         _ = Context.Channel?.TriggerTypingStateAsync()!;
-        var contextUser = await _userService.GetUserWithDiscogs(Context.User.Id);
-        var userSettings = await _settingService.GetUser(artistValues, contextUser, Context);
-        var prfx = _prefixService.GetPrefix(Context.Guild?.Id);
+        var contextUser = await userService.GetUserWithDiscogs(Context.User.Id);
+        var userSettings = await settingService.GetUser(artistValues, contextUser, Context);
+        var prfx = prefixService.GetPrefix(Context.Guild?.Id);
         var redirectsEnabled = SettingService.RedirectsEnabled(userSettings.NewSearchValue);
 
         try
         {
-            var response = await _artistBuilders.ArtistOverviewAsync(
+            var response = await artistBuilders.ArtistOverviewAsync(
                 new ContextModel(Context, prfx, contextUser),
                 userSettings, redirectsEnabled.NewSearchValue, redirectsEnabled.Enabled);
 
@@ -644,39 +564,27 @@ public class ArtistSpaceCommands : BaseCommandModule
 }
 
 [Command("track")]
-public class TrackSpaceCommands : BaseCommandModule
+public class TrackSpaceCommands(
+    IPrefixService prefixService,
+    UserService userService,
+    SettingService settingService,
+    TrackBuilders trackBuilders,
+    InteractiveService interactivity,
+    IOptions<BotSettings> botSettings)
+    : BaseCommandModule(botSettings)
 {
-    private readonly IPrefixService _prefixService;
-    private readonly UserService _userService;
-    private readonly SettingService _settingService;
-    private readonly TrackBuilders _trackBuilders;
-    private InteractiveService Interactivity { get; }
-
-    public TrackSpaceCommands(
-        IPrefixService prefixService,
-        UserService userService,
-        SettingService settingService,
-        TrackBuilders trackBuilders,
-        InteractiveService interactivity,
-        IOptions<BotSettings> botSettings) : base(botSettings)
-    {
-        _prefixService = prefixService;
-        _userService = userService;
-        _settingService = settingService;
-        _trackBuilders = trackBuilders;
-        Interactivity = interactivity;
-    }
+    private InteractiveService Interactivity { get; } = interactivity;
 
     // Alias: ".track plays" (467) -> Original: trackplays
     [Command("plays")]
     public async Task PlaysAsync([CommandParameter(Remainder = true)] string trackValues = null)
     {
         _ = Context.Channel?.TriggerTypingStateAsync()!;
-        var contextUser = await _userService.GetUserSettingsAsync(Context.User);
-        var userSettings = await _settingService.GetUser(trackValues, contextUser, Context);
-        var prfx = _prefixService.GetPrefix(Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(Context.User);
+        var userSettings = await settingService.GetUser(trackValues, contextUser, Context);
+        var prfx = prefixService.GetPrefix(Context.Guild?.Id);
 
-        var response = await _trackBuilders.TrackPlays(new ContextModel(Context, prfx, contextUser),
+        var response = await trackBuilders.TrackPlays(new ContextModel(Context, prfx, contextUser),
             userSettings, userSettings.NewSearchValue);
 
         await Context.SendResponse(Interactivity, response);
@@ -685,41 +593,25 @@ public class TrackSpaceCommands : BaseCommandModule
 }
 
 [Command("server")]
-public class ServerSpaceCommands : BaseCommandModule
+public class ServerSpaceCommands(
+    IPrefixService prefixService,
+    GuildService guildService,
+    ArtistBuilders artistBuilders,
+    AlbumBuilders albumBuilders,
+    TrackBuilders trackBuilders,
+    GenreBuilders genreBuilders,
+    InteractiveService interactivity,
+    IOptions<BotSettings> botSettings)
+    : BaseCommandModule(botSettings)
 {
-    private readonly IPrefixService _prefixService;
-    private readonly GuildService _guildService;
-    private readonly ArtistBuilders _artistBuilders;
-    private readonly AlbumBuilders _albumBuilders;
-    private readonly TrackBuilders _trackBuilders;
-    private readonly GenreBuilders _genreBuilders;
-    private InteractiveService Interactivity { get; }
-
-    public ServerSpaceCommands(
-        IPrefixService prefixService,
-        GuildService guildService,
-        ArtistBuilders artistBuilders,
-        AlbumBuilders albumBuilders,
-        TrackBuilders trackBuilders,
-        GenreBuilders genreBuilders,
-        InteractiveService interactivity,
-        IOptions<BotSettings> botSettings) : base(botSettings)
-    {
-        _prefixService = prefixService;
-        _guildService = guildService;
-        _artistBuilders = artistBuilders;
-        _albumBuilders = albumBuilders;
-        _trackBuilders = trackBuilders;
-        _genreBuilders = genreBuilders;
-        Interactivity = interactivity;
-    }
+    private InteractiveService Interactivity { get; } = interactivity;
 
     // Alias: ".server artists" (647) -> Original: serverartists
     [Command("artists")]
     public async Task ArtistsAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
-        var prfx = _prefixService.GetPrefix(Context.Guild?.Id);
-        var guild = await _guildService.GetGuildAsync(Context.Guild.Id);
+        var prfx = prefixService.GetPrefix(Context.Guild?.Id);
+        var guild = await guildService.GetGuildAsync(Context.Guild.Id);
         _ = Context.Channel?.TriggerTypingStateAsync()!;
 
         var guildListSettings = new GuildRankingSettings
@@ -732,16 +624,19 @@ public class ServerSpaceCommands : BaseCommandModule
         };
 
         guildListSettings = SettingService.SetGuildRankingSettings(guildListSettings, extraOptions);
-        var timeSettings = SettingService.GetTimePeriod(extraOptions, guildListSettings.ChartTimePeriod, cachedOrAllTimeOnly: true);
+        var timeSettings =
+            SettingService.GetTimePeriod(extraOptions, guildListSettings.ChartTimePeriod, cachedOrAllTimeOnly: true);
 
-        if (timeSettings.UsePlays || timeSettings.TimePeriod is TimePeriod.AllTime or TimePeriod.Monthly or TimePeriod.Weekly)
+        if (timeSettings.UsePlays ||
+            timeSettings.TimePeriod is TimePeriod.AllTime or TimePeriod.Monthly or TimePeriod.Weekly)
         {
             guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
         }
 
         try
         {
-            var response = await _artistBuilders.GuildArtistsAsync(new ContextModel(Context, prfx), guild, guildListSettings);
+            var response =
+                await artistBuilders.GuildArtistsAsync(new ContextModel(Context, prfx), guild, guildListSettings);
             _ = Interactivity.SendPaginatorAsync(
                 response.StaticPaginator.Build(),
                 Context.Channel,
@@ -759,8 +654,8 @@ public class ServerSpaceCommands : BaseCommandModule
     public async Task AlbumsAsync([CommandParameter(Remainder = true)] string guildAlbumsOptions = null)
     {
         _ = Context.Channel?.TriggerTypingStateAsync()!;
-        var prfx = _prefixService.GetPrefix(Context.Guild?.Id);
-        var guild = await _guildService.GetGuildAsync(Context.Guild.Id);
+        var prfx = prefixService.GetPrefix(Context.Guild?.Id);
+        var guild = await guildService.GetGuildAsync(Context.Guild.Id);
 
         var guildListSettings = new GuildRankingSettings
         {
@@ -777,12 +672,14 @@ public class ServerSpaceCommands : BaseCommandModule
             var timeSettings = SettingService.GetTimePeriod(guildListSettings.NewSearchValue,
                 guildListSettings.ChartTimePeriod, cachedOrAllTimeOnly: true);
 
-            if (timeSettings.UsePlays || timeSettings.TimePeriod is TimePeriod.AllTime or TimePeriod.Monthly or TimePeriod.Weekly)
+            if (timeSettings.UsePlays ||
+                timeSettings.TimePeriod is TimePeriod.AllTime or TimePeriod.Monthly or TimePeriod.Weekly)
             {
                 guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
             }
 
-            var response = await _albumBuilders.GuildAlbumsAsync(new ContextModel(Context, prfx), guild, guildListSettings);
+            var response =
+                await albumBuilders.GuildAlbumsAsync(new ContextModel(Context, prfx), guild, guildListSettings);
             _ = Interactivity.SendPaginatorAsync(
                 response.StaticPaginator.Build(),
                 Context.Channel,
@@ -800,8 +697,8 @@ public class ServerSpaceCommands : BaseCommandModule
     public async Task TracksAsync([CommandParameter(Remainder = true)] string guildTracksOptions = null)
     {
         _ = Context.Channel?.TriggerTypingStateAsync()!;
-        var prfx = _prefixService.GetPrefix(Context.Guild?.Id);
-        var guild = await _guildService.GetGuildAsync(Context.Guild.Id);
+        var prfx = prefixService.GetPrefix(Context.Guild?.Id);
+        var guild = await guildService.GetGuildAsync(Context.Guild.Id);
 
         var guildListSettings = new GuildRankingSettings
         {
@@ -816,14 +713,16 @@ public class ServerSpaceCommands : BaseCommandModule
         var timeSettings = SettingService.GetTimePeriod(guildListSettings.NewSearchValue,
             guildListSettings.ChartTimePeriod, cachedOrAllTimeOnly: true);
 
-        if (timeSettings.UsePlays || timeSettings.TimePeriod is TimePeriod.AllTime or TimePeriod.Monthly or TimePeriod.Weekly)
+        if (timeSettings.UsePlays ||
+            timeSettings.TimePeriod is TimePeriod.AllTime or TimePeriod.Monthly or TimePeriod.Weekly)
         {
             guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
         }
 
         try
         {
-            var response = await _trackBuilders.GuildTracksAsync(new ContextModel(Context, prfx), guild, guildListSettings);
+            var response =
+                await trackBuilders.GuildTracksAsync(new ContextModel(Context, prfx), guild, guildListSettings);
             await Context.SendResponse(Interactivity, response);
             Context.LogCommandUsed(response.CommandResponse);
         }
@@ -837,8 +736,8 @@ public class ServerSpaceCommands : BaseCommandModule
     [Command("genres")]
     public async Task GenresAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
-        var prfx = _prefixService.GetPrefix(Context.Guild?.Id);
-        var guild = await _guildService.GetGuildAsync(Context.Guild.Id);
+        var prfx = prefixService.GetPrefix(Context.Guild?.Id);
+        var guild = await guildService.GetGuildAsync(Context.Guild.Id);
         _ = Context.Channel?.TriggerTypingStateAsync()!;
 
         var guildListSettings = new GuildRankingSettings
@@ -851,16 +750,19 @@ public class ServerSpaceCommands : BaseCommandModule
         };
 
         guildListSettings = SettingService.SetGuildRankingSettings(guildListSettings, extraOptions);
-        var timeSettings = SettingService.GetTimePeriod(extraOptions, guildListSettings.ChartTimePeriod, cachedOrAllTimeOnly: true);
+        var timeSettings =
+            SettingService.GetTimePeriod(extraOptions, guildListSettings.ChartTimePeriod, cachedOrAllTimeOnly: true);
 
-        if (timeSettings.UsePlays || timeSettings.TimePeriod is TimePeriod.AllTime or TimePeriod.Monthly or TimePeriod.Weekly)
+        if (timeSettings.UsePlays ||
+            timeSettings.TimePeriod is TimePeriod.AllTime or TimePeriod.Monthly or TimePeriod.Weekly)
         {
             guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
         }
 
         try
         {
-            var response = await _genreBuilders.GetGuildGenres(new ContextModel(Context, prfx), guild, guildListSettings);
+            var response =
+                await genreBuilders.GetGuildGenres(new ContextModel(Context, prfx), guild, guildListSettings);
             await Context.SendResponse(Interactivity, response);
             Context.LogCommandUsed(response.CommandResponse);
         }
@@ -877,32 +779,23 @@ public class ServerSpaceCommands : BaseCommandModule
 }
 
 [Command("fm")]
-public class FmSpaceCommands : BaseCommandModule
+public class FmSpaceCommands(
+    IPrefixService prefixService,
+    UserService userService,
+    UserBuilder userBuilder,
+    InteractiveService interactivity,
+    IOptions<BotSettings> botSettings)
+    : BaseCommandModule(botSettings)
 {
-    private readonly IPrefixService _prefixService;
-    private readonly UserService _userService;
-    private readonly UserBuilder _userBuilder;
-    private InteractiveService Interactivity { get; }
-
-    public FmSpaceCommands(
-        IPrefixService prefixService,
-        UserService userService,
-        UserBuilder userBuilder,
-        InteractiveService interactivity,
-        IOptions<BotSettings> botSettings) : base(botSettings)
-    {
-        _prefixService = prefixService;
-        _userService = userService;
-        _userBuilder = userBuilder;
-        Interactivity = interactivity;
-    }
+    private readonly UserBuilder _userBuilder = userBuilder;
+    private InteractiveService Interactivity { get; } = interactivity;
 
     // Alias: ".fm set" (525) -> Original: fmset
     [Command("set")]
     public async Task SetAsync([CommandParameter(Remainder = true)] string _ = null)
     {
-        var prfx = _prefixService.GetPrefix(Context.Guild?.Id);
-        var contextUser = await _userService.GetUserAsync(Context.User.Id);
+        var prfx = prefixService.GetPrefix(Context.Guild?.Id);
+        var contextUser = await userService.GetUserAsync(Context.User.Id);
 
         var response = UserBuilder.LoginRequired(prfx, contextUser != null);
 
@@ -912,28 +805,16 @@ public class FmSpaceCommands : BaseCommandModule
 }
 
 [Command("crown")]
-public class CrownSpaceCommands : BaseCommandModule
+public class CrownSpaceCommands(
+    IPrefixService prefixService,
+    UserService userService,
+    GuildService guildService,
+    GuildBuilders guildBuilders,
+    InteractiveService interactivity,
+    IOptions<BotSettings> botSettings)
+    : BaseCommandModule(botSettings)
 {
-    private readonly IPrefixService _prefixService;
-    private readonly UserService _userService;
-    private readonly GuildService _guildService;
-    private readonly GuildBuilders _guildBuilders;
-    private InteractiveService Interactivity { get; }
-
-    public CrownSpaceCommands(
-        IPrefixService prefixService,
-        UserService userService,
-        GuildService guildService,
-        GuildBuilders guildBuilders,
-        InteractiveService interactivity,
-        IOptions<BotSettings> botSettings) : base(botSettings)
-    {
-        _prefixService = prefixService;
-        _userService = userService;
-        _guildService = guildService;
-        _guildBuilders = guildBuilders;
-        Interactivity = interactivity;
-    }
+    private InteractiveService Interactivity { get; } = interactivity;
 
     // Alias: ".crown leaderboard" (212) -> Original: crownleaderboard
     [Command("leaderboard")]
@@ -942,11 +823,11 @@ public class CrownSpaceCommands : BaseCommandModule
         try
         {
             _ = Context.Channel?.TriggerTypingStateAsync()!;
-            var prfx = _prefixService.GetPrefix(Context.Guild?.Id);
-            var guild = await _guildService.GetGuildForWhoKnows(Context.Guild?.Id);
-            var contextUser = await _userService.GetUserSettingsAsync(Context.User);
+            var prfx = prefixService.GetPrefix(Context.Guild?.Id);
+            var guild = await guildService.GetGuildForWhoKnows(Context.Guild?.Id);
+            var contextUser = await userService.GetUserSettingsAsync(Context.User);
 
-            var response = await _guildBuilders.MemberOverviewAsync(new ContextModel(Context, prfx, contextUser),
+            var response = await guildBuilders.MemberOverviewAsync(new ContextModel(Context, prfx, contextUser),
                 guild, GuildViewType.Crowns);
 
             await Context.SendResponse(Interactivity, response);
@@ -962,31 +843,22 @@ public class CrownSpaceCommands : BaseCommandModule
     [Command("kill")]
     public async Task KillAsync([CommandParameter(Remainder = true)] string _ = null)
     {
-        await Context.Channel.SendMessageAsync(new MessageProperties { Content = "Please use the `/crowns` slash command or `.crowns` text command to manage crowns." });
+        await Context.Channel.SendMessageAsync(new MessageProperties
+            { Content = "Please use the `/crowns` slash command or `.crowns` text command to manage crowns." });
         Context.LogCommandUsed(CommandResponse.Help);
     }
 }
 
 [Command("friends")]
-public class FriendsSpaceCommands : BaseCommandModule
+public class FriendsSpaceCommands(
+    IPrefixService prefixService,
+    UserService userService,
+    FriendBuilders friendBuilders,
+    InteractiveService interactivity,
+    IOptions<BotSettings> botSettings)
+    : BaseCommandModule(botSettings)
 {
-    private readonly IPrefixService _prefixService;
-    private readonly UserService _userService;
-    private readonly FriendBuilders _friendBuilders;
-    private InteractiveService Interactivity { get; }
-
-    public FriendsSpaceCommands(
-        IPrefixService prefixService,
-        UserService userService,
-        FriendBuilders friendBuilders,
-        InteractiveService interactivity,
-        IOptions<BotSettings> botSettings) : base(botSettings)
-    {
-        _prefixService = prefixService;
-        _userService = userService;
-        _friendBuilders = friendBuilders;
-        Interactivity = interactivity;
-    }
+    private InteractiveService Interactivity { get; } = interactivity;
 
     // Alias: ".friends add" (95) -> Original: addfriends
     [Command("add")]
@@ -994,19 +866,24 @@ public class FriendsSpaceCommands : BaseCommandModule
     {
         if (string.IsNullOrWhiteSpace(enteredFriends))
         {
-            await Context.Channel.SendMessageAsync(new MessageProperties { Content = "Please enter at least one friend to add. You can use their Last.fm usernames, Discord mention or Discord id." });
+            await Context.Channel.SendMessageAsync(new MessageProperties
+            {
+                Content =
+                    "Please enter at least one friend to add. You can use their Last.fm usernames, Discord mention or Discord id."
+            });
             Context.LogCommandUsed(CommandResponse.WrongInput);
             return;
         }
 
         _ = Context.Channel?.TriggerTypingStateAsync()!;
-        var contextUser = await _userService.GetUserSettingsAsync(Context.User);
-        var prfx = _prefixService.GetPrefix(Context.Guild?.Id) ?? _botSettings.Bot.Prefix;
+        var contextUser = await userService.GetUserSettingsAsync(Context.User);
+        var prfx = prefixService.GetPrefix(Context.Guild?.Id) ?? _botSettings.Bot.Prefix;
 
         try
         {
             var friendsArray = enteredFriends.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            var response = await _friendBuilders.AddFriendsAsync(new ContextModel(Context, prfx, contextUser), friendsArray);
+            var response =
+                await friendBuilders.AddFriendsAsync(new ContextModel(Context, prfx, contextUser), friendsArray);
 
             await Context.SendResponse(Interactivity, response);
             Context.LogCommandUsed(response.CommandResponse);
@@ -1021,12 +898,16 @@ public class FriendsSpaceCommands : BaseCommandModule
     [Command("remove")]
     public async Task RemoveAsync([CommandParameter(Remainder = true)] string enteredFriends = null)
     {
-        var contextUser = await _userService.GetUserSettingsAsync(Context.User);
-        var prfx = _prefixService.GetPrefix(Context.Guild?.Id) ?? _botSettings.Bot.Prefix;
+        var contextUser = await userService.GetUserSettingsAsync(Context.User);
+        var prfx = prefixService.GetPrefix(Context.Guild?.Id) ?? _botSettings.Bot.Prefix;
 
         if (string.IsNullOrWhiteSpace(enteredFriends))
         {
-            await Context.Channel.SendMessageAsync(new MessageProperties { Content = "Please enter at least one friend to remove. You can use their Last.fm usernames, Discord mention or discord id." });
+            await Context.Channel.SendMessageAsync(new MessageProperties
+            {
+                Content =
+                    "Please enter at least one friend to remove. You can use their Last.fm usernames, Discord mention or discord id."
+            });
             Context.LogCommandUsed(CommandResponse.WrongInput);
             return;
         }
@@ -1034,7 +915,8 @@ public class FriendsSpaceCommands : BaseCommandModule
         try
         {
             var friendsArray = enteredFriends.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            var response = await _friendBuilders.RemoveFriendsAsync(new ContextModel(Context, prfx, contextUser), friendsArray);
+            var response =
+                await friendBuilders.RemoveFriendsAsync(new ContextModel(Context, prfx, contextUser), friendsArray);
 
             await Context.SendResponse(Interactivity, response);
             Context.LogCommandUsed(response.CommandResponse);
@@ -1047,36 +929,30 @@ public class FriendsSpaceCommands : BaseCommandModule
 }
 
 [Command("friend")]
-public class FriendSpaceCommands : BaseCommandModule
+public class FriendSpaceCommands(
+    IPrefixService prefixService,
+    UserService userService,
+    FriendBuilders friendBuilders,
+    InteractiveService interactivity,
+    IOptions<BotSettings> botSettings)
+    : BaseCommandModule(botSettings)
 {
-    private readonly IPrefixService _prefixService;
-    private readonly UserService _userService;
-    private readonly FriendBuilders _friendBuilders;
-    private InteractiveService Interactivity { get; }
-
-    public FriendSpaceCommands(
-        IPrefixService prefixService,
-        UserService userService,
-        FriendBuilders friendBuilders,
-        InteractiveService interactivity,
-        IOptions<BotSettings> botSettings) : base(botSettings)
-    {
-        _prefixService = prefixService;
-        _userService = userService;
-        _friendBuilders = friendBuilders;
-        Interactivity = interactivity;
-    }
+    private InteractiveService Interactivity { get; } = interactivity;
 
     // Alias: ".friend remove" (68) -> Original: removefriends
     [Command("remove")]
     public async Task RemoveAsync([CommandParameter(Remainder = true)] string enteredFriends = null)
     {
-        var contextUser = await _userService.GetUserSettingsAsync(Context.User);
-        var prfx = _prefixService.GetPrefix(Context.Guild?.Id) ?? _botSettings.Bot.Prefix;
+        var contextUser = await userService.GetUserSettingsAsync(Context.User);
+        var prfx = prefixService.GetPrefix(Context.Guild?.Id) ?? _botSettings.Bot.Prefix;
 
         if (string.IsNullOrWhiteSpace(enteredFriends))
         {
-            await Context.Channel.SendMessageAsync(new MessageProperties { Content = "Please enter at least one friend to remove. You can use their Last.fm usernames, Discord mention or discord id." });
+            await Context.Channel.SendMessageAsync(new MessageProperties
+            {
+                Content =
+                    "Please enter at least one friend to remove. You can use their Last.fm usernames, Discord mention or discord id."
+            });
             Context.LogCommandUsed(CommandResponse.WrongInput);
             return;
         }
@@ -1084,7 +960,8 @@ public class FriendSpaceCommands : BaseCommandModule
         try
         {
             var friendsArray = enteredFriends.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            var response = await _friendBuilders.RemoveFriendsAsync(new ContextModel(Context, prfx, contextUser), friendsArray);
+            var response =
+                await friendBuilders.RemoveFriendsAsync(new ContextModel(Context, prfx, contextUser), friendsArray);
 
             await Context.SendResponse(Interactivity, response);
             Context.LogCommandUsed(response.CommandResponse);
@@ -1097,25 +974,19 @@ public class FriendSpaceCommands : BaseCommandModule
 }
 
 [Command("help")]
-public class HelpSpaceCommands : BaseCommandModule
+public class HelpSpaceCommands(
+    IPrefixService prefixService,
+    StaticBuilders staticBuilders,
+    IOptions<BotSettings> botSettings)
+    : BaseCommandModule(botSettings)
 {
-    private readonly IPrefixService _prefixService;
-    private readonly StaticBuilders _staticBuilders;
-
-    public HelpSpaceCommands(
-        IPrefixService prefixService,
-        StaticBuilders staticBuilders,
-        IOptions<BotSettings> botSettings) : base(botSettings)
-    {
-        _prefixService = prefixService;
-        _staticBuilders = staticBuilders;
-    }
+    private readonly StaticBuilders _staticBuilders = staticBuilders;
 
     // Alias: ".help server" (25) -> Original: serverhelp
     [Command("server")]
     public async Task ServerAsync()
     {
-        var prfx = _prefixService.GetPrefix(Context.Guild?.Id);
+        var prfx = prefixService.GetPrefix(Context.Guild?.Id);
         _embed.WithColor(DiscordConstants.InformationColorBlue);
         _embed.WithDescription("**See all server settings below.**\n" +
                                "These commands require either the `Admin` or the `Ban Members` permission.");
@@ -1131,32 +1002,22 @@ public class HelpSpaceCommands : BaseCommandModule
 }
 
 [Command("login")]
-public class LoginSpaceCommands : BaseCommandModule
+public class LoginSpaceCommands(
+    IPrefixService prefixService,
+    UserService userService,
+    DiscogsBuilder discogsBuilder,
+    InteractiveService interactivity,
+    IOptions<BotSettings> botSettings)
+    : BaseCommandModule(botSettings)
 {
-    private readonly IPrefixService _prefixService;
-    private readonly UserService _userService;
-    private readonly DiscogsBuilder _discogsBuilder;
-    private InteractiveService Interactivity { get; }
-
-    public LoginSpaceCommands(
-        IPrefixService prefixService,
-        UserService userService,
-        DiscogsBuilder discogsBuilder,
-        InteractiveService interactivity,
-        IOptions<BotSettings> botSettings) : base(botSettings)
-    {
-        _prefixService = prefixService;
-        _userService = userService;
-        _discogsBuilder = discogsBuilder;
-        Interactivity = interactivity;
-    }
+    private InteractiveService Interactivity { get; } = interactivity;
 
     // Alias: ".login discogs" (14) -> Original: discogs
     [Command("discogs")]
     public async Task DiscogsAsync([CommandParameter(Remainder = true)] string unusedValues = null)
     {
-        var contextUser = await _userService.GetUserWithDiscogs(Context.User.Id);
-        var prfx = _prefixService.GetPrefix(Context.Guild?.Id);
+        var contextUser = await userService.GetUserWithDiscogs(Context.User.Id);
+        var prfx = prefixService.GetPrefix(Context.Guild?.Id);
 
         if (contextUser.UserDiscogs == null)
         {
@@ -1168,7 +1029,7 @@ public class LoginSpaceCommands : BaseCommandModule
                 await Context.Channel.SendMessageAsync(new MessageProperties().AddEmbeds(serverEmbed));
             }
 
-            var response = _discogsBuilder.DiscogsLoginGetLinkAsync(new ContextModel(Context, prfx, contextUser));
+            var response = discogsBuilder.DiscogsLoginGetLinkAsync(new ContextModel(Context, prfx, contextUser));
             var dmChannel = await Context.User.GetDMChannelAsync();
             await dmChannel.SendMessageAsync(new MessageProperties
             {
@@ -1200,42 +1061,26 @@ public class LoginSpaceCommands : BaseCommandModule
 }
 
 [Command("whoknows")]
-public class WhoknowsSpaceCommands : BaseCommandModule
+public class WhoknowsSpaceCommands(
+    IPrefixService prefixService,
+    UserService userService,
+    TrackBuilders trackBuilders,
+    AlbumBuilders albumBuilders,
+    ArtistBuilders artistBuilders,
+    GenreBuilders genreBuilders,
+    InteractiveService interactivity,
+    IOptions<BotSettings> botSettings)
+    : BaseCommandModule(botSettings)
 {
-    private readonly IPrefixService _prefixService;
-    private readonly UserService _userService;
-    private readonly TrackBuilders _trackBuilders;
-    private readonly AlbumBuilders _albumBuilders;
-    private readonly ArtistBuilders _artistBuilders;
-    private readonly GenreBuilders _genreBuilders;
-    private InteractiveService Interactivity { get; }
-
-    public WhoknowsSpaceCommands(
-        IPrefixService prefixService,
-        UserService userService,
-        TrackBuilders trackBuilders,
-        AlbumBuilders albumBuilders,
-        ArtistBuilders artistBuilders,
-        GenreBuilders genreBuilders,
-        InteractiveService interactivity,
-        IOptions<BotSettings> botSettings) : base(botSettings)
-    {
-        _prefixService = prefixService;
-        _userService = userService;
-        _trackBuilders = trackBuilders;
-        _albumBuilders = albumBuilders;
-        _artistBuilders = artistBuilders;
-        _genreBuilders = genreBuilders;
-        Interactivity = interactivity;
-    }
+    private InteractiveService Interactivity { get; } = interactivity;
 
     // Alias: ".whoknows track" (26) -> Original: whoknowstrack
     [Command("track")]
     public async Task TrackAsync([CommandParameter(Remainder = true)] string trackValues = null)
     {
         _ = Context.Channel?.TriggerTypingStateAsync()!;
-        var contextUser = await _userService.GetUserSettingsAsync(Context.User);
-        var prfx = _prefixService.GetPrefix(Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(Context.User);
+        var prfx = prefixService.GetPrefix(Context.Guild?.Id);
 
         try
         {
@@ -1247,7 +1092,7 @@ public class WhoknowsSpaceCommands : BaseCommandModule
             };
             var settings = SettingService.SetWhoKnowsSettings(currentSettings, trackValues, contextUser.UserType);
 
-            var response = await _trackBuilders.WhoKnowsTrackAsync(
+            var response = await trackBuilders.WhoKnowsTrackAsync(
                 new ContextModel(Context, prfx, contextUser), settings.ResponseMode, settings.NewSearchValue,
                 settings.DisplayRoleFilter);
 
@@ -1265,8 +1110,8 @@ public class WhoknowsSpaceCommands : BaseCommandModule
     public async Task AlbumAsync([CommandParameter(Remainder = true)] string albumValues = null)
     {
         _ = Context.Channel?.TriggerTypingStateAsync()!;
-        var prfx = _prefixService.GetPrefix(Context.Guild?.Id);
-        var contextUser = await _userService.GetUserSettingsAsync(Context.User);
+        var prfx = prefixService.GetPrefix(Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(Context.User);
 
         try
         {
@@ -1278,7 +1123,7 @@ public class WhoknowsSpaceCommands : BaseCommandModule
             };
             var settings = SettingService.SetWhoKnowsSettings(currentSettings, albumValues, contextUser.UserType);
 
-            var response = await _albumBuilders.WhoKnowsAlbumAsync(
+            var response = await albumBuilders.WhoKnowsAlbumAsync(
                 new ContextModel(Context, prfx, contextUser), settings.ResponseMode, settings.NewSearchValue,
                 settings.DisplayRoleFilter);
 
@@ -1296,11 +1141,11 @@ public class WhoknowsSpaceCommands : BaseCommandModule
     public async Task ArtistAsync([CommandParameter(Remainder = true)] string artistValues = null)
     {
         _ = Context.Channel?.TriggerTypingStateAsync()!;
-        var prfx = _prefixService.GetPrefix(Context.Guild?.Id);
+        var prfx = prefixService.GetPrefix(Context.Guild?.Id);
 
         try
         {
-            var contextUser = await _userService.GetUserSettingsAsync(Context.User);
+            var contextUser = await userService.GetUserSettingsAsync(Context.User);
             var currentSettings = new WhoKnowsSettings
             {
                 ResponseMode = contextUser.Mode ?? ResponseMode.Embed,
@@ -1309,7 +1154,7 @@ public class WhoknowsSpaceCommands : BaseCommandModule
             };
             var settings = SettingService.SetWhoKnowsSettings(currentSettings, artistValues, contextUser.UserType);
 
-            var response = await _artistBuilders.WhoKnowsArtistAsync(new ContextModel(Context, prfx, contextUser),
+            var response = await artistBuilders.WhoKnowsArtistAsync(new ContextModel(Context, prfx, contextUser),
                 settings.ResponseMode, settings.NewSearchValue, settings.DisplayRoleFilter,
                 redirectsEnabled: settings.RedirectsEnabled);
 
@@ -1327,12 +1172,13 @@ public class WhoknowsSpaceCommands : BaseCommandModule
     public async Task GenreAsync([CommandParameter(Remainder = true)] string genreValues = null)
     {
         _ = Context.Channel?.TriggerTypingStateAsync()!;
-        var prfx = _prefixService.GetPrefix(Context.Guild?.Id);
-        var contextUser = await _userService.GetUserSettingsAsync(Context.User);
+        var prfx = prefixService.GetPrefix(Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(Context.User);
 
         try
         {
-            var response = await _genreBuilders.WhoKnowsGenreAsync(new ContextModel(Context, prfx, contextUser), genreValues);
+            var response =
+                await genreBuilders.WhoKnowsGenreAsync(new ContextModel(Context, prfx, contextUser), genreValues);
 
             await Context.SendResponse(Interactivity, response);
             Context.LogCommandUsed(response.CommandResponse);
@@ -1345,28 +1191,16 @@ public class WhoknowsSpaceCommands : BaseCommandModule
 }
 
 [Command("scrobble")]
-public class ScrobbleSpaceCommands : BaseCommandModule
+public class ScrobbleSpaceCommands(
+    IPrefixService prefixService,
+    UserService userService,
+    GuildService guildService,
+    GuildBuilders guildBuilders,
+    InteractiveService interactivity,
+    IOptions<BotSettings> botSettings)
+    : BaseCommandModule(botSettings)
 {
-    private readonly IPrefixService _prefixService;
-    private readonly UserService _userService;
-    private readonly GuildService _guildService;
-    private readonly GuildBuilders _guildBuilders;
-    private InteractiveService Interactivity { get; }
-
-    public ScrobbleSpaceCommands(
-        IPrefixService prefixService,
-        UserService userService,
-        GuildService guildService,
-        GuildBuilders guildBuilders,
-        InteractiveService interactivity,
-        IOptions<BotSettings> botSettings) : base(botSettings)
-    {
-        _prefixService = prefixService;
-        _userService = userService;
-        _guildService = guildService;
-        _guildBuilders = guildBuilders;
-        Interactivity = interactivity;
-    }
+    private InteractiveService Interactivity { get; } = interactivity;
 
     // Alias: ".scrobble leaderboard" (27) -> Original: scrobbleleaderboard
     [Command("leaderboard")]
@@ -1375,11 +1209,11 @@ public class ScrobbleSpaceCommands : BaseCommandModule
         try
         {
             _ = Context.Channel?.TriggerTypingStateAsync()!;
-            var prfx = _prefixService.GetPrefix(Context.Guild?.Id);
-            var guild = await _guildService.GetGuildForWhoKnows(Context.Guild?.Id);
-            var contextUser = await _userService.GetUserSettingsAsync(Context.User);
+            var prfx = prefixService.GetPrefix(Context.Guild?.Id);
+            var guild = await guildService.GetGuildForWhoKnows(Context.Guild?.Id);
+            var contextUser = await userService.GetUserSettingsAsync(Context.User);
 
-            var response = await _guildBuilders.MemberOverviewAsync(
+            var response = await guildBuilders.MemberOverviewAsync(
                 new ContextModel(Context, prfx, contextUser),
                 guild, GuildViewType.Plays);
 
@@ -1395,43 +1229,31 @@ public class ScrobbleSpaceCommands : BaseCommandModule
 
 // Voice assistant commands (ok google, hey google, hey siri, alexa play)
 [Command("ok")]
-public class OkSpaceCommands : BaseCommandModule
+public class OkSpaceCommands(
+    IPrefixService prefixService,
+    UserService userService,
+    PlayBuilder playBuilder,
+    SettingService settingService,
+    InteractiveService interactivity,
+    IOptions<BotSettings> botSettings)
+    : BaseCommandModule(botSettings)
 {
-    private readonly IPrefixService _prefixService;
-    private readonly UserService _userService;
-    private readonly PlayBuilder _playBuilder;
-    private readonly SettingService _settingService;
-    private InteractiveService Interactivity { get; }
-
-    public OkSpaceCommands(
-        IPrefixService prefixService,
-        UserService userService,
-        PlayBuilder playBuilder,
-        SettingService settingService,
-        InteractiveService interactivity,
-        IOptions<BotSettings> botSettings) : base(botSettings)
-    {
-        _prefixService = prefixService;
-        _userService = userService;
-        _playBuilder = playBuilder;
-        _settingService = settingService;
-        Interactivity = interactivity;
-    }
+    private InteractiveService Interactivity { get; } = interactivity;
 
     // Alias: ".ok google" (107) -> Original: fm
     [Command("google")]
     public async Task GoogleAsync([CommandParameter(Remainder = true)] string options = null)
     {
-        var contextUser = await _userService.GetUserSettingsAsync(Context.User);
-        var prfx = _prefixService.GetPrefix(Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(Context.User);
+        var prfx = prefixService.GetPrefix(Context.Guild?.Id);
 
         try
         {
             _ = Context.Channel?.TriggerTypingStateAsync()!;
-            var userSettings = await _settingService.GetUser(options, contextUser, Context);
+            var userSettings = await settingService.GetUser(options, contextUser, Context);
             var configuredFmType = SettingService.GetEmbedType(userSettings.NewSearchValue, contextUser.FmEmbedType);
 
-            var response = await _playBuilder.NowPlayingAsync(new ContextModel(Context, prfx, contextUser),
+            var response = await playBuilder.NowPlayingAsync(new ContextModel(Context, prfx, contextUser),
                 userSettings, configuredFmType.embedType);
 
             await Context.SendResponse(Interactivity, response);
@@ -1445,28 +1267,16 @@ public class OkSpaceCommands : BaseCommandModule
 }
 
 [Command("hey")]
-public class HeySpaceCommands : BaseCommandModule
+public class HeySpaceCommands(
+    IPrefixService prefixService,
+    UserService userService,
+    PlayBuilder playBuilder,
+    SettingService settingService,
+    InteractiveService interactivity,
+    IOptions<BotSettings> botSettings)
+    : BaseCommandModule(botSettings)
 {
-    private readonly IPrefixService _prefixService;
-    private readonly UserService _userService;
-    private readonly PlayBuilder _playBuilder;
-    private readonly SettingService _settingService;
-    private InteractiveService Interactivity { get; }
-
-    public HeySpaceCommands(
-        IPrefixService prefixService,
-        UserService userService,
-        PlayBuilder playBuilder,
-        SettingService settingService,
-        InteractiveService interactivity,
-        IOptions<BotSettings> botSettings) : base(botSettings)
-    {
-        _prefixService = prefixService;
-        _userService = userService;
-        _playBuilder = playBuilder;
-        _settingService = settingService;
-        Interactivity = interactivity;
-    }
+    private InteractiveService Interactivity { get; } = interactivity;
 
     // Alias: ".hey google" (15) -> Original: fm
     [Command("google")]
@@ -1480,16 +1290,16 @@ public class HeySpaceCommands : BaseCommandModule
 
     private async Task PlayNowPlayingAsync(string options = null)
     {
-        var contextUser = await _userService.GetUserSettingsAsync(Context.User);
-        var prfx = _prefixService.GetPrefix(Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(Context.User);
+        var prfx = prefixService.GetPrefix(Context.Guild?.Id);
 
         try
         {
             _ = Context.Channel?.TriggerTypingStateAsync()!;
-            var userSettings = await _settingService.GetUser(options, contextUser, Context);
+            var userSettings = await settingService.GetUser(options, contextUser, Context);
             var configuredFmType = SettingService.GetEmbedType(userSettings.NewSearchValue, contextUser.FmEmbedType);
 
-            var response = await _playBuilder.NowPlayingAsync(new ContextModel(Context, prfx, contextUser),
+            var response = await playBuilder.NowPlayingAsync(new ContextModel(Context, prfx, contextUser),
                 userSettings, configuredFmType.embedType);
 
             await Context.SendResponse(Interactivity, response);
@@ -1501,4 +1311,3 @@ public class HeySpaceCommands : BaseCommandModule
         }
     }
 }
-

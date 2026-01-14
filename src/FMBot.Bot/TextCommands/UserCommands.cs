@@ -21,44 +21,20 @@ using Fergun.Interactive;
 namespace FMBot.Bot.TextCommands;
 
 [ModuleName("User settings")]
-public class UserCommands : BaseCommandModule
+public class UserCommands(
+    GuildService guildService,
+    IPrefixService prefixService,
+    SettingService settingService,
+    UserService userService,
+    IOptions<BotSettings> botSettings,
+    UserBuilder userBuilder,
+    InteractiveService interactivity,
+    OpenAiService openAiService,
+    TimerService timerService,
+    TemplateBuilders templateBuilders)
+    : BaseCommandModule(botSettings)
 {
-    private readonly GuildService _guildService;
-    private readonly IPrefixService _prefixService;
-    private readonly SettingService _settingService;
-    private readonly UserService _userService;
-    private readonly UserBuilder _userBuilder;
-    private readonly OpenAiService _openAiService;
-    private readonly TimerService _timerService;
-    private readonly TemplateBuilders _templateBuilders;
-    private readonly AdminService _adminService;
-
-    private InteractiveService Interactivity { get; }
-
-    public UserCommands(
-        GuildService guildService,
-        IPrefixService prefixService,
-        SettingService settingService,
-        UserService userService,
-        IOptions<BotSettings> botSettings,
-        UserBuilder userBuilder,
-        InteractiveService interactivity,
-        OpenAiService openAiService,
-        TimerService timerService,
-        TemplateBuilders templateBuilders,
-        AdminService adminService) : base(botSettings)
-    {
-        this._guildService = guildService;
-        this._prefixService = prefixService;
-        this._settingService = settingService;
-        this._userService = userService;
-        this._userBuilder = userBuilder;
-        this.Interactivity = interactivity;
-        this._openAiService = openAiService;
-        this._timerService = timerService;
-        this._templateBuilders = templateBuilders;
-        this._adminService = adminService;
-    }
+    private InteractiveService Interactivity { get; } = interactivity;
 
     [Command("settings", "userconfig", "usersettings", "usersetting", "setting")]
     [Summary("Your user settings in .fmbot")]
@@ -68,8 +44,8 @@ public class UserCommands : BaseCommandModule
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
         try
         {
@@ -93,15 +69,15 @@ public class UserCommands : BaseCommandModule
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var contextUser = await this._userService.GetFullUserAsync(this.Context.User.Id);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetFullUserAsync(this.Context.User.Id);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
         try
         {
-            var userSettings = await this._settingService.GetUser(userOptions, contextUser, this.Context, true);
+            var userSettings = await settingService.GetUser(userOptions, contextUser, this.Context, true);
 
             var response =
-                await this._userBuilder.ProfileAsync(new ContextModel(this.Context, prfx, contextUser), userSettings);
+                await userBuilder.ProfileAsync(new ContextModel(this.Context, prfx, contextUser), userSettings);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -118,12 +94,12 @@ public class UserCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Other)]
     public async Task LinkAsync([CommandParameter(Remainder = true)] string userOptions = null)
     {
-        var user = await this._userService.GetUserAsync(this.Context.User.Id);
+        var user = await userService.GetUserAsync(this.Context.User.Id);
 
         try
         {
-            var userSettings = await this._settingService.GetUser(userOptions, user, this.Context, true);
-            var guildUsers = await this._guildService.GetGuildUsers(this.Context.Guild?.Id);
+            var userSettings = await settingService.GetUser(userOptions, user, this.Context, true);
+            var guildUsers = await guildService.GetGuildUsers(this.Context.Guild?.Id);
 
             if (userSettings.DifferentUser && guildUsers.ContainsKey(userSettings.UserId))
             {
@@ -166,13 +142,13 @@ public class UserCommands : BaseCommandModule
     [SupporterEnhanced("Supporters get an improved AI model with better output and a higher usage limit")]
     public async Task JudgeAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
-        var contextUser = await this._userService.GetUserAsync(this.Context.User.Id);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserAsync(this.Context.User.Id);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
         var timeSettings = SettingService.GetTimePeriod(extraOptions, TimePeriod.Quarterly);
 
-        var userSettings = await this._settingService.GetUser(timeSettings.NewSearchValue, contextUser, this.Context);
+        var userSettings = await settingService.GetUser(timeSettings.NewSearchValue, contextUser, this.Context);
 
-        var commandUsesLeft = await this._openAiService.GetJudgeUsesLeft(contextUser);
+        var commandUsesLeft = await openAiService.GetJudgeUsesLeft(contextUser);
 
         var response =
             UserBuilder.JudgeAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, timeSettings,
@@ -191,8 +167,8 @@ public class UserCommands : BaseCommandModule
     [SupporterExclusive("Supporters can set their own emote reactions used globally")]
     public async Task SetUserReactionsAsync([CommandParameter(Remainder = true)] string emojis = null)
     {
-        var user = await this._userService.GetUserAsync(this.Context.User.Id);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var user = await userService.GetUserAsync(this.Context.User.Id);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
         var supporterRequiredResponse =
             UserBuilder.UserReactionsSupporterRequired(new ContextModel(this.Context, prfx, user), prfx);
@@ -206,7 +182,7 @@ public class UserCommands : BaseCommandModule
 
         if (string.IsNullOrWhiteSpace(emojis))
         {
-            await this._userService.SetUserReactionsAsync(user.UserId, null);
+            await userService.SetUserReactionsAsync(user.UserId, null);
 
             if (user?.EmoteReactions == null || !user.EmoteReactions.Any())
             {
@@ -252,7 +228,7 @@ public class UserCommands : BaseCommandModule
             return;
         }
 
-        await this._userService.SetUserReactionsAsync(user.UserId, emoteArray);
+        await userService.SetUserReactionsAsync(user.UserId, emoteArray);
 
         this._embed.WithTitle("Automatic user emoji reactions set");
         this._embed.WithDescription(
@@ -304,9 +280,9 @@ public class UserCommands : BaseCommandModule
     {
         try
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var response = await this._userBuilder.FeaturedAsync(new ContextModel(this.Context, prfx, contextUser));
+            var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+            var response = await userBuilder.FeaturedAsync(new ContextModel(this.Context, prfx, contextUser));
 
             RestMessage message;
             if (response.ResponseType == ResponseType.Embed)
@@ -323,10 +299,10 @@ public class UserCommands : BaseCommandModule
                 PublicProperties.UsedCommandsResponseMessageId.TryAdd(this.Context.Message.Id, message.Id);
                 PublicProperties.UsedCommandsResponseContextId.TryAdd(message.Id, this.Context.Message.Id);
 
-                if (this._timerService.CurrentFeatured?.Reactions != null &&
-                    this._timerService.CurrentFeatured.Reactions.Any())
+                if (timerService.CurrentFeatured?.Reactions != null &&
+                    timerService.CurrentFeatured.Reactions.Any())
                 {
-                    await GuildService.AddReactionsAsync(message, this._timerService.CurrentFeatured.Reactions);
+                    await GuildService.AddReactionsAsync(message, timerService.CurrentFeatured.Reactions);
                 }
                 else
                 {
@@ -337,7 +313,7 @@ public class UserCommands : BaseCommandModule
                     }
                     else if (this.Context.Guild != null)
                     {
-                        await this._guildService.AddGuildReactionsAsync(message, this.Context.Guild,
+                        await guildService.AddGuildReactionsAsync(message, this.Context.Guild,
                             response.Text == "in-server");
                     }
                 }
@@ -361,19 +337,19 @@ public class UserCommands : BaseCommandModule
     {
         try
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var userSettings = await this._settingService.GetUser(options, contextUser, this.Context);
+            var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+            var userSettings = await settingService.GetUser(options, contextUser, this.Context);
 
             var view = SettingService.SetFeaturedTypeView(userSettings.NewSearchValue);
 
             if (view != FeaturedView.User)
             {
-                userSettings = await this._settingService.GetUser("", contextUser, this.Context);
+                userSettings = await settingService.GetUser("", contextUser, this.Context);
             }
 
             var response =
-                await this._userBuilder.FeaturedLogAsync(new ContextModel(this.Context, prfx, contextUser),
+                await userBuilder.FeaturedLogAsync(new ContextModel(this.Context, prfx, contextUser),
                     userSettings, view);
 
             await this.Context.SendResponse(this.Interactivity, response);
@@ -394,9 +370,9 @@ public class UserCommands : BaseCommandModule
     {
         try
         {
-            var user = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var user = await userService.GetUserSettingsAsync(this.Context.User);
 
-            var newRymSetting = await this._userService.ToggleRymAsync(user);
+            var newRymSetting = await userService.ToggleRymAsync(user);
 
             if (newRymSetting == true)
             {
@@ -431,8 +407,8 @@ public class UserCommands : BaseCommandModule
     {
         try
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
             var response =
                 UserBuilder.BotScrobblingAsync(new ContextModel(this.Context, prfx, contextUser));
@@ -456,10 +432,10 @@ public class UserCommands : BaseCommandModule
     {
         try
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-            var guild = await this._guildService.GetGuildAsync(this.Context.Guild?.Id);
+            var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+            var guild = await guildService.GetGuildAsync(this.Context.Guild?.Id);
 
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
             var response = UserBuilder.FmMode(new ContextModel(this.Context, prfx, contextUser), guild);
 
             var dmChannel = await this.Context.User.GetDMChannelAsync();
@@ -486,8 +462,8 @@ public class UserCommands : BaseCommandModule
     [CommandCategories(CommandCategory.UserSettings)]
     public async Task ResponseModeAsync([CommandParameter(Remainder = true)] string _ = null)
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
         var response = UserBuilder.ResponseMode(new ContextModel(this.Context, prfx, contextUser));
 
@@ -500,8 +476,8 @@ public class UserCommands : BaseCommandModule
     [ExcludeFromHelp]
     public async Task PickModeAsync([CommandParameter(Remainder = true)] string _ = null)
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
         var response = UserBuilder.ModePick(new ContextModel(this.Context, prfx, contextUser));
 
@@ -519,8 +495,8 @@ public class UserCommands : BaseCommandModule
     [CommandCategories(CommandCategory.UserSettings)]
     public async Task PrivacyAsync([CommandParameter(Remainder = true)] string _ = null)
     {
-        var contextUser = await this._userService.GetFullUserAsync(this.Context.User.Id);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetFullUserAsync(this.Context.User.Id);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
         var response = UserBuilder.Privacy(new ContextModel(this.Context, prfx, contextUser));
 
@@ -538,9 +514,9 @@ public class UserCommands : BaseCommandModule
     {
         return;
 
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var guild = await this._guildService.GetGuildAsync(this.Context.Guild?.Id);
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+        var guild = await guildService.GetGuildAsync(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
         try
         {
@@ -555,7 +531,7 @@ public class UserCommands : BaseCommandModule
             }
 
             var response =
-                await this._templateBuilders.TemplatePicker(new ContextModel(this.Context, prfx, contextUser), guild);
+                await templateBuilders.TemplatePicker(new ContextModel(this.Context, prfx, contextUser), guild);
 
             await this.Context.SendResponse(this.Interactivity, response);
 
@@ -581,8 +557,8 @@ public class UserCommands : BaseCommandModule
     [CommandCategories(CommandCategory.UserSettings)]
     public async Task LoginAsync([CommandParameter(Remainder = true)] string _ = null)
     {
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var contextUser = await this._userService.GetUserAsync(this.Context.User.Id);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserAsync(this.Context.User.Id);
 
         var response = UserBuilder.LoginRequired(prfx, contextUser != null);
 
@@ -595,8 +571,8 @@ public class UserCommands : BaseCommandModule
     [CommandCategories(CommandCategory.UserSettings)]
     public async Task RemoveAsync([CommandParameter(Remainder = true)] string confirmation = null)
     {
-        var contextUser = await this._userService.GetFullUserAsync(this.Context.User.Id);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetFullUserAsync(this.Context.User.Id);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
         if (contextUser == null)
         {
@@ -625,8 +601,8 @@ public class UserCommands : BaseCommandModule
     [UsernameSetRequired]
     public async Task UpdateLinkedRoles([CommandParameter(Remainder = true)] string trackValues = null)
     {
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var response = this._userBuilder.ManageLinkedRoles(new ContextModel(this.Context, prfx));
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+        var response = userBuilder.ManageLinkedRoles(new ContextModel(this.Context, prfx));
 
         await this.Context.SendResponse(this.Interactivity, response);
         this.Context.LogCommandUsed(response.CommandResponse);
@@ -644,8 +620,8 @@ public class UserCommands : BaseCommandModule
     {
         try
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-            var contextUser = await this._userService.GetUserAsync(this.Context.User.Id);
+            var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+            var contextUser = await userService.GetUserAsync(this.Context.User.Id);
             var context = new ContextModel(this.Context, prfx, contextUser);
 
             var supporterRequiredResponse = UserBuilder.ShortcutsSupporterRequired(context);
@@ -656,7 +632,7 @@ public class UserCommands : BaseCommandModule
                 return;
             }
 
-            var response = await this._userBuilder.ListShortcutsAsync(context);
+            var response = await userBuilder.ListShortcutsAsync(context);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);

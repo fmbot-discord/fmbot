@@ -11,9 +11,7 @@ using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Repositories;
 using Microsoft.Extensions.Options;
-using NetCord;
 using NetCord.Services.Commands;
 using Fergun.Interactive;
 using NetCord.Rest;
@@ -21,28 +19,16 @@ using NetCord.Rest;
 namespace FMBot.Bot.TextCommands;
 
 [ModuleName("Genius")]
-public class GeniusCommands : BaseCommandModule
+public class GeniusCommands(
+    GeniusService geniusService,
+    IPrefixService prefixService,
+    IDataSourceFactory dataSourceFactory,
+    UserService userService,
+    IOptions<BotSettings> botSettings,
+    InteractiveService interactivity)
+    : BaseCommandModule(botSettings)
 {
-    private readonly GeniusService _geniusService;
-    private readonly IPrefixService _prefixService;
-    private readonly IDataSourceFactory _dataSourceFactory;
-    private readonly UserService _userService;
-
-    private InteractiveService Interactivity { get; }
-
-    public GeniusCommands(
-        GeniusService geniusService,
-        IPrefixService prefixService,
-        IDataSourceFactory dataSourceFactory,
-        UserService userService,
-        IOptions<BotSettings> botSettings, InteractiveService interactivity) : base(botSettings)
-    {
-        this._geniusService = geniusService;
-        this._dataSourceFactory = dataSourceFactory;
-        this._prefixService = prefixService;
-        this._userService = userService;
-        this.Interactivity = interactivity;
-    }
+    private InteractiveService Interactivity { get; } = interactivity;
 
     [Command("genius", "gen")]
     [Summary("Shares a link to the Genius lyrics based on what a user is listening to or what the user is searching for.")]
@@ -52,8 +38,8 @@ public class GeniusCommands : BaseCommandModule
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
         try
         {
@@ -64,7 +50,7 @@ public class GeniusCommands : BaseCommandModule
             {
                 var internalLookup = CommandContextExtensions.GetReferencedMusic(this.Context.Message.ReferencedMessage.Id)
                                      ??
-                                     await this._userService.GetReferencedMusic(this.Context.Message.ReferencedMessage.Id);
+                                     await userService.GetReferencedMusic(this.Context.Message.ReferencedMessage.Id);
 
                 if (internalLookup?.Track != null)
                 {
@@ -85,7 +71,7 @@ public class GeniusCommands : BaseCommandModule
                     sessionKey = userSettings.SessionKeyLastFm;
                 }
 
-                var recentScrobbles = await this._dataSourceFactory.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
+                var recentScrobbles = await dataSourceFactory.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
 
                 if (await GenericEmbedService.RecentScrobbleCallFailedReply(recentScrobbles, userSettings.UserNameLastFM, this.Context))
                 {
@@ -111,12 +97,12 @@ public class GeniusCommands : BaseCommandModule
                 ResponseType = ResponseType.Embed
             };
 
-            var geniusResults = await this._geniusService.SearchGeniusAsync(querystring, currentTrackName, currentTrackArtist);
+            var geniusResults = await geniusService.SearchGeniusAsync(querystring, currentTrackName, currentTrackArtist);
 
             if (geniusResults != null && geniusResults.Any())
             {
                 var rnd = new Random();
-                if (rnd.Next(0, 8) == 1 && string.IsNullOrWhiteSpace(searchValue) && !await this._userService.HintShownBefore(userSettings.UserId, "genius"))
+                if (rnd.Next(0, 8) == 1 && string.IsNullOrWhiteSpace(searchValue) && !await userService.HintShownBefore(userSettings.UserId, "genius"))
                 {
                     response.EmbedFooter.WithText($"Tip: Search for other songs by simply adding the searchvalue behind '{prfx}genius'.");
                     response.HintShown = true;

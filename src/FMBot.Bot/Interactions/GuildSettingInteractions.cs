@@ -23,45 +23,21 @@ using NetCord.Services.ComponentInteractions;
 
 namespace FMBot.Bot.Interactions;
 
-public class GuildSettingInteractions : ComponentInteractionModule<ComponentInteractionContext>
+public class GuildSettingInteractions(
+    GuildService guildService,
+    IPrefixService prefixService,
+    GuildSettingBuilder guildSettingBuilder,
+    GuildBuilders guildBuilders,
+    GuildDisabledCommandService guildDisabledCommandService,
+    ChannelToggledCommandService channelToggledCommandService,
+    DisabledChannelService disabledChannelService,
+    CrownService crownService,
+    UserService userService,
+    InteractiveService interactivity,
+    IOptions<BotSettings> botSettings)
+    : ComponentInteractionModule<ComponentInteractionContext>
 {
-    private readonly GuildService _guildService;
-    private readonly IPrefixService _prefixService;
-    private readonly GuildSettingBuilder _guildSettingBuilder;
-    private readonly GuildBuilders _guildBuilders;
-    private readonly GuildDisabledCommandService _guildDisabledCommandService;
-    private readonly ChannelToggledCommandService _channelToggledCommandService;
-    private readonly DisabledChannelService _disabledChannelService;
-    private readonly CrownService _crownService;
-    private readonly UserService _userService;
-    private readonly InteractiveService _interactivity;
-    private readonly BotSettings _botSettings;
-
-    public GuildSettingInteractions(
-        GuildService guildService,
-        IPrefixService prefixService,
-        GuildSettingBuilder guildSettingBuilder,
-        GuildBuilders guildBuilders,
-        GuildDisabledCommandService guildDisabledCommandService,
-        ChannelToggledCommandService channelToggledCommandService,
-        DisabledChannelService disabledChannelService,
-        CrownService crownService,
-        UserService userService,
-        InteractiveService interactivity,
-        IOptions<BotSettings> botSettings)
-    {
-        this._guildService = guildService;
-        this._prefixService = prefixService;
-        this._guildSettingBuilder = guildSettingBuilder;
-        this._guildBuilders = guildBuilders;
-        this._guildDisabledCommandService = guildDisabledCommandService;
-        this._channelToggledCommandService = channelToggledCommandService;
-        this._disabledChannelService = disabledChannelService;
-        this._crownService = crownService;
-        this._userService = userService;
-        this._interactivity = interactivity;
-        this._botSettings = botSettings.Value;
-    }
+    private readonly BotSettings _botSettings = botSettings.Value;
 
     [ComponentInteraction(InteractionConstants.SetPrefix)]
     [ServerStaffOnly]
@@ -184,8 +160,8 @@ public class GuildSettingInteractions : ComponentInteractionModule<ComponentInte
 
         if (newPrefix == this._botSettings.Bot.Prefix)
         {
-            await this._guildService.SetGuildPrefixAsync(this.Context.Guild, null);
-            this._prefixService.StorePrefix(null, this.Context.Guild.Id);
+            await guildService.SetGuildPrefixAsync(this.Context.Guild, null);
+            prefixService.StorePrefix(null, this.Context.Guild.Id);
         }
         else if (newPrefix.Contains('/') || newPrefix.Contains('*') || newPrefix.Contains('|') ||
                  newPrefix.Contains('`') || newPrefix.Contains('#') || newPrefix.Contains('_') ||
@@ -198,11 +174,11 @@ public class GuildSettingInteractions : ComponentInteractionModule<ComponentInte
         }
         else
         {
-            await this._guildService.SetGuildPrefixAsync(this.Context.Guild, newPrefix);
-            this._prefixService.StorePrefix(newPrefix, this.Context.Guild.Id);
+            await guildService.SetGuildPrefixAsync(this.Context.Guild, newPrefix);
+            prefixService.StorePrefix(newPrefix, this.Context.Guild.Id);
         }
 
-        var response = await this._guildSettingBuilder.SetPrefix(new ContextModel(this.Context), this.Context.User);
+        var response = await guildSettingBuilder.SetPrefix(new ContextModel(this.Context), this.Context.User);
         await this.Context.UpdateMessageEmbed(response, messageId);
     }
 
@@ -219,9 +195,9 @@ public class GuildSettingInteractions : ComponentInteractionModule<ComponentInte
             return;
         }
 
-        await this._guildService.SetFmbotActivityThresholdDaysAsync(this.Context.Guild, result);
+        await guildService.SetFmbotActivityThresholdDaysAsync(this.Context.Guild, result);
 
-        var response = await this._guildSettingBuilder.SetFmbotActivityThreshold(new ContextModel(this.Context), this.Context.User);
+        var response = await guildSettingBuilder.SetFmbotActivityThreshold(new ContextModel(this.Context), this.Context.User);
         await this.Context.UpdateMessageEmbed(response, messageId);
     }
 
@@ -238,9 +214,9 @@ public class GuildSettingInteractions : ComponentInteractionModule<ComponentInte
             return;
         }
 
-        await this._guildService.SetCrownActivityThresholdDaysAsync(this.Context.Guild, result);
+        await guildService.SetCrownActivityThresholdDaysAsync(this.Context.Guild, result);
 
-        var response = await this._guildSettingBuilder.SetCrownActivityThreshold(new ContextModel(this.Context), this.Context.User);
+        var response = await guildSettingBuilder.SetCrownActivityThreshold(new ContextModel(this.Context), this.Context.User);
         await this.Context.UpdateMessageEmbed(response, messageId);
     }
 
@@ -257,9 +233,9 @@ public class GuildSettingInteractions : ComponentInteractionModule<ComponentInte
             return;
         }
 
-        await this._guildService.SetMinimumCrownPlaycountThresholdAsync(this.Context.Guild, result);
+        await guildService.SetMinimumCrownPlaycountThresholdAsync(this.Context.Guild, result);
 
-        var response = await this._guildSettingBuilder.SetCrownMinPlaycount(new ContextModel(this.Context), this.Context.User);
+        var response = await guildSettingBuilder.SetCrownMinPlaycount(new ContextModel(this.Context), this.Context.User);
         await this.Context.UpdateMessageEmbed(response, messageId);
     }
 
@@ -272,14 +248,14 @@ public class GuildSettingInteractions : ComponentInteractionModule<ComponentInte
 
         var channels = await this.Context.Guild.GetChannelsAsync();
         var selectedChannel = channels.FirstOrDefault(f => f.Id == parsedChannelId);
-        var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+        var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
 
-        await this._guildService.DisableChannelCommandsAsync(selectedChannel, guild.GuildId,
+        await guildService.DisableChannelCommandsAsync(selectedChannel, guild.GuildId,
             new List<string> { command.ToLower() }, this.Context.Guild.Id);
 
-        await this._channelToggledCommandService.ReloadToggledCommands(this.Context.Guild.Id);
+        await channelToggledCommandService.ReloadToggledCommands(this.Context.Guild.Id);
 
-        var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context), parsedChannelId, parsedCategoryId);
+        var response = await guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context), parsedChannelId, parsedCategoryId);
         await this.Context.UpdateMessageEmbed(response, messageId);
     }
 
@@ -293,12 +269,12 @@ public class GuildSettingInteractions : ComponentInteractionModule<ComponentInte
         var channels = await this.Context.Guild.GetChannelsAsync();
         var selectedChannel = channels.FirstOrDefault(f => f.Id == parsedChannelId);
 
-        await this._guildService.EnableChannelCommandsAsync(selectedChannel, new List<string> { command.ToLower() },
+        await guildService.EnableChannelCommandsAsync(selectedChannel, new List<string> { command.ToLower() },
             this.Context.Guild.Id);
 
-        await this._channelToggledCommandService.ReloadToggledCommands(this.Context.Guild.Id);
+        await channelToggledCommandService.ReloadToggledCommands(this.Context.Guild.Id);
 
-        var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context), parsedChannelId, parsedCategoryId);
+        var response = await guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context), parsedChannelId, parsedCategoryId);
         await this.Context.UpdateMessageEmbed(response, messageId);
     }
 
@@ -307,10 +283,10 @@ public class GuildSettingInteractions : ComponentInteractionModule<ComponentInte
     {
         var command = this.Context.GetModalValue("command");
 
-        await this._guildService.AddGuildDisabledCommandAsync(this.Context.Guild, command.ToLower());
-        GuildDisabledCommandService.StoreDisabledCommands((await this._guildService.GetGuildAsync(this.Context.Guild.Id)).DisabledCommands, this.Context.Guild.Id);
+        await guildService.AddGuildDisabledCommandAsync(this.Context.Guild, command.ToLower());
+        GuildDisabledCommandService.StoreDisabledCommands((await guildService.GetGuildAsync(this.Context.Guild.Id)).DisabledCommands, this.Context.Guild.Id);
 
-        var response = await this._guildSettingBuilder.ToggleGuildCommand(new ContextModel(this.Context), this.Context.User);
+        var response = await guildSettingBuilder.ToggleGuildCommand(new ContextModel(this.Context), this.Context.User);
         await this.Context.UpdateMessageEmbed(response, messageId);
     }
 
@@ -319,10 +295,10 @@ public class GuildSettingInteractions : ComponentInteractionModule<ComponentInte
     {
         var command = this.Context.GetModalValue("command");
 
-        await this._guildService.RemoveGuildDisabledCommandAsync(this.Context.Guild, command.ToLower());
-        GuildDisabledCommandService.StoreDisabledCommands((await this._guildService.GetGuildAsync(this.Context.Guild.Id)).DisabledCommands, this.Context.Guild.Id);
+        await guildService.RemoveGuildDisabledCommandAsync(this.Context.Guild, command.ToLower());
+        GuildDisabledCommandService.StoreDisabledCommands((await guildService.GetGuildAsync(this.Context.Guild.Id)).DisabledCommands, this.Context.Guild.Id);
 
-        var response = await this._guildSettingBuilder.ToggleGuildCommand(new ContextModel(this.Context), this.Context.User);
+        var response = await guildSettingBuilder.ToggleGuildCommand(new ContextModel(this.Context), this.Context.User);
         await this.Context.UpdateMessageEmbed(response, messageId);
     }
 
@@ -356,14 +332,14 @@ public class GuildSettingInteractions : ComponentInteractionModule<ComponentInte
                     emote: EmojiProperties.Custom(DiscordConstants.Loading), disabled: true, style: ButtonStyle.Secondary);
             await message.ModifyAsync(m => m.Components = [components]);
 
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+            var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
 
             var response =
-                await this._guildBuilders.MemberOverviewAsync(new ContextModel(this.Context, contextUser), guild,
+                await guildBuilders.MemberOverviewAsync(new ContextModel(this.Context, contextUser), guild,
                     viewType);
 
-            await this.Context.UpdateInteractionEmbed(response, this._interactivity, false);
+            await this.Context.UpdateInteractionEmbed(response, interactivity, false);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
@@ -376,7 +352,7 @@ public class GuildSettingInteractions : ComponentInteractionModule<ComponentInte
     [ServerStaffOnly]
     public async Task GetGuildSetting()
     {
-        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
+        if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
         {
             await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
             return;
@@ -385,8 +361,8 @@ public class GuildSettingInteractions : ComponentInteractionModule<ComponentInte
         var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
         var setting = stringMenuInteraction.Data.SelectedValues[0].Replace("gs-", "");
 
-        var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
         if (Enum.TryParse(setting.Replace("view-", "").Replace("set-", ""), out GuildSetting guildSetting))
         {
@@ -395,79 +371,79 @@ public class GuildSettingInteractions : ComponentInteractionModule<ComponentInte
             {
                 case GuildSetting.TextPrefix:
                 {
-                    response = await this._guildSettingBuilder.SetPrefix(new ContextModel(this.Context));
-                    await this.Context.SendResponse(this._interactivity, response, ephemeral: false);
+                    response = await guildSettingBuilder.SetPrefix(new ContextModel(this.Context));
+                    await this.Context.SendResponse(interactivity, response, ephemeral: false);
                 }
                     break;
                 case GuildSetting.EmoteReactions:
                     response = GuildSettingBuilder.GuildReactionsAsync(new ContextModel(this.Context), prfx);
 
-                    await this.Context.SendResponse(this._interactivity, response, ephemeral: false);
+                    await this.Context.SendResponse(interactivity, response, ephemeral: false);
                     return;
                 case GuildSetting.DefaultEmbedType:
                 {
-                    response = await this._guildSettingBuilder.GuildMode(new ContextModel(this.Context));
-                    await this.Context.SendResponse(this._interactivity, response, ephemeral: false);
+                    response = await guildSettingBuilder.GuildMode(new ContextModel(this.Context));
+                    await this.Context.SendResponse(interactivity, response, ephemeral: false);
                 }
                     break;
                 case GuildSetting.WhoKnowsActivityThreshold:
                 {
                     response =
-                        await this._guildSettingBuilder.SetFmbotActivityThreshold(new ContextModel(this.Context));
-                    await this.Context.SendResponse(this._interactivity, response, ephemeral: false);
+                        await guildSettingBuilder.SetFmbotActivityThreshold(new ContextModel(this.Context));
+                    await this.Context.SendResponse(interactivity, response, ephemeral: false);
                 }
                     break;
                 case GuildSetting.WhoKnowsBlockedUsers:
                 {
-                    response = await this._guildSettingBuilder.BlockedUsersAsync(new ContextModel(this.Context,
+                    response = await guildSettingBuilder.BlockedUsersAsync(new ContextModel(this.Context,
                         userSettings));
-                    await this.Context.SendResponse(this._interactivity, response, ephemeral: true);
+                    await this.Context.SendResponse(interactivity, response, ephemeral: true);
                 }
                     break;
                 case GuildSetting.CrownActivityThreshold:
                 {
                     response =
-                        await this._guildSettingBuilder.SetCrownActivityThreshold(new ContextModel(this.Context));
-                    await this.Context.SendResponse(this._interactivity, response, ephemeral: false);
+                        await guildSettingBuilder.SetCrownActivityThreshold(new ContextModel(this.Context));
+                    await this.Context.SendResponse(interactivity, response, ephemeral: false);
                 }
                     break;
                 case GuildSetting.CrownBlockedUsers:
                 {
-                    response = await this._guildSettingBuilder.BlockedUsersAsync(
+                    response = await guildSettingBuilder.BlockedUsersAsync(
                         new ContextModel(this.Context, userSettings), true);
-                    await this.Context.SendResponse(this._interactivity, response, ephemeral: true);
+                    await this.Context.SendResponse(interactivity, response, ephemeral: true);
                 }
 
                     break;
                 case GuildSetting.CrownMinimumPlaycount:
                 {
-                    response = await this._guildSettingBuilder.SetCrownMinPlaycount(new ContextModel(this.Context));
-                    await this.Context.SendResponse(this._interactivity, response, ephemeral: false);
+                    response = await guildSettingBuilder.SetCrownMinPlaycount(new ContextModel(this.Context));
+                    await this.Context.SendResponse(interactivity, response, ephemeral: false);
                 }
                     break;
                 case GuildSetting.CrownSeeder:
                 {
-                    response = await this._guildSettingBuilder.CrownSeeder(new ContextModel(this.Context));
-                    await this.Context.SendResponse(this._interactivity, response, ephemeral: false);
+                    response = await guildSettingBuilder.CrownSeeder(new ContextModel(this.Context));
+                    await this.Context.SendResponse(interactivity, response, ephemeral: false);
                 }
                     break;
                 case GuildSetting.CrownsDisabled:
                 {
-                    response = await this._guildSettingBuilder.ToggleCrowns(new ContextModel(this.Context));
-                    await this.Context.SendResponse(this._interactivity, response, ephemeral: false);
+                    response = await guildSettingBuilder.ToggleCrowns(new ContextModel(this.Context));
+                    await this.Context.SendResponse(interactivity, response, ephemeral: false);
                 }
                     break;
                 case GuildSetting.DisabledCommands:
                 {
-                    response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context),
+                    response = await guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context),
                         this.Context.Channel.Id);
-                    await this.Context.SendResponse(this._interactivity, response, ephemeral: false);
+                    await this.Context.SendResponse(interactivity, response, ephemeral: false);
                 }
                     break;
                 case GuildSetting.DisabledGuildCommands:
                 {
-                    response = await this._guildSettingBuilder.ToggleGuildCommand(new ContextModel(this.Context));
-                    await this.Context.SendResponse(this._interactivity, response, ephemeral: false);
+                    response = await guildSettingBuilder.ToggleGuildCommand(new ContextModel(this.Context));
+                    await this.Context.SendResponse(interactivity, response, ephemeral: false);
                 }
                     break;
                 default:
@@ -483,13 +459,13 @@ public class GuildSettingInteractions : ComponentInteractionModule<ComponentInte
         var response = GuildSettingBuilder.CrownSeederRunning(new ContextModel(this.Context));
         await this.Context.UpdateInteractionEmbed(response);
 
-        var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+        var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
 
-        var guildCrowns = await this._crownService.GetAllCrownsForGuild(guild.GuildId);
+        var guildCrowns = await crownService.GetAllCrownsForGuild(guild.GuildId);
 
-        var amountOfCrownsSeeded = await this._crownService.SeedCrownsForGuild(guild, guildCrowns);
+        var amountOfCrownsSeeded = await crownService.SeedCrownsForGuild(guild, guildCrowns);
 
-        response = await this._guildSettingBuilder.CrownSeederDone(new ContextModel(this.Context),
+        response = await guildSettingBuilder.CrownSeederDone(new ContextModel(this.Context),
             amountOfCrownsSeeded);
         await this.Context.UpdateInteractionEmbed(response);
     }
@@ -498,10 +474,10 @@ public class GuildSettingInteractions : ComponentInteractionModule<ComponentInte
     [ServerStaffOnly]
     public async Task RemovePrefix()
     {
-        await this._guildService.SetGuildPrefixAsync(this.Context.Guild, null);
-        this._prefixService.StorePrefix(null, this.Context.Guild.Id);
+        await guildService.SetGuildPrefixAsync(this.Context.Guild, null);
+        prefixService.StorePrefix(null, this.Context.Guild.Id);
 
-        var response = await this._guildSettingBuilder.SetPrefix(new ContextModel(this.Context), this.Context.User);
+        var response = await guildSettingBuilder.SetPrefix(new ContextModel(this.Context), this.Context.User);
         await this.Context.UpdateInteractionEmbed(response);
     }
 
@@ -509,7 +485,7 @@ public class GuildSettingInteractions : ComponentInteractionModule<ComponentInte
     [ServerStaffOnly]
     public async Task SetGuildEmbedType()
     {
-        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
+        if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
         {
             await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
@@ -523,14 +499,14 @@ public class GuildSettingInteractions : ComponentInteractionModule<ComponentInte
         {
             if (selectedValues.Count > 0 && Enum.TryParse(selectedValues[0], out FmEmbedType embedType))
             {
-                await this._guildService.ChangeGuildSettingAsync(this.Context.Guild, embedType);
+                await guildService.ChangeGuildSettingAsync(this.Context.Guild, embedType);
             }
             else
             {
-                await this._guildService.ChangeGuildSettingAsync(this.Context.Guild, null);
+                await guildService.ChangeGuildSettingAsync(this.Context.Guild, null);
             }
 
-            var response = await this._guildSettingBuilder.GuildMode(new ContextModel(this.Context), this.Context.User);
+            var response = await guildSettingBuilder.GuildMode(new ContextModel(this.Context), this.Context.User);
 
             await this.Context.UpdateInteractionEmbed(response);
         }
@@ -547,7 +523,7 @@ public class GuildSettingInteractions : ComponentInteractionModule<ComponentInte
         var parsedChannelId = ulong.Parse(channelId);
         var parsedCategoryId = ulong.Parse(categoryId);
 
-        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
+        if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
         {
             await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
@@ -557,20 +533,20 @@ public class GuildSettingInteractions : ComponentInteractionModule<ComponentInte
         var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
         var selectedValues = stringMenuInteraction.Data.SelectedValues;
 
-        var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+        var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
         var selectedChannel = this.Context.Guild.Channels.TryGetValue(parsedChannelId, out var ch) ? ch : null;
 
         if (selectedValues.Count > 0 && Enum.TryParse(selectedValues[0], out FmEmbedType embedType))
         {
-            await this._guildService.SetChannelEmbedType(selectedChannel, guild.GuildId, embedType,
+            await guildService.SetChannelEmbedType(selectedChannel, guild.GuildId, embedType,
                 this.Context.Guild.Id);
         }
         else
         {
-            await this._guildService.SetChannelEmbedType(selectedChannel, guild.GuildId, null, this.Context.Guild.Id);
+            await guildService.SetChannelEmbedType(selectedChannel, guild.GuildId, null, this.Context.Guild.Id);
         }
 
-        var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context),
+        var response = await guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context),
             parsedChannelId, parsedCategoryId, this.Context.User);
         await this.Context.UpdateInteractionEmbed(response);
     }
@@ -579,10 +555,10 @@ public class GuildSettingInteractions : ComponentInteractionModule<ComponentInte
     [ServerStaffOnly]
     public async Task RemoveFmbotActivityThreshold()
     {
-        await this._guildService.SetFmbotActivityThresholdDaysAsync(this.Context.Guild, null);
+        await guildService.SetFmbotActivityThresholdDaysAsync(this.Context.Guild, null);
 
         var response =
-            await this._guildSettingBuilder.SetFmbotActivityThreshold(new ContextModel(this.Context),
+            await guildSettingBuilder.SetFmbotActivityThreshold(new ContextModel(this.Context),
                 this.Context.User);
         await this.Context.UpdateInteractionEmbed(response);
     }
@@ -591,10 +567,10 @@ public class GuildSettingInteractions : ComponentInteractionModule<ComponentInte
     [ServerStaffOnly]
     public async Task RemoveCrownActivityThreshold()
     {
-        await this._guildService.SetCrownActivityThresholdDaysAsync(this.Context.Guild, null);
+        await guildService.SetCrownActivityThresholdDaysAsync(this.Context.Guild, null);
 
         var response =
-            await this._guildSettingBuilder.SetCrownActivityThreshold(new ContextModel(this.Context),
+            await guildSettingBuilder.SetCrownActivityThreshold(new ContextModel(this.Context),
                 this.Context.User);
         await this.Context.UpdateInteractionEmbed(response);
     }
@@ -603,10 +579,10 @@ public class GuildSettingInteractions : ComponentInteractionModule<ComponentInte
     [ServerStaffOnly]
     public async Task RemoveCrownMinPlaycount()
     {
-        await this._guildService.SetMinimumCrownPlaycountThresholdAsync(this.Context.Guild, null);
+        await guildService.SetMinimumCrownPlaycountThresholdAsync(this.Context.Guild, null);
 
         var response =
-            await this._guildSettingBuilder.SetCrownMinPlaycount(new ContextModel(this.Context), this.Context.User);
+            await guildSettingBuilder.SetCrownMinPlaycount(new ContextModel(this.Context), this.Context.User);
         await this.Context.UpdateInteractionEmbed(response);
     }
 
@@ -617,7 +593,7 @@ public class GuildSettingInteractions : ComponentInteractionModule<ComponentInte
         var parsedChannelId = ulong.Parse(channelId);
         var parsedCategoryId = ulong.Parse(categoryId);
 
-        var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context),
+        var response = await guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context),
             parsedChannelId, parsedCategoryId, this.Context.User);
         await this.Context.UpdateInteractionEmbed(response);
     }
@@ -632,11 +608,11 @@ public class GuildSettingInteractions : ComponentInteractionModule<ComponentInte
         var channels = await this.Context.Guild.GetChannelsAsync();
         var selectedChannel = channels.FirstOrDefault(f => f.Id == parsedChannelId);
 
-        await this._guildService.ClearDisabledChannelCommandsAsync(selectedChannel, this.Context.Guild.Id);
+        await guildService.ClearDisabledChannelCommandsAsync(selectedChannel, this.Context.Guild.Id);
 
-        await this._channelToggledCommandService.ReloadToggledCommands(this.Context.Guild.Id);
+        await channelToggledCommandService.ReloadToggledCommands(this.Context.Guild.Id);
 
-        var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context),
+        var response = await guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context),
             parsedChannelId, parsedCategoryId, this.Context.User);
         await this.Context.UpdateInteractionEmbed(response);
     }
@@ -648,13 +624,13 @@ public class GuildSettingInteractions : ComponentInteractionModule<ComponentInte
         var parsedChannelId = ulong.Parse(channelId);
         var parsedCategoryId = ulong.Parse(categoryId);
 
-        var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+        var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
         var selectedChannel = this.Context.Guild.Channels.TryGetValue(parsedChannelId, out var ch) ? ch : null;
 
-        await this._guildService.DisableChannelAsync(selectedChannel, guild.GuildId, this.Context.Guild.Id);
-        await this._disabledChannelService.ReloadDisabledChannels(this.Context.Guild.Id);
+        await guildService.DisableChannelAsync(selectedChannel, guild.GuildId, this.Context.Guild.Id);
+        await disabledChannelService.ReloadDisabledChannels(this.Context.Guild.Id);
 
-        var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context),
+        var response = await guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context),
             parsedChannelId, parsedCategoryId, this.Context.User);
         await this.Context.UpdateInteractionEmbed(response);
     }
@@ -668,10 +644,10 @@ public class GuildSettingInteractions : ComponentInteractionModule<ComponentInte
 
         var selectedChannel = this.Context.Guild.Channels.TryGetValue(parsedChannelId, out var ch) ? ch : null;
 
-        await this._guildService.EnableChannelAsync(selectedChannel, this.Context.Guild.Id);
-        await this._disabledChannelService.ReloadDisabledChannels(this.Context.Guild.Id);
+        await guildService.EnableChannelAsync(selectedChannel, this.Context.Guild.Id);
+        await disabledChannelService.ReloadDisabledChannels(this.Context.Guild.Id);
 
-        var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context),
+        var response = await guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context),
             parsedChannelId, parsedCategoryId, this.Context.User);
         await this.Context.UpdateInteractionEmbed(response);
     }
@@ -680,11 +656,11 @@ public class GuildSettingInteractions : ComponentInteractionModule<ComponentInte
     [ServerStaffOnly]
     public async Task ClearGuildDisabledCommands()
     {
-        await this._guildService.ClearGuildDisabledCommandAsync(this.Context.Guild);
-        await this._guildDisabledCommandService.ReloadDisabledCommands(this.Context.Guild.Id);
+        await guildService.ClearGuildDisabledCommandAsync(this.Context.Guild);
+        await guildDisabledCommandService.ReloadDisabledCommands(this.Context.Guild.Id);
 
         var response =
-            await this._guildSettingBuilder.ToggleGuildCommand(new ContextModel(this.Context), this.Context.User);
+            await guildSettingBuilder.ToggleGuildCommand(new ContextModel(this.Context), this.Context.User);
 
         await this.Context.UpdateInteractionEmbed(response);
     }
@@ -693,7 +669,7 @@ public class GuildSettingInteractions : ComponentInteractionModule<ComponentInte
     [ServerStaffOnly]
     public async Task EnableCrowns()
     {
-        var response = await this._guildSettingBuilder.ToggleCrowns(new ContextModel(this.Context), false);
+        var response = await guildSettingBuilder.ToggleCrowns(new ContextModel(this.Context), false);
         await this.Context.UpdateInteractionEmbed(response);
     }
 
@@ -701,7 +677,7 @@ public class GuildSettingInteractions : ComponentInteractionModule<ComponentInte
     [ServerStaffOnly]
     public async Task DisableCrowns()
     {
-        var response = await this._guildSettingBuilder.ToggleCrowns(new ContextModel(this.Context), true);
+        var response = await guildSettingBuilder.ToggleCrowns(new ContextModel(this.Context), true);
         await this.Context.UpdateInteractionEmbed(response);
     }
 }

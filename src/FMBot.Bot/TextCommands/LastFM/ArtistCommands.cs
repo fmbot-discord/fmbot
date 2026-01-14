@@ -21,44 +21,21 @@ using NetCord.Rest;
 namespace FMBot.Bot.TextCommands.LastFM;
 
 [ModuleName("Artists")]
-public class ArtistCommands : BaseCommandModule
+public class ArtistCommands(
+    ArtistsService artistsService,
+    GuildService guildService,
+    IndexService indexService,
+    IPrefixService prefixService,
+    SettingService settingService,
+    UserService userService,
+    InteractiveService interactivity,
+    IOptions<BotSettings> botSettings,
+    ArtistBuilders artistBuilders,
+    DiscogsBuilder discogsBuilders,
+    PlayBuilder playBuilders)
+    : BaseCommandModule(botSettings)
 {
-    private readonly ArtistBuilders _artistBuilders;
-    private readonly ArtistsService _artistsService;
-    private readonly GuildService _guildService;
-    private readonly IndexService _indexService;
-    private readonly IPrefixService _prefixService;
-    private readonly SettingService _settingService;
-    private readonly UserService _userService;
-    private readonly DiscogsBuilder _discogsBuilders;
-    private readonly PlayBuilder _playBuilders;
-
-    private InteractiveService Interactivity { get; }
-
-    public ArtistCommands(
-        ArtistsService artistsService,
-        GuildService guildService,
-        IndexService indexService,
-        IPrefixService prefixService,
-        SettingService settingService,
-        UserService userService,
-        InteractiveService interactivity,
-        IOptions<BotSettings> botSettings,
-        ArtistBuilders artistBuilders,
-        DiscogsBuilder discogsBuilders,
-        PlayBuilder playBuilders) : base(botSettings)
-    {
-        this._artistsService = artistsService;
-        this._guildService = guildService;
-        this._indexService = indexService;
-        this._prefixService = prefixService;
-        this._settingService = settingService;
-        this._userService = userService;
-        this.Interactivity = interactivity;
-        this._artistBuilders = artistBuilders;
-        this._discogsBuilders = discogsBuilders;
-        this._playBuilders = playBuilders;
-    }
+    private InteractiveService Interactivity { get; } = interactivity;
 
     [Command("artist", "a", "ai", "artistinfo")]
     [Summary("Artist you're currently listening to or searching for.")]
@@ -74,15 +51,15 @@ public class ArtistCommands : BaseCommandModule
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var contextUser = await this._userService.GetUserWithDiscogs(this.Context.User.Id);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserWithDiscogs(this.Context.User.Id);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
         var redirectsEnabled = SettingService.RedirectsEnabled(artistValues);
 
-        var userSettings = await this._settingService.GetUser(artistValues, contextUser, this.Context);
+        var userSettings = await settingService.GetUser(artistValues, contextUser, this.Context);
 
         try
         {
-            var response = await this._artistBuilders.ArtistInfoAsync(new ContextModel(this.Context, prfx, contextUser),
+            var response = await artistBuilders.ArtistInfoAsync(new ContextModel(this.Context, prfx, contextUser),
                 userSettings, redirectsEnabled.NewSearchValue, redirectsEnabled.Enabled);
 
             await this.Context.SendResponse(this.Interactivity, response);
@@ -107,15 +84,15 @@ public class ArtistCommands : BaseCommandModule
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var contextUser = await this._userService.GetUserWithDiscogs(this.Context.User.Id);
-        var userSettings = await this._settingService.GetUser(artistValues, contextUser, this.Context);
+        var contextUser = await userService.GetUserWithDiscogs(this.Context.User.Id);
+        var userSettings = await settingService.GetUser(artistValues, contextUser, this.Context);
 
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
         var redirectsEnabled = SettingService.RedirectsEnabled(userSettings.NewSearchValue);
 
         try
         {
-            var response = await this._artistBuilders.ArtistOverviewAsync(
+            var response = await artistBuilders.ArtistOverviewAsync(
                 new ContextModel(this.Context, prfx, contextUser),
                 userSettings, redirectsEnabled.NewSearchValue, redirectsEnabled.Enabled);
 
@@ -142,15 +119,15 @@ public class ArtistCommands : BaseCommandModule
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var userSettings = await this._settingService.GetUser(artistValues, contextUser, this.Context);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var userSettings = await settingService.GetUser(artistValues, contextUser, this.Context);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
         var redirectsEnabled = SettingService.RedirectsEnabled(userSettings.NewSearchValue);
         var timeSettings = SettingService.GetTimePeriod(redirectsEnabled.NewSearchValue, TimePeriod.AllTime,
             cachedOrAllTimeOnly: true, dailyTimePeriods: false);
 
-        var response = await this._artistBuilders.ArtistTracksAsync(new ContextModel(this.Context, prfx, contextUser),
+        var response = await artistBuilders.ArtistTracksAsync(new ContextModel(this.Context, prfx, contextUser),
             timeSettings,
             userSettings, redirectsEnabled.NewSearchValue, redirectsEnabled.Enabled);
 
@@ -172,13 +149,13 @@ public class ArtistCommands : BaseCommandModule
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var userSettings = await this._settingService.GetUser(artistValues, contextUser, this.Context);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var userSettings = await settingService.GetUser(artistValues, contextUser, this.Context);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
         var redirectsEnabled = SettingService.RedirectsEnabled(userSettings.NewSearchValue);
 
-        var response = await this._artistBuilders.ArtistAlbumsAsync(new ContextModel(this.Context, prfx, contextUser),
+        var response = await artistBuilders.ArtistAlbumsAsync(new ContextModel(this.Context, prfx, contextUser),
             userSettings, redirectsEnabled.NewSearchValue, redirectsEnabled.Enabled);
 
         await this.Context.SendResponse(this.Interactivity, response);
@@ -198,15 +175,15 @@ public class ArtistCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Artists)]
     public async Task ArtistPlaysAsync([CommandParameter(Remainder = true)] string artistValues = null)
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var userSettings = await this._settingService.GetUser(artistValues, contextUser, this.Context);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var userSettings = await settingService.GetUser(artistValues, contextUser, this.Context);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
         var redirectsEnabled = SettingService.RedirectsEnabled(userSettings.NewSearchValue);
 
-        var response = await this._artistBuilders.ArtistPlaysAsync(new ContextModel(this.Context, prfx, contextUser),
+        var response = await artistBuilders.ArtistPlaysAsync(new ContextModel(this.Context, prfx, contextUser),
             userSettings,
             redirectsEnabled.NewSearchValue, redirectsEnabled.Enabled);
 
@@ -224,12 +201,12 @@ public class ArtistCommands : BaseCommandModule
     {
         try
         {
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
             _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-            var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            var userSettings = await settingService.GetUser(extraOptions, contextUser, this.Context);
+            var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
             var redirectsEnabled = SettingService.RedirectsEnabled(userSettings.NewSearchValue);
             var timeSettings = SettingService.GetTimePeriod(redirectsEnabled.NewSearchValue, TimePeriod.Monthly,
@@ -241,7 +218,7 @@ public class ArtistCommands : BaseCommandModule
                     SettingService.GetTimePeriod("monthly", TimePeriod.Monthly, timeZone: userSettings.TimeZone);
             }
 
-            var response = await this._artistBuilders.ArtistPaceAsync(new ContextModel(this.Context, prfx, contextUser),
+            var response = await artistBuilders.ArtistPaceAsync(new ContextModel(this.Context, prfx, contextUser),
                 userSettings, timeSettings, timeSettings.NewSearchValue, null, redirectsEnabled.Enabled);
 
             await this.Context.SendResponse(this.Interactivity, response);
@@ -265,14 +242,14 @@ public class ArtistCommands : BaseCommandModule
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
         try
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-            var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
+            var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+            var userSettings = await settingService.GetUser(extraOptions, contextUser, this.Context);
             var topListSettings = SettingService.SetTopListSettings(userSettings.NewSearchValue);
-            userSettings.RegisteredLastFm ??= await this._indexService.AddUserRegisteredLfmDate(userSettings.UserId);
+            userSettings.RegisteredLastFm ??= await indexService.AddUserRegisteredLfmDate(userSettings.UserId);
 
             var timeSettings = SettingService.GetTimePeriod(topListSettings.NewSearchValue,
                 topListSettings.Discogs ? TimePeriod.AllTime : TimePeriod.Weekly,
@@ -280,9 +257,9 @@ public class ArtistCommands : BaseCommandModule
             var mode = SettingService.SetMode(extraOptions, contextUser.Mode);
 
             var response = topListSettings.Discogs
-                ? await this._discogsBuilders.DiscogsTopArtistsAsync(new ContextModel(this.Context, prfx, contextUser),
+                ? await discogsBuilders.DiscogsTopArtistsAsync(new ContextModel(this.Context, prfx, contextUser),
                     topListSettings, timeSettings, userSettings)
-                : await this._artistBuilders.TopArtistsAsync(new ContextModel(this.Context, prfx, contextUser),
+                : await artistBuilders.TopArtistsAsync(new ContextModel(this.Context, prfx, contextUser),
                     topListSettings, timeSettings, userSettings, mode.mode);
 
             await this.Context.SendResponse(this.Interactivity, response);
@@ -306,18 +283,19 @@ public class ArtistCommands : BaseCommandModule
     [UsernameSetRequired]
     [SupportsPagination]
     [CommandCategories(CommandCategory.Artists)]
-    [SupporterExclusive("To see what music you've recently discovered we need to store your lifetime Last.fm history. Your lifetime history and more are only available for supporters")]
+    [SupporterExclusive(
+        "To see what music you've recently discovered we need to store your lifetime Last.fm history. Your lifetime history and more are only available for supporters")]
     public async Task ArtistDiscoveriesAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
         try
         {
             var context = new ContextModel(this.Context, prfx, contextUser);
-            var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
+            var userSettings = await settingService.GetUser(extraOptions, contextUser, this.Context);
 
             var supporterRequiredResponse = ArtistBuilders.DiscoverySupporterRequired(context, userSettings);
 
@@ -329,14 +307,14 @@ public class ArtistCommands : BaseCommandModule
             }
 
             var topListSettings = SettingService.SetTopListSettings(extraOptions);
-            userSettings.RegisteredLastFm ??= await this._indexService.AddUserRegisteredLfmDate(userSettings.UserId);
+            userSettings.RegisteredLastFm ??= await indexService.AddUserRegisteredLfmDate(userSettings.UserId);
 
             var timeSettings = SettingService.GetTimePeriod(topListSettings.NewSearchValue, TimePeriod.Quarterly,
                 registeredLastFm: userSettings.RegisteredLastFm,
                 timeZone: userSettings.TimeZone);
             var mode = SettingService.SetMode(timeSettings.NewSearchValue, contextUser.Mode);
 
-            var response = await this._artistBuilders.ArtistDiscoveriesAsync(context, topListSettings, timeSettings,
+            var response = await artistBuilders.ArtistDiscoveriesAsync(context, topListSettings, timeSettings,
                 userSettings, mode.mode);
 
             await this.Context.SendResponse(this.Interactivity, response);
@@ -359,11 +337,11 @@ public class ArtistCommands : BaseCommandModule
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
         var otherUser =
-            await this._settingService.GetUser(extraOptions, userSettings, this.Context,
+            await settingService.GetUser(extraOptions, userSettings, this.Context,
                 firstOptionIsLfmUsername: true);
 
         var timeSettings = SettingService.GetTimePeriod(
@@ -376,11 +354,11 @@ public class ArtistCommands : BaseCommandModule
             EmbedSize = EmbedSize.Default
         };
 
-        tasteSettings = this._artistsService.SetTasteSettings(tasteSettings, timeSettings.NewSearchValue);
+        tasteSettings = artistsService.SetTasteSettings(tasteSettings, timeSettings.NewSearchValue);
 
         try
         {
-            var response = await this._artistBuilders.TasteAsync(new ContextModel(this.Context, prfx, userSettings),
+            var response = await artistBuilders.TasteAsync(new ContextModel(this.Context, prfx, userSettings),
                 tasteSettings, timeSettings, otherUser);
 
             await this.Context.SendResponse(this.Interactivity, response);
@@ -402,11 +380,11 @@ public class ArtistCommands : BaseCommandModule
     public async Task WhoKnowsAsync([CommandParameter(Remainder = true)] string artistValues = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
         try
         {
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
             var currentSettings = new WhoKnowsSettings
             {
@@ -418,7 +396,7 @@ public class ArtistCommands : BaseCommandModule
             var settings =
                 SettingService.SetWhoKnowsSettings(currentSettings, artistValues, contextUser.UserType);
 
-            var response = await this._artistBuilders.WhoKnowsArtistAsync(new ContextModel(this.Context,
+            var response = await artistBuilders.WhoKnowsArtistAsync(new ContextModel(this.Context,
                     prfx,
                     contextUser),
                 settings.ResponseMode,
@@ -435,7 +413,8 @@ public class ArtistCommands : BaseCommandModule
                 e.Message.Contains("The server responded with error 50013: Missing Permissions"))
             {
                 await this.Context.HandleCommandException(e, sendReply: false);
-                await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Error while replying: The bot is missing permissions.\nMake sure it has permission to 'Embed links' and 'Attach Images'" });
+                await this.Context.Channel.SendMessageAsync(new MessageProperties
+                    { Content = "Error while replying: The bot is missing permissions.\nMake sure it has permission to 'Embed links' and 'Attach Images'" });
             }
             else
             {
@@ -452,11 +431,11 @@ public class ArtistCommands : BaseCommandModule
     public async Task GlobalWhoKnowsAsync([CommandParameter(Remainder = true)] string artistValues = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
         try
         {
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
             var currentSettings = new WhoKnowsSettings
             {
@@ -470,7 +449,7 @@ public class ArtistCommands : BaseCommandModule
             var settings =
                 SettingService.SetWhoKnowsSettings(currentSettings, artistValues, contextUser.UserType, true);
 
-            var response = await this._artistBuilders
+            var response = await artistBuilders
                 .GlobalWhoKnowsArtistAsync(new ContextModel(this.Context, prfx, contextUser), settings);
 
             await this.Context.SendResponse(this.Interactivity, response);
@@ -482,7 +461,8 @@ public class ArtistCommands : BaseCommandModule
                 e.Message.Contains("The server responded with error 50013: Missing Permissions"))
             {
                 await this.Context.HandleCommandException(e, sendReply: false);
-                await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Error while replying: The bot is missing permissions.\nMake sure it has permission to 'Embed links' and 'Attach Images'" });
+                await this.Context.Channel.SendMessageAsync(new MessageProperties
+                    { Content = "Error while replying: The bot is missing permissions.\nMake sure it has permission to 'Embed links' and 'Attach Images'" });
             }
             else
             {
@@ -501,8 +481,8 @@ public class ArtistCommands : BaseCommandModule
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var contextUser = await this._userService.GetUserWithFriendsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserWithFriendsAsync(this.Context.User);
 
         try
         {
@@ -515,7 +495,7 @@ public class ArtistCommands : BaseCommandModule
             var settings =
                 SettingService.SetWhoKnowsSettings(currentSettings, artistValues, contextUser.UserType);
 
-            var response = await this._artistBuilders
+            var response = await artistBuilders
                 .FriendsWhoKnowArtistAsync(new ContextModel(this.Context, prfx, contextUser),
                     currentSettings.ResponseMode, settings.NewSearchValue, settings.RedirectsEnabled);
 
@@ -528,7 +508,8 @@ public class ArtistCommands : BaseCommandModule
                 e.Message.Contains("The server responded with error 50013: Missing Permissions"))
             {
                 await this.Context.HandleCommandException(e, sendReply: false);
-                await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Error while replying: The bot is missing permissions.\nMake sure it has permission to 'Embed links' and 'Attach Images'" });
+                await this.Context.Channel.SendMessageAsync(new MessageProperties
+                    { Content = "Error while replying: The bot is missing permissions.\nMake sure it has permission to 'Embed links' and 'Attach Images'" });
             }
             else
             {
@@ -546,8 +527,8 @@ public class ArtistCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Artists)]
     public async Task GuildArtistsAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+        var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
 
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -573,7 +554,7 @@ public class ArtistCommands : BaseCommandModule
         try
         {
             var response =
-                await this._artistBuilders.GuildArtistsAsync(new ContextModel(this.Context, prfx), guild,
+                await artistBuilders.GuildArtistsAsync(new ContextModel(this.Context, prfx), guild,
                     guildListSettings);
 
             _ = this.Interactivity.SendPaginatorAsync(
@@ -599,15 +580,15 @@ public class ArtistCommands : BaseCommandModule
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var guild = await this._guildService.GetGuildForWhoKnows(this.Context.Guild.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+        var guild = await guildService.GetGuildForWhoKnows(this.Context.Guild.Id);
 
         try
         {
-            var guildUsers = await this._guildService.GetGuildUsers(this.Context.Guild.Id);
+            var guildUsers = await guildService.GetGuildUsers(this.Context.Guild.Id);
 
-            var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context,
+            var userSettings = await settingService.GetUser(extraOptions, contextUser, this.Context,
                 firstOptionIsLfmUsername: true);
 
             var largeGuild = guildUsers.Count > 2000;
@@ -631,7 +612,7 @@ public class ArtistCommands : BaseCommandModule
 
                 var message = await this.Context.Channel.SendMessageAsync(new MessageProperties().AddEmbeds(this._embed));
 
-                response = await this._artistBuilders
+                response = await artistBuilders
                     .AffinityAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, guild, guildUsers,
                         largeGuild);
 
@@ -642,7 +623,7 @@ public class ArtistCommands : BaseCommandModule
             }
             else
             {
-                response = await this._artistBuilders
+                response = await artistBuilders
                     .AffinityAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, guild, guildUsers,
                         largeGuild);
 
@@ -666,17 +647,17 @@ public class ArtistCommands : BaseCommandModule
     public async Task IcebergAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
         try
         {
-            var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
+            var userSettings = await settingService.GetUser(extraOptions, contextUser, this.Context);
             var timeSettings = SettingService.GetTimePeriod(extraOptions,
                 registeredLastFm: userSettings.RegisteredLastFm, timeZone: userSettings.TimeZone,
                 defaultTimePeriod: TimePeriod.AllTime);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
-            var response = await this._artistBuilders.GetIceberg(new ContextModel(this.Context, prfx, contextUser),
+            var response = await artistBuilders.GetIceberg(new ContextModel(this.Context, prfx, contextUser),
                 userSettings, timeSettings);
 
             await this.Context.SendResponse(this.Interactivity, response);
@@ -695,18 +676,19 @@ public class ArtistCommands : BaseCommandModule
     [UsernameSetRequired]
     [SupportsPagination]
     [CommandCategories(CommandCategory.Artists)]
-    [SupporterExclusive("To see which artists you've re-discovered we need to store your lifetime Last.fm history. Your lifetime history and more are only available for supporters")]
+    [SupporterExclusive(
+        "To see which artists you've re-discovered we need to store your lifetime Last.fm history. Your lifetime history and more are only available for supporters")]
     public async Task ArtistGapsAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
         try
         {
             var context = new ContextModel(this.Context, prfx, contextUser);
-            var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
+            var userSettings = await settingService.GetUser(extraOptions, contextUser, this.Context);
 
             var supporterRequiredResponse = PlayBuilder.GapsSupporterRequired(context, userSettings);
 
@@ -718,10 +700,10 @@ public class ArtistCommands : BaseCommandModule
             }
 
             var topListSettings = SettingService.SetTopListSettings(extraOptions);
-            userSettings.RegisteredLastFm ??= await this._indexService.AddUserRegisteredLfmDate(userSettings.UserId);
+            userSettings.RegisteredLastFm ??= await indexService.AddUserRegisteredLfmDate(userSettings.UserId);
             var mode = SettingService.SetMode(userSettings.NewSearchValue, contextUser.Mode);
 
-            var response = await this._playBuilders.ListeningGapsAsync(context, topListSettings,
+            var response = await playBuilders.ListeningGapsAsync(context, topListSettings,
                 userSettings, mode.mode, GapEntityType.Artist);
 
             await this.Context.SendResponse(this.Interactivity, response);

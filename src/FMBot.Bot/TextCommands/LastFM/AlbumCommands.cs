@@ -19,38 +19,19 @@ using NetCord.Rest;
 namespace FMBot.Bot.TextCommands.LastFM;
 
 [ModuleName("Albums")]
-public class AlbumCommands : BaseCommandModule
+public class AlbumCommands(
+    GuildService guildService,
+    IndexService indexService,
+    IPrefixService prefixService,
+    SettingService settingService,
+    UserService userService,
+    InteractiveService interactivity,
+    IOptions<BotSettings> botSettings,
+    AlbumBuilders albumBuilders,
+    PlayBuilder playBuilder)
+    : BaseCommandModule(botSettings)
 {
-    private readonly GuildService _guildService;
-    private readonly IndexService _indexService;
-    private readonly IPrefixService _prefixService;
-    private readonly SettingService _settingService;
-    private readonly UserService _userService;
-    private readonly AlbumBuilders _albumBuilders;
-    private readonly PlayBuilder _playBuilders;
-
-    private InteractiveService Interactivity { get; }
-
-    public AlbumCommands(
-        GuildService guildService,
-        IndexService indexService,
-        IPrefixService prefixService,
-        SettingService settingService,
-        UserService userService,
-        InteractiveService interactivity,
-        IOptions<BotSettings> botSettings,
-        AlbumBuilders albumBuilders,
-        PlayBuilder playBuilder) : base(botSettings)
-    {
-        this._guildService = guildService;
-        this._indexService = indexService;
-        this._prefixService = prefixService;
-        this._settingService = settingService;
-        this._userService = userService;
-        this.Interactivity = interactivity;
-        this._albumBuilders = albumBuilders;
-        this._playBuilders = playBuilder;
-    }
+    private InteractiveService Interactivity { get; } = interactivity;
 
     [Command("album", "ab")]
     [Summary("Shows album you're currently listening to or searching for.")]
@@ -68,11 +49,11 @@ public class AlbumCommands : BaseCommandModule
         {
             _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-            var contextUser = await this._userService.GetUserWithDiscogs(this.Context.User.Id);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            var contextUser = await userService.GetUserWithDiscogs(this.Context.User.Id);
+            var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
             var response =
-                await this._albumBuilders.AlbumAsync(new ContextModel(this.Context, prfx, contextUser), albumValues);
+                await albumBuilders.AlbumAsync(new ContextModel(this.Context, prfx, contextUser), albumValues);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -100,11 +81,11 @@ public class AlbumCommands : BaseCommandModule
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var userSettings = await this._settingService.GetUser(albumValues, contextUser, this.Context);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var userSettings = await settingService.GetUser(albumValues, contextUser, this.Context);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        var response = await this._albumBuilders.AlbumPlaysAsync(new ContextModel(this.Context, prfx, contextUser),
+        var response = await albumBuilders.AlbumPlaysAsync(new ContextModel(this.Context, prfx, contextUser),
             userSettings, userSettings.NewSearchValue);
 
         await this.Context.SendResponse(this.Interactivity, response);
@@ -123,14 +104,14 @@ public class AlbumCommands : BaseCommandModule
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        var userSettings = await this._settingService.GetUser(albumValues, contextUser, this.Context);
+        var userSettings = await settingService.GetUser(albumValues, contextUser, this.Context);
 
         try
         {
-            var response = await this._albumBuilders.CoverAsync(new ContextModel(this.Context, prfx, contextUser),
+            var response = await albumBuilders.CoverAsync(new ContextModel(this.Context, prfx, contextUser),
                 userSettings, albumValues);
 
             await this.Context.SendResponse(this.Interactivity, response);
@@ -156,13 +137,13 @@ public class AlbumCommands : BaseCommandModule
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
         try
         {
-            var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
+            var userSettings = await settingService.GetUser(extraOptions, contextUser, this.Context);
             var topListSettings = SettingService.SetTopListSettings(extraOptions);
-            userSettings.RegisteredLastFm ??= await this._indexService.AddUserRegisteredLfmDate(userSettings.UserId);
+            userSettings.RegisteredLastFm ??= await indexService.AddUserRegisteredLfmDate(userSettings.UserId);
 
             var timeSettings = SettingService.GetTimePeriod(topListSettings.NewSearchValue,
                 topListSettings.ReleaseYearFilter.HasValue || topListSettings.ReleaseDecadeFilter.HasValue
@@ -170,10 +151,10 @@ public class AlbumCommands : BaseCommandModule
                     : TimePeriod.Weekly,
                 registeredLastFm: userSettings.RegisteredLastFm,
                 timeZone: userSettings.TimeZone);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
             var mode = SettingService.SetMode(timeSettings.NewSearchValue, contextUser.Mode);
 
-            var response = await this._albumBuilders.TopAlbumsAsync(new ContextModel(this.Context, prfx, contextUser),
+            var response = await albumBuilders.TopAlbumsAsync(new ContextModel(this.Context, prfx, contextUser),
                 topListSettings, timeSettings, userSettings, mode.mode);
 
             await this.Context.SendResponse(this.Interactivity, response);
@@ -197,8 +178,8 @@ public class AlbumCommands : BaseCommandModule
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
         try
         {
@@ -211,7 +192,7 @@ public class AlbumCommands : BaseCommandModule
 
             var settings = SettingService.SetWhoKnowsSettings(currentSettings, albumValues, contextUser.UserType);
 
-            var response = await this._albumBuilders.WhoKnowsAlbumAsync(
+            var response = await albumBuilders.WhoKnowsAlbumAsync(
                 new ContextModel(this.Context, prfx, contextUser), settings.ResponseMode, settings.NewSearchValue,
                 settings.DisplayRoleFilter);
 
@@ -232,9 +213,9 @@ public class AlbumCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Albums, CommandCategory.WhoKnows)]
     public async Task GlobalWhoKnowsAlbumAsync([CommandParameter(Remainder = true)] string albumValues = null)
     {
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
         var currentSettings = new WhoKnowsSettings
         {
@@ -249,7 +230,7 @@ public class AlbumCommands : BaseCommandModule
 
         try
         {
-            var response = await this._albumBuilders.GlobalWhoKnowsAlbumAsync(
+            var response = await albumBuilders.GlobalWhoKnowsAlbumAsync(
                 new ContextModel(this.Context, prfx, contextUser), settings, settings.NewSearchValue);
 
             await this.Context.SendResponse(this.Interactivity, response);
@@ -261,7 +242,8 @@ public class AlbumCommands : BaseCommandModule
                 e.Message.Contains("The server responded with error 50013: Missing Permissions"))
             {
                 await this.Context.HandleCommandException(e, sendReply: false);
-                await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Error while replying: The bot is missing permissions.\nMake sure it has permission to 'Embed links' and 'Attach Images'" });
+                await this.Context.Channel.SendMessageAsync(new MessageProperties
+                    { Content = "Error while replying: The bot is missing permissions.\nMake sure it has permission to 'Embed links' and 'Attach Images'" });
             }
             else
             {
@@ -281,8 +263,8 @@ public class AlbumCommands : BaseCommandModule
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var contextUser = await this._userService.GetUserWithFriendsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserWithFriendsAsync(this.Context.User);
 
         try
         {
@@ -294,7 +276,7 @@ public class AlbumCommands : BaseCommandModule
 
             var settings = SettingService.SetWhoKnowsSettings(currentSettings, albumValues, contextUser.UserType);
 
-            var response = await this._albumBuilders
+            var response = await albumBuilders
                 .FriendsWhoKnowAlbumAsync(new ContextModel(this.Context, prfx, contextUser),
                     currentSettings.ResponseMode, settings.NewSearchValue);
 
@@ -307,7 +289,8 @@ public class AlbumCommands : BaseCommandModule
                 e.Message.Contains("The server responded with error 50013: Missing Permissions"))
             {
                 await this.Context.HandleCommandException(e, sendReply: false);
-                await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Error while replying: The bot is missing permissions.\nMake sure it has permission to 'Embed links' and 'Attach Images'" });
+                await this.Context.Channel.SendMessageAsync(new MessageProperties
+                    { Content = "Error while replying: The bot is missing permissions.\nMake sure it has permission to 'Embed links' and 'Attach Images'" });
             }
             else
             {
@@ -326,17 +309,17 @@ public class AlbumCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Albums)]
     public async Task AlbumTracksAsync([CommandParameter(Remainder = true)] string albumValues = null)
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         try
         {
             var orderByPlaycount = SettingService.OrderByPlaycount(albumValues);
-            var userSettings = await this._settingService.GetUser(orderByPlaycount.NewSearchValue, contextUser, this.Context);
+            var userSettings = await settingService.GetUser(orderByPlaycount.NewSearchValue, contextUser, this.Context);
 
-            var response = await this._albumBuilders.AlbumTracksAsync(new ContextModel(this.Context, prfx, contextUser),
+            var response = await albumBuilders.AlbumTracksAsync(new ContextModel(this.Context, prfx, contextUser),
                 userSettings, userSettings.NewSearchValue, orderByPlaycount.Enabled);
 
             await this.Context.SendResponse(this.Interactivity, response);
@@ -361,8 +344,8 @@ public class AlbumCommands : BaseCommandModule
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+        var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
 
         var guildListSettings = new GuildRankingSettings
         {
@@ -386,7 +369,7 @@ public class AlbumCommands : BaseCommandModule
             }
 
             var response =
-                await this._albumBuilders.GuildAlbumsAsync(new ContextModel(this.Context, prfx), guild,
+                await albumBuilders.GuildAlbumsAsync(new ContextModel(this.Context, prfx), guild,
                     guildListSettings);
 
             _ = this.Interactivity.SendPaginatorAsync(
@@ -409,18 +392,19 @@ public class AlbumCommands : BaseCommandModule
     [UsernameSetRequired]
     [SupportsPagination]
     [CommandCategories(CommandCategory.Albums)]
-    [SupporterExclusive("To see which albums you've re-discovered we need to store your lifetime Last.fm history. Your lifetime history and more are only available for supporters")]
+    [SupporterExclusive(
+        "To see which albums you've re-discovered we need to store your lifetime Last.fm history. Your lifetime history and more are only available for supporters")]
     public async Task AlbumGapsAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
         try
         {
             var context = new ContextModel(this.Context, prfx, contextUser);
-            var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
+            var userSettings = await settingService.GetUser(extraOptions, contextUser, this.Context);
 
             var supporterRequiredResponse = PlayBuilder.GapsSupporterRequired(context, userSettings);
 
@@ -432,10 +416,10 @@ public class AlbumCommands : BaseCommandModule
             }
 
             var topListSettings = SettingService.SetTopListSettings(extraOptions);
-            userSettings.RegisteredLastFm ??= await this._indexService.AddUserRegisteredLfmDate(userSettings.UserId);
+            userSettings.RegisteredLastFm ??= await indexService.AddUserRegisteredLfmDate(userSettings.UserId);
             var mode = SettingService.SetMode(userSettings.NewSearchValue, contextUser.Mode);
 
-            var response = await this._playBuilders.ListeningGapsAsync(context, topListSettings, userSettings,
+            var response = await playBuilder.ListeningGapsAsync(context, topListSettings, userSettings,
                 mode.mode, GapEntityType.Album);
 
             await this.Context.SendResponse(this.Interactivity, response);

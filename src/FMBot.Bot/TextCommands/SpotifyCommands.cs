@@ -10,8 +10,6 @@ using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Repositories;
-using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
 using NetCord.Services.Commands;
 using SpotifyAPI.Web;
@@ -20,32 +18,17 @@ using Fergun.Interactive;
 namespace FMBot.Bot.TextCommands;
 
 [ModuleName("Spotify")]
-public class SpotifyCommands : BaseCommandModule
+public class SpotifyCommands(
+    IPrefixService prefixService,
+    IDataSourceFactory dataSourceFactory,
+    UserService userService,
+    SpotifyService spotifyService,
+    IOptions<BotSettings> botSettings,
+    InteractiveService interactivity)
+    : BaseCommandModule(botSettings)
 {
-    private readonly IDataSourceFactory _dataSourceFactory;
-    private readonly SpotifyService _spotifyService;
+    private InteractiveService Interactivity { get; } = interactivity;
 
-    private readonly UserService _userService;
-
-    private readonly IPrefixService _prefixService;
-
-    private InteractiveService Interactivity { get; }
-
-
-    public SpotifyCommands(
-        IPrefixService prefixService,
-        IDataSourceFactory dataSourceFactory,
-        UserService userService,
-        SpotifyService spotifyService,
-        IOptions<BotSettings> botSettings,
-        InteractiveService interactivity) : base(botSettings)
-    {
-        this._prefixService = prefixService;
-        this._userService = userService;
-        this._spotifyService = spotifyService;
-        this.Interactivity = interactivity;
-        this._dataSourceFactory = dataSourceFactory;
-    }
 
     [Command("spotify", "sp", "s", "spotifyfind", "spotifysearch")]
     [Summary("Shares a link to a Spotify track based on what a user is listening to or searching for")]
@@ -53,8 +36,8 @@ public class SpotifyCommands : BaseCommandModule
     [CommandCategories(CommandCategory.ThirdParty)]
     public async Task SpotifyAsync([CommandParameter(Remainder = true)] string searchValue = null)
     {
-        var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
         try
         {
@@ -69,7 +52,7 @@ public class SpotifyCommands : BaseCommandModule
             {
                 var internalLookup = CommandContextExtensions.GetReferencedMusic(this.Context.Message.ReferencedMessage.Id)
                                      ??
-                                     await this._userService.GetReferencedMusic(this.Context.Message.ReferencedMessage.Id);
+                                     await userService.GetReferencedMusic(this.Context.Message.ReferencedMessage.Id);
 
                 if (internalLookup?.Track != null)
                 {
@@ -91,7 +74,7 @@ public class SpotifyCommands : BaseCommandModule
                     sessionKey = userSettings.SessionKeyLastFm;
                 }
 
-                var recentScrobbles = await this._dataSourceFactory.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
+                var recentScrobbles = await dataSourceFactory.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
 
                 if (await GenericEmbedService.RecentScrobbleCallFailedReply(recentScrobbles, userSettings.UserNameLastFM, this.Context))
                 {
@@ -104,7 +87,7 @@ public class SpotifyCommands : BaseCommandModule
                 artistName = currentTrack.ArtistName;
             }
 
-            var item = await this._spotifyService.GetSearchResultAsync(querystring);
+            var item = await spotifyService.GetSearchResultAsync(querystring);
 
             var response = new ResponseModel
             {
@@ -127,7 +110,7 @@ public class SpotifyCommands : BaseCommandModule
                 response.Text = $"https://open.spotify.com/track/{track.Id}";
 
                 var rnd = new Random();
-                if (rnd.Next(0, 2) == 1 && string.IsNullOrWhiteSpace(searchValue) && !await this._userService.HintShownBefore(userSettings.UserId, "spotify"))
+                if (rnd.Next(0, 2) == 1 && string.IsNullOrWhiteSpace(searchValue) && !await userService.HintShownBefore(userSettings.UserId, "spotify"))
                 {
                     response.Text += $"\n-# *Tip: Search for other songs by simply adding the searchvalue behind {prfx}spotify.*";
                     response.HintShown = true;
@@ -158,8 +141,8 @@ public class SpotifyCommands : BaseCommandModule
     [CommandCategories(CommandCategory.ThirdParty)]
     public async Task SpotifyAlbumAsync([CommandParameter(Remainder = true)] string searchValue = null)
     {
-        var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
         try
         {
@@ -169,7 +152,7 @@ public class SpotifyCommands : BaseCommandModule
             {
                 var internalLookup = CommandContextExtensions.GetReferencedMusic(this.Context.Message.ReferencedMessage.Id)
                                      ??
-                                     await this._userService.GetReferencedMusic(this.Context.Message.ReferencedMessage.Id);
+                                     await userService.GetReferencedMusic(this.Context.Message.ReferencedMessage.Id);
 
                 if (internalLookup?.Album != null)
                 {
@@ -190,7 +173,7 @@ public class SpotifyCommands : BaseCommandModule
                     sessionKey = userSettings.SessionKeyLastFm;
                 }
 
-                var recentScrobbles = await this._dataSourceFactory.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
+                var recentScrobbles = await dataSourceFactory.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
 
                 if (await GenericEmbedService.RecentScrobbleCallFailedReply(recentScrobbles, userSettings.UserNameLastFM, this.Context))
                 {
@@ -202,7 +185,7 @@ public class SpotifyCommands : BaseCommandModule
                 querystring = $"{currentTrack.ArtistName} {currentTrack.AlbumName}";
             }
 
-            var item = await this._spotifyService.GetSearchResultAsync(querystring, SearchRequest.Types.Album);
+            var item = await spotifyService.GetSearchResultAsync(querystring, SearchRequest.Types.Album);
 
             var response = new ResponseModel
             {
@@ -215,7 +198,7 @@ public class SpotifyCommands : BaseCommandModule
                 response.Text = $"https://open.spotify.com/album/{album.Id}";
 
                 var rnd = new Random();
-                if (rnd.Next(0, 8) == 1 && string.IsNullOrWhiteSpace(searchValue) && !await this._userService.HintShownBefore(userSettings.UserId, "spotifyalbum"))
+                if (rnd.Next(0, 8) == 1 && string.IsNullOrWhiteSpace(searchValue) && !await userService.HintShownBefore(userSettings.UserId, "spotifyalbum"))
                 {
                     response.Text += $"\n-# *Tip: Search for other albums by simply adding the searchvalue behind `{prfx}spotifyalbum` (or `.fmspab`).*";
                     response.HintShown = true;
@@ -245,8 +228,8 @@ public class SpotifyCommands : BaseCommandModule
     [CommandCategories(CommandCategory.ThirdParty)]
     public async Task SpotifyArtistAsync([CommandParameter(Remainder = true)] string searchValue = null)
     {
-        var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
         try
         {
@@ -256,7 +239,7 @@ public class SpotifyCommands : BaseCommandModule
             {
                 var internalLookup = CommandContextExtensions.GetReferencedMusic(this.Context.Message.ReferencedMessage.Id)
                                      ??
-                                     await this._userService.GetReferencedMusic(this.Context.Message.ReferencedMessage.Id);
+                                     await userService.GetReferencedMusic(this.Context.Message.ReferencedMessage.Id);
 
                 if (internalLookup?.Artist != null)
                 {
@@ -277,7 +260,7 @@ public class SpotifyCommands : BaseCommandModule
                     sessionKey = userSettings.SessionKeyLastFm;
                 }
 
-                var recentScrobbles = await this._dataSourceFactory.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
+                var recentScrobbles = await dataSourceFactory.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
 
                 if (await GenericEmbedService.RecentScrobbleCallFailedReply(recentScrobbles, userSettings.UserNameLastFM, this.Context))
                 {
@@ -290,7 +273,7 @@ public class SpotifyCommands : BaseCommandModule
                 querystring = $"{currentTrack.ArtistName}";
             }
 
-            var item = await this._spotifyService.GetSearchResultAsync(querystring, SearchRequest.Types.Artist);
+            var item = await spotifyService.GetSearchResultAsync(querystring, SearchRequest.Types.Artist);
 
             var response = new ResponseModel
             {
@@ -305,7 +288,7 @@ public class SpotifyCommands : BaseCommandModule
                 response.Text = $"https://open.spotify.com/artist/{artist.Id}";
 
                 var rnd = new Random();
-                if (rnd.Next(0, 8) == 1 && string.IsNullOrWhiteSpace(searchValue) && !await this._userService.HintShownBefore(userSettings.UserId, "spotifyartist"))
+                if (rnd.Next(0, 8) == 1 && string.IsNullOrWhiteSpace(searchValue) && !await userService.HintShownBefore(userSettings.UserId, "spotifyartist"))
                 {
                     response.Text += $"\n-# *Tip: Search for other artists by simply adding the searchvalue behind `{prfx}spotifyartist` (or `{prfx}spa`).*";
                     response.HintShown = true;

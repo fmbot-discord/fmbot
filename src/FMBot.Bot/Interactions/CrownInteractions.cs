@@ -15,48 +15,32 @@ using NetCord.Services.ComponentInteractions;
 
 namespace FMBot.Bot.Interactions;
 
-public class CrownInteractions : ComponentInteractionModule<ComponentInteractionContext>
+public class CrownInteractions(
+    CrownBuilders crownBuilders,
+    UserService userService,
+    GuildService guildService,
+    SettingService settingService,
+    ArtistsService artistsService,
+    InteractiveService interactivity)
+    : ComponentInteractionModule<ComponentInteractionContext>
 {
-    private readonly CrownBuilders _crownBuilders;
-    private readonly UserService _userService;
-    private readonly GuildService _guildService;
-    private readonly SettingService _settingService;
-    private readonly ArtistsService _artistsService;
-    private readonly InteractiveService _interactivity;
-
-    public CrownInteractions(
-        CrownBuilders crownBuilders,
-        UserService userService,
-        GuildService guildService,
-        SettingService settingService,
-        ArtistsService artistsService,
-        InteractiveService interactivity)
-    {
-        this._crownBuilders = crownBuilders;
-        this._userService = userService;
-        this._guildService = guildService;
-        this._settingService = settingService;
-        this._artistsService = artistsService;
-        this._interactivity = interactivity;
-    }
-
     [ComponentInteraction(InteractionConstants.Artist.Crown)]
     [UsernameSetRequired]
     public async Task CrownButtonAsync(string artistId, string stolen)
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var artist = await this._artistsService.GetArtistForId(int.Parse(artistId));
-        var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var artist = await artistsService.GetArtistForId(int.Parse(artistId));
+        var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
 
         try
         {
-            var response = await this._crownBuilders.CrownAsync(new ContextModel(this.Context, contextUser), guild, artist.Name);
+            var response = await crownBuilders.CrownAsync(new ContextModel(this.Context, contextUser), guild, artist.Name);
 
             if (stolen.Equals("true", StringComparison.OrdinalIgnoreCase))
             {
                 _ = this.Context.DisableInteractionButtons();
                 response.Components = null;
-                await this.Context.SendResponse(this._interactivity, response);
+                await this.Context.SendResponse(interactivity, response);
                 this.Context.LogCommandUsed(response.CommandResponse);
             }
             else
@@ -89,17 +73,17 @@ public class CrownInteractions : ComponentInteractionModule<ComponentInteraction
             return;
         }
 
-        var contextUser = await this._userService.GetUserWithFriendsAsync(requesterDiscordUserId);
+        var contextUser = await userService.GetUserWithFriendsAsync(requesterDiscordUserId);
         var discordContextUser = await this.Context.GetUserAsync(requesterDiscordUserId);
-        var userSettings = await this._settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
+        var userSettings = await settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
 
-        var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+        var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
 
         try
         {
-            var response = await this._crownBuilders.CrownOverviewAsync(new ContextModel(this.Context, contextUser, discordContextUser), guild, userSettings, viewType);
+            var response = await crownBuilders.CrownOverviewAsync(new ContextModel(this.Context, contextUser, discordContextUser), guild, userSettings, viewType);
 
-            await this.Context.UpdateInteractionEmbed(response, this._interactivity, false);
+            await this.Context.UpdateInteractionEmbed(response, interactivity, false);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)

@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet build:*)",
+      "Bash(cat:*)",
+      "Bash(find:*)",
+      "WebSearch",
+      "WebFetch(domain:netcord.dev)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:www.nuget.org)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(wc:*)",
+      "Bash(grep:*)",
+      "Bash(dotnet test:*)"
+    ]
+  }
+}

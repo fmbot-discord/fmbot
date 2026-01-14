@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
@@ -16,28 +15,23 @@ using NetCord.Services.ApplicationCommands;
 
 namespace FMBot.Bot.SlashCommands;
 
-public class DiscogsSlashCommands : ApplicationCommandModule<ApplicationCommandContext>
+public class DiscogsSlashCommands(
+    UserService userService,
+    DiscogsBuilder discogsBuilder,
+    InteractiveService interactivity,
+    SettingService settingService)
+    : ApplicationCommandModule<ApplicationCommandContext>
 {
-    private readonly UserService _userService;
-    private readonly DiscogsBuilder _discogsBuilder;
-    private readonly SettingService _settingService;
+    private InteractiveService Interactivity { get; } = interactivity;
 
-    private InteractiveService Interactivity { get; }
-
-
-    public DiscogsSlashCommands(UserService userService, DiscogsBuilder discogsBuilder, InteractiveService interactivity, SettingService settingService)
-    {
-        this._userService = userService;
-        this._discogsBuilder = discogsBuilder;
-        this.Interactivity = interactivity;
-        this._settingService = settingService;
-    }
-
-    [SlashCommand("discogs", "Connects your Discogs account by sending a link to your DMs", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
+    [SlashCommand("discogs", "Connects your Discogs account by sending a link to your DMs",
+        Contexts =
+            [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild],
+        IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task DiscogsAsync()
     {
-        var contextUser = await this._userService.GetUserWithDiscogs(this.Context.User.Id);
+        var contextUser = await userService.GetUserWithDiscogs(this.Context.User.Id);
 
         try
         {
@@ -49,12 +43,13 @@ public class DiscogsSlashCommands : ApplicationCommandModule<ApplicationCommandC
                         .WithColor(DiscordConstants.InformationColorBlue);
 
                     serverEmbed.WithDescription("Check your DMs for a link to connect your Discogs account to .fmbot!");
-                    await this.Context.Interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties()
-                        .WithEmbeds([serverEmbed])
-                        .WithFlags(MessageFlags.Ephemeral)));
+                    await this.Context.Interaction.SendResponseAsync(InteractionCallback.Message(
+                        new InteractionMessageProperties()
+                            .WithEmbeds([serverEmbed])
+                            .WithFlags(MessageFlags.Ephemeral)));
                 }
 
-                var response = this._discogsBuilder.DiscogsLoginGetLinkAsync(new ContextModel(this.Context, contextUser));
+                var response = discogsBuilder.DiscogsLoginGetLinkAsync(new ContextModel(this.Context, contextUser));
                 var dmChannel = await this.Context.User.GetDMChannelAsync();
                 await dmChannel.SendMessageAsync(new MessageProperties
                 {
@@ -70,10 +65,12 @@ public class DiscogsSlashCommands : ApplicationCommandModule<ApplicationCommandC
                     var serverEmbed = new EmbedProperties()
                         .WithColor(DiscordConstants.InformationColorBlue);
 
-                    serverEmbed.WithDescription("Check your DMs for a message to manage your connected Discogs account!");
-                    await this.Context.Interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties()
-                        .WithEmbeds([serverEmbed])
-                        .WithFlags(MessageFlags.Ephemeral)));
+                    serverEmbed.WithDescription(
+                        "Check your DMs for a message to manage your connected Discogs account!");
+                    await this.Context.Interaction.SendResponseAsync(InteractionCallback.Message(
+                        new InteractionMessageProperties()
+                            .WithEmbeds([serverEmbed])
+                            .WithFlags(MessageFlags.Ephemeral)));
                 }
 
                 var response = DiscogsBuilder.DiscogsManage(new ContextModel(this.Context, contextUser));
@@ -92,17 +89,23 @@ public class DiscogsSlashCommands : ApplicationCommandModule<ApplicationCommandC
         }
     }
 
-    [SlashCommand("collection", "You or someone else's Discogs collection", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
+    [SlashCommand("collection", "You or someone else's Discogs collection",
+        Contexts =
+            [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild],
+        IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task AlbumAsync(
-        [SlashCommandParameter(Name = "search", Description = "Search query to filter on")] string search = null,
-        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")] string user = null,
-        [SlashCommandParameter(Name = "format", Description = "Media format to include")] DiscogsFormat? format = null)
+        [SlashCommandParameter(Name = "search", Description = "Search query to filter on")]
+        string search = null,
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
+        string user = null,
+        [SlashCommandParameter(Name = "format", Description = "Media format to include")]
+        DiscogsFormat? format = null)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
 
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var userSettings = await settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
         var collectionSettings = new DiscogsCollectionSettings
         {
             Formats = format != null ? new List<DiscogsFormat> { (DiscogsFormat)format } : new()
@@ -110,7 +113,8 @@ public class DiscogsSlashCommands : ApplicationCommandModule<ApplicationCommandC
 
         try
         {
-            var response = await this._discogsBuilder.DiscogsCollectionAsync(new ContextModel(this.Context, contextUser), userSettings, collectionSettings, search);
+            var response = await discogsBuilder.DiscogsCollectionAsync(new ContextModel(this.Context, contextUser),
+                userSettings, collectionSettings, search);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);

@@ -14,35 +14,23 @@ using NetCord.Services.ComponentInteractions;
 
 namespace FMBot.Bot.Interactions;
 
-public class DiscogsInteractions : ComponentInteractionModule<ComponentInteractionContext>
+public class DiscogsInteractions(
+    UserService userService,
+    DiscogsBuilder discogsBuilder,
+    SettingService settingService,
+    InteractiveService interactivity)
+    : ComponentInteractionModule<ComponentInteractionContext>
 {
-    private readonly UserService _userService;
-    private readonly DiscogsBuilder _discogsBuilder;
-    private readonly SettingService _settingService;
-    private readonly InteractiveService _interactivity;
-
-    public DiscogsInteractions(
-        UserService userService,
-        DiscogsBuilder discogsBuilder,
-        SettingService settingService,
-        InteractiveService interactivity)
-    {
-        this._userService = userService;
-        this._discogsBuilder = discogsBuilder;
-        this._settingService = settingService;
-        this._interactivity = interactivity;
-    }
-
     [ComponentInteraction(InteractionConstants.Discogs.AuthDm)]
     [UsernameSetRequired]
     public async Task SendAuthDm()
     {
-        var contextUser = await this._userService.GetUserWithDiscogs(this.Context.User.Id);
+        var contextUser = await userService.GetUserWithDiscogs(this.Context.User.Id);
 
         try
         {
-            var response = this._discogsBuilder.DiscogsLoginGetLinkAsync(new ContextModel(this.Context, contextUser));
-            await this.Context.SendResponse(this._interactivity, response);
+            var response = discogsBuilder.DiscogsLoginGetLinkAsync(new ContextModel(this.Context, contextUser));
+            await this.Context.SendResponse(interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
@@ -55,17 +43,17 @@ public class DiscogsInteractions : ComponentInteractionModule<ComponentInteracti
     [UsernameSetRequired]
     public async Task ToggleCollectionValue()
     {
-        var contextUser = await this._userService.GetUserWithDiscogs(this.Context.User.Id);
+        var contextUser = await userService.GetUserWithDiscogs(this.Context.User.Id);
 
         try
         {
-            var response = await this._discogsBuilder.DiscogsToggleCollectionValue(new ContextModel(this.Context, contextUser));
-            await this.Context.SendResponse(this._interactivity, response);
+            var response = await discogsBuilder.DiscogsToggleCollectionValue(new ContextModel(this.Context, contextUser));
+            await this.Context.SendResponse(interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
 
-            contextUser = await this._userService.GetUserWithDiscogs(this.Context.User.Id);
+            contextUser = await userService.GetUserWithDiscogs(this.Context.User.Id);
             var updatedMsg = DiscogsBuilder.DiscogsManage(new ContextModel(this.Context, contextUser));
-            await this.Context.UpdateInteractionEmbed(updatedMsg, this._interactivity, false);
+            await this.Context.UpdateInteractionEmbed(updatedMsg, interactivity, false);
         }
         catch (Exception e)
         {
@@ -78,12 +66,12 @@ public class DiscogsInteractions : ComponentInteractionModule<ComponentInteracti
     public async Task RemoveDiscogsLogin()
     {
         await this.Context.DisableInteractionButtons();
-        var contextUser = await this._userService.GetUserWithDiscogs(this.Context.User.Id);
+        var contextUser = await userService.GetUserWithDiscogs(this.Context.User.Id);
 
         try
         {
-            var response = await this._discogsBuilder.DiscogsRemove(new ContextModel(this.Context, contextUser));
-            await this.Context.SendResponse(this._interactivity, response);
+            var response = await discogsBuilder.DiscogsRemove(new ContextModel(this.Context, contextUser));
+            await this.Context.SendResponse(interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
@@ -95,7 +83,7 @@ public class DiscogsInteractions : ComponentInteractionModule<ComponentInteracti
     [ComponentInteraction(InteractionConstants.Discogs.StartAuth)]
     public async Task DiscogsStartAuthAsync()
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
         var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
 
@@ -115,7 +103,7 @@ public class DiscogsInteractions : ComponentInteractionModule<ComponentInteracti
 
         try
         {
-            var response = await this._discogsBuilder.DiscogsLoginAsync(new ContextModel(this.Context, contextUser));
+            var response = await discogsBuilder.DiscogsLoginAsync(new ContextModel(this.Context, contextUser));
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
@@ -133,9 +121,9 @@ public class DiscogsInteractions : ComponentInteractionModule<ComponentInteracti
         var discordUserId = ulong.Parse(discordUser);
         var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
 
-        var contextUser = await this._userService.GetUserWithDiscogs(requesterDiscordUserId);
+        var contextUser = await userService.GetUserWithDiscogs(requesterDiscordUserId);
         var discordContextUser = await this.Context.GetUserAsync(requesterDiscordUserId);
-        var userSettings = await this._settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
+        var userSettings = await settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
 
         var collectionSettings = new DiscogsCollectionSettings
         {
@@ -144,9 +132,9 @@ public class DiscogsInteractions : ComponentInteractionModule<ComponentInteracti
 
         try
         {
-            var response = await this._discogsBuilder.DiscogsCollectionAsync(new ContextModel(this.Context, contextUser, discordContextUser), userSettings, collectionSettings, null);
+            var response = await discogsBuilder.DiscogsCollectionAsync(new ContextModel(this.Context, contextUser, discordContextUser), userSettings, collectionSettings, null);
 
-            await this.Context.SendFollowUpResponse(this._interactivity, response);
+            await this.Context.SendFollowUpResponse(interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)

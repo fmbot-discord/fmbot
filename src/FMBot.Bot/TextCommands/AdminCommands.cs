@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
@@ -39,79 +38,34 @@ using NetCord.Gateway;
 namespace FMBot.Bot.TextCommands;
 
 [ExcludeFromHelp]
-public class AdminCommands : BaseCommandModule
+public class AdminCommands(
+    AdminService adminService,
+    CensorService censorService,
+    GuildService guildService,
+    TimerService timer,
+    IDataSourceFactory dataSourceFactory,
+    SupporterService supporterService,
+    UserService userService,
+    IOptions<BotSettings> botSettings,
+    SettingService settingService,
+    FeaturedService featuredService,
+    IndexService indexService,
+    IPrefixService prefixService,
+    StaticBuilders staticBuilders,
+    InteractiveService interactivity,
+    AlbumService albumService,
+    ArtistsService artistsService,
+    AliasService aliasService,
+    WhoKnowsFilterService whoKnowsFilterService,
+    PlayService playService,
+    ShardedGatewayClient client,
+    WebhookService webhookService,
+    TrackService trackService,
+    WhoKnowsTrackService whoKnowsTrackService,
+    IDbContextFactory<FMBotDbContext> contextFactory)
+    : BaseCommandModule(botSettings)
 {
-    private readonly AdminService _adminService;
-    private readonly CensorService _censorService;
-    private readonly GuildService _guildService;
-    private readonly TimerService _timer;
-    private readonly IDataSourceFactory _dataSourceFactory;
-    private readonly SupporterService _supporterService;
-    private readonly UserService _userService;
-    private readonly SettingService _settingService;
-    private readonly FeaturedService _featuredService;
-    private readonly IndexService _indexService;
-    private readonly IPrefixService _prefixService;
-    private readonly StaticBuilders _staticBuilders;
-    private readonly AlbumService _albumService;
-    private readonly ArtistsService _artistsService;
-    private readonly AliasService _aliasService;
-    private readonly WhoKnowsFilterService _whoKnowsFilterService;
-    private readonly PlayService _playService;
-    private readonly ShardedGatewayClient _client;
-    private readonly WebhookService _webhookService;
-    private readonly TrackService _trackService;
-    private readonly WhoKnowsTrackService _whoKnowsTrackService;
-    private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
-
-    private InteractiveService Interactivity { get; }
-
-    public AdminCommands(
-        AdminService adminService,
-        CensorService censorService,
-        GuildService guildService,
-        TimerService timer,
-        IDataSourceFactory dataSourceFactory,
-        SupporterService supporterService,
-        UserService userService,
-        IOptions<BotSettings> botSettings,
-        SettingService settingService,
-        FeaturedService featuredService,
-        IndexService indexService,
-        IPrefixService prefixService,
-        StaticBuilders staticBuilders,
-        InteractiveService interactivity,
-        AlbumService albumService,
-        ArtistsService artistsService,
-        AliasService aliasService,
-        WhoKnowsFilterService whoKnowsFilterService,
-        PlayService playService, ShardedGatewayClient client, WebhookService webhookService, TrackService trackService,
-        WhoKnowsTrackService whoKnowsTrackService, IDbContextFactory<FMBotDbContext> contextFactory) : base(botSettings)
-    {
-        this._adminService = adminService;
-        this._censorService = censorService;
-        this._guildService = guildService;
-        this._timer = timer;
-        this._dataSourceFactory = dataSourceFactory;
-        this._supporterService = supporterService;
-        this._userService = userService;
-        this._settingService = settingService;
-        this._featuredService = featuredService;
-        this._indexService = indexService;
-        this._prefixService = prefixService;
-        this._staticBuilders = staticBuilders;
-        this.Interactivity = interactivity;
-        this._albumService = albumService;
-        this._artistsService = artistsService;
-        this._aliasService = aliasService;
-        this._whoKnowsFilterService = whoKnowsFilterService;
-        this._playService = playService;
-        this._client = client;
-        this._webhookService = webhookService;
-        this._trackService = trackService;
-        this._whoKnowsTrackService = whoKnowsTrackService;
-        this._contextFactory = contextFactory;
-    }
+    private InteractiveService Interactivity { get; } = interactivity;
 
     //[Command("debug")]
     //[Summary("Returns user data")]
@@ -143,7 +97,7 @@ public class AdminCommands : BaseCommandModule
     [Summary("Returns server data")]
     public async Task DebugGuildAsync([CommandParameter(Remainder = true)] string guildId = null)
     {
-        if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = Constants.FmbotStaffOnly });
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
@@ -159,7 +113,7 @@ public class AdminCommands : BaseCommandModule
             return;
         }
 
-        var guild = await this._guildService.GetGuildAsync(discordGuildId);
+        var guild = await guildService.GetGuildAsync(discordGuildId);
 
         if (guild == null)
         {
@@ -237,7 +191,7 @@ public class AdminCommands : BaseCommandModule
     [Summary("Toggles issue mode")]
     public async Task IssuesAsync([CommandParameter(Remainder = true)] string reason = null)
     {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             if (!PublicProperties.IssuesAtLastFm || reason != null)
             {
@@ -268,7 +222,7 @@ public class AdminCommands : BaseCommandModule
     [Summary("Makes the bot leave a server")]
     public async Task LeaveGuild([CommandParameter(Remainder = true)] string reason = null)
     {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
         {
             _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -279,7 +233,7 @@ public class AdminCommands : BaseCommandModule
                 return;
             }
 
-            var guildToLeave = await this._client.GetGuildAsync(id);
+            var guildToLeave = await client.GetGuildAsync(id);
             await guildToLeave.LeaveAsync();
 
             await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Left guild (if the bot was in there)" });
@@ -296,7 +250,7 @@ public class AdminCommands : BaseCommandModule
     [Summary("Bans a guild and makes the bot leave the server")]
     public async Task BanGuild([CommandParameter(Remainder = true)] string guildId = null)
     {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
         {
             _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -308,7 +262,7 @@ public class AdminCommands : BaseCommandModule
             }
 
             // Check if guild exists in database
-            var dbGuild = await this._guildService.GetGuildAsync(id);
+            var dbGuild = await guildService.GetGuildAsync(id);
             if (dbGuild == null)
             {
                 await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Guild does not exist in database" });
@@ -319,10 +273,10 @@ public class AdminCommands : BaseCommandModule
             // Add banned flag
             var currentFlags = dbGuild.GuildFlags ?? (GuildFlags)0;
             var newFlags = currentFlags | GuildFlags.Banned;
-            await this._guildService.SetGuildFlags(dbGuild.GuildId, newFlags);
+            await guildService.SetGuildFlags(dbGuild.GuildId, newFlags);
 
             // Leave the guild
-            var guildToLeave = await this._client.GetGuildAsync(id);
+            var guildToLeave = await client.GetGuildAsync(id);
             if (guildToLeave != null)
             {
                 await guildToLeave.LeaveAsync();
@@ -346,12 +300,12 @@ public class AdminCommands : BaseCommandModule
     [Summary("Updates gwk quality filter")]
     public async Task UpdateGlobalWhoKnowsFilter([CommandParameter(Remainder = true)] string _ = null)
     {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Starting gwk quality filter update.." });
 
-            var filteredUsers = await this._whoKnowsFilterService.GetNewGlobalFilteredUsers();
-            await this._whoKnowsFilterService.AddFilteredUsersToDatabase(filteredUsers);
+            var filteredUsers = await whoKnowsFilterService.GetNewGlobalFilteredUsers();
+            await whoKnowsFilterService.AddFilteredUsersToDatabase(filteredUsers);
 
             var description = new StringBuilder();
 
@@ -376,9 +330,9 @@ public class AdminCommands : BaseCommandModule
     {
         try
         {
-            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
-                var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+                var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
 
                 if (guild.SpecialGuild != true)
                 {
@@ -389,7 +343,7 @@ public class AdminCommands : BaseCommandModule
 
                 user ??= this.Context.User.Id.ToString();
 
-                var userToView = await this._settingService.GetDifferentUser(user);
+                var userToView = await settingService.GetDifferentUser(user);
 
                 if (userToView == null)
                 {
@@ -398,7 +352,7 @@ public class AdminCommands : BaseCommandModule
                     return;
                 }
 
-                var logs = await this._adminService.GetRecentUserInteractions(userToView.UserId);
+                var logs = await adminService.GetRecentUserInteractions(userToView.UserId);
 
                 var logPages = logs.Chunk(10).ToList();
                 var pageCounter = 1;
@@ -516,11 +470,11 @@ public class AdminCommands : BaseCommandModule
     [Summary("Purges discord caches")]
     public async Task PurgeCacheAsync()
     {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-            if (this._client == null)
+            if (client == null)
             {
                 await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Client is null" });
                 return;
@@ -557,15 +511,15 @@ public class AdminCommands : BaseCommandModule
     [Summary("Purges discord caches")]
     public async Task RemoveOldPlaysAsync()
     {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
         {
             _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-            var oldUsers = await this._indexService.GetUnusedUsers();
+            var oldUsers = await indexService.GetUnusedUsers();
             await this.Context.Channel.SendMessageAsync(new MessageProperties { Content =
                 $"Found {oldUsers.Count} users that haven't used fmbot in 3 months. I will now remove their cached scrobbles that are over a year and a half old." });
 
-            await this._indexService.RemoveOldPlaysForUsers(oldUsers);
+            await indexService.RemoveOldPlaysForUsers(oldUsers);
             await this.Context.Channel.SendMessageAsync(new MessageProperties { Content =
                 "Done removing old cached scrobbles." });
 
@@ -582,7 +536,7 @@ public class AdminCommands : BaseCommandModule
     [Summary("Displays all .fmbot supporters.")]
     public async Task OpenCollectiveSupportersAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
-        if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = Constants.FmbotStaffOnly });
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
@@ -591,13 +545,13 @@ public class AdminCommands : BaseCommandModule
 
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+        var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
 
         try
         {
             var response =
-                await this._staticBuilders.OpenCollectiveSupportersAsync(
+                await staticBuilders.OpenCollectiveSupportersAsync(
                     new ContextModel(this.Context, prfx, userSettings), extraOptions == "expired");
 
             await this.Context.SendResponse(this.Interactivity, response);
@@ -614,7 +568,7 @@ public class AdminCommands : BaseCommandModule
     [Summary("Displays all .fmbot supporters.")]
     public async Task DiscordSupportersAsync()
     {
-        if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = Constants.FmbotStaffOnly });
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
@@ -623,12 +577,12 @@ public class AdminCommands : BaseCommandModule
 
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+        var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
         try
         {
             var response =
-                await this._staticBuilders.DiscordSupportersAsync(new ContextModel(this.Context, prfx, userSettings));
+                await staticBuilders.DiscordSupportersAsync(new ContextModel(this.Context, prfx, userSettings));
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -646,15 +600,15 @@ public class AdminCommands : BaseCommandModule
     {
         try
         {
-            if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
                 await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = Constants.FmbotStaffOnly });
                 this.Context.LogCommandUsed(CommandResponse.NoPermission);
                 return;
             }
 
-            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var albumSearch = await this._albumService.SearchAlbum(new ResponseModel(), this.Context.User, albumValues,
+            var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
+            var albumSearch = await albumService.SearchAlbum(new ResponseModel(), this.Context.User, albumValues,
                 userSettings.UserNameLastFM, referencedMessage: this.Context.Message.ReferencedMessage);
             if (albumSearch.Album == null)
             {
@@ -663,33 +617,33 @@ public class AdminCommands : BaseCommandModule
             }
 
             var existingAlbum =
-                await this._censorService.GetCurrentAlbum(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
+                await censorService.GetCurrentAlbum(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
             if (existingAlbum == null)
             {
                 if (this.Context.Message.Content[..12].Contains("nsfw"))
                 {
-                    await this._censorService.AddAlbum(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName,
+                    await censorService.AddAlbum(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName,
                         CensorType.AlbumCoverNsfw);
                     this._embed.WithDescription(
                         $"Marked `{albumSearch.Album.AlbumName}` by `{albumSearch.Album.ArtistName}` as NSFW.");
                 }
                 else if (this.Context.Message.Content[..12].Contains("censored"))
                 {
-                    await this._censorService.AddAlbum(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName,
+                    await censorService.AddAlbum(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName,
                         CensorType.AlbumCoverCensored);
                     this._embed.WithDescription(
                         $"Added `{albumSearch.Album.AlbumName}` by `{albumSearch.Album.ArtistName}` to the censored albums.");
                 }
                 else
                 {
-                    await this._censorService.AddAlbum(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName,
+                    await censorService.AddAlbum(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName,
                         CensorType.None);
                     this._embed.WithDescription(
                         $"Added `{albumSearch.Album.AlbumName}` by `{albumSearch.Album.ArtistName}` to the censored music list, however not banned anywhere.");
                 }
 
                 existingAlbum =
-                    await this._censorService.GetCurrentAlbum(albumSearch.Album.AlbumName,
+                    await censorService.GetCurrentAlbum(albumSearch.Album.AlbumName,
                         albumSearch.Album.ArtistName);
             }
             else
@@ -745,14 +699,14 @@ public class AdminCommands : BaseCommandModule
     {
         try
         {
-            if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
                 await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = Constants.FmbotStaffOnly });
                 this.Context.LogCommandUsed(CommandResponse.NoPermission);
                 return;
             }
 
-            var artistAlias = await this._aliasService.GetArtistAlias(alias);
+            var artistAlias = await aliasService.GetArtistAlias(alias);
             if (artistAlias == null)
             {
                 await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Artist alias not found" });
@@ -783,7 +737,7 @@ public class AdminCommands : BaseCommandModule
 
             this._embed.WithTitle("Artist alias - Option information");
 
-            var artist = await this._artistsService.GetArtistForId(artistAlias.ArtistId);
+            var artist = await artistsService.GetArtistForId(artistAlias.ArtistId);
 
             this._embed.AddField("Artist name", artist.Name);
             this._embed.AddField("Alias", artistAlias.Alias);
@@ -811,7 +765,7 @@ public class AdminCommands : BaseCommandModule
     {
         try
         {
-            if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
                 await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = Constants.FmbotStaffOnly });
                 this.Context.LogCommandUsed(CommandResponse.NoPermission);
@@ -827,32 +781,32 @@ public class AdminCommands : BaseCommandModule
 
             artist = artist.Replace("\"", "");
 
-            var existingArtist = await this._censorService.GetCurrentArtist(artist);
+            var existingArtist = await censorService.GetCurrentArtist(artist);
             if (existingArtist == null)
             {
                 if (this.Context.Message.Content[..12].Contains("nsfw"))
                 {
-                    await this._censorService.AddArtist(artist, CensorType.ArtistAlbumsNsfw);
+                    await censorService.AddArtist(artist, CensorType.ArtistAlbumsNsfw);
                     this._embed.WithDescription($"Added `{artist}` to the album nsfw marked artists.");
                 }
                 else if (this.Context.Message.Content[..12].Contains("censored"))
                 {
-                    await this._censorService.AddArtist(artist, CensorType.ArtistAlbumsCensored);
+                    await censorService.AddArtist(artist, CensorType.ArtistAlbumsCensored);
                     this._embed.WithDescription($"Added `{artist}` to the album censored artists.");
                 }
                 else if (this.Context.Message.Content[..12].Contains("featured"))
                 {
-                    await this._censorService.AddArtist(artist, CensorType.ArtistFeaturedBan);
+                    await censorService.AddArtist(artist, CensorType.ArtistFeaturedBan);
                     this._embed.WithDescription($"Added `{artist}` to the list of featured banned artists.");
                 }
                 else
                 {
-                    await this._censorService.AddArtist(artist, CensorType.None);
+                    await censorService.AddArtist(artist, CensorType.None);
                     this._embed.WithDescription(
                         $"Added `{artist}` to the censored music list, however not banned anywhere.");
                 }
 
-                existingArtist = await this._censorService.GetCurrentArtist(artist);
+                existingArtist = await censorService.GetCurrentArtist(artist);
             }
             else
             {
@@ -904,7 +858,7 @@ public class AdminCommands : BaseCommandModule
     [Summary("Checks some stats for a user and if they're banned from global whoknows")]
     public async Task CheckBottedUserAsync(string user = null)
     {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             if (string.IsNullOrEmpty(user))
             {
@@ -915,8 +869,8 @@ public class AdminCommands : BaseCommandModule
 
             _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var targetedUser = await this._settingService.GetUser(user, contextUser, this.Context);
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+            var targetedUser = await settingService.GetUser(user, contextUser, this.Context);
             var targetedDate = (DateTime?)null;
 
             if (targetedUser.DifferentUser)
@@ -925,11 +879,11 @@ public class AdminCommands : BaseCommandModule
                 targetedDate = targetedUser.RegisteredLastFm;
             }
 
-            var bottedUser = await this._adminService.GetBottedUserAsync(user, targetedDate);
-            var filteredUser = await this._adminService.GetFilteredUserAsync(user, targetedDate);
+            var bottedUser = await adminService.GetBottedUserAsync(user, targetedDate);
+            var filteredUser = await adminService.GetFilteredUserAsync(user, targetedDate);
             var isBannedSomewhere = false;
 
-            var userInfo = await this._dataSourceFactory.GetLfmUserInfoAsync(user);
+            var userInfo = await dataSourceFactory.GetLfmUserInfoAsync(user);
 
             this._embed.WithTitle($"Botted check for Last.fm '{user}'");
 
@@ -947,7 +901,7 @@ public class AdminCommands : BaseCommandModule
                 var dateAgo = DateTime.UtcNow.AddDays(-365);
                 var timeFrom = ((DateTimeOffset)dateAgo).ToUnixTimeSeconds();
 
-                var count = await this._dataSourceFactory.GetScrobbleCountFromDateAsync(user, timeFrom);
+                var count = await dataSourceFactory.GetScrobbleCountFromDateAsync(user, timeFrom);
 
                 var age = DateTimeOffset.FromUnixTimeSeconds(timeFrom);
                 var totalDays = (DateTime.UtcNow - age).TotalDays;
@@ -1039,9 +993,9 @@ public class AdminCommands : BaseCommandModule
     [GuildOnly]
     public async Task GetUsersForLastfmUserNameAsync(string userString = null)
     {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
-            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+            var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
 
             if (guild.SpecialGuild != true)
             {
@@ -1057,13 +1011,13 @@ public class AdminCommands : BaseCommandModule
                 return;
             }
 
-            var otherUser = await this._settingService.GetDifferentUser(userString);
+            var otherUser = await settingService.GetDifferentUser(userString);
             if (otherUser != null && otherUser.UserNameLastFM.ToLower() != userString.ToLower())
             {
                 userString = otherUser.UserNameLastFM;
             }
 
-            var users = await this._adminService.GetUsersWithLfmUsernameAsync(userString);
+            var users = await adminService.GetUsersWithLfmUsernameAsync(userString);
 
             this._embed.WithTitle($"All .fmbot users with Last.fm username {userString}");
             this._embed.WithUrl($"https://www.last.fm/user/{userString}");
@@ -1107,7 +1061,7 @@ public class AdminCommands : BaseCommandModule
     [Examples(".addbotteduser \"Kefkef123\" \"8 days listening time in Last.week\"")]
     public async Task AddBottedUserAsync(string user = null, string reason = null)
     {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             if (string.IsNullOrEmpty(user) || string.IsNullOrEmpty(reason))
             {
@@ -1117,9 +1071,9 @@ public class AdminCommands : BaseCommandModule
                 return;
             }
 
-            var bottedUser = await this._adminService.GetBottedUserAsync(user);
+            var bottedUser = await adminService.GetBottedUserAsync(user);
 
-            var userInfo = await this._dataSourceFactory.GetLfmUserInfoAsync(user);
+            var userInfo = await dataSourceFactory.GetLfmUserInfoAsync(user);
 
             DateTimeOffset? age = null;
             if (userInfo != null && userInfo.Subscriber)
@@ -1129,7 +1083,7 @@ public class AdminCommands : BaseCommandModule
 
             if (bottedUser == null)
             {
-                if (!await this._adminService.AddBottedUserAsync(user, reason, age?.DateTime))
+                if (!await adminService.AddBottedUserAsync(user, reason, age?.DateTime))
                 {
                     await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Something went wrong while adding this user to the gwk banlist" });
                     this.Context.LogCommandUsed(CommandResponse.WrongInput);
@@ -1145,7 +1099,7 @@ public class AdminCommands : BaseCommandModule
             }
             else
             {
-                if (!await this._adminService.EnableBottedUserBanAsync(user, reason, age?.DateTime))
+                if (!await adminService.EnableBottedUserBanAsync(user, reason, age?.DateTime))
                 {
                     await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Something went wrong while adding this user to the gwk banlist" });
                     this.Context.LogCommandUsed(CommandResponse.WrongInput);
@@ -1171,7 +1125,7 @@ public class AdminCommands : BaseCommandModule
     [Examples("removebotteduser \"Kefkef123\"")]
     public async Task RemoveBottedUserAsync(string user = null)
     {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             if (string.IsNullOrEmpty(user))
             {
@@ -1182,7 +1136,7 @@ public class AdminCommands : BaseCommandModule
                 return;
             }
 
-            var bottedUser = await this._adminService.GetBottedUserAsync(user);
+            var bottedUser = await adminService.GetBottedUserAsync(user);
             if (bottedUser == null)
             {
                 await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "The specified user has never been banned from GlobalWhoKnows" });
@@ -1196,7 +1150,7 @@ public class AdminCommands : BaseCommandModule
                 return;
             }
 
-            if (!await this._adminService.DisableBottedUserBanAsync(user))
+            if (!await adminService.DisableBottedUserBanAsync(user))
             {
                 await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "The specified user has not been banned from GlobalWhoKnows" });
                 this.Context.LogCommandUsed(CommandResponse.WrongInput);
@@ -1219,7 +1173,7 @@ public class AdminCommands : BaseCommandModule
     [Command("addsupporter")]
     public async Task AddSupporterAsync(string user = null, string openCollectiveId = null, string sendDm = null)
     {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             const string formatError = "Make sure to follow the correct format when adding a supporter\n" +
                                        "`.addsupporter \"discordUserId\" \"open-collective-id\"`\n" +
@@ -1242,7 +1196,7 @@ public class AdminCommands : BaseCommandModule
             }
 
             _ = this.Context.Channel?.TriggerTypingStateAsync()!;
-            var userSettings = await this._userService.GetUserWithDiscogs(discordUserId);
+            var userSettings = await userService.GetUserWithDiscogs(discordUserId);
 
             if (userSettings == null)
             {
@@ -1252,14 +1206,14 @@ public class AdminCommands : BaseCommandModule
             }
 
             if (userSettings.UserType != UserType.User &&
-                !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+                !await adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
             {
                 await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "`Can only change usertype of normal users`\n\n" + formatError });
                 this.Context.LogCommandUsed(CommandResponse.WrongInput);
                 return;
             }
 
-            var openCollectiveSupporter = await this._supporterService.GetOpenCollectiveSupporter(openCollectiveId);
+            var openCollectiveSupporter = await supporterService.GetOpenCollectiveSupporter(openCollectiveId);
             if (openCollectiveSupporter == null)
             {
                 await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "`OpenCollective user not found`\n\n" + formatError });
@@ -1267,7 +1221,7 @@ public class AdminCommands : BaseCommandModule
                 return;
             }
 
-            var existingSupporters = await this._supporterService.GetAllSupporters();
+            var existingSupporters = await supporterService.GetAllSupporters();
             if (existingSupporters
                     .Where(w => w.OpenCollectiveId != null)
                     .FirstOrDefault(f => f.OpenCollectiveId.ToLower() == openCollectiveId.ToLower()) != null)
@@ -1278,10 +1232,10 @@ public class AdminCommands : BaseCommandModule
             }
 
             var supporter =
-                await this._supporterService.AddOpenCollectiveSupporter(userSettings.DiscordUserId,
+                await supporterService.AddOpenCollectiveSupporter(userSettings.DiscordUserId,
                     openCollectiveSupporter);
 
-            await this._supporterService.ModifyGuildRole(userSettings.DiscordUserId);
+            await supporterService.ModifyGuildRole(userSettings.DiscordUserId);
 
             this._embed.WithTitle("Added new supporter");
             var description = new StringBuilder();
@@ -1312,7 +1266,7 @@ public class AdminCommands : BaseCommandModule
             await this.Context.Channel.SendMessageAsync(new MessageProperties().AddEmbeds(this._embed));
             this.Context.LogCommandUsed();
 
-            await this._indexService.IndexUser(userSettings);
+            await indexService.IndexUser(userSettings);
         }
         else
         {
@@ -1324,7 +1278,7 @@ public class AdminCommands : BaseCommandModule
     [Command("sendsupporterwelcome", "sendwelcomedm")]
     public async Task SendWelcomeDm(string user = null)
     {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             if (!ulong.TryParse(user, out var discordUserId))
             {
@@ -1335,7 +1289,7 @@ public class AdminCommands : BaseCommandModule
 
             _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-            var userSettings = await this._userService.GetUserWithDiscogs(discordUserId);
+            var userSettings = await userService.GetUserWithDiscogs(discordUserId);
 
             if (userSettings == null)
             {
@@ -1344,7 +1298,7 @@ public class AdminCommands : BaseCommandModule
                 return;
             }
 
-            var supporter = await this._supporterService.GetSupporter(discordUserId);
+            var supporter = await supporterService.GetSupporter(discordUserId);
             var discordUser = await this.Context.GetUserAsync(discordUserId);
 
             if (discordUser == null)
@@ -1364,7 +1318,7 @@ public class AdminCommands : BaseCommandModule
     [Command("sendsupportergoodbye", "sendgoodbyedm")]
     public async Task SendGoodbyeDm(string user = null)
     {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             if (!ulong.TryParse(user, out var discordUserId))
             {
@@ -1382,7 +1336,7 @@ public class AdminCommands : BaseCommandModule
                 return;
             }
 
-            var userSettings = await this._userService.GetUserAsync(discordUserId);
+            var userSettings = await userService.GetUserAsync(discordUserId);
 
             var hasImported = userSettings != null && userSettings.DataSource != DataSource.LastFm;
 
@@ -1395,7 +1349,7 @@ public class AdminCommands : BaseCommandModule
     [Command("removesupporter")]
     public async Task RemoveSupporterAsync(string user = null, string sendDm = null)
     {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             var formatError = "Make sure to follow the correct format when removing a supporter\n" +
                               "`.removesupporter \"discord-user-id\"`";
@@ -1414,7 +1368,7 @@ public class AdminCommands : BaseCommandModule
                 return;
             }
 
-            var userSettings = await this._userService.GetUserAsync(discordUserId);
+            var userSettings = await userService.GetUserAsync(discordUserId);
 
             if (userSettings == null)
             {
@@ -1430,10 +1384,10 @@ public class AdminCommands : BaseCommandModule
                 return;
             }
 
-            var stripeSupporter = await this._supporterService.GetStripeSupporter(userSettings.DiscordUserId);
+            var stripeSupporter = await supporterService.GetStripeSupporter(userSettings.DiscordUserId);
             if (stripeSupporter != null)
             {
-                await this._supporterService.CheckExpiredStripeSupporters(userSettings.DiscordUserId);
+                await supporterService.CheckExpiredStripeSupporters(userSettings.DiscordUserId);
                 await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Ran fast-tracked Stripe supporter expiry for " + stripeSupporter.PurchaserDiscordUserId });
                 this.Context.LogCommandUsed();
                 return;
@@ -1441,7 +1395,7 @@ public class AdminCommands : BaseCommandModule
 
             var hadImported = userSettings.DataSource != DataSource.LastFm;
 
-            var existingSupporter = await this._supporterService.GetSupporter(discordUserId);
+            var existingSupporter = await supporterService.GetSupporter(discordUserId);
             if (existingSupporter == null)
             {
                 await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "`Existing supporter not found`\n\n" + formatError });
@@ -1457,7 +1411,7 @@ public class AdminCommands : BaseCommandModule
                 return;
             }
 
-            var supporter = await this._supporterService.OpenCollectiveSupporterExpired(existingSupporter);
+            var supporter = await supporterService.OpenCollectiveSupporterExpired(existingSupporter);
 
             var removedRole = false;
             if (this.Context.Guild.Id == this._botSettings.Bot.BaseServerId)
@@ -1507,7 +1461,7 @@ public class AdminCommands : BaseCommandModule
             await this.Context.Channel.SendMessageAsync(new MessageProperties().AddEmbeds(this._embed));
             this.Context.LogCommandUsed();
 
-            await this._indexService.IndexUser(userSettings);
+            await indexService.IndexUser(userSettings);
         }
         else
         {
@@ -1521,7 +1475,7 @@ public class AdminCommands : BaseCommandModule
         "addsupporter \"278633844763262976\" \"Aetheling\" \"monthly supporter (perm at 28-11-2021)\"")]
     public async Task AddSupporterClassicAsync(string user = null, string name = null, string internalNotes = null)
     {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             var formatError = "Make sure to follow the correct format when adding a supporter\n" +
                               "Examples: \n" +
@@ -1543,7 +1497,7 @@ public class AdminCommands : BaseCommandModule
                 return;
             }
 
-            var userSettings = await this._userService.GetUserAsync(userId);
+            var userSettings = await userService.GetUserAsync(userId);
 
             if (userSettings == null)
             {
@@ -1559,7 +1513,7 @@ public class AdminCommands : BaseCommandModule
                 return;
             }
 
-            await this._supporterService.AddSupporter(userSettings.DiscordUserId, name, internalNotes);
+            await supporterService.AddSupporter(userSettings.DiscordUserId, name, internalNotes);
 
             this._embed.WithDescription("Supporter added.\n" +
                                         $"User id: {user} | <@{user}>\n" +
@@ -1582,23 +1536,23 @@ public class AdminCommands : BaseCommandModule
     [Examples("featuredoverride \"imageurl\" \"description\" true")]
     public async Task FeaturedOverrideAsync(string url, string desc, bool stopTimer = false)
     {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
         {
             try
             {
                 _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-                await this._featuredService.CustomFeatured(this._timer.CurrentFeatured, desc, url);
+                await featuredService.CustomFeatured(timer.CurrentFeatured, desc, url);
 
                 if (stopTimer)
                 {
-                    RecurringJob.TriggerJob(nameof(this._timer.CheckForNewFeatured));
+                    RecurringJob.TriggerJob(nameof(timer.CheckForNewFeatured));
                     await Task.Delay(5000);
-                    RecurringJob.RemoveIfExists(nameof(this._timer.CheckForNewFeatured));
+                    RecurringJob.RemoveIfExists(nameof(timer.CheckForNewFeatured));
                 }
                 else
                 {
-                    RecurringJob.TriggerJob(nameof(this._timer.CheckForNewFeatured));
+                    RecurringJob.TriggerJob(nameof(timer.CheckForNewFeatured));
                 }
 
                 var description = new StringBuilder();
@@ -1629,13 +1583,13 @@ public class AdminCommands : BaseCommandModule
     [Command("updateavatar"), Summary("Changes the avatar to given url.")]
     public async Task UpdateAvatar(string url)
     {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
         {
             try
             {
                 _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-                await this._webhookService.ChangeToNewAvatar(this._client, url);
+                await webhookService.ChangeToNewAvatar(client, url);
 
                 await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = $"Changed avatar to {url}" });
                 this.Context.LogCommandUsed();
@@ -1659,7 +1613,7 @@ public class AdminCommands : BaseCommandModule
     [Examples("shard 0", "shard 821660544581763093")]
     public async Task ReconnectShardAsync(ulong? guildId = null)
     {
-        if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = Constants.FmbotStaffOnly });
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
@@ -1676,21 +1630,21 @@ public class AdminCommands : BaseCommandModule
             return;
         }
 
-        var client = this._client;
+        var client1 = client;
 
         GatewayClient shard = null;
 
         if (guildId is < 1000 and >= 0)
         {
             var shardIndex = (int)guildId.Value;
-            if (shardIndex < client.Count)
+            if (shardIndex < client1.Count)
             {
-                shard = client[shardIndex];
+                shard = client1[shardIndex];
             }
         }
         else
         {
-            shard = client.FirstOrDefault(s => s.Cache.Guilds.ContainsKey(guildId.Value));
+            shard = client1.FirstOrDefault(s => s.Cache.Guilds.ContainsKey(guildId.Value));
         }
 
         if (shard != null)
@@ -1725,7 +1679,7 @@ public class AdminCommands : BaseCommandModule
     [Examples("postembed \"gwkreporter\"")]
     public async Task PostAdminEmbed([CommandParameter(Remainder = true)] string type = null)
     {
-        if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "No permissions mate" });
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
@@ -1989,17 +1943,17 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
     [Summary("Restarts the featured timer.")]
     public async Task RestartTimerAsync([CommandParameter(Remainder = true)] int? id = null)
     {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             try
             {
                 _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-                var feature = this._timer.CurrentFeatured;
+                var feature = timer.CurrentFeatured;
 
                 if (id.HasValue)
                 {
-                    feature = await this._featuredService.GetFeaturedForId(id.Value);
+                    feature = await featuredService.GetFeaturedForId(id.Value);
                 }
 
                 var updateDescription = new StringBuilder();
@@ -2008,7 +1962,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                 updateDescription.AppendLine(feature.ImageUrl);
                 updateDescription.AppendLine();
 
-                var newFeature = await this._featuredService.ReplaceFeatured(feature, this.Context.User.Id);
+                var newFeature = await featuredService.ReplaceFeatured(feature, this.Context.User.Id);
 
                 updateDescription.AppendLine("**New feature**");
                 updateDescription.AppendLine(newFeature.Description);
@@ -2041,12 +1995,12 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
     [Summary("Runs the job that picks new featureds manually.")]
     public async Task StopTimerAsync()
     {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             try
             {
                 await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Started pick new featured job" });
-                await this._timer.PickNewFeatureds();
+                await timer.PickNewFeatureds();
                 await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Finished pick new featured job" });
             }
             catch (Exception e)
@@ -2065,11 +2019,11 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
     [Summary("Runs the job that checks for new OpenCollective supporters.")]
     public async Task CheckNewSupporters()
     {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             try
             {
-                await this._timer.CheckForNewOcSupporters();
+                await timer.CheckForNewOcSupporters();
                 await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Checked for new oc supporters" });
             }
             catch (Exception e)
@@ -2088,12 +2042,12 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
     [Summary("Updates all discord supporters")]
     public async Task CheckDiscordSupporterUserTypes()
     {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             try
             {
                 await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Fetching supporters from Discord..." });
-                await this._supporterService.CheckIfDiscordSupportersHaveCorrectUserType();
+                await supporterService.CheckIfDiscordSupportersHaveCorrectUserType();
                 await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Updated all Discord supporters" });
             }
             catch (Exception e)
@@ -2112,12 +2066,12 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
     [Summary("Updates all discord supporters")]
     public async Task CheckDiscordSupporterRoles()
     {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             try
             {
                 _ = this.Context.Channel?.TriggerTypingStateAsync()!;
-                var activeSupporters = await this._supporterService.GetAllVisibleSupporters();
+                var activeSupporters = await supporterService.GetAllVisibleSupporters();
                 var guildMembers = new List<GuildUser>();
                 await foreach (var user in this.Context.Guild.GetUsersAsync())
                 {
@@ -2149,7 +2103,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                 reply.AppendLine($"Updated all Discord supporters.");
                 reply.AppendLine($"{count} users didn't have the supporter role when they should have had it.");
 
-                var allSupporters = await this._supporterService.GetAllSupporters();
+                var allSupporters = await supporterService.GetAllSupporters();
                 var expiredOnly = allSupporters
                     .Where(w => w.DiscordUserId.HasValue)
                     .GroupBy(g => g.DiscordUserId)
@@ -2185,11 +2139,11 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
     [Summary("Updates single discord supporter")]
     public async Task UpdateSingleDiscordSupporters([CommandParameter(Remainder = true)] string user)
     {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             try
             {
-                var userToUpdate = await this._settingService.GetDifferentUser(user);
+                var userToUpdate = await settingService.GetDifferentUser(user);
 
                 if (userToUpdate == null)
                 {
@@ -2198,7 +2152,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                     return;
                 }
 
-                await this._supporterService.UpdateSingleDiscordSupporter(userToUpdate.DiscordUserId);
+                await supporterService.UpdateSingleDiscordSupporter(userToUpdate.DiscordUserId);
                 await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Updated single discord supporter" });
             }
             catch (Exception e)
@@ -2217,7 +2171,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
     [Summary("Updates multiple discord supporter")]
     public async Task UpdateMultipleDiscordSupporters([CommandParameter(Remainder = true)] string user)
     {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             try
             {
@@ -2227,7 +2181,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
 
                 foreach (var id in idsToUpdate)
                 {
-                    var userToUpdate = await this._settingService.GetDifferentUser(user);
+                    var userToUpdate = await settingService.GetDifferentUser(user);
 
                     if (userToUpdate == null)
                     {
@@ -2235,7 +2189,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                         continue;
                     }
 
-                    await this._supporterService.UpdateSingleDiscordSupporter(userToUpdate.DiscordUserId);
+                    await supporterService.UpdateSingleDiscordSupporter(userToUpdate.DiscordUserId);
                     updated.AppendLine($"{id} - <@{id}>");
                 }
 
@@ -2262,11 +2216,11 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
     [Summary("Refreshes cached premium servers")]
     public async Task RefreshPremiumGuilds()
     {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             try
             {
-                await this._guildService.RefreshPremiumGuilds();
+                await guildService.RefreshPremiumGuilds();
                 await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Refreshed premium server cache dictionary" });
             }
             catch (Exception e)
@@ -2285,7 +2239,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
     [Summary("Run a timer manually (only works if it exists)")]
     public async Task RunTimerAsync([CommandParameter(Remainder = true)] string job = null)
     {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             try
             {
@@ -2298,7 +2252,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
 
                 if (job == "masterjobs")
                 {
-                    this._timer.QueueMasterJobs();
+                    timer.QueueMasterJobs();
                     await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Added masterjobs" });
                     return;
                 }
@@ -2337,7 +2291,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
     [Summary("Remove a timer manually (only works if it exists)")]
     public async Task RemoveJobAsync([CommandParameter(Remainder = true)] string job = null)
     {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             try
             {
@@ -2382,7 +2336,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
     [Summary("Checks the status of the timer.")]
     public async Task TimerStatusAsync()
     {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             try
             {
@@ -2457,7 +2411,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
     {
         try
         {
-            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
                 if (!user.HasValue)
                 {
@@ -2473,7 +2427,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                     return;
                 }
 
-                var blacklistResult = await this._adminService.AddUserToBlocklistAsync(user.Value);
+                var blacklistResult = await adminService.AddUserToBlocklistAsync(user.Value);
 
                 if (blacklistResult)
                 {
@@ -2510,7 +2464,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
     {
         try
         {
-            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
                 if (!user.HasValue)
                 {
@@ -2519,7 +2473,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                     return;
                 }
 
-                var blacklistResult = await this._adminService.RemoveUserFromBlocklistAsync(user.Value);
+                var blacklistResult = await adminService.RemoveUserFromBlocklistAsync(user.Value);
 
                 if (blacklistResult)
                 {
@@ -2556,9 +2510,9 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
     {
         try
         {
-            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
-                var userToUpdate = await this._settingService.GetDifferentUser(user);
+                var userToUpdate = await settingService.GetDifferentUser(user);
 
                 if (userToUpdate == null)
                 {
@@ -2572,7 +2526,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                     .WithAllowedMentions(AllowedMentionsProperties.None));
                 this.Context.LogCommandUsed();
 
-                await this._indexService.IndexUser(userToUpdate);
+                await indexService.IndexUser(userToUpdate);
             }
             else
             {
@@ -2592,9 +2546,9 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
     {
         try
         {
-            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
-                var userToUpdate = await this._settingService.GetDifferentUser(user);
+                var userToUpdate = await settingService.GetDifferentUser(user);
 
                 if (userToUpdate == null)
                 {
@@ -2608,7 +2562,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                     .WithAllowedMentions(AllowedMentionsProperties.None));
                 this.Context.LogCommandUsed();
 
-                await this._indexService.RecalculateTopLists(userToUpdate);
+                await indexService.RecalculateTopLists(userToUpdate);
             }
             else
             {
@@ -2627,7 +2581,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
     {
         try
         {
-            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
                 var components = new ActionRowProperties()
                     .WithButton("Get .fmbot supporter",
@@ -2664,9 +2618,9 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
         {
             _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
-            var userSettings = await this._settingService.GetUser(user, contextUser, this.Context);
+            var userSettings = await settingService.GetUser(user, contextUser, this.Context);
 
             if (!SupporterService.IsSupporter(userSettings.UserType))
             {
@@ -2675,7 +2629,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                 return;
             }
 
-            var dbUser = await this._settingService.GetDifferentUser(userSettings.DiscordUserId.ToString());
+            var dbUser = await settingService.GetDifferentUser(userSettings.DiscordUserId.ToString());
 
             if (dbUser == null)
             {
@@ -2684,8 +2638,8 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                 return;
             }
 
-            var allPlays = await this._playService.GetAllUserPlays(dbUser.UserId, false);
-            var allFinalizedPlays = await this._playService.GetAllUserPlays(dbUser.UserId, true);
+            var allPlays = await playService.GetAllUserPlays(dbUser.UserId, false);
+            var allFinalizedPlays = await playService.GetAllUserPlays(dbUser.UserId, true);
 
             var description = new StringBuilder();
 
@@ -2870,7 +2824,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
     {
         try
         {
-            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
                 if (oldUserId == null || newUserId == null)
                 {
@@ -2879,8 +2833,8 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                     return;
                 }
 
-                var oldUser = await this._settingService.GetDifferentUser(oldUserId);
-                var newUser = await this._settingService.GetDifferentUser(newUserId);
+                var oldUser = await settingService.GetDifferentUser(oldUserId);
+                var newUser = await settingService.GetDifferentUser(newUserId);
 
                 if (oldUser == null || newUser == null)
                 {
@@ -2957,7 +2911,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
     {
         try
         {
-            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
                 if (oldUserId == null || newUserId == null)
                 {
@@ -2966,8 +2920,8 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                     return;
                 }
 
-                var oldUser = await this._settingService.GetDifferentUser(oldUserId);
-                var newUser = await this._settingService.GetDifferentUser(newUserId);
+                var oldUser = await settingService.GetDifferentUser(oldUserId);
+                var newUser = await settingService.GetDifferentUser(newUserId);
 
                 if (oldUser == null || newUser == null)
                 {
@@ -2983,7 +2937,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                     return;
                 }
 
-                var stripeSupporter = await this._supporterService.GetStripeSupporter(oldUser.DiscordUserId);
+                var stripeSupporter = await supporterService.GetStripeSupporter(oldUser.DiscordUserId);
 
                 if (stripeSupporter == null)
                 {
@@ -3062,7 +3016,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
     {
         try
         {
-            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner) &&
+            if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner) &&
                 this.Context.Guild.Id == 821660544581763093)
             {
                 if (userToDelete == null)
@@ -3072,7 +3026,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                     return;
                 }
 
-                var user = await this._settingService.GetDifferentUser(userToDelete);
+                var user = await settingService.GetDifferentUser(userToDelete);
 
                 if (user == null)
                 {
@@ -3122,7 +3076,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
     [Command("lastfmissue", "lfmissue")]
     public async Task LastfmIssue(string _ = null)
     {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             var embed = new EmbedProperties();
             embed.WithDescription(
@@ -3162,7 +3116,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
     {
         try
         {
-            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+            if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
             {
                 _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -3171,9 +3125,9 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                     ResponseType = ResponseType.Embed,
                 };
 
-                var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+                var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
-                var shortTrack = await this._trackService.SearchTrack(response, this.Context.User, trackValues,
+                var shortTrack = await trackService.SearchTrack(response, this.Context.User, trackValues,
                     contextUser.UserNameLastFM);
                 if (shortTrack.Track == null)
                 {
@@ -3181,7 +3135,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                     return;
                 }
 
-                var usersWithTrack = await this._whoKnowsTrackService.GetGlobalUsersForTrack(this.Context.Guild,
+                var usersWithTrack = await whoKnowsTrackService.GetGlobalUsersForTrack(this.Context.Guild,
                     shortTrack.Track.ArtistName, shortTrack.Track.TrackName);
 
                 var bannedUsers = new StringBuilder();
@@ -3196,14 +3150,14 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                 foreach (var userToCheck in usersWithTrack.Where(w => w.Playcount >= playThreshold))
                 {
                     var bottedUser =
-                        await this._adminService.GetBottedUserAsync(userToCheck.LastFMUsername,
+                        await adminService.GetBottedUserAsync(userToCheck.LastFMUsername,
                             userToCheck.RegisteredLastFm);
                     if (bottedUser != null)
                     {
                         continue;
                     }
 
-                    var currentPlaycount = await this._dataSourceFactory.GetTrackInfoAsync(shortTrack.Track.TrackName,
+                    var currentPlaycount = await dataSourceFactory.GetTrackInfoAsync(shortTrack.Track.TrackName,
                         shortTrack.Track.ArtistName,
                         userToCheck.LastFMUsername);
                     if (currentPlaycount.Success && currentPlaycount.Content.UserPlaycount >= playThreshold)
@@ -3211,7 +3165,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                         var reason = $"Semi-automated ban for short track spam\n" +
                                      $"{shortTrack.Track.TrackName} by {shortTrack.Track.ArtistName}\n" +
                                      $"{currentPlaycount.Content.UserPlaycount} plays";
-                        await this._adminService.AddBottedUserAsync(userToCheck.LastFMUsername, reason);
+                        await adminService.AddBottedUserAsync(userToCheck.LastFMUsername, reason);
                         Log.Information("Banning {userNameLastFm} from GW: {reason}", userToCheck.LastFMUsername,
                             reason);
 
@@ -3260,14 +3214,14 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
     [Command("postpendingreports")]
     public async Task PostPendingReports([CommandParameter(Remainder = true)] string trackValues = null)
     {
-        if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             return;
         }
 
         await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Reposting open reports..." });
 
-        await using var db = await this._contextFactory.CreateDbContextAsync();
+        await using var db = await contextFactory.CreateDbContextAsync();
         var musicReports = db.CensoredMusicReport
             .Where(w => w.ReportStatus == ReportStatus.Pending)
             .Include(i => i.Album)
@@ -3276,13 +3230,13 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
 
         foreach (var report in musicReports)
         {
-            await this._censorService.PostReport(report);
+            await censorService.PostReport(report);
         }
 
         var userReports = db.BottedUserReport.Where(w => w.ReportStatus == ReportStatus.Pending).ToList();
         foreach (var report in userReports)
         {
-            await this._adminService.PostReport(report);
+            await adminService.PostReport(report);
         }
 
         await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Done" });

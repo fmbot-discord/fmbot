@@ -19,28 +19,14 @@ using NetCord.Services.ComponentInteractions;
 
 namespace FMBot.Bot.Interactions;
 
-public class PlayInteractions : ComponentInteractionModule<ComponentInteractionContext>
+public class PlayInteractions(
+    UserService userService,
+    SettingService settingService,
+    PlayBuilder playBuilder,
+    RecapBuilders recapBuilders,
+    InteractiveService interactivity)
+    : ComponentInteractionModule<ComponentInteractionContext>
 {
-    private readonly UserService _userService;
-    private readonly SettingService _settingService;
-    private readonly PlayBuilder _playBuilder;
-    private readonly RecapBuilders _recapBuilders;
-    private readonly InteractiveService _interactivity;
-
-    public PlayInteractions(
-        UserService userService,
-        SettingService settingService,
-        PlayBuilder playBuilder,
-        RecapBuilders recapBuilders,
-        InteractiveService interactivity)
-    {
-        this._userService = userService;
-        this._settingService = settingService;
-        this._playBuilder = playBuilder;
-        this._recapBuilders = recapBuilders;
-        this._interactivity = interactivity;
-    }
-
     [ComponentInteraction(InteractionConstants.DeleteStreak)]
     public async Task StreakDeleteOpenModal()
     {
@@ -52,7 +38,7 @@ public class PlayInteractions : ComponentInteractionModule<ComponentInteractionC
     public async Task StreakDeleteButton()
     {
         var streakIdStr = this.Context.GetModalValue("streak_id");
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
         if (!long.TryParse(streakIdStr, out var streakId))
         {
@@ -62,9 +48,9 @@ public class PlayInteractions : ComponentInteractionModule<ComponentInteractionC
             return;
         }
 
-        var response = await this._playBuilder.DeleteStreakAsync(new ContextModel(this.Context, contextUser), streakId);
+        var response = await playBuilder.DeleteStreakAsync(new ContextModel(this.Context, contextUser), streakId);
 
-        await this.Context.SendResponse(this._interactivity, response, ephemeral: true);
+        await this.Context.SendResponse(interactivity, response, ephemeral: true);
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
@@ -86,28 +72,28 @@ public class PlayInteractions : ComponentInteractionModule<ComponentInteractionC
         await RespondAsync(InteractionCallback.DeferredModifyMessage);
         await this.Context.DisableInteractionButtons();
 
-        var contextUser = await this._userService.GetUserWithDiscogs(requesterDiscordUserId);
-        var userSettings = await this._settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId,
+        var contextUser = await userService.GetUserWithDiscogs(requesterDiscordUserId);
+        var userSettings = await settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId,
             this.Context.Guild, this.Context.User);
-        var targetUser = await this._userService.GetUserWithDiscogs(requesterDiscordUserId);
+        var targetUser = await userService.GetUserWithDiscogs(requesterDiscordUserId);
 
         try
         {
             var mileStoneAmount =
                 SettingService.GetMilestoneAmount("random", targetUser.TotalPlaycount.GetValueOrDefault());
 
-            var response = await this._playBuilder.MileStoneAsync(new ContextModel(this.Context, contextUser),
+            var response = await playBuilder.MileStoneAsync(new ContextModel(this.Context, contextUser),
                 userSettings, mileStoneAmount.amount, targetUser.TotalPlaycount.GetValueOrDefault(),
                 mileStoneAmount.isRandom);
 
-            await this.Context.UpdateInteractionEmbed(response, this._interactivity, false);
+            await this.Context.UpdateInteractionEmbed(response, interactivity, false);
             this.Context.LogCommandUsed(response.CommandResponse);
 
             var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
             if (message != null && response.ReferencedMusic != null &&
                 PublicProperties.UsedCommandsResponseContextId.TryGetValue(message.Id, out var contextId))
             {
-                await this._userService.UpdateInteractionContext(contextId, response.ReferencedMusic);
+                await userService.UpdateInteractionContext(contextId, response.ReferencedMusic);
             }
         }
         catch (Exception e)
@@ -124,19 +110,19 @@ public class PlayInteractions : ComponentInteractionModule<ComponentInteractionC
         _ = this.Context.DisableInteractionButtons(specificButtonOnly: $"{InteractionConstants.RecapAlltime}:{userId}",
             addLoaderToSpecificButton: true);
 
-        var contextUser = await this._userService.GetUserForIdAsync(int.Parse(userId));
+        var contextUser = await userService.GetUserForIdAsync(int.Parse(userId));
         var userSettings =
-            await this._settingService.GetUser(null, contextUser, this.Context.Guild, this.Context.User, true);
+            await settingService.GetUser(null, contextUser, this.Context.Guild, this.Context.User, true);
 
         try
         {
             var timeSettings =
                 SettingService.GetTimePeriod("alltime", TimePeriod.AllTime, timeZone: userSettings.TimeZone);
 
-            var response = await this._recapBuilders.RecapAsync(new ContextModel(this.Context, contextUser),
+            var response = await recapBuilders.RecapAsync(new ContextModel(this.Context, contextUser),
                 userSettings, timeSettings, RecapPage.Overview);
 
-            await this.Context.SendFollowUpResponse(this._interactivity, response);
+            await this.Context.SendFollowUpResponse(interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
 
             _ = this.Context.DisableInteractionButtons(
@@ -165,9 +151,9 @@ public class PlayInteractions : ComponentInteractionModule<ComponentInteractionC
             var discordUserId = ulong.Parse(splitInput[1]);
             var requesterDiscordUserId = ulong.Parse(splitInput[2]);
 
-            var contextUser = await this._userService.GetUserWithDiscogs(requesterDiscordUserId);
+            var contextUser = await userService.GetUserWithDiscogs(requesterDiscordUserId);
             var discordContextUser = await this.Context.GetUserAsync(requesterDiscordUserId);
-            var userSettings = await this._settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId,
+            var userSettings = await settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId,
                 this.Context.Guild, this.Context.User);
 
             var timeSettings = SettingService.GetTimePeriod(splitInput[3],
@@ -185,7 +171,7 @@ public class PlayInteractions : ComponentInteractionModule<ComponentInteractionC
                 noPermResponse.CommandResponse = CommandResponse.NoPermission;
                 noPermResponse.ResponseType = ResponseType.Embed;
                 noPermResponse.Embed.WithColor(DiscordConstants.WarningColorOrange);
-                await this.Context.SendResponse(this._interactivity, noPermResponse, true);
+                await this.Context.SendResponse(interactivity, noPermResponse, true);
                 this.Context.LogCommandUsed(noPermResponse.CommandResponse);
                 return;
             }
@@ -205,11 +191,11 @@ public class PlayInteractions : ComponentInteractionModule<ComponentInteractionC
             await Context.ModifyComponents(message, components);
 
             var response =
-                await this._recapBuilders.RecapAsync(
+                await recapBuilders.RecapAsync(
                     new ContextModel(this.Context, contextUser, discordContextUser), userSettings, timeSettings,
                     viewType);
 
-            await this.Context.UpdateInteractionEmbed(response, this._interactivity, false);
+            await this.Context.UpdateInteractionEmbed(response, interactivity, false);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
@@ -246,9 +232,9 @@ public class PlayInteractions : ComponentInteractionModule<ComponentInteractionC
             var discordUserId = ulong.Parse(splitInput[2]);
             var requesterDiscordUserId = ulong.Parse(splitInput[3]);
 
-            var contextUser = await this._userService.GetUserWithDiscogs(requesterDiscordUserId);
+            var contextUser = await userService.GetUserWithDiscogs(requesterDiscordUserId);
             var discordContextUser = await this.Context.GetUserAsync(requesterDiscordUserId);
-            var userSettings = await this._settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId,
+            var userSettings = await settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId,
                 this.Context.Guild, this.Context.User);
 
             var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
@@ -258,11 +244,11 @@ public class PlayInteractions : ComponentInteractionModule<ComponentInteractionC
             }
 
             var response =
-                await this._playBuilder.ListeningGapsAsync(
+                await playBuilder.ListeningGapsAsync(
                     new ContextModel(this.Context, contextUser, discordContextUser), new TopListSettings(),
                     userSettings, responseMode, viewType);
 
-            await this.Context.UpdateInteractionEmbed(response, this._interactivity, false);
+            await this.Context.UpdateInteractionEmbed(response, interactivity, false);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)

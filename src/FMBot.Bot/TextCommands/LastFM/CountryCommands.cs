@@ -15,30 +15,17 @@ using Fergun.Interactive;
 namespace FMBot.Bot.TextCommands.LastFM;
 
 [ModuleName("Countries")]
-public class CountryCommands : BaseCommandModule
+public class CountryCommands(
+    IPrefixService prefixService,
+    IndexService indexService,
+    UserService userService,
+    SettingService settingService,
+    CountryBuilders countryBuilders,
+    InteractiveService interactivity,
+    IOptions<BotSettings> botSettings)
+    : BaseCommandModule(botSettings)
 {
-    private readonly IPrefixService _prefixService;
-    private readonly IndexService _indexService;
-    private readonly UserService _userService;
-    private readonly SettingService _settingService;
-    private readonly CountryBuilders _countryBuilders;
-    private InteractiveService Interactivity { get; }
-
-    public CountryCommands(IPrefixService prefixService,
-        IndexService indexService,
-        UserService userService,
-        SettingService settingService,
-        CountryBuilders countryBuilders,
-        InteractiveService interactivity,
-        IOptions<BotSettings> botSettings) : base(botSettings)
-    {
-        this._prefixService = prefixService;
-        this._indexService = indexService;
-        this._userService = userService;
-        this._settingService = settingService;
-        this._countryBuilders = countryBuilders;
-        this.Interactivity = interactivity;
-    }
+    private InteractiveService Interactivity { get; } = interactivity;
 
     [Command("topcountries", "cl", "tc", "countrylist", "countries", "countrieslist")]
     [Summary("Shows a list of your or someone else's top artist countries over a certain time period.")]
@@ -51,19 +38,19 @@ public class CountryCommands : BaseCommandModule
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
         try
         {
-            var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
+            var userSettings = await settingService.GetUser(extraOptions, contextUser, this.Context);
             var topListSettings = SettingService.SetTopListSettings(extraOptions);
 
-            userSettings.RegisteredLastFm ??= await this._indexService.AddUserRegisteredLfmDate(userSettings.UserId);
+            userSettings.RegisteredLastFm ??= await indexService.AddUserRegisteredLfmDate(userSettings.UserId);
             var timeSettings = SettingService.GetTimePeriod(extraOptions, registeredLastFm: userSettings.RegisteredLastFm, timeZone: userSettings.TimeZone);
             var mode = SettingService.SetMode(extraOptions, contextUser.Mode);
 
-            var response = await this._countryBuilders.TopCountriesAsync(new ContextModel(this.Context, prfx, contextUser),
+            var response = await countryBuilders.TopCountriesAsync(new ContextModel(this.Context, prfx, contextUser),
                 userSettings, timeSettings, topListSettings, mode.mode);
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -80,18 +67,19 @@ public class CountryCommands : BaseCommandModule
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
         try
         {
-            var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
+            var userSettings = await settingService.GetUser(extraOptions, contextUser, this.Context);
 
-            userSettings.RegisteredLastFm ??= await this._indexService.AddUserRegisteredLfmDate(userSettings.UserId);
-            var timeSettings = SettingService.GetTimePeriod(extraOptions, registeredLastFm: userSettings.RegisteredLastFm, defaultTimePeriod: TimePeriod.AllTime,
+            userSettings.RegisteredLastFm ??= await indexService.AddUserRegisteredLfmDate(userSettings.UserId);
+            var timeSettings = SettingService.GetTimePeriod(extraOptions, registeredLastFm: userSettings.RegisteredLastFm,
+                defaultTimePeriod: TimePeriod.AllTime,
                 timeZone: userSettings.TimeZone);
 
-            var response = await this._countryBuilders.GetTopCountryChart(new ContextModel(this.Context, prfx, contextUser),
+            var response = await countryBuilders.GetTopCountryChart(new ContextModel(this.Context, prfx, contextUser),
                 userSettings, timeSettings);
 
             await this.Context.SendResponse(this.Interactivity, response);
@@ -109,14 +97,14 @@ public class CountryCommands : BaseCommandModule
     [SupportsPagination]
     public async Task CountryInfoAsync([CommandParameter(Remainder = true)] string countryOptions = null)
     {
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         try
         {
-            var response = await this._countryBuilders.CountryAsync(new ContextModel(this.Context, prfx, contextUser), countryOptions);
+            var response = await countryBuilders.CountryAsync(new ContextModel(this.Context, prfx, contextUser), countryOptions);
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
         }

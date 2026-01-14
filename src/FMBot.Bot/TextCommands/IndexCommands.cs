@@ -21,32 +21,17 @@ using NetCord.Rest;
 namespace FMBot.Bot.TextCommands;
 
 [ModuleName("Indexing")]
-public class IndexCommands : BaseCommandModule
+public class IndexCommands(
+    GuildService guildService,
+    IndexService indexService,
+    IPrefixService prefixService,
+    UserService userService,
+    IOptions<BotSettings> botSettings,
+    UserBuilder userBuilder,
+    InteractiveService interactivity)
+    : BaseCommandModule(botSettings)
 {
-    private readonly GuildService _guildService;
-    private readonly IndexService _indexService;
-    private readonly IPrefixService _prefixService;
-    private readonly UserService _userService;
-    private readonly UserBuilder _userBuilder;
-
-    private InteractiveService Interactivity { get; }
-
-    public IndexCommands(
-        GuildService guildService,
-        IndexService indexService,
-        IPrefixService prefixService,
-        UserService userService,
-        IOptions<BotSettings> botSettings,
-        UserBuilder userBuilder,
-        InteractiveService interactivity) : base(botSettings)
-    {
-        this._guildService = guildService;
-        this._indexService = indexService;
-        this._prefixService = prefixService;
-        this._userService = userService;
-        this._userBuilder = userBuilder;
-        this.Interactivity = interactivity;
-    }
+    private InteractiveService Interactivity { get; } = interactivity;
 
     [Command("refreshmembers", "index", "refresh", "cachemembers", "refreshserver", "serverset")]
     [Summary("Refreshes the cached member list that .fmbot has for your server.")]
@@ -54,7 +39,7 @@ public class IndexCommands : BaseCommandModule
     [CommandCategories(CommandCategory.ServerSettings)]
     public async Task IndexGuildAsync()
     {
-        var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
+        var lastIndex = await guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
 
         if (lastIndex > DateTime.UtcNow.AddMinutes(-1))
         {
@@ -71,7 +56,7 @@ public class IndexCommands : BaseCommandModule
 
         try
         {
-            await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow);
+            await guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow);
 
             var guildUsers = new List<GuildUser>();
             await foreach (var user in this.Context.Guild.GetUsersAsync())
@@ -83,7 +68,7 @@ public class IndexCommands : BaseCommandModule
                 guildUsers.Count, this.Context.Guild.Id, this.Context.Guild.Name);
 
             var reply = new StringBuilder();
-            var registeredUserCount = await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
+            var registeredUserCount = await indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
 
             reply.AppendLine($"✅ Cached memberlist for server has been updated.");
 
@@ -113,7 +98,7 @@ public class IndexCommands : BaseCommandModule
         catch (Exception e)
         {
             await this.Context.HandleCommandException(e);
-            await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow);
+            await guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow);
         }
     }
 
@@ -127,8 +112,8 @@ public class IndexCommands : BaseCommandModule
     [SupporterEnhanced("Supporters get their lifetime data cached in the bot, so all the commands that rely on this have the most complete data")]
     public async Task UpdateAsync([CommandParameter(Remainder = true)] string options = null)
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
         var updateType = SettingService.GetUpdateType(options, SupporterService.IsSupporter(contextUser.UserType));
 
         if (!updateType.optionPicked)
@@ -137,7 +122,7 @@ public class IndexCommands : BaseCommandModule
             var message = await this.Context.SendResponse(this.Interactivity,initialResponse);
 
             var updatedResponse =
-                await this._userBuilder.UpdatePlays(new ContextModel(this.Context, prfx, contextUser));
+                await userBuilder.UpdatePlays(new ContextModel(this.Context, prfx, contextUser));
 
             await message.ModifyAsync(m =>
             {
@@ -149,7 +134,7 @@ public class IndexCommands : BaseCommandModule
         }
         else
         {
-            var initialResponse = this._userBuilder.UpdateOptionsInit(new ContextModel(this.Context, prfx, contextUser),
+            var initialResponse = userBuilder.UpdateOptionsInit(new ContextModel(this.Context, prfx, contextUser),
                 updateType.updateType, updateType.description);
             var message = await this.Context.SendResponse(this.Interactivity,initialResponse);
 
@@ -160,7 +145,7 @@ public class IndexCommands : BaseCommandModule
             }
 
             var updatedResponse =
-                await this._userBuilder.UpdateOptions(new ContextModel(this.Context, prfx, contextUser),
+                await userBuilder.UpdateOptions(new ContextModel(this.Context, prfx, contextUser),
                     updateType.updateType);
 
             await message.ModifyAsync(m =>

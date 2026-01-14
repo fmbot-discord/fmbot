@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Fergun.Interactive;
@@ -11,7 +10,6 @@ using FMBot.Bot.Factories;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
-using FMBot.Domain;
 using FMBot.Domain.Attributes;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
@@ -21,31 +19,15 @@ using NetCord.Services.ComponentInteractions;
 
 namespace FMBot.Bot.Interactions;
 
-public class ImportInteractions : ComponentInteractionModule<ComponentInteractionContext>
+public class ImportInteractions(
+    UserService userService,
+    ImportService importService,
+    IndexService indexService,
+    ImportBuilders importBuilders,
+    UserBuilder userBuilder,
+    InteractiveService interactivity)
+    : ComponentInteractionModule<ComponentInteractionContext>
 {
-    private readonly UserService _userService;
-    private readonly ImportService _importService;
-    private readonly IndexService _indexService;
-    private readonly ImportBuilders _importBuilders;
-    private readonly UserBuilder _userBuilder;
-    private readonly InteractiveService _interactivity;
-
-    public ImportInteractions(
-        UserService userService,
-        ImportService importService,
-        IndexService indexService,
-        ImportBuilders importBuilders,
-        UserBuilder userBuilder,
-        InteractiveService interactivity)
-    {
-        this._userService = userService;
-        this._importService = importService;
-        this._indexService = indexService;
-        this._importBuilders = importBuilders;
-        this._userBuilder = userBuilder;
-        this._interactivity = interactivity;
-    }
-
     [ComponentInteraction(InteractionConstants.ImportModify.Modify)]
     public async Task SelectImportModifyPickButton()
     {
@@ -53,12 +35,12 @@ public class ImportInteractions : ComponentInteractionModule<ComponentInteractio
         {
             var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
             var pickedOption = stringMenuInteraction.Data.SelectedValues[0];
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
             var supporterRequired = ImportBuilders.ImportSupporterRequired(new ContextModel(this.Context, contextUser));
 
             if (supporterRequired != null)
             {
-                await this.Context.SendResponse(this._interactivity, supporterRequired);
+                await this.Context.SendResponse(interactivity, supporterRequired);
                 this.Context.LogCommandUsed(supporterRequired.CommandResponse);
                 return;
             }
@@ -96,7 +78,7 @@ public class ImportInteractions : ComponentInteractionModule<ComponentInteractio
     {
         try
         {
-            var selectedArtist = this._importService.GetImportRef(selectedArtistRef)?.Artist;
+            var selectedArtist = importService.GetImportRef(selectedArtistRef)?.Artist;
             await RespondAsync(InteractionCallback.Modal(
                 ModalFactory.CreateRenameArtistModal(
                     $"{InteractionConstants.ImportModify.ArtistRenameModal}:{selectedArtistRef}",
@@ -114,7 +96,7 @@ public class ImportInteractions : ComponentInteractionModule<ComponentInteractio
     {
         try
         {
-            var selectedAlbum = this._importService.GetImportRef(selectedAlbumRef);
+            var selectedAlbum = importService.GetImportRef(selectedAlbumRef);
             await RespondAsync(InteractionCallback.Modal(
                 ModalFactory.CreateRenameAlbumModal(
                     $"{InteractionConstants.ImportModify.AlbumRenameModal}:{selectedAlbumRef}",
@@ -133,7 +115,7 @@ public class ImportInteractions : ComponentInteractionModule<ComponentInteractio
     {
         try
         {
-            var selectedTrack = this._importService.GetImportRef(selectedTrackRef);
+            var selectedTrack = importService.GetImportRef(selectedTrackRef);
             await RespondAsync(InteractionCallback.Modal(
                 ModalFactory.CreateRenameTrackModal(
                     $"{InteractionConstants.ImportModify.TrackRenameModal}:{selectedTrackRef}",
@@ -156,14 +138,14 @@ public class ImportInteractions : ComponentInteractionModule<ComponentInteractio
 
             _ = this.Context.Channel?.TriggerTypingStateAsync()!;
             await RespondAsync(InteractionCallback.DeferredModifyMessage);
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
-            var importRef = this._importService.StoreImportReference(new ReferencedMusic { Artist = artistName });
+            var importRef = importService.StoreImportReference(new ReferencedMusic { Artist = artistName });
 
-            var response = await this._importBuilders.PickArtist(contextUser.UserId,
+            var response = await importBuilders.PickArtist(contextUser.UserId,
                 contextUser.NumberFormat ?? NumberFormat.NoSeparator, importRef);
 
-            await this.Context.SendFollowUpResponse(this._interactivity, response);
+            await this.Context.SendFollowUpResponse(interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
@@ -182,17 +164,17 @@ public class ImportInteractions : ComponentInteractionModule<ComponentInteractio
 
             _ = this.Context.Channel?.TriggerTypingStateAsync()!;
             await RespondAsync(InteractionCallback.DeferredModifyMessage);
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
-            var importRef = this._importService.StoreImportReference(new ReferencedMusic
+            var importRef = importService.StoreImportReference(new ReferencedMusic
                 { Artist = artistName, Album = albumName });
 
-            var response = await this._importBuilders.PickAlbum(
+            var response = await importBuilders.PickAlbum(
                 contextUser.UserId,
                 contextUser.NumberFormat ?? NumberFormat.NoSeparator,
                 importRef);
 
-            await this.Context.SendFollowUpResponse(this._interactivity, response);
+            await this.Context.SendFollowUpResponse(interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
@@ -211,17 +193,17 @@ public class ImportInteractions : ComponentInteractionModule<ComponentInteractio
 
             _ = this.Context.Channel?.TriggerTypingStateAsync()!;
             await RespondAsync(InteractionCallback.DeferredModifyMessage);
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
-            var importRef = this._importService.StoreImportReference(new ReferencedMusic
+            var importRef = importService.StoreImportReference(new ReferencedMusic
                 { Artist = artistName, Track = trackName });
 
-            var response = await this._importBuilders.PickTrack(
+            var response = await importBuilders.PickTrack(
                 contextUser.UserId,
                 contextUser.NumberFormat ?? NumberFormat.NoSeparator,
                 importRef);
 
-            await this.Context.SendFollowUpResponse(this._interactivity, response);
+            await this.Context.SendFollowUpResponse(interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
@@ -239,12 +221,12 @@ public class ImportInteractions : ComponentInteractionModule<ComponentInteractio
 
             await RespondAsync(InteractionCallback.DeferredModifyMessage);
             await EditToLoader();
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
             var newArtistRef =
-                this._importService.StoreImportReference(new ReferencedMusic { Artist = artistName });
+                importService.StoreImportReference(new ReferencedMusic { Artist = artistName });
 
-            var response = await this._importBuilders.PickArtist(
+            var response = await importBuilders.PickArtist(
                 contextUser.UserId,
                 contextUser.NumberFormat ?? NumberFormat.NoSeparator,
                 selectedArtistRef,
@@ -274,12 +256,12 @@ public class ImportInteractions : ComponentInteractionModule<ComponentInteractio
 
             await RespondAsync(InteractionCallback.DeferredModifyMessage);
             await EditToLoader();
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
-            var newAlbumRef = this._importService.StoreImportReference(new ReferencedMusic
+            var newAlbumRef = importService.StoreImportReference(new ReferencedMusic
                 { Artist = artistName, Album = albumName });
 
-            var response = await this._importBuilders.PickAlbum(
+            var response = await importBuilders.PickAlbum(
                 contextUser.UserId,
                 contextUser.NumberFormat ?? NumberFormat.NoSeparator,
                 selectedAlbumRef,
@@ -309,12 +291,12 @@ public class ImportInteractions : ComponentInteractionModule<ComponentInteractio
 
             await RespondAsync(InteractionCallback.DeferredModifyMessage);
             await EditToLoader();
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
-            var newTrackRef = this._importService.StoreImportReference(new ReferencedMusic
+            var newTrackRef = importService.StoreImportReference(new ReferencedMusic
                 { Artist = artistName, Track = trackName });
 
-            var response = await this._importBuilders.PickTrack(
+            var response = await importBuilders.PickTrack(
                 contextUser.UserId,
                 contextUser.NumberFormat ?? NumberFormat.NoSeparator,
                 selectedTrackRef,
@@ -347,14 +329,14 @@ public class ImportInteractions : ComponentInteractionModule<ComponentInteractio
     [UsernameSetRequired]
     public async Task SetImport()
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
         var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
         var selectedValue = stringMenuInteraction.Data.SelectedValues[0];
 
         if (Enum.TryParse(selectedValue, out DataSource dataSource))
         {
-            var newUserSettings = await this._userService.SetDataSource(contextUser, dataSource);
+            var newUserSettings = await userService.SetDataSource(contextUser, dataSource);
 
             var name = newUserSettings.DataSource.GetAttribute<OptionAttribute>().Name;
 
@@ -386,7 +368,7 @@ public class ImportInteractions : ComponentInteractionModule<ComponentInteractio
                 .WithComponents(components)));
             this.Context.LogCommandUsed();
 
-            await this._indexService.RecalculateTopLists(newUserSettings);
+            await indexService.RecalculateTopLists(newUserSettings);
 
             embed.WithColor(DiscordConstants.SuccessColorGreen);
             embed.WithDescription(description +
@@ -399,9 +381,9 @@ public class ImportInteractions : ComponentInteractionModule<ComponentInteractio
     [UsernameSetRequired]
     public async Task ClearImportSpotify()
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
-        await this._importService.RemoveImportedSpotifyPlays(contextUser);
+        await importService.RemoveImportedSpotifyPlays(contextUser);
 
         var embed = new EmbedProperties();
         embed.WithDescription("All your imported Spotify history has been removed from .fmbot.");
@@ -417,9 +399,9 @@ public class ImportInteractions : ComponentInteractionModule<ComponentInteractio
     [UsernameSetRequired]
     public async Task ClearImportAppleMusic()
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
-        await this._importService.RemoveImportedAppleMusicPlays(contextUser);
+        await importService.RemoveImportedAppleMusicPlays(contextUser);
 
         var embed = new EmbedProperties();
         embed.WithDescription("All your imported Apple Music history has been removed from .fmbot.");
@@ -435,15 +417,15 @@ public class ImportInteractions : ComponentInteractionModule<ComponentInteractio
     [UsernameSetRequired]
     public async Task ImportManage()
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
 
         try
         {
             var response =
-                await this._userBuilder.ImportMode(new ContextModel(this.Context, contextUser), contextUser.UserId);
+                await userBuilder.ImportMode(new ContextModel(this.Context, contextUser), contextUser.UserId);
 
-            await this.Context.SendFollowUpResponse(this._interactivity, response, ephemeral: true);
+            await this.Context.SendFollowUpResponse(interactivity, response, ephemeral: true);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
@@ -456,12 +438,12 @@ public class ImportInteractions : ComponentInteractionModule<ComponentInteractio
     [UsernameSetRequired]
     public async Task ImportInstructionsSpotify()
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
         try
         {
             var response =
-                await this._importBuilders.GetSpotifyImportInstructions(new ContextModel(this.Context, contextUser),
+                await importBuilders.GetSpotifyImportInstructions(new ContextModel(this.Context, contextUser),
                     true);
 
             await this.Context.UpdateInteractionEmbed(response);
@@ -477,12 +459,12 @@ public class ImportInteractions : ComponentInteractionModule<ComponentInteractio
     [UsernameSetRequired]
     public async Task ImportInstructionsAppleMusic()
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
         try
         {
             var response =
-                await this._importBuilders.GetAppleMusicImportInstructions(new ContextModel(this.Context, contextUser),
+                await importBuilders.GetAppleMusicImportInstructions(new ContextModel(this.Context, contextUser),
                     true);
 
             await this.Context.UpdateInteractionEmbed(response);
@@ -501,21 +483,21 @@ public class ImportInteractions : ComponentInteractionModule<ComponentInteractio
         {
             await RespondAsync(InteractionCallback.DeferredModifyMessage);
             await EditToLoaderButton("Editing selected imports...");
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
-            var selectedArtist = this._importService.GetImportRef(selectedArtistRef)?.Artist;
-            var newArtist = this._importService.GetImportRef(newArtistRef)?.Artist;
+            var selectedArtist = importService.GetImportRef(selectedArtistRef)?.Artist;
+            var newArtist = importService.GetImportRef(newArtistRef)?.Artist;
 
             if (selectedArtist != null && newArtist != null)
             {
-                await this._importService.RenameArtistImports(contextUser, selectedArtist, newArtist);
+                await importService.RenameArtistImports(contextUser, selectedArtist, newArtist);
                 if (contextUser.DataSource != DataSource.LastFm)
                 {
-                    _ = this._indexService.RecalculateTopLists(contextUser);
+                    _ = indexService.RecalculateTopLists(contextUser);
                 }
             }
 
-            var response = await this._importBuilders.PickArtist(
+            var response = await importBuilders.PickArtist(
                 contextUser.UserId,
                 contextUser.NumberFormat ?? NumberFormat.NoSeparator,
                 newArtistRef,
@@ -543,9 +525,9 @@ public class ImportInteractions : ComponentInteractionModule<ComponentInteractio
         {
             await RespondAsync(InteractionCallback.DeferredModifyMessage);
             await EditToLoaderButton();
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
-            var response = await this._importBuilders.PickArtist(
+            var response = await importBuilders.PickArtist(
                 contextUser.UserId,
                 contextUser.NumberFormat ?? NumberFormat.NoSeparator,
                 artistRef,
@@ -572,20 +554,20 @@ public class ImportInteractions : ComponentInteractionModule<ComponentInteractio
         {
             await RespondAsync(InteractionCallback.DeferredModifyMessage);
             await EditToLoaderButton("Deleting selected imports...");
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
-            var artist = this._importService.GetImportRef(artistRef)?.Artist;
+            var artist = importService.GetImportRef(artistRef)?.Artist;
 
             if (artist != null)
             {
-                await this._importService.DeleteArtistImports(contextUser, artist);
+                await importService.DeleteArtistImports(contextUser, artist);
                 if (contextUser.DataSource != DataSource.LastFm)
                 {
-                    _ = this._indexService.RecalculateTopLists(contextUser);
+                    _ = indexService.RecalculateTopLists(contextUser);
                 }
             }
 
-            var response = await this._importBuilders.PickArtist(
+            var response = await importBuilders.PickArtist(
                 contextUser.UserId,
                 contextUser.NumberFormat ?? NumberFormat.NoSeparator,
                 artistRef,
@@ -612,22 +594,22 @@ public class ImportInteractions : ComponentInteractionModule<ComponentInteractio
         {
             await RespondAsync(InteractionCallback.DeferredModifyMessage);
             await EditToLoaderButton("Editing selected imports...");
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
-            var selectedAlbum = this._importService.GetImportRef(selectedAlbumRef);
-            var newAlbum = this._importService.GetImportRef(newAlbumRef);
+            var selectedAlbum = importService.GetImportRef(selectedAlbumRef);
+            var newAlbum = importService.GetImportRef(newAlbumRef);
 
             if (selectedAlbum != null && newAlbum != null)
             {
-                await this._importService.RenameAlbumImports(contextUser, selectedAlbum.Artist, selectedAlbum.Album,
+                await importService.RenameAlbumImports(contextUser, selectedAlbum.Artist, selectedAlbum.Album,
                     newAlbum.Artist, newAlbum.Album);
                 if (contextUser.DataSource != DataSource.LastFm)
                 {
-                    _ = this._indexService.RecalculateTopLists(contextUser);
+                    _ = indexService.RecalculateTopLists(contextUser);
                 }
             }
 
-            var response = await this._importBuilders.PickAlbum(
+            var response = await importBuilders.PickAlbum(
                 contextUser.UserId,
                 contextUser.NumberFormat ?? NumberFormat.NoSeparator,
                 newAlbumRef,
@@ -655,9 +637,9 @@ public class ImportInteractions : ComponentInteractionModule<ComponentInteractio
         {
             await RespondAsync(InteractionCallback.DeferredModifyMessage);
             await EditToLoaderButton();
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
-            var response = await this._importBuilders.PickAlbum(
+            var response = await importBuilders.PickAlbum(
                 contextUser.UserId,
                 contextUser.NumberFormat ?? NumberFormat.NoSeparator,
                 albumRef,
@@ -684,20 +666,20 @@ public class ImportInteractions : ComponentInteractionModule<ComponentInteractio
         {
             await RespondAsync(InteractionCallback.DeferredModifyMessage);
             await EditToLoaderButton("Deleting selected imports...");
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
-            var album = this._importService.GetImportRef(albumRef);
+            var album = importService.GetImportRef(albumRef);
 
             if (album != null)
             {
-                await this._importService.DeleteAlbumImports(contextUser, album.Artist, album.Album);
+                await importService.DeleteAlbumImports(contextUser, album.Artist, album.Album);
                 if (contextUser.DataSource != DataSource.LastFm)
                 {
-                    _ = this._indexService.RecalculateTopLists(contextUser);
+                    _ = indexService.RecalculateTopLists(contextUser);
                 }
             }
 
-            var response = await this._importBuilders.PickAlbum(
+            var response = await importBuilders.PickAlbum(
                 contextUser.UserId,
                 contextUser.NumberFormat ?? NumberFormat.NoSeparator,
                 albumRef,
@@ -724,22 +706,22 @@ public class ImportInteractions : ComponentInteractionModule<ComponentInteractio
         {
             await RespondAsync(InteractionCallback.DeferredModifyMessage);
             await EditToLoaderButton("Editing selected imports...");
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
-            var selectedTrack = this._importService.GetImportRef(selectedTrackRef);
-            var newTrack = this._importService.GetImportRef(newTrackRef);
+            var selectedTrack = importService.GetImportRef(selectedTrackRef);
+            var newTrack = importService.GetImportRef(newTrackRef);
 
             if (selectedTrack != null && newTrack != null)
             {
-                await this._importService.RenameTrackImports(contextUser, selectedTrack.Artist, selectedTrack.Track,
+                await importService.RenameTrackImports(contextUser, selectedTrack.Artist, selectedTrack.Track,
                     newTrack.Artist, newTrack.Track);
                 if (contextUser.DataSource != DataSource.LastFm)
                 {
-                    _ = this._indexService.RecalculateTopLists(contextUser);
+                    _ = indexService.RecalculateTopLists(contextUser);
                 }
             }
 
-            var response = await this._importBuilders.PickTrack(
+            var response = await importBuilders.PickTrack(
                 contextUser.UserId,
                 contextUser.NumberFormat ?? NumberFormat.NoSeparator,
                 newTrackRef,
@@ -767,9 +749,9 @@ public class ImportInteractions : ComponentInteractionModule<ComponentInteractio
         {
             await RespondAsync(InteractionCallback.DeferredModifyMessage);
             await EditToLoaderButton();
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
-            var response = await this._importBuilders.PickTrack(
+            var response = await importBuilders.PickTrack(
                 contextUser.UserId,
                 contextUser.NumberFormat ?? NumberFormat.NoSeparator,
                 trackRef,
@@ -796,20 +778,20 @@ public class ImportInteractions : ComponentInteractionModule<ComponentInteractio
         {
             await RespondAsync(InteractionCallback.DeferredModifyMessage);
             await EditToLoaderButton("Deleting selected imports...");
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
-            var track = this._importService.GetImportRef(trackRef);
+            var track = importService.GetImportRef(trackRef);
 
             if (track != null)
             {
-                await this._importService.DeleteTrackImports(contextUser, track.Artist, track.Track);
+                await importService.DeleteTrackImports(contextUser, track.Artist, track.Track);
                 if (contextUser.DataSource != DataSource.LastFm)
                 {
-                    _ = this._indexService.RecalculateTopLists(contextUser);
+                    _ = indexService.RecalculateTopLists(contextUser);
                 }
             }
 
-            var response = await this._importBuilders.PickTrack(
+            var response = await importBuilders.PickTrack(
                 contextUser.UserId,
                 contextUser.NumberFormat ?? NumberFormat.NoSeparator,
                 trackRef,

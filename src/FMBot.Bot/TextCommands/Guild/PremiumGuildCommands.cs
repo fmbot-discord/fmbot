@@ -18,34 +18,21 @@ namespace FMBot.Bot.TextCommands.Guild;
 
 [ExcludeFromHelp]
 [ModuleName("Premium server settings")]
-public class PremiumGuildCommands : BaseCommandModule
+public class PremiumGuildCommands(
+    IOptions<BotSettings> botSettings,
+    InteractiveService interactivity,
+    GuildService guildService,
+    UserService userService,
+    AdminService adminService,
+    IPrefixService prefixService,
+    PremiumSettingBuilder premiumSettingBuilder)
+    : BaseCommandModule(botSettings)
 {
-    private readonly AdminService _adminService;
-    private readonly GuildService _guildService;
-    private readonly UserService _userService;
+    private readonly AdminService _adminService = adminService;
+    private readonly GuildService _guildService = guildService;
+    private readonly UserService _userService = userService;
 
-    private readonly PremiumSettingBuilder _premiumSettingBuilder;
-
-    private readonly IPrefixService _prefixService;
-
-    private InteractiveService Interactivity { get; }
-
-    public PremiumGuildCommands(
-        IOptions<BotSettings> botSettings,
-        InteractiveService interactivity,
-        GuildService guildService,
-        UserService userService,
-        AdminService adminService,
-        IPrefixService prefixService,
-        PremiumSettingBuilder premiumSettingBuilder) : base(botSettings)
-    {
-        this.Interactivity = interactivity;
-        this._guildService = guildService;
-        this._userService = userService;
-        this._adminService = adminService;
-        this._prefixService = prefixService;
-        this._premiumSettingBuilder = premiumSettingBuilder;
-    }
+    private InteractiveService Interactivity { get; } = interactivity;
 
     [Command("allowedroles", "wkwhitelist", "wkroles", "whoknowswhitelist", "whoknowsroles")]
     [Summary("Sets roles that are allowed to be in server-wide charts")]
@@ -63,9 +50,9 @@ public class PremiumGuildCommands : BaseCommandModule
 
         try
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
-            var response = await this._premiumSettingBuilder.AllowedRoles(new ContextModel(this.Context, prfx));
+            var response = await premiumSettingBuilder.AllowedRoles(new ContextModel(this.Context, prfx));
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -92,9 +79,9 @@ public class PremiumGuildCommands : BaseCommandModule
 
         try
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
-            var response = await this._premiumSettingBuilder.BlockedRoles(new ContextModel(this.Context, prfx));
+            var response = await premiumSettingBuilder.BlockedRoles(new ContextModel(this.Context, prfx));
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -121,9 +108,9 @@ public class PremiumGuildCommands : BaseCommandModule
 
         try
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
-            var response = await this._premiumSettingBuilder.BotManagementRoles(new ContextModel(this.Context, prfx));
+            var response = await premiumSettingBuilder.BotManagementRoles(new ContextModel(this.Context, prfx));
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -150,9 +137,9 @@ public class PremiumGuildCommands : BaseCommandModule
 
         try
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
-            var response = await this._premiumSettingBuilder.BotManagementRoles(new ContextModel(this.Context, prfx));
+            var response = await premiumSettingBuilder.BotManagementRoles(new ContextModel(this.Context, prfx));
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -179,9 +166,9 @@ public class PremiumGuildCommands : BaseCommandModule
 
         try
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
-            var response = await this._premiumSettingBuilder.SetGuildActivityThreshold(new ContextModel(this.Context, prfx));
+            var response = await premiumSettingBuilder.SetGuildActivityThreshold(new ContextModel(this.Context, prfx));
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);

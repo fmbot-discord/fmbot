@@ -29,61 +29,35 @@ using Web.InternalApi;
 namespace FMBot.Bot.TextCommands;
 
 [ModuleName("Static commands")]
-public class StaticCommands : BaseCommandModule
+public class StaticCommands(
+    CommandService<CommandContext> service,
+    FriendsService friendsService,
+    GuildService guildService,
+    IPrefixService prefixService,
+    UserService userService,
+    IOptions<BotSettings> botSettings,
+    InteractiveService interactivity,
+    MusicBotService musicBotService,
+    StaticBuilders staticBuilders,
+    StatusHandler.StatusHandlerClient statusHandler,
+    ShardedGatewayClient client)
+    : BaseCommandModule(botSettings)
 {
-    private readonly CommandService<CommandContext> _service;
-    private readonly FriendsService _friendService;
-    private readonly GuildService _guildService;
-    private readonly IPrefixService _prefixService;
-    private readonly SupporterService _supporterService;
-    private readonly UserService _userService;
-    private readonly MusicBotService _musicBotService;
-    private readonly StaticBuilders _staticBuilders;
-    private readonly StatusHandler.StatusHandlerClient _statusHandler;
-    private readonly ShardedGatewayClient _client;
+    private InteractiveService Interactivity { get; } = interactivity;
 
-    private InteractiveService Interactivity { get; }
-
-    private static readonly List<DateTimeOffset> StackCooldownTimer = new();
-    private static readonly List<User> StackCooldownTarget = new();
-
-    public StaticCommands(
-        CommandService<CommandContext> service,
-        FriendsService friendsService,
-        GuildService guildService,
-        IPrefixService prefixService,
-        SupporterService supporterService,
-        UserService userService,
-        IOptions<BotSettings> botSettings,
-        InteractiveService interactivity,
-        MusicBotService musicBotService,
-        StaticBuilders staticBuilders,
-        StatusHandler.StatusHandlerClient statusHandler,
-        ShardedGatewayClient client) : base(botSettings)
-    {
-        this._friendService = friendsService;
-        this._guildService = guildService;
-        this._prefixService = prefixService;
-        this._service = service;
-        this._supporterService = supporterService;
-        this._userService = userService;
-        this.Interactivity = interactivity;
-        this._musicBotService = musicBotService;
-        this._staticBuilders = staticBuilders;
-        this._statusHandler = statusHandler;
-        this._client = client;
-    }
+    private static readonly List<DateTimeOffset> StackCooldownTimer = [];
+    private static readonly List<User> StackCooldownTarget = [];
 
     [Command("invite", "server", "info")]
     [Summary("Info for inviting the bot to a server")]
     [CommandCategories(CommandCategory.Other)]
     public async Task InviteAsync()
     {
-        var selfId = this._client.Id.ToString();
+        var selfId = client.Id.ToString();
         var embedDescription = new StringBuilder();
         this._embed.WithColor(DiscordConstants.InformationColorBlue);
 
-        if (this._client.Id == Constants.BotBetaId)
+        if (client.Id == Constants.BotBetaId)
         {
             embedDescription.AppendLine(
                 "The version of the bot you're currently using is the beta version, which is used to test new features and fixes.");
@@ -166,8 +140,8 @@ public class StaticCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Other)]
     public async Task OutOfSyncAsync([CommandParameter(Remainder = true)] string options = null)
     {
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+        var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
 
         var response = StaticBuilders.OutOfSync(new ContextModel(this.Context, prfx, userSettings));
 
@@ -180,10 +154,10 @@ public class StaticCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Other)]
     public async Task GetSupporter()
     {
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
-        var response = await this._staticBuilders.SupporterButtons(new ContextModel(this.Context, prfx, contextUser),
+        var response = await staticBuilders.SupporterButtons(new ContextModel(this.Context, prfx, contextUser),
             true, false, true, "getsupporter");
 
         await this.Context.SendResponse(this.Interactivity, response);
@@ -195,7 +169,7 @@ public class StaticCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Other)]
     public async Task StatusAsync()
     {
-        var selfUser = this._client.GetCurrentUser();
+        var selfUser = client.GetCurrentUser();
         this._embed.WithColor(DiscordConstants.InformationColorBlue);
 
         this._embedAuthor.WithIconUrl(selfUser?.GetAvatarUrl()?.ToString());
@@ -214,9 +188,9 @@ public class StaticCommands : BaseCommandModule
         var upTime = (double)ticks / Stopwatch.Frequency;
         var upTimeInSeconds = TimeSpan.FromSeconds(upTime);
 
-        var totalGuilds = this._client.Sum(shard => shard.Cache.Guilds.Count);
-        var totalMembers = this._client.SelectMany(shard => shard.Cache.Guilds.Values).Sum(g => g.ApproximateUserCount ?? 0);
-        var shardCount = this._client.Count();
+        var totalGuilds = client.Sum(shard => shard.Cache.Guilds.Count);
+        var totalMembers = client.SelectMany(shard => shard.Cache.Guilds.Values).Sum(g => g.ApproximateUserCount ?? 0);
+        var shardCount = client.Count();
         var currentShardId = this.Context.Guild != null ? GetShardIdForGuild(this.Context.Guild.Id, shardCount) : 0;
 
         var description = "";
@@ -224,8 +198,8 @@ public class StaticCommands : BaseCommandModule
         description += $"**Instance Uptime:** `{startTime.ToReadableString()}`\n";
         description += $"**Server Uptime:** `{upTimeInSeconds.ToReadableString()}`\n";
         description +=
-            $"**Usercount:** `{await this._userService.GetTotalUserCountAsync()}`  (Authorized: `{await this._userService.GetTotalAuthorizedUserCountAsync()}` | Discord: `{totalMembers}`)\n";
-        description += $"**Friendcount:** `{await this._friendService.GetTotalFriendCountAsync()}`\n";
+            $"**Usercount:** `{await userService.GetTotalUserCountAsync()}`  (Authorized: `{await userService.GetTotalAuthorizedUserCountAsync()}` | Discord: `{totalMembers}`)\n";
+        description += $"**Friendcount:** `{await friendsService.GetTotalFriendCountAsync()}`\n";
         description +=
             $"**Servercount:** `{totalGuilds}`  (Shards: `{shardCount}` (`{currentShardId}`))\n";
         description +=
@@ -234,7 +208,7 @@ public class StaticCommands : BaseCommandModule
         var instanceOverviewDescription = new StringBuilder();
         try
         {
-            var instanceOverview = await this._statusHandler.GetOverviewAsync(new Empty());
+            var instanceOverview = await statusHandler.GetOverviewAsync(new Empty());
 
             foreach (var instance in instanceOverview.Instances.OrderBy(o => o.InstanceName.Length)
                          .ThenBy(o => o.InstanceName))
@@ -287,7 +261,7 @@ public class StaticCommands : BaseCommandModule
     {
         this._embed.WithTitle("Bot instance shards");
 
-        var shards = this._client.ToList();
+        var shards = client.ToList();
         var totalGuilds = shards.Sum(s => s.Cache.Guilds.Count);
         var shardCount = shards.Count;
 
@@ -349,7 +323,7 @@ public class StaticCommands : BaseCommandModule
     [ExcludeFromHelp]
     public async Task DebugBotScrobbles()
     {
-        var logs = this._musicBotService.BotScrobblingLogs.Where(w => w.GuildId == this.Context.Guild.Id);
+        var logs = musicBotService.BotScrobblingLogs.Where(w => w.GuildId == this.Context.Guild.Id);
 
         var logPages = logs.OrderByDescending(o => o.DateTime).Chunk(25).ToList();
         var pageCounter = 1;
@@ -405,7 +379,7 @@ public class StaticCommands : BaseCommandModule
             return;
         }
 
-        var shards = this._client.ToList();
+        var shards = client.ToList();
         var shardCount = shards.Count;
         GatewayClient shard = null;
 
@@ -457,8 +431,8 @@ public class StaticCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Other)]
     public async Task HelpAsync([CommandParameter(Remainder = true)] string extraValues = null)
     {
-        var prefix = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var allCommands = this._service.GetCommands().SelectMany(kvp => kvp.Value).ToList();
+        var prefix = prefixService.GetPrefix(this.Context.Guild?.Id);
+        var allCommands = service.GetCommands().SelectMany(kvp => kvp.Value).ToList();
         var userName = GetUserDisplayName(this.Context.Message.Author as GuildUser, this.Context.User);
 
         try
@@ -473,7 +447,7 @@ public class StaticCommands : BaseCommandModule
                 selectedCommand = extraValues.Trim();
             }
 
-            var response = await this._staticBuilders.BuildHelpResponse(
+            var response = await staticBuilders.BuildHelpResponse(
                 allCommands,
                 prefix,
                 null,
@@ -500,10 +474,10 @@ public class StaticCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Other)]
     public async Task AllSupportersAsync()
     {
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+        var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
 
-        var response = await this._staticBuilders.SupportersAsync(new ContextModel(this.Context, prfx, userSettings));
+        var response = await staticBuilders.SupportersAsync(new ContextModel(this.Context, prfx, userSettings));
 
         await this.Context.SendResponse(this.Interactivity, response);
         this.Context.LogCommandUsed(response.CommandResponse);
@@ -514,7 +488,7 @@ public class StaticCommands : BaseCommandModule
     [ExcludeFromHelp]
     public async Task CountdownAsync(int countdown = 3)
     {
-        if (this._guildService.CheckIfDM(this.Context))
+        if (guildService.CheckIfDM(this.Context))
         {
             await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Command is not supported in DMs." });
             this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
@@ -677,13 +651,13 @@ public class StaticCommands : BaseCommandModule
     [Summary("Displays all available commands.")]
     public async Task FullHelpAsync()
     {
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
         this._embed.WithColor(DiscordConstants.InformationColorBlue);
 
         this._embed.WithDescription("**See a list of all available commands below.**\n" +
                                     $"Use `{prfx}serverhelp` to view all your configurable server settings.");
 
-        var allCommands = this._service.GetCommands().SelectMany(kvp => kvp.Value)
+        var allCommands = service.GetCommands().SelectMany(kvp => kvp.Value)
             .Where(w => !GetAllAttributes(w).OfType<ExcludeFromHelp>().Any() &&
                         !GetAllAttributes(w).OfType<ServerStaffOnly>().Any())
             .ToList();
@@ -727,13 +701,13 @@ public class StaticCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Other)]
     public async Task ServerHelpAsync()
     {
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
         this._embed.WithColor(DiscordConstants.InformationColorBlue);
 
         this._embed.WithDescription("**See all server settings below.**\n" +
                                     "These commands require either the `Admin` or the `Ban Members` permission.");
 
-        var allCommands = this._service.GetCommands().SelectMany(kvp => kvp.Value)
+        var allCommands = service.GetCommands().SelectMany(kvp => kvp.Value)
             .Where(w => !GetAllAttributes(w).OfType<ExcludeFromHelp>().Any() &&
                         GetAllAttributes(w).OfType<ServerStaffOnly>().Any())
             .ToList();
@@ -773,13 +747,13 @@ public class StaticCommands : BaseCommandModule
     [ExcludeFromHelp]
     public async Task StaffHelpAsync()
     {
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
         this._embed.WithColor(DiscordConstants.InformationColorBlue);
 
         this._embed.WithDescription("**See all .fmbot staff commands below.**\n" +
                                     "These commands require .fmbot admin or owner.");
 
-        var allCommands = this._service.GetCommands().SelectMany(kvp => kvp.Value)
+        var allCommands = service.GetCommands().SelectMany(kvp => kvp.Value)
             .Where(w => GetAllAttributes(w).OfType<ExcludeFromHelp>().Any())
             .ToList();
 

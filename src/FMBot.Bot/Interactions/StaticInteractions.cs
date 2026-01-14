@@ -10,7 +10,6 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Services;
-using FMBot.Domain;
 using FMBot.Domain.Models;
 using NetCord;
 using NetCord.Rest;
@@ -20,31 +19,15 @@ using Shared.Domain.Enums;
 
 namespace FMBot.Bot.Interactions;
 
-public class StaticInteractions : ComponentInteractionModule<ComponentInteractionContext>
+public class StaticInteractions(
+    UserService userService,
+    StaticBuilders staticBuilders,
+    SupporterService supporterService,
+    InteractiveService interactivity,
+    CommandService<CommandContext> commandService,
+    IPrefixService prefixService)
+    : ComponentInteractionModule<ComponentInteractionContext>
 {
-    private readonly UserService _userService;
-    private readonly StaticBuilders _staticBuilders;
-    private readonly SupporterService _supporterService;
-    private readonly InteractiveService _interactivity;
-    private readonly CommandService<CommandContext> _commandService;
-    private readonly IPrefixService _prefixService;
-
-    public StaticInteractions(
-        UserService userService,
-        StaticBuilders staticBuilders,
-        SupporterService supporterService,
-        InteractiveService interactivity,
-        CommandService<CommandContext> commandService,
-        IPrefixService prefixService)
-    {
-        this._userService = userService;
-        this._staticBuilders = staticBuilders;
-        this._supporterService = supporterService;
-        this._interactivity = interactivity;
-        this._commandService = commandService;
-        this._prefixService = prefixService;
-    }
-
     [ComponentInteraction(InteractionConstants.SupporterLinks.GetPurchaseButtons)]
     [UserSessionRequired]
     public async Task SupporterButtonsWithSource(string newResponse, string expandWithPerks, string showExpandButton,
@@ -52,15 +35,15 @@ public class StaticInteractions : ComponentInteractionModule<ComponentInteractio
     {
         try
         {
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var response = await this._staticBuilders.SupporterButtons(new ContextModel(this.Context, contextUser),
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+            var response = await staticBuilders.SupporterButtons(new ContextModel(this.Context, contextUser),
                 expandWithPerks.Equals("true", StringComparison.OrdinalIgnoreCase),
                 showExpandButton.Equals("true", StringComparison.OrdinalIgnoreCase),
                 userLocale: this.Context.Interaction.UserLocale, source: source);
 
             if (newResponse.Equals("true", StringComparison.OrdinalIgnoreCase))
             {
-                await this.Context.SendResponse(this._interactivity, response, true);
+                await this.Context.SendResponse(interactivity, response, true);
             }
             else
             {
@@ -85,14 +68,14 @@ public class StaticInteractions : ComponentInteractionModule<ComponentInteractio
     [UserSessionRequired]
     public async Task GetSupporterLink(string type, string source)
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var existingStripeSupporter = await this._supporterService.GetStripeSupporter(contextUser.DiscordUserId);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var existingStripeSupporter = await supporterService.GetStripeSupporter(contextUser.DiscordUserId);
 
         var pricing =
-            await this._supporterService.GetPricing(this.Context.Interaction.UserLocale,
+            await supporterService.GetPricing(this.Context.Interaction.UserLocale,
                 existingStripeSupporter?.Currency);
 
-        var link = await this._supporterService.GetSupporterCheckoutLink(this.Context.User.Id,
+        var link = await supporterService.GetSupporterCheckoutLink(this.Context.User.Id,
             contextUser.UserNameLastFM, type, pricing, existingStripeSupporter, source);
 
         var components = new ActionRowProperties().WithButton($"Complete purchase", url: link,
@@ -133,8 +116,8 @@ public class StaticInteractions : ComponentInteractionModule<ComponentInteractio
     [UserSessionRequired]
     public async Task GetManageOverview()
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var existingSupporter = await this._supporterService.GetSupporter(contextUser.DiscordUserId);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var existingSupporter = await supporterService.GetSupporter(contextUser.DiscordUserId);
 
         var embed = new EmbedProperties();
         embed.WithColor(DiscordConstants.InformationColorBlue);
@@ -227,8 +210,8 @@ public class StaticInteractions : ComponentInteractionModule<ComponentInteractio
     [UserSessionRequired]
     public async Task GetManageLink()
     {
-        var stripeSupporter = await this._supporterService.GetStripeSupporter(this.Context.User.Id);
-        var stripeManageLink = await this._supporterService.GetSupporterManageLink(stripeSupporter);
+        var stripeSupporter = await supporterService.GetStripeSupporter(this.Context.User.Id);
+        var stripeManageLink = await supporterService.GetSupporterManageLink(stripeSupporter);
 
         var embed = new EmbedProperties();
         embed.WithDescription($"**Click the unique link below to manage your supporter.**");
@@ -249,10 +232,10 @@ public class StaticInteractions : ComponentInteractionModule<ComponentInteractio
     {
         await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
 
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var recipientDiscordId = ulong.Parse(recipientId);
 
-        var recipientUser = await this._userService.GetUserAsync(recipientDiscordId);
+        var recipientUser = await userService.GetUserAsync(recipientDiscordId);
         if (recipientUser == null)
         {
             await Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
@@ -261,8 +244,8 @@ public class StaticInteractions : ComponentInteractionModule<ComponentInteractio
             return;
         }
 
-        var existingStripeSupporter = await this._supporterService.GetStripeSupporter(this.Context.User.Id);
-        var pricing = await this._supporterService.GetPricing(this.Context.Interaction.UserLocale,
+        var existingStripeSupporter = await supporterService.GetStripeSupporter(this.Context.User.Id);
+        var pricing = await supporterService.GetPricing(this.Context.Interaction.UserLocale,
             existingStripeSupporter?.Currency, StripeSupporterType.GiftedSupporter);
         var priceId = duration switch
         {
@@ -291,7 +274,7 @@ public class StaticInteractions : ComponentInteractionModule<ComponentInteractio
 
         try
         {
-            var checkoutLink = await this._supporterService.GetSupporterGiftCheckoutLink(
+            var checkoutLink = await supporterService.GetSupporterGiftCheckoutLink(
                 contextUser.DiscordUserId,
                 contextUser.UserNameLastFM,
                 priceId,
@@ -348,11 +331,11 @@ public class StaticInteractions : ComponentInteractionModule<ComponentInteractio
 
             Enum.TryParse<CommandCategory>(selectedCategory, out var category);
 
-            var prefix = this._prefixService.GetPrefix(this.Context.Interaction.GuildId);
-            var allCommands = this._commandService.GetCommands().SelectMany(kvp => kvp.Value).ToList();
+            var prefix = prefixService.GetPrefix(this.Context.Interaction.GuildId);
+            var allCommands = commandService.GetCommands().SelectMany(kvp => kvp.Value).ToList();
             var userName = this.Context.User.GlobalName ?? this.Context.User.Username;
 
-            var response = await this._staticBuilders.BuildHelpResponse(
+            var response = await staticBuilders.BuildHelpResponse(
                 allCommands,
                 prefix,
                 category,
@@ -360,7 +343,7 @@ public class StaticInteractions : ComponentInteractionModule<ComponentInteractio
                 userName,
                 this.Context.User.Id);
 
-            await this.Context.UpdateInteractionEmbed(response, this._interactivity, defer: false);
+            await this.Context.UpdateInteractionEmbed(response, interactivity, defer: false);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
@@ -384,11 +367,11 @@ public class StaticInteractions : ComponentInteractionModule<ComponentInteractio
                 return;
             }
 
-            var prefix = this._prefixService.GetPrefix(this.Context.Interaction.GuildId);
-            var allCommands = this._commandService.GetCommands().SelectMany(kvp => kvp.Value).ToList();
+            var prefix = prefixService.GetPrefix(this.Context.Interaction.GuildId);
+            var allCommands = commandService.GetCommands().SelectMany(kvp => kvp.Value).ToList();
             var userName = this.Context.User.GlobalName ?? this.Context.User.Username;
 
-            var response = await this._staticBuilders.BuildHelpResponse(
+            var response = await staticBuilders.BuildHelpResponse(
                 allCommands,
                 prefix,
                 null,
@@ -396,7 +379,7 @@ public class StaticInteractions : ComponentInteractionModule<ComponentInteractio
                 userName,
                 this.Context.User.Id);
 
-            await this.Context.UpdateInteractionEmbed(response, this._interactivity, defer: false);
+            await this.Context.UpdateInteractionEmbed(response, interactivity, defer: false);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)

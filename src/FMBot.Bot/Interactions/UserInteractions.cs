@@ -17,12 +17,10 @@ using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Attributes;
 using FMBot.Domain.Enums;
-using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
 using NetCord;
-using NetCord.Gateway;
 using NetCord.Rest;
 using NetCord.Services.ComponentInteractions;
 using GuildUser = FMBot.Persistence.Domain.Models.GuildUser;
@@ -30,57 +28,25 @@ using User = FMBot.Persistence.Domain.Models.User;
 
 namespace FMBot.Bot.Interactions;
 
-public class UserInteractions : ComponentInteractionModule<ComponentInteractionContext>
+public class UserInteractions(
+    UserService userService,
+    FriendsService friendsService,
+    UserBuilder userBuilder,
+    InteractiveService interactivity,
+    SettingService settingService,
+    GuildService guildService,
+    IDataSourceFactory dataSourceFactory,
+    IndexService indexService,
+    AdminService adminService,
+    ArtistsService artistsService,
+    TrackService trackService,
+    IPrefixService prefixService,
+    ImportService importService,
+    PlayService playService,
+    IOptions<BotSettings> botSettings)
+    : ComponentInteractionModule<ComponentInteractionContext>
 {
-    private readonly UserService _userService;
-    private readonly FriendsService _friendsService;
-    private readonly UserBuilder _userBuilder;
-    private readonly InteractiveService _interactivity;
-    private readonly SettingService _settingService;
-    private readonly GuildService _guildService;
-    private readonly IDataSourceFactory _dataSourceFactory;
-    private readonly IndexService _indexService;
-    private readonly AdminService _adminService;
-    private readonly ArtistsService _artistsService;
-    private readonly TrackService _trackService;
-    private readonly IPrefixService _prefixService;
-    private readonly ImportService _importService;
-    private readonly PlayService _playService;
-    private readonly BotSettings _botSettings;
-
-    public UserInteractions(
-        UserService userService,
-        FriendsService friendsService,
-        UserBuilder userBuilder,
-        InteractiveService interactivity,
-        SettingService settingService,
-        GuildService guildService,
-        IDataSourceFactory dataSourceFactory,
-        IndexService indexService,
-        AdminService adminService,
-        ArtistsService artistsService,
-        TrackService trackService,
-        IPrefixService prefixService,
-        ImportService importService,
-        PlayService playService,
-        IOptions<BotSettings> botSettings)
-    {
-        this._userService = userService;
-        this._friendsService = friendsService;
-        this._userBuilder = userBuilder;
-        this._interactivity = interactivity;
-        this._settingService = settingService;
-        this._guildService = guildService;
-        this._dataSourceFactory = dataSourceFactory;
-        this._indexService = indexService;
-        this._adminService = adminService;
-        this._artistsService = artistsService;
-        this._trackService = trackService;
-        this._prefixService = prefixService;
-        this._importService = importService;
-        this._playService = playService;
-        this._botSettings = botSettings.Value;
-    }
+    private readonly BotSettings _botSettings = botSettings.Value;
 
     [ComponentInteraction(InteractionConstants.RemoveFmbotAccount)]
     [UsernameSetRequired]
@@ -129,7 +95,7 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
             return;
         }
 
-        var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
 
         if (userSettings == null)
         {
@@ -148,10 +114,10 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
 
             await this.Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
 
-            await this._friendsService.RemoveAllFriendsAsync(userSettings.UserId);
-            await this._friendsService.RemoveUserFromOtherFriendsAsync(userSettings.UserId);
+            await friendsService.RemoveAllFriendsAsync(userSettings.UserId);
+            await friendsService.RemoveUserFromOtherFriendsAsync(userSettings.UserId);
 
-            await this._userService.DeleteUser(userSettings.UserId);
+            await userService.DeleteUser(userSettings.UserId);
 
             var followUpEmbed = new EmbedProperties();
             followUpEmbed.WithTitle("Removal successful");
@@ -172,12 +138,12 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
     {
         try
         {
-            var contextUser = await this._userService.GetUserAsync(this.Context.User.Id);
+            var contextUser = await userService.GetUserAsync(this.Context.User.Id);
             var supporterRequiredResponse =
                 UserBuilder.ShortcutsSupporterRequired(new ContextModel(this.Context, contextUser));
             if (supporterRequiredResponse != null)
             {
-                await this.Context.SendResponse(this._interactivity, supporterRequiredResponse, true);
+                await this.Context.SendResponse(interactivity, supporterRequiredResponse, true);
                 this.Context.LogCommandUsed(supporterRequiredResponse.CommandResponse);
                 return;
             }
@@ -211,7 +177,7 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
     {
         try
         {
-            var shortcut = await this._userBuilder.GetShortcut(int.Parse(shortcutId));
+            var shortcut = await userBuilder.GetShortcut(int.Parse(shortcutId));
             if (shortcut == null)
             {
                 await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
@@ -239,9 +205,9 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
         {
             var input = this.Context.GetModalValue("input");
             var output = this.Context.GetModalValue("output");
-            var contextUser = await this._userService.GetUserAsync(this.Context.User.Id);
+            var contextUser = await userService.GetUserAsync(this.Context.User.Id);
 
-            var response = await this._userBuilder.CreateShortcutAsync(
+            var response = await userBuilder.CreateShortcutAsync(
                 new ContextModel(this.Context, contextUser),
                 input,
                 output);
@@ -251,13 +217,13 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
                 var parsedMessageId = ulong.Parse(messageId);
                 if (parsedMessageId != 0)
                 {
-                    var list = await this._userBuilder.ListShortcutsAsync(new ContextModel(this.Context, contextUser));
+                    var list = await userBuilder.ListShortcutsAsync(new ContextModel(this.Context, contextUser));
                     await this.Context.UpdateMessageEmbed(list, messageId);
                 }
             }
             else
             {
-                await this.Context.SendResponse(this._interactivity, response, ephemeral: true);
+                await this.Context.SendResponse(interactivity, response, ephemeral: true);
                 this.Context.LogCommandUsed(response.CommandResponse);
             }
         }
@@ -277,10 +243,10 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
 
             await this.Context.Interaction.SendResponseAsync(InteractionCallback.DeferredModifyMessage);
 
-            var contextUser = await this._userService.GetUserAsync(this.Context.User.Id);
+            var contextUser = await userService.GetUserAsync(this.Context.User.Id);
             var id = int.Parse(shortcutId);
 
-            var response = await this._userBuilder.ModifyShortcutAsync(
+            var response = await userBuilder.ModifyShortcutAsync(
                 new ContextModel(this.Context, contextUser),
                 id,
                 input,
@@ -291,7 +257,7 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
                 var parsedOverviewMessageId = ulong.Parse(overviewMessageId);
                 if (parsedOverviewMessageId != 0)
                 {
-                    var list = await this._userBuilder.ListShortcutsAsync(new ContextModel(this.Context, contextUser));
+                    var list = await userBuilder.ListShortcutsAsync(new ContextModel(this.Context, contextUser));
                     var overviewMsg = await this.Context.Interaction.Channel.GetMessageAsync(parsedOverviewMessageId);
                     await overviewMsg.ModifyAsync(m =>
                     {
@@ -299,7 +265,7 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
                     });
                 }
 
-                var manage = await this._userBuilder.ManageShortcutAsync(new ContextModel(this.Context, contextUser),
+                var manage = await userBuilder.ManageShortcutAsync(new ContextModel(this.Context, contextUser),
                     id,
                     parsedOverviewMessageId);
                 await this.Context.Interaction.ModifyResponseAsync(m =>
@@ -307,7 +273,7 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
             }
             else
             {
-                await this.Context.SendFollowUpResponse(this._interactivity, response, ephemeral: true);
+                await this.Context.SendFollowUpResponse(interactivity, response, ephemeral: true);
                 this.Context.LogCommandUsed(response.CommandResponse);
             }
         }
@@ -323,11 +289,11 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
     {
         try
         {
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
             var response = UserBuilder.GetUserSettings(new ContextModel(this.Context, contextUser));
 
-            await this.Context.SendResponse(this._interactivity, response, ephemeral: true);
+            await this.Context.SendResponse(interactivity, response, ephemeral: true);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
@@ -343,8 +309,8 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
         var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
         var setting = stringMenuInteraction.Data.SelectedValues[0].Replace("us-", "");
 
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
         try
         {
@@ -357,28 +323,28 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
                     {
                         response = UserBuilder.Privacy(new ContextModel(this.Context, contextUser));
 
-                        await this.Context.SendResponse(this._interactivity, response, ephemeral: true);
+                        await this.Context.SendResponse(interactivity, response, ephemeral: true);
                         break;
                     }
                     case UserSetting.FmMode:
                     {
                         response = UserBuilder.FmMode(new ContextModel(this.Context, contextUser));
 
-                        await this.Context.SendResponse(this._interactivity, response, ephemeral: true);
+                        await this.Context.SendResponse(interactivity, response, ephemeral: true);
                         break;
                     }
                     case UserSetting.WkMode:
                     {
                         response = UserBuilder.ResponseMode(new ContextModel(this.Context, contextUser));
 
-                        await this.Context.SendResponse(this._interactivity, response, ephemeral: true);
+                        await this.Context.SendResponse(interactivity, response, ephemeral: true);
                         break;
                     }
                     case UserSetting.BotScrobbling:
                     {
                         response = UserBuilder.BotScrobblingAsync(new ContextModel(this.Context, contextUser));
 
-                        await this.Context.SendResponse(this._interactivity, response, ephemeral: true);
+                        await this.Context.SendResponse(interactivity, response, ephemeral: true);
                         break;
                     }
                     case UserSetting.SpotifyImport:
@@ -388,15 +354,15 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
 
                         if (supporterRequired != null)
                         {
-                            await this.Context.SendResponse(this._interactivity, supporterRequired, ephemeral: true);
+                            await this.Context.SendResponse(interactivity, supporterRequired, ephemeral: true);
                             this.Context.LogCommandUsed(supporterRequired.CommandResponse);
                             return;
                         }
 
-                        response = await this._userBuilder.ImportMode(new ContextModel(this.Context, contextUser),
+                        response = await userBuilder.ImportMode(new ContextModel(this.Context, contextUser),
                             contextUser.UserId);
 
-                        await this.Context.SendResponse(this._interactivity, response, ephemeral: true);
+                        await this.Context.SendResponse(interactivity, response, ephemeral: true);
                         break;
                     }
                     case UserSetting.CommandShortcuts:
@@ -406,7 +372,7 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
 
                         if (supporterRequired != null)
                         {
-                            await this.Context.SendResponse(this._interactivity, supporterRequired, ephemeral: true);
+                            await this.Context.SendResponse(interactivity, supporterRequired, ephemeral: true);
                             this.Context.LogCommandUsed(supporterRequired.CommandResponse);
                             return;
                         }
@@ -419,7 +385,7 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
                             .WithEmbeds([serverEmbed])
                             .WithFlags(MessageFlags.Ephemeral)));
 
-                        response = await this._userBuilder.ListShortcutsAsync(new ContextModel(this.Context,
+                        response = await userBuilder.ListShortcutsAsync(new ContextModel(this.Context,
                             contextUser));
                         var dmChannel = await this.Context.User.GetDMChannelAsync();
                         await dmChannel.SendMessageAsync(new MessageProperties { Components = response.ComponentsV2 });
@@ -433,42 +399,42 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
 
                         if (supporterRequired != null)
                         {
-                            await this.Context.SendResponse(this._interactivity, supporterRequired, ephemeral: true);
+                            await this.Context.SendResponse(interactivity, supporterRequired, ephemeral: true);
                             this.Context.LogCommandUsed(supporterRequired.CommandResponse);
                             return;
                         }
 
                         response = UserBuilder.UserReactions(new ContextModel(this.Context, contextUser), prfx);
 
-                        await this.Context.SendResponse(this._interactivity, response, ephemeral: true);
+                        await this.Context.SendResponse(interactivity, response, ephemeral: true);
                         break;
                     }
                     case UserSetting.Localization:
                     {
                         response = UserBuilder.Localization(new ContextModel(this.Context, contextUser));
 
-                        await this.Context.SendResponse(this._interactivity, response, ephemeral: true);
+                        await this.Context.SendResponse(interactivity, response, ephemeral: true);
                         break;
                     }
                     case UserSetting.OutOfSync:
                     {
                         response = StaticBuilders.OutOfSync(new ContextModel(this.Context, contextUser));
 
-                        await this.Context.SendResponse(this._interactivity, response, ephemeral: true);
+                        await this.Context.SendResponse(interactivity, response, ephemeral: true);
                         break;
                     }
                     case UserSetting.LinkedRoles:
                     {
-                        response = this._userBuilder.ManageLinkedRoles(new ContextModel(this.Context, contextUser));
+                        response = userBuilder.ManageLinkedRoles(new ContextModel(this.Context, contextUser));
 
-                        await this.Context.SendResponse(this._interactivity, response, ephemeral: true);
+                        await this.Context.SendResponse(interactivity, response, ephemeral: true);
                         break;
                     }
                     case UserSetting.ManageAlts:
                     {
-                        response = await this._userBuilder.ManageAlts(new ContextModel(this.Context, contextUser));
+                        response = await userBuilder.ManageAlts(new ContextModel(this.Context, contextUser));
 
-                        await this.Context.SendResponse(this._interactivity, response, ephemeral: true);
+                        await this.Context.SendResponse(interactivity, response, ephemeral: true);
                         break;
                     }
                     case UserSetting.DeleteAccount:
@@ -504,8 +470,8 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
     [ComponentInteraction(InteractionConstants.User.Login)]
     public async Task LoginButtonAsync()
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var token = await this._dataSourceFactory.GetAuthToken();
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var token = await dataSourceFactory.GetAuthToken();
 
         try
         {
@@ -518,11 +484,11 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
                 .WithFlags(MessageFlags.Ephemeral)));
             this.Context.LogCommandUsed(CommandResponse.UsernameNotSet);
 
-            var loginResult = await this._userService.GetAndStoreAuthSession(this.Context.User, token.Content.Token);
+            var loginResult = await userService.GetAndStoreAuthSession(this.Context.User, token.Content.Token);
 
             if (loginResult.Status == UserService.LoginStatus.Success)
             {
-                var newUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+                var newUserSettings = await userService.GetUserSettingsAsync(this.Context.User);
 
                 var indexUser = contextUser == null ||
                                 !string.Equals(contextUser.UserNameLastFM, newUserSettings.UserNameLastFM,
@@ -541,7 +507,7 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
 
                 if (indexUser)
                 {
-                    await this._indexService.IndexUser(newUserSettings);
+                    await indexService.IndexUser(newUserSettings);
 
                     loginSuccessResponse =
                         UserBuilder.LoginSuccess(newUserSettings, UserBuilder.LoginState.SuccessIndexComplete);
@@ -555,7 +521,7 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
 
                 if (this.Context.Guild != null)
                 {
-                    var guild = await this._guildService.GetGuildForWhoKnows(this.Context.Guild.Id);
+                    var guild = await guildService.GetGuildForWhoKnows(this.Context.Guild.Id);
                     if (guild != null)
                     {
                         var discordGuildUser = await this.Context.Guild.GetUserAsync(this.Context.User.Id);
@@ -573,7 +539,7 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
                                 discordGuildUser.RoleIds.Contains(guild.WhoKnowsWhitelistRoleId.Value);
                         }
 
-                        await this._indexService.AddGuildUserToDatabase(newGuildUser);
+                        await indexService.AddGuildUserToDatabase(newGuildUser);
                     }
                 }
             }
@@ -608,23 +574,23 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
     public async Task SetPrivacy()
     {
         var embed = new EmbedProperties();
-        var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
 
         var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
         var selectedValue = stringMenuInteraction.Data.SelectedValues[0];
 
         if (Enum.TryParse(selectedValue, out PrivacyLevel privacyLevel))
         {
-            var newPrivacyLevel = await this._userService.SetPrivacyLevel(userSettings.UserId, privacyLevel);
+            var newPrivacyLevel = await userService.SetPrivacyLevel(userSettings.UserId, privacyLevel);
 
             embed.AddField("Your new privacy level", $"Your privacy level has been set to **{newPrivacyLevel}**.");
             if (privacyLevel == PrivacyLevel.Global)
             {
                 var bottedUser =
-                    await this._adminService.GetBottedUserAsync(userSettings.UserNameLastFM,
+                    await adminService.GetBottedUserAsync(userSettings.UserNameLastFM,
                         userSettings.RegisteredLastFm);
                 var filteredUser =
-                    await this._adminService.GetFilteredUserAsync(userSettings.UserNameLastFM,
+                    await adminService.GetFilteredUserAsync(userSettings.UserNameLastFM,
                         userSettings.RegisteredLastFm);
 
                 var globalStatus = new StringBuilder();
@@ -714,14 +680,14 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
     [UsernameSetRequired]
     public async Task FmModePickAsync()
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var guild = await this._guildService.GetGuildAsync(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var guild = await guildService.GetGuildAsync(this.Context.Guild?.Id);
 
         try
         {
             var response = UserBuilder.FmMode(new ContextModel(this.Context, contextUser), guild);
 
-            await this.Context.SendResponse(this._interactivity, response, ephemeral: true);
+            await this.Context.SendResponse(interactivity, response, ephemeral: true);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
@@ -735,14 +701,14 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
     public async Task SetEmbedType()
     {
         var embed = new EmbedProperties();
-        var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
 
         var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
         var selectedValue = stringMenuInteraction.Data.SelectedValues[0];
 
         if (Enum.TryParse(selectedValue, out FmEmbedType embedType))
         {
-            await this._userService.SetSettings(userSettings, embedType, FmCountType.None);
+            await userService.SetSettings(userSettings, embedType, FmCountType.None);
 
             var name = embedType.GetAttribute<OptionAttribute>().Name;
             var description = embedType.GetAttribute<OptionAttribute>().Description;
@@ -761,7 +727,7 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
     public async Task SetFooterOptions()
     {
         var embed = new EmbedProperties();
-        var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
 
         var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
         var selectedValues = stringMenuInteraction.Data.SelectedValues;
@@ -798,7 +764,7 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
     public async Task SetSupporterFooterOptions()
     {
         var embed = new EmbedProperties();
-        var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
 
         if (userSettings.UserType == UserType.User)
         {
@@ -836,7 +802,7 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
 
     private async Task SaveFooterOptions(User userSettings, EmbedProperties embed)
     {
-        userSettings = await this._userService.SetFooterOptions(userSettings, userSettings.FmFooterOptions);
+        userSettings = await userService.SetFooterOptions(userSettings, userSettings.FmFooterOptions);
 
         var description = new StringBuilder();
 
@@ -869,11 +835,11 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
     [UsernameSetRequired]
     public async Task ResponseModePickAsync()
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
         var response = UserBuilder.ResponseMode(new ContextModel(this.Context, contextUser));
 
-        await this.Context.SendResponse(this._interactivity, response, ephemeral: true);
+        await this.Context.SendResponse(interactivity, response, ephemeral: true);
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
@@ -881,14 +847,14 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
     [UsernameSetRequired]
     public async Task SetResponseModeAsync()
     {
-        var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
 
         var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
         var selectedValue = stringMenuInteraction.Data.SelectedValues[0];
 
         if (Enum.TryParse(selectedValue, out ResponseMode mode))
         {
-            var newUserSettings = await this._userService.SetResponseMode(userSettings, mode);
+            var newUserSettings = await userService.SetResponseMode(userSettings, mode);
 
             var reply = new StringBuilder();
             reply.Append($"Your default `WhoKnows` and Top list mode has been set to **{newUserSettings.Mode}**.");
@@ -917,8 +883,8 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
             var discordUserId = ulong.Parse(discordUser);
             var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
 
-            var contextUser = await this._userService.GetFullUserAsync(requesterDiscordUserId);
-            var userSettings = await this._settingService.GetOriginalContextUser(
+            var contextUser = await userService.GetFullUserAsync(requesterDiscordUserId);
+            var userSettings = await settingService.GetOriginalContextUser(
                 discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
 
             var descriptor = userSettings.DifferentUser ? $"**{userSettings.DisplayName}**'s" : "your";
@@ -949,12 +915,12 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
             if (timeSettings.TimePeriod == TimePeriod.Quarterly && !userSettings.DifferentUser)
             {
                 topArtists =
-                    await this._artistsService.GetRecentTopArtists(userSettings.DiscordUserId, daysToGoBack: 90);
+                    await artistsService.GetRecentTopArtists(userSettings.DiscordUserId, daysToGoBack: 90);
             }
             else
             {
                 topArtists =
-                    (await this._dataSourceFactory.GetTopArtistsAsync(userSettings.UserNameLastFm, timeSettings, 20))
+                    (await dataSourceFactory.GetTopArtistsAsync(userSettings.UserNameLastFm, timeSettings, 20))
                     ?.Content?.TopArtists;
             }
 
@@ -962,12 +928,12 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
             if (timeSettings.TimePeriod == TimePeriod.Quarterly && !userSettings.DifferentUser)
             {
                 topTracks =
-                    await this._trackService.GetRecentTopTracks(userSettings.DiscordUserId, daysToGoBack: 90);
+                    await trackService.GetRecentTopTracks(userSettings.DiscordUserId, daysToGoBack: 90);
             }
             else
             {
                 topTracks =
-                    (await this._dataSourceFactory.GetTopTracksAsync(userSettings.UserNameLastFm, timeSettings, 20))
+                    (await dataSourceFactory.GetTopTracksAsync(userSettings.UserNameLastFm, timeSettings, 20))
                     ?.Content?.TopTracks;
             }
 
@@ -986,7 +952,7 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
                 return;
             }
 
-            var response = await this._userBuilder.JudgeHandleAsync(
+            var response = await userBuilder.JudgeHandleAsync(
                 new ContextModel(this.Context, contextUser),
                 userSettings, result, topArtists, topTracks);
 
@@ -1021,9 +987,9 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
             var discordUserId = ulong.Parse(splitInput[1]);
             var requesterDiscordUserId = ulong.Parse(splitInput[2]);
 
-            var contextUser = await this._userService.GetUserWithDiscogs(requesterDiscordUserId);
+            var contextUser = await userService.GetUserWithDiscogs(requesterDiscordUserId);
             var discordContextUser = await this.Context.GetUserAsync(requesterDiscordUserId);
-            var userSettings = await this._settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId,
+            var userSettings = await settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId,
                 this.Context.Guild, this.Context.User);
 
             var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
@@ -1033,10 +999,10 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
             }
 
             var response =
-                await this._userBuilder.FeaturedLogAsync(
+                await userBuilder.FeaturedLogAsync(
                     new ContextModel(this.Context, contextUser, discordContextUser), userSettings, viewType);
 
-            await this.Context.UpdateInteractionEmbed(response, this._interactivity);
+            await this.Context.UpdateInteractionEmbed(response, interactivity);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
@@ -1055,16 +1021,16 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
         var discordUserId = ulong.Parse(discordUser);
         var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
 
-        var contextUser = await this._userService.GetFullUserAsync(requesterDiscordUserId);
+        var contextUser = await userService.GetFullUserAsync(requesterDiscordUserId);
         var discordContextUser = await this.Context.GetUserAsync(requesterDiscordUserId);
-        var userSettings = await this._settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId,
+        var userSettings = await settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId,
             this.Context.Guild, this.Context.User);
 
         var response =
-            await this._userBuilder.ProfileAsync(new ContextModel(this.Context, contextUser, discordContextUser),
+            await userBuilder.ProfileAsync(new ContextModel(this.Context, contextUser, discordContextUser),
                 userSettings);
 
-        await this.Context.UpdateInteractionEmbed(response, this._interactivity, false);
+        await this.Context.UpdateInteractionEmbed(response, interactivity, false);
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
@@ -1080,17 +1046,17 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
             var discordUserId = ulong.Parse(discordUser);
             var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
 
-            var contextUser = await this._userService.GetFullUserAsync(requesterDiscordUserId);
+            var contextUser = await userService.GetFullUserAsync(requesterDiscordUserId);
             var discordContextUser = await this.Context.GetUserAsync(requesterDiscordUserId);
-            var userSettings = await this._settingService.GetOriginalContextUser(
+            var userSettings = await settingService.GetOriginalContextUser(
                 discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
 
             var response =
-                await this._userBuilder.ProfileHistoryAsync(
+                await userBuilder.ProfileHistoryAsync(
                     new ContextModel(this.Context, contextUser, discordContextUser),
                     userSettings);
 
-            await this.Context.UpdateInteractionEmbed(response, this._interactivity, false);
+            await this.Context.UpdateInteractionEmbed(response, interactivity, false);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
@@ -1105,7 +1071,7 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
     {
         try
         {
-            var contextUser = await this._userService.GetUserOrTempUser(this.Context.User);
+            var contextUser = await userService.GetUserOrTempUser(this.Context.User);
 
             if (contextUser == null)
             {
@@ -1119,7 +1085,7 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
             var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
             var selectedValue = stringMenuInteraction.Data.SelectedValues[0];
 
-            var targetUser = await this._userService.GetUserForIdAsync(int.Parse(selectedValue));
+            var targetUser = await userService.GetUserForIdAsync(int.Parse(selectedValue));
 
             if (targetUser == null)
             {
@@ -1138,7 +1104,7 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
             var embed = new EmbedProperties();
             embed.WithColor(DiscordConstants.WarningColorOrange);
 
-            var targetUserDiscord = await this._userService.GetUserFromDiscord(targetUser.DiscordUserId);
+            var targetUserDiscord = await userService.GetUserFromDiscord(targetUser.DiscordUserId);
             embed.WithTitle("Manage .fmbot account");
 
             var description = new StringBuilder();
@@ -1199,7 +1165,7 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
     [ComponentInteraction(InteractionConstants.ManageAlts.ManageAltsDeleteAlt)]
     public async Task DeleteAlt(string transferData, string targetUserId)
     {
-        var contextUser = await this._userService.GetUserOrTempUser(this.Context.User);
+        var contextUser = await userService.GetUserOrTempUser(this.Context.User);
 
         if (contextUser == null)
         {
@@ -1210,7 +1176,7 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
             return;
         }
 
-        var userToDelete = await this._userService.GetUserForIdAsync(int.Parse(targetUserId));
+        var userToDelete = await userService.GetUserForIdAsync(int.Parse(targetUserId));
 
         if (userToDelete == null)
         {
@@ -1242,8 +1208,8 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
         embed.WithDescription(description.ToString());
         embed.WithFooter($"Deleting {userToDelete.DiscordUserId.ToString()}");
 
-        var contextUserHasImported = await this._importService.HasImported(contextUser.UserId);
-        var targetUserHasImported = await this._importService.HasImported(userToDelete.UserId);
+        var contextUserHasImported = await importService.HasImported(contextUser.UserId);
+        var targetUserHasImported = await importService.HasImported(userToDelete.UserId);
 
         if (contextUserHasImported && targetUserHasImported && transferData == "true")
         {
@@ -1273,7 +1239,7 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
             _ = Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
             await this.Context.DisableInteractionButtons(interactionEdit: true);
 
-            var contextUser = await this._userService.GetUserOrTempUser(this.Context.User);
+            var contextUser = await userService.GetUserOrTempUser(this.Context.User);
 
             if (contextUser == null)
             {
@@ -1284,7 +1250,7 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
                 return;
             }
 
-            var userToDelete = await this._userService.GetUserForIdAsync(int.Parse(targetUserId));
+            var userToDelete = await userService.GetUserForIdAsync(int.Parse(targetUserId));
 
             if (userToDelete == null)
             {
@@ -1302,12 +1268,12 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
 
             if (transferData == "true")
             {
-                var contextUserHasImported = await this._importService.HasImported(contextUser.UserId);
+                var contextUserHasImported = await importService.HasImported(contextUser.UserId);
 
-                await this._playService.MoveData(userToDelete.UserId, contextUser.UserId, !contextUserHasImported);
+                await playService.MoveData(userToDelete.UserId, contextUser.UserId, !contextUserHasImported);
             }
 
-            await this._userService.DeleteUser(userToDelete.UserId);
+            await userService.DeleteUser(userToDelete.UserId);
 
             var components =
                 new ActionRowProperties().WithButton(
@@ -1332,7 +1298,7 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
         var embed = new EmbedProperties();
         embed.WithColor(DiscordConstants.InformationColorBlue);
 
-        var hasLinked = await this._userService.HasLinkedRole(Context.User.Id);
+        var hasLinked = await userService.HasLinkedRole(Context.User.Id);
         if (!hasLinked)
         {
             embed.WithDescription("Click the 'Authorize .fmbot' button first to get started.");
@@ -1344,7 +1310,7 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
             return;
         }
 
-        await this._userService.UpdateLinkedRole(Context.User.Id);
+        await userService.UpdateLinkedRole(Context.User.Id);
         embed.WithDescription("Refreshed linked role data");
         await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
             .WithEmbeds([embed])
@@ -1355,7 +1321,7 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
     [ComponentInteraction(InteractionConstants.ManageAlts.ManageAltsButton)]
     public async Task ManageAlts()
     {
-        var contextUser = await this._userService.GetUserOrTempUser(this.Context.User);
+        var contextUser = await userService.GetUserOrTempUser(this.Context.User);
 
         if (contextUser == null)
         {
@@ -1371,9 +1337,9 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
         try
         {
             var response =
-                await this._userBuilder.ManageAlts(new ContextModel(this.Context, contextUser));
+                await userBuilder.ManageAlts(new ContextModel(this.Context, contextUser));
 
-            await this.Context.SendFollowUpResponse(this._interactivity, response, ephemeral: true);
+            await this.Context.SendFollowUpResponse(interactivity, response, ephemeral: true);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
@@ -1387,7 +1353,7 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
     {
         try
         {
-            var contextUser = await this._userService.GetUserAsync(this.Context.User.Id);
+            var contextUser = await userService.GetUserAsync(this.Context.User.Id);
             var id = int.Parse(shortcutId);
             var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
             var context = new ContextModel(this.Context, contextUser);
@@ -1395,15 +1361,15 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
             var supporterRequiredResponse = UserBuilder.ShortcutsSupporterRequired(context);
             if (supporterRequiredResponse != null)
             {
-                await this.Context.SendResponse(this._interactivity, supporterRequiredResponse, true);
+                await this.Context.SendResponse(interactivity, supporterRequiredResponse, true);
                 this.Context.LogCommandUsed(supporterRequiredResponse.CommandResponse);
                 return;
             }
 
             var response =
-                await this._userBuilder.ManageShortcutAsync(context, id, message?.Id ?? 0);
+                await userBuilder.ManageShortcutAsync(context, id, message?.Id ?? 0);
 
-            await this.Context.SendResponse(this._interactivity, response, ephemeral: true);
+            await this.Context.SendResponse(interactivity, response, ephemeral: true);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
@@ -1419,10 +1385,10 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
         {
             await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
 
-            var contextUser = await this._userService.GetUserAsync(this.Context.User.Id);
+            var contextUser = await userService.GetUserAsync(this.Context.User.Id);
             var id = int.Parse(shortcutId);
 
-            var response = await this._userBuilder.DeleteShortcutAsync(
+            var response = await userBuilder.DeleteShortcutAsync(
                 new ContextModel(this.Context, contextUser),
                 id);
 
@@ -1431,7 +1397,7 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
                 var parsedOverviewMessageId = ulong.Parse(overviewMessageId);
                 if (parsedOverviewMessageId != 0)
                 {
-                    var list = await this._userBuilder.ListShortcutsAsync(new ContextModel(this.Context, contextUser));
+                    var list = await userBuilder.ListShortcutsAsync(new ContextModel(this.Context, contextUser));
                     await this.Context.UpdateMessageEmbed(list, overviewMessageId, defer: false);
                 }
 
@@ -1439,7 +1405,7 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
             }
             else
             {
-                await this.Context.SendFollowUpResponse(this._interactivity, response, ephemeral: true);
+                await this.Context.SendFollowUpResponse(interactivity, response, ephemeral: true);
                 this.Context.LogCommandUsed(response.CommandResponse);
             }
         }
@@ -1453,10 +1419,10 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
     [UserSessionRequired]
     public async Task BotScrobblingButtonAsync()
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var response = UserBuilder.BotScrobblingAsync(new ContextModel(this.Context, contextUser));
 
-        await this.Context.SendResponse(this._interactivity, response, true);
+        await this.Context.SendResponse(interactivity, response, true);
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
@@ -1464,7 +1430,7 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
     [UserSessionRequired]
     public async Task EnableBotScrobbling()
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var reply = new StringBuilder();
 
         if (contextUser.MusicBotTrackingDisabled != true)
@@ -1473,7 +1439,7 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
         }
         else
         {
-            await this._userService.ToggleBotScrobblingAsync(contextUser.UserId, false);
+            await userService.ToggleBotScrobblingAsync(contextUser.UserId, false);
             reply.AppendLine("Enabled music bot scrobbling for your account.");
         }
 
@@ -1491,7 +1457,7 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
     [UserSessionRequired]
     public async Task DisableBotScrobbling()
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var reply = new StringBuilder();
 
         if (contextUser.MusicBotTrackingDisabled == true)
@@ -1500,7 +1466,7 @@ public class UserInteractions : ComponentInteractionModule<ComponentInteractionC
         }
         else
         {
-            await this._userService.ToggleBotScrobblingAsync(contextUser.UserId, true);
+            await userService.ToggleBotScrobblingAsync(contextUser.UserId, true);
             reply.AppendLine("Disabled music bot scrobbling for your account.");
         }
 

@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Services;
@@ -16,21 +15,14 @@ using Fergun.Interactive;
 
 namespace FMBot.Bot.SlashCommands;
 
-public class SpotifySlashCommands : ApplicationCommandModule<ApplicationCommandContext>
+public class SpotifySlashCommands(
+    InteractiveService interactivity,
+    SpotifyService spotifyService,
+    UserService userService,
+    IDataSourceFactory dataSourceFactory)
+    : ApplicationCommandModule<ApplicationCommandContext>
 {
-    private readonly SpotifyService _spotifyService;
-    private readonly UserService _userService;
-    private readonly IDataSourceFactory _dataSourceFactory;
-
-    private InteractiveService Interactivity { get; }
-
-    public SpotifySlashCommands(InteractiveService interactivity, SpotifyService spotifyService, UserService userService, IDataSourceFactory dataSourceFactory)
-    {
-        this.Interactivity = interactivity;
-        this._spotifyService = spotifyService;
-        this._userService = userService;
-        this._dataSourceFactory = dataSourceFactory;
-    }
+    private InteractiveService Interactivity { get; } = interactivity;
 
     public enum SpotifySearch
     {
@@ -40,14 +32,21 @@ public class SpotifySlashCommands : ApplicationCommandModule<ApplicationCommandC
         Playlist = 4
     }
 
-    [SlashCommand("spotify", "Search through Spotify", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
+    [SlashCommand("spotify", "Search through Spotify",
+        Contexts =
+            [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild],
+        IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task SpotifyAsync(
-        [SlashCommandParameter(Name = "search", Description = "Search value")] string searchValue = null,
-        [SlashCommandParameter(Name = "type", Description = "What you want to search for on Spotify (defaults to track)")] SpotifySearch type = SpotifySearch.Track,
-        [SlashCommandParameter(Name = "private", Description = "Only show response to you")] bool privateResponse = false)
+        [SlashCommandParameter(Name = "search", Description = "Search value")]
+        string searchValue = null,
+        [SlashCommandParameter(Name = "type",
+            Description = "What you want to search for on Spotify (defaults to track)")]
+        SpotifySearch type = SpotifySearch.Track,
+        [SlashCommandParameter(Name = "private", Description = "Only show response to you")]
+        bool privateResponse = false)
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         await RespondAsync(InteractionCallback.DeferredMessage());
 
         try
@@ -70,11 +69,14 @@ public class SpotifySlashCommands : ApplicationCommandModule<ApplicationCommandC
                     sessionKey = contextUser.SessionKeyLastFm;
                 }
 
-                var recentScrobbles = await this._dataSourceFactory.GetRecentTracksAsync(contextUser.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
+                var recentScrobbles = await dataSourceFactory.GetRecentTracksAsync(contextUser.UserNameLastFM, 1,
+                    useCache: true, sessionKey: sessionKey);
 
                 if (GenericEmbedService.RecentScrobbleCallFailed(recentScrobbles))
                 {
-                    var errorResponse = GenericEmbedService.RecentScrobbleCallFailedResponse(recentScrobbles, contextUser.UserNameLastFM);
+                    var errorResponse =
+                        GenericEmbedService.RecentScrobbleCallFailedResponse(recentScrobbles,
+                            contextUser.UserNameLastFM);
 
                     await this.Context.SendFollowUpResponse(this.Interactivity, errorResponse);
                     this.Context.LogCommandUsed(errorResponse.CommandResponse);
@@ -109,7 +111,7 @@ public class SpotifySlashCommands : ApplicationCommandModule<ApplicationCommandC
                 _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
             };
 
-            var item = await this._spotifyService.GetSearchResultAsync(querystring, spotifySearchType);
+            var item = await spotifyService.GetSearchResultAsync(querystring, spotifySearchType);
 
             var result = false;
             switch (type)
@@ -121,6 +123,7 @@ public class SpotifySlashCommands : ApplicationCommandModule<ApplicationCommandC
                         reply += $"https://open.spotify.com/album/{album.Id}";
                         result = true;
                     }
+
                     break;
                 case SpotifySearch.Artist:
                     var artist = item.Artists.Items?.FirstOrDefault();
@@ -129,6 +132,7 @@ public class SpotifySlashCommands : ApplicationCommandModule<ApplicationCommandC
                         reply += $"https://open.spotify.com/artist/{artist.Id}";
                         result = true;
                     }
+
                     break;
                 case SpotifySearch.Playlist:
                     var playlist = item.Playlists.Items?.FirstOrDefault();
@@ -137,12 +141,15 @@ public class SpotifySlashCommands : ApplicationCommandModule<ApplicationCommandC
                         reply += $"https://open.spotify.com/playlist/{playlist.Id}";
                         result = true;
                     }
+
                     break;
                 case SpotifySearch.Track:
                     FullTrack track;
                     if (currentTrack?.ArtistName != null)
                     {
-                        track = item.Tracks.Items?.FirstOrDefault(f => f.Artists.Any(a => string.Equals(a.Name, currentTrack.ArtistName, StringComparison.OrdinalIgnoreCase)));;
+                        track = item.Tracks.Items?.FirstOrDefault(f => f.Artists.Any(a =>
+                            string.Equals(a.Name, currentTrack.ArtistName, StringComparison.OrdinalIgnoreCase)));
+                        ;
                     }
                     else
                     {
@@ -154,6 +161,7 @@ public class SpotifySlashCommands : ApplicationCommandModule<ApplicationCommandC
                         reply += $"https://open.spotify.com/track/{track.Id}";
                         result = true;
                     }
+
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(type), type, null);
@@ -170,7 +178,8 @@ public class SpotifySlashCommands : ApplicationCommandModule<ApplicationCommandC
             else
             {
                 await this.Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
-                    .WithContent($"Sorry, Spotify returned no results for *`{StringExtensions.Sanitize(querystring)}`*.")
+                    .WithContent(
+                        $"Sorry, Spotify returned no results for *`{StringExtensions.Sanitize(querystring)}`*.")
                     .WithAllowedMentions(AllowedMentionsProperties.None)
                     .WithFlags(MessageFlags.Ephemeral));
                 this.Context.LogCommandUsed(CommandResponse.NotFound);

@@ -17,34 +17,20 @@ using NetCord.Services.ComponentInteractions;
 
 namespace FMBot.Bot.Interactions;
 
-public class TemplateInteractions : ComponentInteractionModule<ComponentInteractionContext>
+public class TemplateInteractions(
+    UserService userService,
+    GuildService guildService,
+    TemplateBuilders templateBuilders,
+    TemplateService templateService,
+    InteractiveService interactivity)
+    : ComponentInteractionModule<ComponentInteractionContext>
 {
-    private readonly UserService _userService;
-    private readonly GuildService _guildService;
-    private readonly TemplateBuilders _templateBuilders;
-    private readonly TemplateService _templateService;
-    private readonly InteractiveService _interactivity;
-
-    public TemplateInteractions(
-        UserService userService,
-        GuildService guildService,
-        TemplateBuilders templateBuilders,
-        TemplateService templateService,
-        InteractiveService interactivity)
-    {
-        this._userService = userService;
-        this._guildService = guildService;
-        this._templateBuilders = templateBuilders;
-        this._templateService = templateService;
-        this._interactivity = interactivity;
-    }
-
     [ComponentInteraction(InteractionConstants.Template.ManagePicker)]
     [UsernameSetRequired]
     public async Task TemplateManageAsync()
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var guild = await this._guildService.GetGuildAsync(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var guild = await guildService.GetGuildAsync(this.Context.Guild?.Id);
 
         var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
         var selectedValue = stringMenuInteraction.Data.SelectedValues[0];
@@ -54,10 +40,10 @@ public class TemplateInteractions : ComponentInteractionModule<ComponentInteract
             var templateId = int.Parse(selectedValue.Replace($"{InteractionConstants.Template.ManagePicker}:", ""));
 
             var response =
-                await this._templateBuilders.TemplateManage(new ContextModel(this.Context, contextUser), templateId,
+                await templateBuilders.TemplateManage(new ContextModel(this.Context, contextUser), templateId,
                     guild);
 
-            await this.Context.SendResponse(this._interactivity, response.response, ephemeral: true,
+            await this.Context.SendResponse(interactivity, response.response, ephemeral: true,
                 response.extraResponse);
             this.Context.LogCommandUsed(response.response.CommandResponse);
         }
@@ -71,13 +57,13 @@ public class TemplateInteractions : ComponentInteractionModule<ComponentInteract
     [UsernameSetRequired]
     public async Task TemplateViewVariables()
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
         try
         {
             var response = TemplateBuilders.GetTemplateVariables(new ContextModel(this.Context, contextUser));
 
-            await this.Context.SendResponse(this._interactivity, response, true);
+            await this.Context.SendResponse(interactivity, response, true);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
@@ -90,11 +76,11 @@ public class TemplateInteractions : ComponentInteractionModule<ComponentInteract
     [UsernameSetRequired]
     public async Task TemplateCreate()
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
         try
         {
-            var newTemplate = await this._templateService.CreateTemplate(contextUser.UserId);
+            var newTemplate = await templateService.CreateTemplate(contextUser.UserId);
             this.Context.LogCommandUsed();
         }
         catch (Exception e)
@@ -110,7 +96,7 @@ public class TemplateInteractions : ComponentInteractionModule<ComponentInteract
         try
         {
             var parsedTemplateId = int.Parse(templateId);
-            var template = await this._templateService.GetTemplate(parsedTemplateId);
+            var template = await templateService.GetTemplate(parsedTemplateId);
 
             var embed = new EmbedProperties()
                 .WithColor(DiscordConstants.WarningColorOrange)
@@ -138,7 +124,7 @@ public class TemplateInteractions : ComponentInteractionModule<ComponentInteract
         try
         {
             var parsedTemplateId = int.Parse(templateId);
-            await this._templateService.DeleteTemplate(parsedTemplateId);
+            await templateService.DeleteTemplate(parsedTemplateId);
 
             var embed = new EmbedProperties()
                 .WithColor(DiscordConstants.WarningColorOrange)
@@ -160,7 +146,7 @@ public class TemplateInteractions : ComponentInteractionModule<ComponentInteract
     public async Task SetOption()
     {
         var embed = new EmbedProperties();
-        var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
 
         var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
         var selectedValue = stringMenuInteraction.Data.SelectedValues[0];
@@ -178,7 +164,7 @@ public class TemplateInteractions : ComponentInteractionModule<ComponentInteract
         try
         {
             var parsedTemplateId = int.Parse(templateId);
-            var template = await this._templateService.GetTemplate(parsedTemplateId);
+            var template = await templateService.GetTemplate(parsedTemplateId);
 
             await RespondAsync(InteractionCallback.Modal(
                 ModalFactory.CreateTemplateViewScriptModal(
@@ -200,7 +186,7 @@ public class TemplateInteractions : ComponentInteractionModule<ComponentInteract
         try
         {
             var parsedTemplateId = int.Parse(templateId);
-            var template = await this._templateService.GetTemplate(parsedTemplateId);
+            var template = await templateService.GetTemplate(parsedTemplateId);
 
             await RespondAsync(InteractionCallback.Modal(
                 ModalFactory.CreateTemplateNameModal(
@@ -223,9 +209,9 @@ public class TemplateInteractions : ComponentInteractionModule<ComponentInteract
         {
             var content = this.Context.GetModalValue("content");
             var parsedTemplateId = int.Parse(templateId);
-            var template = await this._templateService.GetTemplate(parsedTemplateId);
+            var template = await templateService.GetTemplate(parsedTemplateId);
 
-            await this._templateService.UpdateTemplateContent(template.Id, content);
+            await templateService.UpdateTemplateContent(template.Id, content);
             this.Context.LogCommandUsed();
         }
         catch (Exception e)
@@ -242,9 +228,9 @@ public class TemplateInteractions : ComponentInteractionModule<ComponentInteract
         {
             var name = this.Context.GetModalValue("name");
             var parsedTemplateId = int.Parse(templateId);
-            var template = await this._templateService.GetTemplate(parsedTemplateId);
+            var template = await templateService.GetTemplate(parsedTemplateId);
 
-            await this._templateService.UpdateTemplateName(template.Id, name);
+            await templateService.UpdateTemplateName(template.Id, name);
             this.Context.LogCommandUsed();
         }
         catch (Exception e)

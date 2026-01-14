@@ -1,4 +1,3 @@
-using System;
 using System.Threading.Tasks;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.AutoCompleteHandlers;
@@ -12,49 +11,26 @@ using NetCord.Services.ApplicationCommands;
 using NetCord;
 using NetCord.Rest;
 using Fergun.Interactive;
-using NetCord.Services.Commands;
 
 namespace FMBot.Bot.SlashCommands;
 
 [SlashCommand("top", "Top lists - Artist/Albums/Tracks/Genres/Countries",
     Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild],
     IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
-public class TopSlashCommands : ApplicationCommandModule<ApplicationCommandContext>
+public class TopSlashCommands(
+    UserService userService,
+    ArtistBuilders artistBuilders,
+    SettingService settingService,
+    InteractiveService interactivity,
+    AlbumBuilders albumBuilders,
+    TrackBuilders trackBuilders,
+    GenreBuilders genreBuilders,
+    CountryBuilders countryBuilders,
+    DiscogsBuilder discogsBuilders,
+    IndexService indexService)
+    : ApplicationCommandModule<ApplicationCommandContext>
 {
-    private readonly UserService _userService;
-    private readonly ArtistBuilders _artistBuilders;
-    private readonly SettingService _settingService;
-    private readonly AlbumBuilders _albumBuilders;
-    private readonly TrackBuilders _trackBuilders;
-    private readonly GenreBuilders _genreBuilders;
-    private readonly CountryBuilders _countryBuilders;
-    private readonly DiscogsBuilder _discogsBuilders;
-    private readonly IndexService _indexService;
-
-    private InteractiveService Interactivity { get; }
-
-    public TopSlashCommands(UserService userService,
-        ArtistBuilders artistBuilders,
-        SettingService settingService,
-        InteractiveService interactivity,
-        AlbumBuilders albumBuilders,
-        TrackBuilders trackBuilders,
-        GenreBuilders genreBuilders,
-        CountryBuilders countryBuilders,
-        DiscogsBuilder discogsBuilders,
-        IndexService indexService)
-    {
-        this._userService = userService;
-        this._artistBuilders = artistBuilders;
-        this._settingService = settingService;
-        this.Interactivity = interactivity;
-        this._albumBuilders = albumBuilders;
-        this._trackBuilders = trackBuilders;
-        this._genreBuilders = genreBuilders;
-        this._countryBuilders = countryBuilders;
-        this._discogsBuilders = discogsBuilders;
-        this._indexService = indexService;
-    }
+    private InteractiveService Interactivity { get; } = interactivity;
 
     [SubSlashCommand("artists", "Your top artists")]
     [UsernameSetRequired]
@@ -79,10 +55,10 @@ public class TopSlashCommands : ApplicationCommandModule<ApplicationCommandConte
         await Context.Interaction.SendResponseAsync(
             InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
 
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var userSettings =
-            await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
-        userSettings.RegisteredLastFm ??= await this._indexService.AddUserRegisteredLfmDate(userSettings.UserId);
+            await settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+        userSettings.RegisteredLastFm ??= await indexService.AddUserRegisteredLfmDate(userSettings.UserId);
 
         mode ??= contextUser.Mode ?? ResponseMode.Embed;
 
@@ -91,9 +67,9 @@ public class TopSlashCommands : ApplicationCommandModule<ApplicationCommandConte
         var topListSettings = new TopListSettings(embedSize ?? EmbedSize.Default, billboard, discogs);
 
         var response = topListSettings.Discogs
-            ? await this._discogsBuilders.DiscogsTopArtistsAsync(new ContextModel(this.Context, contextUser),
+            ? await discogsBuilders.DiscogsTopArtistsAsync(new ContextModel(this.Context, contextUser),
                 topListSettings, timeSettings, userSettings)
-            : await this._artistBuilders.TopArtistsAsync(new ContextModel(this.Context, contextUser),
+            : await artistBuilders.TopArtistsAsync(new ContextModel(this.Context, contextUser),
                 topListSettings, timeSettings, userSettings, mode.Value);
 
         await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);
@@ -127,9 +103,9 @@ public class TopSlashCommands : ApplicationCommandModule<ApplicationCommandConte
         await Context.Interaction.SendResponseAsync(
             InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
 
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var userSettings =
-            await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+            await settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
         mode ??= contextUser.Mode ?? ResponseMode.Embed;
 
         var timeSettings = SettingService.GetTimePeriod(timePeriod,
@@ -140,7 +116,7 @@ public class TopSlashCommands : ApplicationCommandModule<ApplicationCommandConte
         var topListSettings = new TopListSettings(embedSize ?? EmbedSize.Default, billboard,
             year: year != null ? int.Parse(year) : null, decade: decade != null ? int.Parse(decade) : null);
 
-        var response = await this._albumBuilders.TopAlbumsAsync(new ContextModel(this.Context, contextUser),
+        var response = await albumBuilders.TopAlbumsAsync(new ContextModel(this.Context, contextUser),
             topListSettings, timeSettings, userSettings, mode.Value);
 
         await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);
@@ -168,16 +144,16 @@ public class TopSlashCommands : ApplicationCommandModule<ApplicationCommandConte
         await Context.Interaction.SendResponseAsync(
             InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
 
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var userSettings =
-            await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+            await settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
         mode ??= contextUser.Mode ?? ResponseMode.Embed;
 
         var timeSettings = SettingService.GetTimePeriod(timePeriod, timeZone: userSettings.TimeZone);
 
         var topListSettings = new TopListSettings(embedSize ?? EmbedSize.Default, billboard);
 
-        var response = await this._trackBuilders.TopTracksAsync(new ContextModel(this.Context, contextUser),
+        var response = await trackBuilders.TopTracksAsync(new ContextModel(this.Context, contextUser),
             topListSettings, timeSettings, userSettings, mode.Value);
 
         await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);
@@ -205,16 +181,16 @@ public class TopSlashCommands : ApplicationCommandModule<ApplicationCommandConte
         await Context.Interaction.SendResponseAsync(
             InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
 
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var userSettings =
-            await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+            await settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
         mode ??= contextUser.Mode ?? ResponseMode.Embed;
 
         var timeSettings = SettingService.GetTimePeriod(timePeriod, timeZone: userSettings.TimeZone);
 
         var topListSettings = new TopListSettings(embedSize ?? EmbedSize.Default, billboard);
 
-        var response = await this._genreBuilders.TopGenresAsync(new ContextModel(this.Context, contextUser),
+        var response = await genreBuilders.TopGenresAsync(new ContextModel(this.Context, contextUser),
             userSettings, timeSettings, topListSettings, mode.Value);
 
         await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);
@@ -242,16 +218,16 @@ public class TopSlashCommands : ApplicationCommandModule<ApplicationCommandConte
         await Context.Interaction.SendResponseAsync(
             InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
 
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var userSettings =
-            await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+            await settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
         mode ??= contextUser.Mode ?? ResponseMode.Embed;
 
         var timeSettings = SettingService.GetTimePeriod(timePeriod, timeZone: userSettings.TimeZone);
 
         var topListSettings = new TopListSettings(embedSize ?? EmbedSize.Default, billboard);
 
-        var response = await this._countryBuilders.TopCountriesAsync(new ContextModel(this.Context, contextUser),
+        var response = await countryBuilders.TopCountriesAsync(new ContextModel(this.Context, contextUser),
             userSettings, timeSettings, topListSettings, mode.Value);
 
         await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);

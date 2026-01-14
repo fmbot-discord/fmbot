@@ -20,51 +20,27 @@ using NetCord.Rest;
 namespace FMBot.Bot.TextCommands.LastFM;
 
 [ModuleName("Tracks")]
-public class TrackCommands : BaseCommandModule
+public class TrackCommands(
+    GuildService guildService,
+    IndexService indexService,
+    IPrefixService prefixService,
+    IDataSourceFactory dataSourceFactory,
+    SettingService settingService,
+    UserService userService,
+    InteractiveService interactivity,
+    IOptions<BotSettings> botSettings,
+    TrackService trackService,
+    TrackBuilders trackBuilders,
+    EurovisionBuilders eurovisionBuilders,
+    PlayBuilder playBuilders,
+    CountryService countryService)
+    : BaseCommandModule(botSettings)
 {
-    private readonly GuildService _guildService;
-    private readonly IndexService _indexService;
-    private readonly IPrefixService _prefixService;
-    private readonly IDataSourceFactory _dataSourceFactory;
-    private readonly SettingService _settingService;
-    private readonly UserService _userService;
-    private readonly TrackService _trackService;
-    private readonly TrackBuilders _trackBuilders;
-    private readonly EurovisionBuilders _eurovisionBuilders;
-    private readonly PlayBuilder _playBuilders;
-    private readonly CountryService _countryService;
+    private readonly IDataSourceFactory _dataSourceFactory = dataSourceFactory;
+    private readonly TrackService _trackService = trackService;
 
-    private InteractiveService Interactivity { get; }
+    private InteractiveService Interactivity { get; } = interactivity;
 
-
-    public TrackCommands(
-        GuildService guildService,
-        IndexService indexService,
-        IPrefixService prefixService,
-        IDataSourceFactory dataSourceFactory,
-        SettingService settingService,
-        UserService userService,
-        InteractiveService interactivity,
-        IOptions<BotSettings> botSettings,
-        TrackService trackService,
-        TrackBuilders trackBuilders,
-        EurovisionBuilders eurovisionBuilders,
-        PlayBuilder playBuilders,
-        CountryService countryService) : base(botSettings)
-    {
-        this._guildService = guildService;
-        this._indexService = indexService;
-        this._dataSourceFactory = dataSourceFactory;
-        this._prefixService = prefixService;
-        this._settingService = settingService;
-        this._userService = userService;
-        this.Interactivity = interactivity;
-        this._trackService = trackService;
-        this._trackBuilders = trackBuilders;
-        this._eurovisionBuilders = eurovisionBuilders;
-        this._playBuilders = playBuilders;
-        this._countryService = countryService;
-    }
 
     [Command("track", "tr", "ti", "ts", "trackinfo")]
     [Summary("Track you're currently listening to or searching for.")]
@@ -82,11 +58,11 @@ public class TrackCommands : BaseCommandModule
         {
             _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+            var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
             var response =
-                await this._trackBuilders.TrackAsync(new ContextModel(this.Context, prfx, contextUser), trackValues);
+                await trackBuilders.TrackAsync(new ContextModel(this.Context, prfx, contextUser), trackValues);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -112,11 +88,11 @@ public class TrackCommands : BaseCommandModule
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var userSettings = await this._settingService.GetUser(trackValues, contextUser, this.Context);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var userSettings = await settingService.GetUser(trackValues, contextUser, this.Context);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        var response = await this._trackBuilders.TrackPlays(new ContextModel(this.Context, prfx, contextUser),
+        var response = await trackBuilders.TrackPlays(new ContextModel(this.Context, prfx, contextUser),
             userSettings, userSettings.NewSearchValue);
 
         await this.Context.SendResponse(this.Interactivity, response);
@@ -135,11 +111,11 @@ public class TrackCommands : BaseCommandModule
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
         var response =
-            await this._trackBuilders.TrackDetails(new ContextModel(this.Context, prfx, contextUser), trackValues);
+            await trackBuilders.TrackDetails(new ContextModel(this.Context, prfx, contextUser), trackValues);
 
         await this.Context.SendResponse(this.Interactivity, response);
         this.Context.LogCommandUsed(response.CommandResponse);
@@ -154,11 +130,11 @@ public class TrackCommands : BaseCommandModule
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
         var response =
-            await this._trackBuilders.LoveTrackAsync(new ContextModel(this.Context, prfx, contextUser), trackValues);
+            await trackBuilders.LoveTrackAsync(new ContextModel(this.Context, prfx, contextUser), trackValues);
 
         await this.Context.SendResponse(this.Interactivity, response);
         this.Context.LogCommandUsed(response.CommandResponse);
@@ -173,11 +149,11 @@ public class TrackCommands : BaseCommandModule
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
         var response =
-            await this._trackBuilders.UnLoveTrackAsync(new ContextModel(this.Context, prfx, contextUser), trackValues);
+            await trackBuilders.UnLoveTrackAsync(new ContextModel(this.Context, prfx, contextUser), trackValues);
 
         await this.Context.SendResponse(this.Interactivity, response);
         this.Context.LogCommandUsed(response.CommandResponse);
@@ -193,13 +169,13 @@ public class TrackCommands : BaseCommandModule
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+        var userSettings = await settingService.GetUser(extraOptions, contextUser, this.Context);
 
         try
         {
-            var response = await this._trackBuilders.LovedTracksAsync(new ContextModel(this.Context, prfx, contextUser),
+            var response = await trackBuilders.LovedTracksAsync(new ContextModel(this.Context, prfx, contextUser),
                 userSettings);
 
             await this.Context.SendResponse(this.Interactivity, response);
@@ -219,12 +195,12 @@ public class TrackCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Tracks)]
     public async Task ScrobbleAsync([CommandParameter(Remainder = true)] string trackValues = null)
     {
-        var contextUser = await this._userService.GetUserWithDiscogs(this.Context.User.Id);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserWithDiscogs(this.Context.User.Id);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var response = await this._trackBuilders.ScrobbleAsync(new ContextModel(this.Context, prfx, contextUser),
+        var response = await trackBuilders.ScrobbleAsync(new ContextModel(this.Context, prfx, contextUser),
             trackValues);
 
         await this.Context.SendResponse(this.Interactivity, response);
@@ -243,19 +219,19 @@ public class TrackCommands : BaseCommandModule
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
         try
         {
-            var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
+            var userSettings = await settingService.GetUser(extraOptions, contextUser, this.Context);
             var topListSettings = SettingService.SetTopListSettings(extraOptions);
-            userSettings.RegisteredLastFm ??= await this._indexService.AddUserRegisteredLfmDate(userSettings.UserId);
+            userSettings.RegisteredLastFm ??= await indexService.AddUserRegisteredLfmDate(userSettings.UserId);
             var timeSettings = SettingService.GetTimePeriod(extraOptions,
                 registeredLastFm: userSettings.RegisteredLastFm, timeZone: userSettings.TimeZone);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
             var mode = SettingService.SetMode(extraOptions, contextUser.Mode);
 
-            var response = await this._trackBuilders.TopTracksAsync(new ContextModel(this.Context, prfx, contextUser),
+            var response = await trackBuilders.TopTracksAsync(new ContextModel(this.Context, prfx, contextUser),
                 topListSettings, timeSettings, userSettings, mode.mode);
 
             await this.Context.SendResponse(this.Interactivity, response);
@@ -277,15 +253,15 @@ public class TrackCommands : BaseCommandModule
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
         try
         {
-            var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
-            userSettings.RegisteredLastFm ??= await this._indexService.AddUserRegisteredLfmDate(userSettings.UserId);
+            var userSettings = await settingService.GetUser(extraOptions, contextUser, this.Context);
+            userSettings.RegisteredLastFm ??= await indexService.AddUserRegisteredLfmDate(userSettings.UserId);
             var timeSettings = SettingService.GetTimePeriod(extraOptions,
                 registeredLastFm: userSettings.RegisteredLastFm, timeZone: userSettings.TimeZone);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
             if (timeSettings.DefaultPicked)
             {
@@ -294,7 +270,7 @@ public class TrackCommands : BaseCommandModule
                     timeZone: userSettings.TimeZone);
             }
 
-            var response = await this._trackBuilders.GetReceipt(new ContextModel(this.Context, prfx, contextUser),
+            var response = await trackBuilders.GetReceipt(new ContextModel(this.Context, prfx, contextUser),
                 userSettings, timeSettings);
 
             await this.Context.SendResponse(this.Interactivity, response);
@@ -318,8 +294,8 @@ public class TrackCommands : BaseCommandModule
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
         try
         {
@@ -332,7 +308,7 @@ public class TrackCommands : BaseCommandModule
 
             var settings = SettingService.SetWhoKnowsSettings(currentSettings, trackValues, contextUser.UserType);
 
-            var response = await this._trackBuilders.WhoKnowsTrackAsync(
+            var response = await trackBuilders.WhoKnowsTrackAsync(
                 new ContextModel(this.Context, prfx, contextUser), settings.ResponseMode, settings.NewSearchValue,
                 settings.DisplayRoleFilter);
 
@@ -355,8 +331,8 @@ public class TrackCommands : BaseCommandModule
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
         var currentSettings = new WhoKnowsSettings
         {
@@ -370,7 +346,7 @@ public class TrackCommands : BaseCommandModule
 
         try
         {
-            var response = await this._trackBuilders.GlobalWhoKnowsTrackAsync(
+            var response = await trackBuilders.GlobalWhoKnowsTrackAsync(
                 new ContextModel(this.Context, prfx, contextUser), settings, settings.NewSearchValue);
 
             await this.Context.SendResponse(this.Interactivity, response);
@@ -402,8 +378,8 @@ public class TrackCommands : BaseCommandModule
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var contextUser = await this._userService.GetUserWithFriendsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserWithFriendsAsync(this.Context.User);
 
         var currentSettings = new WhoKnowsSettings
         {
@@ -415,7 +391,7 @@ public class TrackCommands : BaseCommandModule
 
         try
         {
-            var response = await this._trackBuilders.FriendsWhoKnowTrackAsync(
+            var response = await trackBuilders.FriendsWhoKnowTrackAsync(
                 new ContextModel(this.Context, prfx, contextUser), settings.ResponseMode, settings.NewSearchValue);
 
             await this.Context.SendResponse(this.Interactivity, response);
@@ -449,8 +425,8 @@ public class TrackCommands : BaseCommandModule
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+        var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
 
         var guildListSettings = new GuildRankingSettings
         {
@@ -474,7 +450,7 @@ public class TrackCommands : BaseCommandModule
         try
         {
             var response =
-                await this._trackBuilders.GuildTracksAsync(new ContextModel(this.Context, prfx), guild,
+                await trackBuilders.GuildTracksAsync(new ContextModel(this.Context, prfx), guild,
                     guildListSettings);
 
             await this.Context.SendResponse(this.Interactivity, response);
@@ -489,8 +465,8 @@ public class TrackCommands : BaseCommandModule
     [Command("eurovision", "ev", "esc", "eurovisie", "eurovisionsongcontest", "songcontest")]
     public async Task EurovisionAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var context = new ContextModel(this.Context, prfx, contextUser);
 
         try
@@ -501,7 +477,7 @@ public class TrackCommands : BaseCommandModule
                 var splitOptions = extraOptions.Split(" ");
                 foreach (var option in splitOptions)
                 {
-                    pickedCountry = this._countryService.GetValidCountry(option);
+                    pickedCountry = countryService.GetValidCountry(option);
                     if (pickedCountry != null)
                     {
                         break;
@@ -514,12 +490,12 @@ public class TrackCommands : BaseCommandModule
             ResponseModel response;
             if (pickedCountry != null)
             {
-                response = await this._eurovisionBuilders.GetEurovisionCountryYear(context, pickedCountry, year ?? DateTime.UtcNow.Year);
+                response = await eurovisionBuilders.GetEurovisionCountryYear(context, pickedCountry, year ?? DateTime.UtcNow.Year);
             }
             else
             {
                 response =
-                    await this._eurovisionBuilders.GetEurovisionYear(context, year ?? DateTime.UtcNow.Year);
+                    await eurovisionBuilders.GetEurovisionYear(context, year ?? DateTime.UtcNow.Year);
             }
 
             await this.Context.SendResponse(this.Interactivity, response);
@@ -544,13 +520,13 @@ public class TrackCommands : BaseCommandModule
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
         try
         {
             var context = new ContextModel(this.Context, prfx, contextUser);
-            var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
+            var userSettings = await settingService.GetUser(extraOptions, contextUser, this.Context);
 
             var supporterRequiredResponse = PlayBuilder.GapsSupporterRequired(context, userSettings);
 
@@ -562,10 +538,10 @@ public class TrackCommands : BaseCommandModule
             }
 
             var topListSettings = SettingService.SetTopListSettings(extraOptions);
-            userSettings.RegisteredLastFm ??= await this._indexService.AddUserRegisteredLfmDate(userSettings.UserId);
+            userSettings.RegisteredLastFm ??= await indexService.AddUserRegisteredLfmDate(userSettings.UserId);
             var mode = SettingService.SetMode(userSettings.NewSearchValue, contextUser.Mode);
 
-            var response = await this._playBuilders.ListeningGapsAsync(context, topListSettings, userSettings,
+            var response = await playBuilders.ListeningGapsAsync(context, topListSettings, userSettings,
                 mode.mode, GapEntityType.Track);
 
             await this.Context.SendResponse(this.Interactivity, response);
@@ -594,8 +570,8 @@ public class TrackCommands : BaseCommandModule
         {
             _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+            var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
             var context = new ContextModel(this.Context, prfx, contextUser);
 
             var supporterRequiredResponse = TrackBuilders.LyricsSupporterRequired(context);
@@ -606,7 +582,7 @@ public class TrackCommands : BaseCommandModule
                 return;
             }
 
-            var response = await this._trackBuilders.TrackLyricsAsync(context, trackValues);
+            var response = await trackBuilders.TrackLyricsAsync(context, trackValues);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);

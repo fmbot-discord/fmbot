@@ -1,6 +1,5 @@
 using System.Threading.Tasks;
 using System;
-using System.Collections.Generic;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
@@ -14,36 +13,21 @@ using FMBot.Domain;
 using NetCord.Services.Commands;
 using Fergun.Interactive;
 using NetCord.Rest;
-using NetCord.Gateway;
 
 namespace FMBot.Bot.TextCommands;
 
 [ModuleName("Games")]
-public class GameCommands : BaseCommandModule
+public class GameCommands(
+    IOptions<BotSettings> botSettings,
+    UserService userService,
+    GameBuilders gameBuilders,
+    IPrefixService prefixService,
+    InteractiveService interactivity,
+    GameService gameService,
+    SettingService settingService)
+    : BaseCommandModule(botSettings)
 {
-    private readonly UserService _userService;
-    private readonly GameBuilders _gameBuilders;
-    private readonly IPrefixService _prefixService;
-    private readonly GameService _gameService;
-    private readonly SettingService _settingService;
-
-    private InteractiveService Interactivity { get; }
-
-    public GameCommands(IOptions<BotSettings> botSettings,
-        UserService userService,
-        GameBuilders gameBuilders,
-        IPrefixService prefixService,
-        InteractiveService interactivity,
-        GameService gameService,
-        SettingService settingService) : base(botSettings)
-    {
-        this._userService = userService;
-        this._gameBuilders = gameBuilders;
-        this._prefixService = prefixService;
-        this.Interactivity = interactivity;
-        this._gameService = gameService;
-        this._settingService = settingService;
-    }
+    private InteractiveService Interactivity { get; } = interactivity;
 
     [Command("jumble", "j", "jmbl", "jum", "jumbmle")]
     [Summary("Play the Jumble game.")]
@@ -53,8 +37,8 @@ public class GameCommands : BaseCommandModule
     [SupporterEnhanced("Supporters can play unlimited Jumble games without a daily limit")]
     public async Task JumbleAsync([CommandParameter(Remainder = true)] string options = null)
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
         try
         {
@@ -63,16 +47,16 @@ public class GameCommands : BaseCommandModule
             {
                 _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-                var userSettings = await this._settingService.GetUser(options, contextUser, this.Context);
+                var userSettings = await settingService.GetUser(options, contextUser, this.Context);
 
-                var statResponse = await this._gameBuilders.GetJumbleUserStats(context, userSettings, JumbleType.Artist);
+                var statResponse = await gameBuilders.GetJumbleUserStats(context, userSettings, JumbleType.Artist);
                 await this.Context.SendResponse(this.Interactivity, statResponse);
                 this.Context.LogCommandUsed(statResponse.CommandResponse);
                 return;
             }
 
             var cancellationTokenSource = new CancellationTokenSource();
-            var response = await this._gameBuilders.StartArtistJumble(context, contextUser.UserId, cancellationTokenSource);
+            var response = await gameBuilders.StartArtistJumble(context, contextUser.UserId, cancellationTokenSource);
 
             if (response.CommandResponse == CommandResponse.Cooldown)
             {
@@ -86,7 +70,7 @@ public class GameCommands : BaseCommandModule
 
             if (responseId?.Id != null && response.GameSessionId.HasValue)
             {
-                await this._gameService.JumbleAddResponseId(response.GameSessionId.Value, responseId.Id);
+                await gameService.JumbleAddResponseId(response.GameSessionId.Value, responseId.Id);
                 await JumbleTimeExpired(context, responseId.Id, cancellationTokenSource.Token, response.GameSessionId.Value, GameService.JumbleSecondsToGuess);
             }
         }
@@ -109,7 +93,7 @@ public class GameCommands : BaseCommandModule
             return;
         }
 
-        var response = await this._gameBuilders.JumbleTimeExpired(context, gameSessionId);
+        var response = await gameBuilders.JumbleTimeExpired(context, gameSessionId);
 
         if (response == null)
         {
@@ -120,7 +104,7 @@ public class GameCommands : BaseCommandModule
 
         if (PublicProperties.UsedCommandsResponseContextId.TryGetValue(msg.Id, out var contextId))
         {
-            await this._userService.UpdateInteractionContext(contextId, response.ReferencedMusic);
+            await userService.UpdateInteractionContext(contextId, response.ReferencedMusic);
         }
 
         await msg.ModifyAsync(m =>
@@ -143,8 +127,8 @@ public class GameCommands : BaseCommandModule
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
         try
         {
@@ -153,16 +137,16 @@ public class GameCommands : BaseCommandModule
             {
                 _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-                var userSettings = await this._settingService.GetUser(options, contextUser, this.Context);
+                var userSettings = await settingService.GetUser(options, contextUser, this.Context);
 
-                var statResponse = await this._gameBuilders.GetJumbleUserStats(context, userSettings, JumbleType.Pixelation);
+                var statResponse = await gameBuilders.GetJumbleUserStats(context, userSettings, JumbleType.Pixelation);
                 await this.Context.SendResponse(this.Interactivity, statResponse);
                 this.Context.LogCommandUsed(statResponse.CommandResponse);
                 return;
             }
 
             var cancellationTokenSource = new CancellationTokenSource();
-            var response = await this._gameBuilders.StartPixelJumble(context, contextUser.UserId, cancellationTokenSource);
+            var response = await gameBuilders.StartPixelJumble(context, contextUser.UserId, cancellationTokenSource);
 
             if (response.CommandResponse == CommandResponse.Cooldown)
             {
@@ -176,7 +160,7 @@ public class GameCommands : BaseCommandModule
 
             if (responseId?.Id != null && response.GameSessionId.HasValue)
             {
-                await this._gameService.JumbleAddResponseId(response.GameSessionId.Value, responseId.Id);
+                await gameService.JumbleAddResponseId(response.GameSessionId.Value, responseId.Id);
                 await JumbleTimeExpired(context, responseId.Id, cancellationTokenSource.Token, response.GameSessionId.Value, GameService.PixelationSecondsToGuess);
             }
         }

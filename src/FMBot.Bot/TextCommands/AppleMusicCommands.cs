@@ -4,7 +4,6 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Services;
 using System.Threading.Tasks;
 using System;
-using CsvHelper.Configuration.Attributes;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain;
@@ -17,25 +16,17 @@ using Fergun.Interactive;
 namespace FMBot.Bot.TextCommands;
 
 [ModuleName("AppleMusic")]
-public class AppleMusicCommands : BaseCommandModule
+public class AppleMusicCommands(
+    IDataSourceFactory dataSourceFactory,
+    AppleMusicService appleMusicService,
+    UserService userService,
+    IPrefixService prefixService,
+    IOptions<BotSettings> botSettings,
+    InteractiveService interactivity)
+    : BaseCommandModule(botSettings)
 {
-    private readonly IDataSourceFactory _dataSourceFactory;
-    private readonly AppleMusicService _appleMusicService;
+    private InteractiveService Interactivity { get; } = interactivity;
 
-    private readonly UserService _userService;
-    private readonly IPrefixService _prefixService;
-
-    private InteractiveService Interactivity { get; }
-
-
-    public AppleMusicCommands(IDataSourceFactory dataSourceFactory, AppleMusicService appleMusicService, UserService userService, IPrefixService prefixService, IOptions<BotSettings> botSettings, InteractiveService interactivity) : base(botSettings)
-    {
-        this._dataSourceFactory = dataSourceFactory;
-        this._appleMusicService = appleMusicService;
-        this._userService = userService;
-        this._prefixService = prefixService;
-        this.Interactivity = interactivity;
-    }
 
     [Command("applemusic", "am", "apple")]
     [Summary("Shares a link to an Apple Music track based on what a user is listening to or searching for")]
@@ -43,8 +34,8 @@ public class AppleMusicCommands : BaseCommandModule
     [CommandCategories(CommandCategory.ThirdParty)]
     public async Task AppleMusicAsync([CommandParameter(Remainder = true)] string searchValue = null)
     {
-        var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
         try
         {
@@ -59,7 +50,7 @@ public class AppleMusicCommands : BaseCommandModule
             {
                 var internalLookup = CommandContextExtensions.GetReferencedMusic(this.Context.Message.ReferencedMessage.Id)
                                      ??
-                                     await this._userService.GetReferencedMusic(this.Context.Message.ReferencedMessage.Id);
+                                     await userService.GetReferencedMusic(this.Context.Message.ReferencedMessage.Id);
 
                 if (internalLookup?.Track != null)
                 {
@@ -80,7 +71,7 @@ public class AppleMusicCommands : BaseCommandModule
                     sessionKey = userSettings.SessionKeyLastFm;
                 }
 
-                var recentScrobbles = await this._dataSourceFactory.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
+                var recentScrobbles = await dataSourceFactory.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
 
                 if (await GenericEmbedService.RecentScrobbleCallFailedReply(recentScrobbles, userSettings.UserNameLastFM, this.Context))
                 {
@@ -92,7 +83,7 @@ public class AppleMusicCommands : BaseCommandModule
                 querystring = $"{currentTrack.TrackName} {currentTrack.ArtistName} {currentTrack.AlbumName}";
             }
 
-            var item = await this._appleMusicService.SearchAppleMusicSong(querystring);
+            var item = await appleMusicService.SearchAppleMusicSong(querystring);
 
             var response = new ResponseModel
             {
@@ -104,7 +95,7 @@ public class AppleMusicCommands : BaseCommandModule
                 response.Text = $"{item.Attributes.Url}";
 
                 var rnd = new Random();
-                if (rnd.Next(0, 8) == 1 && string.IsNullOrWhiteSpace(searchValue) && !await this._userService.HintShownBefore(userSettings.UserId, "applemusic"))
+                if (rnd.Next(0, 8) == 1 && string.IsNullOrWhiteSpace(searchValue) && !await userService.HintShownBefore(userSettings.UserId, "applemusic"))
                 {
                     response.Text += $"\n-# *Tip: Search for other songs by simply adding the searchvalue behind {prfx}applemusic.*";
                     response.HintShown = true;

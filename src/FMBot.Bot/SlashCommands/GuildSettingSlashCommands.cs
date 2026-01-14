@@ -7,34 +7,20 @@ using FMBot.Bot.Attributes;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using Fergun.Interactive;
-using FMBot.Domain.Enums;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 
 namespace FMBot.Bot.SlashCommands;
 
-public class GuildSettingSlashCommands : ApplicationCommandModule<ApplicationCommandContext>
+public class GuildSettingSlashCommands(
+    GuildSettingBuilder guildSettingBuilder,
+    InteractiveService interactivity,
+    UserService userService,
+    GuildService guildService,
+    GuildBuilders guildBuilders)
+    : ApplicationCommandModule<ApplicationCommandContext>
 {
-    private readonly UserService _userService;
-    private readonly GuildSettingBuilder _guildSettingBuilder;
-    private readonly GuildService _guildService;
-    private readonly GuildBuilders _guildBuilders;
-
-    private InteractiveService Interactivity { get; }
-
-    public GuildSettingSlashCommands(
-        GuildSettingBuilder guildSettingBuilder,
-        InteractiveService interactivity,
-        UserService userService,
-        GuildService guildService,
-        GuildBuilders guildBuilders)
-    {
-        this._guildSettingBuilder = guildSettingBuilder;
-        this.Interactivity = interactivity;
-        this._userService = userService;
-        this._guildService = guildService;
-        this._guildBuilders = guildBuilders;
-    }
+    private InteractiveService Interactivity { get; } = interactivity;
 
     [SlashCommand("configuration", "Server configuration for .fmbot")]
     [RequiresIndex]
@@ -43,11 +29,11 @@ public class GuildSettingSlashCommands : ApplicationCommandModule<ApplicationCom
     {
         try
         {
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
             var guildPermissions = await GuildService.GetGuildPermissionsAsync(this.Context);
 
             var response =
-                await this._guildSettingBuilder.GetGuildSettings(new ContextModel(this.Context, contextUser),
+                await guildSettingBuilder.GetGuildSettings(new ContextModel(this.Context, contextUser),
                     guildPermissions);
 
             await this.Context.SendResponse(this.Interactivity, response);
@@ -70,11 +56,11 @@ public class GuildSettingSlashCommands : ApplicationCommandModule<ApplicationCom
         {
             await RespondAsync(InteractionCallback.DeferredMessage());
 
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+            var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
 
             var response =
-                await this._guildBuilders.MemberOverviewAsync(new ContextModel(this.Context, contextUser), guild,
+                await guildBuilders.MemberOverviewAsync(new ContextModel(this.Context, contextUser), guild,
                     viewType);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);

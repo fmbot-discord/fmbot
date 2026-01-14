@@ -15,25 +15,15 @@ using NetCord.Services.Commands;
 
 namespace FMBot.Bot.TextCommands;
 
-public class ImportCommands : BaseCommandModule
+public class ImportCommands(
+    UserService userService,
+    ImportBuilders importBuilders,
+    IPrefixService prefixService,
+    InteractiveService interactivity,
+    IOptions<BotSettings> botSettings)
+    : BaseCommandModule(botSettings)
 {
-    private readonly UserService _userService;
-    private readonly ImportBuilders _importBuilders;
-    private readonly IPrefixService _prefixService;
-
-    private InteractiveService Interactivity { get; }
-
-    public ImportCommands(UserService userService,
-        ImportBuilders importBuilders,
-        IPrefixService prefixService,
-        InteractiveService interactivity,
-        IOptions<BotSettings> botSettings) : base(botSettings)
-    {
-        this._userService = userService;
-        this._importBuilders = importBuilders;
-        this._prefixService = prefixService;
-        this.Interactivity = interactivity;
-    }
+    private InteractiveService Interactivity { get; } = interactivity;
 
     [Command("import", "spotifyimport", "importspotify", "appleimport", "applemusicimport", "importapple", "importapplemusic", "imports")]
     [Summary("Imports your Spotify or Apple Music history into .fmbot")]
@@ -42,8 +32,8 @@ public class ImportCommands : BaseCommandModule
     [SupporterExclusive("Only supporters can import and access their Spotify or Apple Music history")]
     public async Task ImportSpotifyAsync([CommandParameter(Remainder = true)] string _ = null)
     {
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
         var supporterRequiredResponse =
             ImportBuilders.ImportSupporterRequired(new ContextModel(this.Context, prfx, contextUser));
@@ -58,15 +48,15 @@ public class ImportCommands : BaseCommandModule
         ResponseModel response;
         if (this.Context.Message.Content.Contains("spotify", StringComparison.OrdinalIgnoreCase))
         {
-            response = await this._importBuilders.GetSpotifyImportInstructions(new ContextModel(this.Context, prfx, contextUser), true);
+            response = await importBuilders.GetSpotifyImportInstructions(new ContextModel(this.Context, prfx, contextUser), true);
         }
         else if (this.Context.Message.Content.Contains("apple", StringComparison.OrdinalIgnoreCase))
         {
-            response = await this._importBuilders.GetAppleMusicImportInstructions(new ContextModel(this.Context, prfx, contextUser), true);
+            response = await importBuilders.GetAppleMusicImportInstructions(new ContextModel(this.Context, prfx, contextUser), true);
         }
         else
         {
-            response = this._importBuilders.ImportInstructionsPickSource(new ContextModel(this.Context, prfx, contextUser));
+            response = importBuilders.ImportInstructionsPickSource(new ContextModel(this.Context, prfx, contextUser));
         }
 
         await this.Context.SendResponse(this.Interactivity, response);
@@ -80,8 +70,8 @@ public class ImportCommands : BaseCommandModule
     [SupporterExclusive("Only supporters can import and access their Spotify or Apple Music history")]
     public async Task ModifyImportAsync([CommandParameter(Remainder = true)] string confirmation = null)
     {
-        var contextUser = await this._userService.GetFullUserAsync(this.Context.User.Id);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetFullUserAsync(this.Context.User.Id);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
         var supporterRequiredResponse =
             ImportBuilders.ImportSupporterRequired(new ContextModel(this.Context, prfx, contextUser));
@@ -108,7 +98,7 @@ public class ImportCommands : BaseCommandModule
 
         try
         {
-            var response = await this._importBuilders.ImportModify(new ContextModel(this.Context, prfx, contextUser), contextUser.UserId);
+            var response = await importBuilders.ImportModify(new ContextModel(this.Context, prfx, contextUser), contextUser.UserId);
             var dmChannel = await this.Context.User.GetDMChannelAsync();
             await dmChannel.SendMessageAsync(new MessageProperties
             {

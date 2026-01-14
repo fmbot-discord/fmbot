@@ -23,38 +23,18 @@ namespace FMBot.Bot.SlashCommands;
 [SlashCommand("import", "Manage your data imports",
     Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild],
     IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
-public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationCommandContext>
+public class ImportGroupSlashCommands(
+    UserService userService,
+    ImportService importService,
+    PlayService playService,
+    IndexService indexService,
+    InteractiveService interactivity,
+    ImportBuilders importBuilders,
+    SupporterService supporterService,
+    UserBuilder userBuilder)
+    : ApplicationCommandModule<ApplicationCommandContext>
 {
-    private readonly UserService _userService;
-    private readonly IDataSourceFactory _dataSourceFactory;
-    private readonly ImportService _importService;
-    private readonly PlayService _playService;
-    private readonly IndexService _indexService;
-    private readonly ImportBuilders _importBuilders;
-    private readonly SupporterService _supporterService;
-    private readonly UserBuilder _userBuilder;
-    private InteractiveService Interactivity { get; }
-
-    public ImportGroupSlashCommands(UserService userService,
-        IDataSourceFactory dataSourceFactory,
-        ImportService importService,
-        PlayService playService,
-        IndexService indexService,
-        InteractiveService interactivity,
-        ImportBuilders importBuilders,
-        SupporterService supporterService,
-        UserBuilder userBuilder)
-    {
-        this._userService = userService;
-        this._dataSourceFactory = dataSourceFactory;
-        this._importService = importService;
-        this._playService = playService;
-        this._indexService = indexService;
-        this.Interactivity = interactivity;
-        this._importBuilders = importBuilders;
-        this._supporterService = supporterService;
-        this._userBuilder = userBuilder;
-    }
+    private InteractiveService Interactivity { get; } = interactivity;
 
     private const string SpotifyFileDescription = "Spotify history package (.zip) or history files (.json) ";
 
@@ -92,14 +72,14 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
         [SlashCommandParameter(Name = "file-15", Description = SpotifyFileDescription)]
         Attachment attachment15 = null)
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var numberFormat = contextUser.NumberFormat ?? NumberFormat.NoSeparator;
 
         if (this.Context.Interaction.Entitlements.Any() && !SupporterService.IsSupporter(contextUser.UserType))
         {
-            await this._supporterService.UpdateSingleDiscordSupporter(this.Context.User.Id);
-            this._userService.RemoveUserFromCache(contextUser);
-            contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            await supporterService.UpdateSingleDiscordSupporter(this.Context.User.Id);
+            userService.RemoveUserFromCache(contextUser);
+            contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         }
 
         var supporterRequired = ImportBuilders.ImportSupporterRequired(new ContextModel(this.Context, contextUser));
@@ -128,7 +108,7 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
         if (noAttachments)
         {
             var instructionResponse =
-                await this._importBuilders.GetSpotifyImportInstructions(new ContextModel(this.Context, contextUser));
+                await importBuilders.GetSpotifyImportInstructions(new ContextModel(this.Context, contextUser));
             await this.Context.SendResponse(this.Interactivity, instructionResponse);
             this.Context.LogCommandUsed(instructionResponse.CommandResponse);
             return;
@@ -137,14 +117,15 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
         await Context.Interaction.SendResponseAsync(
             InteractionCallback.DeferredMessage(noAttachments ? MessageFlags.Ephemeral : default));
 
-        embed.AddField($"{EmojiProperties.Custom(DiscordConstants.Spotify).ToDiscordString("spotify")} Importing history into .fmbot..",
+        embed.AddField(
+            $"{EmojiProperties.Custom(DiscordConstants.Spotify).ToDiscordString("spotify")} Importing history into .fmbot..",
             $"- {EmojiProperties.Custom(DiscordConstants.Loading).ToDiscordString("loading", true)} Loading import files...");
         var message = await this.Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
             .WithEmbeds([embed]));
 
         try
         {
-            var imports = await this._importService.HandleSpotifyFiles(contextUser, attachments);
+            var imports = await importService.HandleSpotifyFiles(contextUser, attachments);
 
             if (imports.status == ImportStatus.UnknownFailure)
             {
@@ -198,32 +179,32 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
             await UpdateSpotifyImportEmbed(this.Context.Interaction, embed, description,
                 $"- **{imports.result.Count.Format(numberFormat)}** Spotify imports found");
 
-            var plays = await this._importService.SpotifyImportToUserPlays(contextUser, imports.result);
+            var plays = await importService.SpotifyImportToUserPlays(contextUser, imports.result);
             await UpdateSpotifyImportEmbed(this.Context.Interaction, embed, description,
                 $"- **{plays.Count.Format(numberFormat)}** actual plays found");
 
             var playsWithoutDuplicates =
-                await this._importService.RemoveDuplicateImports(contextUser.UserId, plays);
+                await importService.RemoveDuplicateImports(contextUser.UserId, plays);
             await UpdateSpotifyImportEmbed(this.Context.Interaction, embed, description,
                 $"- **{playsWithoutDuplicates.Count.Format(numberFormat)}** new plays found");
 
             if (playsWithoutDuplicates.Count > 0)
             {
-                await this._importService.InsertImportPlays(contextUser, playsWithoutDuplicates);
+                await importService.InsertImportPlays(contextUser, playsWithoutDuplicates);
                 await UpdateSpotifyImportEmbed(this.Context.Interaction, embed, description,
                     $"- Added plays to database");
 
                 if (contextUser.DataSource == DataSource.LastFm)
                 {
-                    var userHasImportedLastfm = await this._playService.UserHasImportedLastFm(contextUser.UserId);
+                    var userHasImportedLastfm = await playService.UserHasImportedLastFm(contextUser.UserId);
 
                     if (userHasImportedLastfm)
                     {
-                        await this._userService.SetDataSource(contextUser, DataSource.FullImportThenLastFm);
+                        await userService.SetDataSource(contextUser, DataSource.FullImportThenLastFm);
                     }
                     else
                     {
-                        await this._userService.SetDataSource(contextUser, DataSource.ImportThenFullLastFm);
+                        await userService.SetDataSource(contextUser, DataSource.ImportThenFullLastFm);
                     }
 
                     await UpdateSpotifyImportEmbed(this.Context.Interaction, embed, description,
@@ -233,21 +214,21 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
 
             if (contextUser.DataSource != DataSource.LastFm)
             {
-                await this._indexService.RecalculateTopLists(contextUser);
+                await indexService.RecalculateTopLists(contextUser);
                 await UpdateSpotifyImportEmbed(this.Context.Interaction, embed, description,
                     $"- Refreshed top list cache");
             }
 
-            await this._importService.UpdateExistingScrobbleSource(contextUser);
+            await importService.UpdateExistingScrobbleSource(contextUser);
 
-            var years = await this._importBuilders.GetImportedYears(contextUser.UserId, PlaySource.SpotifyImport,
+            var years = await importBuilders.GetImportedYears(contextUser.UserId, PlaySource.SpotifyImport,
                 numberFormat);
             if (years is { Length: > 0 })
             {
                 embed.AddField("<:fmbot_importing:1131511469096312914> All imported Spotify plays", years, true);
             }
 
-            contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
             var importActivated = new StringBuilder();
             var importSetting = new StringBuilder();
@@ -313,14 +294,14 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
             Description = "'Apple Media Services information.zip' or 'Apple Music Play Activity.csv' file")]
         Attachment attachment = null)
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var numberFormat = contextUser.NumberFormat ?? NumberFormat.NoSeparator;
 
         if (this.Context.Interaction.Entitlements.Any() && !SupporterService.IsSupporter(contextUser.UserType))
         {
-            await this._supporterService.UpdateSingleDiscordSupporter(this.Context.User.Id);
-            this._userService.RemoveUserFromCache(contextUser);
-            contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            await supporterService.UpdateSingleDiscordSupporter(this.Context.User.Id);
+            userService.RemoveUserFromCache(contextUser);
+            contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         }
 
         var supporterRequired = ImportBuilders.ImportSupporterRequired(new ContextModel(this.Context, contextUser));
@@ -339,7 +320,7 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
         if (attachment == null)
         {
             var instructionResponse =
-                await this._importBuilders.GetAppleMusicImportInstructions(new ContextModel(this.Context, contextUser));
+                await importBuilders.GetAppleMusicImportInstructions(new ContextModel(this.Context, contextUser));
             await this.Context.SendResponse(this.Interactivity, instructionResponse);
             this.Context.LogCommandUsed(instructionResponse.CommandResponse);
             return;
@@ -347,7 +328,8 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
 
         await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage());
 
-        embed.AddField($"{EmojiProperties.Custom(DiscordConstants.AppleMusic).ToDiscordString("apple_music")} Importing history into .fmbot..",
+        embed.AddField(
+            $"{EmojiProperties.Custom(DiscordConstants.AppleMusic).ToDiscordString("apple_music")} Importing history into .fmbot..",
             $"- {EmojiProperties.Custom(DiscordConstants.Loading).ToDiscordString("loading", true)} Loading import files...");
 
         var message = await this.Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
@@ -355,7 +337,7 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
 
         try
         {
-            var imports = await this._importService.HandleAppleMusicFiles(contextUser, attachment);
+            var imports = await importService.HandleAppleMusicFiles(contextUser, attachment);
 
             if (imports.status == ImportStatus.UnknownFailure)
             {
@@ -383,7 +365,7 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
             await UpdateAppleMusicImportEmbed(this.Context.Interaction, embed, description,
                 $"- **{imports.result.Count.Format(numberFormat)}** Apple Music imports found");
 
-            var importsWithArtist = await this._importService.AppleMusicImportAddArtists(contextUser, imports.result);
+            var importsWithArtist = await importService.AppleMusicImportAddArtists(contextUser, imports.result);
             await UpdateAppleMusicImportEmbed(this.Context.Interaction, embed, description,
                 $"- **{importsWithArtist.matchFoundPercentage}** of artist names found for imports");
             await UpdateAppleMusicImportEmbed(this.Context.Interaction, embed, description,
@@ -394,27 +376,27 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
                 $"- **{plays.Count.Format(numberFormat)}** actual plays found");
 
             var playsWithoutDuplicates =
-                await this._importService.RemoveDuplicateImports(contextUser.UserId, plays);
+                await importService.RemoveDuplicateImports(contextUser.UserId, plays);
             await UpdateAppleMusicImportEmbed(this.Context.Interaction, embed, description,
                 $"- **{playsWithoutDuplicates.Count.Format(numberFormat)}** new plays found");
 
             if (playsWithoutDuplicates.Count > 0)
             {
-                await this._importService.InsertImportPlays(contextUser, playsWithoutDuplicates);
+                await importService.InsertImportPlays(contextUser, playsWithoutDuplicates);
                 await UpdateAppleMusicImportEmbed(this.Context.Interaction, embed, description,
                     $"- Added plays to database");
 
                 if (contextUser.DataSource == DataSource.LastFm)
                 {
-                    var userHasImportedLastfm = await this._playService.UserHasImportedLastFm(contextUser.UserId);
+                    var userHasImportedLastfm = await playService.UserHasImportedLastFm(contextUser.UserId);
 
                     if (userHasImportedLastfm)
                     {
-                        await this._userService.SetDataSource(contextUser, DataSource.FullImportThenLastFm);
+                        await userService.SetDataSource(contextUser, DataSource.FullImportThenLastFm);
                     }
                     else
                     {
-                        await this._userService.SetDataSource(contextUser, DataSource.ImportThenFullLastFm);
+                        await userService.SetDataSource(contextUser, DataSource.ImportThenFullLastFm);
                     }
 
                     await UpdateAppleMusicImportEmbed(this.Context.Interaction, embed, description,
@@ -424,21 +406,21 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
 
             if (contextUser.DataSource != DataSource.LastFm)
             {
-                await this._indexService.RecalculateTopLists(contextUser);
+                await indexService.RecalculateTopLists(contextUser);
                 await UpdateAppleMusicImportEmbed(this.Context.Interaction, embed, description,
                     $"- Refreshed top list cache");
             }
 
-            await this._importService.UpdateExistingScrobbleSource(contextUser);
+            await importService.UpdateExistingScrobbleSource(contextUser);
 
-            var years = await this._importBuilders.GetImportedYears(contextUser.UserId, PlaySource.AppleMusicImport,
+            var years = await importBuilders.GetImportedYears(contextUser.UserId, PlaySource.AppleMusicImport,
                 numberFormat);
             if (years is { Length: > 0 })
             {
                 embed.AddField("<:fmbot_importing:1131511469096312914> All imported Apple Music plays", years, true);
             }
 
-            contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
             var importActivated = new StringBuilder();
             var importSetting = new StringBuilder();
@@ -521,7 +503,8 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
     {
         builder.AppendLine(lineToAdd);
 
-        var loadingLine = $"- {EmojiProperties.Custom(DiscordConstants.Loading).ToDiscordString("loading", true)} Processing...";
+        var loadingLine =
+            $"- {EmojiProperties.Custom(DiscordConstants.Loading).ToDiscordString("loading", true)} Processing...";
 
         var title = playSource == PlaySource.SpotifyImport
             ? $"{EmojiProperties.Custom(DiscordConstants.Spotify).ToDiscordString("spotify")} Importing history into .fmbot.."
@@ -551,7 +534,7 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
     [UsernameSetRequired]
     public async Task ManageImportAsync()
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
         var supporterRequired = ImportBuilders.ImportSupporterRequired(new ContextModel(this.Context, contextUser));
 
@@ -567,7 +550,7 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
         try
         {
             var response =
-                await this._userBuilder.ImportMode(new ContextModel(this.Context, contextUser), contextUser.UserId);
+                await userBuilder.ImportMode(new ContextModel(this.Context, contextUser), contextUser.UserId);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response, ephemeral: true);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -582,7 +565,7 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
     [UsernameSetRequired]
     public async Task ModifyImportAsync()
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
         var supporterRequired = ImportBuilders.ImportSupporterRequired(new ContextModel(this.Context, contextUser));
 
@@ -613,7 +596,7 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
         try
         {
             var response =
-                await this._importBuilders.ImportModify(new ContextModel(this.Context, contextUser),
+                await importBuilders.ImportModify(new ContextModel(this.Context, contextUser),
                     contextUser.UserId);
             var dmChannel = await this.Context.User.GetDMChannelAsync();
             await dmChannel.SendMessageAsync(new MessageProperties

@@ -20,31 +20,18 @@ namespace FMBot.Bot.TextCommands.Guild;
 
 [ModuleName("Server member settings")]
 [ServerStaffOnly]
-public class UserGuildSettingCommands : BaseCommandModule
+public class UserGuildSettingCommands(
+    IPrefixService prefixService,
+    GuildService guildService,
+    AdminService adminService,
+    SettingService settingService,
+    IOptions<BotSettings> botSettings,
+    GuildSettingBuilder guildSettingBuilder,
+    InteractiveService interactivity)
+    : BaseCommandModule(botSettings)
 {
-    private readonly AdminService _adminService;
-    private readonly GuildService _guildService;
-    private readonly SettingService _settingService;
-    private readonly GuildSettingBuilder _guildSettingBuilder;
+    private InteractiveService Interactivity { get; } = interactivity;
 
-    private readonly IPrefixService _prefixService;
-
-    private InteractiveService Interactivity { get; }
-
-
-    public UserGuildSettingCommands(IPrefixService prefixService,
-        GuildService guildService,
-        AdminService adminService,
-        SettingService settingService,
-        IOptions<BotSettings> botSettings, GuildSettingBuilder guildSettingBuilder, InteractiveService interactivity) : base(botSettings)
-    {
-        this._prefixService = prefixService;
-        this._guildService = guildService;
-        this._settingService = settingService;
-        this._guildSettingBuilder = guildSettingBuilder;
-        this.Interactivity = interactivity;
-        this._adminService = adminService;
-    }
 
     [Command("fmbotactivitythreshold", "setfmbotactivitythreshold", "setfmbotthreshold", "setfmbothreshold")]
     [Summary("Sets amount of days to filter out users for inactivity. Inactivity is counted by the last date that someone has used .fmbot")]
@@ -55,8 +42,8 @@ public class UserGuildSettingCommands : BaseCommandModule
     {
         try
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-            var response = await this._guildSettingBuilder.SetFmbotActivityThreshold(new ContextModel(this.Context, prfx));
+            var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+            var response = await guildSettingBuilder.SetFmbotActivityThreshold(new ContextModel(this.Context, prfx));
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -75,9 +62,9 @@ public class UserGuildSettingCommands : BaseCommandModule
     [CommandCategories(CommandCategory.ServerSettings, CommandCategory.WhoKnows)]
     public async Task GuildBlockUserAsync([CommandParameter(Remainder = true)] string user = null)
     {
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
+        if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
         {
             await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = GuildSettingBuilder.UserNotAllowedResponseText() });
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
@@ -93,7 +80,7 @@ public class UserGuildSettingCommands : BaseCommandModule
             return;
         }
 
-        var userToBlock = await this._settingService.GetDifferentUser(user);
+        var userToBlock = await settingService.GetDifferentUser(user);
 
         if (userToBlock == null)
         {
@@ -102,11 +89,11 @@ public class UserGuildSettingCommands : BaseCommandModule
             return;
         }
 
-        var guildUsers = await this._guildService.GetGuildUsers(this.Context.Guild.Id);
+        var guildUsers = await guildService.GetGuildUsers(this.Context.Guild.Id);
 
         if (!guildUsers.ContainsKey(userToBlock.UserId))
         {
-            var similarUsers = await this._adminService.GetUsersWithLfmUsernameAsync(userToBlock.UserNameLastFM);
+            var similarUsers = await adminService.GetUsersWithLfmUsernameAsync(userToBlock.UserNameLastFM);
 
             var userInThisServer = similarUsers.FirstOrDefault(f =>
                 f.UserNameLastFM.ToLower() == userToBlock.UserNameLastFM.ToLower() && guildUsers.ContainsKey(f.UserId));
@@ -131,7 +118,7 @@ public class UserGuildSettingCommands : BaseCommandModule
             return;
         }
 
-        var userBlocked = await this._guildService.BlockGuildUserAsync(this.Context.Guild, userToBlock.UserId);
+        var userBlocked = await guildService.BlockGuildUserAsync(this.Context.Guild, userToBlock.UserId);
 
         if (userBlocked)
         {
@@ -159,9 +146,9 @@ public class UserGuildSettingCommands : BaseCommandModule
     [CommandCategories(CommandCategory.ServerSettings, CommandCategory.WhoKnows)]
     public async Task GuildUnBlockUserAsync([CommandParameter(Remainder = true)] string user = null)
     {
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
+        if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
         {
             await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = GuildSettingBuilder.UserNotAllowedResponseText() });
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
@@ -177,7 +164,7 @@ public class UserGuildSettingCommands : BaseCommandModule
             return;
         }
 
-        var userToUnblock = await this._settingService.GetDifferentUser(user);
+        var userToUnblock = await settingService.GetDifferentUser(user);
 
         if (userToUnblock == null)
         {
@@ -186,7 +173,7 @@ public class UserGuildSettingCommands : BaseCommandModule
             return;
         }
 
-        var guildUsers = await this._guildService.GetGuildUsers(this.Context.Guild.Id);
+        var guildUsers = await guildService.GetGuildUsers(this.Context.Guild.Id);
 
         if (guildUsers == null || !guildUsers.ContainsKey(userToUnblock.UserId))
         {
@@ -195,7 +182,7 @@ public class UserGuildSettingCommands : BaseCommandModule
             return;
         }
 
-        var userUnblocked = await this._guildService.UnBlockGuildUserAsync(this.Context.Guild, userToUnblock.UserId);
+        var userUnblocked = await guildService.UnBlockGuildUserAsync(this.Context.Guild, userToUnblock.UserId);
 
         if (userUnblocked)
         {
@@ -223,9 +210,9 @@ public class UserGuildSettingCommands : BaseCommandModule
     [CommandCategories(CommandCategory.ServerSettings, CommandCategory.WhoKnows)]
     public async Task BlockedUsersAsync([CommandParameter(Remainder = true)] string searchValue = null)
     {
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
+        if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
         {
             await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = GuildSettingBuilder.UserNotAllowedResponseText() });
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
@@ -234,7 +221,7 @@ public class UserGuildSettingCommands : BaseCommandModule
 
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var response = await this._guildSettingBuilder.BlockedUsersAsync(new ContextModel(this.Context, prfx), searchValue: searchValue);
+        var response = await guildSettingBuilder.BlockedUsersAsync(new ContextModel(this.Context, prfx), searchValue: searchValue);
 
         await this.Context.SendResponse(this.Interactivity, response);
         this.Context.LogCommandUsed(response.CommandResponse);

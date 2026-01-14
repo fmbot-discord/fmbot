@@ -21,34 +21,17 @@ using NetCord.Services.ApplicationCommands;
 
 namespace FMBot.Bot.SlashCommands;
 
-public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandContext>
+public class UserSlashCommands(
+    UserService userService,
+    GuildService guildService,
+    UserBuilder userBuilder,
+    SettingService settingService,
+    OpenAiService openAiService,
+    TimerService timerService,
+    InteractiveService interactivity)
+    : ApplicationCommandModule<ApplicationCommandContext>
 {
-    private readonly UserService _userService;
-    private readonly GuildService _guildService;
-    private readonly UserBuilder _userBuilder;
-    private readonly SettingService _settingService;
-    private readonly OpenAiService _openAiService;
-    private readonly TimerService _timerService;
-
-    private InteractiveService Interactivity { get; }
-
-    public UserSlashCommands(
-        UserService userService,
-        GuildService guildService,
-        UserBuilder userBuilder,
-        SettingService settingService,
-        OpenAiService openAiService,
-        TimerService timerService,
-        InteractiveService interactivity)
-    {
-        this.Interactivity = interactivity;
-        this._userService = userService;
-        this._guildService = guildService;
-        this._userBuilder = userBuilder;
-        this._settingService = settingService;
-        this._openAiService = openAiService;
-        this._timerService = timerService;
-    }
+    private InteractiveService Interactivity { get; } = interactivity;
 
     [SlashCommand("settings", "Your user settings in .fmbot", Contexts =
     [
@@ -64,7 +47,7 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
     {
         try
         {
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
             var response = UserBuilder.GetUserSettings(new ContextModel(this.Context, contextUser));
 
@@ -88,7 +71,7 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
     ])]
     public async Task LoginAsync()
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
         try
         {
@@ -115,7 +98,7 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
     [UsernameSetRequired]
     public async Task PrivacyAsync()
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
         var response = UserBuilder.Privacy(new ContextModel(this.Context, contextUser));
 
@@ -135,8 +118,8 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
     [UsernameSetRequired]
     public async Task FmModeSlashAsync()
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var guild = await this._guildService.GetGuildAsync(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var guild = await guildService.GetGuildAsync(this.Context.Guild?.Id);
 
         var response = UserBuilder.FmMode(new ContextModel(this.Context, contextUser), guild);
 
@@ -148,7 +131,7 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
     [UsernameSetRequired]
     public async Task ResponseModeSlashAsync()
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
         var response = UserBuilder.ResponseMode(new ContextModel(this.Context, contextUser));
 
@@ -167,14 +150,15 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
     ])]
     [UsernameSetRequired]
     public async Task SetLocalization(
-        [SlashCommandParameter(Name = "timezone", Description = "Timezone you want to set", AutocompleteProviderType = typeof(TimeZoneAutoComplete))]
+        [SlashCommandParameter(Name = "timezone", Description = "Timezone you want to set",
+            AutocompleteProviderType = typeof(TimeZoneAutoComplete))]
         string timezone = null,
         [SlashCommandParameter(Name = "numberformat", Description = "Number formatting you want to use")]
         NumberFormat? numberFormat = null)
     {
         try
         {
-            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
 
             var embeds = new List<EmbedProperties>();
             EmbedProperties timezoneEmbed = null;
@@ -185,7 +169,7 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
 
                 var timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(timezone);
 
-                await this._userService.SetTimeZone(userSettings.UserId, timezone);
+                await userService.SetTimeZone(userSettings.UserId, timezone);
 
                 var localTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, timeZoneInfo);
                 var nextMidnight = localTime.Date.AddDays(1);
@@ -208,7 +192,7 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
             {
                 numberFormatEmbed = new EmbedProperties();
 
-                var setValue = await this._userService.SetNumberFormat(userSettings.UserId, numberFormat.Value);
+                var setValue = await userService.SetNumberFormat(userSettings.UserId, numberFormat.Value);
 
                 var reply = new StringBuilder();
                 reply.AppendLine($"Your number format has successfully been updated.");
@@ -225,7 +209,8 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
             if (embeds.Count == 0)
             {
                 await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
-                    .WithContent("No options set. Select one of the slash command options to configure your localization settings.")
+                    .WithContent(
+                        "No options set. Select one of the slash command options to configure your localization settings.")
                     .WithFlags(MessageFlags.Ephemeral)));
                 this.Context.LogCommandUsed(CommandResponse.WrongInput);
                 return;
@@ -239,7 +224,8 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
         catch (Exception e)
         {
             await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
-                .WithContent("Something went wrong while setting localization. Please check if you entered a valid timezone.")
+                .WithContent(
+                    "Something went wrong while setting localization. Please check if you entered a valid timezone.")
                 .WithFlags(MessageFlags.Ephemeral)));
             this.Context.LogCommandUsed(CommandResponse.WrongInput);
             await this.Context.HandleCommandException(e, sendReply: false);
@@ -258,7 +244,7 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
     [UsernameSetRequired]
     public async Task RemoveAsync()
     {
-        var userSettings = await this._userService.GetFullUserAsync(this.Context.User.Id);
+        var userSettings = await userService.GetFullUserAsync(this.Context.User.Id);
 
         if (this.Context.Guild != null)
         {
@@ -266,9 +252,10 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
                 .WithColor(DiscordConstants.WarningColorOrange)
                 .WithDescription("Check your DMs to continue with your .fmbot account deletion.");
 
-            await this.Context.Interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties()
-                .WithEmbeds([serverEmbed])
-                .WithFlags(MessageFlags.Ephemeral)));
+            await this.Context.Interaction.SendResponseAsync(InteractionCallback.Message(
+                new InteractionMessageProperties()
+                    .WithEmbeds([serverEmbed])
+                    .WithFlags(MessageFlags.Ephemeral)));
         }
         else
         {
@@ -276,9 +263,10 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
                 .WithColor(DiscordConstants.WarningColorOrange)
                 .WithDescription("Check the message below to continue with your .fmbot account deletion.");
 
-            await this.Context.Interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties()
-                .WithEmbeds([serverEmbed])
-                .WithFlags(MessageFlags.Ephemeral)));
+            await this.Context.Interaction.SendResponseAsync(InteractionCallback.Message(
+                new InteractionMessageProperties()
+                    .WithEmbeds([serverEmbed])
+                    .WithFlags(MessageFlags.Ephemeral)));
         }
 
         var response = UserBuilder.RemoveDataResponse(new ContextModel(this.Context, userSettings));
@@ -295,7 +283,7 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
     [UsernameSetRequired]
     public async Task DeleteResponseAsync(RestMessage message)
     {
-        var interactionToDelete = await this._userService.GetMessageIdToDelete(message.Id);
+        var interactionToDelete = await userService.GetMessageIdToDelete(message.Id);
 
         if (interactionToDelete == null)
         {
@@ -334,8 +322,8 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
             { AuditLogReason = "Deleted by user through message command" });
 
         await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
-                .WithContent("Removed .fmbot response.")
-                .WithFlags(MessageFlags.Ephemeral)));
+            .WithContent("Removed .fmbot response.")
+            .WithFlags(MessageFlags.Ephemeral)));
         this.Context.LogCommandUsed();
     }
 
@@ -350,17 +338,19 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
     ])]
     [UsernameSetRequired]
     public async Task JudgeAsync(
-        [SlashCommandParameter(Name = "time-period", Description = "Time period", AutocompleteProviderType = typeof(DateTimeAutoComplete))]
+        [SlashCommandParameter(Name = "time-period", Description = "Time period",
+            AutocompleteProviderType = typeof(DateTimeAutoComplete))]
         string timePeriod = null,
-        [SlashCommandParameter(Name = "user", Description = "The user to judge")] string user = null)
+        [SlashCommandParameter(Name = "user", Description = "The user to judge")]
+        string user = null)
     {
-        var contextUser = await this._userService.GetUserAsync(this.Context.User.Id);
+        var contextUser = await userService.GetUserAsync(this.Context.User.Id);
         var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.Quarterly);
 
         var userSettings =
-            await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+            await settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
 
-        var commandUsesLeft = await this._openAiService.GetJudgeUsesLeft(contextUser);
+        var commandUsesLeft = await openAiService.GetJudgeUsesLeft(contextUser);
 
         var response =
             UserBuilder.JudgeAsync(new ContextModel(this.Context, contextUser), userSettings, timeSettings,
@@ -382,8 +372,8 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
     [UsernameSetRequired]
     public async Task FeaturedAsync()
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var response = await this._userBuilder.FeaturedAsync(new ContextModel(this.Context, contextUser));
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var response = await userBuilder.FeaturedAsync(new ContextModel(this.Context, contextUser));
 
         await this.Context.SendResponse(this.Interactivity, response);
         this.Context.LogCommandUsed(response.CommandResponse);
@@ -395,10 +385,10 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
             PublicProperties.UsedCommandsResponseMessageId.TryAdd(this.Context.Interaction.Id, message.Id);
             PublicProperties.UsedCommandsResponseContextId.TryAdd(message.Id, this.Context.Interaction.Id);
 
-            if (this._timerService.CurrentFeatured?.Reactions != null &&
-                this._timerService.CurrentFeatured.Reactions.Length != 0)
+            if (timerService.CurrentFeatured?.Reactions != null &&
+                timerService.CurrentFeatured.Reactions.Length != 0)
             {
-                await GuildService.AddReactionsAsync(message, this._timerService.CurrentFeatured.Reactions);
+                await GuildService.AddReactionsAsync(message, timerService.CurrentFeatured.Reactions);
             }
             else
             {
@@ -409,7 +399,7 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
                 }
                 else if (this.Context.Guild != null)
                 {
-                    await this._guildService.AddGuildReactionsAsync(message, this.Context.Guild,
+                    await guildService.AddGuildReactionsAsync(message, this.Context.Guild,
                         response.Text == "in-server");
                 }
             }
@@ -427,7 +417,7 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
     [UsernameSetRequired]
     public async Task BotScrobblingAsync()
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var response = UserBuilder.BotScrobblingAsync(new ContextModel(this.Context, contextUser));
 
         await this.Context.SendResponse(this.Interactivity, response);
@@ -450,18 +440,21 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
         [SlashCommandParameter(Name = "user", Description = "The user to view the featured log for (defaults to self)")]
         string user = null)
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var userSettings =
-            await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+            await settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
 
         var response =
-            await this._userBuilder.FeaturedLogAsync(new ContextModel(this.Context, contextUser), userSettings, view);
+            await userBuilder.FeaturedLogAsync(new ContextModel(this.Context, contextUser), userSettings, view);
 
         await this.Context.SendResponse(this.Interactivity, response);
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [SlashCommand("profile", "Shows you or someone else's profile", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,     InteractionContextType.Guild], IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
+    [SlashCommand("profile", "Shows you or someone else's profile",
+        Contexts =
+            [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild],
+        IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task ProfileAsync(
         [SlashCommandParameter(Name = "user", Description = "The user of which you want to view their profile")]
@@ -469,11 +462,11 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
 
-        var contextUser = await this._userService.GetFullUserAsync(this.Context.User.Id);
+        var contextUser = await userService.GetFullUserAsync(this.Context.User.Id);
         var userSettings =
-            await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+            await settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
 
-        var response = await this._userBuilder.ProfileAsync(new ContextModel(this.Context, contextUser), userSettings);
+        var response = await userBuilder.ProfileAsync(new ContextModel(this.Context, contextUser), userSettings);
 
         await this.Context.SendFollowUpResponse(this.Interactivity, response);
         this.Context.LogCommandUsed(response.CommandResponse);

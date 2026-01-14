@@ -17,30 +17,18 @@ using NetCord.Services.ComponentInteractions;
 
 namespace FMBot.Bot.Interactions;
 
-public class GameInteractions : ComponentInteractionModule<ComponentInteractionContext>
+public class GameInteractions(
+    GameBuilders gameBuilders,
+    UserService userService,
+    GameService gameService,
+    InteractiveService interactivity)
+    : ComponentInteractionModule<ComponentInteractionContext>
 {
-    private readonly GameBuilders _gameBuilders;
-    private readonly UserService _userService;
-    private readonly GameService _gameService;
-    private readonly InteractiveService _interactivity;
-
-    public GameInteractions(
-        GameBuilders gameBuilders,
-        UserService userService,
-        GameService gameService,
-        InteractiveService interactivity)
-    {
-        this._gameBuilders = gameBuilders;
-        this._userService = userService;
-        this._gameService = gameService;
-        this._interactivity = interactivity;
-    }
-
     [ComponentInteraction(InteractionConstants.Game.AddJumbleHint)]
     public async Task JumbleAddHint(string gameId)
     {
         var parsedGameId = int.Parse(gameId);
-        var response = await this._gameBuilders.JumbleAddHint(new ContextModel(this.Context), parsedGameId);
+        var response = await gameBuilders.JumbleAddHint(new ContextModel(this.Context), parsedGameId);
 
         await this.Context.UpdateInteractionEmbed(response);
     }
@@ -49,7 +37,7 @@ public class GameInteractions : ComponentInteractionModule<ComponentInteractionC
     public async Task JumbleUnblur(string gameId)
     {
         var parsedGameId = int.Parse(gameId);
-        var response = await this._gameBuilders.JumbleUnblur(new ContextModel(this.Context), parsedGameId);
+        var response = await gameBuilders.JumbleUnblur(new ContextModel(this.Context), parsedGameId);
 
         await this.Context.UpdateInteractionEmbed(response);
     }
@@ -58,7 +46,7 @@ public class GameInteractions : ComponentInteractionModule<ComponentInteractionC
     public async Task JumbleReshuffle(string gameId)
     {
         var parsedGameId = int.Parse(gameId);
-        var response = await this._gameBuilders.JumbleReshuffle(new ContextModel(this.Context), parsedGameId);
+        var response = await gameBuilders.JumbleReshuffle(new ContextModel(this.Context), parsedGameId);
 
         await this.Context.UpdateInteractionEmbed(response);
     }
@@ -67,12 +55,12 @@ public class GameInteractions : ComponentInteractionModule<ComponentInteractionC
     public async Task JumbleGiveUp(string gameId)
     {
         var parsedGameId = int.Parse(gameId);
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var response = await this._gameBuilders.JumbleGiveUp(new ContextModel(this.Context, contextUser), parsedGameId);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var response = await gameBuilders.JumbleGiveUp(new ContextModel(this.Context, contextUser), parsedGameId);
 
         if (response.CommandResponse == CommandResponse.NoPermission)
         {
-            await this.Context.SendResponse(this._interactivity, response, ephemeral: true);
+            await this.Context.SendResponse(interactivity, response, ephemeral: true);
         }
         else
         {
@@ -83,7 +71,7 @@ public class GameInteractions : ComponentInteractionModule<ComponentInteractionC
         if (message != null &&
             PublicProperties.UsedCommandsResponseContextId.TryGetValue(message.Id, out var contextId))
         {
-            await this._userService.UpdateInteractionContext(contextId, response.ReferencedMusic);
+            await userService.UpdateInteractionContext(contextId, response.ReferencedMusic);
         }
     }
 
@@ -98,7 +86,7 @@ public class GameInteractions : ComponentInteractionModule<ComponentInteractionC
 
             var jumbleTypeEnum = (JumbleType)Enum.Parse(typeof(JumbleType), jumbleType);
 
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
             var context = new ContextModel(this.Context, contextUser);
 
             var cancellationTokenSource = new CancellationTokenSource();
@@ -107,17 +95,17 @@ public class GameInteractions : ComponentInteractionModule<ComponentInteractionC
             var secondsToGuess = GameService.JumbleSecondsToGuess;
             if (jumbleTypeEnum == JumbleType.Artist)
             {
-                response = await this._gameBuilders.StartArtistJumble(context, contextUser.UserId,
+                response = await gameBuilders.StartArtistJumble(context, contextUser.UserId,
                     cancellationTokenSource);
             }
             else
             {
                 secondsToGuess = GameService.PixelationSecondsToGuess;
-                response = await this._gameBuilders.StartPixelJumble(context, contextUser.UserId,
+                response = await gameBuilders.StartPixelJumble(context, contextUser.UserId,
                     cancellationTokenSource);
             }
 
-            var responseId = await this.Context.SendFollowUpResponse(this._interactivity, response,
+            var responseId = await this.Context.SendFollowUpResponse(interactivity, response,
                 ephemeral: response.CommandResponse != CommandResponse.Ok);
             this.Context.LogCommandUsed(response.CommandResponse);
 
@@ -136,7 +124,7 @@ public class GameInteractions : ComponentInteractionModule<ComponentInteractionC
 
                 if (responseId.HasValue && response.GameSessionId.HasValue)
                 {
-                    await this._gameService.JumbleAddResponseId(response.GameSessionId.Value, responseId.Value);
+                    await gameService.JumbleAddResponseId(response.GameSessionId.Value, responseId.Value);
 
                     await JumbleTimeExpired(context, responseId.Value, cancellationTokenSource.Token,
                         response.GameSessionId.Value, secondsToGuess);
@@ -166,7 +154,7 @@ public class GameInteractions : ComponentInteractionModule<ComponentInteractionC
             return;
         }
 
-        var response = await this._gameBuilders.JumbleTimeExpired(context, gameSessionId);
+        var response = await gameBuilders.JumbleTimeExpired(context, gameSessionId);
 
         if (response == null)
         {
@@ -181,7 +169,7 @@ public class GameInteractions : ComponentInteractionModule<ComponentInteractionC
 
         if (PublicProperties.UsedCommandsResponseContextId.TryGetValue(message.Id, out var contextId))
         {
-            await this._userService.UpdateInteractionContext(contextId, response.ReferencedMusic);
+            await userService.UpdateInteractionContext(contextId, response.ReferencedMusic);
         }
 
         await this.Context.ModifyMessage(message, response, false);

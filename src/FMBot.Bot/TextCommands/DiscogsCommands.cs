@@ -12,36 +12,24 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using NetCord.Rest;
 using NetCord.Services.Commands;
-using static System.Text.RegularExpressions.Regex;
 using Fergun.Interactive;
 
 namespace FMBot.Bot.TextCommands;
 
-public class DiscogsCommands : BaseCommandModule
+public class DiscogsCommands(
+    DiscogsBuilder discogsBuilder,
+    IOptions<BotSettings> botSettings,
+    UserService userService,
+    DiscogsService discogsService,
+    InteractiveService interactivity,
+    SettingService settingService,
+    IPrefixService prefixService)
+    : BaseCommandModule(botSettings)
 {
-    private readonly DiscogsBuilder _discogsBuilder;
-    private readonly UserService _userService;
-    private readonly DiscogsService _discogsService;
-    private readonly SettingService _settingService;
-    private readonly IPrefixService _prefixService;
+    private readonly DiscogsService _discogsService = discogsService;
 
-    private InteractiveService Interactivity { get; }
+    private InteractiveService Interactivity { get; } = interactivity;
 
-
-    public DiscogsCommands(DiscogsBuilder discogsBuilder,
-        IOptions<BotSettings> botSettings,
-        UserService userService,
-        DiscogsService discogsService,
-        InteractiveService interactivity,
-        SettingService settingService, IPrefixService prefixService) : base(botSettings)
-    {
-        this._discogsBuilder = discogsBuilder;
-        this._userService = userService;
-        this._discogsService = discogsService;
-        this.Interactivity = interactivity;
-        this._settingService = settingService;
-        this._prefixService = prefixService;
-    }
 
     [Command("discogs")]
     [Summary("Connects your Discogs account.\n\n" +
@@ -50,8 +38,8 @@ public class DiscogsCommands : BaseCommandModule
     [UsernameSetRequired]
     public async Task DiscogsAsync([CommandParameter(Remainder = true)] string unusedValues = null)
     {
-        var contextUser = await this._userService.GetUserWithDiscogs(this.Context.User.Id);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserWithDiscogs(this.Context.User.Id);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
         if (contextUser.UserDiscogs == null)
         {
@@ -65,7 +53,7 @@ public class DiscogsCommands : BaseCommandModule
             }
 
             var response =
-                this._discogsBuilder.DiscogsLoginGetLinkAsync(new ContextModel(this.Context, prfx, contextUser));
+                discogsBuilder.DiscogsLoginGetLinkAsync(new ContextModel(this.Context, prfx, contextUser));
             var dmChannel = await this.Context.User.GetDMChannelAsync();
             await dmChannel.SendMessageAsync(new MessageProperties
             {
@@ -104,14 +92,14 @@ public class DiscogsCommands : BaseCommandModule
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var userSettings = await this._settingService.GetUser(searchValues, contextUser, this.Context);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var userSettings = await settingService.GetUser(searchValues, contextUser, this.Context);
         var collectionSettings = SettingService.SetDiscogsCollectionSettings(userSettings.NewSearchValue);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
         try
         {
-            var response = await this._discogsBuilder.DiscogsCollectionAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, collectionSettings, collectionSettings.NewSearchValue);
+            var response = await discogsBuilder.DiscogsCollectionAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, collectionSettings, collectionSettings.NewSearchValue);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -131,14 +119,14 @@ public class DiscogsCommands : BaseCommandModule
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var userSettings = await this._settingService.GetUser(searchValues, contextUser, this.Context);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var userSettings = await settingService.GetUser(searchValues, contextUser, this.Context);
         var collectionSettings = SettingService.SetDiscogsCollectionSettings(userSettings.NewSearchValue);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
         try
         {
-            var response = await this._discogsBuilder.DiscogsCollectionAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, collectionSettings, collectionSettings.NewSearchValue);
+            var response = await discogsBuilder.DiscogsCollectionAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, collectionSettings, collectionSettings.NewSearchValue);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);

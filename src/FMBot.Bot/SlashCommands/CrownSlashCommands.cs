@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using System.Threading.Tasks;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
@@ -7,7 +6,6 @@ using FMBot.Bot.AutoCompleteHandlers;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
-using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using NetCord.Services.ApplicationCommands;
@@ -15,40 +13,33 @@ using NetCord.Rest;
 
 namespace FMBot.Bot.SlashCommands;
 
-public class CrownSlashCommands : ApplicationCommandModule<ApplicationCommandContext>
+public class CrownSlashCommands(
+    CrownBuilders crownBuilders,
+    InteractiveService interactivity,
+    UserService userService,
+    GuildService guildService,
+    SettingService settingService)
+    : ApplicationCommandModule<ApplicationCommandContext>
 {
-    private readonly CrownBuilders _crownBuilders;
-    private readonly UserService _userService;
-    private readonly GuildService _guildService;
-    private readonly SettingService _settingService;
-    private readonly ArtistsService _artistsService;
+    private InteractiveService Interactivity { get; } = interactivity;
 
-    private InteractiveService Interactivity { get; }
-
-
-    public CrownSlashCommands(CrownBuilders crownBuilders, InteractiveService interactivity, UserService userService, GuildService guildService, SettingService settingService, ArtistsService artistsService)
-    {
-        this._crownBuilders = crownBuilders;
-        this.Interactivity = interactivity;
-        this._userService = userService;
-        this._guildService = guildService;
-        this._settingService = settingService;
-        this._artistsService = artistsService;
-    }
 
     [SlashCommand("crown", "History for a specific crown")]
     [UsernameSetRequired]
     public async Task CrownAsync(
-        [SlashCommandParameter(Name = "artist", Description = "The artist your want to search for (defaults to currently playing)", AutocompleteProviderType = typeof(ArtistAutoComplete))] string name = null)
+        [SlashCommandParameter(Name = "artist",
+            Description = "The artist your want to search for (defaults to currently playing)",
+            AutocompleteProviderType = typeof(ArtistAutoComplete))]
+        string name = null)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
 
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
 
         try
         {
-            var response = await this._crownBuilders.CrownAsync(new ContextModel(this.Context, contextUser), guild, name);
+            var response = await crownBuilders.CrownAsync(new ContextModel(this.Context, contextUser), guild, name);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -62,19 +53,22 @@ public class CrownSlashCommands : ApplicationCommandModule<ApplicationCommandCon
     [SlashCommand("crowns", "View a list of crowns for you or someone else")]
     [UsernameSetRequired]
     public async Task CrownOverViewAsync(
-        [SlashCommandParameter(Name = "view", Description = "View of crowns you want to see")] CrownViewType viewType = CrownViewType.Playcount,
-        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")] string user = null)
+        [SlashCommandParameter(Name = "view", Description = "View of crowns you want to see")]
+        CrownViewType viewType = CrownViewType.Playcount,
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
+        string user = null)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
 
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var userSettings = await settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
 
-        var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+        var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
 
         try
         {
-            var response = await this._crownBuilders.CrownOverviewAsync(new ContextModel(this.Context, contextUser), guild, userSettings, viewType);
+            var response = await crownBuilders.CrownOverviewAsync(new ContextModel(this.Context, contextUser), guild,
+                userSettings, viewType);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
