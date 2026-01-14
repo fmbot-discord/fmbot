@@ -119,9 +119,6 @@ public class StartupService
         Log.Information("Loading all disabled channels");
         await this._disabledChannelService.LoadAllDisabledChannels();
 
-        Log.Information("Logging into Discord");
-        await this._client.StartAsync();
-
         Log.Information("Loading interaction modules");
         this._appCommands.AddModules(typeof(Program).Assembly);
 
@@ -130,6 +127,9 @@ public class StartupService
 
         Log.Information("Loading command modules");
         this._textCommands.AddModules(typeof(Program).Assembly);
+
+        Log.Information("Logging into Discord");
+        await this._client.StartAsync();
 
         Log.Information("Preparing cache folder");
         PrepareCacheFolder();
