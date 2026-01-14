@@ -884,7 +884,7 @@ public class TrackBuilders
         }
         catch (Exception e)
         {
-            Log.Error("Error while sending voice message followup", e);
+            Log.Error(e, "Error while sending voice message followup");
             throw;
         }
 

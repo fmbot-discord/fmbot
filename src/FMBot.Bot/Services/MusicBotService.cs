@@ -91,7 +91,7 @@ public class MusicBotService
         }
         catch (Exception e)
         {
-            Log.Error($"BotScrobbling: Error in music bot scrobbler ({musicBot.Name})", e);
+            Log.Error(e, "BotScrobbling: Error in music bot scrobbler ({musicBotName})", musicBot.Name);
             this.BotScrobblingLogs.Add(new BotScrobblingLog(context.Guild.Id, DateTime.UtcNow, "Skipped scrobble because error"));
         }
     }
@@ -166,7 +166,7 @@ public class MusicBotService
         }
         catch (Exception e)
         {
-            Log.Error("BotScrobbling: Error while setting now playing for bot scrobbling", e);
+            Log.Error(e, "BotScrobbling: Error while setting now playing for bot scrobbling");
             throw;
         }
 
@@ -266,7 +266,7 @@ public class MusicBotService
         }
         catch (Exception e)
         {
-            Log.Error("BotScrobbling: Error while getting users in voice", e);
+            Log.Error(e, "BotScrobbling: Error while getting users in voice");
             this.BotScrobblingLogs.Add(new BotScrobblingLog(context.Guild.Id, DateTime.UtcNow, $"Error while getting vc users"));
             return null;
         }

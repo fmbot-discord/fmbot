@@ -547,7 +547,7 @@ public class AlbumService
         }
         catch (Exception e)
         {
-            Log.Error($"Error in {nameof(GetLatestAlbums)}", e);
+            Log.Error(e, "Error in {method}", nameof(GetLatestAlbums));
             throw;
         }
     }
@@ -591,7 +591,7 @@ public class AlbumService
         }
         catch (Exception e)
         {
-            Log.Error($"Error in {nameof(GetRecentTopAlbums)}", e);
+            Log.Error(e, "Error in {method}", nameof(GetRecentTopAlbums));
             throw;
         }
     }
@@ -635,7 +635,7 @@ public class AlbumService
         }
         catch (Exception e)
         {
-            Log.Error($"Error in {nameof(SearchThroughAlbums)}", e);
+            Log.Error(e, "Error in {method}", nameof(SearchThroughAlbums));
             throw;
         }
     }

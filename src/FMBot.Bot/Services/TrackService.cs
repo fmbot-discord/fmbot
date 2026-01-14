@@ -613,7 +613,7 @@ public class TrackService
         }
         catch (Exception e)
         {
-            Log.Error("BotScrobbling: Error while getting track for description: {description}", description, e);
+            Log.Error(e, "BotScrobbling: Error while getting track for description: {description}", description);
             return null;
         }
     }
@@ -924,7 +924,7 @@ public class TrackService
         }
         catch (Exception e)
         {
-            Log.Error($"Error in {nameof(GetLatestTracks)}", e);
+            Log.Error(e, "Error in {method}", nameof(GetLatestTracks));
             throw;
         }
     }
@@ -941,7 +941,7 @@ public class TrackService
         }
         catch (Exception e)
         {
-            Log.Error($"Error in {nameof(GetRecentTopTracks)}", e);
+            Log.Error(e, "Error in {method}", nameof(GetRecentTopTracks));
             throw;
         }
     }
@@ -999,7 +999,7 @@ public class TrackService
         }
         catch (Exception e)
         {
-            Log.Error($"Error in {nameof(GetRecentTopTracks)}", e);
+            Log.Error(e, "Error in {method}", nameof(GetRecentTopTracks));
             throw;
         }
     }
@@ -1043,7 +1043,7 @@ public class TrackService
         }
         catch (Exception e)
         {
-            Log.Error($"Error in {nameof(SearchThroughTracks)}", e);
+            Log.Error(e, "Error in {method}", nameof(SearchThroughTracks));
             throw;
         }
     }

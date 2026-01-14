@@ -1474,7 +1474,7 @@ public class AdminCommands : BaseCommandModule
                 }
                 catch (Exception e)
                 {
-                    Log.Error("Removing supporter role failed for {id}", discordUserId, e);
+                    Log.Error(e, "Removing supporter role failed for {id}", discordUserId);
                 }
             }
 

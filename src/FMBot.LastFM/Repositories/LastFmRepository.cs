@@ -183,7 +183,7 @@ public class LastFmRepository : ILastfmRepository
         }
         catch (Exception e)
         {
-            Log.Error("LastFmRepository: Error in GetRecentTracksAsync for {lastFmUserName}", lastFmUserName, e);
+            Log.Error(e, "LastFmRepository: Error in GetRecentTracksAsync for {lastFmUserName}", lastFmUserName);
             throw;
         }
     }
@@ -785,7 +785,7 @@ public class LastFmRepository : ILastfmRepository
         }
         catch (Exception e)
         {
-            Log.Error("LastFmRepository: Error in GetTopAlbumsAsync for {lastFmUserName}", lastFmUserName, e);
+            Log.Error(e, "LastFmRepository: Error in GetTopAlbumsAsync for {lastFmUserName}", lastFmUserName);
             return new Response<TopAlbumList>
             {
                 Success = false,
@@ -981,7 +981,7 @@ public class LastFmRepository : ILastfmRepository
         }
         catch (Exception e)
         {
-            Log.Error("LastFmRepository: Error in GetTopArtistsAsync for {lastFmUserName}", lastFmUserName, e);
+            Log.Error(e, "LastFmRepository: Error in GetTopArtistsAsync for {lastFmUserName}", lastFmUserName);
             return new Response<TopArtistList>
             {
                 Success = false,
@@ -1147,7 +1147,7 @@ public class LastFmRepository : ILastfmRepository
         }
         catch (Exception e)
         {
-            Log.Error("LastFmRepository: Error in GetTopTracksAsync for {lastFmUserName}", lastFmUserName, e);
+            Log.Error(e, "LastFmRepository: Error in GetTopTracksAsync for {lastFmUserName}", lastFmUserName);
             return new Response<TopTrackList>
             {
                 Success = false,

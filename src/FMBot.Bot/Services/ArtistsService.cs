@@ -659,7 +659,7 @@ public class ArtistsService
         }
         catch (Exception e)
         {
-            Log.Error("Error in GetLatestArtists", e);
+            Log.Error(e, "Error in GetLatestArtists");
             throw;
         }
     }
@@ -713,7 +713,7 @@ public class ArtistsService
         }
         catch (Exception e)
         {
-            Log.Error("Error in GetRecentTopArtists", e);
+            Log.Error(e, "Error in GetRecentTopArtists");
             throw;
         }
     }
@@ -753,7 +753,7 @@ public class ArtistsService
         }
         catch (Exception e)
         {
-            Log.Error("Error in SearchThroughArtists", e);
+            Log.Error(e, "Error in SearchThroughArtists");
             throw;
         }
     }

@@ -205,7 +205,7 @@ public class LastfmApi : ILastfmApi
         }
         catch (Exception ex)
         {
-            Log.Error("LastfmApi: Error while trying to check for error", ex);
+            Log.Error(ex, "LastfmApi: Error while trying to check for error");
         }
 
         return response;

@@ -156,7 +156,7 @@ public class ClientLogHandler
         }
         catch (Exception e)
         {
-            Log.Error("Error in JoinedGuild / IndexServer", e);
+            Log.Error(e, "Error in JoinedGuild / IndexServer");
         }
     }
 

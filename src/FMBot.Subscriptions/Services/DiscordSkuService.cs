@@ -73,7 +73,7 @@ public class DiscordSkuService
         }
         catch (Exception ex)
         {
-            Log.Error("Something went wrong while deserializing Discord entitlements", ex);
+            Log.Error(ex, "Something went wrong while deserializing Discord entitlements");
             return null;
         }
     }

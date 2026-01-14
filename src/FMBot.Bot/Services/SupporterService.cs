@@ -1824,7 +1824,7 @@ public class SupporterService
             }
             catch (Exception e)
             {
-                Log.Error("Modifying supporter role failed for {id} - {exceptionMessage}", discordUserId, e.Message, e);
+                Log.Error(e, "Modifying supporter role failed for {id}", discordUserId);
             }
         }
     }

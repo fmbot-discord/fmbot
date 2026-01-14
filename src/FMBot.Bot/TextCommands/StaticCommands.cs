@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -27,8 +25,6 @@ using NetCord.Rest;
 using NetCord.Services.Commands;
 using Serilog;
 using Web.InternalApi;
-using Enum = System.Enum;
-using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 
 namespace FMBot.Bot.TextCommands;
 
@@ -272,7 +268,7 @@ public class StaticCommands : BaseCommandModule
         }
         catch (Exception e)
         {
-            Log.Error("Error in gRPC status fetch, {exceptionMessage}", e.Message, e);
+            Log.Error(e, "Error in gRPC status fetch, {exceptionMessage}", e.Message);
             instanceOverviewDescription.AppendLine("Error");
         }
 
@@ -321,7 +317,7 @@ public class StaticCommands : BaseCommandModule
         }
         catch (Exception e)
         {
-            Log.Error("Error in shards command", e);
+            Log.Error(e, "Error in shards command");
         }
 
         if (ConfigData.Data.Shards?.TotalShards != null)

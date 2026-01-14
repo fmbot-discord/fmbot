@@ -93,7 +93,7 @@ public class IndexService
         }
         catch (Exception e)
         {
-            Log.Error($"Index: Error happened! User {user.DiscordUserId} / {user.UserId} - {e.Message} - {e.InnerException} - {e.StackTrace}", e);
+            Log.Error(e, "Index: Error happened! User {userDiscordId} / {userId}", user.DiscordUserId, user.UserId);
             throw;
         }
     }
@@ -246,7 +246,7 @@ public class IndexService
         }
         catch (Exception e)
         {
-            Log.Error("Index: Reculculate toplists error happened! User {userDiscordId} / {userId} - {exceptionMessage} - {innerException} - {stackTrace}", user.DiscordUserId, user.UserId, e.Message, e.InnerException, e.StackTrace, e);
+            Log.Error(e, "Index: Recalculate toplists error happened! User {userDiscordId} / {userId}", user.DiscordUserId, user.UserId);
             throw;
         }
     }

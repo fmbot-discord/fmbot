@@ -801,7 +801,7 @@ public class GameBuilders
         }
         catch (Exception e)
         {
-            Log.Error("Error in JumbleProcessAnswer: {exception}", e.Message, e);
+            Log.Error(e, "Error in JumbleProcessAnswer: {exception}", e.Message);
             if (e.Message.Contains("error 50001", StringComparison.OrdinalIgnoreCase))
             {
                 await commandContext.Channel.SendMessageAsync(

@@ -193,7 +193,7 @@ public class GenreService
         }
         catch (Exception e)
         {
-            Log.Error("Error in SearchThroughGenres", e);
+            Log.Error(e, "Error in SearchThroughGenres");
             throw;
         }
     }
