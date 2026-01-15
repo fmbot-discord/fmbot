@@ -142,7 +142,7 @@ public static class CommandContextExtensions
 
                         break;
                     case ResponseType.Paginator:
-                        var existingMsgPaginator = await context.Channel.GetMessageAsync(
+                        var existingMsgPaginator = await context.Client.Rest.GetMessageAsync(context.Message.ChannelId,
                             PublicProperties.UsedCommandsResponseMessageId[context.Message.Id]);
 
                         if (existingMsgPaginator is Message gatewayMsgPaginator)
@@ -157,6 +157,7 @@ public static class CommandContextExtensions
                                 gatewayMsgPaginator,
                                 TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
                         }
+
                         break;
                     case ResponseType.ComponentPaginator:
                         var existingMsgComponentPaginator =
@@ -225,9 +226,10 @@ public static class CommandContextExtensions
                     responseMessage = embed;
                     break;
                 case ResponseType.Paginator:
+                    var channel = context.Guild == null ? await context.User.GetDMChannelAsync() : context.Channel;
                     var staticPaginator = await interactiveService.SendPaginatorAsync(
                         response.StaticPaginator.Build(),
-                        context.Channel,
+                        channel,
                         TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
                     responseMessage = staticPaginator.Message;
                     break;
