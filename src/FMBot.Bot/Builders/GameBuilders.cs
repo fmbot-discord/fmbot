@@ -804,9 +804,11 @@ public class GameBuilders
             Log.Error(e, "Error in JumbleProcessAnswer: {exception}", e.Message);
             if (e.Message.Contains("error 50001", StringComparison.OrdinalIgnoreCase))
             {
-                await commandContext.Channel.SendMessageAsync(
-                    "❌ Error: I can't properly process your jumble answers, because this server hasn't given me the necessary permissions.\n" +
-                    "Please ensure .fmbot has access to the **Add Reactions** permission.");
+                await commandContext.Client.Rest.SendMessageAsync(commandContext.Message.ChannelId, new MessageProperties
+                {
+                    Content = "❌ Error: I can't properly process your jumble answers, because this server hasn't given me the necessary permissions.\n" +
+                              "Please ensure .fmbot has access to the **Add Reactions** permission."
+                });
             }
         }
     }

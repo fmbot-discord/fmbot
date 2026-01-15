@@ -55,7 +55,7 @@ public class ChartCommands(
         var chartCount = await userService.GetCommandExecutedAmount(user.UserId, "chart", DateTime.UtcNow.AddSeconds(-40));
         if (chartCount >= 4)
         {
-            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Please wait a minute before generating charts again." });
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Please wait a minute before generating charts again." });
             this.Context.LogCommandUsed(CommandResponse.Cooldown);
             return;
         }
@@ -67,7 +67,7 @@ public class ChartCommands(
             var perms = await GuildService.GetGuildPermissionsAsync(this.Context);
             if (!perms.HasFlag(Permissions.AttachFiles))
             {
-                await this.Context.Channel.SendMessageAsync(new MessageProperties
+                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
                     { Content = "I'm missing the 'Attach files' permission in this server, so I can't post a chart." });
                 this.Context.LogCommandUsed(CommandResponse.NoPermission);
                 return;
@@ -119,7 +119,7 @@ public class ChartCommands(
         var chartCount = await userService.GetCommandExecutedAmount(user.UserId, "artistchart", DateTime.UtcNow.AddSeconds(-45));
         if (chartCount >= 3)
         {
-            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Please wait a minute before generating charts again." });
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Please wait a minute before generating charts again." });
             this.Context.LogCommandUsed(CommandResponse.Cooldown);
             return;
         }
@@ -131,7 +131,7 @@ public class ChartCommands(
             var perms = await GuildService.GetGuildPermissionsAsync(this.Context);
             if (!perms.HasFlag(Permissions.AttachFiles))
             {
-                await this.Context.Channel.SendMessageAsync(new MessageProperties
+                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
                     { Content = "I'm missing the 'Attach files' permission in this server, so I can't post a chart." });
                 this.Context.LogCommandUsed(CommandResponse.NoPermission);
                 return;

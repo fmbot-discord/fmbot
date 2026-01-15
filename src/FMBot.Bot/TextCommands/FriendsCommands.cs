@@ -101,7 +101,7 @@ public class FriendsCommands(
 
         if (enteredFriends.Length == 0)
         {
-            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Please enter at least one friend to add. You can use their Last.fm usernames, Discord mention or Discord id." });
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Please enter at least one friend to add. You can use their Last.fm usernames, Discord mention or Discord id." });
             this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
             return;
         }
@@ -141,7 +141,7 @@ public class FriendsCommands(
 
         if (enteredFriends.Length == 0)
         {
-            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Please enter at least one friend to remove. You can use their Last.fm usernames, Discord mention or discord id." });
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Please enter at least one friend to remove. You can use their Last.fm usernames, Discord mention or discord id." });
             this.Context.LogCommandUsed(CommandResponse.WrongInput);
             return;
         }
@@ -171,7 +171,7 @@ public class FriendsCommands(
         {
             await friendsService.RemoveAllFriendsAsync(userSettings.UserId);
 
-            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Removed all your friends." });
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Removed all your friends." });
             this.Context.LogCommandUsed();
         }
         catch (Exception e)

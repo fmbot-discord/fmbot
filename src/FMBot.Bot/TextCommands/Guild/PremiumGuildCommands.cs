@@ -43,7 +43,7 @@ public class PremiumGuildCommands(
     {
         if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
         {
-            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = Constants.GetPremiumServer });
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = Constants.GetPremiumServer });
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
@@ -72,7 +72,7 @@ public class PremiumGuildCommands(
     {
         if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
         {
-            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = Constants.GetPremiumServer });
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = Constants.GetPremiumServer });
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
@@ -101,7 +101,7 @@ public class PremiumGuildCommands(
     {
         if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
         {
-            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = Constants.GetPremiumServer });
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = Constants.GetPremiumServer });
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
@@ -130,7 +130,7 @@ public class PremiumGuildCommands(
     {
         if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
         {
-            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = Constants.GetPremiumServer });
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = Constants.GetPremiumServer });
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
@@ -159,7 +159,7 @@ public class PremiumGuildCommands(
     {
         if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
         {
-            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = Constants.GetPremiumServer });
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = Constants.GetPremiumServer });
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }

@@ -94,7 +94,7 @@ public class PlayCommands(
             this._embed.UsernameNotSetErrorResponse(prfx,
                 discordGuildUser?.GetDisplayName() ?? this.Context.User.GetDisplayName());
 
-            await this.Context.Channel.SendMessageAsync(new () { Embeds = [this._embed], Components = [GenericEmbedService.UsernameNotSetErrorComponents()] });
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new () { Embeds = [this._embed], Components = [GenericEmbedService.UsernameNotSetErrorComponents()] });
             this.Context.LogCommandUsed(CommandResponse.UsernameNotSet);
             return;
         }
@@ -123,14 +123,14 @@ public class PlayCommands(
 
             this._embed.WithFooter($"For more information on the bot in general, use '{prfx}help'");
 
-            await this.Context.Channel.SendMessageAsync(new MessageProperties().AddEmbeds(this._embed));
+            await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
             this.Context.LogCommandUsed(CommandResponse.Help);
             return;
         }
 
         try
         {
-            var existingFmCooldown = await guildService.GetChannelCooldown(this.Context.Channel.Id);
+            var existingFmCooldown = await guildService.GetChannelCooldown(this.Context.Channel?.Id);
             if (existingFmCooldown.HasValue)
             {
                 var author = this.Context.Message.Author;
@@ -144,7 +144,7 @@ public class PlayCommands(
                             .AddSeconds(existingFmCooldown.Value) - DateTimeOffset.Now).TotalSeconds;
                         if (secondsLeft <= existingFmCooldown.Value - 2)
                         {
-                            _ = (await this.Context.Channel.SendMessageAsync(new MessageProperties
+                            _ = (await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
                                 {
                                     Content = $"This channel has a `{existingFmCooldown.Value}` second cooldown on `{prfx}fm`. Please wait for this to expire before using this command again."
                                 })).DeleteAfterAsync(6);
@@ -180,7 +180,7 @@ public class PlayCommands(
                 e.Message.Contains("The server responded with error 50013: Missing Permissions"))
             {
                 await this.Context.HandleCommandException(e, sendReply: false);
-                await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Error while replying: The bot is missing permissions.\nMake sure it has permission to 'Embed links' and 'Attach Images'" });
+                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Error while replying: The bot is missing permissions.\nMake sure it has permission to 'Embed links' and 'Attach Images'" });
             }
             else
             {

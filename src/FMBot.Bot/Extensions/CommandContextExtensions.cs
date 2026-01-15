@@ -11,6 +11,7 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using NetCord;
+using NetCord.Gateway;
 using NetCord.Rest;
 using NetCord.Services.Commands;
 using Serilog;
@@ -21,22 +22,6 @@ public static class CommandContextExtensions
 {
     extension(CommandContext context)
     {
-        private async Task<TextChannel> GetChannelAsync()
-        {
-            if (context.Channel != null)
-            {
-                return context.Channel;
-            }
-
-            if (context.Guild == null)
-            {
-                return await context.User.GetDMChannelAsync();
-            }
-
-            var channel = await context.Client.Rest.GetChannelAsync(context.Message.ChannelId);
-            return channel as TextChannel;
-        }
-
         public void LogCommandUsed(CommandResponse commandResponse = CommandResponse.Ok)
         {
             var shardId = context.Client.Shard?.Id ?? 0;
@@ -60,20 +45,20 @@ public static class CommandContextExtensions
 
             if (sendReply)
             {
-                var channel = await context.GetChannelAsync();
                 if (exception?.Message != null && exception.Message.Contains("error 50013"))
                 {
-                    await channel.SendMessageAsync(new MessageProperties
+                    await context.Client.Rest.SendMessageAsync(context.Message.ChannelId, new MessageProperties
                     {
-                        Content = "Sorry, something went wrong because the bot is missing permissions. Make sure the bot has `Embed links` and `Attach Files`.\n" +
-                                  "Please adjust .fmbot permissions or ask server staff to do this for you.\n" +
-                                  $"*Reference id: `{referenceId}`*",
+                        Content =
+                            "Sorry, something went wrong because the bot is missing permissions. Make sure the bot has `Embed links` and `Attach Files`.\n" +
+                            "Please adjust .fmbot permissions or ask server staff to do this for you.\n" +
+                            $"*Reference id: `{referenceId}`*",
                         AllowedMentions = AllowedMentionsProperties.None
                     });
                 }
                 else
                 {
-                    await channel.SendMessageAsync(new MessageProperties
+                    await context.Client.Rest.SendMessageAsync(context.Message.ChannelId, new MessageProperties
                     {
                         Content = "Sorry, something went wrong. Please try again later.\n" +
                                   $"*Reference id: `{referenceId}`*",
@@ -88,15 +73,15 @@ public static class CommandContextExtensions
         public async Task<RestMessage> SendResponse(InteractiveService interactiveService, ResponseModel response)
         {
             RestMessage responseMessage = null;
-            var channel = await context.GetChannelAsync();
-
             if (PublicProperties.UsedCommandsResponseMessageId.ContainsKey(context.Message.Id))
             {
                 switch (response.ResponseType)
                 {
                     case ResponseType.Text:
-                        await channel.ModifyMessageAsync(
-                            PublicProperties.UsedCommandsResponseMessageId[context.Message.Id], msg =>
+                        await context.Client.Rest.ModifyMessageAsync(
+                            context.Message.ChannelId,
+                            PublicProperties.UsedCommandsResponseMessageId[context.Message.Id],
+                            msg =>
                             {
                                 msg.Content = response.Text;
                                 msg.Embeds = null;
@@ -106,8 +91,10 @@ public static class CommandContextExtensions
                     case ResponseType.Embed:
                     case ResponseType.ImageWithEmbed:
                     case ResponseType.ImageOnly:
-                        await channel.ModifyMessageAsync(
-                            PublicProperties.UsedCommandsResponseMessageId[context.Message.Id], msg =>
+                        await context.Client.Rest.ModifyMessageAsync(
+                            context.Message.ChannelId,
+                            PublicProperties.UsedCommandsResponseMessageId[context.Message.Id],
+                            msg =>
                             {
                                 msg.Content = response.Text;
                                 msg.Embeds = response.ResponseType == ResponseType.ImageOnly
@@ -131,8 +118,10 @@ public static class CommandContextExtensions
 
                         break;
                     case ResponseType.ComponentsV2:
-                        await channel.ModifyMessageAsync(
-                            PublicProperties.UsedCommandsResponseMessageId[context.Message.Id], msg =>
+                        await context.Client.Rest.ModifyMessageAsync(
+                            context.Message.ChannelId,
+                            PublicProperties.UsedCommandsResponseMessageId[context.Message.Id],
+                            msg =>
                             {
                                 msg.Flags = MessageFlags.IsComponentsV2;
                                 msg.Components = response.GetComponentsV2();
@@ -153,39 +142,38 @@ public static class CommandContextExtensions
 
                         break;
                     case ResponseType.Paginator:
-                        var existingMsgPaginator =
-                            await channel.GetMessageAsync(
-                                PublicProperties.UsedCommandsResponseMessageId[context.Message.Id]);
-                        if (existingMsgPaginator.Attachments != null && existingMsgPaginator.Attachments.Any())
-                        {
-                            await channel.ModifyMessageAsync(
-                                PublicProperties.UsedCommandsResponseMessageId[context.Message.Id],
-                                msg => { msg.Attachments = null; });
-                        }
+                        var existingMsgPaginator = await context.Channel.GetMessageAsync(
+                            PublicProperties.UsedCommandsResponseMessageId[context.Message.Id]);
 
-                        // Delete old message and send new paginator
-                        await channel.DeleteMessageAsync(existingMsgPaginator.Id);
-                        await interactiveService.SendPaginatorAsync(
-                            response.StaticPaginator.Build(),
-                            channel,
-                            TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
+                        if (existingMsgPaginator is Message gatewayMsgPaginator)
+                        {
+                            if (gatewayMsgPaginator.Attachments != null && gatewayMsgPaginator.Attachments.Any())
+                            {
+                                await gatewayMsgPaginator.ModifyAsync(msg => { msg.Attachments = null; });
+                            }
+
+                            await interactiveService.SendPaginatorAsync(
+                                response.StaticPaginator.Build(),
+                                gatewayMsgPaginator,
+                                TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
+                        }
                         break;
                     case ResponseType.ComponentPaginator:
                         var existingMsgComponentPaginator =
-                            await channel.GetMessageAsync(
+                            await context.Client.Rest.GetMessageAsync(
+                                context.Message.ChannelId,
                                 PublicProperties.UsedCommandsResponseMessageId[context.Message.Id]);
                         if (existingMsgComponentPaginator.Attachments != null && existingMsgComponentPaginator.Attachments.Any())
                         {
-                            await channel.ModifyMessageAsync(
+                            await context.Client.Rest.ModifyMessageAsync(
+                                context.Message.ChannelId,
                                 PublicProperties.UsedCommandsResponseMessageId[context.Message.Id],
                                 msg => { msg.Attachments = null; });
                         }
 
-                        // Delete old message and send new paginator
-                        await channel.DeleteMessageAsync(existingMsgComponentPaginator.Id);
                         await interactiveService.SendPaginatorAsync(
                             response.ComponentPaginator.Build(),
-                            channel,
+                            existingMsgComponentPaginator,
                             TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
                         break;
                     default:
@@ -222,44 +210,48 @@ public static class CommandContextExtensions
             switch (response.ResponseType)
             {
                 case ResponseType.Text:
-                    var text = await channel.SendMessageAsync(new MessageProperties()
-                        .WithContent(response.Text)
-                        .WithAllowedMentions(AllowedMentionsProperties.None)
-                        .WithComponents(response.GetMessageComponents()));
+                    var text = await context.Client.Rest.SendMessageAsync(context.Message.ChannelId,
+                        new MessageProperties()
+                            .WithContent(response.Text)
+                            .WithAllowedMentions(AllowedMentionsProperties.None)
+                            .WithComponents(response.GetMessageComponents()));
                     responseMessage = text;
                     break;
                 case ResponseType.Embed:
-                    var embed = await channel.SendMessageAsync(new MessageProperties()
-                        .AddEmbeds(response.Embed)
-                        .WithComponents(response.GetMessageComponents()));
+                    var embed = await context.Client.Rest.SendMessageAsync(context.Message.ChannelId,
+                        new MessageProperties()
+                            .AddEmbeds(response.Embed)
+                            .WithComponents(response.GetMessageComponents()));
                     responseMessage = embed;
                     break;
                 case ResponseType.Paginator:
                     var staticPaginator = await interactiveService.SendPaginatorAsync(
                         response.StaticPaginator.Build(),
-                        channel,
+                        context.Channel,
                         TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
                     responseMessage = staticPaginator.Message;
                     break;
                 case ResponseType.ImageWithEmbed:
                     response.FileName = StringExtensions.ReplaceInvalidChars(response.FileName);
-                    var imageWithEmbed = await channel.SendMessageAsync(new MessageProperties()
-                        .AddAttachments(new AttachmentProperties(
-                            response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName,
-                            response.Stream).WithDescription(response.FileDescription))
-                        .AddEmbeds(response.Embed)
-                        .WithComponents(response.GetMessageComponents()));
+                    var imageWithEmbed = await context.Client.Rest.SendMessageAsync(context.Message.ChannelId,
+                        new MessageProperties()
+                            .AddAttachments(new AttachmentProperties(
+                                response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName,
+                                response.Stream).WithDescription(response.FileDescription))
+                            .AddEmbeds(response.Embed)
+                            .WithComponents(response.GetMessageComponents()));
 
                     await response.Stream.DisposeAsync();
                     responseMessage = imageWithEmbed;
                     break;
                 case ResponseType.ImageOnly:
                     response.FileName = StringExtensions.ReplaceInvalidChars(response.FileName);
-                    var image = await channel.SendMessageAsync(new MessageProperties()
-                        .AddAttachments(new AttachmentProperties(
-                            response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName,
-                            response.Stream).WithDescription(response.FileDescription))
-                        .WithComponents(response.GetMessageComponents()));
+                    var image = await context.Client.Rest.SendMessageAsync(context.Message.ChannelId,
+                        new MessageProperties()
+                            .AddAttachments(new AttachmentProperties(
+                                response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName,
+                                response.Stream).WithDescription(response.FileDescription))
+                            .WithComponents(response.GetMessageComponents()));
                     await response.Stream.DisposeAsync();
                     responseMessage = image;
                     break;
@@ -267,23 +259,25 @@ public static class CommandContextExtensions
                     if (response.Stream is { Length: > 0 })
                     {
                         response.FileName = StringExtensions.ReplaceInvalidChars(response.FileName);
-                        var componentImage = await channel.SendMessageAsync(new MessageProperties()
-                            .AddAttachments(new AttachmentProperties(
-                                response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName,
-                                response.Stream).WithDescription(response.FileDescription))
-                            .WithComponents(response.GetComponentsV2())
-                            .WithFlags(MessageFlags.IsComponentsV2)
-                            .WithAllowedMentions(AllowedMentionsProperties.None));
+                        var componentImage = await context.Client.Rest.SendMessageAsync(context.Message.ChannelId,
+                            new MessageProperties()
+                                .AddAttachments(new AttachmentProperties(
+                                    response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName,
+                                    response.Stream).WithDescription(response.FileDescription))
+                                .WithComponents(response.GetComponentsV2())
+                                .WithFlags(MessageFlags.IsComponentsV2)
+                                .WithAllowedMentions(AllowedMentionsProperties.None));
 
                         await response.Stream.DisposeAsync();
                         responseMessage = componentImage;
                     }
                     else
                     {
-                        var components = await channel.SendMessageAsync(new MessageProperties()
-                            .WithComponents(response.GetComponentsV2())
-                            .WithFlags(MessageFlags.IsComponentsV2)
-                            .WithAllowedMentions(AllowedMentionsProperties.None));
+                        var components = await context.Client.Rest.SendMessageAsync(context.Message.ChannelId,
+                            new MessageProperties()
+                                .WithComponents(response.GetComponentsV2())
+                                .WithFlags(MessageFlags.IsComponentsV2)
+                                .WithAllowedMentions(AllowedMentionsProperties.None));
                         responseMessage = components;
                     }
 
@@ -291,7 +285,7 @@ public static class CommandContextExtensions
                 case ResponseType.ComponentPaginator:
                     var componentPaginator = await interactiveService.SendPaginatorAsync(
                         response.ComponentPaginator.Build(),
-                        channel,
+                        context.Channel,
                         TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
                     responseMessage = componentPaginator.Message;
                     break;
@@ -320,14 +314,11 @@ public static class CommandContextExtensions
                 catch (Exception e)
                 {
                     await context.HandleCommandException(e, "Could not add emote reactions", sendReply: false);
-                    var errorMsg = await channel.SendMessageAsync(new MessageProperties()
-                        .WithContent("Could not add automatic emoji reactions.\n" +
-                                     "-# Make sure the emojis still exist, the bot is the same server as where the emojis come from and the bot has permission to `Add Reactions`."));
-                    _ = Task.Run(async () =>
-                    {
-                        await Task.Delay(TimeSpan.FromSeconds(30));
-                        try { await channel.DeleteMessageAsync(errorMsg.Id); } catch { /* ignore */ }
-                    });
+                    var errorMsg = await context.Client.Rest.SendMessageAsync(context.Message.ChannelId,
+                        new MessageProperties()
+                            .WithContent("Could not add automatic emoji reactions.\n" +
+                                         "-# Make sure the emojis still exist, the bot is the same server as where the emojis come from and the bot has permission to `Add Reactions`."));
+                    _ = errorMsg.DeleteAfterAsync(30);
                 }
             }
 

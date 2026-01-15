@@ -149,7 +149,7 @@ public class PlaySlashCommands(
             catch (Exception e)
             {
                 await this.Context.HandleCommandException(e, "Could not add emote reactions", sendReply: false);
-                await this.Context.Channel.SendMessageAsync(new MessageProperties
+                await this.Context.Client.Rest.SendMessageAsync(this.Context.Channel.Id, new MessageProperties
                 {
                     Content =
                         "Could not add automatic emoji reactions to `/fm`. Make sure the emojis still exist, the bot is the same server as where the emojis come from and the bot has permission to `Add Reactions`."

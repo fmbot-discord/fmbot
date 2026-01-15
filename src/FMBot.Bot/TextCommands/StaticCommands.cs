@@ -103,7 +103,7 @@ public class StaticCommands(
             .WithButton($"https://discord.com/oauth2/authorize?client_id={selfId}&scope=applications.commands&integration_type=1",
                 "Add to user");
 
-        await this.Context.Channel.SendMessageAsync(new MessageProperties
+        await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
         {
             Embeds = [this._embed],
             Components = [components]
@@ -131,7 +131,7 @@ public class StaticCommands(
             "[Development](https://fm.bot/setup/)\n" +
             "[Supporter](https://fm.bot/supporter)");
 
-        await this.Context.Channel.SendMessageAsync(new MessageProperties().AddEmbeds(this._embed));
+        await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
         this.Context.LogCommandUsed();
     }
 
@@ -250,7 +250,7 @@ public class StaticCommands(
 
         this._embed.WithDescription(description);
 
-        await this.Context.Channel.SendMessageAsync(new MessageProperties().AddEmbeds(this._embed));
+        await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
         this.Context.LogCommandUsed();
     }
 
@@ -314,13 +314,14 @@ public class StaticCommands(
                 $"Guild {this.Context.Guild.Name} | {this.Context.Guild.Id} is on shard {currentShardId}");
         }
 
-        await this.Context.Channel.SendMessageAsync(new MessageProperties().AddEmbeds(this._embed));
+        await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
         this.Context.LogCommandUsed();
     }
 
     [Command("debugbotscrobbling", "debugbotscrobble", "debugbotscrobbles", "botscrobbledebug", "botscrobblingdebug")]
     [Summary("Debugging for bot scrobbling")]
     [ExcludeFromHelp]
+    [GuildOnly]
     public async Task DebugBotScrobbles()
     {
         var logs = musicBotService.BotScrobblingLogs.Where(w => w.GuildId == this.Context.Guild.Id);
@@ -373,7 +374,7 @@ public class StaticCommands(
     {
         if (!guildId.HasValue)
         {
-            await this.Context.Channel.SendMessageAsync(
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
                 $"Enter a server id please (this server is `{this.Context.Guild.Id}`)");
             this.Context.LogCommandUsed(CommandResponse.WrongInput);
             return;
@@ -413,7 +414,7 @@ public class StaticCommands(
         }
         else
         {
-            await this.Context.Channel.SendMessageAsync(new MessageProperties
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
             {
                 Content = "Server or shard could not be found. \n" +
                           "This either means the bot is not connected to that server or that the bot is not in this server."
@@ -422,7 +423,7 @@ public class StaticCommands(
             return;
         }
 
-        await this.Context.Channel.SendMessageAsync(new MessageProperties().AddEmbeds(this._embed));
+        await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
         this.Context.LogCommandUsed();
     }
 
@@ -455,7 +456,7 @@ public class StaticCommands(
                 userName,
                 this.Context.User.Id);
 
-            await this.Context.Channel.SendMessageAsync(new MessageProperties
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
             {
                 Embeds = [response.Embed],
                 Components = response.GetMessageComponents()
@@ -490,7 +491,7 @@ public class StaticCommands(
     {
         if (guildService.CheckIfDM(this.Context))
         {
-            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Command is not supported in DMs." });
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Command is not supported in DMs." });
             this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
             return;
         }
@@ -517,7 +518,7 @@ public class StaticCommands(
                 if (secondsLeft <= 20)
                 {
                     var secondString = secondsLeft == 1 ? "second" : "seconds";
-                    await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = $"Please wait {secondsLeft} {secondString} before starting another countdown." });
+                    await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = $"Please wait {secondsLeft} {secondString} before starting another countdown." });
                     this.Context.LogCommandUsed(CommandResponse.Cooldown);
                 }
 
@@ -532,16 +533,16 @@ public class StaticCommands(
             StackCooldownTimer.Add(DateTimeOffset.Now);
         }
 
-        await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = $"Countdown for `{countdown}` seconds starting!" });
+        await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = $"Countdown for `{countdown}` seconds starting!" });
         await Task.Delay(4000);
 
         for (var i = countdown; i > 0; i--)
         {
-            _ = this.Context.Channel.SendMessageAsync(new MessageProperties { Content = i.ToString() });
+            _ = this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = i.ToString() });
             await Task.Delay(1000);
         }
 
-        await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Go!" });
+        await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Go!" });
         this.Context.LogCommandUsed();
     }
 
@@ -643,7 +644,7 @@ public class StaticCommands(
         this._embed.WithTitle("You caught a fish!");
         this._embed.WithDescription(reply.ToString());
 
-        await this.Context.Channel.SendMessageAsync(new MessageProperties().AddEmbeds(this._embed));
+        await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
         this.Context.LogCommandUsed();
     }
 
@@ -691,7 +692,7 @@ public class StaticCommands(
         }
 
         this._embed.WithFooter($"Add 'help' after a command to get more info. For example: '{prfx}chart help'");
-        await this.Context.Channel.SendMessageAsync(new MessageProperties().AddEmbeds(this._embed));
+        await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
 
         this.Context.LogCommandUsed();
     }
@@ -737,7 +738,7 @@ public class StaticCommands(
         }
 
         this._embed.WithFooter($"Add 'help' after a command to get more info. For example: '{prfx}prefix help'");
-        await this.Context.Channel.SendMessageAsync(new MessageProperties().AddEmbeds(this._embed));
+        await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
 
         this.Context.LogCommandUsed();
     }
@@ -781,7 +782,7 @@ public class StaticCommands(
             }
         }
 
-        await this.Context.Channel.SendMessageAsync(new MessageProperties().AddEmbeds(this._embed));
+        await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
 
         this.Context.LogCommandUsed();
     }

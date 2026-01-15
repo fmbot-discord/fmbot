@@ -192,6 +192,7 @@ public class CommandHandler
             _ = Task.Run(async () => await ExecuteCommand(message, commandContext, argPos, prfx, update));
             return true;
         }
+
         if (currentUser != null && message.Content.StartsWith($"<@!{currentUser.Id}>"))
         {
             argPos = $"<@!{currentUser.Id}>".Length;
@@ -214,6 +215,8 @@ public class CommandHandler
             messageContent = $"{shortcut.Output} {remainingArgs}".Trim();
             _ = Task.Run(() => ShortcutService.AddShortcutReaction(context));
         }
+
+        messageContent = ReplaceSpaceAlias(messageContent);
 
         var searchResult = this._commands.Search(messageContent);
 
@@ -259,7 +262,7 @@ public class CommandHandler
                         var embed = new EmbedProperties()
                             .WithColor(DiscordConstants.WarningColorOrange);
                         embed.RateLimitedResponse();
-                        await context.Channel.SendMessageAsync(new MessageProperties
+                        await context.Client.Rest.SendMessageAsync(context.Message.ChannelId, new MessageProperties
                         {
                             Embeds = [embed]
                         });
@@ -310,7 +313,6 @@ public class CommandHandler
                 return;
             }
 
-            // Get command attributes (NetCord uses a dictionary)
             bool HasAttribute<T>() where T : Attribute =>
                 searchResult.Command.Attributes.ContainsKey(typeof(T)) &&
                 searchResult.Command.Attributes[typeof(T)].Count > 0;
@@ -326,7 +328,7 @@ public class CommandHandler
 
                     embed.UsernameNotSetErrorResponse(prfx ?? this._botSettings.Bot.Prefix,
                         guildUser?.GetDisplayName() ?? context.User.GetDisplayName());
-                    await context.Channel.SendMessageAsync(new MessageProperties
+                    await context.Client.Rest.SendMessageAsync(context.Message.ChannelId, new MessageProperties
                     {
                         Embeds = [embed],
                         Components = [GenericEmbedService.UsernameNotSetErrorComponents()]
@@ -343,7 +345,7 @@ public class CommandHandler
                         var embed = new EmbedProperties()
                             .WithColor(DiscordConstants.WarningColorOrange);
                         embed.RateLimitedResponse();
-                        await context.Channel.SendMessageAsync(new MessageProperties
+                        await context.Client.Rest.SendMessageAsync(context.Message.ChannelId, new MessageProperties
                         {
                             Embeds = [embed]
                         });
@@ -362,7 +364,7 @@ public class CommandHandler
                     var embed = new EmbedProperties()
                         .WithColor(DiscordConstants.LastFmColorRed);
                     embed.SessionRequiredResponse(prfx ?? this._botSettings.Bot.Prefix);
-                    await context.Channel.SendMessageAsync(new MessageProperties
+                    await context.Client.Rest.SendMessageAsync(context.Message.ChannelId, new MessageProperties
                     {
                         Embeds = [embed]
                     });
@@ -376,7 +378,7 @@ public class CommandHandler
                 if (context.Guild == null)
                 {
                     var dmChannel = await context.User.GetDMChannelAsync();
-                    await dmChannel.SendMessageAsync(new MessageProperties
+                    await context.Client.Rest.SendMessageAsync(dmChannel.Id, new MessageProperties
                     {
                         Content = "This command is not supported in DMs."
                     });
@@ -395,7 +397,7 @@ public class CommandHandler
                         "To use .fmbot commands with server-wide statistics you need to create a memberlist cache first.\n\n" +
                         $"Please run `{prfx}refreshmembers` to create this.\n" +
                         $"Note that this can take some time on large servers.");
-                    await context.Channel.SendMessageAsync(new MessageProperties
+                    await context.Client.Rest.SendMessageAsync(context.Message.ChannelId, new MessageProperties
                     {
                         Embeds = [embed]
                     });
@@ -429,7 +431,7 @@ public class CommandHandler
                     messageProps.Components = [GenericEmbedService.PurchaseButtons(searchResult.Command)];
                 }
 
-                await context.Channel.SendMessageAsync(messageProps);
+                await context.Client.Rest.SendMessageAsync(context.Message.ChannelId,messageProps);
                 context.LogCommandUsed(CommandResponse.Help);
                 return;
             }
@@ -562,19 +564,19 @@ public class CommandHandler
                     if (toggledChannelCommands != null &&
                         toggledChannelCommands.Any())
                     {
-                        _ = (await context.Channel.SendMessageAsync(new MessageProperties
-                            {
-                                Content = "The command you're trying to execute is not enabled in this channel." +
-                                    (isMod ? $"\n-# *Configured with `{prfx}togglecommand`*" : null)
-                            })).DeleteAfterAsync(8);
+                        _ = (await context.Client.Rest.SendMessageAsync(context.Message.ChannelId, new MessageProperties
+                        {
+                            Content = "The command you're trying to execute is not enabled in this channel." +
+                                      (isMod ? $"\n-# *Configured with `{prfx}togglecommand`*" : null)
+                        })).DeleteAfterAsync(8);
                     }
                     else
                     {
-                        _ = (await context.Channel.SendMessageAsync(new MessageProperties
-                            {
-                                Content = "The bot has been disabled in this channel." +
-                                    (isMod ? $"\n-# *Configured with `{prfx}togglecommand`*" : null)
-                            })).DeleteAfterAsync(8);
+                        _ = (await context.Client.Rest.SendMessageAsync(context.Message.ChannelId, new MessageProperties
+                        {
+                            Content = "The bot has been disabled in this channel." +
+                                      (isMod ? $"\n-# *Configured with `{prfx}togglecommand`*" : null)
+                        })).DeleteAfterAsync(8);
                     }
                 }
 
@@ -588,11 +590,11 @@ public class CommandHandler
             {
                 if (!update)
                 {
-                    _ = (await context.Channel.SendMessageAsync(new MessageProperties
-                        {
-                            Content = "The command you're trying to execute has been disabled in this server." +
-                                (isMod ? $"\n-# *Configured with `{prfx}toggleservercommand`*" : null)
-                        })).DeleteAfterAsync(8);
+                    _ = (await context.Client.Rest.SendMessageAsync(context.Message.ChannelId, new MessageProperties
+                    {
+                        Content = "The command you're trying to execute has been disabled in this server." +
+                                  (isMod ? $"\n-# *Configured with `{prfx}toggleservercommand`*" : null)
+                    })).DeleteAfterAsync(8);
                 }
 
                 return false;
@@ -607,11 +609,11 @@ public class CommandHandler
             {
                 if (!update)
                 {
-                    _ = (await context.Channel.SendMessageAsync(new MessageProperties
-                        {
-                            Content = "The command you're trying to execute has been disabled in this channel." +
-                                (isMod ? $"\n-# *Configured with `{prfx}togglecommand`*" : null)
-                        })).DeleteAfterAsync(8);
+                    _ = (await context.Client.Rest.SendMessageAsync(context.Message.ChannelId, new MessageProperties
+                    {
+                        Content = "The command you're trying to execute has been disabled in this channel." +
+                                  (isMod ? $"\n-# *Configured with `{prfx}togglecommand`*" : null)
+                    })).DeleteAfterAsync(8);
                 }
 
                 return false;
@@ -626,7 +628,7 @@ public class CommandHandler
         var embed = new EmbedProperties()
             .WithColor(DiscordConstants.LastFmColorRed);
         embed.UserBlockedResponse(s ?? this._botSettings.Bot.Prefix);
-        await context.Channel.SendMessageAsync(new MessageProperties
+        await context.Client.Rest.SendMessageAsync(context.Message.ChannelId, new MessageProperties
         {
             Embeds = [embed]
         });
@@ -673,5 +675,68 @@ public class CommandHandler
         await this._guildService.UpdateGuildIndexTimestampAsync(context.Guild, DateTime.UtcNow);
 
         // NetCord doesn't have PurgeUserCache - cache is managed differently
+    }
+
+    private static readonly (string SpaceAlias, string CanonicalCommand)[] SpaceAliases =
+    [
+        ("scrobble leaderboard", "playleaderboard"),
+        ("crown leaderboard", "crownleaderboard"),
+        ("whoknows artist", "whoknows"),
+        ("whoknows album", "whoknowsalbum"),
+        ("whoknows track", "whoknowstrack"),
+        ("whoknows genre", "whoknowsgenre"),
+        ("login discogs", "discogs"),
+        ("friends remove", "removefriends"),
+        ("friends add", "addfriends"),
+        ("friend remove", "removefriends"),
+        ("help server", "settinghelp"),
+        ("server artists", "serverartists"),
+        ("server albums", "serveralbums"),
+        ("server tracks", "servertracks"),
+        ("server genres", "servergenres"),
+        ("server genre", "servergenres"),
+        ("chart artists", "artistchart"),
+        ("chart artist", "artistchart"),
+        ("artist overview", "artistoverview"),
+        ("artist albums", "artistalbums"),
+        ("artist tracks", "artisttracks"),
+        ("artist album", "artistalbums"),
+        ("artist track", "artisttracks"),
+        ("artist plays", "artistplays"),
+        ("album plays", "albumplays"),
+        ("album cover", "cover"),
+        ("track plays", "trackplays"),
+        ("top countries", "topcountries"),
+        ("top artists", "topartists"),
+        ("top albums", "topalbums"),
+        ("top tracks", "toptracks"),
+        ("top genres", "topgenres"),
+        ("top track", "toptracks"),
+        ("wk track", "whoknowstrack"),
+        ("wk album", "whoknowsalbum"),
+        ("c artists", "artistchart"),
+        ("c artist", "artistchart"),
+        ("ok google", "fm"),
+        ("hey google", "fm"),
+        ("hey siri", "fm"),
+        ("fm set", "login"),
+    ];
+
+    private static string ReplaceSpaceAlias(string messageContent)
+    {
+        foreach (var (spaceAlias, canonicalCommand) in SpaceAliases)
+        {
+            if (messageContent.StartsWith(spaceAlias, StringComparison.OrdinalIgnoreCase))
+            {
+                var remainingContent = messageContent[spaceAlias.Length..];
+
+                if (remainingContent.Length == 0 || char.IsWhiteSpace(remainingContent[0]))
+                {
+                    return canonicalCommand + remainingContent;
+                }
+            }
+        }
+
+        return messageContent;
     }
 }

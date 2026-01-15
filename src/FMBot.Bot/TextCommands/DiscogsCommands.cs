@@ -49,7 +49,7 @@ public class DiscogsCommands(
                     .WithColor(DiscordConstants.InformationColorBlue);
 
                 serverEmbed.WithDescription("Check your DMs for a link to connect your Discogs account to .fmbot!");
-                await this.Context.Channel.SendMessageAsync(new MessageProperties().AddEmbeds(serverEmbed));
+                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties().AddEmbeds(serverEmbed));
             }
 
             var response =
@@ -70,7 +70,7 @@ public class DiscogsCommands(
                     .WithColor(DiscordConstants.InformationColorBlue);
 
                 serverEmbed.WithDescription("Check your DMs for a message to manage your connected Discogs account!");
-                await this.Context.Channel.SendMessageAsync(new MessageProperties { Embeds = [serverEmbed] });
+                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Embeds = [serverEmbed] });
             }
 
             var response = DiscogsBuilder.DiscogsManage(new ContextModel(this.Context, prfx, contextUser));

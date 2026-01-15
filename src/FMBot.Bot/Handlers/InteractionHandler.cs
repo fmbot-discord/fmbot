@@ -420,7 +420,7 @@ public class InteractionHandler
     {
         var embed = new EmbedProperties().WithColor(DiscordConstants.LastFmColorRed);
         embed.UserBlockedResponse("/");
-        await context.Channel.SendMessageAsync(new MessageProperties
+        await context.Client.Rest.SendMessageAsync(context.Channel.Id, new MessageProperties
         {
             Embeds = [embed]
         });

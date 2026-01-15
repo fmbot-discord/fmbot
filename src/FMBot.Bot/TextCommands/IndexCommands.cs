@@ -46,14 +46,14 @@ public class IndexCommands(
         {
             this._embed.WithColor(DiscordConstants.InformationColorBlue);
             this._embed.WithDescription("This server has already been updated in the last minute, please wait.");
-            await this.Context.Channel.SendMessageAsync(new MessageProperties().AddEmbeds(this._embed));
+            await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
             this.Context.LogCommandUsed(CommandResponse.Cooldown);
             return;
         }
 
         this._embed.WithDescription(
             "<a:loading:821676038102056991> Updating memberlist, this can take a while on larger servers...");
-        var indexMessage = await this.Context.Channel.SendMessageAsync(new MessageProperties().AddEmbeds(this._embed));
+        var indexMessage = await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
 
         try
         {

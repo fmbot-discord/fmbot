@@ -66,7 +66,7 @@ public class UserGuildSettingCommands(
 
         if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
         {
-            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = GuildSettingBuilder.UserNotAllowedResponseText() });
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = GuildSettingBuilder.UserNotAllowedResponseText() });
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
@@ -75,7 +75,7 @@ public class UserGuildSettingCommands(
 
         if (user == null)
         {
-            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Please mention a user, enter a discord id or enter a Last.fm username to block on your server." });
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Please mention a user, enter a discord id or enter a Last.fm username to block on your server." });
             this.Context.LogCommandUsed(CommandResponse.NotFound);
             return;
         }
@@ -84,7 +84,7 @@ public class UserGuildSettingCommands(
 
         if (userToBlock == null)
         {
-            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "User not found. Are you sure they are registered in .fmbot?" });
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "User not found. Are you sure they are registered in .fmbot?" });
             this.Context.LogCommandUsed(CommandResponse.NotFound);
             return;
         }
@@ -100,7 +100,7 @@ public class UserGuildSettingCommands(
 
             if (userInThisServer == null)
             {
-                await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = $"User not found. Are you sure they are in this server?\nTo refresh the cached memberlist on your server, use `{prfx}refreshmembers`." });
+                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = $"User not found. Are you sure they are in this server?\nTo refresh the cached memberlist on your server, use `{prfx}refreshmembers`." });
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
                 return;
             }
@@ -113,7 +113,7 @@ public class UserGuildSettingCommands(
                 .Select(s => s.Key)
                 .Contains(userToBlock.UserId))
         {
-            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "The user you're trying to block has already been blocked on this server." });
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "The user you're trying to block has already been blocked on this server." });
             this.Context.LogCommandUsed(CommandResponse.WrongInput);
             return;
         }
@@ -128,12 +128,12 @@ public class UserGuildSettingCommands(
 
             this._embed.WithFooter($"See all blocked users with {prfx}blockedusers");
 
-            await this.Context.Channel.SendMessageAsync(new MessageProperties { Embeds = [this._embed] });
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Embeds = [this._embed] });
             this.Context.LogCommandUsed();
         }
         else
         {
-            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Something went wrong while attempting to block user, please contact .fmbot staff." });
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Something went wrong while attempting to block user, please contact .fmbot staff." });
             this.Context.LogCommandUsed(CommandResponse.Error);
         }
     }
@@ -150,7 +150,7 @@ public class UserGuildSettingCommands(
 
         if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
         {
-            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = GuildSettingBuilder.UserNotAllowedResponseText() });
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = GuildSettingBuilder.UserNotAllowedResponseText() });
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
@@ -159,7 +159,7 @@ public class UserGuildSettingCommands(
 
         if (user == null)
         {
-            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Please mention a user, enter a discord id or enter a Last.fm username to unblock on your server." });
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Please mention a user, enter a discord id or enter a Last.fm username to unblock on your server." });
             this.Context.LogCommandUsed(CommandResponse.NotFound);
             return;
         }
@@ -168,7 +168,7 @@ public class UserGuildSettingCommands(
 
         if (userToUnblock == null)
         {
-            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "User not found. Are you sure they are registered in .fmbot?" });
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "User not found. Are you sure they are registered in .fmbot?" });
             this.Context.LogCommandUsed(CommandResponse.NotFound);
             return;
         }
@@ -177,7 +177,7 @@ public class UserGuildSettingCommands(
 
         if (guildUsers == null || !guildUsers.ContainsKey(userToUnblock.UserId))
         {
-            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "The user you're trying to unblock was not blocked on this server." });
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "The user you're trying to unblock was not blocked on this server." });
             this.Context.LogCommandUsed(CommandResponse.WrongInput);
             return;
         }
@@ -192,12 +192,12 @@ public class UserGuildSettingCommands(
 
             this._embed.WithFooter($"See other blocked users with {prfx}blockedusers");
 
-            await this.Context.Channel.SendMessageAsync(new MessageProperties { Embeds = [this._embed] });
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Embeds = [this._embed] });
             this.Context.LogCommandUsed();
         }
         else
         {
-            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = "Something went wrong while attempting to unblock user, please contact .fmbot staff." });
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Something went wrong while attempting to unblock user, please contact .fmbot staff." });
             this.Context.LogCommandUsed(CommandResponse.Error);
         }
     }
@@ -214,7 +214,7 @@ public class UserGuildSettingCommands(
 
         if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
         {
-            await this.Context.Channel.SendMessageAsync(new MessageProperties { Content = GuildSettingBuilder.UserNotAllowedResponseText() });
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = GuildSettingBuilder.UserNotAllowedResponseText() });
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }

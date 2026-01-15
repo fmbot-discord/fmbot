@@ -89,7 +89,7 @@ public class ImportCommands(
                 .WithColor(DiscordConstants.InformationColorBlue)
                 .WithDescription("Check your DMs to continue with modifying your .fmbot imports.");
 
-            await this.Context.Channel.SendMessageAsync(new MessageProperties { Embeds = [serverEmbed] });
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Embeds = [serverEmbed] });
         }
         else
         {
