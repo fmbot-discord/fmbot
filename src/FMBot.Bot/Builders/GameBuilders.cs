@@ -608,7 +608,7 @@ public class GameBuilders
                 separateResponse.WithFooter(footer.ToString());
             }
 
-            if (context.DiscordChannel is TextChannel msgChannel)
+            if (context.DiscordChannel is TextGuildChannel msgChannel)
             {
                 _ = Task.Run(() => SendSeparateResponse(msgChannel, separateResponse, playAgainButton,
                     new ReferencedMusic
@@ -643,7 +643,7 @@ public class GameBuilders
         return response;
     }
 
-    private static async Task SendSeparateResponse(TextChannel msgChannel, EmbedProperties separateResponse,
+    private static async Task SendSeparateResponse(TextGuildChannel msgChannel, EmbedProperties separateResponse,
         ActionRowProperties components, ReferencedMusic referencedMusic)
     {
         var msg = await msgChannel.SendMessageAsync(new MessageProperties
@@ -726,7 +726,7 @@ public class GameBuilders
                     var playAgainComponent = new ActionRowProperties().WithButton("Play again",
                         $"{InteractionConstants.Game.JumblePlayAgain}:{currentGame.JumbleType}",
                         ButtonStyle.Secondary);
-                    if (context.DiscordChannel is TextChannel msgChannel)
+                    if (context.DiscordChannel is TextGuildChannel msgChannel)
                     {
                         _ = Task.Run(() => SendSeparateResponse(msgChannel, separateResponse, playAgainComponent,
                             new ReferencedMusic
@@ -846,7 +846,7 @@ public class GameBuilders
                 ? $"Nobody guessed it right. It was `{currentGame.CorrectAnswer}`"
                 : $"Nobody guessed it right. It was `{currentGame.CorrectAnswer}` by {currentGame.ArtistName}");
             separateResponse.WithColor(DiscordConstants.AppleMusicRed);
-            if (context.DiscordChannel is TextChannel msgChannel)
+            if (context.DiscordChannel is TextGuildChannel msgChannel)
             {
                 _ = Task.Run(() => SendSeparateResponse(msgChannel, separateResponse, playAgainComponent,
                     new ReferencedMusic

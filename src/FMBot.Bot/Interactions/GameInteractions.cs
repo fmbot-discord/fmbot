@@ -161,17 +161,18 @@ public class GameInteractions(
             return;
         }
 
-        var msg = await this.Context.Channel.GetMessageAsync(responseId);
-        if (msg is not RestMessage message)
+        await this.Context.Client.Rest.ModifyMessageAsync(context.DiscordChannel.Id, responseId, m =>
         {
-            return;
-        }
+            m.Components = [];
+            m.Embeds = [response.Embed];
+            m.Attachments = response.Stream != null
+                ? [new AttachmentProperties(response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName, response.Stream)]
+                : null;
+        });
 
-        if (PublicProperties.UsedCommandsResponseContextId.TryGetValue(message.Id, out var contextId))
+        if (PublicProperties.UsedCommandsResponseContextId.TryGetValue(responseId, out var contextId))
         {
             await userService.UpdateInteractionContext(contextId, response.ReferencedMusic);
         }
-
-        await this.Context.ModifyMessage(message, response, false);
     }
 }

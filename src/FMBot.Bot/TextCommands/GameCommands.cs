@@ -43,7 +43,8 @@ public class GameCommands(
         try
         {
             var context = new ContextModel(this.Context, prfx, contextUser);
-            if (options != null && (options.Contains("stats", StringComparison.OrdinalIgnoreCase) || options.Contains("statistics", StringComparison.OrdinalIgnoreCase)))
+            if (options != null && (options.Contains("stats", StringComparison.OrdinalIgnoreCase) ||
+                                    options.Contains("statistics", StringComparison.OrdinalIgnoreCase)))
             {
                 _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -100,14 +101,7 @@ public class GameCommands(
             return;
         }
 
-        var msg = await this.Context.Channel.GetMessageAsync(responseId);
-
-        if (PublicProperties.UsedCommandsResponseContextId.TryGetValue(msg.Id, out var contextId))
-        {
-            await userService.UpdateInteractionContext(contextId, response.ReferencedMusic);
-        }
-
-        await msg.ModifyAsync(m =>
+        await this.Context.Client.Rest.ModifyMessageAsync(context.DiscordChannel.Id, responseId, m =>
         {
             m.Components = [];
             m.Embeds = [response.Embed];
@@ -115,6 +109,11 @@ public class GameCommands(
                 ? [new AttachmentProperties(response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName, response.Stream)]
                 : null;
         });
+
+        if (PublicProperties.UsedCommandsResponseContextId.TryGetValue(responseId, out var contextId))
+        {
+            await userService.UpdateInteractionContext(contextId, response.ReferencedMusic);
+        }
     }
 
     [Command("pixel", "px", "pixelation", "aj", "abj", "popidle", "pixeljumble", "pxj")]
@@ -133,7 +132,8 @@ public class GameCommands(
         try
         {
             var context = new ContextModel(this.Context, prfx, contextUser);
-            if (options != null && (options.Contains("stats", StringComparison.OrdinalIgnoreCase) || options.Contains("statistics", StringComparison.OrdinalIgnoreCase)))
+            if (options != null && (options.Contains("stats", StringComparison.OrdinalIgnoreCase) ||
+                                    options.Contains("statistics", StringComparison.OrdinalIgnoreCase)))
             {
                 _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -161,7 +161,8 @@ public class GameCommands(
             if (responseId?.Id != null && response.GameSessionId.HasValue)
             {
                 await gameService.JumbleAddResponseId(response.GameSessionId.Value, responseId.Id);
-                await JumbleTimeExpired(context, responseId.Id, cancellationTokenSource.Token, response.GameSessionId.Value, GameService.PixelationSecondsToGuess);
+                await JumbleTimeExpired(context, responseId.Id, cancellationTokenSource.Token, response.GameSessionId.Value,
+                    GameService.PixelationSecondsToGuess);
             }
         }
         catch (OperationCanceledException)
@@ -172,5 +173,4 @@ public class GameCommands(
             await this.Context.HandleCommandException(e);
         }
     }
-
 }
