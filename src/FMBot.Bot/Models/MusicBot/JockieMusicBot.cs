@@ -7,7 +7,7 @@ namespace FMBot.Bot.Models.MusicBot;
 
 internal class JockieMusicBot : MusicBot
 {
-    private const string StartedPlaying = " ​ Started playing ";
+    private const string StartedPlaying = " ​ Started playing";
     public JockieMusicBot() : base("Jockie Music", true)
     {
     }
@@ -40,15 +40,16 @@ internal class JockieMusicBot : MusicBot
      */
     public override string GetTrackQuery(Message msg)
     {
-        var description = msg.Embeds.First().Description;
+        var description = msg.Embeds[0].Description;
         if (description != null &&
             description.Contains(StartedPlaying, StringComparison.OrdinalIgnoreCase))
         {
-            var songByArtist = description[description.IndexOf(StartedPlaying, StringComparison.OrdinalIgnoreCase)..];
-            return songByArtist.Replace("\\", "");
+            var startIndex = description.IndexOf(StartedPlaying, StringComparison.OrdinalIgnoreCase) + StartedPlaying.Length;
+            var songByArtist = description[startIndex..];
+            return songByArtist.TrimStart().TrimEnd().Replace("\\", "");
         }
 
-        if (msg.Embeds.First().Author != null &&
+        if (msg.Embeds[0].Author != null &&
             msg.Embeds.First().Author.Name != null &&
             msg.Embeds.First().Author.Name.Contains("Started playing", StringComparison.OrdinalIgnoreCase))
         {

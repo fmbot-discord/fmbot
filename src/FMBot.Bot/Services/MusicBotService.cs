@@ -195,32 +195,6 @@ public class MusicBotService
     {
         try
         {
-            GuildUser guildUser = null;
-
-            if (context.User is not GuildUser resolvedGuildUser)
-            {
-                // MessageUpdate event returns SocketWebhookUser instead of GuildUser. In order to continue, we
-                // need to get the GuildUser instance from the guild object.
-                // if (context.User is SocketWebhookUser webhookUser)
-                // {
-                //     guildUser = await context.Guild.GetUserAsync(webhookUser.Id) as GuildUser;
-                // }
-
-                if (guildUser is null)
-                {
-                    Log.Debug("BotScrobbling: Skipped scrobble for {guildName} / {guildId} because no found guild user", context.Guild.Name,
-                        context.Guild.Id);
-                    this.BotScrobblingLogs.Add(new BotScrobblingLog(context.Guild.Id, DateTime.UtcNow,
-                        $"Skipped scrobble because no found guild user"));
-                    return null;
-                }
-            }
-            else
-            {
-                guildUser = resolvedGuildUser;
-            }
-
-
             if (!context.Guild.VoiceStates.TryGetValue(botId, out var botVoiceState) || botVoiceState.ChannelId is null)
             {
                 Log.Debug("BotScrobbling: Skipped scrobble for {guildName} / {guildId} because bot not in voice channel", context.Guild.Name,
@@ -232,7 +206,6 @@ public class MusicBotService
 
             var channelId = botVoiceState.ChannelId.Value;
 
-            // Get all users in the same voice channel that are not deafened
             var usersInChannel = context.Guild.VoiceStates.Values
                 .Where(vs => vs.ChannelId == channelId && !vs.IsDeafened && !vs.IsSelfDeafened)
                 .Select(vs => vs.UserId)
