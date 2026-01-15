@@ -265,8 +265,7 @@ public class GuildBuilders
 
             var active = option == guildViewType;
 
-            // TODO: check if this is right
-            viewType.AddOption( value, null, isDefault: active);
+            viewType.AddOption(name, value, isDefault: active);
         }
 
         if (!pages.Any())

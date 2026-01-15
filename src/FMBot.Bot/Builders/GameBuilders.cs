@@ -608,7 +608,6 @@ public class GameBuilders
                 separateResponse.WithFooter(footer.ToString());
             }
 
-            // TODO: check if right type of channel
             if (context.DiscordChannel is TextChannel msgChannel)
             {
                 _ = Task.Run(() => SendSeparateResponse(msgChannel, separateResponse, playAgainButton,
@@ -847,7 +846,6 @@ public class GameBuilders
                 ? $"Nobody guessed it right. It was `{currentGame.CorrectAnswer}`"
                 : $"Nobody guessed it right. It was `{currentGame.CorrectAnswer}` by {currentGame.ArtistName}");
             separateResponse.WithColor(DiscordConstants.AppleMusicRed);
-            // TODO: check if right type of channel
             if (context.DiscordChannel is TextChannel msgChannel)
             {
                 _ = Task.Run(() => SendSeparateResponse(msgChannel, separateResponse, playAgainComponent,
