@@ -235,6 +235,7 @@ public static class InteractionContextExtensions
                         response.StaticPaginator.Build(),
                         context.Interaction,
                         TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
+                        InteractionCallbackType.DeferredMessage,
                         ephemeral: ephemeral);
                     break;
                 case ResponseType.ComponentPaginator:
@@ -242,6 +243,7 @@ public static class InteractionContextExtensions
                         response.ComponentPaginator.Build(),
                         context.Interaction,
                         TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
+                        InteractionCallbackType.DeferredMessage,
                         ephemeral: ephemeral);
                     break;
                 case ResponseType.SupporterRequired:
@@ -338,6 +340,7 @@ public static class InteractionContextExtensions
                         response.StaticPaginator.Build(),
                         context.Interaction,
                         TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
+                        InteractionCallbackType.DeferredMessage,
                         ephemeral: ephemeral);
                     break;
                 case ResponseType.ComponentPaginator:
@@ -345,6 +348,7 @@ public static class InteractionContextExtensions
                         response.ComponentPaginator.Build(),
                         context.Interaction,
                         TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
+                        InteractionCallbackType.DeferredMessage,
                         ephemeral: ephemeral);
                     break;
                 case ResponseType.ImageWithEmbed:
