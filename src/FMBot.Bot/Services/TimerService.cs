@@ -216,7 +216,10 @@ public class TimerService : IDisposable
                 {
                     Activities =
                     [
-                        new UserActivityProperties(this.CurrentFeatured.Status, UserActivityType.Custom)
+                        new UserActivityProperties("Custom Status", UserActivityType.Custom)
+                        {
+                            State = this.CurrentFeatured.Status
+                        }
                     ]
                 };
 
@@ -224,6 +227,7 @@ public class TimerService : IDisposable
                 {
                     await client.UpdatePresenceAsync(featuredPresence);
                 }
+
                 return;
             }
 
@@ -255,7 +259,10 @@ public class TimerService : IDisposable
                 {
                     Activities =
                     [
-                        new UserActivityProperties(status, UserActivityType.Custom)
+                        new UserActivityProperties("Custom Status", UserActivityType.Custom)
+                        {
+                            State = status
+                        }
                     ]
                 };
 
