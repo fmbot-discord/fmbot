@@ -232,7 +232,7 @@ public static class InteractionContextExtensions
                     break;
                 case ResponseType.Paginator:
                     _ = interactiveService.SendPaginatorAsync(
-                        response.StaticPaginator.Build(),
+                        response.ComponentPaginator.Build(),
                         context.Interaction,
                         TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
                         InteractionCallbackType.DeferredMessage,
@@ -337,7 +337,7 @@ public static class InteractionContextExtensions
                     break;
                 case ResponseType.Paginator:
                     _ = interactiveService.SendPaginatorAsync(
-                        response.StaticPaginator.Build(),
+                        response.ComponentPaginator.Build(),
                         context.Interaction,
                         TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
                         InteractionCallbackType.DeferredMessage,
@@ -746,7 +746,7 @@ public static class InteractionContextExtensions
                 !context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall))
             {
                 _ = interactiveService.SendPaginatorAsync(
-                    response.StaticPaginator.Build(),
+                    response.ComponentPaginator.Build(),
                     context.Interaction,
                     TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
             }
@@ -758,7 +758,7 @@ public static class InteractionContextExtensions
                 }
 
                 _ = interactiveService.SendPaginatorAsync(
-                    response.StaticPaginator.Build(),
+                    response.ComponentPaginator.Build(),
                     message,
                     TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
             }

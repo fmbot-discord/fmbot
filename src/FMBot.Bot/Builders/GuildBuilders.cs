@@ -276,7 +276,7 @@ public class GuildBuilders
             return response;
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginatorWithSelectMenu(pages, viewType);
+        response.ComponentPaginator = StringService.BuildComponentPaginatorWithSelectMenu(pages, viewType);
 
         return response;
     }

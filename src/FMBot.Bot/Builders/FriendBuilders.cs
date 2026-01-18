@@ -444,7 +444,7 @@ public class FriendBuilders
             pageCounter++;
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+        response.ComponentPaginator = StringService.BuildComponentPaginator(pages);
         return response;
     }
 }

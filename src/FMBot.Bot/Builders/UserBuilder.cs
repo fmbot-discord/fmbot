@@ -824,7 +824,7 @@ public class UserBuilder
             });
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginatorWithSelectMenu(pages, viewType);
+        response.ComponentPaginator = StringService.BuildComponentPaginatorWithSelectMenu(pages, viewType);
         response.ResponseType = ResponseType.Paginator;
         return response;
     }

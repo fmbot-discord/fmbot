@@ -281,7 +281,7 @@ public class CrownBuilders
             pageCounter++;
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginatorWithSelectMenu(pages, viewType);
+        response.ComponentPaginator = StringService.BuildComponentPaginatorWithSelectMenu(pages, viewType);
 
         return response;
     }

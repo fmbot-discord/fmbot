@@ -172,7 +172,7 @@ public class GenreBuilders
             pageCounter++;
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+        response.ComponentPaginator = StringService.BuildComponentPaginator(pages);
 
         return response;
     }
@@ -347,7 +347,7 @@ public class GenreBuilders
             pageCounter++;
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages, selectMenuBuilder: context.SelectMenu);
+        response.ComponentPaginator = StringService.BuildComponentPaginator(pages, selectMenuBuilder: context.SelectMenu);
         return response;
     }
 
@@ -742,7 +742,7 @@ public class GenreBuilders
             }
             else
             {
-                response.StaticPaginator = StringService.BuildStaticPaginator(pages, optionId, optionEmote);
+                response.ComponentPaginator = StringService.BuildComponentPaginator(pages, optionId, optionEmote);
             }
 
             response.ResponseType = ResponseType.Paginator;

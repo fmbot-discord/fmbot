@@ -345,7 +345,7 @@ public class StaticBuilders
                 .WithTitle(".fmbot supporters overview"));
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+        response.ComponentPaginator = StringService.BuildComponentPaginator(pages);
 
         return response;
     }
@@ -443,7 +443,7 @@ public class StaticBuilders
                 .WithDescription("No pages, most likely an error while fetching supporters"));
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+        response.ComponentPaginator = StringService.BuildComponentPaginator(pages);
 
         return response;
     }
@@ -547,7 +547,7 @@ public class StaticBuilders
                 .WithDescription("No pages, most likely an error while fetching supporters"));
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+        response.ComponentPaginator = StringService.BuildComponentPaginator(pages);
 
         return response;
     }

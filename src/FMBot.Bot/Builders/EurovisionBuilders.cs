@@ -140,7 +140,7 @@ public class EurovisionBuilders
             pageCounter++;
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+        response.ComponentPaginator = StringService.BuildComponentPaginator(pages);
         response.ResponseType = ResponseType.Paginator;
 
         return response;

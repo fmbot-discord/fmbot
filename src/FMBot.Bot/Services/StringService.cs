@@ -528,4 +528,121 @@ public static class StringService
             .AddLastButton(p, style: ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.PagesLast))
             .AddJumpButton(p, style: ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.PagesGoTo));
     }
+
+    public static ComponentPaginatorBuilder BuildComponentPaginator(IList<PageBuilder> pages,
+        string customOptionId = null, EmojiProperties optionEmote = null, StringMenuProperties selectMenuBuilder = null)
+    {
+        var builder = new ComponentPaginatorBuilder()
+            .WithPageFactory(p =>
+            {
+                var page = pages[p.CurrentPageIndex];
+
+                if (pages.Count == 1)
+                {
+                    if (selectMenuBuilder != null)
+                    {
+                        page.WithComponents(new List<IMessageComponentProperties> { selectMenuBuilder });
+                    }
+                    else
+                    {
+                        page.WithComponents(new List<IMessageComponentProperties>());
+                    }
+                    return page.Build();
+                }
+
+                var components = new List<IMessageComponentProperties>();
+
+                var navRow = new ActionRowProperties()
+                    .AddFirstButton(p, style: ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.PagesFirst))
+                    .AddPreviousButton(p, style: ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.PagesPrevious))
+                    .AddNextButton(p, style: ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.PagesNext))
+                    .AddLastButton(p, style: ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.PagesLast));
+
+                if (customOptionId != null && optionEmote != null)
+                {
+                    navRow.WithButton(customId: customOptionId, emote: optionEmote, label: null, style: ButtonStyle.Secondary);
+                }
+                else if (pages.Count >= 25)
+                {
+                    navRow.AddJumpButton(p, style: ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.PagesGoTo));
+                }
+
+                components.Add(navRow);
+
+                if (selectMenuBuilder != null)
+                {
+                    components.Add(selectMenuBuilder);
+                }
+
+                page.WithComponents(components);
+                return page.Build();
+            })
+            .WithPageCount(pages.Count)
+            .WithActionOnTimeout(ActionOnStop.DisableInput);
+
+        return builder;
+    }
+
+    public static ComponentPaginatorBuilder BuildComponentPaginatorWithSelectMenu(IList<PageBuilder> pages,
+        StringMenuProperties selectMenuBuilder, string customOptionId = null, EmojiProperties optionEmote = null)
+    {
+        var builder = new ComponentPaginatorBuilder()
+            .WithPageFactory(p =>
+            {
+                var page = pages[p.CurrentPageIndex];
+                var components = new List<IMessageComponentProperties>();
+
+                if (pages.Count > 1)
+                {
+                    var navRow = new ActionRowProperties()
+                        .AddFirstButton(p, style: ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.PagesFirst))
+                        .AddPreviousButton(p, style: ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.PagesPrevious))
+                        .AddNextButton(p, style: ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.PagesNext))
+                        .AddLastButton(p, style: ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.PagesLast));
+
+                    if (customOptionId != null && optionEmote != null)
+                    {
+                        navRow.WithButton(customId: customOptionId, emote: optionEmote, label: null, style: ButtonStyle.Secondary);
+                    }
+                    else if (pages.Count >= 10)
+                    {
+                        navRow.AddJumpButton(p, style: ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.PagesGoTo));
+                    }
+
+                    components.Add(navRow);
+                }
+
+                if (selectMenuBuilder != null)
+                {
+                    components.Add(selectMenuBuilder);
+                }
+
+                page.WithComponents(components);
+                return page.Build();
+            })
+            .WithPageCount(pages.Count)
+            .WithActionOnTimeout(ActionOnStop.DisableInput);
+
+        return builder;
+    }
+
+    public static ComponentPaginatorBuilder BuildSimpleComponentPaginator(IList<PageBuilder> pages)
+    {
+        var builder = new ComponentPaginatorBuilder()
+            .WithPageFactory(p =>
+            {
+                var page = pages[p.CurrentPageIndex];
+
+                var navRow = new ActionRowProperties()
+                    .AddPreviousButton(p, style: ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.PagesPrevious))
+                    .AddNextButton(p, style: ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.PagesNext));
+
+                page.WithComponents(new List<IMessageComponentProperties> { navRow });
+                return page.Build();
+            })
+            .WithPageCount(pages.Count)
+            .WithActionOnTimeout(ActionOnStop.DisableInput);
+
+        return builder;
+    }
 }

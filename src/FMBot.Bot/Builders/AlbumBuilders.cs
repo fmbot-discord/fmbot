@@ -856,7 +856,7 @@ public class AlbumBuilders
             pageCounter++;
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+        response.ComponentPaginator = StringService.BuildComponentPaginator(pages);
         response.ResponseType = ResponseType.Paginator;
         return response;
     }
@@ -1041,7 +1041,7 @@ public class AlbumBuilders
         else
         {
             response.ResponseType = ResponseType.Paginator;
-            response.StaticPaginator = StringService.BuildStaticPaginator(pages, optionId, optionEmote);
+            response.ComponentPaginator = StringService.BuildComponentPaginator(pages, optionId, optionEmote);
         }
 
         return response;
@@ -1457,7 +1457,7 @@ public class AlbumBuilders
                 .WithAuthor(response.EmbedAuthor));
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages, selectMenuBuilder: context.SelectMenu);
+        response.ComponentPaginator = StringService.BuildComponentPaginator(pages, selectMenuBuilder: context.SelectMenu);
         response.ResponseType = ResponseType.Paginator;
         return response;
     }

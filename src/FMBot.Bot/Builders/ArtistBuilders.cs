@@ -787,7 +787,7 @@ public class ArtistBuilders
         }
         else
         {
-            response.StaticPaginator = StringService.BuildStaticPaginator(pages, optionId, optionEmote);
+            response.ComponentPaginator = StringService.BuildComponentPaginator(pages, optionId, optionEmote);
         }
 
         return response;
@@ -918,7 +918,7 @@ public class ArtistBuilders
         }
         else
         {
-            response.StaticPaginator = StringService.BuildStaticPaginator(pages, optionId, optionEmote);
+            response.ComponentPaginator = StringService.BuildComponentPaginator(pages, optionId, optionEmote);
         }
 
         return response;
@@ -1020,7 +1020,7 @@ public class ArtistBuilders
             pageCounter++;
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+        response.ComponentPaginator = StringService.BuildComponentPaginator(pages);
         response.ResponseType = ResponseType.Paginator;
         return response;
     }
@@ -1183,7 +1183,7 @@ public class ArtistBuilders
             pageCounter++;
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages, selectMenuBuilder: context.SelectMenu);
+        response.ComponentPaginator = StringService.BuildComponentPaginator(pages, selectMenuBuilder: context.SelectMenu);
         response.ResponseType = ResponseType.Paginator;
         return response;
     }
@@ -1355,7 +1355,7 @@ public class ArtistBuilders
                 .WithAuthor(response.EmbedAuthor));
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages, selectMenuBuilder: context.SelectMenu);
+        response.ComponentPaginator = StringService.BuildComponentPaginator(pages, selectMenuBuilder: context.SelectMenu);
         response.ResponseType = ResponseType.Paginator;
         return response;
     }
@@ -2235,7 +2235,7 @@ public class ArtistBuilders
                 this._smallIndexRepository.UpdateUserArtists(context.ContextUser, ownArtists.Content.TopArtists));
         }
 
-        response.StaticPaginator = StringService.BuildSimpleStaticPaginator(pages);
+        response.ComponentPaginator = StringService.BuildSimpleComponentPaginator(pages);
         return response;
     }
 
@@ -2337,7 +2337,7 @@ public class ArtistBuilders
                 .WithDescription("Could not find users with a similar music taste."));
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+        response.ComponentPaginator = StringService.BuildComponentPaginator(pages);
 
         return response;
     }

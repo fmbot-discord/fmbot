@@ -12,6 +12,7 @@ using FMBot.Domain;
 using FMBot.Domain.Models;
 using NetCord;
 using NetCord.Gateway;
+using NetCord.JsonModels;
 using NetCord.Rest;
 using NetCord.Services.Commands;
 using Serilog;
@@ -145,18 +146,18 @@ public static class CommandContextExtensions
                         var existingMsgPaginator = await context.Client.Rest.GetMessageAsync(context.Message.ChannelId,
                             PublicProperties.UsedCommandsResponseMessageId[context.Message.Id]);
 
-                        if (existingMsgPaginator is Message gatewayMsgPaginator)
+                        if (existingMsgPaginator.Attachments != null && existingMsgPaginator.Attachments.Any())
                         {
-                            if (gatewayMsgPaginator.Attachments != null && gatewayMsgPaginator.Attachments.Any())
-                            {
-                                await gatewayMsgPaginator.ModifyAsync(msg => { msg.Attachments = null; });
-                            }
-
-                            await interactiveService.SendPaginatorAsync(
-                                response.StaticPaginator.Build(),
-                                gatewayMsgPaginator,
-                                TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
+                            await context.Client.Rest.ModifyMessageAsync(
+                                context.Message.ChannelId,
+                                PublicProperties.UsedCommandsResponseMessageId[context.Message.Id],
+                                msg => { msg.Attachments = null; });
                         }
+
+                        await interactiveService.SendPaginatorAsync(
+                            response.ComponentPaginator.Build(),
+                            existingMsgPaginator,
+                            TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
 
                         break;
                     case ResponseType.ComponentPaginator:
@@ -227,11 +228,11 @@ public static class CommandContextExtensions
                     break;
                 case ResponseType.Paginator:
                     var channel = context.Guild == null ? await context.User.GetDMChannelAsync() : context.Channel;
-                    var staticPaginator = await interactiveService.SendPaginatorAsync(
-                        response.StaticPaginator.Build(),
+                    var componentPaginatorResult = await interactiveService.SendPaginatorAsync(
+                        response.ComponentPaginator.Build(),
                         channel,
                         TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
-                    responseMessage = staticPaginator.Message;
+                    responseMessage = componentPaginatorResult.Message;
                     break;
                 case ResponseType.ImageWithEmbed:
                     response.FileName = StringExtensions.ReplaceInvalidChars(response.FileName);

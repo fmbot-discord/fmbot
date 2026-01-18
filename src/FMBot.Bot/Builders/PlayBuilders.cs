@@ -833,7 +833,7 @@ public class PlayBuilder
             return response;
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages,
+        response.ComponentPaginator = StringService.BuildComponentPaginator(pages,
             editMode ? InteractionConstants.DeleteStreak : null, editMode ? EmojiProperties.Standard("🗑️") : null);
 
         return response;
@@ -1496,7 +1496,7 @@ public class PlayBuilder
                 .WithDescription("⭐ .fmbot Supporter stats"));
         }
 
-        response.StaticPaginator = StringService.BuildSimpleStaticPaginator(pages);
+        response.ComponentPaginator = StringService.BuildSimpleComponentPaginator(pages);
         return response;
     }
 
@@ -1588,7 +1588,7 @@ public class PlayBuilder
                 .WithDescription($"No plays found in your listening history.")
                 .WithAuthor(response.EmbedAuthor));
 
-            response.StaticPaginator = StringService.BuildStaticPaginator(pages, selectMenuBuilder: context.SelectMenu);
+            response.ComponentPaginator = StringService.BuildComponentPaginator(pages, selectMenuBuilder: context.SelectMenu);
             response.ResponseType = ResponseType.Paginator;
             return response;
         }
@@ -1799,7 +1799,7 @@ public class PlayBuilder
                 .WithAuthor(response.EmbedAuthor));
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginatorWithSelectMenu(pages, viewType);
+        response.ComponentPaginator = StringService.BuildComponentPaginatorWithSelectMenu(pages, viewType);
         response.ResponseType = ResponseType.Paginator;
         return response;
     }

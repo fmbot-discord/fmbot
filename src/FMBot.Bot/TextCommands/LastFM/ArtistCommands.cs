@@ -14,6 +14,7 @@ using FMBot.Domain;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
+using NetCord.Gateway;
 using NetCord.Services.Commands;
 using TimePeriod = FMBot.Domain.Models.TimePeriod;
 using NetCord.Rest;
@@ -616,10 +617,13 @@ public class ArtistCommands(
                     .AffinityAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, guild, guildUsers,
                         largeGuild);
 
-                _ = this.Interactivity.SendPaginatorAsync(
-                    response.StaticPaginator.Build(),
-                    this.Context.Channel,
-                    TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
+                if (message is Message gatewayMessage)
+                {
+                    _ = this.Interactivity.SendPaginatorAsync(
+                        response.StaticPaginator.Build(),
+                        gatewayMessage,
+                        TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
+                }
             }
             else
             {

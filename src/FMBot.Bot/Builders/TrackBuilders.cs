@@ -1081,7 +1081,7 @@ public class TrackBuilders
             pages.Add(page);
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+        response.ComponentPaginator = StringService.BuildComponentPaginator(pages);
         return response;
     }
 
@@ -1193,7 +1193,7 @@ public class TrackBuilders
             pageCounter++;
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+        response.ComponentPaginator = StringService.BuildComponentPaginator(pages);
         response.ResponseType = ResponseType.Paginator;
         return response;
     }
@@ -1382,7 +1382,7 @@ public class TrackBuilders
             pageCounter++;
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages, selectMenuBuilder: context.SelectMenu);
+        response.ComponentPaginator = StringService.BuildComponentPaginator(pages, selectMenuBuilder: context.SelectMenu);
         response.ResponseType = ResponseType.Paginator;
         return response;
     }
@@ -1791,7 +1791,7 @@ public class TrackBuilders
         else
         {
             response.ResponseType = ResponseType.Paginator;
-            response.StaticPaginator = StringService.BuildSimpleStaticPaginator(pages);
+            response.ComponentPaginator = StringService.BuildSimpleComponentPaginator(pages);
         }
 
         response.CommandResponse = CommandResponse.Ok;

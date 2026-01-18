@@ -629,7 +629,7 @@ public class GuildSettingBuilder
                 .WithFooter(footer.ToString()));
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+        response.ComponentPaginator = StringService.BuildComponentPaginator(pages);
         return response;
     }
 

@@ -386,7 +386,7 @@ public class GameBuilders
 
         pages.Add(guildPage);
 
-        response.StaticPaginator = StringService.BuildSimpleStaticPaginator(pages);
+        response.ComponentPaginator = StringService.BuildSimpleComponentPaginator(pages);
 
         return response;
     }

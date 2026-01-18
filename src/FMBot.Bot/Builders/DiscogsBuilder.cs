@@ -328,7 +328,7 @@ public class DiscogsBuilder
                 .WithAuthor(response.EmbedAuthor));
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+        response.ComponentPaginator = StringService.BuildComponentPaginator(pages);
 
         response.ResponseType = ResponseType.Paginator;
         return response;
@@ -449,7 +449,7 @@ public class DiscogsBuilder
                 .WithAuthor(response.EmbedAuthor));
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+        response.ComponentPaginator = StringService.BuildComponentPaginator(pages);
         response.ResponseType = ResponseType.Paginator;
         return response;
     }
