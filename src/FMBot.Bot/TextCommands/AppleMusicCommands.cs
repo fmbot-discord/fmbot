@@ -73,7 +73,7 @@ public class AppleMusicCommands(
 
                 var recentScrobbles = await dataSourceFactory.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
 
-                if (await GenericEmbedService.RecentScrobbleCallFailedReply(recentScrobbles, userSettings.UserNameLastFM, this.Context))
+                if (await GenericEmbedService.RecentScrobbleCallFailedReply(recentScrobbles, userSettings.UserNameLastFM, this.Context, userService))
                 {
                     return;
                 }
@@ -101,22 +101,24 @@ public class AppleMusicCommands(
                     response.HintShown = true;
                 }
 
-                PublicProperties.UsedCommandsArtists.TryAdd(this.Context.Message.Id, item.Attributes.ArtistName);
-                PublicProperties.UsedCommandsTracks.TryAdd(this.Context.Message.Id, item.Attributes.Name);
+                response.ReferencedMusic = new ReferencedMusic
+                {
+                    Artist = item.Attributes.ArtistName,
+                    Track = item.Attributes.Name
+                };
             }
             else
             {
-
                 response.Text = $"Sorry, Apple Music returned no results for *`{StringExtensions.Sanitize(querystring)}`*.";
                 response.CommandResponse = CommandResponse.NotFound;
             }
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 }

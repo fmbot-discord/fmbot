@@ -52,12 +52,12 @@ public class CountryCommands(
 
             var response = await countryBuilders.TopCountriesAsync(new ContextModel(this.Context, prfx, contextUser),
                 userSettings, timeSettings, topListSettings, mode.mode);
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -82,12 +82,12 @@ public class CountryCommands(
             var response = await countryBuilders.GetTopCountryChart(new ContextModel(this.Context, prfx, contextUser),
                 userSettings, timeSettings);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -105,12 +105,12 @@ public class CountryCommands(
         try
         {
             var response = await countryBuilders.CountryAsync(new ContextModel(this.Context, prfx, contextUser), countryOptions);
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 }

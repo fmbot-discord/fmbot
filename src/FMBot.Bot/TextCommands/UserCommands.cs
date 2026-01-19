@@ -51,12 +51,12 @@ public class UserCommands(
         {
             var response = UserBuilder.GetUserSettings(new ContextModel(this.Context, prfx, contextUser));
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -79,12 +79,12 @@ public class UserCommands(
             var response =
                 await userBuilder.ProfileAsync(new ContextModel(this.Context, prfx, contextUser), userSettings);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -126,11 +126,11 @@ public class UserCommands(
                 });
             }
 
-            this.Context.LogCommandUsed();
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -154,8 +154,8 @@ public class UserCommands(
             UserBuilder.JudgeAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, timeSettings,
                 contextUser.UserType, commandUsesLeft);
 
-        await this.Context.SendResponse(this.Interactivity, response);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendResponse(this.Interactivity, response, userService);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
     [Command("userreactions", "usersetreactions", "useremojis", "userreacts")]
@@ -175,8 +175,8 @@ public class UserCommands(
 
         if (supporterRequiredResponse != null)
         {
-            await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse);
-            this.Context.LogCommandUsed(supporterRequiredResponse.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse, userService);
+            await this.Context.LogCommandUsedAsync(supporterRequiredResponse, userService);
             return;
         }
 
@@ -199,7 +199,7 @@ public class UserCommands(
             this._embed.WithColor(DiscordConstants.InformationColorBlue);
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Embeds = [this._embed] });
 
-            this.Context.LogCommandUsed();
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
 
             return;
         }
@@ -212,7 +212,7 @@ public class UserCommands(
             this._embed.WithColor(DiscordConstants.WarningColorOrange);
             this._embed.WithDescription("Sorry, you can't set more then 5 emoji reacts. Please try again.");
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Embeds = [this._embed] });
-            this.Context.LogCommandUsed(CommandResponse.WrongInput);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
 
             return;
         }
@@ -223,7 +223,7 @@ public class UserCommands(
             this._embed.WithDescription("Sorry, one or multiple of your reactions seems invalid. Please try again.\n" +
                                         "Please check if you have a space between every emoji.");
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Embeds = [this._embed] });
-            this.Context.LogCommandUsed(CommandResponse.WrongInput);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
 
             return;
         }
@@ -238,7 +238,7 @@ public class UserCommands(
         this._embed.WithFooter("⭐ Supporter perk");
 
         var message = await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Embeds = [this._embed] });
-        this.Context.LogCommandUsed();
+        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
 
         try
         {
@@ -266,7 +266,7 @@ public class UserCommands(
             }
 
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Embeds = [this._embed] });
-            this.Context.LogCommandUsed(CommandResponse.Error);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Error }, userService);
         }
     }
 
@@ -319,11 +319,11 @@ public class UserCommands(
                 }
             }
 
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e, sendReply: false);
+            await this.Context.HandleCommandException(e, userService, sendReply: false);
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Unable to show the featured avatar on FMBot due to an internal error. \nThe bot might not have changed its avatar since its last startup. Please wait until a new featured user is chosen." });
         }
     }
@@ -352,12 +352,12 @@ public class UserCommands(
                 await userBuilder.FeaturedLogAsync(new ContextModel(this.Context, prfx, contextUser),
                     userSettings, view);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -391,11 +391,11 @@ public class UserCommands(
             this._embed.WithColor(new Color(32, 62, 121));
             await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
 
-            this.Context.LogCommandUsed();
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -413,12 +413,12 @@ public class UserCommands(
             var response =
                 UserBuilder.BotScrobblingAsync(new ContextModel(this.Context, prfx, contextUser));
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -446,12 +446,12 @@ public class UserCommands(
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Check your DMs to configure your `fm` settings!" });
             }
 
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Error occurred while trying to send DM, maybe you have DMs disabled. \nTry using the slash command version `/fmmode` instead." });
-            await this.Context.HandleCommandException(e, sendReply: false);
+            await this.Context.HandleCommandException(e, userService, sendReply: false);
         }
     }
 
@@ -467,8 +467,8 @@ public class UserCommands(
 
         var response = UserBuilder.ResponseMode(new ContextModel(this.Context, prfx, contextUser));
 
-        await this.Context.SendResponse(this.Interactivity, response);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendResponse(this.Interactivity, response, userService);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
     [Command("mode", "md")]
@@ -481,8 +481,8 @@ public class UserCommands(
 
         var response = UserBuilder.ModePick(new ContextModel(this.Context, prfx, contextUser));
 
-        await this.Context.SendResponse(this.Interactivity, response);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendResponse(this.Interactivity, response, userService);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
     [Command("privacy")]
@@ -500,8 +500,8 @@ public class UserCommands(
 
         var response = UserBuilder.Privacy(new ContextModel(this.Context, prfx, contextUser));
 
-        await this.Context.SendResponse(this.Interactivity, response);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendResponse(this.Interactivity, response, userService);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
     [Command("templates")]
@@ -525,15 +525,15 @@ public class UserCommands(
 
             if (supporterRequiredResponse != null)
             {
-                await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse);
-                this.Context.LogCommandUsed(supporterRequiredResponse.CommandResponse);
+                await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse, userService);
+                await this.Context.LogCommandUsedAsync(supporterRequiredResponse, userService);
                 return;
             }
 
             var response =
                 await templateBuilders.TemplatePicker(new ContextModel(this.Context, prfx, contextUser), guild);
 
-            await this.Context.SendResponse(this.Interactivity, response);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
 
             // await this.Context.User.SendMessageAsync(embed: response.Embed,
             //     components: response.Components);
@@ -543,12 +543,12 @@ public class UserCommands(
             //     await ReplyAsync("Check your DMs to configure your `fm` settings!");
             // }
 
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Error occurred while trying to send DM, maybe you have DMs disabled. \nTry using the slash command version `/fmmode` instead." });
-            await this.Context.HandleCommandException(e, sendReply: false);
+            await this.Context.HandleCommandException(e, userService, sendReply: false);
         }
     }
 
@@ -562,8 +562,8 @@ public class UserCommands(
 
         var response = UserBuilder.LoginRequired(prfx, contextUser != null);
 
-        await this.Context.SendResponse(this.Interactivity, response);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendResponse(this.Interactivity, response, userService);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
     [Command("remove", "delete", "removedata", "deletedata", "logout")]
@@ -577,7 +577,7 @@ public class UserCommands(
         if (contextUser == null)
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Sorry, but we don't have any data from you in our database." });
-            this.Context.LogCommandUsed(CommandResponse.NotFound);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
             return;
         }
 
@@ -593,7 +593,7 @@ public class UserCommands(
         var response = UserBuilder.RemoveDataResponse(new ContextModel(this.Context, prfx, contextUser));
         var dmChannel = await this.Context.User.GetDMChannelAsync();
         await dmChannel.SendMessageAsync(new MessageProperties().AddEmbeds(response.Embed).WithComponents(response.Components?.Any() == true ? [response.Components] : null));
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
 
@@ -604,8 +604,8 @@ public class UserCommands(
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
         var response = userBuilder.ManageLinkedRoles(new ContextModel(this.Context, prfx));
 
-        await this.Context.SendResponse(this.Interactivity, response);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendResponse(this.Interactivity, response, userService);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
 
@@ -627,19 +627,19 @@ public class UserCommands(
             var supporterRequiredResponse = UserBuilder.ShortcutsSupporterRequired(context);
             if (supporterRequiredResponse != null)
             {
-                await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse);
-                this.Context.LogCommandUsed(supporterRequiredResponse.CommandResponse);
+                await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse, userService);
+                await this.Context.LogCommandUsedAsync(supporterRequiredResponse, userService);
                 return;
             }
 
             var response = await userBuilder.ListShortcutsAsync(context);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 }

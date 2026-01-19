@@ -312,13 +312,12 @@ public class Startup
             .AddSingleton<WhoKnowsTrackService>();
 
         // Interactive configuration
-        services
-            .AddSingleton(new InteractiveServiceOptions
-            {
-                ReturnAfterSendingPaginator = true,
-                ProcessSinglePagePaginators = true
-            })
-            .AddSingleton<InteractiveService>();
+        services.Configure<InteractiveServiceOptions>(options =>
+        {
+            options.ReturnAfterSendingPaginator = true;
+            options.ProcessSinglePagePaginators = true;
+        });
+        services.AddSingleton<InteractiveService>();
     }
 
     private static void RegisterHttpClients(IServiceCollection services)

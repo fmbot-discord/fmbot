@@ -41,12 +41,12 @@ public class CountrySlashCommands(
         {
             var response = await countryBuilders.CountryAsync(new ContextModel(this.Context, contextUser), name);
 
-            await this.Context.SendFollowUpResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -73,7 +73,7 @@ public class CountrySlashCommands(
 
         var response = await countryBuilders.GetTopCountryChart(new ContextModel(this.Context, contextUser), userSettings, timeSettings);
 
-        await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendFollowUpResponse(this.Interactivity, response, userService, privateResponse);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 }

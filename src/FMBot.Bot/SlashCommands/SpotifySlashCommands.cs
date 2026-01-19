@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
+using FMBot.Bot.Models;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain.Interfaces;
@@ -78,8 +79,8 @@ public class SpotifySlashCommands(
                         GenericEmbedService.RecentScrobbleCallFailedResponse(recentScrobbles,
                             contextUser.UserNameLastFM);
 
-                    await this.Context.SendFollowUpResponse(this.Interactivity, errorResponse);
-                    this.Context.LogCommandUsed(errorResponse.CommandResponse);
+                    await this.Context.SendFollowUpResponse(this.Interactivity, errorResponse, userService);
+                    await this.Context.LogCommandUsedAsync(errorResponse, userService);
                     return;
                 }
 
@@ -113,15 +114,23 @@ public class SpotifySlashCommands(
 
             var item = await spotifyService.GetSearchResultAsync(querystring, spotifySearchType);
 
-            var result = false;
+            var response = new ResponseModel
+            {
+                ResponseType = ResponseType.Text
+            };
+
             switch (type)
             {
                 case SpotifySearch.Album:
                     var album = item.Albums.Items?.FirstOrDefault();
                     if (album != null)
                     {
-                        reply += $"https://open.spotify.com/album/{album.Id}";
-                        result = true;
+                        response.Text = reply + $"https://open.spotify.com/album/{album.Id}";
+                        response.ReferencedMusic = new ReferencedMusic
+                        {
+                            Artist = album.Artists.FirstOrDefault()?.Name,
+                            Album = album.Name
+                        };
                     }
 
                     break;
@@ -129,8 +138,11 @@ public class SpotifySlashCommands(
                     var artist = item.Artists.Items?.FirstOrDefault();
                     if (artist != null)
                     {
-                        reply += $"https://open.spotify.com/artist/{artist.Id}";
-                        result = true;
+                        response.Text = reply + $"https://open.spotify.com/artist/{artist.Id}";
+                        response.ReferencedMusic = new ReferencedMusic
+                        {
+                            Artist = artist.Name
+                        };
                     }
 
                     break;
@@ -138,8 +150,7 @@ public class SpotifySlashCommands(
                     var playlist = item.Playlists.Items?.FirstOrDefault();
                     if (playlist != null)
                     {
-                        reply += $"https://open.spotify.com/playlist/{playlist.Id}";
-                        result = true;
+                        response.Text = reply + $"https://open.spotify.com/playlist/{playlist.Id}";
                     }
 
                     break;
@@ -149,7 +160,6 @@ public class SpotifySlashCommands(
                     {
                         track = item.Tracks.Items?.FirstOrDefault(f => f.Artists.Any(a =>
                             string.Equals(a.Name, currentTrack.ArtistName, StringComparison.OrdinalIgnoreCase)));
-                        ;
                     }
                     else
                     {
@@ -158,8 +168,12 @@ public class SpotifySlashCommands(
 
                     if (track != null)
                     {
-                        reply += $"https://open.spotify.com/track/{track.Id}";
-                        result = true;
+                        response.Text = reply + $"https://open.spotify.com/track/{track.Id}";
+                        response.ReferencedMusic = new ReferencedMusic
+                        {
+                            Artist = track.Artists.FirstOrDefault()?.Name,
+                            Track = track.Name
+                        };
                     }
 
                     break;
@@ -167,27 +181,22 @@ public class SpotifySlashCommands(
                     throw new ArgumentOutOfRangeException(nameof(type), type, null);
             }
 
-            if (result)
+            if (!string.IsNullOrEmpty(response.Text))
             {
-                await this.Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
-                    .WithContent(reply)
-                    .WithAllowedMentions(AllowedMentionsProperties.None)
-                    .WithFlags(privateResponse ? MessageFlags.Ephemeral : default));
-                this.Context.LogCommandUsed();
+                await this.Context.SendFollowUpResponse(this.Interactivity, response, userService, privateResponse);
+                await this.Context.LogCommandUsedAsync(response, userService);
             }
             else
             {
-                await this.Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
-                    .WithContent(
-                        $"Sorry, Spotify returned no results for *`{StringExtensions.Sanitize(querystring)}`*.")
-                    .WithAllowedMentions(AllowedMentionsProperties.None)
-                    .WithFlags(MessageFlags.Ephemeral));
-                this.Context.LogCommandUsed(CommandResponse.NotFound);
+                response.Text = $"Sorry, Spotify returned no results for *`{StringExtensions.Sanitize(querystring)}`*.";
+                response.CommandResponse = CommandResponse.NotFound;
+                await this.Context.SendFollowUpResponse(this.Interactivity, response, userService, true);
+                await this.Context.LogCommandUsedAsync(response, userService);
             }
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 }

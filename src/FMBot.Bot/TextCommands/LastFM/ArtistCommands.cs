@@ -63,12 +63,12 @@ public class ArtistCommands(
             var response = await artistBuilders.ArtistInfoAsync(new ContextModel(this.Context, prfx, contextUser),
                 userSettings, redirectsEnabled.NewSearchValue, redirectsEnabled.Enabled);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -97,12 +97,12 @@ public class ArtistCommands(
                 new ContextModel(this.Context, prfx, contextUser),
                 userSettings, redirectsEnabled.NewSearchValue, redirectsEnabled.Enabled);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -132,8 +132,8 @@ public class ArtistCommands(
             timeSettings,
             userSettings, redirectsEnabled.NewSearchValue, redirectsEnabled.Enabled);
 
-        await this.Context.SendResponse(this.Interactivity, response);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendResponse(this.Interactivity, response, userService);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
     [Command("artistalbums", "aa", "aab", "atab", "artistalbum", "artistopalbum", "artisttopalbums",
@@ -159,8 +159,8 @@ public class ArtistCommands(
         var response = await artistBuilders.ArtistAlbumsAsync(new ContextModel(this.Context, prfx, contextUser),
             userSettings, redirectsEnabled.NewSearchValue, redirectsEnabled.Enabled);
 
-        await this.Context.SendResponse(this.Interactivity, response);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendResponse(this.Interactivity, response, userService);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
     [Command("artistplays", "ap")]
@@ -188,8 +188,8 @@ public class ArtistCommands(
             userSettings,
             redirectsEnabled.NewSearchValue, redirectsEnabled.Enabled);
 
-        await this.Context.SendResponse(this.Interactivity, response);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendResponse(this.Interactivity, response, userService);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
     [Command("artistpace", "apc", "apace", "artistpc")]
@@ -222,12 +222,12 @@ public class ArtistCommands(
             var response = await artistBuilders.ArtistPaceAsync(new ContextModel(this.Context, prfx, contextUser),
                 userSettings, timeSettings, timeSettings.NewSearchValue, null, redirectsEnabled.Enabled);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -263,8 +263,8 @@ public class ArtistCommands(
                 : await artistBuilders.TopArtistsAsync(new ContextModel(this.Context, prfx, contextUser),
                     topListSettings, timeSettings, userSettings, mode.mode);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
 
             //if (!userSettings.DifferentUser && timeSettings.TimePeriod == TimePeriod.AllTime)
             //{
@@ -273,7 +273,7 @@ public class ArtistCommands(
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -302,8 +302,8 @@ public class ArtistCommands(
 
             if (supporterRequiredResponse != null)
             {
-                await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse);
-                this.Context.LogCommandUsed(supporterRequiredResponse.CommandResponse);
+                await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse, userService);
+                await this.Context.LogCommandUsedAsync(supporterRequiredResponse, userService);
                 return;
             }
 
@@ -318,12 +318,12 @@ public class ArtistCommands(
             var response = await artistBuilders.ArtistDiscoveriesAsync(context, topListSettings, timeSettings,
                 userSettings, mode.mode);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -362,12 +362,12 @@ public class ArtistCommands(
             var response = await artistBuilders.TasteAsync(new ContextModel(this.Context, prfx, userSettings),
                 tasteSettings, timeSettings, otherUser);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -405,21 +405,21 @@ public class ArtistCommands(
                 settings.DisplayRoleFilter,
                 redirectsEnabled: settings.RedirectsEnabled);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
             if (!string.IsNullOrEmpty(e.Message) &&
                 e.Message.Contains("The server responded with error 50013: Missing Permissions"))
             {
-                await this.Context.HandleCommandException(e, sendReply: false);
+                await this.Context.HandleCommandException(e, userService, sendReply: false);
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
                     { Content = "Error while replying: The bot is missing permissions.\nMake sure it has permission to 'Embed links' and 'Attach Images'" });
             }
             else
             {
-                await this.Context.HandleCommandException(e);
+                await this.Context.HandleCommandException(e, userService);
             }
         }
     }
@@ -453,21 +453,21 @@ public class ArtistCommands(
             var response = await artistBuilders
                 .GlobalWhoKnowsArtistAsync(new ContextModel(this.Context, prfx, contextUser), settings);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
             if (!string.IsNullOrEmpty(e.Message) &&
                 e.Message.Contains("The server responded with error 50013: Missing Permissions"))
             {
-                await this.Context.HandleCommandException(e, sendReply: false);
+                await this.Context.HandleCommandException(e, userService, sendReply: false);
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
                     { Content = "Error while replying: The bot is missing permissions.\nMake sure it has permission to 'Embed links' and 'Attach Images'" });
             }
             else
             {
-                await this.Context.HandleCommandException(e);
+                await this.Context.HandleCommandException(e, userService);
             }
         }
     }
@@ -500,21 +500,21 @@ public class ArtistCommands(
                 .FriendsWhoKnowArtistAsync(new ContextModel(this.Context, prfx, contextUser),
                     currentSettings.ResponseMode, settings.NewSearchValue, settings.RedirectsEnabled);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
             if (!string.IsNullOrEmpty(e.Message) &&
                 e.Message.Contains("The server responded with error 50013: Missing Permissions"))
             {
-                await this.Context.HandleCommandException(e, sendReply: false);
+                await this.Context.HandleCommandException(e, userService, sendReply: false);
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
                     { Content = "Error while replying: The bot is missing permissions.\nMake sure it has permission to 'Embed links' and 'Attach Images'" });
             }
             else
             {
-                await this.Context.HandleCommandException(e);
+                await this.Context.HandleCommandException(e, userService);
             }
         }
     }
@@ -563,11 +563,11 @@ public class ArtistCommands(
                 this.Context.Channel,
                 TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
 
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -631,14 +631,14 @@ public class ArtistCommands(
                     .AffinityAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, guild, guildUsers,
                         largeGuild);
 
-                await this.Context.SendResponse(this.Interactivity, response);
+                await this.Context.SendResponse(this.Interactivity, response, userService);
             }
 
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -664,12 +664,12 @@ public class ArtistCommands(
             var response = await artistBuilders.GetIceberg(new ContextModel(this.Context, prfx, contextUser),
                 userSettings, timeSettings);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -698,8 +698,8 @@ public class ArtistCommands(
 
             if (supporterRequiredResponse != null)
             {
-                await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse);
-                this.Context.LogCommandUsed(supporterRequiredResponse.CommandResponse);
+                await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse, userService);
+                await this.Context.LogCommandUsedAsync(supporterRequiredResponse, userService);
                 return;
             }
 
@@ -710,12 +710,12 @@ public class ArtistCommands(
             var response = await playBuilders.ListeningGapsAsync(context, topListSettings,
                 userSettings, mode.mode, GapEntityType.Artist);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 }

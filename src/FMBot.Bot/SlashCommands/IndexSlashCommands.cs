@@ -45,7 +45,7 @@ public class IndexSlashCommands(
                 embed.WithDescription("This server has already been updated in the last minute, please wait.");
                 await this.Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
                     .WithEmbeds([embed]));
-                this.Context.LogCommandUsed(CommandResponse.Cooldown);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Cooldown }, userService);
                 return;
             }
 
@@ -82,11 +82,11 @@ public class IndexSlashCommands(
             //     socketGuild.PurgeUserCache();
             // }
 
-            this.Context.LogCommandUsed();
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -106,7 +106,7 @@ public class IndexSlashCommands(
         if (updateTypeInput == UpdateType.RecentPlays || updateType.updateType.HasFlag(UpdateType.RecentPlays))
         {
             var initialResponse = UserBuilder.UpdatePlaysInit(new ContextModel(this.Context, contextUser));
-            await this.Context.SendResponse(this.Interactivity, initialResponse);
+            await this.Context.SendResponse(this.Interactivity, initialResponse, userService);
 
             var updatedResponse = await userBuilder.UpdatePlays(new ContextModel(this.Context, contextUser));
             await this.Context.Interaction.ModifyResponseAsync(e =>
@@ -114,18 +114,18 @@ public class IndexSlashCommands(
                 e.Embeds = [updatedResponse.Embed];
                 e.Components = updatedResponse.Components?.Any() == true ? [updatedResponse.Components] : [];
             });
-            this.Context.LogCommandUsed(updatedResponse.CommandResponse);
+            await this.Context.LogCommandUsedAsync(updatedResponse, userService);
         }
         else
         {
             var initialResponse =
                 userBuilder.UpdateOptionsInit(new ContextModel(this.Context, contextUser), updateType.updateType,
                     updateType.description);
-            await this.Context.SendResponse(this.Interactivity, initialResponse);
+            await this.Context.SendResponse(this.Interactivity, initialResponse, userService);
 
             if (initialResponse.CommandResponse != CommandResponse.Ok)
             {
-                this.Context.LogCommandUsed(initialResponse.CommandResponse);
+                await this.Context.LogCommandUsedAsync(initialResponse, userService);
                 return;
             }
 
@@ -137,7 +137,7 @@ public class IndexSlashCommands(
                 e.Embeds = [updatedResponse.Embed];
                 e.Components = updatedResponse.Components?.Any() == true ? [updatedResponse.Components] : [];
             });
-            this.Context.LogCommandUsed(updatedResponse.CommandResponse);
+            await this.Context.LogCommandUsedAsync(updatedResponse, userService);
         }
     }
 }

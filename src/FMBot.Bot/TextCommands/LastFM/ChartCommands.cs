@@ -56,7 +56,7 @@ public class ChartCommands(
         if (chartCount >= 4)
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Please wait a minute before generating charts again." });
-            this.Context.LogCommandUsed(CommandResponse.Cooldown);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Cooldown }, userService);
             return;
         }
 
@@ -69,7 +69,7 @@ public class ChartCommands(
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
                     { Content = "I'm missing the 'Attach files' permission in this server, so I can't post a chart." });
-                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
                 return;
             }
         }
@@ -92,12 +92,12 @@ public class ChartCommands(
             var response = await chartBuilders.AlbumChartAsync(new ContextModel(this.Context, prfx, user), userSettings,
                 chartSettings);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -120,7 +120,7 @@ public class ChartCommands(
         if (chartCount >= 3)
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Please wait a minute before generating charts again." });
-            this.Context.LogCommandUsed(CommandResponse.Cooldown);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Cooldown }, userService);
             return;
         }
 
@@ -133,7 +133,7 @@ public class ChartCommands(
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
                     { Content = "I'm missing the 'Attach files' permission in this server, so I can't post a chart." });
-                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
                 return;
             }
         }
@@ -149,12 +149,12 @@ public class ChartCommands(
             var response = await chartBuilders.ArtistChartAsync(new ContextModel(this.Context, prfx, user), userSettings,
                 chartSettings);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 }

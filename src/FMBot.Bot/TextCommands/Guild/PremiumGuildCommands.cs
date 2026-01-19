@@ -44,7 +44,7 @@ public class PremiumGuildCommands(
         if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = Constants.GetPremiumServer });
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             return;
         }
 
@@ -54,12 +54,12 @@ public class PremiumGuildCommands(
 
             var response = await premiumSettingBuilder.AllowedRoles(new ContextModel(this.Context, prfx));
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -73,7 +73,7 @@ public class PremiumGuildCommands(
         if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = Constants.GetPremiumServer });
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             return;
         }
 
@@ -83,12 +83,12 @@ public class PremiumGuildCommands(
 
             var response = await premiumSettingBuilder.BlockedRoles(new ContextModel(this.Context, prfx));
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -102,7 +102,7 @@ public class PremiumGuildCommands(
         if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = Constants.GetPremiumServer });
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             return;
         }
 
@@ -112,12 +112,12 @@ public class PremiumGuildCommands(
 
             var response = await premiumSettingBuilder.BotManagementRoles(new ContextModel(this.Context, prfx));
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -131,7 +131,7 @@ public class PremiumGuildCommands(
         if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = Constants.GetPremiumServer });
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             return;
         }
 
@@ -141,12 +141,12 @@ public class PremiumGuildCommands(
 
             var response = await premiumSettingBuilder.BotManagementRoles(new ContextModel(this.Context, prfx));
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -160,7 +160,7 @@ public class PremiumGuildCommands(
         if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = Constants.GetPremiumServer });
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             return;
         }
 
@@ -170,12 +170,12 @@ public class PremiumGuildCommands(
 
             var response = await premiumSettingBuilder.SetGuildActivityThreshold(new ContextModel(this.Context, prfx));
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 }

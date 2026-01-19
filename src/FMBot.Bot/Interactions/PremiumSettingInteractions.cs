@@ -7,6 +7,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Factories;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
+using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain.Models;
 using NetCord;
@@ -16,6 +17,7 @@ using NetCord.Services.ComponentInteractions;
 namespace FMBot.Bot.Interactions;
 
 public class PremiumSettingInteractions(
+    UserService userService,
     GuildService guildService,
     PremiumSettingBuilder premiumSettingBuilder,
     GuildSettingBuilder guildSettingBuilder)
@@ -28,7 +30,7 @@ public class PremiumSettingInteractions(
         if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
         {
             await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             return;
         }
 
@@ -48,7 +50,7 @@ public class PremiumSettingInteractions(
         if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
         {
             await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             return;
         }
 
@@ -68,7 +70,7 @@ public class PremiumSettingInteractions(
         if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context), managersAllowed: false))
         {
             await GuildSettingBuilder.UserNotAllowedResponse(this.Context, managersAllowed: false);
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             return;
         }
 

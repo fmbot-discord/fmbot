@@ -250,7 +250,7 @@ public class CommandHandler
 
                 if (await this._userService.UserBlockedAsync(context.User.Id))
                 {
-                    await UserBlockedResponse(context, prfx);
+                    await UserBlockedResponse(context, prfx, "fm");
                     return;
                 }
 
@@ -268,13 +268,18 @@ public class CommandHandler
                         });
                     }
 
-                    context.LogCommandUsed(CommandResponse.RateLimited);
+                    await context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.RateLimited }, this._userService, "fm");
                     return;
                 }
 
-                if (!await CommandEnabled(context, fmSearchResult, prfx, update))
+                if (!await CommandEnabled(context, fmSearchResult, prfx, update, "fm"))
                 {
                     return;
+                }
+
+                if (!update)
+                {
+                    _ = Task.Run(async () => await this._userService.InsertCommandInteractionAsync(context, "fm"));
                 }
 
                 var commandPrefixResult = await this._commands.ExecuteAsync(messageContent.AsMemory(), context, this._provider);
@@ -284,7 +289,6 @@ public class CommandHandler
                     Statistics.CommandsExecuted.WithLabels("fm").Inc();
 
                     _ = Task.Run(async () => await this._userService.UpdateUserLastUsedAsync(context.User.Id));
-                    _ = Task.Run(async () => await this._userService.AddUserTextCommandInteraction(context, "fm"));
                 }
                 else if (commandPrefixResult is IFailResult failResult)
                 {
@@ -302,14 +306,16 @@ public class CommandHandler
                 return;
             }
 
-            if (!await CommandEnabled(context, searchResult, prfx, update))
+            var commandName = searchResult.Command.Aliases[0];
+
+            if (!await CommandEnabled(context, searchResult, prfx, update, commandName))
             {
                 return;
             }
 
             if (await this._userService.UserBlockedAsync(context.User.Id))
             {
-                await UserBlockedResponse(context, prfx);
+                await UserBlockedResponse(context, prfx, commandName);
                 return;
             }
 
@@ -333,7 +339,7 @@ public class CommandHandler
                         Embeds = [embed],
                         Components = [GenericEmbedService.UsernameNotSetErrorComponents()]
                     });
-                    context.LogCommandUsed(CommandResponse.UsernameNotSet);
+                    await context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.UsernameNotSet }, this._userService, commandName);
                     return;
                 }
 
@@ -351,7 +357,7 @@ public class CommandHandler
                         });
                     }
 
-                    context.LogCommandUsed(CommandResponse.RateLimited);
+                    await context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.RateLimited }, this._userService, commandName);
                     return;
                 }
             }
@@ -368,7 +374,7 @@ public class CommandHandler
                     {
                         Embeds = [embed]
                     });
-                    context.LogCommandUsed(CommandResponse.UsernameNotSet);
+                    await context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.UsernameNotSet }, this._userService, commandName);
                     return;
                 }
             }
@@ -382,7 +388,7 @@ public class CommandHandler
                     {
                         Content = "This command is not supported in DMs."
                     });
-                    context.LogCommandUsed(CommandResponse.NotSupportedInDm);
+                    await context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotSupportedInDm }, this._userService, commandName);
                     return;
                 }
             }
@@ -401,7 +407,7 @@ public class CommandHandler
                     {
                         Embeds = [embed]
                     });
-                    context.LogCommandUsed(CommandResponse.IndexRequired);
+                    await context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.IndexRequired }, this._userService, commandName);
                     return;
                 }
 
@@ -410,8 +416,6 @@ public class CommandHandler
                     _ = Task.Run(async () => await this.UpdateGuildIndex(context));
                 }
             }
-
-            var commandName = searchResult.Command.Aliases[0];
             if (msg.Content.EndsWith(" help", StringComparison.OrdinalIgnoreCase) && commandName != "help")
             {
                 var embed = new EmbedProperties();
@@ -432,8 +436,13 @@ public class CommandHandler
                 }
 
                 await context.Client.Rest.SendMessageAsync(context.Message.ChannelId,messageProps);
-                context.LogCommandUsed(CommandResponse.Help);
+                await context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Help }, this._userService, commandName);
                 return;
+            }
+
+            if (!update)
+            {
+                _ = Task.Run(async () => await this._userService.InsertCommandInteractionAsync(context, commandName));
             }
 
             var result = await this._commands.ExecuteAsync(messageContent.AsMemory(), context, this._provider);
@@ -444,11 +453,7 @@ public class CommandHandler
 
                 _ = Task.Run(async () => await this._userService.UpdateUserLastUsedAsync(context.User.Id));
 
-                if (!update)
-                {
-                    _ = Task.Run(async () => await this._userService.AddUserTextCommandInteraction(context, commandName));
-                }
-                else
+                if (update)
                 {
                     _ = Task.Run(async () =>
                         await this._userService.UpdateInteractionContextThroughReference(context.Message.Id, true, false));
@@ -517,8 +522,8 @@ public class CommandHandler
         return (false, errorSent);
     }
 
-    private static async Task<bool> CommandEnabled(CommandContext context, CommandSearchResult searchResult, string prfx,
-        bool update = false)
+    private async Task<bool> CommandEnabled(CommandContext context, CommandSearchResult searchResult, string prfx,
+        bool update, string commandName)
     {
         if (context.Guild != null)
         {
@@ -578,6 +583,8 @@ public class CommandHandler
                                       (isMod ? $"\n-# *Configured with `{prfx}togglecommand`*" : null)
                         })).DeleteAfterAsync(8);
                     }
+
+                    await context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Disabled }, this._userService, commandName);
                 }
 
                 return false;
@@ -595,6 +602,8 @@ public class CommandHandler
                         Content = "The command you're trying to execute has been disabled in this server." +
                                   (isMod ? $"\n-# *Configured with `{prfx}toggleservercommand`*" : null)
                     })).DeleteAfterAsync(8);
+
+                    await context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Disabled }, this._userService, commandName);
                 }
 
                 return false;
@@ -614,6 +623,8 @@ public class CommandHandler
                         Content = "The command you're trying to execute has been disabled in this channel." +
                                   (isMod ? $"\n-# *Configured with `{prfx}togglecommand`*" : null)
                     })).DeleteAfterAsync(8);
+
+                    await context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Disabled }, this._userService, commandName);
                 }
 
                 return false;
@@ -623,7 +634,7 @@ public class CommandHandler
         return true;
     }
 
-    private async Task UserBlockedResponse(CommandContext context, string s)
+    private async Task UserBlockedResponse(CommandContext context, string s, string commandName)
     {
         var embed = new EmbedProperties()
             .WithColor(DiscordConstants.LastFmColorRed);
@@ -632,7 +643,7 @@ public class CommandHandler
         {
             Embeds = [embed]
         });
-        context.LogCommandUsed(CommandResponse.UserBlocked);
+        await context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.UserBlocked }, this._userService, commandName);
     }
 
     private async Task UpdateUserLastMessageDate(CommandContext context)

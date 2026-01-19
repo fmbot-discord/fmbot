@@ -52,12 +52,12 @@ public class GuildCommands(
             var response =
                 await guildSettingBuilder.GetGuildSettings(new ContextModel(this.Context, prfx, contextUser), guildPermissions);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -78,12 +78,12 @@ public class GuildCommands(
             var response = await guildBuilders.MemberOverviewAsync(new ContextModel(this.Context, prfx, contextUser), guild,
                 GuildViewType.Overview);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -111,8 +111,8 @@ public class GuildCommands(
 
         var response = await guildSettingBuilder.GuildMode(new ContextModel(this.Context, prfx));
 
-        await this.Context.SendResponse(this.Interactivity, response);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendResponse(this.Interactivity, response, userService);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
     [Command("serverreactions", "serversetreactions", "serveremojis", "serverreacts")]
@@ -129,7 +129,7 @@ public class GuildCommands(
         if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = GuildSettingBuilder.UserNotAllowedResponseText() });
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             return;
         }
 
@@ -153,7 +153,7 @@ public class GuildCommands(
             this._embed.WithColor(DiscordConstants.InformationColorBlue);
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Embeds = [this._embed] });
 
-            this.Context.LogCommandUsed();
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
 
             return;
         }
@@ -166,7 +166,7 @@ public class GuildCommands(
             this._embed.WithColor(DiscordConstants.WarningColorOrange);
             this._embed.WithDescription("Sorry, you can't set more then 3 emoji reacts. Please try again.");
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Embeds = [this._embed] });
-            this.Context.LogCommandUsed(CommandResponse.WrongInput);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
 
             return;
         }
@@ -177,7 +177,7 @@ public class GuildCommands(
             this._embed.WithDescription("Sorry, one or multiple of your reactions seems invalid. Please try again.\n" +
                                         "Please check if you have a space between every emoji.");
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Embeds = [this._embed] });
-            this.Context.LogCommandUsed(CommandResponse.WrongInput);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
 
             return;
         }
@@ -198,7 +198,7 @@ public class GuildCommands(
         this._embed.WithColor(DiscordConstants.InformationColorBlue);
 
         var message = await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Embeds = [this._embed] });
-        this.Context.LogCommandUsed();
+        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
 
         try
         {
@@ -226,7 +226,7 @@ public class GuildCommands(
             }
 
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Embeds = [this._embed] });
-            this.Context.LogCommandUsed(CommandResponse.Error);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Error }, userService);
         }
     }
 
@@ -245,12 +245,12 @@ public class GuildCommands(
             var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
             var response = await guildSettingBuilder.SetPrefix(new ContextModel(this.Context, prfx));
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -266,12 +266,12 @@ public class GuildCommands(
             var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
             var response = await guildSettingBuilder.ToggleGuildCommand(new ContextModel(this.Context, prfx));
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -295,12 +295,12 @@ public class GuildCommands(
             var response =
                 await guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context, prfx), id);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -318,7 +318,7 @@ public class GuildCommands(
         if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = GuildSettingBuilder.UserNotAllowedResponseText() });
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             return;
         }
 
@@ -353,6 +353,6 @@ public class GuildCommands(
                                "Note that this cooldown can also expire after a bot restart.");
 
         await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Embeds = [this._embed] });
-        this.Context.LogCommandUsed();
+        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
     }
 }

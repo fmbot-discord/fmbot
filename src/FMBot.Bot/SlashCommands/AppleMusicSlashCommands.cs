@@ -64,8 +64,8 @@ public class AppleMusicSlashCommands(
                 {
                     var errorResponse = GenericEmbedService.RecentScrobbleCallFailedResponse(recentScrobbles, contextUser.UserNameLastFM);
 
-                    await this.Context.SendResponse(this.Interactivity, errorResponse);
-                    this.Context.LogCommandUsed(errorResponse.CommandResponse);
+                    await this.Context.SendResponse(this.Interactivity, errorResponse, userService);
+                    await this.Context.LogCommandUsedAsync(errorResponse, userService);
                     return;
                 }
 
@@ -85,8 +85,11 @@ public class AppleMusicSlashCommands(
             if (item != null)
             {
                 response.Text = $"{item.Attributes.Url}";
-                PublicProperties.UsedCommandsArtists.TryAdd(this.Context.Interaction.Id, item.Attributes.ArtistName);
-                PublicProperties.UsedCommandsTracks.TryAdd(this.Context.Interaction.Id, item.Attributes.Name);
+                response.ReferencedMusic = new ReferencedMusic
+                {
+                    Artist = item.Attributes.ArtistName,
+                    Track = item.Attributes.Name
+                };
             }
             else
             {
@@ -94,12 +97,12 @@ public class AppleMusicSlashCommands(
                 response.CommandResponse = CommandResponse.NotFound;
             }
 
-            await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendFollowUpResponse(this.Interactivity, response, userService, privateResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 }

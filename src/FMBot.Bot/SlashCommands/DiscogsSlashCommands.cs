@@ -56,7 +56,7 @@ public class DiscogsSlashCommands(
                     Embeds = [response.Embed],
                     Components = [response.Components]
                 });
-                this.Context.LogCommandUsed(response.CommandResponse);
+                await this.Context.LogCommandUsedAsync(response, userService);
             }
             else
             {
@@ -80,12 +80,12 @@ public class DiscogsSlashCommands(
                     Embeds = [response.Embed],
                     Components = [response.Components]
                 });
-                this.Context.LogCommandUsed(response.CommandResponse);
+                await this.Context.LogCommandUsedAsync(response, userService);
             }
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -116,12 +116,12 @@ public class DiscogsSlashCommands(
             var response = await discogsBuilder.DiscogsCollectionAsync(new ContextModel(this.Context, contextUser),
                 userSettings, collectionSettings, search);
 
-            await this.Context.SendFollowUpResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 }

@@ -50,8 +50,8 @@ public class PlayInteractions(
 
         var response = await playBuilder.DeleteStreakAsync(new ContextModel(this.Context, contextUser), streakId);
 
-        await this.Context.SendResponse(interactivity, response, ephemeral: true);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
     [ComponentInteraction(InteractionConstants.RandomMilestone)]
@@ -87,7 +87,7 @@ public class PlayInteractions(
                 mileStoneAmount.isRandom);
 
             await this.Context.UpdateInteractionEmbed(response, interactivity, false);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
 
             var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
             if (message != null && response.ReferencedMusic != null &&
@@ -98,7 +98,7 @@ public class PlayInteractions(
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -122,15 +122,15 @@ public class PlayInteractions(
             var response = await recapBuilders.RecapAsync(new ContextModel(this.Context, contextUser),
                 userSettings, timeSettings, RecapPage.Overview);
 
-            await this.Context.SendFollowUpResponse(interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendFollowUpResponse(interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
 
             _ = this.Context.DisableInteractionButtons(
                 specificButtonOnly: $"{InteractionConstants.RecapAlltime}:{userId}");
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -171,8 +171,8 @@ public class PlayInteractions(
                 noPermResponse.CommandResponse = CommandResponse.NoPermission;
                 noPermResponse.ResponseType = ResponseType.Embed;
                 noPermResponse.Embed.WithColor(DiscordConstants.WarningColorOrange);
-                await this.Context.SendResponse(interactivity, noPermResponse, true);
-                this.Context.LogCommandUsed(noPermResponse.CommandResponse);
+                await this.Context.SendResponse(interactivity, noPermResponse, userService, true);
+                await this.Context.LogCommandUsedAsync(noPermResponse, userService);
                 return;
             }
 
@@ -196,11 +196,11 @@ public class PlayInteractions(
                     viewType);
 
             await this.Context.UpdateInteractionEmbed(response, interactivity, false);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -249,11 +249,11 @@ public class PlayInteractions(
                     userSettings, responseMode, viewType);
 
             await this.Context.UpdateInteractionEmbed(response, interactivity, false);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 }

@@ -5,10 +5,12 @@ using System.Threading.Tasks;
 using Fergun.Interactive;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
+using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
+using FMBot.Persistence.Domain.Models;
 using NetCord;
 using NetCord.Rest;
 using NetCord.Services;
@@ -77,6 +79,54 @@ public static class InteractionContextExtensions
         PublicProperties.UsedCommandsResponses.TryAdd(context.Interaction.Id, commandResponse);
     }
 
+    public static async Task LogCommandUsedAsync(this ApplicationCommandContext context,
+        ResponseModel response,
+        UserService userService,
+        string commandName = null)
+    {
+        // 1. Serilog logging + in-memory dictionary
+        LogCommandUsed(context, response.CommandResponse);
+
+        // 2. Database storage - always happens
+        var resolvedCommandName = commandName ?? context.Interaction switch
+        {
+            SlashCommandInteraction slashCommand => slashCommand.Data.Name,
+            UserCommandInteraction userCommand => userCommand.Data.Name,
+            MessageCommandInteraction messageCommand => messageCommand.Data.Name,
+            _ => null
+        };
+
+        var type = context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
+                   !context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall)
+            ? UserInteractionType.SlashCommandUser
+            : UserInteractionType.SlashCommandGuild;
+
+        Dictionary<string, string> options = null;
+        if (context.Interaction is SlashCommandInteraction slashCommandInteraction)
+        {
+            options = new Dictionary<string, string>();
+            foreach (var option in slashCommandInteraction.Data.Options)
+            {
+                options.Add(option.Name, option.Value?.ToString());
+            }
+
+            if (!options.Any())
+            {
+                options = null;
+            }
+        }
+
+        await userService.InsertAndCompleteInteractionAsync(
+            context.Interaction.Id,
+            context.User.Id,
+            resolvedCommandName,
+            response.CommandResponse,
+            context.Guild?.Id,
+            context.Channel?.Id,
+            type,
+            commandOptions: options);
+    }
+
     public static void LogCommandUsed(this ComponentInteractionContext context,
         CommandResponse commandResponse = CommandResponse.Ok)
     {
@@ -114,8 +164,46 @@ public static class InteractionContextExtensions
         PublicProperties.UsedCommandsResponses.TryAdd(context.Interaction.Id, commandResponse);
     }
 
+    public static async Task LogCommandUsedAsync(this ComponentInteractionContext context,
+        ResponseModel response,
+        UserService userService,
+        string commandName = null)
+    {
+        // 1. Serilog logging + in-memory dictionary
+        LogCommandUsed(context, response.CommandResponse);
+
+        // 2. Database storage - always happens
+        var resolvedCommandName = commandName;
+        if (resolvedCommandName == null && context.Interaction is MessageComponentInteraction messageComponent)
+        {
+            var customId = messageComponent.Data?.CustomId;
+            if (customId != null)
+            {
+                var parts = customId.Split('-');
+                if (parts.Length >= 2)
+                {
+                    resolvedCommandName = parts[0] + '-' + parts[1];
+                }
+            }
+        }
+
+        var type = context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
+                   !context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall)
+            ? UserInteractionType.SlashCommandUser
+            : UserInteractionType.SlashCommandGuild;
+
+        await userService.InsertAndCompleteInteractionAsync(
+            context.Interaction.Id,
+            context.User.Id,
+            resolvedCommandName,
+            response.CommandResponse,
+            context.Guild?.Id,
+            context.Channel?.Id,
+            type);
+    }
+
     public static async Task HandleCommandException(this IInteractionContext context, Exception exception,
-        string message = null, bool sendReply = true, bool deferFirst = false)
+        UserService userService, string message = null, bool sendReply = true, bool deferFirst = false)
     {
         var referenceId = CommandContextExtensions.GenerateRandomCode();
 
@@ -175,13 +263,23 @@ public static class InteractionContextExtensions
             }
         }
 
-        PublicProperties.UsedCommandsErrorReferences.TryAdd(context.Interaction.Id, referenceId);
+        if (userService != null)
+        {
+            var interactionId = context.Interaction.Id;
+            _ = Task.Run(async () =>
+            {
+                await userService.UpdateCommandInteractionAsync(
+                    interactionId,
+                    commandResponse: CommandResponse.Error,
+                    errorReference: referenceId);
+            });
+        }
     }
 
     extension(IInteractionContext context)
     {
         public async Task SendResponse(InteractiveService interactiveService,
-            ResponseModel response, bool ephemeral = false, ResponseModel extraResponse = null)
+            ResponseModel response, UserService userService, bool ephemeral = false, ResponseModel extraResponse = null)
         {
             var embeds = new[] { response.Embed };
             if (extraResponse != null)
@@ -257,9 +355,9 @@ public static class InteractionContextExtensions
                     throw new ArgumentOutOfRangeException();
             }
 
-            if (response.HintShown == true && !PublicProperties.UsedCommandsHintShown.Contains(context.Interaction.Id))
+            if (response.ReferencedMusic != null)
             {
-                PublicProperties.UsedCommandsHintShown.Add(context.Interaction.Id);
+                PublicProperties.UsedCommandsReferencedMusic.TryAdd(context.Interaction.Id, response.ReferencedMusic);
             }
 
             if (response.EmoteReactions != null && response.EmoteReactions.Length != 0 &&
@@ -274,16 +372,37 @@ public static class InteractionContextExtensions
                 }
                 catch (Exception e)
                 {
-                    await context.HandleCommandException(e, "Could not add emote reactions", sendReply: false);
+                    await context.HandleCommandException(e, userService, "Could not add emote reactions", sendReply: false);
                     _ = (await context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
                             .WithContent("Could not add automatic emoji reactions.\n" +
                                          "-# Make sure the emojis still exist, the bot is the same server as where the emojis come from and the bot has permission to `Add Reactions`.")))
                         .DeleteAfterAsync(30);
                 }
             }
+
+            if (userService != null)
+            {
+                var interactionId = context.Interaction.Id;
+                var commandResponse = response.CommandResponse;
+                var artist = response.ReferencedMusic?.Artist;
+                var album = response.ReferencedMusic?.Album;
+                var track = response.ReferencedMusic?.Track;
+                var hintShown = response.HintShown;
+
+                _ = Task.Run(async () =>
+                {
+                    await userService.UpdateCommandInteractionAsync(
+                        interactionId,
+                        commandResponse: commandResponse,
+                        artist: artist,
+                        album: album,
+                        track: track,
+                        hintShown: hintShown);
+                });
+            }
         }
 
-        public async Task<ulong?> SendFollowUpResponse(InteractiveService interactiveService, ResponseModel response, bool ephemeral = false)
+        public async Task<ulong?> SendFollowUpResponse(InteractiveService interactiveService, ResponseModel response, UserService userService, bool ephemeral = false)
         {
             ulong? responseId = null;
             var flags = ephemeral ? MessageFlags.Ephemeral : (MessageFlags?)null;
@@ -388,9 +507,9 @@ public static class InteractionContextExtensions
                 PublicProperties.UsedCommandsResponseContextId.TryAdd(responseId.Value, context.Interaction.Id);
             }
 
-            if (response.HintShown == true && !PublicProperties.UsedCommandsHintShown.Contains(context.Interaction.Id))
+            if (response.ReferencedMusic != null)
             {
-                PublicProperties.UsedCommandsHintShown.Add(context.Interaction.Id);
+                PublicProperties.UsedCommandsReferencedMusic.TryAdd(context.Interaction.Id, response.ReferencedMusic);
             }
 
             if (response.EmoteReactions != null && response.EmoteReactions.Length != 0 &&
@@ -405,12 +524,35 @@ public static class InteractionContextExtensions
                 }
                 catch (Exception e)
                 {
-                    await context.HandleCommandException(e, "Could not add emote reactions", sendReply: false);
+                    await context.HandleCommandException(e, userService, "Could not add emote reactions", sendReply: false);
                     _ = (await context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
                             .WithContent("Could not add automatic emoji reactions.\n" +
                                          "-# Make sure the emojis still exist, the bot is the same server as where the emojis come from and the bot has permission to `Add Reactions`.")))
                         .DeleteAfterAsync(30);
                 }
+            }
+
+            if (userService != null && responseId.HasValue)
+            {
+                var interactionId = context.Interaction.Id;
+                var responseIdForDb = responseId.Value;
+                var commandResponse = response.CommandResponse;
+                var artist = response.ReferencedMusic?.Artist;
+                var album = response.ReferencedMusic?.Album;
+                var track = response.ReferencedMusic?.Track;
+                var hintShown = response.HintShown;
+
+                _ = Task.Run(async () =>
+                {
+                    await userService.UpdateCommandInteractionAsync(
+                        interactionId,
+                        responseId: responseIdForDb,
+                        commandResponse: commandResponse,
+                        artist: artist,
+                        album: album,
+                        track: track,
+                        hintShown: hintShown);
+                });
             }
 
             return responseId;

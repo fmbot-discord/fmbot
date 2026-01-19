@@ -152,13 +152,6 @@ public class TrackService
 
                 if (interactionId.HasValue)
                 {
-                    PublicProperties.UsedCommandsArtists.TryAdd(interactionId.Value, trackArtist);
-                    PublicProperties.UsedCommandsTracks.TryAdd(interactionId.Value, trackName);
-                    if (!string.IsNullOrWhiteSpace(trackInfo.Content?.AlbumName))
-                    {
-                        PublicProperties.UsedCommandsAlbums.TryAdd(interactionId.Value, trackInfo.Content.AlbumName);
-                    }
-
                     response.ReferencedMusic = new ReferencedMusic
                     {
                         Artist = trackArtist,
@@ -236,13 +229,6 @@ public class TrackService
 
             if (interactionId.HasValue)
             {
-                PublicProperties.UsedCommandsArtists.TryAdd(interactionId.Value, lastPlayedTrack.ArtistName);
-                PublicProperties.UsedCommandsTracks.TryAdd(interactionId.Value, lastPlayedTrack.TrackName);
-                if (!string.IsNullOrWhiteSpace(lastPlayedTrack.AlbumName))
-                {
-                    PublicProperties.UsedCommandsAlbums.TryAdd(interactionId.Value, lastPlayedTrack.AlbumName);
-                }
-
                 response.ReferencedMusic = new ReferencedMusic
                 {
                     Artist = lastPlayedTrack.ArtistName,
@@ -307,13 +293,6 @@ public class TrackService
 
             if (interactionId.HasValue)
             {
-                PublicProperties.UsedCommandsArtists.TryAdd(interactionId.Value, trackSearch.ArtistName);
-                PublicProperties.UsedCommandsTracks.TryAdd(interactionId.Value, trackSearch.Name);
-                if (!string.IsNullOrWhiteSpace(trackInfo.Content?.AlbumName))
-                {
-                    PublicProperties.UsedCommandsAlbums.TryAdd(interactionId.Value, trackInfo.Content.AlbumName);
-                }
-
                 response.ReferencedMusic = new ReferencedMusic
                 {
                     Artist = trackSearch.ArtistName,

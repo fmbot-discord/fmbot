@@ -52,12 +52,12 @@ public class UserSlashCommands(
 
             var response = UserBuilder.GetUserSettings(new ContextModel(this.Context, contextUser));
 
-            await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService, ephemeral: true);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -78,12 +78,12 @@ public class UserSlashCommands(
         {
             var response = UserBuilder.LoginRequired("/", contextUser != null);
 
-            await this.Context.SendResponse(this.Interactivity, response, true);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService, true);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e, deferFirst: true);
+            await this.Context.HandleCommandException(e, userService, deferFirst: true);
         }
     }
 
@@ -103,8 +103,8 @@ public class UserSlashCommands(
 
         var response = UserBuilder.Privacy(new ContextModel(this.Context, contextUser));
 
-        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendResponse(this.Interactivity, response, userService, ephemeral: true);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
     [SlashCommand("fmmode", "Changes your '/fm' layout", Contexts =
@@ -124,8 +124,8 @@ public class UserSlashCommands(
 
         var response = UserBuilder.FmMode(new ContextModel(this.Context, contextUser), guild);
 
-        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendResponse(this.Interactivity, response, userService, ephemeral: true);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
     [SlashCommand("responsemode", "Changes your default whoknows and top list mode")]
@@ -136,8 +136,8 @@ public class UserSlashCommands(
 
         var response = UserBuilder.ResponseMode(new ContextModel(this.Context, contextUser));
 
-        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendResponse(this.Interactivity, response, userService, ephemeral: true);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
     [SlashCommand("localization", "Configure your timezone and number format in .fmbot", Contexts =
@@ -213,14 +213,14 @@ public class UserSlashCommands(
                     .WithContent(
                         "No options set. Select one of the slash command options to configure your localization settings.")
                     .WithFlags(MessageFlags.Ephemeral)));
-                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
                 return;
             }
 
             await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
                 .WithEmbeds(embeds.ToArray())
                 .WithFlags(MessageFlags.Ephemeral)));
-            this.Context.LogCommandUsed();
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
         }
         catch (Exception e)
         {
@@ -228,8 +228,8 @@ public class UserSlashCommands(
                 .WithContent(
                     "Something went wrong while setting localization. Please check if you entered a valid timezone.")
                 .WithFlags(MessageFlags.Ephemeral)));
-            this.Context.LogCommandUsed(CommandResponse.WrongInput);
-            await this.Context.HandleCommandException(e, sendReply: false);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
+            await this.Context.HandleCommandException(e, userService, sendReply: false);
         }
     }
 
@@ -277,7 +277,7 @@ public class UserSlashCommands(
             Embeds = [response.Embed],
             Components = response.Components?.Any() == true ? [response.Components] : null
         });
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
     [MessageCommand("Delete response")]
@@ -325,7 +325,7 @@ public class UserSlashCommands(
         await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
             .WithContent("Removed .fmbot response.")
             .WithFlags(MessageFlags.Ephemeral)));
-        this.Context.LogCommandUsed();
+        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
     }
 
     [SlashCommand("judge", "Judges your music taste using AI", Contexts =
@@ -357,8 +357,8 @@ public class UserSlashCommands(
             UserBuilder.JudgeAsync(new ContextModel(this.Context, contextUser), userSettings, timeSettings,
                 contextUser.UserType, commandUsesLeft);
 
-        await this.Context.SendResponse(this.Interactivity, response);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendResponse(this.Interactivity, response, userService);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
     [SlashCommand("featured", "Shows what is currently featured (and the bots avatar)", Contexts =
@@ -376,8 +376,8 @@ public class UserSlashCommands(
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var response = await userBuilder.FeaturedAsync(new ContextModel(this.Context, contextUser));
 
-        await this.Context.SendResponse(this.Interactivity, response);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendResponse(this.Interactivity, response, userService);
+        await this.Context.LogCommandUsedAsync(response, userService);
 
         var message = await this.Context.Interaction.GetResponseAsync();
 
@@ -421,8 +421,8 @@ public class UserSlashCommands(
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var response = UserBuilder.BotScrobblingAsync(new ContextModel(this.Context, contextUser));
 
-        await this.Context.SendResponse(this.Interactivity, response);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendResponse(this.Interactivity, response, userService);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
     [SlashCommand("featuredlog", "Shows you or someone else's featured history", Contexts =
@@ -448,8 +448,8 @@ public class UserSlashCommands(
         var response =
             await userBuilder.FeaturedLogAsync(new ContextModel(this.Context, contextUser), userSettings, view);
 
-        await this.Context.SendResponse(this.Interactivity, response);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendResponse(this.Interactivity, response, userService);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
     [SlashCommand("profile", "Shows you or someone else's profile",
@@ -469,7 +469,7 @@ public class UserSlashCommands(
 
         var response = await userBuilder.ProfileAsync(new ContextModel(this.Context, contextUser), userSettings);
 
-        await this.Context.SendFollowUpResponse(this.Interactivity, response);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 }

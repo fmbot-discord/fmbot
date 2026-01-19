@@ -48,12 +48,12 @@ public class ArtistSlashCommands(
         {
             var response = await artistBuilders.ArtistInfoAsync(new ContextModel(this.Context, contextUser), userSettings, name, redirectsEnabled);
 
-            await this.Context.SendFollowUpResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -79,12 +79,12 @@ public class ArtistSlashCommands(
         {
             var response = await artistBuilders.ArtistOverviewAsync(new ContextModel(this.Context, contextUser), userSettings, name, redirectsEnabled);
 
-            await this.Context.SendFollowUpResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -110,12 +110,12 @@ public class ArtistSlashCommands(
         {
             var response = await artistBuilders.ArtistPlaysAsync(new ContextModel(this.Context, contextUser), userSettings, name, redirectsEnabled);
 
-            await this.Context.SendFollowUpResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -142,8 +142,8 @@ public class ArtistSlashCommands(
         var response = await artistBuilders.ArtistTracksAsync(new ContextModel(this.Context, contextUser), timeSettings,
             userSettings, name, redirectsEnabled);
 
-        await this.Context.SendResponse(this.Interactivity, response);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendResponse(this.Interactivity, response, userService);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
     [SlashCommand("artistalbums", "Shows your top albums for an artist",
@@ -165,8 +165,8 @@ public class ArtistSlashCommands(
         var response = await artistBuilders.ArtistAlbumsAsync(new ContextModel(this.Context, contextUser),
             userSettings, name, redirectsEnabled);
 
-        await this.Context.SendResponse(this.Interactivity, response);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendResponse(this.Interactivity, response, userService);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
     [SlashCommand("artistpace", "Shows estimated date you reach a certain amount of plays on an artist",
@@ -199,12 +199,12 @@ public class ArtistSlashCommands(
             var response = await artistBuilders.ArtistPaceAsync(new ContextModel(this.Context, contextUser),
                 userSettings, timeSettings, amount.ToString(), name, redirectsEnabled);
 
-            await this.Context.SendFollowUpResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed();
+            await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -240,12 +240,12 @@ public class ArtistSlashCommands(
             var response = await artistBuilders.WhoKnowsArtistAsync(new ContextModel(this.Context, contextUser),
                 mode.Value, name, displayRoleFilter, redirectsEnabled: redirectsEnabled);
 
-            await this.Context.SendFollowUpResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -276,12 +276,12 @@ public class ArtistSlashCommands(
             var response = await artistBuilders.FriendsWhoKnowArtistAsync(new ContextModel(this.Context, contextUser),
                 mode.Value, name, redirectsEnabled);
 
-            await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendFollowUpResponse(this.Interactivity, response, userService, privateResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -319,12 +319,12 @@ public class ArtistSlashCommands(
         {
             var response = await artistBuilders.GlobalWhoKnowsArtistAsync(new ContextModel(this.Context, contextUser), currentSettings);
 
-            await this.Context.SendFollowUpResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -354,8 +354,8 @@ public class ArtistSlashCommands(
 
         if (supporterRequiredResponse != null)
         {
-            await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse);
-            this.Context.LogCommandUsed(supporterRequiredResponse.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse, userService);
+            await this.Context.LogCommandUsedAsync(supporterRequiredResponse, userService);
             return;
         }
 
@@ -367,8 +367,8 @@ public class ArtistSlashCommands(
 
         var response = await artistBuilders.ArtistDiscoveriesAsync(context, topListSettings, timeSettings, userSettings, mode.Value);
 
-        await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendFollowUpResponse(this.Interactivity, response, userService, privateResponse);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
     [UserCommand("Compare taste", Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild],
@@ -407,12 +407,12 @@ public class ArtistSlashCommands(
             var response = await artistBuilders.TasteAsync(new ContextModel(this.Context, contextUser),
                 new TasteSettings { TasteType = tasteType, EmbedSize = embedSize ?? EmbedSize.Default }, timeSettings, userSettings);
 
-            await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendFollowUpResponse(this.Interactivity, response, userService, privateResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -435,12 +435,12 @@ public class ArtistSlashCommands(
             var response = await artistBuilders.AffinityAsync(new ContextModel(this.Context, contextUser), userSettings, guild, guildUsers,
                 guildUsers.Count > 2000);
 
-            await this.Context.SendFollowUpResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -467,7 +467,7 @@ public class ArtistSlashCommands(
 
         var response = await artistBuilders.GetIceberg(new ContextModel(this.Context, contextUser), userSettings, timeSettings);
 
-        await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendFollowUpResponse(this.Interactivity, response, userService, privateResponse);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 }

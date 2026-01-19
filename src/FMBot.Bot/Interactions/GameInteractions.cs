@@ -60,7 +60,7 @@ public class GameInteractions(
 
         if (response.CommandResponse == CommandResponse.NoPermission)
         {
-            await this.Context.SendResponse(interactivity, response, ephemeral: true);
+            await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
         }
         else
         {
@@ -105,9 +105,9 @@ public class GameInteractions(
                     cancellationTokenSource);
             }
 
-            var responseId = await this.Context.SendFollowUpResponse(interactivity, response,
+            var responseId = await this.Context.SendFollowUpResponse(interactivity, response, userService,
                 ephemeral: response.CommandResponse != CommandResponse.Ok);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
 
             if (response.CommandResponse == CommandResponse.Ok)
             {
@@ -140,7 +140,7 @@ public class GameInteractions(
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 

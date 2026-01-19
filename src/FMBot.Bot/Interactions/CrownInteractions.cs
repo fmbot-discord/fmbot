@@ -40,19 +40,19 @@ public class CrownInteractions(
             {
                 _ = this.Context.DisableInteractionButtons();
                 response.Components = null;
-                await this.Context.SendResponse(interactivity, response);
-                this.Context.LogCommandUsed(response.CommandResponse);
+                await this.Context.SendResponse(interactivity, response, userService);
+                await this.Context.LogCommandUsedAsync(response, userService);
             }
             else
             {
                 await this.Context.UpdateInteractionEmbed(response);
-                this.Context.LogCommandUsed(response.CommandResponse);
+                await this.Context.LogCommandUsedAsync(response, userService);
             }
 
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -84,11 +84,11 @@ public class CrownInteractions(
             var response = await crownBuilders.CrownOverviewAsync(new ContextModel(this.Context, contextUser, discordContextUser), guild, userSettings, viewType);
 
             await this.Context.UpdateInteractionEmbed(response, interactivity, false);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 }

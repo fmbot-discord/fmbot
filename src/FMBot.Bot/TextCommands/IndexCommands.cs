@@ -47,7 +47,7 @@ public class IndexCommands(
             this._embed.WithColor(DiscordConstants.InformationColorBlue);
             this._embed.WithDescription("This server has already been updated in the last minute, please wait.");
             await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
-            this.Context.LogCommandUsed(CommandResponse.Cooldown);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Cooldown }, userService);
             return;
         }
 
@@ -89,7 +89,7 @@ public class IndexCommands(
             if (this.Context.Guild is NetCord.Gateway.Guild socketGuild)
             {
             }
-            this.Context.LogCommandUsed();
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
 
             // if (usersToFullyUpdate != null && usersToFullyUpdate.Count != 0)
             // {
@@ -98,7 +98,7 @@ public class IndexCommands(
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
             await guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow);
         }
     }
@@ -120,7 +120,7 @@ public class IndexCommands(
         if (!updateType.optionPicked)
         {
             var initialResponse = UserBuilder.UpdatePlaysInit(new ContextModel(this.Context, prfx, contextUser));
-            var message = await this.Context.SendResponse(this.Interactivity,initialResponse);
+            var message = await this.Context.SendResponse(this.Interactivity, initialResponse, userService);
 
             var updatedResponse =
                 await userBuilder.UpdatePlays(new ContextModel(this.Context, prfx, contextUser));
@@ -131,17 +131,17 @@ public class IndexCommands(
                 m.Components = updatedResponse.Components != null && updatedResponse.Components.Any() ? [updatedResponse.Components] : [];
             });
 
-            this.Context.LogCommandUsed(updatedResponse.CommandResponse);
+            await this.Context.LogCommandUsedAsync(updatedResponse, userService);
         }
         else
         {
             var initialResponse = userBuilder.UpdateOptionsInit(new ContextModel(this.Context, prfx, contextUser),
                 updateType.updateType, updateType.description);
-            var message = await this.Context.SendResponse(this.Interactivity,initialResponse);
+            var message = await this.Context.SendResponse(this.Interactivity, initialResponse, userService);
 
             if (initialResponse.CommandResponse != CommandResponse.Ok)
             {
-                this.Context.LogCommandUsed(initialResponse.CommandResponse);
+                await this.Context.LogCommandUsedAsync(initialResponse, userService);
                 return;
             }
 
@@ -155,7 +155,7 @@ public class IndexCommands(
                 m.Components = updatedResponse.Components != null && updatedResponse.Components.Any() ? [updatedResponse.Components] : [];
             });
 
-            this.Context.LogCommandUsed(updatedResponse.CommandResponse);
+            await this.Context.LogCommandUsedAsync(updatedResponse, userService);
         }
     }
 }

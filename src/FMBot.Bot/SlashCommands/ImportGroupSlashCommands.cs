@@ -86,8 +86,8 @@ public class ImportGroupSlashCommands(
 
         if (supporterRequired != null)
         {
-            await this.Context.SendResponse(this.Interactivity, supporterRequired);
-            this.Context.LogCommandUsed(supporterRequired.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, supporterRequired, userService);
+            await this.Context.LogCommandUsedAsync(supporterRequired, userService);
             return;
         }
 
@@ -109,8 +109,8 @@ public class ImportGroupSlashCommands(
         {
             var instructionResponse =
                 await importBuilders.GetSpotifyImportInstructions(new ContextModel(this.Context, contextUser));
-            await this.Context.SendResponse(this.Interactivity, instructionResponse);
-            this.Context.LogCommandUsed(instructionResponse.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, instructionResponse, userService);
+            await this.Context.LogCommandUsedAsync(instructionResponse, userService);
             return;
         }
 
@@ -133,7 +133,7 @@ public class ImportGroupSlashCommands(
                 await UpdateSpotifyImportEmbed(message.Id, this.Context.Interaction, embed, description,
                     $"❌ Invalid Spotify import file. Make sure you select the right files, for example `my_spotify_data.zip` or `Streaming_History_Audio_x.json`.",
                     true);
-                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
                 return;
             }
 
@@ -147,7 +147,7 @@ public class ImportGroupSlashCommands(
                     image: "https://fm.bot/img/bot/import-spotify-instructions.png",
                     components: new ActionRowProperties().WithButton("Spotify privacy page",
                         url: "https://www.spotify.com/us/account/privacy/"));
-                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
                 return;
             }
 
@@ -163,7 +163,7 @@ public class ImportGroupSlashCommands(
                         $"The files should have names like `my_spotify_data.zip` or `Streaming_History_Audio_x.json`.\n\n" +
                         $"The right files can take some more time to get, but actually contain your full Spotify history. Sorry for the inconvenience.",
                         true);
-                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
                     return;
                 }
 
@@ -172,7 +172,7 @@ public class ImportGroupSlashCommands(
                     $"❌ Invalid Spotify import file (contains no plays). Make sure you select the right files, for example `my_spotify_data.zip` or `Streaming_History_Audio_x.json`.\n\n" +
                     $"If your `.zip` contains files like `Userdata.json` or `Identity.json` its the wrong package. We can only process files that are from the ['Extended Streaming History'](https://www.spotify.com/us/account/privacy/) package. ",
                     true);
-                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
                 return;
             }
 
@@ -276,14 +276,14 @@ public class ImportGroupSlashCommands(
             await UpdateSpotifyImportEmbed(message.Id, this.Context.Interaction, embed, description, $"- Import complete!", true,
                 components);
 
-            this.Context.LogCommandUsed();
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
         }
         catch (Exception e)
         {
             await UpdateSpotifyImportEmbed(message.Id, this.Context.Interaction, embed, description,
                 $"- ❌ Sorry, an internal error occured. Please try again later, or open a help thread on [our server](https://discord.gg/fmbot).",
                 true);
-            await this.Context.HandleCommandException(e, sendReply: false);
+            await this.Context.HandleCommandException(e, userService, sendReply: false);
         }
     }
 
@@ -308,8 +308,8 @@ public class ImportGroupSlashCommands(
 
         if (supporterRequired != null)
         {
-            await this.Context.SendResponse(this.Interactivity, supporterRequired);
-            this.Context.LogCommandUsed(supporterRequired.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, supporterRequired, userService);
+            await this.Context.LogCommandUsedAsync(supporterRequired, userService);
             return;
         }
 
@@ -321,8 +321,8 @@ public class ImportGroupSlashCommands(
         {
             var instructionResponse =
                 await importBuilders.GetAppleMusicImportInstructions(new ContextModel(this.Context, contextUser));
-            await this.Context.SendResponse(this.Interactivity, instructionResponse);
-            this.Context.LogCommandUsed(instructionResponse.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, instructionResponse, userService);
+            await this.Context.LogCommandUsedAsync(instructionResponse, userService);
             return;
         }
 
@@ -346,7 +346,7 @@ public class ImportGroupSlashCommands(
                     $"❌ Invalid Apple Music import file, or something went wrong.\n\n" +
                     $"If you've uploaded a `.zip` file you can also try to find the `Apple Music Play Activity.csv` inside the .zip and attach that instead.\n\n" +
                     $"You can also open a help thread on [our server](https://discord.gg/fmbot).", true);
-                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
                 return;
             }
 
@@ -358,7 +358,7 @@ public class ImportGroupSlashCommands(
                     $"We can only read a `Apple Music Play Activity.csv` file. Other files do not contain the data required for importing.\n\n" +
                     $"Still having issues? You can also open a help thread on [our server](https://discord.gg/fmbot).",
                     true);
-                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
                 return;
             }
 
@@ -469,14 +469,14 @@ public class ImportGroupSlashCommands(
             await UpdateAppleMusicImportEmbed(message.Id, this.Context.Interaction, embed, description, $"- Import complete!", true,
                 components);
 
-            this.Context.LogCommandUsed();
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
         }
         catch (Exception e)
         {
             await UpdateAppleMusicImportEmbed(message.Id, this.Context.Interaction, embed, description,
                 $"- ❌ Sorry, an internal error occured. Please try again later, or open a help thread on [our server](https://discord.gg/fmbot).",
                 true);
-            await this.Context.HandleCommandException(e, sendReply: false);
+            await this.Context.HandleCommandException(e, userService, sendReply: false);
         }
     }
 
@@ -537,8 +537,8 @@ public class ImportGroupSlashCommands(
 
         if (supporterRequired != null)
         {
-            await this.Context.SendResponse(this.Interactivity, supporterRequired);
-            this.Context.LogCommandUsed(supporterRequired.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, supporterRequired, userService);
+            await this.Context.LogCommandUsedAsync(supporterRequired, userService);
             return;
         }
 
@@ -549,12 +549,12 @@ public class ImportGroupSlashCommands(
             var response =
                 await userBuilder.ImportMode(new ContextModel(this.Context, contextUser), contextUser.UserId);
 
-            await this.Context.SendFollowUpResponse(this.Interactivity, response, ephemeral: true);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendFollowUpResponse(this.Interactivity, response, userService, ephemeral: true);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -568,8 +568,8 @@ public class ImportGroupSlashCommands(
 
         if (supporterRequired != null)
         {
-            await this.Context.SendResponse(this.Interactivity, supporterRequired);
-            this.Context.LogCommandUsed(supporterRequired.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, supporterRequired, userService);
+            await this.Context.LogCommandUsedAsync(supporterRequired, userService);
             return;
         }
 
@@ -601,11 +601,11 @@ public class ImportGroupSlashCommands(
                 Embeds = [response.Embed],
                 Components = [response.Components]
             });
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 }

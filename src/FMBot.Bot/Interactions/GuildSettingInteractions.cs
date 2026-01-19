@@ -340,11 +340,11 @@ public class GuildSettingInteractions(
                     viewType);
 
             await this.Context.UpdateInteractionEmbed(response, interactivity, false);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -372,78 +372,78 @@ public class GuildSettingInteractions(
                 case GuildSetting.TextPrefix:
                 {
                     response = await guildSettingBuilder.SetPrefix(new ContextModel(this.Context));
-                    await this.Context.SendResponse(interactivity, response, ephemeral: false);
+                    await this.Context.SendResponse(interactivity, response, userService, ephemeral: false);
                 }
                     break;
                 case GuildSetting.EmoteReactions:
                     response = GuildSettingBuilder.GuildReactionsAsync(new ContextModel(this.Context), prfx);
 
-                    await this.Context.SendResponse(interactivity, response, ephemeral: false);
+                    await this.Context.SendResponse(interactivity, response, userService, ephemeral: false);
                     return;
                 case GuildSetting.DefaultEmbedType:
                 {
                     response = await guildSettingBuilder.GuildMode(new ContextModel(this.Context));
-                    await this.Context.SendResponse(interactivity, response, ephemeral: false);
+                    await this.Context.SendResponse(interactivity, response, userService, ephemeral: false);
                 }
                     break;
                 case GuildSetting.WhoKnowsActivityThreshold:
                 {
                     response =
                         await guildSettingBuilder.SetFmbotActivityThreshold(new ContextModel(this.Context));
-                    await this.Context.SendResponse(interactivity, response, ephemeral: false);
+                    await this.Context.SendResponse(interactivity, response, userService, ephemeral: false);
                 }
                     break;
                 case GuildSetting.WhoKnowsBlockedUsers:
                 {
                     response = await guildSettingBuilder.BlockedUsersAsync(new ContextModel(this.Context,
                         userSettings));
-                    await this.Context.SendResponse(interactivity, response, ephemeral: true);
+                    await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
                 }
                     break;
                 case GuildSetting.CrownActivityThreshold:
                 {
                     response =
                         await guildSettingBuilder.SetCrownActivityThreshold(new ContextModel(this.Context));
-                    await this.Context.SendResponse(interactivity, response, ephemeral: false);
+                    await this.Context.SendResponse(interactivity, response, userService, ephemeral: false);
                 }
                     break;
                 case GuildSetting.CrownBlockedUsers:
                 {
                     response = await guildSettingBuilder.BlockedUsersAsync(
                         new ContextModel(this.Context, userSettings), true);
-                    await this.Context.SendResponse(interactivity, response, ephemeral: true);
+                    await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
                 }
 
                     break;
                 case GuildSetting.CrownMinimumPlaycount:
                 {
                     response = await guildSettingBuilder.SetCrownMinPlaycount(new ContextModel(this.Context));
-                    await this.Context.SendResponse(interactivity, response, ephemeral: false);
+                    await this.Context.SendResponse(interactivity, response, userService, ephemeral: false);
                 }
                     break;
                 case GuildSetting.CrownSeeder:
                 {
                     response = await guildSettingBuilder.CrownSeeder(new ContextModel(this.Context));
-                    await this.Context.SendResponse(interactivity, response, ephemeral: false);
+                    await this.Context.SendResponse(interactivity, response, userService, ephemeral: false);
                 }
                     break;
                 case GuildSetting.CrownsDisabled:
                 {
                     response = await guildSettingBuilder.ToggleCrowns(new ContextModel(this.Context));
-                    await this.Context.SendResponse(interactivity, response, ephemeral: false);
+                    await this.Context.SendResponse(interactivity, response, userService, ephemeral: false);
                 }
                     break;
                 case GuildSetting.DisabledCommands:
                 {
                     response = await guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context),
                         this.Context.Channel.Id);
-                    await this.Context.SendResponse(interactivity, response, ephemeral: false);
+                    await this.Context.SendResponse(interactivity, response, userService, ephemeral: false);
                 }
                     break;
                 case GuildSetting.DisabledGuildCommands:
                 {
                     response = await guildSettingBuilder.ToggleGuildCommand(new ContextModel(this.Context));
-                    await this.Context.SendResponse(interactivity, response, ephemeral: false);
+                    await this.Context.SendResponse(interactivity, response, userService, ephemeral: false);
                 }
                     break;
                 default:
@@ -488,7 +488,7 @@ public class GuildSettingInteractions(
         if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
         {
             await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             return;
         }
 
@@ -512,7 +512,7 @@ public class GuildSettingInteractions(
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -526,7 +526,7 @@ public class GuildSettingInteractions(
         if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
         {
             await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             return;
         }
 

@@ -55,12 +55,12 @@ public class YoutubeCommands(
                 await youtubeBuilders.YoutubeAsync(new ContextModel(this.Context, prfx, contextUser),
                     searchValue);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 }

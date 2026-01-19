@@ -332,6 +332,7 @@ public class AlbumBuilders
                 emote: EmojiProperties.Standard("🖼️"));
 
         response.Embed.WithFooter(footer.ToString());
+
         return response;
     }
 

@@ -59,20 +59,20 @@ public class PlaySlashCommands(
 
             if (supporterRequiredResponse != null)
             {
-                await this.Context.SendFollowUpResponse(this.Interactivity, supporterRequiredResponse);
-                this.Context.LogCommandUsed(supporterRequiredResponse.CommandResponse);
+                await this.Context.SendFollowUpResponse(this.Interactivity, supporterRequiredResponse, userService);
+                await this.Context.LogCommandUsedAsync(supporterRequiredResponse, userService);
                 return;
             }
 
             var response =
                 await playBuilder.DiscoveryDate(context, name, userSettings);
 
-            await this.Context.SendFollowUpResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -131,8 +131,8 @@ public class PlaySlashCommands(
                 await playBuilder.NowPlayingAsync(new ContextModel(this.Context, contextUser), userSettings,
                     embedType ?? contextUser.FmEmbedType);
 
-            await this.Context.SendFollowUpResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
 
             var message = await this.Context.Interaction.GetResponseAsync();
 
@@ -148,7 +148,7 @@ public class PlaySlashCommands(
             }
             catch (Exception e)
             {
-                await this.Context.HandleCommandException(e, "Could not add emote reactions", sendReply: false);
+                await this.Context.HandleCommandException(e, userService, "Could not add emote reactions", sendReply: false);
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Channel.Id, new MessageProperties
                 {
                     Content =
@@ -158,7 +158,7 @@ public class PlaySlashCommands(
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -185,12 +185,12 @@ public class PlaySlashCommands(
             var response = await playBuilder.RecentAsync(new ContextModel(this.Context, contextUser),
                 userSettings, artistName);
 
-            await this.Context.SendFollowUpResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -215,12 +215,12 @@ public class PlaySlashCommands(
             var response = await playBuilder.StreakAsync(new ContextModel(this.Context, contextUser),
                 userSettings, userWithStreak);
 
-            await this.Context.SendFollowUpResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e, deferFirst: true);
+            await this.Context.HandleCommandException(e, userService, deferFirst: true);
         }
     }
 
@@ -247,12 +247,12 @@ public class PlaySlashCommands(
             var response = await playBuilder.StreakHistoryAsync(new ContextModel(this.Context, contextUser),
                 userSettings, editMode, name);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e, deferFirst: true);
+            await this.Context.HandleCommandException(e, userService, deferFirst: true);
         }
     }
 
@@ -283,12 +283,12 @@ public class PlaySlashCommands(
             var response = await playBuilder.OverviewAsync(new ContextModel(this.Context, contextUser),
                 userSettings, amount);
 
-            await this.Context.SendFollowUpResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -322,12 +322,12 @@ public class PlaySlashCommands(
             var response = await playBuilder.PaceAsync(new ContextModel(this.Context, contextUser),
                 userSettings, timeSettings, goalAmount, userInfo.Playcount, userInfo.RegisteredUnix);
 
-            await this.Context.SendFollowUpResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -357,12 +357,12 @@ public class PlaySlashCommands(
             var response = await playBuilder.PlaysAsync(new ContextModel(this.Context, contextUser), userSettings,
                 timeSettings);
 
-            await this.Context.SendFollowUpResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -391,12 +391,12 @@ public class PlaySlashCommands(
             var response = await playBuilder.MileStoneAsync(new ContextModel(this.Context, contextUser),
                 userSettings, mileStoneAmount.amount, userInfo.Playcount);
 
-            await this.Context.SendFollowUpResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -420,12 +420,12 @@ public class PlaySlashCommands(
             var response = await playBuilder.YearAsync(new ContextModel(this.Context, contextUser),
                 userSettings, parsedYear);
 
-            await this.Context.SendFollowUpResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -458,12 +458,12 @@ public class PlaySlashCommands(
             var response = await recapBuilders.RecapAsync(new ContextModel(this.Context, contextUser),
                 userSettings, timeSettings, RecapPage.Overview);
 
-            await this.Context.SendFollowUpResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -496,8 +496,8 @@ public class PlaySlashCommands(
 
         if (supporterRequiredResponse != null)
         {
-            await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse);
-            this.Context.LogCommandUsed(supporterRequiredResponse.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse, userService);
+            await this.Context.LogCommandUsedAsync(supporterRequiredResponse, userService);
             return;
         }
 
@@ -509,7 +509,7 @@ public class PlaySlashCommands(
         var response =
             await playBuilder.ListeningGapsAsync(context, topListSettings, userSettings, mode.Value, gapType);
 
-        await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendFollowUpResponse(this.Interactivity, response, userService, privateResponse);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 }

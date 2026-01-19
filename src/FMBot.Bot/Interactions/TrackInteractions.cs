@@ -40,11 +40,11 @@ public class TrackInteractions(
                 ResponseMode.Embed, $"{track.ArtistName} | {track.Name}", true, roleIds);
 
             await this.Context.UpdateInteractionEmbed(response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -72,11 +72,11 @@ public class TrackInteractions(
         {
             var response = await trackBuilders.TrackPreviewAsync(new ContextModel(this.Context, contextUser),
                 $"{dbTrack.ArtistName} | {dbTrack.Name}", Context.Interaction.Token);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -90,8 +90,8 @@ public class TrackInteractions(
 
         if (supporterRequiredResponse != null)
         {
-            await this.Context.SendResponse(interactivity, supporterRequiredResponse, true);
-            this.Context.LogCommandUsed(supporterRequiredResponse.CommandResponse);
+            await this.Context.SendResponse(interactivity, supporterRequiredResponse, userService, true);
+            await this.Context.LogCommandUsedAsync(supporterRequiredResponse, userService);
             return;
         }
 
@@ -106,12 +106,12 @@ public class TrackInteractions(
         {
             var response =
                 await trackBuilders.TrackLyricsAsync(context, $"{dbTrack.ArtistName} | {dbTrack.Name}");
-            await this.Context.SendFollowUpResponse(interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendFollowUpResponse(interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 }

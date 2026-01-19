@@ -38,12 +38,12 @@ public class YoutubeSlashCommands(
             var response =
                 await youtubeBuilders.YoutubeAsync(new ContextModel(this.Context, contextUser), searchValue);
 
-            await this.Context.SendResponse(this.Interactivity, response, privateResponse);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService, privateResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 }

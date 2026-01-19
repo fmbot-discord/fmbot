@@ -55,12 +55,12 @@ public class GenreCommands(
 
             var response = await genreBuilders.TopGenresAsync(new ContextModel(this.Context, prfx, contextUser),
                 userSettings, timeSettings, topListSettings, mode.mode);
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -86,12 +86,12 @@ public class GenreCommands(
             var userSettings = await settingService.GetUser(userView.NewSearchValue, contextUser, this.Context);
             var response = await genreBuilders.GenreAsync(new ContextModel(this.Context, prfx, contextUser), userSettings.NewSearchValue, userSettings, guild, userView.User);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -113,19 +113,19 @@ public class GenreCommands(
         {
             var response = await genreBuilders.WhoKnowsGenreAsync(new ContextModel(this.Context, prfx, contextUser), genreValues);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
             if (!string.IsNullOrEmpty(e.Message) && e.Message.Contains("The server responded with error 50013: Missing Permissions"))
             {
-                await this.Context.HandleCommandException(e, sendReply: false);
+                await this.Context.HandleCommandException(e, userService, sendReply: false);
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Error while replying: The bot is missing permissions.\nMake sure it has permission to 'Embed links' and 'Attach Images'" });
             }
             else
             {
-                await this.Context.HandleCommandException(e);
+                await this.Context.HandleCommandException(e, userService);
             }
         }
     }
@@ -164,12 +164,12 @@ public class GenreCommands(
         try
         {
             var response = await genreBuilders.GetGuildGenres(new ContextModel(this.Context, prfx), guild, guildListSettings);
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -191,19 +191,19 @@ public class GenreCommands(
             var response = await genreBuilders
                 .FriendsWhoKnowsGenreAsync(new ContextModel(this.Context, prfx, contextUser), genreValues);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
             if (!string.IsNullOrEmpty(e.Message) && e.Message.Contains("The server responded with error 50013: Missing Permissions"))
             {
-                await this.Context.HandleCommandException(e, sendReply: false);
+                await this.Context.HandleCommandException(e, userService, sendReply: false);
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Error while replying: The bot is missing permissions.\nMake sure it has permission to 'Embed links' and 'Attach Images'" });
             }
             else
             {
-                await this.Context.HandleCommandException(e);
+                await this.Context.HandleCommandException(e, userService);
             }
         }
     }

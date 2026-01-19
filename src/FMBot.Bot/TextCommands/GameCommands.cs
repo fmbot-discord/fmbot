@@ -51,8 +51,8 @@ public class GameCommands(
                 var userSettings = await settingService.GetUser(options, contextUser, this.Context);
 
                 var statResponse = await gameBuilders.GetJumbleUserStats(context, userSettings, JumbleType.Artist);
-                await this.Context.SendResponse(this.Interactivity, statResponse);
-                this.Context.LogCommandUsed(statResponse.CommandResponse);
+                await this.Context.SendResponse(this.Interactivity, statResponse, userService);
+                await this.Context.LogCommandUsedAsync(statResponse, userService);
                 return;
             }
 
@@ -62,12 +62,12 @@ public class GameCommands(
             if (response.CommandResponse == CommandResponse.Cooldown)
             {
                 _ = Task.Run(() => this.Context.Message.AddReactionAsync(new ReactionEmojiProperties("❌")));
-                this.Context.LogCommandUsed(response.CommandResponse);
+                await this.Context.LogCommandUsedAsync(response, userService);
                 return;
             }
 
-            var responseId = await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            var responseId = await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
 
             if (responseId?.Id != null && response.GameSessionId.HasValue)
             {
@@ -80,7 +80,7 @@ public class GameCommands(
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -140,8 +140,8 @@ public class GameCommands(
                 var userSettings = await settingService.GetUser(options, contextUser, this.Context);
 
                 var statResponse = await gameBuilders.GetJumbleUserStats(context, userSettings, JumbleType.Pixelation);
-                await this.Context.SendResponse(this.Interactivity, statResponse);
-                this.Context.LogCommandUsed(statResponse.CommandResponse);
+                await this.Context.SendResponse(this.Interactivity, statResponse, userService);
+                await this.Context.LogCommandUsedAsync(statResponse, userService);
                 return;
             }
 
@@ -151,12 +151,12 @@ public class GameCommands(
             if (response.CommandResponse == CommandResponse.Cooldown)
             {
                 _ = Task.Run(() => this.Context.Message.AddReactionAsync(new ReactionEmojiProperties("❌")));
-                this.Context.LogCommandUsed(response.CommandResponse);
+                await this.Context.LogCommandUsedAsync(response, userService);
                 return;
             }
 
-            var responseId = await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            var responseId = await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
 
             if (responseId?.Id != null && response.GameSessionId.HasValue)
             {
@@ -170,7 +170,7 @@ public class GameCommands(
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 }

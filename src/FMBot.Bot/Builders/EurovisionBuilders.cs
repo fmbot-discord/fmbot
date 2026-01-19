@@ -257,8 +257,11 @@ public class EurovisionBuilders
         }
 
         var artistName = entry.Artist.Split(" and ")[0];
-        PublicProperties.UsedCommandsArtists.TryAdd(context.InteractionId, artistName);
-        PublicProperties.UsedCommandsTracks.TryAdd(context.InteractionId, entry.Title);
+        response.ReferencedMusic = new ReferencedMusic
+        {
+            Artist = artistName,
+            Track = entry.Title
+        };
 
         if (context.ContextUser != null)
         {

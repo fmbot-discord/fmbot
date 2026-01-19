@@ -93,12 +93,12 @@ public class ChartSlashCommands(
             var response = await chartBuilders.AlbumChartAsync(new ContextModel(this.Context, contextUser), userSettings,
                 chartSettings);
 
-            await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendFollowUpResponse(this.Interactivity, response, userService, privateResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -145,12 +145,12 @@ public class ChartSlashCommands(
             var response = await chartBuilders.ArtistChartAsync(new ContextModel(this.Context, contextUser), userSettings,
                 chartSettings);
 
-            await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendFollowUpResponse(this.Interactivity, response, userService, privateResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 }

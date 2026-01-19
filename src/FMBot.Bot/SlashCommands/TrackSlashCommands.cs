@@ -45,12 +45,12 @@ public class TrackSlashCommands(
         {
             var response = await trackBuilders.TrackAsync(new ContextModel(this.Context, contextUser), name);
 
-            await this.Context.SendFollowUpResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -79,12 +79,12 @@ public class TrackSlashCommands(
                 await trackBuilders.WhoKnowsTrackAsync(new ContextModel(this.Context, contextUser), mode.Value,
                     name, displayRoleFilter);
 
-            await this.Context.SendFollowUpResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -117,12 +117,12 @@ public class TrackSlashCommands(
                 await trackBuilders.FriendsWhoKnowTrackAsync(new ContextModel(this.Context, contextUser),
                     mode.Value, name);
 
-            await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendFollowUpResponse(this.Interactivity, response, userService, privateResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -161,12 +161,12 @@ public class TrackSlashCommands(
                 await trackBuilders.GlobalWhoKnowsTrackAsync(new ContextModel(this.Context, contextUser),
                     currentSettings, name);
 
-            await this.Context.SendFollowUpResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -194,12 +194,12 @@ public class TrackSlashCommands(
             var response =
                 await trackBuilders.TrackPlays(new ContextModel(this.Context, contextUser), userSettings, name);
 
-            await this.Context.SendFollowUpResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -222,12 +222,12 @@ public class TrackSlashCommands(
         {
             var response = await trackBuilders.TrackDetails(new ContextModel(this.Context, contextUser), name);
 
-            await this.Context.SendFollowUpResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -250,12 +250,12 @@ public class TrackSlashCommands(
         {
             var response = await trackBuilders.LoveTrackAsync(new ContextModel(this.Context, contextUser), name);
 
-            await this.Context.SendResponse(this.Interactivity, response, privateResponse);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService, privateResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -279,12 +279,12 @@ public class TrackSlashCommands(
             var response =
                 await trackBuilders.UnLoveTrackAsync(new ContextModel(this.Context, contextUser), name);
 
-            await this.Context.SendResponse(this.Interactivity, response, privateResponse);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService, privateResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -322,8 +322,8 @@ public class TrackSlashCommands(
             await trackBuilders.GetReceipt(new ContextModel(this.Context, contextUser), userSettings,
                 timeSettings);
 
-        await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendFollowUpResponse(this.Interactivity, response, userService, privateResponse);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
     [SlashCommand("loved", "Tracks you've loved on Last.fm",
@@ -347,8 +347,8 @@ public class TrackSlashCommands(
         var response =
             await trackBuilders.LovedTracksAsync(new ContextModel(this.Context, contextUser), userSettings);
 
-        await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendFollowUpResponse(this.Interactivity, response, userService, privateResponse);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
     [SlashCommand("lyrics", "⭐ Shows lyrics for the track you're currently listening to or searching for",
@@ -371,8 +371,8 @@ public class TrackSlashCommands(
 
         if (supporterRequiredResponse != null)
         {
-            await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse);
-            this.Context.LogCommandUsed(supporterRequiredResponse.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse, userService);
+            await this.Context.LogCommandUsedAsync(supporterRequiredResponse, userService);
             return;
         }
 
@@ -382,12 +382,12 @@ public class TrackSlashCommands(
         {
             var response = await trackBuilders.TrackLyricsAsync(context, name);
 
-            await this.Context.SendFollowUpResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -409,12 +409,12 @@ public class TrackSlashCommands(
         {
             var response = await trackBuilders.ScrobbleAsync(new ContextModel(this.Context, contextUser), name);
 
-            await this.Context.SendResponse(this.Interactivity, response, privateResponse);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService, privateResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -456,12 +456,12 @@ public class TrackSlashCommands(
                     await eurovisionBuilders.GetEurovisionYear(context, pickedYear);
             }
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 }

@@ -4,6 +4,7 @@ using System.Text;
 using System.Threading.Tasks;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Factories;
+using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
@@ -184,7 +185,7 @@ public class AdminInteractions(
             await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
                 .WithContent(positiveResponse)
                 .WithFlags(MessageFlags.Ephemeral)));
-            this.Context.LogCommandUsed(CommandResponse.Censored);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Censored }, userService);
             return;
         }
 
@@ -194,7 +195,7 @@ public class AdminInteractions(
             await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
                 .WithContent("Thanks, but there is already a pending report for the user you reported.")
                 .WithFlags(MessageFlags.Ephemeral)));
-            this.Context.LogCommandUsed(CommandResponse.Cooldown);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Cooldown }, userService);
             return;
         }
 
@@ -396,7 +397,7 @@ public class AdminInteractions(
             await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
                 .WithContent("Thanks for your report, but the album cover you reported has already been marked as NSFW or censored.")
                 .WithFlags(MessageFlags.Ephemeral)));
-            this.Context.LogCommandUsed(CommandResponse.Censored);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Censored }, userService);
             return;
         }
 
@@ -407,7 +408,7 @@ public class AdminInteractions(
             await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
                 .WithContent($"The album you tried to report does not exist in the .fmbot database (`{albumName}` by `{artistName}`). Someone needs to run the `album` command on it first.")
                 .WithFlags(MessageFlags.Ephemeral)));
-            this.Context.LogCommandUsed(CommandResponse.WrongInput);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
             return;
         }
 
@@ -417,7 +418,7 @@ public class AdminInteractions(
             await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
                 .WithContent("Thanks, but there is already a pending report for the album you reported.")
                 .WithFlags(MessageFlags.Ephemeral)));
-            this.Context.LogCommandUsed(CommandResponse.Cooldown);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Cooldown }, userService);
             return;
         }
 
@@ -450,7 +451,7 @@ public class AdminInteractions(
             await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
                 .WithContent("Thanks for your report, but the artist image you reported has already been marked as NSFW or censored.")
                 .WithFlags(MessageFlags.Ephemeral)));
-            this.Context.LogCommandUsed(CommandResponse.Censored);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Censored }, userService);
             return;
         }
 
@@ -461,7 +462,7 @@ public class AdminInteractions(
             await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
                 .WithContent($"The artist you tried to report does not exist in the .fmbot database (`{artistName}`). Someone needs to run the `artist` command on them first.")
                 .WithFlags(MessageFlags.Ephemeral)));
-            this.Context.LogCommandUsed(CommandResponse.WrongInput);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
             return;
         }
 
@@ -471,7 +472,7 @@ public class AdminInteractions(
             await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
                 .WithContent("Thanks, but there is already a pending report for the artist image you reported.")
                 .WithFlags(MessageFlags.Ephemeral)));
-            this.Context.LogCommandUsed(CommandResponse.Cooldown);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Cooldown }, userService);
             return;
         }
 
@@ -700,7 +701,7 @@ public class AdminInteractions(
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -742,7 +743,7 @@ public class AdminInteractions(
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -791,7 +792,7 @@ public class AdminInteractions(
             await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
                 .WithContent(Constants.FmbotStaffOnly)
                 .WithFlags(MessageFlags.Ephemeral)));
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             return;
         }
 

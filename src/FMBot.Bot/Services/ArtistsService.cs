@@ -5,9 +5,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using Dapper;
-
 using FMBot.Bot.Extensions;
-using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
@@ -127,7 +125,6 @@ public class ArtistsService
 
             if (interactionId.HasValue)
             {
-                PublicProperties.UsedCommandsArtists.TryAdd(interactionId.Value, artistValues);
                 response.ReferencedMusic = new ReferencedMusic
                 {
                     Artist = artistValues
@@ -196,7 +193,6 @@ public class ArtistsService
 
             if (interactionId.HasValue)
             {
-                PublicProperties.UsedCommandsArtists.TryAdd(interactionId.Value, lastPlayedTrack.ArtistName);
                 response.ReferencedMusic = new ReferencedMusic
                 {
                     Artist = lastPlayedTrack.ArtistName

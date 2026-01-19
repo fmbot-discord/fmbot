@@ -414,7 +414,7 @@ public class GenreBuilders
                 response.Embed.WithThumbnail(artist.SpotifyImageUrl);
             }
 
-            PublicProperties.UsedCommandsArtists.TryAdd(context.InteractionId, artist.Name);
+            response.ReferencedMusic = new ReferencedMusic { Artist = artist.Name };
 
             if (genres.Count != 0 && artist.ArtistGenres.Count != 0)
             {
@@ -501,7 +501,7 @@ public class GenreBuilders
                     response.Embed.WithThumbnail(artist.SpotifyImageUrl);
                 }
 
-                PublicProperties.UsedCommandsArtists.TryAdd(context.InteractionId, artist.Name);
+                response.ReferencedMusic = new ReferencedMusic { Artist = artist.Name };
 
                 response.Embed.WithDescription(genreDescription.ToString());
                 response.ResponseType = ResponseType.Embed;

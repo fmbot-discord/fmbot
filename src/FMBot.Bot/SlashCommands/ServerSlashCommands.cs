@@ -21,7 +21,8 @@ public class ServerSlashCommands(
     GuildService guildService,
     AlbumBuilders albumBuilders,
     TrackBuilders trackBuilders,
-    GenreBuilders genreBuilders)
+    GenreBuilders genreBuilders,
+    UserService userService)
     : ApplicationCommandModule<ApplicationCommandContext>
 {
     private InteractiveService Interactivity { get; } = interactivity;
@@ -58,9 +59,9 @@ public class ServerSlashCommands(
 
         var response = await artistBuilders.GuildArtistsAsync(new ContextModel(this.Context), guild, guildListSettings);
 
-        await this.Context.SendFollowUpResponse(this.Interactivity, response);
+        await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
 
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
     [SubSlashCommand("albums", "Top albums for your server")]
@@ -100,9 +101,9 @@ public class ServerSlashCommands(
 
         var response = await albumBuilders.GuildAlbumsAsync(new ContextModel(this.Context), guild, guildListSettings);
 
-        await this.Context.SendFollowUpResponse(this.Interactivity, response);
+        await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
 
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
     [SubSlashCommand("tracks", "Top tracks for your server")]
@@ -142,9 +143,9 @@ public class ServerSlashCommands(
 
         var response = await trackBuilders.GuildTracksAsync(new ContextModel(this.Context), guild, guildListSettings);
 
-        await this.Context.SendFollowUpResponse(this.Interactivity, response);
+        await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
 
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
     [SubSlashCommand("genres", "Top genres for your server")]
@@ -179,8 +180,8 @@ public class ServerSlashCommands(
 
         var response = await genreBuilders.GetGuildGenres(new ContextModel(this.Context), guild, guildListSettings);
 
-        await this.Context.SendFollowUpResponse(this.Interactivity, response);
+        await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
 
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 }

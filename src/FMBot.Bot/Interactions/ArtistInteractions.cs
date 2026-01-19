@@ -46,11 +46,11 @@ public class ArtistInteractions(
             var response = await artistBuilders.ArtistInfoAsync(new ContextModel(this.Context, contextUser, discordContextUser), userSettings, artist.Name, false);
 
             await this.Context.UpdateInteractionEmbed(response, interactivity, false);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -76,11 +76,11 @@ public class ArtistInteractions(
                 artist.Name, false);
 
             await this.Context.UpdateInteractionEmbed(response, interactivity, false);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -104,7 +104,7 @@ public class ArtistInteractions(
             userSettings, artist.Name, false);
 
         await this.Context.UpdateInteractionEmbed(response, interactivity, false);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
     [ComponentInteraction(InteractionConstants.Artist.Albums)]
@@ -126,7 +126,7 @@ public class ArtistInteractions(
             userSettings, artist.Name, false);
 
         await this.Context.UpdateInteractionEmbed(response, interactivity, false);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
     [ComponentInteraction(InteractionConstants.WhoKnowsRolePicker)]
@@ -147,11 +147,11 @@ public class ArtistInteractions(
             var response = await artistBuilders.WhoKnowsArtistAsync(new ContextModel(this.Context, contextUser), ResponseMode.Embed, artist.Name, true, roleIds);
 
             await this.Context.UpdateInteractionEmbed(response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -172,11 +172,11 @@ public class ArtistInteractions(
             var response = await artistBuilders.WhoKnowsArtistAsync(new ContextModel(this.Context, contextUser), mode, artist.Name, showCrownButton: true);
 
             await this.Context.UpdateInteractionEmbed(response, defer: false);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 }

@@ -135,8 +135,6 @@ public class AlbumService
 
                 if (interactionId.HasValue)
                 {
-                    PublicProperties.UsedCommandsArtists.TryAdd(interactionId.Value, searchArtistName);
-                    PublicProperties.UsedCommandsAlbums.TryAdd(interactionId.Value, searchAlbumName);
                     response.ReferencedMusic = new ReferencedMusic
                     {
                         Artist = searchArtistName,
@@ -218,8 +216,6 @@ public class AlbumService
 
             if (interactionId.HasValue)
             {
-                PublicProperties.UsedCommandsArtists.TryAdd(interactionId.Value, lastPlayedTrack.ArtistName);
-                PublicProperties.UsedCommandsAlbums.TryAdd(interactionId.Value, lastPlayedTrack.AlbumName);
                 response.ReferencedMusic = new ReferencedMusic
                 {
                     Artist = lastPlayedTrack.ArtistName,
@@ -264,12 +260,6 @@ public class AlbumService
 
             if (albumInfo?.Content != null && interactionId is not null)
             {
-                PublicProperties.UsedCommandsArtists.TryAdd(interactionId.Value, albumInfo.Content.ArtistName);
-                if (albumInfo.Content.AlbumName != null)
-                {
-                    PublicProperties.UsedCommandsAlbums.TryAdd(interactionId.Value, albumInfo.Content.AlbumName);
-                }
-
                 response.ReferencedMusic = new ReferencedMusic
                 {
                     Artist = albumInfo.Content.ArtistName,

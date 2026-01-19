@@ -11,6 +11,7 @@ using FMBot.Bot.Models.TemplateOptions;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
+using FMBot.Domain.Models;
 using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ComponentInteractions;
@@ -43,13 +44,13 @@ public class TemplateInteractions(
                 await templateBuilders.TemplateManage(new ContextModel(this.Context, contextUser), templateId,
                     guild);
 
-            await this.Context.SendResponse(interactivity, response.response, ephemeral: true,
+            await this.Context.SendResponse(interactivity, response.response, userService, ephemeral: true,
                 response.extraResponse);
-            this.Context.LogCommandUsed(response.response.CommandResponse);
+            await this.Context.LogCommandUsedAsync(response.response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -63,12 +64,12 @@ public class TemplateInteractions(
         {
             var response = TemplateBuilders.GetTemplateVariables(new ContextModel(this.Context, contextUser));
 
-            await this.Context.SendResponse(interactivity, response, true);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(interactivity, response, userService, true);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -81,11 +82,11 @@ public class TemplateInteractions(
         try
         {
             var newTemplate = await templateService.CreateTemplate(contextUser.UserId);
-            this.Context.LogCommandUsed();
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -109,11 +110,11 @@ public class TemplateInteractions(
                 .WithEmbeds([embed])
                 .WithComponents([components])
                 .WithFlags(MessageFlags.Ephemeral)));
-            this.Context.LogCommandUsed();
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -133,11 +134,11 @@ public class TemplateInteractions(
             await Context.Interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties()
                 .WithEmbeds([embed])
                 .WithFlags(MessageFlags.Ephemeral)));
-            this.Context.LogCommandUsed();
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -171,11 +172,11 @@ public class TemplateInteractions(
                     $"{InteractionConstants.Template.ViewScriptModal}:{parsedTemplateId}",
                     $"Template script for '{template.Name}'",
                     template.Content)));
-            this.Context.LogCommandUsed();
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -193,11 +194,11 @@ public class TemplateInteractions(
                     $"{InteractionConstants.Template.RenameModal}:{parsedTemplateId}",
                     $"Renaming template '{template.Name}'",
                     template.Name)));
-            this.Context.LogCommandUsed();
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -212,11 +213,11 @@ public class TemplateInteractions(
             var template = await templateService.GetTemplate(parsedTemplateId);
 
             await templateService.UpdateTemplateContent(template.Id, content);
-            this.Context.LogCommandUsed();
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -231,11 +232,11 @@ public class TemplateInteractions(
             var template = await templateService.GetTemplate(parsedTemplateId);
 
             await templateService.UpdateTemplateName(template.Id, name);
-            this.Context.LogCommandUsed();
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 }

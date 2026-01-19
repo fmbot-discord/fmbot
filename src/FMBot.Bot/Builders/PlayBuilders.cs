@@ -265,12 +265,12 @@ public class PlayBuilder
             totalPlaycount = recentTracks.Content.TotalAmount;
         }
 
-        PublicProperties.UsedCommandsArtists.TryAdd(context.InteractionId, currentTrack.ArtistName);
-        PublicProperties.UsedCommandsTracks.TryAdd(context.InteractionId, currentTrack.TrackName);
-        if (!string.IsNullOrWhiteSpace(currentTrack.AlbumName))
+        response.ReferencedMusic = new ReferencedMusic
         {
-            PublicProperties.UsedCommandsAlbums.TryAdd(context.InteractionId, currentTrack.AlbumName);
-        }
+            Artist = currentTrack.ArtistName,
+            Album = currentTrack.AlbumName,
+            Track = currentTrack.TrackName
+        };
 
         var requesterUserTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
         var embedTitle = !userSettings.DifferentUser
@@ -676,20 +676,12 @@ public class PlayBuilder
                 }
             }
 
-            if (!string.IsNullOrWhiteSpace(streak.ArtistName))
+            response.ReferencedMusic = new ReferencedMusic
             {
-                PublicProperties.UsedCommandsArtists.TryAdd(context.InteractionId, streak.ArtistName);
-            }
-
-            if (!string.IsNullOrWhiteSpace(streak.AlbumName))
-            {
-                PublicProperties.UsedCommandsAlbums.TryAdd(context.InteractionId, streak.AlbumName);
-            }
-
-            if (!string.IsNullOrWhiteSpace(streak.TrackName))
-            {
-                PublicProperties.UsedCommandsTracks.TryAdd(context.InteractionId, streak.TrackName);
-            }
+                Artist = streak.ArtistName,
+                Album = streak.AlbumName,
+                Track = streak.TrackName
+            };
 
             emoji = PlayService.GetEmojiForStreakCount(streak.ArtistPlaycount.GetValueOrDefault());
         }
@@ -1130,13 +1122,6 @@ public class PlayBuilder
                 $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library?from={dateString}&to={dateString}");
 
             reply.AppendLine($"Date played: **<t:{mileStonePlay.Content.TimePlayed.Value.ToUnixEpochDate()}:D>**");
-
-            PublicProperties.UsedCommandsArtists.TryAdd(context.InteractionId, mileStonePlay.Content.ArtistName);
-            PublicProperties.UsedCommandsTracks.TryAdd(context.InteractionId, mileStonePlay.Content.TrackName);
-            if (!string.IsNullOrWhiteSpace(mileStonePlay.Content.AlbumName))
-            {
-                PublicProperties.UsedCommandsAlbums.TryAdd(context.InteractionId, mileStonePlay.Content.AlbumName);
-            }
 
             response.ReferencedMusic = new ReferencedMusic
             {

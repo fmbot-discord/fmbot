@@ -50,12 +50,12 @@ public class CrownCommands(
         {
             var response = await crownBuilders.CrownOverviewAsync(new ContextModel(this.Context, prfx, contextUser), guild, userSettings, crownViewType);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -77,12 +77,12 @@ public class CrownCommands(
         {
             var response = await crownBuilders.CrownAsync(new ContextModel(this.Context, prfx, contextUser), guild, artistValues);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -106,12 +106,12 @@ public class CrownCommands(
             var response = await guildBuilders.MemberOverviewAsync(new ContextModel(this.Context, prfx, contextUser),
                 guild, GuildViewType.Crowns);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 }

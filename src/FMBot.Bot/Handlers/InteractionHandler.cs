@@ -118,7 +118,7 @@ public class InteractionHandler
 
             if (contextUser?.Blocked == true)
             {
-                await UserBlockedResponse(context);
+                await UserBlockedResponse(context, commandName);
                 return;
             }
 
@@ -134,12 +134,14 @@ public class InteractionHandler
             // Check custom attributes
             if (commandInfo != null)
             {
-                var keepGoing = await CheckAttributes(context, commandInfo.Attributes);
+                var keepGoing = await CheckAttributes(context, commandInfo.Attributes, commandName);
                 if (!keepGoing)
                 {
                     return;
                 }
             }
+
+            _ = Task.Run(async () => await this._userService.InsertSlashCommandInteractionAsync(context, commandName));
 
             await this._appCommands.ExecuteAsync(context, this._provider);
 
@@ -152,20 +154,20 @@ public class InteractionHandler
             Statistics.SlashCommandsExecuted.WithLabels(commandName, integrationType).Inc();
 
             _ = Task.Run(async () => await this._userService.UpdateUserLastUsedAsync(context.User.Id));
-            _ = Task.Run(async () => await this._userService.AddUserSlashCommandInteraction(context, commandName));
         }
     }
 
     private async Task ExecuteUserCommand(UserCommandInteraction userCommand, GatewayClient client)
     {
         var context = new ApplicationCommandContext(userCommand, client);
+        var commandName = userCommand.Data.Name;
 
         var commandInfo = _appCommands.GetCommands()
-            .FirstOrDefault(c => c.Name.Equals(userCommand.Data.Name, StringComparison.OrdinalIgnoreCase));
+            .FirstOrDefault(c => c.Name.Equals(commandName, StringComparison.OrdinalIgnoreCase));
 
         if (commandInfo != null)
         {
-            var keepGoing = await CheckAttributes(context, commandInfo.Attributes);
+            var keepGoing = await CheckAttributes(context, commandInfo.Attributes, commandName);
             if (!keepGoing)
             {
                 return;
@@ -182,13 +184,14 @@ public class InteractionHandler
     private async Task ExecuteMessageCommand(MessageCommandInteraction messageCommand, GatewayClient client)
     {
         var context = new ApplicationCommandContext(messageCommand, client);
+        var commandName = messageCommand.Data.Name;
 
         var commandInfo = _appCommands.GetCommands()
-            .FirstOrDefault(c => c.Name.Equals(messageCommand.Data.Name, StringComparison.OrdinalIgnoreCase));
+            .FirstOrDefault(c => c.Name.Equals(commandName, StringComparison.OrdinalIgnoreCase));
 
         if (commandInfo != null)
         {
-            var keepGoing = await CheckAttributes(context, commandInfo.Attributes);
+            var keepGoing = await CheckAttributes(context, commandInfo.Attributes, commandName);
             if (!keepGoing)
             {
                 return;
@@ -238,7 +241,7 @@ public class InteractionHandler
     }
 
     private async Task<bool> CheckAttributes(ApplicationCommandContext context,
-        IReadOnlyDictionary<Type, IReadOnlyList<Attribute>> attributes)
+        IReadOnlyDictionary<Type, IReadOnlyList<Attribute>> attributes, string commandName)
     {
         if (attributes == null || attributes.Count == 0)
         {
@@ -254,7 +257,7 @@ public class InteractionHandler
             if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(context)))
             {
                 await GuildSettingBuilder.UserNotAllowedResponse(context);
-                context.LogCommandUsed(CommandResponse.NoPermission);
+                await context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, this._userService, commandName);
                 return false;
             }
         }
@@ -276,7 +279,7 @@ public class InteractionHandler
                     Flags = MessageFlags.Ephemeral,
                     Components = [GenericEmbedService.UsernameNotSetErrorComponents()]
                 }));
-                context.LogCommandUsed(CommandResponse.UsernameNotSet);
+                await context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.UsernameNotSet }, this._userService, commandName);
                 return false;
             }
         }
@@ -296,7 +299,7 @@ public class InteractionHandler
                     Flags = MessageFlags.Ephemeral,
                     Components = [GenericEmbedService.ReconnectComponents()]
                 }));
-                context.LogCommandUsed(CommandResponse.UsernameNotSet);
+                await context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.UsernameNotSet }, this._userService, commandName);
                 return false;
             }
         }
@@ -309,7 +312,7 @@ public class InteractionHandler
                 {
                     Content = "This command is not supported in DMs."
                 }));
-                context.LogCommandUsed(CommandResponse.NotSupportedInDm);
+                await context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotSupportedInDm }, this._userService, commandName);
                 return false;
             }
         }
@@ -328,7 +331,7 @@ public class InteractionHandler
                 {
                     Embeds = [embed]
                 }));
-                context.LogCommandUsed(CommandResponse.IndexRequired);
+                await context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.IndexRequired }, this._userService, commandName);
                 return false;
             }
 
@@ -341,7 +344,7 @@ public class InteractionHandler
                 {
                     Embeds = [embed]
                 }));
-                context.LogCommandUsed(CommandResponse.IndexRequired);
+                await context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.IndexRequired }, this._userService, commandName);
                 return false;
             }
         }
@@ -383,6 +386,7 @@ public class InteractionHandler
                     }));
                 }
 
+                await context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Disabled }, this._userService, commandName);
                 return false;
             }
 
@@ -395,6 +399,7 @@ public class InteractionHandler
                     Content = "The command you're trying to execute has been disabled in this server.",
                     Flags = MessageFlags.Ephemeral
                 }));
+                await context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Disabled }, this._userService, commandName);
                 return false;
             }
 
@@ -409,6 +414,7 @@ public class InteractionHandler
                     Content = "The command you're trying to execute has been disabled in this channel.",
                     Flags = MessageFlags.Ephemeral
                 }));
+                await context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Disabled }, this._userService, commandName);
                 return false;
             }
         }
@@ -416,7 +422,7 @@ public class InteractionHandler
         return true;
     }
 
-    private static async Task UserBlockedResponse(ApplicationCommandContext context)
+    private async Task UserBlockedResponse(ApplicationCommandContext context, string commandName)
     {
         var embed = new EmbedProperties().WithColor(DiscordConstants.LastFmColorRed);
         embed.UserBlockedResponse("/");
@@ -424,6 +430,6 @@ public class InteractionHandler
         {
             Embeds = [embed]
         });
-        context.LogCommandUsed(CommandResponse.UserBlocked);
+        await context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.UserBlocked }, this._userService, commandName);
     }
 }

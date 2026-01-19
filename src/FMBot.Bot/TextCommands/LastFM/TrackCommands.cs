@@ -64,12 +64,12 @@ public class TrackCommands(
             var response =
                 await trackBuilders.TrackAsync(new ContextModel(this.Context, prfx, contextUser), trackValues);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -95,8 +95,8 @@ public class TrackCommands(
         var response = await trackBuilders.TrackPlays(new ContextModel(this.Context, prfx, contextUser),
             userSettings, userSettings.NewSearchValue);
 
-        await this.Context.SendResponse(this.Interactivity, response);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendResponse(this.Interactivity, response, userService);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
     [Command("trackdetails", "td", "trackdata", "trackmetadata", "tds")]
@@ -117,8 +117,8 @@ public class TrackCommands(
         var response =
             await trackBuilders.TrackDetails(new ContextModel(this.Context, prfx, contextUser), trackValues);
 
-        await this.Context.SendResponse(this.Interactivity, response);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendResponse(this.Interactivity, response, userService);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
     [Command("love", "l", "heart", "favorite", "affection", "appreciation", "lust", "fuckyeah", "fukk", "unfuck")]
@@ -136,8 +136,8 @@ public class TrackCommands(
         var response =
             await trackBuilders.LoveTrackAsync(new ContextModel(this.Context, prfx, contextUser), trackValues);
 
-        await this.Context.SendResponse(this.Interactivity, response);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendResponse(this.Interactivity, response, userService);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
     [Command("unlove", "ul", "unheart", "hate", "fuck")]
@@ -155,8 +155,8 @@ public class TrackCommands(
         var response =
             await trackBuilders.UnLoveTrackAsync(new ContextModel(this.Context, prfx, contextUser), trackValues);
 
-        await this.Context.SendResponse(this.Interactivity, response);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendResponse(this.Interactivity, response, userService);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
     [Command("loved", "lovedtracks", "lt", "unfucked")]
@@ -178,12 +178,12 @@ public class TrackCommands(
             var response = await trackBuilders.LovedTracksAsync(new ContextModel(this.Context, prfx, contextUser),
                 userSettings);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -203,8 +203,8 @@ public class TrackCommands(
         var response = await trackBuilders.ScrobbleAsync(new ContextModel(this.Context, prfx, contextUser),
             trackValues);
 
-        await this.Context.SendResponse(this.Interactivity, response);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendResponse(this.Interactivity, response, userService);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
     [Command("toptracks", "tt", "tl", "tracklist", "tracks", "trackslist", "ttracks")]
@@ -234,12 +234,12 @@ public class TrackCommands(
             var response = await trackBuilders.TopTracksAsync(new ContextModel(this.Context, prfx, contextUser),
                 topListSettings, timeSettings, userSettings, mode.mode);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -273,12 +273,12 @@ public class TrackCommands(
             var response = await trackBuilders.GetReceipt(new ContextModel(this.Context, prfx, contextUser),
                 userSettings, timeSettings);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -312,12 +312,12 @@ public class TrackCommands(
                 new ContextModel(this.Context, prfx, contextUser), settings.ResponseMode, settings.NewSearchValue,
                 settings.DisplayRoleFilter);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -349,20 +349,20 @@ public class TrackCommands(
             var response = await trackBuilders.GlobalWhoKnowsTrackAsync(
                 new ContextModel(this.Context, prfx, contextUser), settings, settings.NewSearchValue);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
             if (!string.IsNullOrEmpty(e.Message) &&
                 e.Message.Contains("The server responded with error 50013: Missing Permissions"))
             {
-                await this.Context.HandleCommandException(e, sendReply: false);
+                await this.Context.HandleCommandException(e, userService, sendReply: false);
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Error while replying: The bot is missing permissions.\nMake sure it has permission to 'Embed links' and 'Attach Images'" });
             }
             else
             {
-                await this.Context.HandleCommandException(e);
+                await this.Context.HandleCommandException(e, userService);
             }
         }
     }
@@ -394,20 +394,20 @@ public class TrackCommands(
             var response = await trackBuilders.FriendsWhoKnowTrackAsync(
                 new ContextModel(this.Context, prfx, contextUser), settings.ResponseMode, settings.NewSearchValue);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
             if (!string.IsNullOrEmpty(e.Message) &&
                 e.Message.Contains("The server responded with error 50013: Missing Permissions"))
             {
-                await this.Context.HandleCommandException(e, sendReply: false);
+                await this.Context.HandleCommandException(e, userService, sendReply: false);
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Error while replying: The bot is missing permissions.\nMake sure it has permission to 'Embed links' and 'Attach Images'" });
             }
             else
             {
-                await this.Context.HandleCommandException(e);
+                await this.Context.HandleCommandException(e, userService);
             }
         }
     }
@@ -453,12 +453,12 @@ public class TrackCommands(
                 await trackBuilders.GuildTracksAsync(new ContextModel(this.Context, prfx), guild,
                     guildListSettings);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -498,12 +498,12 @@ public class TrackCommands(
                     await eurovisionBuilders.GetEurovisionYear(context, year ?? DateTime.UtcNow.Year);
             }
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -532,8 +532,8 @@ public class TrackCommands(
 
             if (supporterRequiredResponse != null)
             {
-                await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse);
-                this.Context.LogCommandUsed(supporterRequiredResponse.CommandResponse);
+                await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse, userService);
+                await this.Context.LogCommandUsedAsync(supporterRequiredResponse, userService);
                 return;
             }
 
@@ -544,12 +544,12 @@ public class TrackCommands(
             var response = await playBuilders.ListeningGapsAsync(context, topListSettings, userSettings,
                 mode.mode, GapEntityType.Track);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -577,19 +577,19 @@ public class TrackCommands(
             var supporterRequiredResponse = TrackBuilders.LyricsSupporterRequired(context);
             if (supporterRequiredResponse != null)
             {
-                await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse);
-                this.Context.LogCommandUsed(supporterRequiredResponse.CommandResponse);
+                await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse, userService);
+                await this.Context.LogCommandUsedAsync(supporterRequiredResponse, userService);
                 return;
             }
 
             var response = await trackBuilders.TrackLyricsAsync(context, trackValues);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 }

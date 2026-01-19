@@ -5,6 +5,7 @@ using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
+using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
@@ -23,6 +24,7 @@ public class WebhookCommands(
     IOptions<BotSettings> botSettings,
     GuildSettingBuilder guildSettingBuilder,
     IPrefixService prefixService,
+    UserService userService,
     ShardedGatewayClient client)
     : BaseCommandModule(botSettings)
 {
@@ -38,7 +40,7 @@ public class WebhookCommands(
         if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = GuildSettingBuilder.UserNotAllowedResponseText() });
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             return;
         }
 
@@ -47,7 +49,7 @@ public class WebhookCommands(
         {
             var currentUser = client.GetCurrentUser();
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = $"In order to create the featured webhook, I need permission to add webhooks.\n\nYou can add this permission by going to `Server Settings` > `Roles` > `{currentUser?.Username}` and enabling the `Manage Webhooks` permission." });
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             return;
         }
 
@@ -57,7 +59,7 @@ public class WebhookCommands(
         if (guild.Webhooks != null && guild.Webhooks.Any(a => a.BotType == botType))
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "This server already has a webhook configured.\n\nYou can change the channel in the webhook settings (`Server settings` > `Integrations` > `Webhooks`)\n\nIf you recently deleted the webhook and want to make a new one, please run `.testwebhook` once to remove the deleted webhook from our database." });
-            this.Context.LogCommandUsed(CommandResponse.WrongInput);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
             return;
         }
 
@@ -66,7 +68,7 @@ public class WebhookCommands(
         await webhookService.TestWebhook(createdWebhook, "If you see this message the webhook has been successfully added!\n\n" +
                                                                "You will now automatically receive the .fmbot featured message every hour.\n\n" +
                                                                "To disable this, simply delete the webhook in your servers integration settings.");
-        this.Context.LogCommandUsed();
+        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
     }
 
     [Command("testwebhook", "testfeatured", "testfeaturedwebhook")]
@@ -80,7 +82,7 @@ public class WebhookCommands(
         if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = GuildSettingBuilder.UserNotAllowedResponseText() });
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             return;
         }
 
@@ -98,12 +100,12 @@ public class WebhookCommands(
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "The previously registered webhook has been removed from our database.\n\nYou can now add a new webhook for .fmbot with `.addwebhook`." });
             }
 
-            this.Context.LogCommandUsed();
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
         }
         else
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "You don't have any webhooks added yet.\n\nAdd a webhook for .fmbot with `.addwebhook`" });
-            this.Context.LogCommandUsed();
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
         }
     }
 }

@@ -35,12 +35,12 @@ public class FriendSlashCommands(
         {
             var response = await friendBuilders.FriendsAsync(new ContextModel(this.Context, contextUser));
 
-            await this.Context.SendFollowUpResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -60,12 +60,12 @@ public class FriendSlashCommands(
             var response =
                 await friendBuilders.AddFriendsAsync(new ContextModel(this.Context, contextUser), [user.Id.ToString()]);
 
-            await this.Context.SendResponse(this.Interactivity, response, true);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService, true);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e, deferFirst: true);
+            await this.Context.HandleCommandException(e, userService, deferFirst: true);
         }
     }
 
@@ -83,12 +83,12 @@ public class FriendSlashCommands(
             var response =
                 await friendBuilders.AddFriendsAsync(new ContextModel(this.Context, contextUser), [user.Id.ToString()]);
 
-            await this.Context.SendResponse(this.Interactivity, response, true);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService, true);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e, deferFirst: true);
+            await this.Context.HandleCommandException(e, userService, deferFirst: true);
         }
     }
 
@@ -109,12 +109,12 @@ public class FriendSlashCommands(
                 await friendBuilders.RemoveFriendsAsync(new ContextModel(this.Context, contextUser),
                     [user.Id.ToString()]);
 
-            await this.Context.SendResponse(this.Interactivity, response, true);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService, true);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e, deferFirst: true);
+            await this.Context.HandleCommandException(e, userService, deferFirst: true);
         }
     }
 
@@ -132,12 +132,12 @@ public class FriendSlashCommands(
             var response = await friendBuilders.RemoveFriendsAsync(new ContextModel(this.Context, contextUser),
                 new[] { user.Id.ToString() }, true);
 
-            await this.Context.SendResponse(this.Interactivity, response, true);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService, true);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e, deferFirst: true);
+            await this.Context.HandleCommandException(e, userService, deferFirst: true);
         }
     }
 }

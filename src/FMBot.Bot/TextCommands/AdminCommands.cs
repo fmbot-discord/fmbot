@@ -100,7 +100,7 @@ public class AdminCommands(
         if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = Constants.FmbotStaffOnly });
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             return;
         }
 
@@ -109,7 +109,7 @@ public class AdminCommands(
         if (!ulong.TryParse(guildId, out var discordGuildId))
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Enter a valid discord guild id" });
-            this.Context.LogCommandUsed(CommandResponse.WrongInput);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
             return;
         }
 
@@ -118,7 +118,7 @@ public class AdminCommands(
         if (guild == null)
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Guild does not exist in database" });
-            this.Context.LogCommandUsed(CommandResponse.NotFound);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
             return;
         }
 
@@ -184,7 +184,7 @@ public class AdminCommands(
         await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties()
             .AddEmbeds(this._embed)
             .WithComponents([guildFlagsOptions]));
-        this.Context.LogCommandUsed();
+        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
     }
 
     [Command("issues")]
@@ -209,12 +209,12 @@ public class AdminCommands(
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Disabled issue mode" });
             }
 
-            this.Context.LogCommandUsed();
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
         }
         else
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = Constants.FmbotStaffOnly });
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
         }
     }
 
@@ -229,7 +229,7 @@ public class AdminCommands(
             if (!ulong.TryParse(reason, out var id))
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Invalid guild ID" });
-                this.Context.LogCommandUsed();
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
                 return;
             }
 
@@ -237,12 +237,12 @@ public class AdminCommands(
             await guildToLeave.LeaveAsync();
 
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Left guild (if the bot was in there)" });
-            this.Context.LogCommandUsed();
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
         }
         else
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = Constants.FmbotStaffOnly });
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
         }
     }
 
@@ -257,7 +257,7 @@ public class AdminCommands(
             if (!ulong.TryParse(guildId, out var id))
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Invalid guild ID" });
-                this.Context.LogCommandUsed();
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
                 return;
             }
 
@@ -266,7 +266,7 @@ public class AdminCommands(
             if (dbGuild == null)
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Guild does not exist in database" });
-                this.Context.LogCommandUsed(CommandResponse.NotFound);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
                 return;
             }
 
@@ -287,12 +287,12 @@ public class AdminCommands(
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = $"Guild banned but bot was not in the guild ({id})" });
             }
 
-            this.Context.LogCommandUsed();
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
         }
         else
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = Constants.FmbotStaffOnly });
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
         }
     }
 
@@ -315,12 +315,12 @@ public class AdminCommands(
                 $"Found {filteredUsers.Count(c => c.Reason == GlobalFilterReason.AmountPerPeriod)} users exceeding max amount");
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = description.ToString() });
 
-            this.Context.LogCommandUsed();
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
         }
         else
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = Constants.FmbotStaffOnly });
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
         }
     }
 
@@ -337,7 +337,7 @@ public class AdminCommands(
                 if (guild.SpecialGuild != true)
                 {
                     await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "This command can only be used in special guilds." });
-                    this.Context.LogCommandUsed(CommandResponse.NoPermission);
+                    await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
                     return;
                 }
 
@@ -348,7 +348,7 @@ public class AdminCommands(
                 if (userToView == null)
                 {
                     await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "User not found. Are you sure they are registered in .fmbot?" });
-                    this.Context.LogCommandUsed(CommandResponse.NotFound);
+                    await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
                     return;
                 }
 
@@ -452,17 +452,17 @@ public class AdminCommands(
                     this.Context.Channel,
                     TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
 
-                this.Context.LogCommandUsed();
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
             }
             else
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "You are not authorized to use this command." });
-                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             }
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -498,12 +498,12 @@ public class AdminCommands(
 
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = reply.ToString() });
 
-            this.Context.LogCommandUsed();
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
         }
         else
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = Constants.FmbotStaffOnly });
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
         }
     }
 
@@ -523,12 +523,12 @@ public class AdminCommands(
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content =
                 "Done removing old cached scrobbles." });
 
-            this.Context.LogCommandUsed();
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
         }
         else
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = Constants.FmbotStaffOnly });
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
         }
     }
 
@@ -539,7 +539,7 @@ public class AdminCommands(
         if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = Constants.FmbotStaffOnly });
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             return;
         }
 
@@ -554,8 +554,8 @@ public class AdminCommands(
                 await staticBuilders.OpenCollectiveSupportersAsync(
                     new ContextModel(this.Context, prfx, userSettings), extraOptions == "expired");
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
@@ -571,7 +571,7 @@ public class AdminCommands(
         if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = Constants.FmbotStaffOnly });
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             return;
         }
 
@@ -584,12 +584,12 @@ public class AdminCommands(
             var response =
                 await staticBuilders.DiscordSupportersAsync(new ContextModel(this.Context, prfx, userSettings));
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -603,7 +603,7 @@ public class AdminCommands(
             if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = Constants.FmbotStaffOnly });
-                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
                 return;
             }
 
@@ -612,7 +612,7 @@ public class AdminCommands(
                 userSettings.UserNameLastFM, referencedMessage: this.Context.Message.ReferencedMessage);
             if (albumSearch.Album == null)
             {
-                await this.Context.SendResponse(this.Interactivity, albumSearch.Response);
+                await this.Context.SendResponse(this.Interactivity, albumSearch.Response, userService);
                 return;
             }
 
@@ -685,11 +685,11 @@ public class AdminCommands(
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties()
                 .AddEmbeds(this._embed)
                 .WithComponents([censorOptions]));
-            this.Context.LogCommandUsed();
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -702,7 +702,7 @@ public class AdminCommands(
             if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = Constants.FmbotStaffOnly });
-                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
                 return;
             }
 
@@ -710,7 +710,7 @@ public class AdminCommands(
             if (artistAlias == null)
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Artist alias not found" });
-                this.Context.LogCommandUsed(CommandResponse.NotFound);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
                 return;
             }
 
@@ -750,11 +750,11 @@ public class AdminCommands(
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties()
                 .AddEmbeds(this._embed)
                 .WithComponents([aliasOptions]));
-            this.Context.LogCommandUsed();
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -768,7 +768,7 @@ public class AdminCommands(
             if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = Constants.FmbotStaffOnly });
-                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
                 return;
             }
 
@@ -846,11 +846,11 @@ public class AdminCommands(
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties()
                 .AddEmbeds(this._embed)
                 .WithComponents([censorOptions]));
-            this.Context.LogCommandUsed();
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -979,12 +979,12 @@ public class AdminCommands(
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties()
                 .AddEmbeds(this._embed)
                 .WithComponents(components != null ? [components] : null));
-            this.Context.LogCommandUsed();
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
         }
         else
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = Constants.FmbotStaffOnly });
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
         }
     }
 
@@ -1000,14 +1000,14 @@ public class AdminCommands(
             if (guild.SpecialGuild != true)
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "This command can only be used in special guilds." });
-                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
                 return;
             }
 
             if (string.IsNullOrEmpty(userString))
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Enter a Last.fm username to get the accounts for." });
-                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
                 return;
             }
 
@@ -1048,12 +1048,12 @@ public class AdminCommands(
             this._embed.WithFooter("Command not intended for use in public channels");
 
             await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
-            this.Context.LogCommandUsed();
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
         }
         else
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = Constants.FmbotStaffOnly });
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
         }
     }
 
@@ -1067,7 +1067,7 @@ public class AdminCommands(
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Enter an username and reason to remove someone from gwk banlist\n" +
                                  "Example: `.addbotteduser \"Kefkef123\" \"8 days listening time in Last.week\"`" });
-                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
                 return;
             }
 
@@ -1086,7 +1086,7 @@ public class AdminCommands(
                 if (!await adminService.AddBottedUserAsync(user, reason, age?.DateTime))
                 {
                     await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Something went wrong while adding this user to the gwk banlist" });
-                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
                 }
                 else
                 {
@@ -1094,7 +1094,7 @@ public class AdminCommands(
                         .WithContent($"User {user} has been banned from GlobalWhoKnows with reason `{reason}`" +
                             (age.HasValue ? " (+ join date so username change resilient)" : ""))
                         .WithAllowedMentions(AllowedMentionsProperties.None));
-                    this.Context.LogCommandUsed();
+                    await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
                 }
             }
             else
@@ -1102,7 +1102,7 @@ public class AdminCommands(
                 if (!await adminService.EnableBottedUserBanAsync(user, reason, age?.DateTime))
                 {
                     await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Something went wrong while adding this user to the gwk banlist" });
-                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
                 }
                 else
                 {
@@ -1110,14 +1110,14 @@ public class AdminCommands(
                         .WithContent($"User {user} has been banned from GlobalWhoKnows with reason `{reason}`" +
                             (age.HasValue ? " (+ join date so username change resilient)" : ""))
                         .WithAllowedMentions(AllowedMentionsProperties.None));
-                    this.Context.LogCommandUsed();
+                    await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
                 }
             }
         }
         else
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = Constants.FmbotStaffOnly });
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
         }
     }
 
@@ -1132,7 +1132,7 @@ public class AdminCommands(
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content =
                     "Enter an username to remove from the gwk banlist. This will flag their ban as `false`.\n" +
                     "Example: `.removebotteduser \"Kefkef123\"`" });
-                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
                 return;
             }
 
@@ -1140,7 +1140,7 @@ public class AdminCommands(
             if (bottedUser == null)
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "The specified user has never been banned from GlobalWhoKnows" });
-                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
                 return;
             }
 
@@ -1153,20 +1153,20 @@ public class AdminCommands(
             if (!await adminService.DisableBottedUserBanAsync(user))
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "The specified user has not been banned from GlobalWhoKnows" });
-                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
                 return;
             }
             else
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = $"User {user} has been unbanned from GlobalWhoKnows" });
-                this.Context.LogCommandUsed();
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
                 return;
             }
         }
         else
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = Constants.FmbotStaffOnly });
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
         }
     }
 
@@ -1184,14 +1184,14 @@ public class AdminCommands(
             if (string.IsNullOrEmpty(user) || string.IsNullOrEmpty(openCollectiveId) || user == "help")
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = formatError });
-                this.Context.LogCommandUsed(CommandResponse.Help);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Help }, userService);
                 return;
             }
 
             if (!ulong.TryParse(user, out var discordUserId))
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = formatError });
-                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
                 return;
             }
 
@@ -1201,7 +1201,7 @@ public class AdminCommands(
             if (userSettings == null)
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "`User not found`\n\n" + formatError });
-                this.Context.LogCommandUsed(CommandResponse.NotFound);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
                 return;
             }
 
@@ -1209,7 +1209,7 @@ public class AdminCommands(
                 !await adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "`Can only change usertype of normal users`\n\n" + formatError });
-                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
                 return;
             }
 
@@ -1217,7 +1217,7 @@ public class AdminCommands(
             if (openCollectiveSupporter == null)
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "`OpenCollective user not found`\n\n" + formatError });
-                this.Context.LogCommandUsed(CommandResponse.NotFound);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
                 return;
             }
 
@@ -1227,7 +1227,7 @@ public class AdminCommands(
                     .FirstOrDefault(f => f.OpenCollectiveId.ToLower() == openCollectiveId.ToLower()) != null)
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "`OpenCollective account already connected to someone else`\n\n" + formatError });
-                this.Context.LogCommandUsed(CommandResponse.NotFound);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
                 return;
             }
 
@@ -1264,14 +1264,14 @@ public class AdminCommands(
             this._embed.WithDescription(description.ToString());
 
             await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
-            this.Context.LogCommandUsed();
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
 
             await indexService.IndexUser(userSettings);
         }
         else
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = Constants.FmbotStaffOnly });
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
         }
     }
 
@@ -1283,7 +1283,7 @@ public class AdminCommands(
             if (!ulong.TryParse(user, out var discordUserId))
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Wrong discord user id format" });
-                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
                 return;
             }
 
@@ -1294,7 +1294,7 @@ public class AdminCommands(
             if (userSettings == null)
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "User does not exist in database" });
-                this.Context.LogCommandUsed(CommandResponse.NotFound);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
                 return;
             }
 
@@ -1304,7 +1304,7 @@ public class AdminCommands(
             if (discordUser == null)
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Discord user not found" });
-                this.Context.LogCommandUsed(CommandResponse.NotFound);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
                 return;
             }
 
@@ -1323,7 +1323,7 @@ public class AdminCommands(
             if (!ulong.TryParse(user, out var discordUserId))
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Wrong discord user id format" });
-                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
                 return;
             }
 
@@ -1332,7 +1332,7 @@ public class AdminCommands(
             if (discordUser == null)
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Discord user not found" });
-                this.Context.LogCommandUsed(CommandResponse.NotFound);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
                 return;
             }
 
@@ -1357,14 +1357,14 @@ public class AdminCommands(
             if (string.IsNullOrEmpty(user) || user == "help")
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = formatError });
-                this.Context.LogCommandUsed(CommandResponse.Help);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Help }, userService);
                 return;
             }
 
             if (!ulong.TryParse(user, out var discordUserId))
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = formatError });
-                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
                 return;
             }
 
@@ -1373,14 +1373,14 @@ public class AdminCommands(
             if (userSettings == null)
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "`User not found`\n\n" + formatError });
-                this.Context.LogCommandUsed(CommandResponse.NotFound);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
                 return;
             }
 
             if (userSettings.UserType != UserType.Supporter)
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "`User is not a supporter`\n\n" + formatError });
-                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
                 return;
             }
 
@@ -1389,7 +1389,7 @@ public class AdminCommands(
             {
                 await supporterService.CheckExpiredStripeSupporters(userSettings.DiscordUserId);
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Ran fast-tracked Stripe supporter expiry for " + stripeSupporter.PurchaserDiscordUserId });
-                this.Context.LogCommandUsed();
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
                 return;
             }
 
@@ -1399,7 +1399,7 @@ public class AdminCommands(
             if (existingSupporter == null)
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "`Existing supporter not found`\n\n" + formatError });
-                this.Context.LogCommandUsed(CommandResponse.NotFound);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
                 return;
             }
 
@@ -1407,7 +1407,7 @@ public class AdminCommands(
                 existingSupporter.SubscriptionType != SubscriptionType.YearlyOpenCollective)
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "You can only use this command on Stripe subs or on OpenCollective monthly and yearly subs" });
-                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
                 return;
             }
 
@@ -1459,14 +1459,14 @@ public class AdminCommands(
             this._embed.WithDescription(description.ToString());
 
             await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
-            this.Context.LogCommandUsed();
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
 
             await indexService.IndexUser(userSettings);
         }
         else
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = Constants.FmbotStaffOnly });
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
         }
     }
 
@@ -1486,14 +1486,14 @@ public class AdminCommands(
                 user == "help")
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = formatError });
-                this.Context.LogCommandUsed(CommandResponse.Help);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Help }, userService);
                 return;
             }
 
             if (!ulong.TryParse(user, out var userId))
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = formatError });
-                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
                 return;
             }
 
@@ -1502,14 +1502,14 @@ public class AdminCommands(
             if (userSettings == null)
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "`User not found`\n\n" + formatError });
-                this.Context.LogCommandUsed(CommandResponse.NotFound);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
                 return;
             }
 
             if (userSettings.UserType != UserType.User)
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "`Can only change usertype of normal users`\n\n" + formatError });
-                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
                 return;
             }
 
@@ -1523,12 +1523,12 @@ public class AdminCommands(
             this._embed.WithFooter("Command not intended for use in public channels");
 
             await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
-            this.Context.LogCommandUsed();
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
         }
         else
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = Constants.FmbotStaffOnly });
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
         }
     }
 
@@ -1566,17 +1566,17 @@ public class AdminCommands(
                     "You might also have to edit the next few hours in the database (with no update true)");
 
                 await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
-                this.Context.LogCommandUsed();
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
             }
             catch (Exception e)
             {
-                await this.Context.HandleCommandException(e);
+                await this.Context.HandleCommandException(e, userService);
             }
         }
         else
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Error: Insufficient rights. Only .fmbot owners can set featured." });
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
         }
     }
 
@@ -1592,17 +1592,17 @@ public class AdminCommands(
                 await webhookService.ChangeToNewAvatar(client, url);
 
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = $"Changed avatar to {url}" });
-                this.Context.LogCommandUsed();
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
             }
             catch (Exception e)
             {
-                await this.Context.HandleCommandException(e);
+                await this.Context.HandleCommandException(e, userService);
             }
         }
         else
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Error: Insufficient rights. Only .fmbot owners can change avatar." });
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
         }
     }
 
@@ -1616,7 +1616,7 @@ public class AdminCommands(
         if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = Constants.FmbotStaffOnly });
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             return;
         }
 
@@ -1626,7 +1626,7 @@ public class AdminCommands(
             {
                 Content = $"Enter a server id please (this server is `{this.Context.Guild.Id}`)"
             });
-            this.Context.LogCommandUsed(CommandResponse.WrongInput);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
             return;
         }
 
@@ -1668,11 +1668,11 @@ public class AdminCommands(
                 Content = "Server or shard could not be found. \n" +
                           "This either means the bot is not connected to that server or that the bot is not in this server."
             });
-            this.Context.LogCommandUsed(CommandResponse.NotFound);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
             return;
         }
 
-        this.Context.LogCommandUsed();
+        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
     }
 
     [Command("postembed"), Summary("Posts one of the reporting embeds")]
@@ -1682,7 +1682,7 @@ public class AdminCommands(
         if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "No permissions mate" });
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             return;
         }
 
@@ -1977,17 +1977,17 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
 
                 this._embed.WithDescription(updateDescription.ToString());
                 await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
-                this.Context.LogCommandUsed();
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
             }
             catch (Exception e)
             {
-                await this.Context.HandleCommandException(e);
+                await this.Context.HandleCommandException(e, userService);
             }
         }
         else
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Error: Insufficient rights. Only .fmbot staff can restart timer." });
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
         }
     }
 
@@ -2005,13 +2005,13 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
             }
             catch (Exception e)
             {
-                await this.Context.HandleCommandException(e);
+                await this.Context.HandleCommandException(e, userService);
             }
         }
         else
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = Constants.FmbotStaffOnly });
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
         }
     }
 
@@ -2028,13 +2028,13 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
             }
             catch (Exception e)
             {
-                await this.Context.HandleCommandException(e);
+                await this.Context.HandleCommandException(e, userService);
             }
         }
         else
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = Constants.FmbotStaffOnly });
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
         }
     }
 
@@ -2052,13 +2052,13 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
             }
             catch (Exception e)
             {
-                await this.Context.HandleCommandException(e);
+                await this.Context.HandleCommandException(e, userService);
             }
         }
         else
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Error: Insufficient rights. Only FMBot owners can stop timer." });
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
         }
     }
 
@@ -2125,13 +2125,13 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
             }
             catch (Exception e)
             {
-                await this.Context.HandleCommandException(e);
+                await this.Context.HandleCommandException(e, userService);
             }
         }
         else
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Error: Insufficient rights. Only FMBot owners can stop timer." });
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
         }
     }
 
@@ -2148,7 +2148,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                 if (userToUpdate == null)
                 {
                     await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "User not found. Are you sure they are registered in .fmbot?" });
-                    this.Context.LogCommandUsed(CommandResponse.NotFound);
+                    await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
                     return;
                 }
 
@@ -2157,13 +2157,13 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
             }
             catch (Exception e)
             {
-                await this.Context.HandleCommandException(e);
+                await this.Context.HandleCommandException(e, userService);
             }
         }
         else
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Error: Insufficient rights. Only FMBot owners can stop timer." });
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
         }
     }
 
@@ -2202,13 +2202,13 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
             }
             catch (Exception e)
             {
-                await this.Context.HandleCommandException(e);
+                await this.Context.HandleCommandException(e, userService);
             }
         }
         else
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Error: Insufficient rights. Only FMBot owners can stop timer." });
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
         }
     }
 
@@ -2225,13 +2225,13 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
             }
             catch (Exception e)
             {
-                await this.Context.HandleCommandException(e);
+                await this.Context.HandleCommandException(e, userService);
             }
         }
         else
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Error: Insufficient rights. Only FMBot owners can stop timer." });
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
         }
     }
 
@@ -2246,7 +2246,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                 if (job == null)
                 {
                     await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Pick a job to run. Check `.timerstatus` for available jobs." });
-                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
                     return;
                 }
 
@@ -2264,7 +2264,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                 if (jobToRun == null)
                 {
                     await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Could not find job you're looking for. Check `.timerstatus` for available jobs." });
-                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
                     return;
                 }
 
@@ -2273,17 +2273,17 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                     .WithContent($"Triggered job {jobToRun.Id}")
                     .WithAllowedMentions(AllowedMentionsProperties.None));
 
-                this.Context.LogCommandUsed();
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
             }
             catch (Exception e)
             {
-                await this.Context.HandleCommandException(e);
+                await this.Context.HandleCommandException(e, userService);
             }
         }
         else
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Error: Insufficient rights. Only FMBot owners can stop timer." });
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
         }
     }
 
@@ -2298,7 +2298,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                 if (job == null)
                 {
                     await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Pick a job to remove. Check `.timerstatus` for available jobs." });
-                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
                     return;
                 }
 
@@ -2309,7 +2309,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                 if (jobToRemove == null)
                 {
                     await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Could not find job you're looking for. Check `.timerstatus` for available jobs." });
-                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
                     return;
                 }
 
@@ -2318,17 +2318,17 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                     .WithContent($"Removed job {jobToRemove.Id}")
                     .WithAllowedMentions(AllowedMentionsProperties.None));
 
-                this.Context.LogCommandUsed();
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
             }
             catch (Exception e)
             {
-                await this.Context.HandleCommandException(e);
+                await this.Context.HandleCommandException(e, userService);
             }
         }
         else
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Error: Insufficient rights. Only FMBot owners can remove jobs." });
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
         }
     }
 
@@ -2391,17 +2391,17 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                 this._embed.WithFooter("15 second timer interval");
 
                 await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
-                this.Context.LogCommandUsed();
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
             }
             catch (Exception e)
             {
-                await this.Context.HandleCommandException(e);
+                await this.Context.HandleCommandException(e, userService);
             }
         }
         else
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Error: Insufficient rights. Only FMBot admins can check timer." });
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
         }
     }
 
@@ -2416,14 +2416,14 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                 if (!user.HasValue)
                 {
                     await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Please specify what discord user id you want to block from using .fmbot." });
-                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
                     return;
                 }
 
                 if (user == this.Context.Message.Author.Id)
                 {
                     await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "You cannot block yourself from using .fmbot!" });
-                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
                     return;
                 }
 
@@ -2444,17 +2444,17 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                         .WithAllowedMentions(AllowedMentionsProperties.None));
                 }
 
-                this.Context.LogCommandUsed();
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
             }
             else
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "You are not authorized to use this command." });
-                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             }
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -2469,7 +2469,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                 if (!user.HasValue)
                 {
                     await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Please specify what user you want to remove from the list of users who are blocked from using .fmbot." });
-                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
                     return;
                 }
 
@@ -2490,17 +2490,17 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                         .WithAllowedMentions(AllowedMentionsProperties.None));
                 }
 
-                this.Context.LogCommandUsed();
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
             }
             else
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "You are not authorized to use this command." });
-                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             }
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -2517,26 +2517,26 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                 if (userToUpdate == null)
                 {
                     await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "User not found. Are you sure they are registered in .fmbot?" });
-                    this.Context.LogCommandUsed(CommandResponse.NotFound);
+                    await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
                     return;
                 }
 
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties()
                     .WithContent($"Running full update for '{userToUpdate.UserNameLastFM}'")
                     .WithAllowedMentions(AllowedMentionsProperties.None));
-                this.Context.LogCommandUsed();
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
 
                 await indexService.IndexUser(userToUpdate);
             }
             else
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "You are not authorized to use this command." });
-                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             }
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -2553,26 +2553,26 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                 if (userToUpdate == null)
                 {
                     await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "User not found. Are you sure they are registered in .fmbot?" });
-                    this.Context.LogCommandUsed(CommandResponse.NotFound);
+                    await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
                     return;
                 }
 
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties()
                     .WithContent($"Running top list update for '{userToUpdate.UserNameLastFM}'")
                     .WithAllowedMentions(AllowedMentionsProperties.None));
-                this.Context.LogCommandUsed();
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
 
                 await indexService.RecalculateTopLists(userToUpdate);
             }
             else
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "You are not authorized to use this command." });
-                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             }
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -2595,17 +2595,17 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties()
                     .AddEmbeds(embed)
                     .WithComponents([components]));
-                this.Context.LogCommandUsed();
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
             }
             else
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "You are not authorized to use this command." });
-                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             }
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -2625,7 +2625,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
             if (!SupporterService.IsSupporter(userSettings.UserType))
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "You can only debug imports for supporters." });
-                this.Context.LogCommandUsed(CommandResponse.SupporterRequired);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.SupporterRequired }, userService);
                 return;
             }
 
@@ -2634,7 +2634,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
             if (dbUser == null)
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "User not found. Are you sure they are registered in .fmbot?" });
-                this.Context.LogCommandUsed(CommandResponse.NotFound);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
                 return;
             }
 
@@ -2810,11 +2810,11 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
 
             await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
 
-            this.Context.LogCommandUsed();
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -2829,7 +2829,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                 if (oldUserId == null || newUserId == null)
                 {
                     await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Enter the old and new id. For example, `.moveimports 125740103539621888 356268235697553409`" });
-                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
                     return;
                 }
 
@@ -2839,7 +2839,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                 if (oldUser == null || newUser == null)
                 {
                     await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "One or both users could not be found. Are you sure they are registered in .fmbot?" });
-                    this.Context.LogCommandUsed(CommandResponse.NotFound);
+                    await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
                     return;
                 }
 
@@ -2891,17 +2891,17 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                     .AddEmbeds(embed)
                     .WithAllowedMentions(AllowedMentionsProperties.None)
                     .WithComponents([components]));
-                this.Context.LogCommandUsed();
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
             }
             else
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "You are not authorized to use this command." });
-                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             }
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -2916,7 +2916,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                 if (oldUserId == null || newUserId == null)
                 {
                     await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Enter the old and new id. For example, `.movesupporter 125740103539621888 356268235697553409`" });
-                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
                     return;
                 }
 
@@ -2926,14 +2926,14 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                 if (oldUser == null || newUser == null)
                 {
                     await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "One or both users could not be found. Are you sure they are registered in .fmbot?" });
-                    this.Context.LogCommandUsed(CommandResponse.NotFound);
+                    await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
                     return;
                 }
 
                 if (oldUser.UserType != UserType.Supporter)
                 {
                     await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Old user is not a supporter" });
-                    this.Context.LogCommandUsed(CommandResponse.NotFound);
+                    await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
                     return;
                 }
 
@@ -2942,7 +2942,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                 if (stripeSupporter == null)
                 {
                     await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Old user is not a Stripe supporter. At the moment only transferring Stripe supporters is supported." });
-                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
                     return;
                 }
 
@@ -2996,17 +2996,17 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                     .AddEmbeds(embed)
                     .WithAllowedMentions(AllowedMentionsProperties.None)
                     .WithComponents([components]));
-                this.Context.LogCommandUsed();
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
             }
             else
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "You are not authorized to use this command." });
-                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             }
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -3022,7 +3022,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                 if (userToDelete == null)
                 {
                     await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Enter the user to delete. For example, `.deleteuser 125740103539621888`" });
-                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
                     return;
                 }
 
@@ -3031,7 +3031,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                 if (user == null)
                 {
                     await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "User could not be found. Are you sure they are registered in .fmbot?" });
-                    this.Context.LogCommandUsed(CommandResponse.NotFound);
+                    await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
                     return;
                 }
 
@@ -3059,17 +3059,17 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                     .AddEmbeds(embed)
                     .WithAllowedMentions(AllowedMentionsProperties.None)
                     .WithComponents([components]));
-                this.Context.LogCommandUsed();
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
             }
             else
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "You are not authorized to use this command, or you're in the wrong server." });
-                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             }
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -3196,8 +3196,8 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
 
                 response.Embed.WithFooter($"{shortTrack.Track.TrackName} by {shortTrack.Track.ArtistName}");
 
-                await this.Context.SendResponse(this.Interactivity, response);
-                this.Context.LogCommandUsed(response.CommandResponse);
+                await this.Context.SendResponse(this.Interactivity, response, userService);
+                await this.Context.LogCommandUsedAsync(response, userService);
             }
             else
             {
@@ -3207,7 +3207,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 

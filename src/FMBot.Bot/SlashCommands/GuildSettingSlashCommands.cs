@@ -36,12 +36,12 @@ public class GuildSettingSlashCommands(
                 await guildSettingBuilder.GetGuildSettings(new ContextModel(this.Context, contextUser),
                     guildPermissions);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -63,12 +63,12 @@ public class GuildSettingSlashCommands(
                 await guildBuilders.MemberOverviewAsync(new ContextModel(this.Context, contextUser), guild,
                     viewType);
 
-            await this.Context.SendFollowUpResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 }

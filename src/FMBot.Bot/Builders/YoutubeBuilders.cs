@@ -56,12 +56,12 @@ public class YoutubeBuilders
             var currentTrack = recentTracks.Content.RecentTracks[0];
             searchValue = currentTrack.TrackName + " - " + currentTrack.ArtistName;
 
-            PublicProperties.UsedCommandsArtists.TryAdd(context.InteractionId, currentTrack.ArtistName);
-            PublicProperties.UsedCommandsTracks.TryAdd(context.InteractionId, currentTrack.TrackName);
-            if (!string.IsNullOrWhiteSpace(currentTrack.AlbumName))
+            response.ReferencedMusic = new ReferencedMusic
             {
-                PublicProperties.UsedCommandsAlbums.TryAdd(context.InteractionId, currentTrack.AlbumName);
-            }
+                Artist = currentTrack.ArtistName,
+                Album = currentTrack.AlbumName,
+                Track = currentTrack.TrackName
+            };
         }
 
         var youtubeResult = await this._youtubeService.GetSearchResult(searchValue);

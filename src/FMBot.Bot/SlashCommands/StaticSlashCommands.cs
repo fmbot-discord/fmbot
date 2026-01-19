@@ -34,8 +34,8 @@ public class StaticSlashCommands(
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var response = StaticBuilders.OutOfSync(new ContextModel(this.Context, contextUser));
 
-        await this.Context.SendResponse(this.Interactivity, response, ephemeral: privateResponse);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendResponse(this.Interactivity, response, userService, ephemeral: privateResponse);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
     [SlashCommand("getsupporter", "⭐ Get supporter or manage your current subscription", Contexts =
@@ -53,8 +53,8 @@ public class StaticSlashCommands(
         var response = await staticBuilders.SupporterButtons(new ContextModel(this.Context, contextUser),
             false, true, userLocale: this.Context.Interaction.UserLocale, source: "getsupporter");
 
-        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendResponse(this.Interactivity, response, userService, ephemeral: true);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
     [SlashCommand("supporters", "⭐ Shows all current supporters")]
@@ -63,8 +63,8 @@ public class StaticSlashCommands(
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var response = await staticBuilders.SupportersAsync(new ContextModel(this.Context, contextUser));
 
-        await this.Context.SendResponse(this.Interactivity, response);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendResponse(this.Interactivity, response, userService);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
     [SlashCommand("giftsupporter", "🎁 Gift supporter to another user", Contexts =
@@ -85,8 +85,8 @@ public class StaticSlashCommands(
         var response = await staticBuilders.BuildGiftSupporterResponse(this.Context.User.Id, recipientUser,
             Context.Interaction.UserLocale);
 
-        await Context.SendFollowUpResponse(this.Interactivity, response, ephemeral: true);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await Context.SendFollowUpResponse(this.Interactivity, response, userService, ephemeral: true);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
     [UserCommand("Gift supporter", Contexts =
@@ -106,7 +106,7 @@ public class StaticSlashCommands(
         var response = await staticBuilders.BuildGiftSupporterResponse(this.Context.User.Id, recipientUser,
             Context.Interaction.UserLocale);
 
-        await Context.SendFollowUpResponse(this.Interactivity, response, ephemeral: true);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await Context.SendFollowUpResponse(this.Interactivity, response, userService, ephemeral: true);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 }

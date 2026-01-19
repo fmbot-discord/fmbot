@@ -72,8 +72,8 @@ public class TopSlashCommands(
             : await artistBuilders.TopArtistsAsync(new ContextModel(this.Context, contextUser),
                 topListSettings, timeSettings, userSettings, mode.Value);
 
-        await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendFollowUpResponse(this.Interactivity, response, userService, privateResponse);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
     [SubSlashCommand("albums", "Shows your top albums")]
@@ -119,8 +119,8 @@ public class TopSlashCommands(
         var response = await albumBuilders.TopAlbumsAsync(new ContextModel(this.Context, contextUser),
             topListSettings, timeSettings, userSettings, mode.Value);
 
-        await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendFollowUpResponse(this.Interactivity, response, userService, privateResponse);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
     [SubSlashCommand("tracks", "Shows your top tracks")]
@@ -156,8 +156,8 @@ public class TopSlashCommands(
         var response = await trackBuilders.TopTracksAsync(new ContextModel(this.Context, contextUser),
             topListSettings, timeSettings, userSettings, mode.Value);
 
-        await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendFollowUpResponse(this.Interactivity, response, userService, privateResponse);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
     [SubSlashCommand("genres", "Shows your top genres")]
@@ -193,8 +193,8 @@ public class TopSlashCommands(
         var response = await genreBuilders.TopGenresAsync(new ContextModel(this.Context, contextUser),
             userSettings, timeSettings, topListSettings, mode.Value);
 
-        await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendFollowUpResponse(this.Interactivity, response, userService, privateResponse);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
     [SubSlashCommand("countries", "Shows your top countries")]
@@ -230,7 +230,7 @@ public class TopSlashCommands(
         var response = await countryBuilders.TopCountriesAsync(new ContextModel(this.Context, contextUser),
             userSettings, timeSettings, topListSettings, mode.Value);
 
-        await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendFollowUpResponse(this.Interactivity, response, userService, privateResponse);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 }

@@ -178,20 +178,12 @@ public class UserBuilder
             }
         }
 
-        if (!string.IsNullOrWhiteSpace(this._timer.CurrentFeatured.ArtistName))
+        response.ReferencedMusic = new ReferencedMusic
         {
-            PublicProperties.UsedCommandsArtists.TryAdd(context.InteractionId, this._timer.CurrentFeatured.ArtistName);
-        }
-
-        if (!string.IsNullOrWhiteSpace(this._timer.CurrentFeatured.AlbumName))
-        {
-            PublicProperties.UsedCommandsAlbums.TryAdd(context.InteractionId, this._timer.CurrentFeatured.AlbumName);
-        }
-
-        if (!string.IsNullOrWhiteSpace(this._timer.CurrentFeatured.TrackName))
-        {
-            PublicProperties.UsedCommandsTracks.TryAdd(context.InteractionId, this._timer.CurrentFeatured.TrackName);
-        }
+            Artist = this._timer.CurrentFeatured.ArtistName,
+            Album = this._timer.CurrentFeatured.AlbumName,
+            Track = this._timer.CurrentFeatured.TrackName
+        };
 
         if (this._timer.CurrentFeatured.SupporterDay && context.ContextUser.UserType == UserType.User)
         {

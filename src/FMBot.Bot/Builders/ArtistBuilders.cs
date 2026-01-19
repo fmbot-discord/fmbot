@@ -436,6 +436,7 @@ public class ArtistBuilders
         }
 
         response.Embed.WithFooter(footer.ToString());
+
         return response;
     }
 

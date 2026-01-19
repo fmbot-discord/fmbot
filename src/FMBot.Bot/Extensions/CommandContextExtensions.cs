@@ -7,8 +7,10 @@ using System.Threading.Tasks;
 using Fergun.Interactive;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
+using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 using NetCord;
 using NetCord.Gateway;
@@ -23,7 +25,7 @@ public static class CommandContextExtensions
 {
     extension(CommandContext context)
     {
-        public void LogCommandUsed(CommandResponse commandResponse = CommandResponse.Ok)
+        private void LogCommandUsed(CommandResponse commandResponse = CommandResponse.Ok)
         {
             var shardId = context.Client.Shard?.Id ?? 0;
             Log.Information(
@@ -34,8 +36,25 @@ public static class CommandContextExtensions
             PublicProperties.UsedCommandsResponses.TryAdd(context.Message.Id, commandResponse);
         }
 
+        public async Task LogCommandUsedAsync(ResponseModel response,
+            UserService userService,
+            string commandName = null)
+        {
+            context.LogCommandUsed(response.CommandResponse);
+
+            await userService.InsertAndCompleteInteractionAsync(
+                context.Message.Id,
+                context.User.Id,
+                commandName,
+                response.CommandResponse,
+                context.Guild?.Id,
+                context.Channel?.Id,
+                UserInteractionType.TextCommand,
+                context.Message.Content);
+        }
+
         public async Task HandleCommandException(Exception exception,
-            string message = null, bool sendReply = true)
+            UserService userService, string message = null, bool sendReply = true)
         {
             var referenceId = GenerateRandomCode();
             var shardId = context.Client.Shard?.Id ?? 0;
@@ -68,10 +87,20 @@ public static class CommandContextExtensions
                 }
             }
 
-            PublicProperties.UsedCommandsErrorReferences.TryAdd(context.Message.Id, referenceId);
+            if (userService != null)
+            {
+                var messageId = context.Message.Id;
+                _ = Task.Run(async () =>
+                {
+                    await userService.UpdateCommandInteractionAsync(
+                        messageId,
+                        commandResponse: CommandResponse.Error,
+                        errorReference: referenceId);
+                });
+            }
         }
 
-        public async Task<RestMessage> SendResponse(InteractiveService interactiveService, ResponseModel response)
+        public async Task<RestMessage> SendResponse(InteractiveService interactiveService, ResponseModel response, UserService userService)
         {
             RestMessage responseMessage = null;
             if (PublicProperties.UsedCommandsResponseMessageId.ContainsKey(context.Message.Id))
@@ -186,24 +215,6 @@ public static class CommandContextExtensions
                 {
                     PublicProperties.UsedCommandsReferencedMusic.TryRemove(context.Message.Id, out _);
                     PublicProperties.UsedCommandsReferencedMusic.TryAdd(context.Message.Id, response.ReferencedMusic);
-
-                    if (PublicProperties.UsedCommandsTracks.TryRemove(context.Message.Id, out _))
-                    {
-                        PublicProperties.UsedCommandsTracks.TryAdd(context.Message.Id, response.ReferencedMusic.Track);
-                    }
-
-                    if (PublicProperties.UsedCommandsAlbums.TryRemove(context.Message.Id, out _))
-                    {
-                        if (response.ReferencedMusic.Album != null)
-                        {
-                            PublicProperties.UsedCommandsAlbums.TryAdd(context.Message.Id, response.ReferencedMusic.Album);
-                        }
-                    }
-
-                    if (PublicProperties.UsedCommandsArtists.TryRemove(context.Message.Id, out _))
-                    {
-                        PublicProperties.UsedCommandsArtists.TryAdd(context.Message.Id, response.ReferencedMusic.Artist);
-                    }
                 }
 
                 return null;
@@ -296,15 +307,12 @@ public static class CommandContextExtensions
                     throw new ArgumentOutOfRangeException();
             }
 
-            if (responseMessage != null)
-            {
-                PublicProperties.UsedCommandsResponseMessageId.TryAdd(context.Message.Id, responseMessage.Id);
-                PublicProperties.UsedCommandsResponseContextId.TryAdd(responseMessage.Id, context.Message.Id);
-            }
+            PublicProperties.UsedCommandsResponseMessageId.TryAdd(context.Message.Id, responseMessage.Id);
+            PublicProperties.UsedCommandsResponseContextId.TryAdd(responseMessage.Id, context.Message.Id);
 
-            if (response.HintShown == true && !PublicProperties.UsedCommandsHintShown.Contains(context.Message.Id))
+            if (response.ReferencedMusic != null)
             {
-                PublicProperties.UsedCommandsHintShown.Add(context.Message.Id);
+                PublicProperties.UsedCommandsReferencedMusic.TryAdd(context.Message.Id, response.ReferencedMusic);
             }
 
             if (response.EmoteReactions != null && response.EmoteReactions.Length != 0 &&
@@ -316,13 +324,36 @@ public static class CommandContextExtensions
                 }
                 catch (Exception e)
                 {
-                    await context.HandleCommandException(e, "Could not add emote reactions", sendReply: false);
+                    await context.HandleCommandException(e, userService, "Could not add emote reactions", sendReply: false);
                     var errorMsg = await context.Client.Rest.SendMessageAsync(context.Message.ChannelId,
                         new MessageProperties()
                             .WithContent("Could not add automatic emoji reactions.\n" +
                                          "-# Make sure the emojis still exist, the bot is the same server as where the emojis come from and the bot has permission to `Add Reactions`."));
                     _ = errorMsg.DeleteAfterAsync(30);
                 }
+            }
+
+            if (userService != null)
+            {
+                var messageId = context.Message.Id;
+                var responseIdForDb = responseMessage?.Id;
+                var commandResponse = response.CommandResponse;
+                var artist = response.ReferencedMusic?.Artist;
+                var album = response.ReferencedMusic?.Album;
+                var track = response.ReferencedMusic?.Track;
+                var hintShown = response.HintShown;
+
+                _ = Task.Run(async () =>
+                {
+                    await userService.UpdateCommandInteractionAsync(
+                        messageId,
+                        responseId: responseIdForDb,
+                        commandResponse: commandResponse,
+                        artist: artist,
+                        album: album,
+                        track: track,
+                        hintShown: hintShown);
+                });
             }
 
             return responseMessage;
@@ -359,27 +390,6 @@ public static class CommandContextExtensions
             PublicProperties.UsedCommandsResponseContextId.TryGetValue(lookupId, out lookupId);
         }
 
-        if (PublicProperties.UsedCommandsReferencedMusic.TryGetValue(lookupId, out var value))
-        {
-            return value;
-        }
-
-        if (PublicProperties.UsedCommandsArtists.ContainsKey(lookupId) ||
-            PublicProperties.UsedCommandsAlbums.ContainsKey(lookupId) ||
-            PublicProperties.UsedCommandsTracks.ContainsKey(lookupId))
-        {
-            PublicProperties.UsedCommandsArtists.TryGetValue(lookupId, out var artist);
-            PublicProperties.UsedCommandsAlbums.TryGetValue(lookupId, out var album);
-            PublicProperties.UsedCommandsTracks.TryGetValue(lookupId, out var track);
-
-            return new ReferencedMusic
-            {
-                Artist = artist,
-                Album = album,
-                Track = track
-            };
-        }
-
-        return null;
+        return PublicProperties.UsedCommandsReferencedMusic.GetValueOrDefault(lookupId);
     }
 }

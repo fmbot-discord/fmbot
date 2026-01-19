@@ -73,7 +73,7 @@ public class GeniusCommands(
 
                 var recentScrobbles = await dataSourceFactory.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
 
-                if (await GenericEmbedService.RecentScrobbleCallFailedReply(recentScrobbles, userSettings.UserNameLastFM, this.Context))
+                if (await GenericEmbedService.RecentScrobbleCallFailedReply(recentScrobbles, userSettings.UserNameLastFM, this.Context, userService))
                 {
                     return;
                 }
@@ -84,17 +84,16 @@ public class GeniusCommands(
                 currentTrackName = currentTrack.TrackName;
                 currentTrackArtist = currentTrack.ArtistName;
 
-                PublicProperties.UsedCommandsArtists.TryAdd(this.Context.Message.Id, currentTrack.ArtistName);
-                PublicProperties.UsedCommandsTracks.TryAdd(this.Context.Message.Id, currentTrack.TrackName);
-                if (!string.IsNullOrWhiteSpace(currentTrack.AlbumName))
-                {
-                    PublicProperties.UsedCommandsAlbums.TryAdd(this.Context.Message.Id, currentTrack.AlbumName);
-                }
             }
 
             var response = new ResponseModel
             {
-                ResponseType = ResponseType.Embed
+                ResponseType = ResponseType.Embed,
+                ReferencedMusic = currentTrackArtist != null ? new ReferencedMusic
+                {
+                    Artist = currentTrackArtist,
+                    Track = currentTrackName
+                } : null
             };
 
             var geniusResults = await geniusService.SearchGeniusAsync(querystring, currentTrackName, currentTrackArtist);
@@ -122,8 +121,8 @@ public class GeniusCommands(
 
                     response.Components = new ActionRowProperties().WithButton("View on Genius",  url: firstResult.Url);
 
-                    await this.Context.SendResponse(this.Interactivity, response);
-                    this.Context.LogCommandUsed(response.CommandResponse);
+                    await this.Context.SendResponse(this.Interactivity, response, userService);
+                    await this.Context.LogCommandUsedAsync(response, userService);
                     return;
                 }
 
@@ -150,12 +149,12 @@ public class GeniusCommands(
                 response.CommandResponse = CommandResponse.NotFound;
             }
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 }

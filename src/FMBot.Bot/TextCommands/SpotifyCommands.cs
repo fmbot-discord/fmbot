@@ -76,7 +76,7 @@ public class SpotifyCommands(
 
                 var recentScrobbles = await dataSourceFactory.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
 
-                if (await GenericEmbedService.RecentScrobbleCallFailedReply(recentScrobbles, userSettings.UserNameLastFM, this.Context))
+                if (await GenericEmbedService.RecentScrobbleCallFailedReply(recentScrobbles, userSettings.UserNameLastFM, this.Context, userService))
                 {
                     return;
                 }
@@ -116,22 +116,24 @@ public class SpotifyCommands(
                     response.HintShown = true;
                 }
 
-                PublicProperties.UsedCommandsArtists.TryAdd(this.Context.Message.Id, track.Artists.First().Name);
-                PublicProperties.UsedCommandsTracks.TryAdd(this.Context.Message.Id, track.Name);
+                response.ReferencedMusic = new ReferencedMusic
+                {
+                    Artist = track.Artists.First().Name,
+                    Track = track.Name
+                };
             }
             else
             {
-
                 response.Text = $"Sorry, Spotify returned no results for *`{StringExtensions.Sanitize(querystring)}`*.";
                 response.CommandResponse = CommandResponse.NotFound;
             }
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -175,7 +177,7 @@ public class SpotifyCommands(
 
                 var recentScrobbles = await dataSourceFactory.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
 
-                if (await GenericEmbedService.RecentScrobbleCallFailedReply(recentScrobbles, userSettings.UserNameLastFM, this.Context))
+                if (await GenericEmbedService.RecentScrobbleCallFailedReply(recentScrobbles, userSettings.UserNameLastFM, this.Context, userService))
                 {
                     return;
                 }
@@ -204,8 +206,11 @@ public class SpotifyCommands(
                     response.HintShown = true;
                 }
 
-                PublicProperties.UsedCommandsArtists.TryAdd(this.Context.Message.Id, album.Artists.First().Name);
-                PublicProperties.UsedCommandsAlbums.TryAdd(this.Context.Message.Id, album.Name);
+                response.ReferencedMusic = new ReferencedMusic
+                {
+                    Artist = album.Artists.First().Name,
+                    Album = album.Name
+                };
             }
             else
             {
@@ -213,12 +218,12 @@ public class SpotifyCommands(
                 response.CommandResponse = CommandResponse.NotFound;
             }
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -262,7 +267,7 @@ public class SpotifyCommands(
 
                 var recentScrobbles = await dataSourceFactory.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
 
-                if (await GenericEmbedService.RecentScrobbleCallFailedReply(recentScrobbles, userSettings.UserNameLastFM, this.Context))
+                if (await GenericEmbedService.RecentScrobbleCallFailedReply(recentScrobbles, userSettings.UserNameLastFM, this.Context, userService))
                 {
                     return;
                 }
@@ -294,7 +299,7 @@ public class SpotifyCommands(
                     response.HintShown = true;
                 }
 
-                PublicProperties.UsedCommandsArtists.TryAdd(this.Context.Message.Id, artist.Name);
+                response.ReferencedMusic = new ReferencedMusic { Artist = artist.Name };
             }
             else
             {
@@ -302,12 +307,12 @@ public class SpotifyCommands(
                 response.CommandResponse = CommandResponse.NotFound;
             }
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 }

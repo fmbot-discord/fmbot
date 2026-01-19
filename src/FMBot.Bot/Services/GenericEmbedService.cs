@@ -180,13 +180,13 @@ public static class GenericEmbedService
     }
 
     public static async Task<bool> RecentScrobbleCallFailedReply(Response<RecentTrackList> recentScrobbles,
-        string lastFmUserName, CommandContext context)
+        string lastFmUserName, CommandContext context, UserService userService)
     {
         var embed = new EmbedProperties();
         if (!recentScrobbles.Success || recentScrobbles.Content == null)
         {
             embed.ErrorResponse(recentScrobbles.Error, recentScrobbles.Message, context.Message.Content, context.User);
-            context.LogCommandUsed(CommandResponse.LastFmError);
+            await context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.LastFmError }, userService);
             await context.Channel.SendMessageAsync(new MessageProperties
             {
                 Embeds = [embed]
@@ -197,7 +197,7 @@ public static class GenericEmbedService
         if (!recentScrobbles.Content.RecentTracks.Any())
         {
             embed.NoScrobblesFoundErrorResponse(lastFmUserName);
-            context.LogCommandUsed(CommandResponse.NoScrobbles);
+            await context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoScrobbles }, userService);
             await context.Channel.SendMessageAsync(new MessageProperties
             {
                 Embeds = [embed],

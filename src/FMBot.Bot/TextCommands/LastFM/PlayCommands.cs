@@ -62,19 +62,19 @@ public class PlayCommands(
             var supporterRequiredResponse = ArtistBuilders.DiscoverySupporterRequired(context, userSettings);
             if (supporterRequiredResponse != null)
             {
-                await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse);
-                this.Context.LogCommandUsed(supporterRequiredResponse.CommandResponse);
+                await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse, userService);
+                await this.Context.LogCommandUsedAsync(supporterRequiredResponse, userService);
                 return;
             }
 
             var response = await playBuilder.DiscoveryDate(context, userSettings.NewSearchValue, userSettings);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -95,7 +95,7 @@ public class PlayCommands(
                 discordGuildUser?.GetDisplayName() ?? this.Context.User.GetDisplayName());
 
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new () { Embeds = [this._embed], Components = [GenericEmbedService.UsernameNotSetErrorComponents()] });
-            this.Context.LogCommandUsed(CommandResponse.UsernameNotSet);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.UsernameNotSet }, userService);
             return;
         }
 
@@ -124,7 +124,7 @@ public class PlayCommands(
             this._embed.WithFooter($"For more information on the bot in general, use '{prfx}help'");
 
             await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
-            this.Context.LogCommandUsed(CommandResponse.Help);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Help }, userService);
             return;
         }
 
@@ -148,7 +148,7 @@ public class PlayCommands(
                                 {
                                     Content = $"This channel has a `{existingFmCooldown.Value}` second cooldown on `{prfx}fm`. Please wait for this to expire before using this command again."
                                 })).DeleteAfterAsync(6);
-                            this.Context.LogCommandUsed(CommandResponse.Cooldown);
+                            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Cooldown }, userService);
                         }
 
                         return;
@@ -171,20 +171,20 @@ public class PlayCommands(
                 await playBuilder.NowPlayingAsync(new ContextModel(this.Context, prfx, contextUser),
                     userSettings, configuredFmType.embedType);;
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
             if (!string.IsNullOrEmpty(e.Message) &&
                 e.Message.Contains("The server responded with error 50013: Missing Permissions"))
             {
-                await this.Context.HandleCommandException(e, sendReply: false);
+                await this.Context.HandleCommandException(e, userService, sendReply: false);
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Error while replying: The bot is missing permissions.\nMake sure it has permission to 'Embed links' and 'Attach Images'" });
             }
             else
             {
-                await this.Context.HandleCommandException(e);
+                await this.Context.HandleCommandException(e, userService);
             }
         }
     }
@@ -209,12 +209,12 @@ public class PlayCommands(
             var response = await playBuilder.RecentAsync(new ContextModel(this.Context, prfx, contextUser),
                 userSettings, userSettings.NewSearchValue);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -239,12 +239,12 @@ public class PlayCommands(
             var response = await playBuilder.OverviewAsync(new ContextModel(this.Context, prfx, contextUser),
                 userSettings, amountOfDays);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -268,12 +268,12 @@ public class PlayCommands(
             var response = await playBuilder.YearAsync(new ContextModel(this.Context, prfx, contextUser),
                 userSettings, year);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -308,7 +308,7 @@ public class PlayCommands(
             var response = await recapBuilders.RecapAsync(new ContextModel(this.Context, prfx, contextUser),
                 userSettings, timeSettings, RecapPage.Overview);
 
-            await this.Context.SendResponse(this.Interactivity, response);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
 
             if (loading)
             {
@@ -316,11 +316,11 @@ public class PlayCommands(
                     this._botSettings.Discord.ApplicationId.GetValueOrDefault());
             }
 
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -355,8 +355,8 @@ public class PlayCommands(
         var response = await playBuilder.PaceAsync(new ContextModel(this.Context, prfx, contextUser),
             userSettings, timeSettings, goalAmount, userInfo.Playcount, userInfo.RegisteredUnix);
 
-        await this.Context.SendResponse(this.Interactivity, response);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendResponse(this.Interactivity, response, userService);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
     [Command("milestone", "m", "ms")]
@@ -389,12 +389,12 @@ public class PlayCommands(
             var response = await playBuilder.MileStoneAsync(new ContextModel(this.Context, prfx, contextUser),
                 userSettings, mileStoneAmount.amount, userInfo.Playcount, mileStoneAmount.isRandom);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -419,8 +419,8 @@ public class PlayCommands(
         var response = await playBuilder.PlaysAsync(new ContextModel(this.Context, prfx, contextUser),
             userSettings, timeSettings);
 
-        await this.Context.SendResponse(this.Interactivity, response);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendResponse(this.Interactivity, response, userService);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
     [Command("streak", "str", "combo", "cb")]
@@ -449,12 +449,12 @@ public class PlayCommands(
             var response = await playBuilder.StreakAsync(new ContextModel(this.Context, prfx, contextUser),
                 userSettings, userWithStreak);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -476,12 +476,12 @@ public class PlayCommands(
             var response = await playBuilder.StreakHistoryAsync(new ContextModel(this.Context, prfx, contextUser),
                 userSettings, artist: userSettings.NewSearchValue);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -506,12 +506,12 @@ public class PlayCommands(
                 new ContextModel(this.Context, prfx, contextUser),
                 guild, GuildViewType.Plays);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -536,12 +536,12 @@ public class PlayCommands(
                 new ContextModel(this.Context, prfx, contextUser),
                 guild, GuildViewType.ListeningTime);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 }

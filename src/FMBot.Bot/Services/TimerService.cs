@@ -702,11 +702,7 @@ public class TimerService : IDisposable
         PublicProperties.UsedCommandsResponses = new ConcurrentDictionary<ulong, CommandResponse>();
         PublicProperties.UsedCommandsResponseMessageId = new ConcurrentDictionary<ulong, ulong>();
         PublicProperties.UsedCommandsResponseContextId = new ConcurrentDictionary<ulong, ulong>();
-        PublicProperties.UsedCommandsErrorReferences = new ConcurrentDictionary<ulong, string>();
         PublicProperties.UsedCommandDiscordUserIds = new ConcurrentDictionary<ulong, ulong>();
-        PublicProperties.UsedCommandsArtists = new ConcurrentDictionary<ulong, string>();
-        PublicProperties.UsedCommandsAlbums = new ConcurrentDictionary<ulong, string>();
-        PublicProperties.UsedCommandsTracks = new ConcurrentDictionary<ulong, string>();
         PublicProperties.UsedCommandsReferencedMusic = new ConcurrentDictionary<ulong, ReferencedMusic>();
 
         Log.Information("Cleared internal logs");

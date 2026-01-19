@@ -30,12 +30,12 @@ public class DiscogsInteractions(
         try
         {
             var response = discogsBuilder.DiscogsLoginGetLinkAsync(new ContextModel(this.Context, contextUser));
-            await this.Context.SendResponse(interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -48,8 +48,8 @@ public class DiscogsInteractions(
         try
         {
             var response = await discogsBuilder.DiscogsToggleCollectionValue(new ContextModel(this.Context, contextUser));
-            await this.Context.SendResponse(interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
 
             contextUser = await userService.GetUserWithDiscogs(this.Context.User.Id);
             var updatedMsg = DiscogsBuilder.DiscogsManage(new ContextModel(this.Context, contextUser));
@@ -57,7 +57,7 @@ public class DiscogsInteractions(
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -71,12 +71,12 @@ public class DiscogsInteractions(
         try
         {
             var response = await discogsBuilder.DiscogsRemove(new ContextModel(this.Context, contextUser));
-            await this.Context.SendResponse(interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -104,11 +104,11 @@ public class DiscogsInteractions(
         try
         {
             var response = await discogsBuilder.DiscogsLoginAsync(new ContextModel(this.Context, contextUser));
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -134,12 +134,12 @@ public class DiscogsInteractions(
         {
             var response = await discogsBuilder.DiscogsCollectionAsync(new ContextModel(this.Context, contextUser, discordContextUser), userSettings, collectionSettings, null);
 
-            await this.Context.SendFollowUpResponse(interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendFollowUpResponse(interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 }

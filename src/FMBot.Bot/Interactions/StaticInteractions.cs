@@ -43,7 +43,7 @@ public class StaticInteractions(
 
             if (newResponse.Equals("true", StringComparison.OrdinalIgnoreCase))
             {
-                await this.Context.SendResponse(interactivity, response, true);
+                await this.Context.SendResponse(interactivity, response, userService, true);
             }
             else
             {
@@ -56,11 +56,11 @@ public class StaticInteractions(
                 });
             }
 
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e, deferFirst: true);
+            await this.Context.HandleCommandException(e, userService, deferFirst: true);
         }
     }
 
@@ -109,7 +109,7 @@ public class StaticInteractions(
             .WithEmbeds([embed])
             .WithComponents([components])
             .WithFlags(MessageFlags.Ephemeral)));
-        this.Context.LogCommandUsed();
+        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
     }
 
     [ComponentInteraction($"{InteractionConstants.SupporterLinks.ManageOverview}")]
@@ -203,7 +203,7 @@ public class StaticInteractions(
         await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
             .WithEmbeds([embed])
             .WithFlags(MessageFlags.Ephemeral)));
-        this.Context.LogCommandUsed();
+        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
     }
 
     [ComponentInteraction(InteractionConstants.SupporterLinks.GetManageLink)]
@@ -224,7 +224,7 @@ public class StaticInteractions(
             .WithEmbeds([embed])
             .WithComponents([components])
             .WithFlags(MessageFlags.Ephemeral)));
-        this.Context.LogCommandUsed();
+        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
     }
 
     [ComponentInteraction("gift-supporter-purchase")]
@@ -306,11 +306,11 @@ public class StaticInteractions(
                 .WithEmbeds([embed])
                 .WithComponents([components])
                 .WithFlags(MessageFlags.Ephemeral));
-            this.Context.LogCommandUsed();
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
         }
         catch (Exception ex)
         {
-            await this.Context.HandleCommandException(ex);
+            await this.Context.HandleCommandException(ex, userService);
         }
     }
 
@@ -344,11 +344,11 @@ public class StaticInteractions(
                 this.Context.User.Id);
 
             await this.Context.UpdateInteractionEmbed(response, interactivity, defer: false);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -380,11 +380,11 @@ public class StaticInteractions(
                 this.Context.User.Id);
 
             await this.Context.UpdateInteractionEmbed(response, interactivity, defer: false);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 }

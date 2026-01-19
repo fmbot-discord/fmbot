@@ -39,12 +39,12 @@ public class ImportInteractions(
 
             if (supporterRequired != null)
             {
-                await this.Context.SendResponse(interactivity, supporterRequired);
-                this.Context.LogCommandUsed(supporterRequired.CommandResponse);
+                await this.Context.SendResponse(interactivity, supporterRequired, userService);
+                await this.Context.LogCommandUsedAsync(supporterRequired, userService);
                 return;
             }
 
-            this.Context.LogCommandUsed();
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
             if (Enum.TryParse(pickedOption, out ImportModifyPick modifyPick))
             {
                 switch (modifyPick)
@@ -68,7 +68,7 @@ public class ImportInteractions(
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -82,11 +82,11 @@ public class ImportInteractions(
                 ModalFactory.CreateRenameArtistModal(
                     $"{InteractionConstants.ImportModify.ArtistRenameModal}:{selectedArtistRef}",
                     selectedArtist)));
-            this.Context.LogCommandUsed();
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e, deferFirst: true);
+            await this.Context.HandleCommandException(e, userService, deferFirst: true);
         }
     }
 
@@ -101,11 +101,11 @@ public class ImportInteractions(
                     $"{InteractionConstants.ImportModify.AlbumRenameModal}:{selectedAlbumRef}",
                     selectedAlbum?.Artist,
                     selectedAlbum?.Album)));
-            this.Context.LogCommandUsed();
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e, deferFirst: true);
+            await this.Context.HandleCommandException(e, userService, deferFirst: true);
         }
     }
 
@@ -120,11 +120,11 @@ public class ImportInteractions(
                     $"{InteractionConstants.ImportModify.TrackRenameModal}:{selectedTrackRef}",
                     selectedTrack?.Artist,
                     selectedTrack?.Track)));
-            this.Context.LogCommandUsed();
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e, deferFirst: true);
+            await this.Context.HandleCommandException(e, userService, deferFirst: true);
         }
     }
 
@@ -144,12 +144,12 @@ public class ImportInteractions(
             var response = await importBuilders.PickArtist(contextUser.UserId,
                 contextUser.NumberFormat ?? NumberFormat.NoSeparator, importRef);
 
-            await this.Context.SendFollowUpResponse(interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendFollowUpResponse(interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -173,12 +173,12 @@ public class ImportInteractions(
                 contextUser.NumberFormat ?? NumberFormat.NoSeparator,
                 importRef);
 
-            await this.Context.SendFollowUpResponse(interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendFollowUpResponse(interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -202,12 +202,12 @@ public class ImportInteractions(
                 contextUser.NumberFormat ?? NumberFormat.NoSeparator,
                 importRef);
 
-            await this.Context.SendFollowUpResponse(interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendFollowUpResponse(interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -237,11 +237,11 @@ public class ImportInteractions(
                 e.Components = response.Components?.Any() == true ? [response.Components] : null;
             });
 
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -272,11 +272,11 @@ public class ImportInteractions(
                 e.Components = response.Components?.Any() == true ? [response.Components] : null;
             });
 
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -307,11 +307,11 @@ public class ImportInteractions(
                 e.Components = response.Components?.Any() == true ? [response.Components] : null;
             });
 
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -365,7 +365,7 @@ public class ImportInteractions(
                 .WithEmbeds([embed])
                 .WithFlags(MessageFlags.Ephemeral)
                 .WithComponents(components)));
-            this.Context.LogCommandUsed();
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
 
             await indexService.RecalculateTopLists(newUserSettings);
 
@@ -391,7 +391,7 @@ public class ImportInteractions(
         await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
             .WithEmbeds([embed])
             .WithFlags(MessageFlags.Ephemeral)));
-        this.Context.LogCommandUsed();
+        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
     }
 
     [ComponentInteraction(InteractionConstants.ImportClearAppleMusic)]
@@ -409,7 +409,7 @@ public class ImportInteractions(
         await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
             .WithEmbeds([embed])
             .WithFlags(MessageFlags.Ephemeral)));
-        this.Context.LogCommandUsed();
+        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
     }
 
     [ComponentInteraction(InteractionConstants.ImportManage)]
@@ -424,12 +424,12 @@ public class ImportInteractions(
             var response =
                 await userBuilder.ImportMode(new ContextModel(this.Context, contextUser), contextUser.UserId);
 
-            await this.Context.SendFollowUpResponse(interactivity, response, ephemeral: true);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendFollowUpResponse(interactivity, response, userService, ephemeral: true);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -446,11 +446,11 @@ public class ImportInteractions(
                     true);
 
             await this.Context.UpdateInteractionEmbed(response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -467,11 +467,11 @@ public class ImportInteractions(
                     true);
 
             await this.Context.UpdateInteractionEmbed(response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -509,11 +509,11 @@ public class ImportInteractions(
                 e.Components = response.Components?.Any() == true ? [response.Components] : [];
             });
 
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -538,11 +538,11 @@ public class ImportInteractions(
                 e.Components = response.Components?.Any() == true ? [response.Components] : [];
             });
 
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -578,11 +578,11 @@ public class ImportInteractions(
                 e.Components = response.Components?.Any() == true ? [response.Components] : [];
             });
 
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -621,11 +621,11 @@ public class ImportInteractions(
                 e.Components = response.Components?.Any() == true ? [response.Components] : [];
             });
 
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -650,11 +650,11 @@ public class ImportInteractions(
                 e.Components = response.Components?.Any() == true ? [response.Components] : [];
             });
 
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -690,11 +690,11 @@ public class ImportInteractions(
                 e.Components = response.Components?.Any() == true ? [response.Components] : [];
             });
 
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -733,11 +733,11 @@ public class ImportInteractions(
                 e.Components = response.Components?.Any() == true ? [response.Components] : [];
             });
 
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -762,11 +762,11 @@ public class ImportInteractions(
                 e.Components = response.Components?.Any() == true ? [response.Components] : [];
             });
 
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -802,11 +802,11 @@ public class ImportInteractions(
                 e.Components = response.Components?.Any() == true ? [response.Components] : [];
             });
 
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 

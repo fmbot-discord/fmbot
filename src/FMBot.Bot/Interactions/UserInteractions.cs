@@ -129,7 +129,7 @@ public class UserInteractions(
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -143,8 +143,8 @@ public class UserInteractions(
                 UserBuilder.ShortcutsSupporterRequired(new ContextModel(this.Context, contextUser));
             if (supporterRequiredResponse != null)
             {
-                await this.Context.SendResponse(interactivity, supporterRequiredResponse, true);
-                this.Context.LogCommandUsed(supporterRequiredResponse.CommandResponse);
+                await this.Context.SendResponse(interactivity, supporterRequiredResponse, userService, true);
+                await this.Context.LogCommandUsedAsync(supporterRequiredResponse, userService);
                 return;
             }
 
@@ -157,7 +157,7 @@ public class UserInteractions(
                 await this.Context.Interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties()
                     .WithEmbeds([embed])
                     .WithFlags(MessageFlags.Ephemeral)));
-                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
                 return;
             }
 
@@ -168,7 +168,7 @@ public class UserInteractions(
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e, deferFirst: true);
+            await this.Context.HandleCommandException(e, userService, deferFirst: true);
         }
     }
 
@@ -194,7 +194,7 @@ public class UserInteractions(
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e, deferFirst: true);
+            await this.Context.HandleCommandException(e, userService, deferFirst: true);
         }
     }
 
@@ -223,13 +223,13 @@ public class UserInteractions(
             }
             else
             {
-                await this.Context.SendResponse(interactivity, response, ephemeral: true);
-                this.Context.LogCommandUsed(response.CommandResponse);
+                await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
+                await this.Context.LogCommandUsedAsync(response, userService);
             }
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e, deferFirst: true);
+            await this.Context.HandleCommandException(e, userService, deferFirst: true);
         }
     }
 
@@ -273,13 +273,13 @@ public class UserInteractions(
             }
             else
             {
-                await this.Context.SendFollowUpResponse(interactivity, response, ephemeral: true);
-                this.Context.LogCommandUsed(response.CommandResponse);
+                await this.Context.SendFollowUpResponse(interactivity, response, userService, ephemeral: true);
+                await this.Context.LogCommandUsedAsync(response, userService);
             }
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -293,12 +293,12 @@ public class UserInteractions(
 
             var response = UserBuilder.GetUserSettings(new ContextModel(this.Context, contextUser));
 
-            await this.Context.SendResponse(interactivity, response, ephemeral: true);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -323,28 +323,28 @@ public class UserInteractions(
                     {
                         response = UserBuilder.Privacy(new ContextModel(this.Context, contextUser));
 
-                        await this.Context.SendResponse(interactivity, response, ephemeral: true);
+                        await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
                         break;
                     }
                     case UserSetting.FmMode:
                     {
                         response = UserBuilder.FmMode(new ContextModel(this.Context, contextUser));
 
-                        await this.Context.SendResponse(interactivity, response, ephemeral: true);
+                        await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
                         break;
                     }
                     case UserSetting.WkMode:
                     {
                         response = UserBuilder.ResponseMode(new ContextModel(this.Context, contextUser));
 
-                        await this.Context.SendResponse(interactivity, response, ephemeral: true);
+                        await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
                         break;
                     }
                     case UserSetting.BotScrobbling:
                     {
                         response = UserBuilder.BotScrobblingAsync(new ContextModel(this.Context, contextUser));
 
-                        await this.Context.SendResponse(interactivity, response, ephemeral: true);
+                        await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
                         break;
                     }
                     case UserSetting.SpotifyImport:
@@ -354,15 +354,15 @@ public class UserInteractions(
 
                         if (supporterRequired != null)
                         {
-                            await this.Context.SendResponse(interactivity, supporterRequired, ephemeral: true);
-                            this.Context.LogCommandUsed(supporterRequired.CommandResponse);
+                            await this.Context.SendResponse(interactivity, supporterRequired, userService, ephemeral: true);
+                            await this.Context.LogCommandUsedAsync(supporterRequired, userService);
                             return;
                         }
 
                         response = await userBuilder.ImportMode(new ContextModel(this.Context, contextUser),
                             contextUser.UserId);
 
-                        await this.Context.SendResponse(interactivity, response, ephemeral: true);
+                        await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
                         break;
                     }
                     case UserSetting.CommandShortcuts:
@@ -372,8 +372,8 @@ public class UserInteractions(
 
                         if (supporterRequired != null)
                         {
-                            await this.Context.SendResponse(interactivity, supporterRequired, ephemeral: true);
-                            this.Context.LogCommandUsed(supporterRequired.CommandResponse);
+                            await this.Context.SendResponse(interactivity, supporterRequired, userService, ephemeral: true);
+                            await this.Context.LogCommandUsedAsync(supporterRequired, userService);
                             return;
                         }
 
@@ -399,42 +399,42 @@ public class UserInteractions(
 
                         if (supporterRequired != null)
                         {
-                            await this.Context.SendResponse(interactivity, supporterRequired, ephemeral: true);
-                            this.Context.LogCommandUsed(supporterRequired.CommandResponse);
+                            await this.Context.SendResponse(interactivity, supporterRequired, userService, ephemeral: true);
+                            await this.Context.LogCommandUsedAsync(supporterRequired, userService);
                             return;
                         }
 
                         response = UserBuilder.UserReactions(new ContextModel(this.Context, contextUser), prfx);
 
-                        await this.Context.SendResponse(interactivity, response, ephemeral: true);
+                        await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
                         break;
                     }
                     case UserSetting.Localization:
                     {
                         response = UserBuilder.Localization(new ContextModel(this.Context, contextUser));
 
-                        await this.Context.SendResponse(interactivity, response, ephemeral: true);
+                        await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
                         break;
                     }
                     case UserSetting.OutOfSync:
                     {
                         response = StaticBuilders.OutOfSync(new ContextModel(this.Context, contextUser));
 
-                        await this.Context.SendResponse(interactivity, response, ephemeral: true);
+                        await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
                         break;
                     }
                     case UserSetting.LinkedRoles:
                     {
                         response = userBuilder.ManageLinkedRoles(new ContextModel(this.Context, contextUser));
 
-                        await this.Context.SendResponse(interactivity, response, ephemeral: true);
+                        await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
                         break;
                     }
                     case UserSetting.ManageAlts:
                     {
                         response = await userBuilder.ManageAlts(new ContextModel(this.Context, contextUser));
 
-                        await this.Context.SendResponse(interactivity, response, ephemeral: true);
+                        await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
                         break;
                     }
                     case UserSetting.DeleteAccount:
@@ -463,7 +463,7 @@ public class UserInteractions(
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e, deferFirst: true);
+            await this.Context.HandleCommandException(e, userService, deferFirst: true);
         }
     }
 
@@ -482,7 +482,7 @@ public class UserInteractions(
                 .WithEmbeds([loginUrlResponse.Embed])
                 .WithComponents(loginUrlResponse.Components?.Any() == true ? [loginUrlResponse.Components] : null)
                 .WithFlags(MessageFlags.Ephemeral)));
-            this.Context.LogCommandUsed(CommandResponse.UsernameNotSet);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.UsernameNotSet }, userService);
 
             var loginResult = await userService.GetAndStoreAuthSession(this.Context.User, token.Content.Token);
 
@@ -503,7 +503,7 @@ public class UserInteractions(
                     m.Components = loginSuccessResponse.Components?.Any() == true ? [loginSuccessResponse.Components] : [];
                     m.Embeds = [loginSuccessResponse.Embed];
                 });
-                this.Context.LogCommandUsed();
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
 
                 if (indexUser)
                 {
@@ -551,7 +551,7 @@ public class UserInteractions(
                     .WithComponents(loginFailure.Components?.Any() == true ? [loginFailure.Components] : null)
                     .WithFlags(MessageFlags.Ephemeral));
 
-                this.Context.LogCommandUsed(CommandResponse.RateLimited);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.RateLimited }, userService);
             }
             else
             {
@@ -560,12 +560,12 @@ public class UserInteractions(
                     .WithEmbeds([loginFailure.Embed])
                     .WithFlags(MessageFlags.Ephemeral));
 
-                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
             }
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e, deferFirst: true);
+            await this.Context.HandleCommandException(e, userService, deferFirst: true);
         }
     }
 
@@ -687,12 +687,12 @@ public class UserInteractions(
         {
             var response = UserBuilder.FmMode(new ContextModel(this.Context, contextUser), guild);
 
-            await this.Context.SendResponse(interactivity, response, ephemeral: true);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -839,8 +839,8 @@ public class UserInteractions(
 
         var response = UserBuilder.ResponseMode(new ContextModel(this.Context, contextUser));
 
-        await this.Context.SendResponse(interactivity, response, ephemeral: true);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
     [ComponentInteraction(InteractionConstants.ResponseModeSetting)]
@@ -866,7 +866,7 @@ public class UserInteractions(
             await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
                 .WithEmbeds([embed])
                 .WithFlags(MessageFlags.Ephemeral)));
-            this.Context.LogCommandUsed();
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
         }
     }
 
@@ -943,7 +943,7 @@ public class UserInteractions(
                 embed.WithColor(DiscordConstants.LastFmColorRed);
                 embed.WithDescription(
                     $"Sorry, you or the user you're searching for don't have any top artists or top tracks in the selected time period.");
-                this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoScrobbles }, userService);
                 await this.Context.Interaction.ModifyResponseAsync(e =>
                 {
                     e.Embeds = [embed];
@@ -962,11 +962,11 @@ public class UserInteractions(
                 e.Components = [];
             });
 
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -1003,11 +1003,11 @@ public class UserInteractions(
                     new ContextModel(this.Context, contextUser, discordContextUser), userSettings, viewType);
 
             await this.Context.UpdateInteractionEmbed(response, interactivity);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -1031,7 +1031,7 @@ public class UserInteractions(
                 userSettings);
 
         await this.Context.UpdateInteractionEmbed(response, interactivity, false);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
     [UsernameSetRequired]
@@ -1057,11 +1057,11 @@ public class UserInteractions(
                     userSettings);
 
             await this.Context.UpdateInteractionEmbed(response, interactivity, false);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -1078,7 +1078,7 @@ public class UserInteractions(
                 await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
                 .WithContent("Session expired. Login again to manage your alts.")
                 .WithFlags(MessageFlags.Ephemeral)));
-                this.Context.LogCommandUsed(CommandResponse.UsernameNotSet);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.UsernameNotSet }, userService);
                 return;
             }
 
@@ -1092,7 +1092,7 @@ public class UserInteractions(
                 await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
                 .WithContent("The .fmbot account you want to manage doesn't exist (anymore).")
                 .WithFlags(MessageFlags.Ephemeral)));
-                this.Context.LogCommandUsed(CommandResponse.NotFound);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
                 return;
             }
 
@@ -1154,11 +1154,11 @@ public class UserInteractions(
                 .WithEmbeds([embed])
                 .WithComponents([components])
                 .WithFlags(MessageFlags.Ephemeral)));
-            this.Context.LogCommandUsed();
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -1172,7 +1172,7 @@ public class UserInteractions(
             await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
                 .WithContent("Session expired. Login again to manage your alts.")
                 .WithFlags(MessageFlags.Ephemeral)));
-            this.Context.LogCommandUsed(CommandResponse.UsernameNotSet);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.UsernameNotSet }, userService);
             return;
         }
 
@@ -1183,7 +1183,7 @@ public class UserInteractions(
             await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
                 .WithContent("The .fmbot account you want to manage doesn't exist (anymore).")
                 .WithFlags(MessageFlags.Ephemeral)));
-            this.Context.LogCommandUsed(CommandResponse.NotFound);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
             return;
         }
 
@@ -1228,7 +1228,7 @@ public class UserInteractions(
             .WithEmbeds([embed])
             .WithComponents([components])
             .WithFlags(MessageFlags.Ephemeral)));
-        this.Context.LogCommandUsed();
+        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
     }
 
     [ComponentInteraction(InteractionConstants.ManageAlts.ManageAltsDeleteAltConfirm)]
@@ -1246,7 +1246,7 @@ public class UserInteractions(
                 await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
                 .WithContent("Session expired. Login again to manage your alts.")
                 .WithFlags(MessageFlags.Ephemeral)));
-                this.Context.LogCommandUsed(CommandResponse.UsernameNotSet);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.UsernameNotSet }, userService);
                 return;
             }
 
@@ -1257,7 +1257,7 @@ public class UserInteractions(
                 await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
                 .WithContent("The .fmbot account you want to delete doesn't exist (anymore).")
                 .WithFlags(MessageFlags.Ephemeral)));
-                this.Context.LogCommandUsed(CommandResponse.NotFound);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
                 return;
             }
 
@@ -1283,11 +1283,11 @@ public class UserInteractions(
                     customId: "0", disabled: true, style: ButtonStyle.Success);
             await this.Context.Interaction.ModifyResponseAsync(m => { m.Components = [components]; });
 
-            this.Context.LogCommandUsed();
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -1306,7 +1306,7 @@ public class UserInteractions(
             await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
                 .WithEmbeds([embed])
                 .WithFlags(MessageFlags.Ephemeral)));
-            this.Context.LogCommandUsed(CommandResponse.NotFound);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
             return;
         }
 
@@ -1315,7 +1315,7 @@ public class UserInteractions(
         await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
             .WithEmbeds([embed])
             .WithFlags(MessageFlags.Ephemeral)));
-        this.Context.LogCommandUsed();
+        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
     }
 
     [ComponentInteraction(InteractionConstants.ManageAlts.ManageAltsButton)]
@@ -1328,7 +1328,7 @@ public class UserInteractions(
             await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
                 .WithContent("Session expired. Login again to manage your alts.")
                 .WithFlags(MessageFlags.Ephemeral)));
-            this.Context.LogCommandUsed(CommandResponse.UsernameNotSet);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.UsernameNotSet }, userService);
             return;
         }
 
@@ -1339,12 +1339,12 @@ public class UserInteractions(
             var response =
                 await userBuilder.ManageAlts(new ContextModel(this.Context, contextUser));
 
-            await this.Context.SendFollowUpResponse(interactivity, response, ephemeral: true);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendFollowUpResponse(interactivity, response, userService, ephemeral: true);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -1361,20 +1361,20 @@ public class UserInteractions(
             var supporterRequiredResponse = UserBuilder.ShortcutsSupporterRequired(context);
             if (supporterRequiredResponse != null)
             {
-                await this.Context.SendResponse(interactivity, supporterRequiredResponse, true);
-                this.Context.LogCommandUsed(supporterRequiredResponse.CommandResponse);
+                await this.Context.SendResponse(interactivity, supporterRequiredResponse, userService, true);
+                await this.Context.LogCommandUsedAsync(supporterRequiredResponse, userService);
                 return;
             }
 
             var response =
                 await userBuilder.ManageShortcutAsync(context, id, message?.Id ?? 0);
 
-            await this.Context.SendResponse(interactivity, response, ephemeral: true);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e, deferFirst: true);
+            await this.Context.HandleCommandException(e, userService, deferFirst: true);
         }
     }
 
@@ -1405,13 +1405,13 @@ public class UserInteractions(
             }
             else
             {
-                await this.Context.SendFollowUpResponse(interactivity, response, ephemeral: true);
-                this.Context.LogCommandUsed(response.CommandResponse);
+                await this.Context.SendFollowUpResponse(interactivity, response, userService, ephemeral: true);
+                await this.Context.LogCommandUsedAsync(response, userService);
             }
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -1422,8 +1422,8 @@ public class UserInteractions(
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var response = UserBuilder.BotScrobblingAsync(new ContextModel(this.Context, contextUser));
 
-        await this.Context.SendResponse(interactivity, response, true);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendResponse(interactivity, response, userService, true);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
     [ComponentInteraction(InteractionConstants.BotScrobblingEnable)]
@@ -1450,7 +1450,7 @@ public class UserInteractions(
         await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
             .WithEmbeds([embed])
             .WithFlags(MessageFlags.Ephemeral)));
-        this.Context.LogCommandUsed();
+        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
     }
 
     [ComponentInteraction(InteractionConstants.BotScrobblingDisable)]
@@ -1477,6 +1477,6 @@ public class UserInteractions(
         await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
             .WithEmbeds([embed])
             .WithFlags(MessageFlags.Ephemeral)));
-        this.Context.LogCommandUsed();
+        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
     }
 }

@@ -126,7 +126,7 @@ public class CountryBuilders
                     response.Embed.WithThumbnail(artist.SpotifyImageUrl);
                 }
 
-                PublicProperties.UsedCommandsArtists.TryAdd(context.InteractionId, artist.Name);
+                response.ReferencedMusic = new ReferencedMusic { Artist = artist.Name };
 
                 var description = new StringBuilder();
                 foundCountry = this._countryService.GetValidCountry(artist.CountryCode);
@@ -194,7 +194,7 @@ public class CountryBuilders
                             $"*{artist.Location}*");
                     }
 
-                    PublicProperties.UsedCommandsArtists.TryAdd(context.InteractionId, artist.Name);
+                    response.ReferencedMusic = new ReferencedMusic { Artist = artist.Name };
                     response.Embed.WithDescription(description.ToString());
 
                     response.Embed.WithFooter($"Country source: MusicBrainz\n" +
