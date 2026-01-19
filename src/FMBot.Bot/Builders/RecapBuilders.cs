@@ -327,7 +327,7 @@ public class RecapBuilders
                 var trackResponse = await this._trackBuilders.TopTracksAsync(context, topListSettings, timeSettings,
                     userSettings, ResponseMode.Embed);
 
-                response.StaticPaginator = trackResponse.StaticPaginator;
+                response.ComponentPaginator = trackResponse.ComponentPaginator;
                 response.Embed = trackResponse.Embed;
                 response.ResponseType = trackResponse.ResponseType;
 
@@ -338,7 +338,7 @@ public class RecapBuilders
                 var albumResponse = await this._albumBuilders.TopAlbumsAsync(context, topListSettings, timeSettings,
                     userSettings, ResponseMode.Embed);
 
-                response.StaticPaginator = albumResponse.StaticPaginator;
+                response.ComponentPaginator = albumResponse.ComponentPaginator;
                 response.Embed = albumResponse.Embed;
                 response.ResponseType = albumResponse.ResponseType;
 
@@ -349,7 +349,7 @@ public class RecapBuilders
                 var artistResponse = await this._artistBuilders.TopArtistsAsync(context, topListSettings, timeSettings,
                     userSettings, ResponseMode.Embed);
 
-                response.StaticPaginator = artistResponse.StaticPaginator;
+                response.ComponentPaginator = artistResponse.ComponentPaginator;
                 response.Embed = artistResponse.Embed;
                 response.ResponseType = artistResponse.ResponseType;
 
@@ -360,7 +360,7 @@ public class RecapBuilders
                 var genreResponse = await this._genreBuilders.TopGenresAsync(context, userSettings, timeSettings,
                     topListSettings, ResponseMode.Embed);
 
-                response.StaticPaginator = genreResponse.StaticPaginator;
+                response.ComponentPaginator = genreResponse.ComponentPaginator;
                 response.Embed = genreResponse.Embed;
                 response.ResponseType = genreResponse.ResponseType;
 
@@ -371,7 +371,7 @@ public class RecapBuilders
                 var countryResponse = await this._countryBuilders.TopCountriesAsync(context, userSettings, timeSettings,
                     topListSettings, ResponseMode.Embed);
 
-                response.StaticPaginator = countryResponse.StaticPaginator;
+                response.ComponentPaginator = countryResponse.ComponentPaginator;
                 response.Embed = countryResponse.Embed;
                 response.ResponseType = countryResponse.ResponseType;
 
@@ -412,7 +412,7 @@ public class RecapBuilders
                         timeSettings,
                         userSettings, ResponseMode.Embed);
 
-                    response.StaticPaginator = artistResponse.StaticPaginator;
+                    response.ComponentPaginator = artistResponse.ComponentPaginator;
                     response.Embed = artistResponse.Embed;
                     response.ResponseType = artistResponse.ResponseType;
                 }

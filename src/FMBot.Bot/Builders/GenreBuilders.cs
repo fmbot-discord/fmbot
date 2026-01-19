@@ -432,7 +432,7 @@ public class GenreBuilders
                                    artistGenre.Name.Equals(selectedValue, StringComparison.OrdinalIgnoreCase);
 
                     var optionId =
-                        $"{userSettings.DiscordUserId}~{context.ContextUser.DiscordUserId}~{selectCommandId}~{artistGenre.Name}~{artist.Name}";
+                        $"{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}:{selectCommandId}:{artistGenre.Name}:{artist.Name}";
                     selectMenu.AddOption(artistGenre.Name.Transform(To.TitleCase), optionId, selected);
                 }
 
@@ -478,7 +478,7 @@ public class GenreBuilders
                                        artistGenre.Name.Equals(selectedValue, StringComparison.OrdinalIgnoreCase);
 
                         var optionId =
-                            $"{userSettings.DiscordUserId}~{context.ContextUser.DiscordUserId}~{selectCommandId}~{artistGenre.Name}~{genreOptions}";
+                            $"{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}:{selectCommandId}:{artistGenre.Name}:{genreOptions}";
                         selectMenu.AddOption(StringExtensions.TruncateLongString(artistGenre.Name.Transform(To.TitleCase), 25), optionId,
                             isDefault: selected);
                     }
@@ -557,7 +557,7 @@ public class GenreBuilders
             var firstResult = topGenresList.FirstOrDefault(f =>
                 f.GenreName.Equals(genreResults.First(), StringComparison.OrdinalIgnoreCase));
             selectMenu.AddOption(genreResults.First().Transform(To.TitleCase),
-                $"{userSettings.DiscordUserId}~{context.ContextUser.DiscordUserId}~{selectCommandId}~{genreResults.First()}~{genreOptions}",
+                $"{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}:{selectCommandId}:{genreResults.First()}:{genreOptions}",
                 description: firstResult == null
                     ? null
                     : $"{firstResult.UserPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(firstResult.UserPlaycount)}");
@@ -570,7 +570,7 @@ public class GenreBuilders
                                genre.GenreName.Equals(selectedValue, StringComparison.OrdinalIgnoreCase);
 
                 var optionId =
-                    $"{userSettings.DiscordUserId}~{context.ContextUser.DiscordUserId}~{selectCommandId}~{genre.GenreName}~{genreOptions}";
+                    $"{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}:{selectCommandId}:{genre.GenreName}:{genreOptions}";
                 selectMenu.AddOption(genre.GenreName.Transform(To.TitleCase), optionId,
                     description: $"{genre.UserPlaycount} {StringExtensions.GetPlaysString(genre.UserPlaycount)}",
                     isDefault: selected);
@@ -718,7 +718,7 @@ public class GenreBuilders
         var optionDescription = userView ? "View server overview" : "View user overview";
         var originalSearchValue = !string.IsNullOrWhiteSpace(originalSearch) ? originalSearch : "0";
         var optionId =
-            $"{interaction}~{userSettings.DiscordUserId}~{context.ContextUser.DiscordUserId}~{userGenre.GenreName}~{originalSearchValue}";
+            $"{interaction}:{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}:{userGenre.GenreName}:{originalSearchValue}";
 
         if (userView && context.DiscordGuild == null)
         {
@@ -737,8 +737,8 @@ public class GenreBuilders
         {
             if (genres.selectMenu != null)
             {
-                response.StaticPaginator =
-                    StringService.BuildStaticPaginatorWithSelectMenu(pages, genres.selectMenu, optionId, optionEmote);
+                response.ComponentPaginator =
+                    StringService.BuildComponentPaginatorWithSelectMenu(pages, genres.selectMenu, optionId, optionEmote);
             }
             else
             {

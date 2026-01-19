@@ -38,10 +38,6 @@ public class ResponseModel
 
     public ComponentContainerProperties ComponentsContainer { get; set; }
 
-    /// <summary>
-    /// Gets all V2 components combined into a single array for sending.
-    /// Includes ComponentsContainer if it has any components, plus any ComponentsV2 action rows.
-    /// </summary>
     public IMessageComponentProperties[] GetComponentsV2()
     {
         var components = new List<IMessageComponentProperties>();
@@ -61,11 +57,9 @@ public class ResponseModel
         return components.Count > 0 ? components.ToArray() : null;
     }
 
-    /// <summary>
-    /// Gets all message components (buttons, menus) combined into a single array for sending.
-    /// </summary>
     public IMessageComponentProperties[] GetMessageComponents()
     {
+        const int maxComponentsPerRow = 5;
         var components = new List<IMessageComponentProperties>();
 
         // Add button rows if any (sorted by row number)
@@ -75,14 +69,44 @@ public class ResponseModel
             {
                 if (row.Value?.Any() == true)
                 {
-                    components.Add(row.Value);
+                    var rowComponents = row.Value.ToList();
+                    if (rowComponents.Count <= maxComponentsPerRow)
+                    {
+                        components.Add(row.Value);
+                    }
+                    else
+                    {
+                        // Split into multiple rows
+                        for (var i = 0; i < rowComponents.Count; i += maxComponentsPerRow)
+                        {
+                            var chunk = rowComponents.Skip(i).Take(maxComponentsPerRow).ToArray();
+                            var newRow = new ActionRowProperties();
+                            newRow.AddComponents(chunk);
+                            components.Add(newRow);
+                        }
+                    }
                 }
             }
         }
         // Fall back to single Components property for backward compatibility
         else if (Components?.Any() == true)
         {
-            components.Add(Components);
+            var componentsList = Components.ToList();
+            if (componentsList.Count <= maxComponentsPerRow)
+            {
+                components.Add(Components);
+            }
+            else
+            {
+                // Split into multiple rows
+                for (var i = 0; i < componentsList.Count; i += maxComponentsPerRow)
+                {
+                    var chunk = componentsList.Skip(i).Take(maxComponentsPerRow).ToArray();
+                    var newRow = new ActionRowProperties();
+                    newRow.AddComponents(chunk);
+                    components.Add(newRow);
+                }
+            }
         }
 
         // Add all string menus (each is its own component)
@@ -115,8 +139,6 @@ public class ResponseModel
     public int? GameSessionId { get; set; }
 
     public string[] EmoteReactions { get; set; }
-
-    public StaticPaginatorBuilder StaticPaginator { get; set; }
 
     public ComponentPaginatorBuilder ComponentPaginator { get; set; }
 

@@ -37,7 +37,7 @@ public class GenreInteractions(
         }
 
         var components =
-            new ActionRowProperties().WithButton($"Loading server view...", customId: "1", emote: EmojiProperties.Custom(DiscordConstants.Loading), disabled: true, style: ButtonStyle.Secondary);
+            new ActionRowProperties().WithButton("Loading server view...", "1", ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.Loading), disabled: true);
         await message.ModifyAsync(m => m.Components = [components]);
 
         var discordUserId = ulong.Parse(discordUser);
@@ -75,7 +75,7 @@ public class GenreInteractions(
         }
 
         var components =
-            new ActionRowProperties().WithButton($"Loading user view...", customId: "1", emote: EmojiProperties.Custom(DiscordConstants.Loading), disabled: true, style: ButtonStyle.Secondary);
+            new ActionRowProperties().WithButton("Loading user view...", "1", ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.Loading), disabled: true);
         await Context.ModifyComponents(message, components);
 
         var discordUserId = ulong.Parse(discordUser);
@@ -103,12 +103,12 @@ public class GenreInteractions(
 
     [ComponentInteraction(InteractionConstants.Genre.GenreSelectMenu)]
     [UsernameSetRequired]
-    public async Task SetResponseModeAsync(params string[] inputs)
+    public async Task SetResponseModeAsync()
     {
         try
         {
             var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
-            var options = stringMenuInteraction.Data.SelectedValues.First().Split("~");
+            var options = stringMenuInteraction.Data.SelectedValues.First().Split(":");
 
             await RespondAsync(InteractionCallback.DeferredModifyMessage);
 
@@ -125,7 +125,7 @@ public class GenreInteractions(
             var originalSearch = string.IsNullOrWhiteSpace(options[4]) ? null : options[4];
 
             var components =
-                new ActionRowProperties().WithButton($"Loading {selectedOption}...", customId: "1", emote: EmojiProperties.Custom(DiscordConstants.Loading), disabled: true, style: ButtonStyle.Secondary);
+                new ActionRowProperties().WithButton($"Loading {selectedOption}...", "1", ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.Loading), disabled: true);
             await Context.ModifyComponents(message, components);
 
             var guild = await guildService.GetGuildAsync(this.Context.Guild?.Id);

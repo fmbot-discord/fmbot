@@ -355,7 +355,7 @@ public class StaticCommands(
                 .WithTitle($"Bot scrobbling debug log for {this.Context.Guild.Name} | {this.Context.Guild.Id}"));
         }
 
-        var paginator = StringService.BuildStaticPaginator(pages);
+        var paginator = StringService.BuildComponentPaginator(pages);
 
         _ = this.Interactivity.SendPaginatorAsync(
             paginator.Build(),

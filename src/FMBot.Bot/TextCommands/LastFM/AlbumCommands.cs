@@ -373,7 +373,7 @@ public class AlbumCommands(
                     guildListSettings);
 
             _ = this.Interactivity.SendPaginatorAsync(
-                response.StaticPaginator.Build(),
+                response.ComponentPaginator.Build(),
                 this.Context.Channel,
                 TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
 

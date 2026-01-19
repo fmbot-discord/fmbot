@@ -559,7 +559,7 @@ public class ArtistCommands(
                     guildListSettings);
 
             _ = this.Interactivity.SendPaginatorAsync(
-                response.StaticPaginator.Build(),
+                response.ComponentPaginator.Build(),
                 this.Context.Channel,
                 TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
 
@@ -620,7 +620,7 @@ public class ArtistCommands(
                 if (message is Message gatewayMessage)
                 {
                     _ = this.Interactivity.SendPaginatorAsync(
-                        response.StaticPaginator.Build(),
+                        response.ComponentPaginator.Build(),
                         gatewayMessage,
                         TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
                 }
