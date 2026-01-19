@@ -189,24 +189,6 @@ public static class CommandContextExtensions
                             TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
 
                         break;
-                    case ResponseType.ComponentPaginator:
-                        var existingMsgComponentPaginator =
-                            await context.Client.Rest.GetMessageAsync(
-                                context.Message.ChannelId,
-                                PublicProperties.UsedCommandsResponseMessageId[context.Message.Id]);
-                        if (existingMsgComponentPaginator.Attachments != null && existingMsgComponentPaginator.Attachments.Any())
-                        {
-                            await context.Client.Rest.ModifyMessageAsync(
-                                context.Message.ChannelId,
-                                PublicProperties.UsedCommandsResponseMessageId[context.Message.Id],
-                                msg => { msg.Attachments = null; });
-                        }
-
-                        await interactiveService.SendPaginatorAsync(
-                            response.ComponentPaginator.Build(),
-                            existingMsgComponentPaginator,
-                            TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
-                        break;
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
@@ -295,13 +277,6 @@ public static class CommandContextExtensions
                         responseMessage = components;
                     }
 
-                    break;
-                case ResponseType.ComponentPaginator:
-                    var componentPaginator = await interactiveService.SendPaginatorAsync(
-                        response.ComponentPaginator.Build(),
-                        context.Channel,
-                        TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
-                    responseMessage = componentPaginator.Message;
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();

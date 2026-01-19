@@ -23,11 +23,8 @@ using FMBot.Persistence.Domain.Models;
 using NetCord;
 using NetCord.Rest;
 using SkiaSharp;
-using IPage = PuppeteerSharp.IPage;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 using User = FMBot.Persistence.Domain.Models.User;
-using NetCord.Gateway;
-using DiscordGuild = NetCord.Gateway.Guild;
 using Guild = FMBot.Persistence.Domain.Models.Guild;
 
 namespace FMBot.Bot.Builders;
@@ -524,7 +521,7 @@ public class PlayBuilder
             .WithPageCount(trackPages.Count)
             .WithActionOnTimeout(ActionOnStop.DisableInput);
 
-        response.ResponseType = ResponseType.ComponentPaginator;
+        response.ResponseType = ResponseType.Paginator;
         response.ComponentPaginator = paginator;
 
         return response;
@@ -903,7 +900,7 @@ public class PlayBuilder
             .WithPageCount(dayPages.Count)
             .WithActionOnTimeout(ActionOnStop.DisableInput);
 
-        response.ResponseType = ResponseType.ComponentPaginator;
+        response.ResponseType = ResponseType.Paginator;
         response.ComponentPaginator = paginator;
 
         return response;
