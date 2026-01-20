@@ -467,7 +467,7 @@ public class GuildSettingInteractions(
 
         response = await guildSettingBuilder.CrownSeederDone(new ContextModel(this.Context),
             amountOfCrownsSeeded);
-        await this.Context.UpdateInteractionEmbed(response);
+        await this.Context.UpdateInteractionEmbed(response, defer: false);
     }
 
     [ComponentInteraction(InteractionConstants.RemovePrefix)]

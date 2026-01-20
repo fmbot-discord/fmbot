@@ -153,7 +153,7 @@ public class Startup
         services.AddHealthChecks();
         services.AddDbContextFactory<FMBotDbContext>(b =>
             b.UseNpgsql(this.Configuration["Database:ConnectionString"]));
-        services.AddMemoryCache(options => { options.TrackStatistics = true; });
+        services.AddMemoryCache(options => { options.TrackStatistics = false; });
     }
 
     private static ShardedGatewayClient ConfigureDiscordClient()
