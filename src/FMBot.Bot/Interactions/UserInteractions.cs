@@ -17,6 +17,7 @@ using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Attributes;
 using FMBot.Domain.Enums;
+using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
@@ -105,14 +106,14 @@ public class UserInteractions(
             return;
         }
 
-        var parsedMessageId = ulong.Parse(messageId);
-        var msg = await this.Context.Channel.GetMessageAsync(parsedMessageId);
-
         try
         {
-            await msg.ModifyAsync(m => m.Components = []);
-
             await this.Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
+
+            var parsedMessageId = ulong.Parse(messageId);
+            var msg = await this.Context.Channel.GetMessageAsync(parsedMessageId);
+
+            await msg.ModifyAsync(m => m.Components = []);
 
             await friendsService.RemoveAllFriendsAsync(userSettings.UserId);
             await friendsService.RemoveUserFromOtherFriendsAsync(userSettings.UserId);
@@ -122,7 +123,8 @@ public class UserInteractions(
             var followUpEmbed = new EmbedProperties();
             followUpEmbed.WithTitle("Removal successful");
             followUpEmbed.WithDescription(
-                "Your settings, friends and any other data have been successfully deleted from .fmbot.");
+                "Your settings, friends and any other data have been successfully deleted from .fmbot.\n\n" +
+                $"If [your Last.fm account]({LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFM)}) is still connected to other Discord accounts in .fmbot, you can remove them too by logging back in, going to `.settings` and using 'Manage alts'.");
             await this.Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
                 .WithEmbeds([followUpEmbed])
                 .WithFlags(MessageFlags.Ephemeral));
@@ -259,10 +261,7 @@ public class UserInteractions(
                 {
                     var list = await userBuilder.ListShortcutsAsync(new ContextModel(this.Context, contextUser));
                     var overviewMsg = await this.Context.Interaction.Channel.GetMessageAsync(parsedOverviewMessageId);
-                    await overviewMsg.ModifyAsync(m =>
-                    {
-                        m.Components = list.GetComponentsV2();
-                    });
+                    await overviewMsg.ModifyAsync(m => { m.Components = list.GetComponentsV2(); });
                 }
 
                 var manage = await userBuilder.ManageShortcutAsync(new ContextModel(this.Context, contextUser),
@@ -1076,8 +1075,8 @@ public class UserInteractions(
             if (contextUser == null)
             {
                 await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
-                .WithContent("Session expired. Login again to manage your alts.")
-                .WithFlags(MessageFlags.Ephemeral)));
+                    .WithContent("Session expired. Login again to manage your alts.")
+                    .WithFlags(MessageFlags.Ephemeral)));
                 await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.UsernameNotSet }, userService);
                 return;
             }
@@ -1090,8 +1089,8 @@ public class UserInteractions(
             if (targetUser == null)
             {
                 await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
-                .WithContent("The .fmbot account you want to manage doesn't exist (anymore).")
-                .WithFlags(MessageFlags.Ephemeral)));
+                    .WithContent("The .fmbot account you want to manage doesn't exist (anymore).")
+                    .WithFlags(MessageFlags.Ephemeral)));
                 await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
                 return;
             }
@@ -1244,8 +1243,8 @@ public class UserInteractions(
             if (contextUser == null)
             {
                 await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
-                .WithContent("Session expired. Login again to manage your alts.")
-                .WithFlags(MessageFlags.Ephemeral)));
+                    .WithContent("Session expired. Login again to manage your alts.")
+                    .WithFlags(MessageFlags.Ephemeral)));
                 await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.UsernameNotSet }, userService);
                 return;
             }
@@ -1255,8 +1254,8 @@ public class UserInteractions(
             if (userToDelete == null)
             {
                 await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
-                .WithContent("The .fmbot account you want to delete doesn't exist (anymore).")
-                .WithFlags(MessageFlags.Ephemeral)));
+                    .WithContent("The .fmbot account you want to delete doesn't exist (anymore).")
+                    .WithFlags(MessageFlags.Ephemeral)));
                 await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
                 return;
             }
