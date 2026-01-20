@@ -150,15 +150,12 @@ public class TrackService
                         lastFmUserName);
                 }
 
-                if (interactionId.HasValue)
+                response.ReferencedMusic = new ReferencedMusic
                 {
-                    response.ReferencedMusic = new ReferencedMusic
-                    {
-                        Artist = trackArtist,
-                        Album = trackInfo.Content?.AlbumName,
-                        Track = trackName
-                    };
-                }
+                    Artist = trackArtist,
+                    Album = trackInfo.Content?.AlbumName,
+                    Track = trackName
+                };
 
                 if (!trackInfo.Success && trackInfo.Error == ResponseStatus.MissingParameters)
                 {
@@ -227,15 +224,12 @@ public class TrackService
                 trackInfo.Content.AlbumName = lastPlayedTrack.AlbumName;
             }
 
-            if (interactionId.HasValue)
+            response.ReferencedMusic = new ReferencedMusic
             {
-                response.ReferencedMusic = new ReferencedMusic
-                {
-                    Artist = lastPlayedTrack.ArtistName,
-                    Album = lastPlayedTrack.AlbumName,
-                    Track = lastPlayedTrack.TrackName
-                };
-            }
+                Artist = lastPlayedTrack.ArtistName,
+                Album = lastPlayedTrack.AlbumName,
+                Track = lastPlayedTrack.TrackName
+            };
 
             if (trackInfo?.Content == null || !trackInfo.Success)
             {
@@ -291,15 +285,12 @@ public class TrackService
                 return new TrackSearch(null, response);
             }
 
-            if (interactionId.HasValue)
+            response.ReferencedMusic = new ReferencedMusic
             {
-                response.ReferencedMusic = new ReferencedMusic
-                {
-                    Artist = trackSearch.ArtistName,
-                    Album = trackInfo.Content?.AlbumName,
-                    Track = trackSearch.Name
-                };
-            }
+                Artist = trackSearch.ArtistName,
+                Album = trackInfo.Content?.AlbumName,
+                Track = trackSearch.Name
+            };
 
             return new TrackSearch(trackInfo.Content, response);
         }

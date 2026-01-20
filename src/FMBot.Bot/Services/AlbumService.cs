@@ -133,14 +133,11 @@ public class AlbumService
                         lastFmUserName);
                 }
 
-                if (interactionId.HasValue)
+                response.ReferencedMusic = new ReferencedMusic
                 {
-                    response.ReferencedMusic = new ReferencedMusic
-                    {
-                        Artist = searchArtistName,
-                        Album = searchAlbumName
-                    };
-                }
+                    Artist = searchArtistName,
+                    Album = searchAlbumName
+                };
 
                 if (!albumInfo.Success && albumInfo.Error == ResponseStatus.MissingParameters)
                 {
@@ -214,14 +211,11 @@ public class AlbumService
                     lastFmUserName);
             }
 
-            if (interactionId.HasValue)
+            response.ReferencedMusic = new ReferencedMusic
             {
-                response.ReferencedMusic = new ReferencedMusic
-                {
-                    Artist = lastPlayedTrack.ArtistName,
-                    Album = lastPlayedTrack.AlbumName
-                };
-            }
+                Artist = lastPlayedTrack.ArtistName,
+                Album = lastPlayedTrack.AlbumName
+            };
 
             if (albumInfo?.Content == null || !albumInfo.Success)
             {

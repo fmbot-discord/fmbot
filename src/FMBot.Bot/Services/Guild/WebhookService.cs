@@ -128,7 +128,7 @@ public class WebhookService
         }
         catch (Exception e)
         {
-            if (e.Message.Contains("Could not find"))
+            if (e.Message.Contains("Unknown Webhook", StringComparison.OrdinalIgnoreCase))
             {
                 await using var db = await this._contextFactory.CreateDbContextAsync();
 

@@ -167,7 +167,7 @@ public static class ModalFactory
         {
             Components =
             [
-                new LabelProperties("Type 'confirm' to delete", new TextInputProperties("confirm", TextInputStyle.Short)
+                new LabelProperties("Type 'confirm' to delete", new TextInputProperties("confirmation", TextInputStyle.Short)
                 {
                     MinLength = 1,
                     MaxLength = 7

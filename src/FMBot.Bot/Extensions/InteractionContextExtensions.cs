@@ -124,19 +124,19 @@ public static class InteractionContextExtensions
             context.Guild?.Id,
             context.Channel?.Id,
             type,
-            commandOptions: options);
+            commandOptions: options,
+            referencedMusic: response.ReferencedMusic);
     }
 
-    public static void LogCommandUsed(this ComponentInteractionContext context,
-        CommandResponse commandResponse = CommandResponse.Ok)
+    extension(ComponentInteractionContext context)
     {
-        string commandName = null;
-        if (context.Interaction is MessageComponentInteraction messageComponent)
+        private void LogCommandUsed(CommandResponse commandResponse = CommandResponse.Ok)
         {
-            var customId = messageComponent.Data?.CustomId;
-
-            if (customId != null)
+            string commandName = null;
+            if (context.Interaction is MessageComponentInteraction messageComponent)
             {
+                var customId = messageComponent.Data?.CustomId;
+
                 var parts = customId.Split('-');
 
                 if (parts.Length >= 2)
@@ -144,62 +144,61 @@ public static class InteractionContextExtensions
                     commandName = parts[0] + '-' + parts[1];
                 }
             }
-        }
 
-        if (context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
-            !context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall))
-        {
-            Log.Information(
-                "ComponentUsed: {discordUserName} / {discordUserId} | UserApp | {commandResponse} | {messageContent}",
-                context.User?.Username, context.User?.Id, commandResponse, commandName);
-        }
-        else
-        {
-            Log.Information(
-                "ComponentUsed: {discordUserName} / {discordUserId} | {guildName} / {guildId} | {commandResponse} | {messageContent}",
-                context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, commandResponse,
-                commandName);
-        }
-
-        PublicProperties.UsedCommandsResponses.TryAdd(context.Interaction.Id, commandResponse);
-    }
-
-    public static async Task LogCommandUsedAsync(this ComponentInteractionContext context,
-        ResponseModel response,
-        UserService userService,
-        string commandName = null)
-    {
-        // 1. Serilog logging + in-memory dictionary
-        LogCommandUsed(context, response.CommandResponse);
-
-        // 2. Database storage - always happens
-        var resolvedCommandName = commandName;
-        if (resolvedCommandName == null && context.Interaction is MessageComponentInteraction messageComponent)
-        {
-            var customId = messageComponent.Data?.CustomId;
-            if (customId != null)
+            if (context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
+                !context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall))
             {
-                var parts = customId.Split('-');
-                if (parts.Length >= 2)
+                Log.Information(
+                    "ComponentUsed: {discordUserName} / {discordUserId} | UserApp | {commandResponse} | {messageContent}",
+                    context.User?.Username, context.User?.Id, commandResponse, commandName);
+            }
+            else
+            {
+                Log.Information(
+                    "ComponentUsed: {discordUserName} / {discordUserId} | {guildName} / {guildId} | {commandResponse} | {messageContent}",
+                    context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, commandResponse,
+                    commandName);
+            }
+
+            PublicProperties.UsedCommandsResponses.TryAdd(context.Interaction.Id, commandResponse);
+        }
+
+        public async Task LogCommandUsedAsync(ResponseModel response,
+            UserService userService,
+            string commandName = null)
+        {
+            // 1. Serilog logging + in-memory dictionary
+            context.LogCommandUsed(response.CommandResponse);
+
+            // 2. Database storage - always happens
+            var resolvedCommandName = commandName;
+            if (resolvedCommandName == null && context.Interaction is MessageComponentInteraction messageComponent)
+            {
+                var customId = messageComponent.Data?.CustomId;
                 {
-                    resolvedCommandName = parts[0] + '-' + parts[1];
+                    var parts = customId.Split('-');
+                    if (parts.Length >= 2)
+                    {
+                        resolvedCommandName = parts[0] + '-' + parts[1];
+                    }
                 }
             }
+
+            var type = context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
+                       !context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall)
+                ? UserInteractionType.SlashCommandUser
+                : UserInteractionType.SlashCommandGuild;
+
+            await userService.InsertAndCompleteInteractionAsync(
+                context.Interaction.Id,
+                context.User.Id,
+                resolvedCommandName,
+                response.CommandResponse,
+                context.Guild?.Id,
+                context.Channel?.Id,
+                type,
+                referencedMusic: response.ReferencedMusic);
         }
-
-        var type = context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
-                   !context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall)
-            ? UserInteractionType.SlashCommandUser
-            : UserInteractionType.SlashCommandGuild;
-
-        await userService.InsertAndCompleteInteractionAsync(
-            context.Interaction.Id,
-            context.User.Id,
-            resolvedCommandName,
-            response.CommandResponse,
-            context.Guild?.Id,
-            context.Channel?.Id,
-            type);
     }
 
     public static async Task HandleCommandException(this IInteractionContext context, Exception exception,
@@ -394,7 +393,8 @@ public static class InteractionContextExtensions
             }
         }
 
-        public async Task<ulong?> SendFollowUpResponse(InteractiveService interactiveService, ResponseModel response, UserService userService, bool ephemeral = false)
+        public async Task<ulong?> SendFollowUpResponse(InteractiveService interactiveService, ResponseModel response, UserService userService,
+            bool ephemeral = false)
         {
             ulong? responseId = null;
             var flags = ephemeral ? MessageFlags.Ephemeral : (MessageFlags?)null;
