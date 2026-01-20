@@ -1775,10 +1775,7 @@ public class TrackBuilders
                 .WithAuthor(response.EmbedAuthor)
                 .WithFooter(footer.ToString());
 
-            if (response.Embed.Color != null)
-            {
-                page.WithColor(response.Embed.Color);
-            }
+            page.WithColor(response.Embed.Color);
 
             pages.Add(page);
         }

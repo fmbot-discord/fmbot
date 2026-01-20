@@ -4,14 +4,11 @@ using NetCord.Services.Commands;
 
 namespace FMBot.Bot.Extensions;
 
-/// <summary>
-/// Result of searching for a command in the command service
-/// </summary>
 public class CommandSearchResult
 {
     public bool IsSuccess { get; init; }
-    public ICommandInfo<CommandContext>? Command { get; init; }
-    public string? ErrorReason { get; init; }
+    public ICommandInfo<CommandContext> Command { get; init; }
+    public string ErrorReason { get; init; }
 
     public static CommandSearchResult Success(ICommandInfo<CommandContext> command) =>
         new() { IsSuccess = true, Command = command };
@@ -22,9 +19,6 @@ public class CommandSearchResult
 
 public static class CommandServiceExtensions
 {
-    /// <summary>
-    /// Searches for a command by name or alias in the command service
-    /// </summary>
     public static CommandSearchResult Search(this CommandService<CommandContext> commandService, string input)
     {
         if (string.IsNullOrWhiteSpace(input))

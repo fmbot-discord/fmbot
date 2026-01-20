@@ -44,7 +44,7 @@ public class GenreInteractions(
         var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
         var originalSearchValue = originalSearch == "0" ? null : originalSearch;
 
-        var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
+        var guild = await guildService.GetGuildAsync(this.Context.Guild?.Id);
         var contextUser = await userService.GetUserWithDiscogs(requesterDiscordUserId);
         var discordContextUser = await this.Context.GetUserAsync(requesterDiscordUserId);
         var userSettings = await settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
@@ -82,7 +82,7 @@ public class GenreInteractions(
         var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
         var originalSearchValue = originalSearch == "0" ? null : originalSearch;
 
-        var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
+        var guild = await guildService.GetGuildAsync(this.Context.Guild?.Id);
         var contextUser = await userService.GetUserWithDiscogs(requesterDiscordUserId);
         var discordContextUser = await this.Context.GetUserAsync(requesterDiscordUserId);
         var userSettings = await settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);

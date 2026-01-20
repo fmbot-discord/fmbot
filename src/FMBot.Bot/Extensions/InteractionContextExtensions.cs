@@ -874,7 +874,8 @@ public static class InteractionContextExtensions
                 _ = interactiveService.SendPaginatorAsync(
                     response.ComponentPaginator.Build(),
                     context.Interaction,
-                    TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
+                    TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
+                    InteractionCallbackType.DeferredMessage);
             }
             else
             {

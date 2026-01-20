@@ -2173,7 +2173,7 @@ public class UserBuilder
             await _shortcutService.AddOrUpdateUserShortcut(context.ContextUser, 0, input, output);
             return null;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             response.Embed.WithDescription($"❌ Error while trying to create shortcut");
             response.Embed.WithColor(DiscordConstants.WarningColorOrange);
