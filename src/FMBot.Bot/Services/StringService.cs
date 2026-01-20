@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using Fergun.Interactive;
 using Fergun.Interactive.Pagination;
@@ -9,7 +10,6 @@ using FMBot.Bot.Resources;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
-using Google.Protobuf.Reflection;
 using Microsoft.AspNetCore.WebUtilities;
 using NetCord;
 using NetCord.Rest;
@@ -245,7 +245,7 @@ public static class StringService
                 style: ButtonStyle.Secondary);
         }
 
-        if (selectMenu != null)
+        if (selectMenu != null && response.StringMenus.All(m => m.CustomId != selectMenu.CustomId))
         {
             response.StringMenus.Add(selectMenu);
         }
@@ -453,11 +453,11 @@ public static class StringService
                 {
                     if (selectMenuBuilder != null)
                     {
-                        page.WithComponents(new List<IMessageComponentProperties> { selectMenuBuilder });
+                        page.WithComponents([selectMenuBuilder]);
                     }
                     else
                     {
-                        page.WithComponents(new List<IMessageComponentProperties>());
+                        page.WithComponents([]);
                     }
                     return page.Build();
                 }
@@ -549,7 +549,7 @@ public static class StringService
                     .AddPreviousButton(p, style: ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.PagesPrevious))
                     .AddNextButton(p, style: ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.PagesNext));
 
-                page.WithComponents(new List<IMessageComponentProperties> { navRow });
+                page.WithComponents([navRow]);
                 return page.Build();
             })
             .WithPageCount(pages.Count)

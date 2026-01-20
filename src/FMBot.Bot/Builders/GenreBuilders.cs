@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Factories;
-using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
@@ -19,7 +18,6 @@ using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Domain.Types;
 using FMBot.Images.Generators;
-using FMBot.Persistence.Domain.Models;
 using Humanizer;
 using Guild = FMBot.Persistence.Domain.Models.Guild;
 using NetCord;
@@ -27,9 +25,6 @@ using NetCord.Rest;
 using SkiaSharp;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 using User = FMBot.Persistence.Domain.Models.User;
-using NetCord.Gateway;
-using DiscordGuild = NetCord.Gateway.Guild;
-using NetCord.Services.Commands;
 
 namespace FMBot.Bot.Builders;
 
@@ -908,7 +903,7 @@ public class GenreBuilders
             footer.AppendLine(filterStats.FullDescription);
         }
 
-        if (genres.selectMenu != null)
+        if (genres.selectMenu != null && response.StringMenus.All(m => m.CustomId != genres.selectMenu.CustomId))
         {
             response.StringMenus.Add(genres.selectMenu);
         }
@@ -1012,7 +1007,7 @@ public class GenreBuilders
             footer.AppendLine();
         }
 
-        if (genres.selectMenu != null)
+        if (genres.selectMenu != null && response.StringMenus.All(m => m.CustomId != genres.selectMenu.CustomId))
         {
             response.StringMenus.Add(genres.selectMenu);
         }
