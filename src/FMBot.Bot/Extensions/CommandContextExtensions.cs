@@ -50,7 +50,8 @@ public static class CommandContextExtensions
                 context.Guild?.Id,
                 context.Channel?.Id,
                 UserInteractionType.TextCommand,
-                context.Message.Content);
+                context.Message.Content,
+                referencedMusic: response.ReferencedMusic);
         }
 
         public async Task HandleCommandException(Exception exception,

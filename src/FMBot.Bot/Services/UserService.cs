@@ -382,7 +382,8 @@ public class UserService
         UserInteractionType type = UserInteractionType.SlashCommandGuild,
         string commandContent = null,
         Dictionary<string, string> commandOptions = null,
-        string errorReference = null)
+        string errorReference = null,
+        ReferencedMusic referencedMusic = null)
     {
         PublicProperties.UsedCommandDiscordUserIds.TryAdd(discordId, discordUserId);
 
@@ -423,7 +424,10 @@ public class UserService
                 DiscordId = discordId,
                 Type = type,
                 Response = commandResponse,
-                ErrorReferenceId = errorReference
+                ErrorReferenceId = errorReference,
+                Artist = referencedMusic?.Artist,
+                Album = referencedMusic?.Album,
+                Track = referencedMusic?.Track
             };
 
             await db.UserInteractions.AddAsync(interaction);

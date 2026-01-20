@@ -123,13 +123,10 @@ public class ArtistsService
                     await this._dataSourceFactory.GetArtistInfoAsync(artistValues, lastFmUserName, redirectsEnabled);
             }
 
-            if (interactionId.HasValue)
+            response.ReferencedMusic = new ReferencedMusic
             {
-                response.ReferencedMusic = new ReferencedMusic
-                {
-                    Artist = artistValues
-                };
-            }
+                Artist = artistValues
+            };
 
             if (!artistCall.Success && artistCall.Error == ResponseStatus.MissingParameters)
             {
@@ -191,13 +188,10 @@ public class ArtistsService
                     lastFmUserName, redirectsEnabled);
             }
 
-            if (interactionId.HasValue)
+            response.ReferencedMusic = new ReferencedMusic
             {
-                response.ReferencedMusic = new ReferencedMusic
-                {
-                    Artist = lastPlayedTrack.ArtistName
-                };
-            }
+                Artist = lastPlayedTrack.ArtistName
+            };
 
             if (artistCall.Content == null || !artistCall.Success)
             {
