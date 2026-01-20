@@ -2,10 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Discord;
-using Discord.Commands;
-using Discord.Interactions;
-using Discord.WebSocket;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
@@ -17,6 +13,12 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Caching.Memory;
+using NetCord;
+using NetCord.Gateway;
+using NetCord.Rest;
+using NetCord.Services.ApplicationCommands;
+using NetCord.Services.Commands;
+using NetCord.Services.ComponentInteractions;
 using Prometheus;
 using Serilog;
 
@@ -26,29 +28,35 @@ namespace FMBot.Bot.Handlers;
 
 public class InteractionHandler
 {
-    private readonly DiscordShardedClient _client;
-    private readonly InteractionService _interactionService;
+    private readonly ShardedGatewayClient _client;
+    private readonly ApplicationCommandService<ApplicationCommandContext, AutocompleteInteractionContext> _appCommands;
+    private readonly ComponentInteractionService<ComponentInteractionContext> _componentCommands;
+    private readonly ComponentInteractionService<ModalInteractionContext> _modalCommands;
     private readonly IServiceProvider _provider;
     private readonly UserService _userService;
     private readonly GuildService _guildService;
     private readonly GuildSettingBuilder _guildSettingBuilder;
-    private readonly CommandService _commands;
+    private readonly CommandService<CommandContext> _commands;
 
     private readonly IMemoryCache _cache;
     private readonly InteractiveService _interactivity;
 
-    public InteractionHandler(DiscordShardedClient client,
-        InteractionService interactionService,
+    public InteractionHandler(ShardedGatewayClient client,
+        ApplicationCommandService<ApplicationCommandContext, AutocompleteInteractionContext> appCommands,
+        ComponentInteractionService<ComponentInteractionContext> componentCommands,
+        ComponentInteractionService<ModalInteractionContext> modalCommands,
         IServiceProvider provider,
         UserService userService,
         GuildService guildService,
         IMemoryCache cache,
         GuildSettingBuilder guildSettingBuilder,
         InteractiveService interactivity,
-        CommandService commands)
+        CommandService<CommandContext> commands)
     {
         this._client = client;
-        this._interactionService = interactionService;
+        this._appCommands = appCommands;
+        this._componentCommands = componentCommands;
+        this._modalCommands = modalCommands;
         this._provider = provider;
         this._userService = userService;
         this._guildService = guildService;
@@ -56,305 +64,390 @@ public class InteractionHandler
         this._guildSettingBuilder = guildSettingBuilder;
         this._interactivity = interactivity;
         this._commands = commands;
-        this._client.SlashCommandExecuted += SlashCommandExecuted;
-        this._client.AutocompleteExecuted += AutoCompleteExecuted;
-        this._client.SelectMenuExecuted += SelectMenuExecuted;
-        this._client.ModalSubmitted += ModalSubmitted;
-        this._client.UserCommandExecuted += UserCommandExecuted;
-        this._client.MessageCommandExecuted += MessageCommandExecuted;
-        this._client.ButtonExecuted += ButtonExecuted;
+        this._client.InteractionCreate += InteractionCreated;
     }
 
-    private async Task SlashCommandExecuted(SocketInteraction socketInteraction)
+    private ValueTask InteractionCreated(GatewayClient client, Interaction interaction)
     {
-        Statistics.DiscordEvents.WithLabels(nameof(SlashCommandExecuted)).Inc();
-
-        if (socketInteraction is not SocketSlashCommand socketSlashCommand)
+        switch (interaction)
         {
-            return;
+            case SlashCommandInteraction slashCommand:
+                Statistics.DiscordEvents.WithLabels("SlashCommandExecuted").Inc();
+                _ = Task.Run(async () => await ExecuteSlashCommand(slashCommand, client));
+                break;
+            case UserCommandInteraction userCommand:
+                Statistics.DiscordEvents.WithLabels("UserCommandExecuted").Inc();
+                _ = Task.Run(async () => await ExecuteUserCommand(userCommand, client));
+                break;
+            case MessageCommandInteraction messageCommand:
+                Statistics.DiscordEvents.WithLabels("MessageCommandExecuted").Inc();
+                _ = Task.Run(async () => await ExecuteMessageCommand(messageCommand, client));
+                break;
+            case AutocompleteInteraction autocomplete:
+                Statistics.DiscordEvents.WithLabels("AutoCompleteExecuted").Inc();
+                _ = Task.Run(async () => await ExecuteAutocomplete(autocomplete, client));
+                break;
+            case ModalInteraction modal:
+                Statistics.DiscordEvents.WithLabels("ModalSubmitted").Inc();
+                _ = Task.Run(async () => await ExecuteModal(modal, client));
+                break;
+            case MessageComponentInteraction component:
+                if (component.Data is ButtonInteractionData)
+                {
+                    Statistics.DiscordEvents.WithLabels("ButtonExecuted").Inc();
+                    _ = Task.Run(async () => await ExecuteButton(component, client));
+                }
+                else
+                {
+                    Statistics.DiscordEvents.WithLabels("SelectMenuExecuted").Inc();
+                    _ = Task.Run(async () => await ExecuteSelectMenu(component, client));
+                }
+                break;
         }
-
-        _ = Task.Run(() => ExecuteSlashCommand(socketInteraction, socketSlashCommand));
+        return ValueTask.CompletedTask;
     }
 
-    private async Task ExecuteSlashCommand(SocketInteraction socketInteraction, SocketSlashCommand socketSlashCommand)
+    private async Task ExecuteSlashCommand(SlashCommandInteraction slashCommand, GatewayClient client)
     {
         using (Statistics.SlashCommandHandlerDuration.NewTimer())
         {
-            var context = new ShardedInteractionContext(this._client, socketInteraction);
+            var context = new ApplicationCommandContext(slashCommand, client);
             var contextUser = await this._userService.GetUserAsync(context.User.Id);
 
-            var commandSearch = this._interactionService.SearchSlashCommand(socketSlashCommand);
-
-            if (!commandSearch.IsSuccess)
-            {
-                Log.Error("Someone tried to execute a non-existent slash command! {slashCommand}",
-                    socketSlashCommand.CommandName);
-                return;
-            }
-
-            var command = commandSearch.Command;
+            var commandName = slashCommand.Data.Name;
 
             if (contextUser?.Blocked == true)
             {
-                await UserBlockedResponse(context);
+                await UserBlockedResponse(context, commandName);
                 return;
             }
 
-            var textCommand = this._commands.Search(command.Name);
-            if (!await CommandEnabled(context, command, textCommand))
+            // Look up command info for attribute checking
+            var commandInfo = _appCommands.GetCommands()
+                .FirstOrDefault(c => c.Name.Equals(commandName, StringComparison.OrdinalIgnoreCase));
+
+            if (!await CommandEnabled(context, commandName))
             {
                 return;
             }
 
-            var keepGoing = await CheckAttributes(context, command.Attributes);
+            // Check custom attributes
+            if (commandInfo != null)
+            {
+                var keepGoing = await CheckAttributes(context, commandInfo.Attributes, commandName);
+                if (!keepGoing)
+                {
+                    return;
+                }
+            }
 
+            _ = Task.Run(async () => await this._userService.InsertSlashCommandInteractionAsync(context, commandName));
+
+            await this._appCommands.ExecuteAsync(context, this._provider);
+
+            var integrationType =
+                context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
+                !context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall)
+                    ? "user_app"
+                    : "guild_app";
+
+            Statistics.SlashCommandsExecuted.WithLabels(commandName, integrationType).Inc();
+
+            _ = Task.Run(async () => await this._userService.UpdateUserLastUsedAsync(context.User.Id));
+        }
+    }
+
+    private async Task ExecuteUserCommand(UserCommandInteraction userCommand, GatewayClient client)
+    {
+        var context = new ApplicationCommandContext(userCommand, client);
+        var commandName = userCommand.Data.Name;
+
+        var commandInfo = _appCommands.GetCommands()
+            .FirstOrDefault(c => c.Name.Equals(commandName, StringComparison.OrdinalIgnoreCase));
+
+        if (commandInfo != null)
+        {
+            var keepGoing = await CheckAttributes(context, commandInfo.Attributes, commandName);
             if (!keepGoing)
             {
                 return;
             }
-
-            await this._interactionService.ExecuteCommandAsync(context, this._provider);
-
-            var integrationType =
-                context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
-                !context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall)
-                    ? "user_app"
-                    : "guild_app";
-
-            Statistics.SlashCommandsExecuted.WithLabels(command.Name, integrationType).Inc();
-
-            _ = Task.Run(() => this._userService.UpdateUserLastUsedAsync(context.User.Id));
-            _ = Task.Run(() => this._userService.AddUserSlashCommandInteraction(context, command.Name));
-        }
-    }
-
-    private async Task UserCommandExecuted(SocketInteraction socketInteraction)
-    {
-        Statistics.DiscordEvents.WithLabels(nameof(UserCommandExecuted)).Inc();
-
-        if (socketInteraction is not SocketUserCommand socketUserCommand)
-        {
-            return;
         }
 
-        var context = new ShardedInteractionContext(this._client, socketInteraction);
-        var commandSearch = this._interactionService.SearchUserCommand(socketUserCommand);
-
-        if (!commandSearch.IsSuccess)
-        {
-            return;
-        }
-
-        var keepGoing = await CheckAttributes(context, commandSearch.Command?.Attributes);
-
-        if (!keepGoing)
-        {
-            return;
-        }
-
-        await this._interactionService.ExecuteCommandAsync(context, this._provider);
+        await this._appCommands.ExecuteAsync(context, this._provider);
 
         Statistics.UserCommandsExecuted.Inc();
 
-        _ = Task.Run(() => this._userService.UpdateUserLastUsedAsync(context.User.Id));
+        _ = Task.Run(async () => await this._userService.UpdateUserLastUsedAsync(context.User.Id));
     }
 
-    private async Task MessageCommandExecuted(SocketInteraction socketInteraction)
+    private async Task ExecuteMessageCommand(MessageCommandInteraction messageCommand, GatewayClient client)
     {
-        Statistics.DiscordEvents.WithLabels(nameof(MessageCommandExecuted)).Inc();
+        var context = new ApplicationCommandContext(messageCommand, client);
+        var commandName = messageCommand.Data.Name;
 
-        if (socketInteraction is not SocketMessageCommand socketMessageCommand)
+        var commandInfo = _appCommands.GetCommands()
+            .FirstOrDefault(c => c.Name.Equals(commandName, StringComparison.OrdinalIgnoreCase));
+
+        if (commandInfo != null)
         {
-            return;
+            var keepGoing = await CheckAttributes(context, commandInfo.Attributes, commandName);
+            if (!keepGoing)
+            {
+                return;
+            }
         }
 
-        var context = new ShardedInteractionContext(this._client, socketInteraction);
-        var commandSearch = this._interactionService.SearchMessageCommand(socketMessageCommand);
-
-        if (!commandSearch.IsSuccess)
-        {
-            return;
-        }
-
-        var keepGoing = await CheckAttributes(context, commandSearch.Command?.Attributes);
-
-        if (!keepGoing)
-        {
-            return;
-        }
-
-        await this._interactionService.ExecuteCommandAsync(context, this._provider);
+        await this._appCommands.ExecuteAsync(context, this._provider);
 
         Statistics.MessageCommandsExecuted.Inc();
 
-        _ = Task.Run(() => this._userService.UpdateUserLastUsedAsync(context.User.Id));
+        _ = Task.Run(async () => await this._userService.UpdateUserLastUsedAsync(context.User.Id));
     }
 
-    private async Task AutoCompleteExecuted(SocketInteraction socketInteraction)
+    private async Task ExecuteAutocomplete(AutocompleteInteraction autocomplete, GatewayClient client)
     {
-        Statistics.DiscordEvents.WithLabels(nameof(AutoCompleteExecuted)).Inc();
-
-        var context = new ShardedInteractionContext(this._client, socketInteraction);
-        await this._interactionService.ExecuteCommandAsync(context, this._provider);
+        var context = new AutocompleteInteractionContext(autocomplete, client);
+        await this._appCommands.ExecuteAutocompleteAsync(context, this._provider);
 
         Statistics.AutoCompletesExecuted.Inc();
     }
 
-    private async Task SelectMenuExecuted(SocketInteraction socketInteraction)
+    private async Task ExecuteSelectMenu(MessageComponentInteraction component, GatewayClient client)
     {
-        Statistics.DiscordEvents.WithLabels(nameof(SelectMenuExecuted)).Inc();
+        var context = new ComponentInteractionContext(component, client);
+        var contextUser = await this._userService.GetUserAsync(context.User.Id);
 
-        var context = new ShardedInteractionContext(this._client, socketInteraction);
-        await this._interactionService.ExecuteCommandAsync(context, this._provider);
+        var customId = component.Data.CustomId;
+
+        if (contextUser?.Blocked == true)
+        {
+            return;
+        }
+
+        var componentInfo = GetComponentInteractionInfo(customId);
+        if (componentInfo != null)
+        {
+            var keepGoing = await CheckComponentAttributes(context, componentInfo.Attributes, customId);
+            if (!keepGoing)
+            {
+                return;
+            }
+        }
+
+        await this._componentCommands.ExecuteAsync(context, this._provider);
 
         Statistics.SelectMenusExecuted.Inc();
     }
 
-    private async Task ModalSubmitted(SocketModal socketModal)
+    private async Task ExecuteModal(ModalInteraction modal, GatewayClient client)
     {
-        Statistics.DiscordEvents.WithLabels(nameof(ModalSubmitted)).Inc();
-
-        var context = new ShardedInteractionContext(this._client, socketModal);
-        await this._interactionService.ExecuteCommandAsync(context, this._provider);
+        var context = new ComponentInteractionContext(modal, client);
+        await this._componentCommands.ExecuteAsync(context, this._provider);
 
         Statistics.ModalsExecuted.Inc();
     }
 
-    private async Task ButtonExecuted(SocketMessageComponent socketMessageComponent)
+    private async Task ExecuteButton(MessageComponentInteraction component, GatewayClient client)
     {
-        Statistics.DiscordEvents.WithLabels(nameof(ButtonExecuted)).Inc();
+        var context = new ComponentInteractionContext(component, client);
+        var contextUser = await this._userService.GetUserAsync(context.User.Id);
 
-        var context = new ShardedInteractionContext(this._client, socketMessageComponent);
-        var commandSearch = this._interactionService.SearchComponentCommand(socketMessageComponent);
+        var customId = component.Data.CustomId;
 
-        if (!commandSearch.IsSuccess)
+        if (contextUser?.Blocked == true)
         {
             return;
         }
 
-        var keepGoing = await CheckAttributes(context, commandSearch.Command.Attributes);
-
-        if (!keepGoing)
+        var componentInfo = GetComponentInteractionInfo(customId);
+        if (componentInfo != null)
         {
-            return;
+            var keepGoing = await CheckComponentAttributes(context, componentInfo.Attributes, customId);
+            if (!keepGoing)
+            {
+                return;
+            }
         }
 
-        await this._interactionService.ExecuteCommandAsync(context, this._provider);
+        await _componentCommands.ExecuteAsync(context, this._provider);
 
         Statistics.ButtonExecuted.Inc();
 
-        _ = Task.Run(() => this._userService.UpdateUserLastUsedAsync(context.User.Id));
+        _ = Task.Run(async () => await this._userService.UpdateUserLastUsedAsync(context.User.Id));
     }
 
-    private async Task<bool> CheckAttributes(ShardedInteractionContext context,
-        IReadOnlyCollection<Attribute> attributes)
+    private ComponentInteractionInfo<ComponentInteractionContext> GetComponentInteractionInfo(string customId)
     {
-        if (attributes == null)
+        var interactions = _componentCommands.GetComponentInteractions();
+        var basePattern = customId.Split(':')[0];
+
+        foreach (var kvp in interactions)
+        {
+            var pattern = kvp.Key.ToString();
+            if (pattern.Equals(basePattern, StringComparison.OrdinalIgnoreCase) ||
+                customId.StartsWith(pattern, StringComparison.OrdinalIgnoreCase))
+            {
+                return kvp.Value;
+            }
+        }
+
+        return null;
+    }
+
+    private Task<bool> CheckComponentAttributes(ComponentInteractionContext context,
+        IReadOnlyDictionary<Type, IReadOnlyList<Attribute>> attributes, string customId)
+    {
+        return CheckAttributesAsync(
+            new ContextModel(context),
+            context.User,
+            context.Guild,
+            context.Interaction,
+            attributes,
+            response => context.LogCommandUsedAsync(response, this._userService, customId));
+    }
+
+    private Task<bool> CheckAttributes(ApplicationCommandContext context,
+        IReadOnlyDictionary<Type, IReadOnlyList<Attribute>> attributes, string commandName)
+    {
+        return CheckAttributesAsync(
+            new ContextModel(context),
+            context.User,
+            context.Guild,
+            context.Interaction,
+            attributes,
+            response => context.LogCommandUsedAsync(response, this._userService, commandName));
+    }
+
+    private async Task<bool> CheckAttributesAsync(
+        ContextModel contextModel,
+        User user,
+        Guild guild,
+        Interaction interaction,
+        IReadOnlyDictionary<Type, IReadOnlyList<Attribute>> attributes,
+        Func<ResponseModel, Task> logCommandUsed)
+    {
+        if (attributes == null || attributes.Count == 0)
         {
             return true;
         }
 
-        if (attributes.OfType<ServerStaffOnly>().Any())
+        if (HasAttribute<ServerStaffOnly>())
         {
-            if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(context)))
+            if (!await this._guildSettingBuilder.UserIsAllowed(contextModel))
             {
-                await GuildSettingBuilder.UserNotAllowedResponse(context);
-                context.LogCommandUsed(CommandResponse.NoPermission);
+                await interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                    .WithContent(GuildSettingBuilder.UserNotAllowedResponseText())
+                    .WithFlags(MessageFlags.Ephemeral)));
+                await logCommandUsed(new ResponseModel { CommandResponse = CommandResponse.NoPermission });
                 return false;
             }
         }
 
-        if (attributes.OfType<UsernameSetRequired>().Any())
+        if (HasAttribute<UsernameSetRequired>())
         {
-            var userIsRegistered = await this._userService.UserRegisteredAsync(context.User);
+            var userIsRegistered = await this._userService.UserRegisteredAsync(user);
 
             if (!userIsRegistered)
             {
-                var embed = new EmbedBuilder()
+                var embed = new EmbedProperties()
                     .WithColor(DiscordConstants.LastFmColorRed);
-                var userNickname = (context.User as SocketGuildUser)?.DisplayName;
-                embed.UsernameNotSetErrorResponse("/", userNickname ?? context.User.Username);
+                var guildUser = user as GuildUser;
+                embed.UsernameNotSetErrorResponse("/", guildUser?.GetDisplayName() ?? user.GetDisplayName());
 
-                await context.Interaction.RespondAsync(null, [embed.Build()], ephemeral: true,
-                    components: GenericEmbedService.UsernameNotSetErrorComponents().Build());
-                context.LogCommandUsed(CommandResponse.UsernameNotSet);
+                await interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties
+                {
+                    Embeds = [embed],
+                    Flags = MessageFlags.Ephemeral,
+                    Components = [GenericEmbedService.UsernameNotSetErrorComponents()]
+                }));
+                await logCommandUsed(new ResponseModel { CommandResponse = CommandResponse.UsernameNotSet });
                 return false;
             }
         }
 
-        if (attributes.OfType<UserSessionRequired>().Any())
+        if (HasAttribute<UserSessionRequired>())
         {
-            var contextUser = await this._userService.GetUserAsync(context.User.Id);
+            var contextUser = await this._userService.GetUserAsync(user.Id);
 
             if (contextUser?.SessionKeyLastFm == null)
             {
-                var embed = new EmbedBuilder()
+                var embed = new EmbedProperties()
                     .WithColor(DiscordConstants.LastFmColorRed);
                 embed.SessionRequiredResponse("/");
-                await context.Interaction.RespondAsync(null, [embed.Build()], ephemeral: true,
-                    components: GenericEmbedService.ReconnectComponents().Build());
-                context.LogCommandUsed(CommandResponse.UsernameNotSet);
+                await interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties
+                {
+                    Embeds = [embed],
+                    Flags = MessageFlags.Ephemeral,
+                    Components = [GenericEmbedService.ReconnectComponents()]
+                }));
+                await logCommandUsed(new ResponseModel { CommandResponse = CommandResponse.UsernameNotSet });
                 return false;
             }
         }
 
-        if (attributes.OfType<GuildOnly>().Any())
+        if (HasAttribute<GuildOnly>())
         {
-            if (context.Guild == null)
+            if (guild == null)
             {
-                await context.Interaction.RespondAsync("This command is not supported in DMs.");
-                context.LogCommandUsed(CommandResponse.NotSupportedInDm);
+                await interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties
+                {
+                    Content = "This command is not supported in DMs."
+                }));
+                await logCommandUsed(new ResponseModel { CommandResponse = CommandResponse.NotSupportedInDm });
                 return false;
             }
         }
 
-        if (attributes.OfType<RequiresIndex>().Any() && context.Guild != null)
+        if (HasAttribute<RequiresIndex>() && guild != null)
         {
-            var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(context.Guild);
+            var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(guild);
             if (lastIndex == null)
             {
-                var embed = new EmbedBuilder();
+                var embed = new EmbedProperties();
                 embed.WithDescription(
                     "To use .fmbot commands with server-wide statistics you need to create a memberlist cache first.\n\n" +
                     $"Please run `/refreshmembers` to create this.\n" +
                     $"Note that this can take some time on large servers.");
-                await context.Interaction.RespondAsync(null, new[] { embed.Build() });
-                context.LogCommandUsed(CommandResponse.IndexRequired);
+                await interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties
+                {
+                    Embeds = [embed]
+                }));
+                await logCommandUsed(new ResponseModel { CommandResponse = CommandResponse.IndexRequired });
                 return false;
             }
 
             if (lastIndex < DateTime.UtcNow.AddDays(-180))
             {
-                var embed = new EmbedBuilder();
+                var embed = new EmbedProperties();
                 embed.WithDescription("Server member cache is out of date, it was last updated over 180 days ago.\n" +
                                       $"Please run `/refreshmembers` to update the cached memberlist");
-                await context.Interaction.RespondAsync(null, new[] { embed.Build() });
-                context.LogCommandUsed(CommandResponse.IndexRequired);
+                await interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties
+                {
+                    Embeds = [embed]
+                }));
+                await logCommandUsed(new ResponseModel { CommandResponse = CommandResponse.IndexRequired });
                 return false;
             }
         }
 
         return true;
+
+        bool HasAttribute<T>() where T : Attribute =>
+            attributes.ContainsKey(typeof(T)) && attributes[typeof(T)].Count > 0;
     }
 
-    private static async Task<bool> CommandEnabled(ShardedInteractionContext context, ICommandInfo searchResult,
-        SearchResult textCommand)
+    private async Task<bool> CommandEnabled(ApplicationCommandContext context, string commandName)
     {
         if (context.Guild != null)
         {
-            var textCommandName = textCommand.IsSuccess && textCommand.Commands.Any()
-                ? textCommand.Commands.First().Command.Name
-                : searchResult.Name;
             var channelDisabled = DisabledChannelService.GetDisabledChannel(context.Channel.Id);
             if (channelDisabled)
             {
                 var toggledChannelCommands = ChannelToggledCommandService.GetToggledCommands(context.Channel?.Id);
                 if (toggledChannelCommands != null &&
                     toggledChannelCommands.Any() &&
-                    (toggledChannelCommands.Any(searchResult.Name.Equals) ||
-                     toggledChannelCommands.Any(textCommandName.Equals)) &&
-                    context.Channel != null)
+                    toggledChannelCommands.Any(commandName.Equals))
                 {
                     return true;
                 }
@@ -362,41 +455,49 @@ public class InteractionHandler
                 if (toggledChannelCommands != null &&
                     toggledChannelCommands.Any())
                 {
-                    await context.Interaction.RespondAsync(
-                        "The command you're trying to execute is not enabled in this channel.",
-                        ephemeral: true);
+                    await context.Interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties
+                    {
+                        Content = "The command you're trying to execute is not enabled in this channel.",
+                        Flags = MessageFlags.Ephemeral
+                    }));
                 }
                 else
                 {
-                    await context.Interaction.RespondAsync(
-                        "The bot has been disabled in this channel.",
-                        ephemeral: true);
+                    await context.Interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties
+                    {
+                        Content = "The bot has been disabled in this channel.",
+                        Flags = MessageFlags.Ephemeral
+                    }));
                 }
 
+                await context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Disabled }, this._userService, commandName);
                 return false;
             }
 
             var disabledGuildCommands = GuildDisabledCommandService.GetToggledCommands(context.Guild?.Id);
             if (disabledGuildCommands != null &&
-                (disabledGuildCommands.Any(searchResult.Name.Equals) ||
-                 disabledGuildCommands.Any(textCommandName.Equals)))
+                disabledGuildCommands.Any(commandName.Equals))
             {
-                await context.Interaction.RespondAsync(
-                    "The command you're trying to execute has been disabled in this server.",
-                    ephemeral: true);
+                await context.Interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties
+                {
+                    Content = "The command you're trying to execute has been disabled in this server.",
+                    Flags = MessageFlags.Ephemeral
+                }));
+                await context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Disabled }, _userService, commandName);
                 return false;
             }
 
             var disabledChannelCommands = ChannelToggledCommandService.GetToggledCommands(context.Channel?.Id);
             if (disabledChannelCommands != null &&
                 disabledChannelCommands.Any() &&
-                (disabledChannelCommands.Any(searchResult.Name.Equals) ||
-                 disabledChannelCommands.Any(textCommandName.Equals)) &&
-                context.Channel != null)
+                disabledChannelCommands.Any(commandName.Equals))
             {
-                await context.Interaction.RespondAsync(
-                    "The command you're trying to execute has been disabled in this channel.",
-                    ephemeral: true);
+                await context.Interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties
+                {
+                    Content = "The command you're trying to execute has been disabled in this channel.",
+                    Flags = MessageFlags.Ephemeral
+                }));
+                await context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Disabled }, _userService, commandName);
                 return false;
             }
         }
@@ -404,12 +505,14 @@ public class InteractionHandler
         return true;
     }
 
-    private static async Task UserBlockedResponse(ShardedInteractionContext shardedCommandContext)
+    private async Task UserBlockedResponse(ApplicationCommandContext context, string commandName)
     {
-        var embed = new EmbedBuilder().WithColor(DiscordConstants.LastFmColorRed);
+        var embed = new EmbedProperties().WithColor(DiscordConstants.LastFmColorRed);
         embed.UserBlockedResponse("/");
-        await shardedCommandContext.Channel.SendMessageAsync("", false, embed.Build());
-        shardedCommandContext.LogCommandUsed(CommandResponse.UserBlocked);
-        return;
+        await context.Client.Rest.SendMessageAsync(context.Channel.Id, new MessageProperties
+        {
+            Embeds = [embed]
+        });
+        await context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.UserBlocked }, _userService, commandName);
     }
 }

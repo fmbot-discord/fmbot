@@ -1,0 +1,1482 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Fergun.Interactive;
+using FMBot.Bot.Attributes;
+using FMBot.Bot.Builders;
+using FMBot.Bot.Extensions;
+using FMBot.Bot.Factories;
+using FMBot.Bot.Interfaces;
+using FMBot.Bot.Models;
+using FMBot.Bot.Resources;
+using FMBot.Bot.Services;
+using FMBot.Bot.Services.Guild;
+using FMBot.Bot.Services.WhoKnows;
+using FMBot.Domain;
+using FMBot.Domain.Attributes;
+using FMBot.Domain.Enums;
+using FMBot.Domain.Interfaces;
+using FMBot.Domain.Models;
+using Microsoft.Extensions.Options;
+using NetCord;
+using NetCord.Rest;
+using NetCord.Services.ComponentInteractions;
+using GuildUser = FMBot.Persistence.Domain.Models.GuildUser;
+using User = FMBot.Persistence.Domain.Models.User;
+
+namespace FMBot.Bot.Interactions;
+
+public class UserInteractions(
+    UserService userService,
+    FriendsService friendsService,
+    UserBuilder userBuilder,
+    InteractiveService interactivity,
+    SettingService settingService,
+    GuildService guildService,
+    IDataSourceFactory dataSourceFactory,
+    IndexService indexService,
+    AdminService adminService,
+    ArtistsService artistsService,
+    TrackService trackService,
+    IPrefixService prefixService,
+    ImportService importService,
+    PlayService playService,
+    IOptions<BotSettings> botSettings)
+    : ComponentInteractionModule<ComponentInteractionContext>
+{
+    private readonly BotSettings _botSettings = botSettings.Value;
+
+    [ComponentInteraction(InteractionConstants.RemoveFmbotAccount)]
+    [UsernameSetRequired]
+    public async Task RemoveAccountModalButton(string discordUserId)
+    {
+        var parsedId = ulong.Parse(discordUserId);
+        if (parsedId != this.Context.User.Id)
+        {
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("Hey, this button is not for you. At least you tried.")
+                .WithFlags(MessageFlags.Ephemeral)));
+            return;
+        }
+
+        var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
+        if (message == null)
+        {
+            return;
+        }
+
+        await RespondAsync(InteractionCallback.Modal(
+            ModalFactory.CreateRemoveAccountConfirmModal(
+                $"{InteractionConstants.RemoveFmbotAccountModal}:{discordUserId}:{message.Id}")));
+    }
+
+    [ComponentInteraction(InteractionConstants.RemoveFmbotAccountModal)]
+    [UsernameSetRequired]
+    public async Task RemoveConfirmAsync(string discordUserId, string messageId)
+    {
+        var confirmation = this.Context.GetModalValue("confirmation");
+        var parsedId = ulong.Parse(discordUserId);
+
+        if (parsedId != this.Context.User.Id)
+        {
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("Hey, this button is not for you. At least you tried.")
+                .WithFlags(MessageFlags.Ephemeral)));
+            return;
+        }
+
+        if (confirmation?.ToLower() != "confirm")
+        {
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("Account deletion cancelled, wrong modal input")
+                .WithFlags(MessageFlags.Ephemeral)));
+            return;
+        }
+
+        var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
+
+        if (userSettings == null)
+        {
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("We don't have any data from you in our database")
+                .WithFlags(MessageFlags.Ephemeral)));
+            return;
+        }
+
+        var parsedMessageId = ulong.Parse(messageId);
+        var msg = await this.Context.Channel.GetMessageAsync(parsedMessageId);
+
+        try
+        {
+            await msg.ModifyAsync(m => m.Components = []);
+
+            await this.Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
+
+            await friendsService.RemoveAllFriendsAsync(userSettings.UserId);
+            await friendsService.RemoveUserFromOtherFriendsAsync(userSettings.UserId);
+
+            await userService.DeleteUser(userSettings.UserId);
+
+            var followUpEmbed = new EmbedProperties();
+            followUpEmbed.WithTitle("Removal successful");
+            followUpEmbed.WithDescription(
+                "Your settings, friends and any other data have been successfully deleted from .fmbot.");
+            await this.Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
+                .WithEmbeds([followUpEmbed])
+                .WithFlags(MessageFlags.Ephemeral));
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.Shortcuts.Create)]
+    public async Task CreateShortcutButton(string discordUserId)
+    {
+        try
+        {
+            var contextUser = await userService.GetUserAsync(this.Context.User.Id);
+            var supporterRequiredResponse =
+                UserBuilder.ShortcutsSupporterRequired(new ContextModel(this.Context, contextUser));
+            if (supporterRequiredResponse != null)
+            {
+                await this.Context.SendResponse(interactivity, supporterRequiredResponse, userService, true);
+                await this.Context.LogCommandUsedAsync(supporterRequiredResponse, userService);
+                return;
+            }
+
+            var parsedDiscordUserId = ulong.Parse(discordUserId);
+            if (parsedDiscordUserId != this.Context.User.Id)
+            {
+                var embed = new EmbedProperties();
+                embed.WithColor(DiscordConstants.WarningColorOrange);
+                embed.WithDescription("Please run the command yourself if you want to create shortcuts.");
+                await this.Context.Interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                    .WithEmbeds([embed])
+                    .WithFlags(MessageFlags.Ephemeral)));
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
+                return;
+            }
+
+            var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
+            await RespondAsync(InteractionCallback.Modal(
+                ModalFactory.CreateCreateShortcutModal(
+                    $"{InteractionConstants.Shortcuts.CreateModal}:{message?.Id ?? 0}")));
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService, deferFirst: true);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.Shortcuts.Modify)]
+    public async Task ModifyShortcutButton(string shortcutId, string overviewMessageId)
+    {
+        try
+        {
+            var shortcut = await userBuilder.GetShortcut(int.Parse(shortcutId));
+            if (shortcut == null)
+            {
+                await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                    .WithContent("This shortcut no longer exists.")
+                    .WithFlags(MessageFlags.Ephemeral)));
+                return;
+            }
+
+            await RespondAsync(InteractionCallback.Modal(
+                ModalFactory.CreateModifyShortcutModal(
+                    $"{InteractionConstants.Shortcuts.ModifyModal}:{shortcutId}:{overviewMessageId}",
+                    shortcut.Input,
+                    shortcut.Output)));
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService, deferFirst: true);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.Shortcuts.CreateModal)]
+    public async Task CreateShortcutModal(string messageId)
+    {
+        try
+        {
+            var input = this.Context.GetModalValue("input");
+            var output = this.Context.GetModalValue("output");
+            var contextUser = await userService.GetUserAsync(this.Context.User.Id);
+
+            var response = await userBuilder.CreateShortcutAsync(
+                new ContextModel(this.Context, contextUser),
+                input,
+                output);
+
+            if (response == null)
+            {
+                var parsedMessageId = ulong.Parse(messageId);
+                if (parsedMessageId != 0)
+                {
+                    var list = await userBuilder.ListShortcutsAsync(new ContextModel(this.Context, contextUser));
+                    await this.Context.UpdateMessageEmbed(list, messageId);
+                }
+            }
+            else
+            {
+                await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
+                await this.Context.LogCommandUsedAsync(response, userService);
+            }
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService, deferFirst: true);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.Shortcuts.ModifyModal)]
+    public async Task ModifyShortcutModal(string shortcutId, string overviewMessageId)
+    {
+        try
+        {
+            var input = this.Context.GetModalValue("input");
+            var output = this.Context.GetModalValue("output");
+
+            await this.Context.Interaction.SendResponseAsync(InteractionCallback.DeferredModifyMessage);
+
+            var contextUser = await userService.GetUserAsync(this.Context.User.Id);
+            var id = int.Parse(shortcutId);
+
+            var response = await userBuilder.ModifyShortcutAsync(
+                new ContextModel(this.Context, contextUser),
+                id,
+                input,
+                output);
+
+            if (response == null)
+            {
+                var parsedOverviewMessageId = ulong.Parse(overviewMessageId);
+                if (parsedOverviewMessageId != 0)
+                {
+                    var list = await userBuilder.ListShortcutsAsync(new ContextModel(this.Context, contextUser));
+                    var overviewMsg = await this.Context.Interaction.Channel.GetMessageAsync(parsedOverviewMessageId);
+                    await overviewMsg.ModifyAsync(m =>
+                    {
+                        m.Components = list.GetComponentsV2();
+                    });
+                }
+
+                var manage = await userBuilder.ManageShortcutAsync(new ContextModel(this.Context, contextUser),
+                    id,
+                    parsedOverviewMessageId);
+                await this.Context.Interaction.ModifyResponseAsync(m =>
+                    m.Components = manage.GetComponentsV2());
+            }
+            else
+            {
+                await this.Context.SendFollowUpResponse(interactivity, response, userService, ephemeral: true);
+                await this.Context.LogCommandUsedAsync(response, userService);
+            }
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.User.Settings)]
+    [UsernameSetRequired]
+    public async Task UserSettingsButtonAsync()
+    {
+        try
+        {
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+
+            var response = UserBuilder.GetUserSettings(new ContextModel(this.Context, contextUser));
+
+            await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.UserSetting)]
+    [UsernameSetRequired]
+    public async Task GetUserSetting()
+    {
+        var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
+        var setting = stringMenuInteraction.Data.SelectedValues[0].Replace("us-", "");
+
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+
+        try
+        {
+            if (Enum.TryParse(setting.Replace("view-", "").Replace("set-", ""), out UserSetting userSetting))
+            {
+                ResponseModel response;
+                switch (userSetting)
+                {
+                    case UserSetting.Privacy:
+                    {
+                        response = UserBuilder.Privacy(new ContextModel(this.Context, contextUser));
+
+                        await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
+                        break;
+                    }
+                    case UserSetting.FmMode:
+                    {
+                        response = UserBuilder.FmMode(new ContextModel(this.Context, contextUser));
+
+                        await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
+                        break;
+                    }
+                    case UserSetting.WkMode:
+                    {
+                        response = UserBuilder.ResponseMode(new ContextModel(this.Context, contextUser));
+
+                        await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
+                        break;
+                    }
+                    case UserSetting.BotScrobbling:
+                    {
+                        response = UserBuilder.BotScrobblingAsync(new ContextModel(this.Context, contextUser));
+
+                        await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
+                        break;
+                    }
+                    case UserSetting.SpotifyImport:
+                    {
+                        var supporterRequired =
+                            ImportBuilders.ImportSupporterRequired(new ContextModel(this.Context, contextUser));
+
+                        if (supporterRequired != null)
+                        {
+                            await this.Context.SendResponse(interactivity, supporterRequired, userService, ephemeral: true);
+                            await this.Context.LogCommandUsedAsync(supporterRequired, userService);
+                            return;
+                        }
+
+                        response = await userBuilder.ImportMode(new ContextModel(this.Context, contextUser),
+                            contextUser.UserId);
+
+                        await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
+                        break;
+                    }
+                    case UserSetting.CommandShortcuts:
+                    {
+                        var supporterRequired =
+                            UserBuilder.ShortcutsSupporterRequired(new ContextModel(this.Context, contextUser));
+
+                        if (supporterRequired != null)
+                        {
+                            await this.Context.SendResponse(interactivity, supporterRequired, userService, ephemeral: true);
+                            await this.Context.LogCommandUsedAsync(supporterRequired, userService);
+                            return;
+                        }
+
+                        var serverEmbed = new EmbedProperties()
+                            .WithColor(DiscordConstants.InformationColorBlue)
+                            .WithDescription("Check your DMs to continue with configuring your command shortcuts.");
+
+                        await this.Context.Interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                            .WithEmbeds([serverEmbed])
+                            .WithFlags(MessageFlags.Ephemeral)));
+
+                        response = await userBuilder.ListShortcutsAsync(new ContextModel(this.Context,
+                            contextUser));
+                        var dmChannel = await this.Context.User.GetDMChannelAsync();
+                        await dmChannel.SendMessageAsync(new MessageProperties { Components = response.ComponentsV2 });
+                        break;
+                    }
+                    case UserSetting.UserReactions:
+                    {
+                        var supporterRequired =
+                            UserBuilder.UserReactionsSupporterRequired(new ContextModel(this.Context, contextUser),
+                                prfx);
+
+                        if (supporterRequired != null)
+                        {
+                            await this.Context.SendResponse(interactivity, supporterRequired, userService, ephemeral: true);
+                            await this.Context.LogCommandUsedAsync(supporterRequired, userService);
+                            return;
+                        }
+
+                        response = UserBuilder.UserReactions(new ContextModel(this.Context, contextUser), prfx);
+
+                        await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
+                        break;
+                    }
+                    case UserSetting.Localization:
+                    {
+                        response = UserBuilder.Localization(new ContextModel(this.Context, contextUser));
+
+                        await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
+                        break;
+                    }
+                    case UserSetting.OutOfSync:
+                    {
+                        response = StaticBuilders.OutOfSync(new ContextModel(this.Context, contextUser));
+
+                        await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
+                        break;
+                    }
+                    case UserSetting.LinkedRoles:
+                    {
+                        response = userBuilder.ManageLinkedRoles(new ContextModel(this.Context, contextUser));
+
+                        await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
+                        break;
+                    }
+                    case UserSetting.ManageAlts:
+                    {
+                        response = await userBuilder.ManageAlts(new ContextModel(this.Context, contextUser));
+
+                        await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
+                        break;
+                    }
+                    case UserSetting.DeleteAccount:
+                    {
+                        var serverEmbed = new EmbedProperties()
+                            .WithColor(DiscordConstants.WarningColorOrange)
+                            .WithDescription("Check your DMs to continue with your .fmbot account deletion.");
+
+                        await this.Context.Interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                            .WithEmbeds([serverEmbed])
+                            .WithFlags(MessageFlags.Ephemeral)));
+
+                        response = UserBuilder.RemoveDataResponse(new ContextModel(this.Context, contextUser));
+                        var dmChannel = await this.Context.User.GetDMChannelAsync();
+                        await dmChannel.SendMessageAsync(new MessageProperties
+                        {
+                            Embeds = [response.Embed],
+                            Components = response.Components?.Any() == true ? [response.Components] : null
+                        });
+                        break;
+                    }
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService, deferFirst: true);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.User.Login)]
+    public async Task LoginButtonAsync()
+    {
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var token = await dataSourceFactory.GetAuthToken();
+
+        try
+        {
+            var loginUrlResponse =
+                UserBuilder.StartLogin(contextUser, token.Content.Token, this._botSettings.LastFm.PublicKey);
+
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithEmbeds([loginUrlResponse.Embed])
+                .WithComponents(loginUrlResponse.Components?.Any() == true ? [loginUrlResponse.Components] : null)
+                .WithFlags(MessageFlags.Ephemeral)));
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.UsernameNotSet }, userService);
+
+            var loginResult = await userService.GetAndStoreAuthSession(this.Context.User, token.Content.Token);
+
+            if (loginResult.Status == UserService.LoginStatus.Success)
+            {
+                var newUserSettings = await userService.GetUserSettingsAsync(this.Context.User);
+
+                var indexUser = contextUser == null ||
+                                !string.Equals(contextUser.UserNameLastFM, newUserSettings.UserNameLastFM,
+                                    StringComparison.CurrentCultureIgnoreCase);
+
+                var loginSuccessResponse =
+                    UserBuilder.LoginSuccess(newUserSettings,
+                        indexUser ? UserBuilder.LoginState.SuccessPendingIndex : UserBuilder.LoginState.SuccessNoIndex);
+
+                await this.Context.Interaction.ModifyResponseAsync(m =>
+                {
+                    m.Components = loginSuccessResponse.Components?.Any() == true ? [loginSuccessResponse.Components] : [];
+                    m.Embeds = [loginSuccessResponse.Embed];
+                });
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
+
+                if (indexUser)
+                {
+                    await indexService.IndexUser(newUserSettings);
+
+                    loginSuccessResponse =
+                        UserBuilder.LoginSuccess(newUserSettings, UserBuilder.LoginState.SuccessIndexComplete);
+
+                    await this.Context.Interaction.ModifyResponseAsync(m =>
+                    {
+                        m.Components = loginSuccessResponse.Components?.Any() == true ? [loginSuccessResponse.Components] : [];
+                        m.Embeds = [loginSuccessResponse.Embed];
+                    });
+                }
+
+                if (this.Context.Guild != null)
+                {
+                    var guild = await guildService.GetGuildForWhoKnows(this.Context.Guild.Id);
+                    if (guild != null)
+                    {
+                        var discordGuildUser = await this.Context.Guild.GetUserAsync(this.Context.User.Id);
+                        var newGuildUser = new GuildUser
+                        {
+                            Bot = false,
+                            GuildId = guild.GuildId,
+                            UserId = newUserSettings.UserId,
+                            UserName = discordGuildUser?.GetDisplayName(),
+                        };
+
+                        if (guild.WhoKnowsWhitelistRoleId.HasValue && discordGuildUser != null)
+                        {
+                            newGuildUser.WhoKnowsWhitelisted =
+                                discordGuildUser.RoleIds.Contains(guild.WhoKnowsWhitelistRoleId.Value);
+                        }
+
+                        await indexService.AddGuildUserToDatabase(newGuildUser);
+                    }
+                }
+            }
+            else if (loginResult.Status == UserService.LoginStatus.TooManyAccounts)
+            {
+                var loginFailure = UserBuilder.LoginTooManyAccounts(loginResult.AltCount);
+                await this.Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
+                    .WithEmbeds([loginFailure.Embed])
+                    .WithComponents(loginFailure.Components?.Any() == true ? [loginFailure.Components] : null)
+                    .WithFlags(MessageFlags.Ephemeral));
+
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.RateLimited }, userService);
+            }
+            else
+            {
+                var loginFailure = UserBuilder.LoginFailure();
+                await this.Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
+                    .WithEmbeds([loginFailure.Embed])
+                    .WithFlags(MessageFlags.Ephemeral));
+
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
+            }
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService, deferFirst: true);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.FmPrivacySetting)]
+    [UsernameSetRequired]
+    public async Task SetPrivacy()
+    {
+        var embed = new EmbedProperties();
+        var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
+
+        var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
+        var selectedValue = stringMenuInteraction.Data.SelectedValues[0];
+
+        if (Enum.TryParse(selectedValue, out PrivacyLevel privacyLevel))
+        {
+            var newPrivacyLevel = await userService.SetPrivacyLevel(userSettings.UserId, privacyLevel);
+
+            embed.AddField("Your new privacy level", $"Your privacy level has been set to **{newPrivacyLevel}**.");
+            if (privacyLevel == PrivacyLevel.Global)
+            {
+                var bottedUser =
+                    await adminService.GetBottedUserAsync(userSettings.UserNameLastFM,
+                        userSettings.RegisteredLastFm);
+                var filteredUser =
+                    await adminService.GetFilteredUserAsync(userSettings.UserNameLastFM,
+                        userSettings.RegisteredLastFm);
+
+                var globalStatus = new StringBuilder();
+                var infractionDetails = new StringBuilder();
+
+                if (bottedUser is { BanActive: true })
+                {
+                    globalStatus.AppendLine(
+                        "Sorry, you've been permanently removed from Global WhoKnows leaderboards. " +
+                        "This is most likely because we think some of your playcounts have been falsely increased. " +
+                        "This might for example be adding fake scrobbles through OpenScrobbler or listening to a short song a lot of times.");
+                    globalStatus.AppendLine();
+                    globalStatus.AppendLine(
+                        "You can still use all other functionalities of the bot, you just won't be globally visible when other users use commands. " +
+                        "We moderate global leaderboards to keep them fun and fair for everybody. Remember, it's just a few numbers on a list.");
+                }
+                else if (filteredUser != null &&
+                         (filteredUser.OccurrenceEnd ?? filteredUser.Created) >
+                         DateTime.UtcNow.AddMonths(-filteredUser.MonthLength ?? -3))
+                {
+                    var length = filteredUser.MonthLength ?? 3;
+                    switch (filteredUser.Reason)
+                    {
+                        case GlobalFilterReason.PlayTimeInPeriod:
+                        {
+                            globalStatus.AppendLine(
+                                "Sorry, you've been temporarily removed from Global WhoKnows leaderboards. " +
+                                $"This is because you've scrobbled over 6 days of listening time within an {WhoKnowsFilterService.PeriodAmountOfDays} day period. " +
+                                "For example, this can be caused by scrobbling overnight (sleep scrobbling) or because you've added scrobbles with external tools.");
+                            globalStatus.AppendLine();
+                            globalStatus.AppendLine(
+                                $".fmbot staff is unable to remove this block. The only way to remove it is to make sure you don't go over the listening time threshold again and wait {length} months for the filter to expire. " +
+                                "Note that if we think you've intentionally added fake scrobbles this block can become permanent.");
+
+                            infractionDetails.AppendLine(WhoKnowsFilterService.FilteredUserReason(filteredUser));
+                        }
+                            break;
+                        case GlobalFilterReason.AmountPerPeriod:
+                        {
+                            globalStatus.AppendLine(
+                                "Sorry, you've been temporarily removed from Global WhoKnows leaderboards. " +
+                                $"This is because you've scrobbled over {WhoKnowsFilterService.MaxAmountOfPlaysPerDay * WhoKnowsFilterService.PeriodAmountOfDays} plays within a {WhoKnowsFilterService.PeriodAmountOfDays} day period. " +
+                                "For example, this can be caused by scrobbling very short songs repeatedly or because you've added scrobbles with external tools.");
+                            globalStatus.AppendLine();
+                            globalStatus.AppendLine(
+                                $".fmbot staff is unable to remove this block. The only way to remove it is to make sure you don't go over the scrobble count threshold again and wait {length} months for the filter to expire. " +
+                                "Note that if we think you've intentionally added fake scrobbles this block can become permanent.");
+
+                            infractionDetails.AppendLine(WhoKnowsFilterService.FilteredUserReason(filteredUser));
+                        }
+                            break;
+                        case GlobalFilterReason.ShortTrack:
+                            break;
+                        default:
+                            throw new ArgumentOutOfRangeException();
+                    }
+
+                    globalStatus.AppendLine();
+                    globalStatus.AppendLine(
+                        "You can still use all other functionalities of the bot, you just won't be globally visible when other users use commands. " +
+                        "We automatically moderate global leaderboards to keep them fun and fair for everybody. Remember, it's just a few numbers on a list.");
+
+                    globalStatus.AppendLine();
+                    globalStatus.AppendLine(
+                        ".fmbot is not affiliated with Last.fm. This filter only applies to global charts in .fmbot.");
+                }
+
+                if (globalStatus.Length > 0)
+                {
+                    embed.AddField("Global WhoKnows status", globalStatus.ToString());
+                }
+
+                if (infractionDetails.Length > 0)
+                {
+                    embed.AddField("Infraction details", infractionDetails.ToString());
+                }
+            }
+
+            embed.WithColor(DiscordConstants.InformationColorBlue);
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithEmbeds([embed])
+                .WithFlags(MessageFlags.Ephemeral)));
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.FmCommand.FmModeChange)]
+    [UsernameSetRequired]
+    public async Task FmModePickAsync()
+    {
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var guild = await guildService.GetGuildAsync(this.Context.Guild?.Id);
+
+        try
+        {
+            var response = UserBuilder.FmMode(new ContextModel(this.Context, contextUser), guild);
+
+            await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.FmCommand.FmSettingType)]
+    [UsernameSetRequired]
+    public async Task SetEmbedType()
+    {
+        var embed = new EmbedProperties();
+        var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
+
+        var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
+        var selectedValue = stringMenuInteraction.Data.SelectedValues[0];
+
+        if (Enum.TryParse(selectedValue, out FmEmbedType embedType))
+        {
+            await userService.SetSettings(userSettings, embedType, FmCountType.None);
+
+            var name = embedType.GetAttribute<OptionAttribute>().Name;
+            var description = embedType.GetAttribute<OptionAttribute>().Description;
+
+            embed.WithDescription($"Your `fm` mode has been set to **{name}**.");
+            embed.WithFooter(description);
+            embed.WithColor(DiscordConstants.InformationColorBlue);
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithEmbeds([embed])
+                .WithFlags(MessageFlags.Ephemeral)));
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.FmCommand.FmSettingFooter)]
+    [UsernameSetRequired]
+    public async Task SetFooterOptions()
+    {
+        var embed = new EmbedProperties();
+        var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
+
+        var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
+        var selectedValues = stringMenuInteraction.Data.SelectedValues;
+
+        var maxOptions = userSettings.UserType == UserType.User
+            ? Constants.MaxFooterOptions
+            : Constants.MaxFooterOptionsSupporter;
+        var amountSelected = 0;
+
+        foreach (var option in Enum.GetNames(typeof(FmFooterOption)))
+        {
+            if (Enum.TryParse(option, out FmFooterOption flag))
+            {
+                var supporterOnly = flag.GetAttribute<OptionAttribute>().SupporterOnly;
+                if (!supporterOnly)
+                {
+                    if (selectedValues.Any(a => a == option) && amountSelected <= maxOptions)
+                    {
+                        userSettings.FmFooterOptions |= flag;
+                        amountSelected++;
+                    }
+                    else
+                    {
+                        userSettings.FmFooterOptions &= ~flag;
+                    }
+                }
+            }
+        }
+
+        await SaveFooterOptions(userSettings, embed);
+    }
+
+    [ComponentInteraction(InteractionConstants.FmCommand.FmSettingFooterSupporter)]
+    public async Task SetSupporterFooterOptions()
+    {
+        var embed = new EmbedProperties();
+        var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
+
+        if (userSettings.UserType == UserType.User)
+        {
+            return;
+        }
+
+        var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
+        var selectedValues = stringMenuInteraction.Data.SelectedValues;
+
+        var maxOptions = userSettings.UserType == UserType.User ? 0 : 1;
+        var amountSelected = 0;
+
+        foreach (var option in Enum.GetNames(typeof(FmFooterOption)))
+        {
+            if (Enum.TryParse(option, out FmFooterOption flag))
+            {
+                var supporterOnly = flag.GetAttribute<OptionAttribute>().SupporterOnly;
+                if (supporterOnly)
+                {
+                    if (selectedValues.Any(a => a == option) && amountSelected <= maxOptions && option != "none")
+                    {
+                        userSettings.FmFooterOptions |= flag;
+                        amountSelected++;
+                    }
+                    else
+                    {
+                        userSettings.FmFooterOptions &= ~flag;
+                    }
+                }
+            }
+        }
+
+        await SaveFooterOptions(userSettings, embed);
+    }
+
+    private async Task SaveFooterOptions(User userSettings, EmbedProperties embed)
+    {
+        userSettings = await userService.SetFooterOptions(userSettings, userSettings.FmFooterOptions);
+
+        var description = new StringBuilder();
+
+        if (userSettings.FmFooterOptions.GetUniqueFlags().Any())
+        {
+            description.AppendLine("Your `fm` footer options have been set to:");
+
+            foreach (var flag in userSettings.FmFooterOptions.GetUniqueFlags())
+            {
+                if (userSettings.FmFooterOptions.HasFlag(flag))
+                {
+                    var name = flag.GetAttribute<OptionAttribute>().Name;
+                    description.AppendLine($"- **{name}**");
+                }
+            }
+        }
+        else
+        {
+            description.AppendLine("You have removed all `fm` footer options.");
+        }
+
+        embed.WithDescription(description.ToString());
+        embed.WithColor(DiscordConstants.InformationColorBlue);
+        await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+            .WithEmbeds([embed])
+            .WithFlags(MessageFlags.Ephemeral)));
+    }
+
+    [ComponentInteraction(InteractionConstants.ResponseModeChange)]
+    [UsernameSetRequired]
+    public async Task ResponseModePickAsync()
+    {
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+
+        var response = UserBuilder.ResponseMode(new ContextModel(this.Context, contextUser));
+
+        await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
+        await this.Context.LogCommandUsedAsync(response, userService);
+    }
+
+    [ComponentInteraction(InteractionConstants.ResponseModeSetting)]
+    [UsernameSetRequired]
+    public async Task SetResponseModeAsync()
+    {
+        var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
+
+        var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
+        var selectedValue = stringMenuInteraction.Data.SelectedValues[0];
+
+        if (Enum.TryParse(selectedValue, out ResponseMode mode))
+        {
+            var newUserSettings = await userService.SetResponseMode(userSettings, mode);
+
+            var reply = new StringBuilder();
+            reply.Append($"Your default `WhoKnows` and Top list mode has been set to **{newUserSettings.Mode}**.");
+
+            var embed = new EmbedProperties();
+            embed.WithColor(DiscordConstants.InformationColorBlue);
+            embed.WithDescription(reply.ToString());
+
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithEmbeds([embed])
+                .WithFlags(MessageFlags.Ephemeral)));
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
+        }
+    }
+
+    [UsernameSetRequired]
+    [ComponentInteraction(InteractionConstants.Judge)]
+    public async Task JudgeResultAsync(string timeOption, string result, string discordUser,
+        string requesterDiscordUser)
+    {
+        try
+        {
+            await RespondAsync(InteractionCallback.DeferredModifyMessage);
+            await this.Context.DisableInteractionButtons();
+
+            var discordUserId = ulong.Parse(discordUser);
+            var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
+
+            var contextUser = await userService.GetFullUserAsync(requesterDiscordUserId);
+            var userSettings = await settingService.GetOriginalContextUser(
+                discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
+
+            var descriptor = userSettings.DifferentUser ? $"**{userSettings.DisplayName}**'s" : "your";
+            EmbedProperties loaderEmbed;
+            if (result == "compliment")
+            {
+                loaderEmbed = new EmbedProperties()
+                    .WithDescription($"<a:loading:821676038102056991> Loading {descriptor} compliment...")
+                    .WithColor(new Color(186, 237, 169));
+            }
+            else
+            {
+                loaderEmbed = new EmbedProperties()
+                    .WithDescription(
+                        $"<a:loading:821676038102056991> Loading {descriptor} roast (don't take it personally)...")
+                    .WithColor(new Color(255, 122, 1));
+            }
+
+            await this.Context.Interaction.ModifyResponseAsync(e =>
+            {
+                e.Embeds = [loaderEmbed];
+                e.Components = [];
+            });
+
+            var timeSettings = SettingService.GetTimePeriod(timeOption, TimePeriod.AllTime);
+
+            List<TopArtist> topArtists;
+            if (timeSettings.TimePeriod == TimePeriod.Quarterly && !userSettings.DifferentUser)
+            {
+                topArtists =
+                    await artistsService.GetRecentTopArtists(userSettings.DiscordUserId, daysToGoBack: 90);
+            }
+            else
+            {
+                topArtists =
+                    (await dataSourceFactory.GetTopArtistsAsync(userSettings.UserNameLastFm, timeSettings, 20))
+                    ?.Content?.TopArtists;
+            }
+
+            List<TopTrack> topTracks;
+            if (timeSettings.TimePeriod == TimePeriod.Quarterly && !userSettings.DifferentUser)
+            {
+                topTracks =
+                    await trackService.GetRecentTopTracks(userSettings.DiscordUserId, daysToGoBack: 90);
+            }
+            else
+            {
+                topTracks =
+                    (await dataSourceFactory.GetTopTracksAsync(userSettings.UserNameLastFm, timeSettings, 20))
+                    ?.Content?.TopTracks;
+            }
+
+            if (topArtists == null || !topArtists.Any() || topTracks == null || !topTracks.Any())
+            {
+                var embed = new EmbedProperties();
+                embed.WithColor(DiscordConstants.LastFmColorRed);
+                embed.WithDescription(
+                    $"Sorry, you or the user you're searching for don't have any top artists or top tracks in the selected time period.");
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoScrobbles }, userService);
+                await this.Context.Interaction.ModifyResponseAsync(e =>
+                {
+                    e.Embeds = [embed];
+                    e.Components = [];
+                });
+                return;
+            }
+
+            var response = await userBuilder.JudgeHandleAsync(
+                new ContextModel(this.Context, contextUser),
+                userSettings, result, topArtists, topTracks);
+
+            await this.Context.Interaction.ModifyResponseAsync(e =>
+            {
+                e.Embeds = [response.Embed];
+                e.Components = [];
+            });
+
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.FeaturedLog)]
+    [RequiresIndex]
+    [GuildOnly]
+    public async Task FeaturedLogAsync(params string[] inputs)
+    {
+        try
+        {
+            var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
+            var splitInput = stringMenuInteraction.Data.SelectedValues.First().Split("-");
+            if (!Enum.TryParse(splitInput[0], out FeaturedView viewType))
+            {
+                return;
+            }
+
+            var discordUserId = ulong.Parse(splitInput[1]);
+            var requesterDiscordUserId = ulong.Parse(splitInput[2]);
+
+            var contextUser = await userService.GetUserWithDiscogs(requesterDiscordUserId);
+            var discordContextUser = await this.Context.GetUserAsync(requesterDiscordUserId);
+            var userSettings = await settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId,
+                this.Context.Guild, this.Context.User);
+
+            var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
+            if (message == null)
+            {
+                return;
+            }
+
+            var response =
+                await userBuilder.FeaturedLogAsync(
+                    new ContextModel(this.Context, contextUser, discordContextUser), userSettings, viewType);
+
+            await this.Context.UpdateInteractionEmbed(response, interactivity);
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
+    [UsernameSetRequired]
+    [ComponentInteraction(InteractionConstants.User.Profile)]
+    public async Task ProfileAsync(string discordUser, string requesterDiscordUser)
+    {
+        await RespondAsync(InteractionCallback.DeferredModifyMessage);
+        await this.Context.DisableActionRows();
+
+        var discordUserId = ulong.Parse(discordUser);
+        var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
+
+        var contextUser = await userService.GetFullUserAsync(requesterDiscordUserId);
+        var discordContextUser = await this.Context.GetUserAsync(requesterDiscordUserId);
+        var userSettings = await settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId,
+            this.Context.Guild, this.Context.User);
+
+        var response =
+            await userBuilder.ProfileAsync(new ContextModel(this.Context, contextUser, discordContextUser),
+                userSettings);
+
+        await this.Context.UpdateInteractionEmbed(response, interactivity, false);
+        await this.Context.LogCommandUsedAsync(response, userService);
+    }
+
+    [UsernameSetRequired]
+    [ComponentInteraction(InteractionConstants.User.History)]
+    public async Task ProfileHistoryAsync(string discordUser, string requesterDiscordUser)
+    {
+        try
+        {
+            await RespondAsync(InteractionCallback.DeferredModifyMessage);
+            await this.Context.DisableActionRows();
+
+            var discordUserId = ulong.Parse(discordUser);
+            var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
+
+            var contextUser = await userService.GetFullUserAsync(requesterDiscordUserId);
+            var discordContextUser = await this.Context.GetUserAsync(requesterDiscordUserId);
+            var userSettings = await settingService.GetOriginalContextUser(
+                discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
+
+            var response =
+                await userBuilder.ProfileHistoryAsync(
+                    new ContextModel(this.Context, contextUser, discordContextUser),
+                    userSettings);
+
+            await this.Context.UpdateInteractionEmbed(response, interactivity, false);
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.ManageAlts.ManageAltsPicker)]
+    [UserSessionRequired]
+    public async Task ManageAltsPicker()
+    {
+        try
+        {
+            var contextUser = await userService.GetUserOrTempUser(this.Context.User);
+
+            if (contextUser == null)
+            {
+                await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("Session expired. Login again to manage your alts.")
+                .WithFlags(MessageFlags.Ephemeral)));
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.UsernameNotSet }, userService);
+                return;
+            }
+
+            var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
+            var selectedValue = stringMenuInteraction.Data.SelectedValues[0];
+
+            var targetUser = await userService.GetUserForIdAsync(int.Parse(selectedValue));
+
+            if (targetUser == null)
+            {
+                await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("The .fmbot account you want to manage doesn't exist (anymore).")
+                .WithFlags(MessageFlags.Ephemeral)));
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
+                return;
+            }
+
+            if (!targetUser.UserNameLastFM.Equals(contextUser.UserNameLastFM, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            var embed = new EmbedProperties();
+            embed.WithColor(DiscordConstants.WarningColorOrange);
+
+            var targetUserDiscord = await userService.GetUserFromDiscord(targetUser.DiscordUserId);
+            embed.WithTitle("Manage .fmbot account");
+
+            var description = new StringBuilder();
+            if (targetUserDiscord != null)
+            {
+                description.AppendLine($"`    Username:` **{targetUserDiscord.Username}**");
+                if (!string.IsNullOrWhiteSpace(targetUserDiscord.GlobalName))
+                {
+                    description.AppendLine(
+                        $"`Display name:` **{StringExtensions.Sanitize(targetUserDiscord.GlobalName)}**");
+                }
+            }
+
+            description.AppendLine($"`  Discord ID:` `{targetUser.DiscordUserId}`");
+            if (targetUser.LastUsed.HasValue)
+            {
+                var lastUsed = ((DateTimeOffset)targetUser.LastUsed).ToUnixTimeSeconds();
+                description.AppendLine($"`   Last used:` <t:{lastUsed}:R>");
+            }
+            else
+            {
+                description.AppendLine($"`   Last used:` Unknown");
+            }
+
+            description.AppendLine();
+            description.AppendLine(
+                "Transferring data transfers .fmbot streaks, imports and featured history to your current .fmbot account.");
+            description.AppendLine();
+            description.AppendLine(
+                ".fmbot is not affiliated with Last.fm. No Last.fm data can be modified, transferred or deleted with this command.");
+
+            var components = new ActionRowProperties()
+                .WithButton("Delete account",
+                    $"{InteractionConstants.ManageAlts.ManageAltsDeleteAlt}:false:{targetUser.UserId}",
+                    style: ButtonStyle.Danger);
+
+            if (contextUser.SessionKeyLastFm != "tempuser")
+            {
+                components.WithButton("Transfer data and delete account",
+                    $"{InteractionConstants.ManageAlts.ManageAltsDeleteAlt}:true:{targetUser.UserId}",
+                    style: ButtonStyle.Danger);
+            }
+
+            embed.WithDescription(description.ToString());
+
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithEmbeds([embed])
+                .WithComponents([components])
+                .WithFlags(MessageFlags.Ephemeral)));
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.ManageAlts.ManageAltsDeleteAlt)]
+    public async Task DeleteAlt(string transferData, string targetUserId)
+    {
+        var contextUser = await userService.GetUserOrTempUser(this.Context.User);
+
+        if (contextUser == null)
+        {
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("Session expired. Login again to manage your alts.")
+                .WithFlags(MessageFlags.Ephemeral)));
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.UsernameNotSet }, userService);
+            return;
+        }
+
+        var userToDelete = await userService.GetUserForIdAsync(int.Parse(targetUserId));
+
+        if (userToDelete == null)
+        {
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("The .fmbot account you want to manage doesn't exist (anymore).")
+                .WithFlags(MessageFlags.Ephemeral)));
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
+            return;
+        }
+
+        if (!userToDelete.UserNameLastFM.Equals(contextUser.UserNameLastFM, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        if (contextUser.SessionKeyLastFm == "tempuser")
+        {
+            transferData = "false";
+        }
+
+        var embed = new EmbedProperties();
+        embed.WithColor(DiscordConstants.WarningColorOrange);
+        var description = new StringBuilder();
+        description.AppendLine("Are you sure you want to delete this .fmbot alt account? This cannot be reversed.");
+        description.AppendLine();
+        description.AppendLine(transferData == "true"
+            ? "Streaks, imports and featured history will be transferred to your current .fmbot account if they exist."
+            : "Streaks, imports and featured history will be permanently deleted.");
+        embed.WithDescription(description.ToString());
+        embed.WithFooter($"Deleting {userToDelete.DiscordUserId.ToString()}");
+
+        var contextUserHasImported = await importService.HasImported(contextUser.UserId);
+        var targetUserHasImported = await importService.HasImported(userToDelete.UserId);
+
+        if (contextUserHasImported && targetUserHasImported && transferData == "true")
+        {
+            embed.AddField("Imports will not be transferred",
+                "Because your current account already has imported plays, imports from the account you're deleting will not be transferred.");
+        }
+
+        var components = new ActionRowProperties()
+            .WithButton(transferData == "true"
+                    ? "Confirm data transfer and deletion"
+                    : "Confirm deletion",
+                $"{InteractionConstants.ManageAlts.ManageAltsDeleteAltConfirm}:{transferData}:{userToDelete.UserId}",
+                style: ButtonStyle.Danger);
+
+        await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+            .WithEmbeds([embed])
+            .WithComponents([components])
+            .WithFlags(MessageFlags.Ephemeral)));
+        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
+    }
+
+    [ComponentInteraction(InteractionConstants.ManageAlts.ManageAltsDeleteAltConfirm)]
+    public async Task DeleteAltConfirmed(string transferData, string targetUserId)
+    {
+        try
+        {
+            _ = Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
+            await this.Context.DisableInteractionButtons(interactionEdit: true);
+
+            var contextUser = await userService.GetUserOrTempUser(this.Context.User);
+
+            if (contextUser == null)
+            {
+                await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("Session expired. Login again to manage your alts.")
+                .WithFlags(MessageFlags.Ephemeral)));
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.UsernameNotSet }, userService);
+                return;
+            }
+
+            var userToDelete = await userService.GetUserForIdAsync(int.Parse(targetUserId));
+
+            if (userToDelete == null)
+            {
+                await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("The .fmbot account you want to delete doesn't exist (anymore).")
+                .WithFlags(MessageFlags.Ephemeral)));
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
+                return;
+            }
+
+            if (!userToDelete.UserNameLastFM.Equals(contextUser.UserNameLastFM, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            if (transferData == "true")
+            {
+                var contextUserHasImported = await importService.HasImported(contextUser.UserId);
+
+                await playService.MoveData(userToDelete.UserId, contextUser.UserId, !contextUserHasImported);
+            }
+
+            await userService.DeleteUser(userToDelete.UserId);
+
+            var components =
+                new ActionRowProperties().WithButton(
+                    transferData == "true"
+                        ? "Successfully transferred data and deleted alt"
+                        : "Successfully deleted alt",
+                    customId: "0", disabled: true, style: ButtonStyle.Success);
+            await this.Context.Interaction.ModifyResponseAsync(m => { m.Components = [components]; });
+
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
+    [UsernameSetRequired]
+    [ComponentInteraction($"update-linkedroles")]
+    public async Task UpdateLinkedRoles()
+    {
+        var embed = new EmbedProperties();
+        embed.WithColor(DiscordConstants.InformationColorBlue);
+
+        var hasLinked = await userService.HasLinkedRole(Context.User.Id);
+        if (!hasLinked)
+        {
+            embed.WithDescription("Click the 'Authorize .fmbot' button first to get started.");
+            embed.WithColor(DiscordConstants.WarningColorOrange);
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithEmbeds([embed])
+                .WithFlags(MessageFlags.Ephemeral)));
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
+            return;
+        }
+
+        await userService.UpdateLinkedRole(Context.User.Id);
+        embed.WithDescription("Refreshed linked role data");
+        await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+            .WithEmbeds([embed])
+            .WithFlags(MessageFlags.Ephemeral)));
+        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
+    }
+
+    [ComponentInteraction(InteractionConstants.ManageAlts.ManageAltsButton)]
+    public async Task ManageAlts()
+    {
+        var contextUser = await userService.GetUserOrTempUser(this.Context.User);
+
+        if (contextUser == null)
+        {
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("Session expired. Login again to manage your alts.")
+                .WithFlags(MessageFlags.Ephemeral)));
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.UsernameNotSet }, userService);
+            return;
+        }
+
+        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
+
+        try
+        {
+            var response =
+                await userBuilder.ManageAlts(new ContextModel(this.Context, contextUser));
+
+            await this.Context.SendFollowUpResponse(interactivity, response, userService, ephemeral: true);
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.Shortcuts.Manage)]
+    public async Task ManageShortcut(string shortcutId)
+    {
+        try
+        {
+            var contextUser = await userService.GetUserAsync(this.Context.User.Id);
+            var id = int.Parse(shortcutId);
+            var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
+            var context = new ContextModel(this.Context, contextUser);
+
+            var supporterRequiredResponse = UserBuilder.ShortcutsSupporterRequired(context);
+            if (supporterRequiredResponse != null)
+            {
+                await this.Context.SendResponse(interactivity, supporterRequiredResponse, userService, true);
+                await this.Context.LogCommandUsedAsync(supporterRequiredResponse, userService);
+                return;
+            }
+
+            var response =
+                await userBuilder.ManageShortcutAsync(context, id, message?.Id ?? 0);
+
+            await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService, deferFirst: true);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.Shortcuts.Delete)]
+    public async Task DeleteShortcut(string shortcutId, string overviewMessageId)
+    {
+        try
+        {
+            await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
+
+            var contextUser = await userService.GetUserAsync(this.Context.User.Id);
+            var id = int.Parse(shortcutId);
+
+            var response = await userBuilder.DeleteShortcutAsync(
+                new ContextModel(this.Context, contextUser),
+                id);
+
+            if (response == null)
+            {
+                var parsedOverviewMessageId = ulong.Parse(overviewMessageId);
+                if (parsedOverviewMessageId != 0)
+                {
+                    var list = await userBuilder.ListShortcutsAsync(new ContextModel(this.Context, contextUser));
+                    await this.Context.UpdateMessageEmbed(list, overviewMessageId, defer: false);
+                }
+
+                await this.Context.Interaction.DeleteResponseAsync();
+            }
+            else
+            {
+                await this.Context.SendFollowUpResponse(interactivity, response, userService, ephemeral: true);
+                await this.Context.LogCommandUsedAsync(response, userService);
+            }
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.BotScrobblingManage)]
+    [UserSessionRequired]
+    public async Task BotScrobblingButtonAsync()
+    {
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var response = UserBuilder.BotScrobblingAsync(new ContextModel(this.Context, contextUser));
+
+        await this.Context.SendResponse(interactivity, response, userService, true);
+        await this.Context.LogCommandUsedAsync(response, userService);
+    }
+
+    [ComponentInteraction(InteractionConstants.BotScrobblingEnable)]
+    [UserSessionRequired]
+    public async Task EnableBotScrobbling()
+    {
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var reply = new StringBuilder();
+
+        if (contextUser.MusicBotTrackingDisabled != true)
+        {
+            reply.AppendLine("Music bot scrobbling for your account is already enabled.");
+        }
+        else
+        {
+            await userService.ToggleBotScrobblingAsync(contextUser.UserId, false);
+            reply.AppendLine("Enabled music bot scrobbling for your account.");
+        }
+
+        var embed = new EmbedProperties();
+        embed.WithDescription(reply.ToString());
+        embed.WithColor(DiscordConstants.SuccessColorGreen);
+
+        await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+            .WithEmbeds([embed])
+            .WithFlags(MessageFlags.Ephemeral)));
+        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
+    }
+
+    [ComponentInteraction(InteractionConstants.BotScrobblingDisable)]
+    [UserSessionRequired]
+    public async Task DisableBotScrobbling()
+    {
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var reply = new StringBuilder();
+
+        if (contextUser.MusicBotTrackingDisabled == true)
+        {
+            reply.AppendLine("Music bot scrobbling for your account is already disabled.");
+        }
+        else
+        {
+            await userService.ToggleBotScrobblingAsync(contextUser.UserId, true);
+            reply.AppendLine("Disabled music bot scrobbling for your account.");
+        }
+
+        var embed = new EmbedProperties();
+        embed.WithDescription(reply.ToString());
+        embed.WithColor(DiscordConstants.LastFmColorRed);
+
+        await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+            .WithEmbeds([embed])
+            .WithFlags(MessageFlags.Ephemeral)));
+        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
+    }
+}

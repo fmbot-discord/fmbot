@@ -3,9 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Discord;
-using Discord.Commands;
-using Discord.WebSocket;
 using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
@@ -18,6 +15,9 @@ using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
+using NetCord;
+using NetCord.Rest;
+using NetCord.Services;
 
 namespace FMBot.Bot.Builders;
 
@@ -34,7 +34,7 @@ public class GuildSettingBuilder
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<ResponseModel> GetGuildSettings(ContextModel context, GuildPermissions guildPermissions)
+    public async Task<ResponseModel> GetGuildSettings(ContextModel context, Permissions guildPermissions)
     {
         var response = new ResponseModel
         {
@@ -59,7 +59,6 @@ public class GuildSettingBuilder
         {
             settings.Append($"`{this._botSettings.Bot.Prefix}` (default)");
         }
-
         settings.AppendLine();
 
         var whoKnowsSettings = new StringBuilder();
@@ -69,8 +68,7 @@ public class GuildSettingBuilder
 
         if (guild.ActivityThresholdDays.HasValue)
         {
-            whoKnowsSettings.Append(
-                $"Users must have used .fmbot in the last **{guild.ActivityThresholdDays}** days to be visible.");
+            whoKnowsSettings.Append($"Users must have used .fmbot in the last **{guild.ActivityThresholdDays}** days to be visible.");
         }
         else
         {
@@ -83,6 +81,7 @@ public class GuildSettingBuilder
         if (guild.CrownsDisabled == true)
         {
             crownSettings.Append("Crown functionality has been disabled on this server.");
+
         }
         else
         {
@@ -94,8 +93,7 @@ public class GuildSettingBuilder
 
             crownSettings.AppendLine();
 
-            crownSettings.Append(
-                $"The minimum playcount for a crown is set to **{guild.CrownsMinimumPlaycountThreshold ?? Constants.DefaultPlaysForCrown}** or higher");
+            crownSettings.Append($"The minimum playcount for a crown is set to **{guild.CrownsMinimumPlaycountThreshold ?? Constants.DefaultPlaysForCrown}** or higher");
 
             if (guild.CrownsMinimumPlaycountThreshold == null)
             {
@@ -107,8 +105,7 @@ public class GuildSettingBuilder
 
             if (guild.CrownsActivityThresholdDays.HasValue)
             {
-                crownSettings.Append(
-                    $"Users must have used .fmbot in the last **{guild.CrownsActivityThresholdDays}** days to earn crowns.");
+                crownSettings.Append($"Users must have used .fmbot in the last **{guild.CrownsActivityThresholdDays}** days to earn crowns.");
             }
             else
             {
@@ -131,7 +128,6 @@ public class GuildSettingBuilder
                 emoteReactions.Append($"{reaction} ");
             }
         }
-
         response.Embed.AddField("Emote reactions", emoteReactions.ToString());
 
         if (guild.DisabledCommands != null && guild.DisabledCommands.Any())
@@ -145,31 +141,26 @@ public class GuildSettingBuilder
 
             response.Embed.AddField("Server-wide disabled commands", disabledCommands.ToString());
         }
-
         response.Embed.WithDescription(settings.ToString());
 
         var serverPermission = new StringBuilder();
-        if (!guildPermissions.SendMessages)
+        if (!guildPermissions.HasFlag(Permissions.SendMessages))
         {
             serverPermission.AppendLine("❌ Send messages");
         }
-
-        if (!guildPermissions.AttachFiles)
+        if (!guildPermissions.HasFlag(Permissions.AttachFiles))
         {
             serverPermission.AppendLine("❌ Attach files");
         }
-
-        if (!guildPermissions.EmbedLinks)
+        if (!guildPermissions.HasFlag(Permissions.EmbedLinks))
         {
             serverPermission.AppendLine("❌ Embed links");
         }
-
-        if (!guildPermissions.AddReactions)
+        if (!guildPermissions.HasFlag(Permissions.AddReactions))
         {
             serverPermission.AppendLine("❌ Add reactions");
         }
-
-        if (!guildPermissions.UseExternalEmojis)
+        if (!guildPermissions.HasFlag(Permissions.UseExternalEmojis))
         {
             serverPermission.AppendLine("❌ Use external emojis");
         }
@@ -179,9 +170,8 @@ public class GuildSettingBuilder
             response.Embed.AddField("Missing server-wide permissions", serverPermission.ToString());
         }
 
-        var guildSettings = new SelectMenuBuilder()
+        var guildSettings = new StringMenuProperties(InteractionConstants.GuildSetting)
             .WithPlaceholder("Select setting you want to change")
-            .WithCustomId(InteractionConstants.GuildSetting)
             .WithMaxValues(1);
 
         foreach (var setting in ((GuildSetting[])Enum.GetValues(typeof(GuildSetting))))
@@ -190,18 +180,17 @@ public class GuildSettingBuilder
             var description = setting.GetAttribute<OptionAttribute>().Description;
             var value = Enum.GetName(setting);
 
-            guildSettings.AddOption(new SelectMenuOptionBuilder(name, $"gs-view-{value}", description));
+            guildSettings.AddOption(name, $"gs-view-{value}", description: description);
         }
 
-        response.Components = new ComponentBuilder()
-            .WithSelectMenu(guildSettings);
+        response.StringMenus.Add(guildSettings);
 
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
         return response;
     }
 
-    public async Task<ResponseModel> SetPrefix(ContextModel context, IUser lastModifier = null)
+    public async Task<ResponseModel> SetPrefix(ContextModel context, NetCord.User lastModifier = null)
     {
         var response = new ResponseModel
         {
@@ -224,21 +213,19 @@ public class GuildSettingBuilder
         description.AppendLine($"`{prefix}whoknows`");
         description.AppendLine();
 
-        var components = new ComponentBuilder();
+        var components = new ActionRowProperties();
 
         if (guild.Prefix != null &&
             guild.Prefix != this._botSettings.Bot.Prefix)
         {
             description.AppendLine("This server has set up a custom prefix for .fmbot text commands. " +
                                    $"Most people are used to having this bot with the `{this._botSettings.Bot.Prefix}` prefix, so consider informing your users.");
-            components.WithButton("Remove text command prefix", $"{InteractionConstants.RemovePrefix}",
-                style: ButtonStyle.Secondary);
+            components.WithButton("Remove text command prefix", $"{InteractionConstants.RemovePrefix}", style: ButtonStyle.Secondary);
         }
         else
         {
             description.AppendLine("This is the default .fmbot prefix.");
-            components.WithButton("Set text command prefix", InteractionConstants.SetPrefix,
-                style: ButtonStyle.Secondary);
+            components.WithButton("Set text command prefix", InteractionConstants.SetPrefix, style: ButtonStyle.Secondary);
         }
 
         response.Embed.WithDescription(description.ToString());
@@ -253,7 +240,7 @@ public class GuildSettingBuilder
         return response;
     }
 
-    public async Task<ResponseModel> SetFmbotActivityThreshold(ContextModel context, IUser lastModifier = null)
+    public async Task<ResponseModel> SetFmbotActivityThreshold(ContextModel context, NetCord.User lastModifier = null)
     {
         var response = new ResponseModel
         {
@@ -265,31 +252,27 @@ public class GuildSettingBuilder
 
         var description = new StringBuilder();
 
-        description.AppendLine(
-            $"Setting a WhoKnows activity threshold will filter out people who have not used .fmbot in a certain amount of days from all server-wide commands. " +
-            $"A user counts as active as soon as they use .fmbot anywhere.");
+        description.AppendLine($"Setting a WhoKnows activity threshold will filter out people who have not used .fmbot in a certain amount of days from all server-wide commands. " +
+                               $"A user counts as active as soon as they use .fmbot anywhere.");
         description.AppendLine();
         description.AppendLine("This filtering applies to all server-wide commands.");
         description.AppendLine();
 
         var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
 
-        var components = new ComponentBuilder();
+        var components = new ActionRowProperties();
 
         if (!guild.ActivityThresholdDays.HasValue)
         {
             description.AppendLine("There is currently no .fmbot activity threshold enabled.");
             description.AppendLine("To enable, click the button below and enter the amount of days.");
-            components.WithButton("Set activity threshold", InteractionConstants.SetFmbotActivityThreshold,
-                style: ButtonStyle.Secondary);
+            components.WithButton("Set activity threshold", InteractionConstants.SetFmbotActivityThreshold, style: ButtonStyle.Secondary);
         }
         else
         {
             description.AppendLine($"✅ Enabled.");
-            description.AppendLine(
-                $"Anyone who hasn't used .fmbot in the last **{guild.ActivityThresholdDays.Value}** days is currently filtered out.");
-            components.WithButton("Remove activity threshold", $"{InteractionConstants.RemoveFmbotActivityThreshold}",
-                style: ButtonStyle.Secondary);
+            description.AppendLine($"Anyone who hasn't used .fmbot in the last **{guild.ActivityThresholdDays.Value}** days is currently filtered out.");
+            components.WithButton("Remove activity threshold", $"{InteractionConstants.RemoveFmbotActivityThreshold}", style: ButtonStyle.Secondary);
         }
 
         response.Embed.WithDescription(description.ToString());
@@ -304,7 +287,7 @@ public class GuildSettingBuilder
         return response;
     }
 
-    public async Task<ResponseModel> SetCrownActivityThreshold(ContextModel context, IUser lastModifier = null)
+    public async Task<ResponseModel> SetCrownActivityThreshold(ContextModel context, NetCord.User lastModifier = null)
     {
         var response = new ResponseModel
         {
@@ -316,31 +299,26 @@ public class GuildSettingBuilder
 
         var description = new StringBuilder();
 
-        description.AppendLine(
-            $"Setting a crown activity threshold will filter out people who have not used .fmbot in a certain amount of days from earning crowns. " +
-            $"A user counts as active as soon as they use the bot anywhere.");
+        description.AppendLine($"Setting a crown activity threshold will filter out people who have not used .fmbot in a certain amount of days from earning crowns. " +
+                               $"A user counts as active as soon as they use the bot anywhere.");
         description.AppendLine();
 
         var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
         var crownsDisabled = guild.CrownsDisabled == true;
 
-        var components = new ComponentBuilder();
+        var components = new ActionRowProperties();
 
         if (!guild.CrownsActivityThresholdDays.HasValue)
         {
             description.AppendLine("There is currently no crown activity threshold enabled.");
             description.AppendLine("To enable, click the button below and enter the amount of days.");
-            components.WithButton("Set crown activity threshold", InteractionConstants.SetCrownActivityThreshold,
-                style: ButtonStyle.Secondary, disabled: crownsDisabled);
+            components.WithButton("Set crown activity threshold", InteractionConstants.SetCrownActivityThreshold, style: ButtonStyle.Secondary, disabled: crownsDisabled);
         }
         else
         {
             description.AppendLine($"✅ Enabled.");
-            description.AppendLine(
-                $"Anyone who hasn't used .fmbot in the last **{guild.CrownsActivityThresholdDays.Value}** days can't earn crowns.");
-            components.WithButton("Remove crown activity threshold",
-                $"{InteractionConstants.RemoveCrownActivityThreshold}", style: ButtonStyle.Secondary,
-                disabled: crownsDisabled);
+            description.AppendLine($"Anyone who hasn't used .fmbot in the last **{guild.CrownsActivityThresholdDays.Value}** days can't earn crowns.");
+            components.WithButton("Remove crown activity threshold", $"{InteractionConstants.RemoveCrownActivityThreshold}", style: ButtonStyle.Secondary, disabled: crownsDisabled);
         }
 
         if (crownsDisabled)
@@ -361,7 +339,7 @@ public class GuildSettingBuilder
         return response;
     }
 
-    public async Task<ResponseModel> SetCrownMinPlaycount(ContextModel context, IUser lastModifier = null)
+    public async Task<ResponseModel> SetCrownMinPlaycount(ContextModel context, NetCord.User lastModifier = null)
     {
         var response = new ResponseModel
         {
@@ -373,33 +351,28 @@ public class GuildSettingBuilder
 
         var description = new StringBuilder();
 
-        description.AppendLine(
-            $"A crown is something someone earns when they're the #1 listener for an artist on a server. ");
+        description.AppendLine($"A crown is something someone earns when they're the #1 listener for an artist on a server. ");
         description.AppendLine();
-        description.AppendLine(
-            $"By default crowns are only applied when someone has **{Constants.DefaultPlaysForCrown}** plays or more, " +
-            $"but you can customize that amount in this command.");
+        description.AppendLine($"By default crowns are only applied when someone has **{Constants.DefaultPlaysForCrown}** plays or more, " +
+                               $"but you can customize that amount in this command.");
         description.AppendLine();
 
         var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
         var crownsDisabled = guild.CrownsDisabled == true;
 
-        var components = new ComponentBuilder();
+        var components = new ActionRowProperties();
 
         if (!guild.CrownsMinimumPlaycountThreshold.HasValue)
         {
             description.AppendLine($"Minimum playcount is set to default ({Constants.DefaultPlaysForCrown}).");
             description.AppendLine("To change this, click the button below and enter the minimum amount of plays.");
-            components.WithButton("Set minimum crown playcount ", InteractionConstants.SetCrownMinPlaycount,
-                style: ButtonStyle.Secondary, disabled: crownsDisabled);
+            components.WithButton("Set minimum crown playcount ", InteractionConstants.SetCrownMinPlaycount, style: ButtonStyle.Secondary, disabled: crownsDisabled);
         }
         else
         {
             description.AppendLine($"✅ Custom minimum playcount set.");
-            description.AppendLine(
-                $"Minimum playcount for crowns is set to **{guild.CrownsMinimumPlaycountThreshold.Value}**.");
-            components.WithButton("Revert to default", $"{InteractionConstants.RemoveCrownMinPlaycount}",
-                style: ButtonStyle.Secondary, disabled: crownsDisabled);
+            description.AppendLine($"Minimum playcount for crowns is set to **{guild.CrownsMinimumPlaycountThreshold.Value}**.");
+            components.WithButton("Revert to default", $"{InteractionConstants.RemoveCrownMinPlaycount}", style: ButtonStyle.Secondary, disabled: crownsDisabled);
         }
 
         if (crownsDisabled)
@@ -435,18 +408,15 @@ public class GuildSettingBuilder
 
         var description = new StringBuilder();
 
-        description.AppendLine(
-            $"Crowns can be earned when someone is the #1 listener for an artist and has {guild.CrownsMinimumPlaycountThreshold ?? Constants.DefaultPlaysForCrown} plays or more. ");
+        description.AppendLine($"Crowns can be earned when someone is the #1 listener for an artist and has {guild.CrownsMinimumPlaycountThreshold ?? Constants.DefaultPlaysForCrown} plays or more. ");
         description.AppendLine();
-        description.AppendLine(
-            $"Users can run `whoknows` to claim crowns, but you can also use the crownseeder to generate or update all crowns at once. " +
-            $"Only server staff can do this, because some people prefer manual crown claiming.");
+        description.AppendLine($"Users can run `whoknows` to claim crowns, but you can also use the crownseeder to generate or update all crowns at once. " +
+                               $"Only server staff can do this, because some people prefer manual crown claiming.");
         description.AppendLine();
         description.AppendLine($"To add or update all crowns, press the button below.");
 
-        var components = new ComponentBuilder();
-        components.WithButton("Run crownseeder", $"{InteractionConstants.RunCrownseeder}", style: ButtonStyle.Secondary,
-            disabled: crownsDisabled);
+        var components = new ActionRowProperties();
+        components.WithButton("Run crownseeder", $"{InteractionConstants.RunCrownseeder}", style: ButtonStyle.Secondary, disabled: crownsDisabled);
 
         if (crownsDisabled)
         {
@@ -511,10 +481,12 @@ public class GuildSettingBuilder
             return false;
         }
 
-        var guildUser = (IGuildUser)context.DiscordUser;
+        // TODO: check if this works
+        var guildUser = (PartialGuildUser)context.DiscordUser;
+        var permissions = guildUser.GetPermissions(context.DiscordGuild);
 
-        if (guildUser.GuildPermissions.BanMembers ||
-            guildUser.GuildPermissions.Administrator)
+        if (permissions.HasFlag(Permissions.BanUsers) ||
+            permissions.HasFlag(Permissions.Administrator))
         {
             return true;
         }
@@ -556,7 +528,9 @@ public class GuildSettingBuilder
 
     public static async Task UserNotAllowedResponse(IInteractionContext context, bool managersAllowed = true)
     {
-        await context.Interaction.RespondAsync(UserNotAllowedResponseText(managersAllowed), ephemeral: true);
+        await context.Interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties()
+            .WithContent(UserNotAllowedResponseText(managersAllowed))
+            .WithFlags(MessageFlags.Ephemeral)));
     }
 
     public async Task<ResponseModel> BlockedUsersAsync(
@@ -611,15 +585,10 @@ public class GuildSettingBuilder
         }
 
         if (guildUsers != null &&
-            guildUsers.Any(a =>
-                includeCrownBlocked
-                    ? a.Value.BlockedFromCrowns || a.Value.BlockedFromWhoKnows
-                    : a.Value.BlockedFromWhoKnows))
+            guildUsers.Any(a => includeCrownBlocked ? a.Value.BlockedFromCrowns || a.Value.BlockedFromWhoKnows : a.Value.BlockedFromWhoKnows))
         {
             guildUsers = guildUsers
-                .Where(w => includeCrownBlocked
-                    ? w.Value.BlockedFromCrowns || w.Value.BlockedFromWhoKnows
-                    : w.Value.BlockedFromWhoKnows)
+                .Where(w => includeCrownBlocked ? w.Value.BlockedFromCrowns || w.Value.BlockedFromWhoKnows : w.Value.BlockedFromWhoKnows)
                 .ToDictionary(i => i.Key, i => i.Value);
 
             var userPages = guildUsers.Select(s => s.Value).Chunk(15);
@@ -660,11 +629,11 @@ public class GuildSettingBuilder
                 .WithFooter(footer.ToString()));
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+        response.ComponentPaginator = StringService.BuildComponentPaginator(pages);
         return response;
     }
 
-    public async Task<ResponseModel> GuildMode(ContextModel context, IUser lastModifier = null)
+    public async Task<ResponseModel> GuildMode(ContextModel context, NetCord.User lastModifier = null)
     {
         var response = new ResponseModel
         {
@@ -673,21 +642,19 @@ public class GuildSettingBuilder
 
         var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
 
-        var fmType = new SelectMenuBuilder()
+        var fmType = new StringMenuProperties(InteractionConstants.FmGuildSettingType)
             .WithPlaceholder("Forced server 'fm' mode")
-            .WithCustomId(InteractionConstants.FmGuildSettingType)
             .WithMinValues(0)
             .WithMaxValues(1);
 
-        foreach (var option in ((FmEmbedType[])Enum.GetValues(typeof(FmEmbedType))).OrderBy(o =>
-                     o.GetAttribute<OptionOrderAttribute>().Order))
+        foreach (var option in ((FmEmbedType[])Enum.GetValues(typeof(FmEmbedType))).OrderBy(o => o.GetAttribute<OptionOrderAttribute>().Order))
         {
             var name = option.GetAttribute<OptionAttribute>().Name;
             var optionDescription = option.GetAttribute<OptionAttribute>().Description;
             var value = Enum.GetName(option);
 
             var selected = value == guild.FmEmbedType.ToString();
-            fmType.AddOption(new SelectMenuOptionBuilder(name, value, optionDescription, isDefault: selected));
+            fmType.AddOption(name, value, description: optionDescription, isDefault: selected);
         }
 
         response.Embed.WithTitle("Set server 'fm' mode");
@@ -718,7 +685,7 @@ public class GuildSettingBuilder
             response.Embed.WithFooter($"Last modified by {lastModifier.Username}");
         }
 
-        response.Components = new ComponentBuilder().WithSelectMenu(fmType);
+        response.StringMenus.Add(fmType);
 
         return response;
     }
@@ -747,7 +714,7 @@ public class GuildSettingBuilder
         return response;
     }
 
-    public async Task<ResponseModel> ToggleGuildCommand(ContextModel context, IUser lastModifier = null)
+    public async Task<ResponseModel> ToggleGuildCommand(ContextModel context, NetCord.User lastModifier = null)
     {
         var response = new ResponseModel
         {
@@ -771,23 +738,18 @@ public class GuildSettingBuilder
                 var newDisabledCommand = currentDisabledCommands[index];
                 currentlyDisabled.Append($"`{newDisabledCommand}` ");
             }
-
             if (currentDisabledCommands.Count > 32)
             {
                 currentlyDisabled.Append($" and {currentDisabledCommands.Count - 32} other commands");
             }
         }
 
-        response.Embed.AddField("Disabled commands",
-            currentlyDisabled.Length > 0 ? currentlyDisabled.ToString() : "✅ All commands enabled.");
+        response.Embed.AddField("Disabled commands", currentlyDisabled.Length > 0 ? currentlyDisabled.ToString() : "✅ All commands enabled.");
 
-        var components = new ComponentBuilder()
-            .WithButton("Add", $"{InteractionConstants.ToggleCommand.ToggleGuildCommandAdd}",
-                style: ButtonStyle.Secondary)
-            .WithButton("Remove", $"{InteractionConstants.ToggleCommand.ToggleGuildCommandRemove}",
-                style: ButtonStyle.Secondary, disabled: currentlyDisabled.Length == 0)
-            .WithButton("Clear", $"{InteractionConstants.ToggleCommand.ToggleGuildCommandClear}",
-                style: ButtonStyle.Secondary, disabled: currentlyDisabled.Length == 0);
+        var components = new ActionRowProperties()
+            .WithButton("Add", $"{InteractionConstants.ToggleCommand.ToggleGuildCommandAdd}", style: ButtonStyle.Secondary)
+            .WithButton("Remove", $"{InteractionConstants.ToggleCommand.ToggleGuildCommandRemove}", style: ButtonStyle.Secondary, disabled: currentlyDisabled.Length == 0)
+            .WithButton("Clear", $"{InteractionConstants.ToggleCommand.ToggleGuildCommandClear}", style: ButtonStyle.Secondary, disabled: currentlyDisabled.Length == 0);
 
         if (lastModifier != null)
         {
@@ -799,24 +761,26 @@ public class GuildSettingBuilder
         return response;
     }
 
-    public async Task<ResponseModel> ToggleChannelCommand(ContextModel context, ulong selectedChannelId,
-        ulong? selectedCategoryId = null, IUser lastModifier = null)
+    public async Task<ResponseModel> ToggleChannelCommand(ContextModel context, ulong selectedChannelId, ulong? selectedCategoryId = null, NetCord.User lastModifier = null)
     {
         var response = new ResponseModel
         {
             ResponseType = ResponseType.Embed
         };
 
-        var selectedChannel = await context.DiscordGuild.GetChannelAsync(selectedChannelId);
+        var selectedChannel = context.DiscordGuild.Channels.TryGetValue(selectedChannelId, out var ch) ? ch : null;
 
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
-        response.Embed.WithTitle($"Toggle channel commands - #{selectedChannel.Name}");
+        response.Embed.WithTitle($"Toggle channel commands - #{selectedChannel?.Name}");
 
         var footer = new StringBuilder();
 
         var channelDescription = new StringBuilder();
 
-        var categories = await context.DiscordGuild.GetCategoriesAsync();
+        var categories = context.DiscordGuild.Channels.Values
+            .OfType<CategoryGuildChannel>()
+            .OrderBy(c => c.Position)
+            .ToList();
 
         ulong previousChannelId = 0;
         ulong previousCategoryId = 0;
@@ -832,12 +796,12 @@ public class GuildSettingBuilder
             var currentCategory = categories.OrderBy(o => o.Position).ElementAt(i);
             var nextCategory = categories.OrderBy(o => o.Position).ElementAtOrDefault(i + 1);
 
-            if (currentCategory is not SocketCategoryChannel currentSocketCategory)
+            if (currentCategory is not CategoryGuildChannel currentSocketCategory)
             {
                 break;
             }
 
-            var categoryChannels = currentSocketCategory.GetCategoryChannelPositions();
+            var categoryChannels = currentSocketCategory.GetCategoryChannelPositions(context.DiscordGuild);
 
             if (!selectedCategoryId.HasValue && categoryChannels.Any(a => a.Key.Id == selectedChannelId))
             {
@@ -858,16 +822,14 @@ public class GuildSettingBuilder
                     {
                         if (previousChannel != null)
                         {
-                            channelDescription.AppendLine(
-                                $"{DiscordConstants.OneToFiveUp} **<#{previousChannel.Id}>**");
+                            channelDescription.AppendLine($"{EmojiProperties.Custom(DiscordConstants.OneToFiveUp).ToDiscordString("one_to_five_up")} **<#{previousChannel.Id}>**");
                         }
 
-                        channelDescription.AppendLine(
-                            $"{DiscordConstants.SamePosition} **<#{currentChannel.Id}>** **<**");
+                        channelDescription.AppendLine($"{EmojiProperties.Custom(DiscordConstants.SamePosition).ToDiscordString("same_position")} **<#{currentChannel.Id}>** **<**");
 
                         if (nextChannel != null)
                         {
-                            channelDescription.AppendLine($"{DiscordConstants.OneToFiveDown} **<#{nextChannel.Id}>**");
+                            channelDescription.AppendLine($"{EmojiProperties.Custom(DiscordConstants.OneToFiveDown).ToDiscordString("one_to_five_down")} **<#{nextChannel.Id}>**");
                         }
 
                         if (previousChannel != null)
@@ -875,9 +837,9 @@ public class GuildSettingBuilder
                             previousChannelId = previousChannel.Id;
                             previousCategoryId = currentCategory.Id;
                         }
-                        else if (previousCategory is SocketCategoryChannel previousSocketCategory)
+                        else if (previousCategory is CategoryGuildChannel previousSocketCategory)
                         {
-                            var previousCategoryChannels = previousSocketCategory.GetCategoryChannelPositions();
+                            var previousCategoryChannels = previousSocketCategory.GetCategoryChannelPositions(context.DiscordGuild);
                             if (previousCategoryChannels.Keys.Any())
                             {
                                 previousCategoryId = previousSocketCategory.Id;
@@ -890,9 +852,9 @@ public class GuildSettingBuilder
                             nextChannelId = nextChannel.Id;
                             nextCategoryId = currentCategory.Id;
                         }
-                        else if (nextCategory is SocketCategoryChannel nextSocketCategory)
+                        else if (nextCategory is CategoryGuildChannel nextSocketCategory)
                         {
-                            var nextCategoryChannels = nextSocketCategory.GetCategoryChannelPositions();
+                            var nextCategoryChannels = nextSocketCategory.GetCategoryChannelPositions(context.DiscordGuild);
                             if (nextCategoryChannels.Keys.Any())
                             {
                                 nextCategoryId = nextSocketCategory.Id;
@@ -920,22 +882,18 @@ public class GuildSettingBuilder
                 var newDisabledCommand = currentDisabledCommands[index];
                 currentlyDisabled.Append($"`{newDisabledCommand}` ");
             }
-
             if (currentDisabledCommands.Count > 32)
             {
                 currentlyDisabled.Append($" and {currentDisabledCommands.Count - 32} other commands");
             }
         }
 
-        var fmType = new SelectMenuBuilder()
+        var fmType = new StringMenuProperties($"{InteractionConstants.ToggleCommand.ToggleCommandChannelFmType}:{selectedChannel.Id}:{selectedCategoryId}")
             .WithPlaceholder("Forced channel 'fm' mode")
-            .WithCustomId(
-                $"{InteractionConstants.ToggleCommand.ToggleCommandChannelFmType}-{selectedChannel.Id}-{selectedCategoryId}")
             .WithMinValues(0)
             .WithMaxValues(1);
 
-        foreach (var option in ((FmEmbedType[])Enum.GetValues(typeof(FmEmbedType))).OrderBy(o =>
-                     o.GetAttribute<OptionOrderAttribute>().Order))
+        foreach (var option in ((FmEmbedType[])Enum.GetValues(typeof(FmEmbedType))).OrderBy(o => o.GetAttribute<OptionOrderAttribute>().Order))
         {
             var name = option.GetAttribute<OptionAttribute>().Name;
             var description = option.GetAttribute<OptionAttribute>().Description;
@@ -943,13 +901,12 @@ public class GuildSettingBuilder
 
             var active = option == channel?.FmEmbedType;
 
-            fmType.AddOption(new SelectMenuOptionBuilder(name, value, description, isDefault: active));
+            fmType.AddOption(name, value, description: description, isDefault: active);
         }
 
         if (!botDisabled)
         {
-            response.Embed.AddField("Disabled commands",
-                currentlyDisabled.Length > 0 ? currentlyDisabled.ToString() : "✅ All commands enabled.");
+            response.Embed.AddField("Disabled commands", currentlyDisabled.Length > 0 ? currentlyDisabled.ToString() : "✅ All commands enabled.");
 
             if (channel != null && channel.FmEmbedType.HasValue)
             {
@@ -962,8 +919,7 @@ public class GuildSettingBuilder
         }
         else
         {
-            response.Embed.AddField("Enabled commands",
-                currentlyDisabled.Length > 0 ? currentlyDisabled.ToString() : "🚫 All commands disabled.");
+            response.Embed.AddField("Enabled commands", currentlyDisabled.Length > 0 ? currentlyDisabled.ToString() : "🚫 All commands disabled.");
 
             if (channel != null && channel.FmEmbedType.HasValue)
             {
@@ -978,44 +934,24 @@ public class GuildSettingBuilder
         var upDisabled = previousCategoryId == 0 || previousChannelId == 0;
         var downDisabled = nextCategoryId == 0 || nextChannelId == 0;
 
-        var components = new ComponentBuilder()
-            .WithButton(null,
-                $"{InteractionConstants.ToggleCommand.ToggleCommandMove}-{previousChannelId}-{previousCategoryId}-up",
-                style: ButtonStyle.Secondary, Emote.Parse(DiscordConstants.OneToFiveUp), disabled: upDisabled)
-            .WithButton(null,
-                $"{InteractionConstants.ToggleCommand.ToggleCommandMove}-{nextChannelId}-{nextCategoryId}-down",
-                style: ButtonStyle.Secondary, Emote.Parse(DiscordConstants.OneToFiveDown), disabled: downDisabled,
-                row: 1)
-            .WithButton("Add",
-                $"{InteractionConstants.ToggleCommand.ToggleCommandAdd}-{selectedChannel.Id}-{selectedCategoryId}",
-                style: ButtonStyle.Secondary)
-            .WithButton("Remove",
-                $"{InteractionConstants.ToggleCommand.ToggleCommandRemove}-{selectedChannel.Id}-{selectedCategoryId}",
-                style: ButtonStyle.Secondary, disabled: currentlyDisabled.Length == 0)
-            .WithButton("Clear",
-                $"{InteractionConstants.ToggleCommand.ToggleCommandClear}-{selectedChannel.Id}-{selectedCategoryId}",
-                style: ButtonStyle.Secondary, disabled: currentlyDisabled.Length == 0);
+        response.ButtonRows
+            .WithButton(null, $"{InteractionConstants.ToggleCommand.ToggleCommandMove}:{previousChannelId}:{previousCategoryId}:up", style: ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.OneToFiveUp), disabled: upDisabled, row: 0)
+            .WithButton(null, $"{InteractionConstants.ToggleCommand.ToggleCommandMove}:{nextChannelId}:{nextCategoryId}:down", style: ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.OneToFiveDown), disabled: downDisabled, row: 1)
+            .WithButton("Add", $"{InteractionConstants.ToggleCommand.ToggleCommandAdd}:{selectedChannel.Id}:{selectedCategoryId}", style: ButtonStyle.Secondary, row: 0)
+            .WithButton("Remove", $"{InteractionConstants.ToggleCommand.ToggleCommandRemove}:{selectedChannel.Id}:{selectedCategoryId}", style: ButtonStyle.Secondary, disabled: currentlyDisabled.Length == 0, row: 0)
+            .WithButton("Clear", $"{InteractionConstants.ToggleCommand.ToggleCommandClear}:{selectedChannel.Id}:{selectedCategoryId}", style: ButtonStyle.Secondary, disabled: currentlyDisabled.Length == 0, row: 0);
 
         if (!botDisabled)
         {
-            components.WithSelectMenu(fmType);
+            response.StringMenus.Add(fmType);
 
-            components
-                .WithButton("Disable all commands",
-                    $"{InteractionConstants.ToggleCommand.ToggleCommandDisableAll}-{selectedChannel.Id}-{selectedCategoryId}",
-                    style: ButtonStyle.Secondary, row: 1);
+            response.ButtonRows
+                .WithButton("Disable all commands", $"{InteractionConstants.ToggleCommand.ToggleCommandDisableAll}:{selectedChannel.Id}:{selectedCategoryId}", style: ButtonStyle.Secondary, row: 1);
         }
         else
         {
-            if (currentDisabledCommands != null && currentDisabledCommands.Any(a => a == "fm"))
-            {
-                components.WithSelectMenu(fmType);
-            }
-
-            components
-                .WithButton("Enable all commands",
-                    $"{InteractionConstants.ToggleCommand.ToggleCommandEnableAll}-{selectedChannel.Id}-{selectedCategoryId}",
-                    style: ButtonStyle.Secondary, row: 1);
+            response.ButtonRows
+                .WithButton("Enable all commands", $"{InteractionConstants.ToggleCommand.ToggleCommandEnableAll}:{selectedChannel.Id}:{selectedCategoryId}", style: ButtonStyle.Secondary, row: 1);
         }
 
         footer.AppendLine("Use the up and down selector to browse through channels");
@@ -1025,8 +961,6 @@ public class GuildSettingBuilder
         }
 
         response.Embed.WithFooter(footer.ToString());
-
-        response.Components = components;
 
         return response;
     }
@@ -1056,20 +990,16 @@ public class GuildSettingBuilder
             description.AppendLine();
             description.AppendLine("Use the button below to re-enable crowns.");
 
-            response.Components = new ComponentBuilder().WithButton("Enable crowns",
-                $"{InteractionConstants.ToggleCrowns.Enable}", style: ButtonStyle.Secondary);
+            response.Components = new ActionRowProperties().WithButton("Enable crowns", $"{InteractionConstants.ToggleCrowns.Enable}", style: ButtonStyle.Secondary);
         }
         else
         {
             response.Embed.WithTitle("Disabling crowns on this server");
-            description.AppendLine(
-                $"Crowns can be earned when someone is the #1 listener for an artist and has {guild.CrownsMinimumPlaycountThreshold ?? Constants.DefaultPlaysForCrown} plays or more. ");
+            description.AppendLine($"Crowns can be earned when someone is the #1 listener for an artist and has {guild.CrownsMinimumPlaycountThreshold ?? Constants.DefaultPlaysForCrown} plays or more. ");
             description.AppendLine();
-            description.AppendLine(
-                "Use the button below to disable crown functionality server-wide. Crown history will be preserved, but it will no longer be visible.");
+            description.AppendLine("Use the button below to disable crown functionality server-wide. Crown history will be preserved, but it will no longer be visible.");
 
-            response.Components = new ComponentBuilder().WithButton("Disable crowns",
-                $"{InteractionConstants.ToggleCrowns.Disable}", style: ButtonStyle.Secondary);
+            response.Components = new ActionRowProperties().WithButton("Disable crowns", $"{InteractionConstants.ToggleCrowns.Disable}", style: ButtonStyle.Secondary);
         }
 
         response.Embed.WithDescription(description.ToString());

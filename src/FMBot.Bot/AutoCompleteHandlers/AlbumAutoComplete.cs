@@ -2,14 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Discord;
-using Discord.Interactions;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Services;
+using NetCord;
+using NetCord.Rest;
+using NetCord.Services.ApplicationCommands;
 
 namespace FMBot.Bot.AutoCompleteHandlers;
 
-public class AlbumAutoComplete : AutocompleteHandler
+public class AlbumAutoComplete : IAutocompleteProvider<AutocompleteInteractionContext>
 {
     private readonly AlbumService _albumService;
 
@@ -18,24 +19,24 @@ public class AlbumAutoComplete : AutocompleteHandler
         this._albumService = albumService;
     }
 
-    public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context,
-        IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+    public async ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>> GetChoicesAsync(
+        ApplicationCommandInteractionDataOption option,
+        AutocompleteInteractionContext context)
     {
         var recentlyPlayedAlbums = await this._albumService.GetLatestAlbums(context.User.Id);
         var recentTopAlbums = await this._albumService.GetRecentTopAlbums(context.User.Id);
 
         var results = new List<string>();
 
-        if (autocompleteInteraction?.Data?.Current?.Value == null ||
-            string.IsNullOrWhiteSpace(autocompleteInteraction?.Data?.Current?.Value.ToString()))
+        if (string.IsNullOrWhiteSpace(option.Value))
         {
             if (recentlyPlayedAlbums == null || !recentlyPlayedAlbums.Any() ||
                 recentTopAlbums == null || !recentTopAlbums.Any())
             {
                 results.Add("Start typing to search through albums...");
 
-                return await Task.FromResult(
-                    AutocompletionResult.FromSuccess(results.Select(s => new AutocompleteResult(s, s))));
+                return new List<ApplicationCommandOptionChoiceProperties>(results.Select(s =>
+                    new ApplicationCommandOptionChoiceProperties(s, s)));
             }
 
             results
@@ -48,7 +49,7 @@ public class AlbumAutoComplete : AutocompleteHandler
         {
             try
             {
-                var searchValue = autocompleteInteraction.Data.Current.Value.ToString();
+                var searchValue = option.Value;
                 results = [searchValue];
 
                 var albumResults =
@@ -95,7 +96,6 @@ public class AlbumAutoComplete : AutocompleteHandler
                     .Where(w => w.Name.Contains(searchValue, StringComparison.OrdinalIgnoreCase))
                     .Take(2)
                     .Select(s => s.Name));
-
             }
             catch (Exception e)
             {
@@ -104,7 +104,7 @@ public class AlbumAutoComplete : AutocompleteHandler
             }
         }
 
-        return await Task.FromResult(
-            AutocompletionResult.FromSuccess(results.Select(s => new AutocompleteResult(s, s))));
+        return new List<ApplicationCommandOptionChoiceProperties>(results.Select(s =>
+            new ApplicationCommandOptionChoiceProperties(s, s)));
     }
 }

@@ -1,13 +1,16 @@
-using Discord;
-using Discord.Commands;
+
 using FMBot.Domain.Enums;
 using FMBot.Persistence.Domain.Models;
+using NetCord.Rest;
+using NetCord.Services.ApplicationCommands;
+using NetCord.Services.Commands;
+using NetCord.Services.ComponentInteractions;
 
 namespace FMBot.Bot.Models;
 
 public class ContextModel
 {
-    public ContextModel(ICommandContext context, string prefix, User contextUser = null)
+    public ContextModel(CommandContext context, string prefix, User contextUser = null)
     {
         this.Prefix = prefix;
         this.NumberFormat = contextUser?.NumberFormat ?? NumberFormat.NoSeparator;
@@ -20,7 +23,19 @@ public class ContextModel
         this.ReferencedMessage = context.Message.ReferencedMessage;
     }
 
-    public ContextModel(IInteractionContext context, User contextUser = null, IUser discordContextUser = null)
+    public ContextModel(ApplicationCommandContext context, User contextUser = null, NetCord.User discordContextUser = null)
+    {
+        this.Prefix = "/";
+        this.NumberFormat = contextUser?.NumberFormat ?? NumberFormat.NoSeparator;
+        this.DiscordGuild = context.Guild;
+        this.DiscordChannel = context.Channel;
+        this.DiscordUser = discordContextUser ?? context.User;
+        this.ContextUser = contextUser;
+        this.SlashCommand = true;
+        this.InteractionId = context.Interaction.Id;
+    }
+
+    public ContextModel(ComponentInteractionContext context, User contextUser = null, NetCord.User discordContextUser = null)
     {
         this.Prefix = "/";
         this.NumberFormat = contextUser?.NumberFormat ?? NumberFormat.NoSeparator;
@@ -36,15 +51,16 @@ public class ContextModel
 
     public string Prefix { get; set; }
 
-    public IGuild DiscordGuild { get; set; }
-    public IChannel DiscordChannel { get; set; }
-    public IUser DiscordUser { get; set; }
+    public NetCord.Gateway.Guild DiscordGuild { get; set; }
+
+    public NetCord.Channel DiscordChannel { get; set; }
+    public NetCord.User DiscordUser { get; set; }
 
     public ulong InteractionId { get; set; }
 
-    public IUserMessage ReferencedMessage { get; set; }
+    public RestMessage ReferencedMessage { get; set; }
 
-    public SelectMenuBuilder SelectMenu { get; set; }
+    public StringMenuProperties SelectMenu { get; set; }
 
     public User ContextUser { get; set; }
 

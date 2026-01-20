@@ -3,11 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Discord;
 using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Factories;
-using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
@@ -20,10 +18,13 @@ using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Domain.Types;
 using FMBot.Images.Generators;
-using FMBot.Persistence.Domain.Models;
 using Humanizer;
+using Guild = FMBot.Persistence.Domain.Models.Guild;
+using NetCord;
+using NetCord.Rest;
 using SkiaSharp;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
+using User = FMBot.Persistence.Domain.Models.User;
 
 namespace FMBot.Bot.Builders;
 
@@ -166,7 +167,7 @@ public class GenreBuilders
             pageCounter++;
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+        response.ComponentPaginator = StringService.BuildComponentPaginator(pages);
 
         return response;
     }
@@ -341,17 +342,17 @@ public class GenreBuilders
             pageCounter++;
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages, selectMenuBuilder: context.SelectMenu);
+        response.ComponentPaginator = StringService.BuildComponentPaginator(pages, selectMenuBuilder: context.SelectMenu);
         return response;
     }
 
-    private async Task<(List<string> genres, SelectMenuBuilder selectMenu)> GetGenreOrRespond(string genreOptions,
+    private async Task<(List<string> genres, StringMenuProperties selectMenu)> GetGenreOrRespond(string genreOptions,
         ContextModel context, ResponseModel response, User userSettings, string commandDescription,
         string selectedValue = null,
         string selectCommandId = null, string selectCommandDescription = null)
     {
         var genres = new List<string>();
-        SelectMenuBuilder selectMenu = null;
+        StringMenuProperties selectMenu = null;
 
         if (string.IsNullOrWhiteSpace(genreOptions))
         {
@@ -405,17 +406,16 @@ public class GenreBuilders
                 await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel, artist.Name);
             if (artist.SpotifyImageUrl != null && safeForChannel == CensorService.CensorResult.Safe)
             {
-                response.Embed.WithThumbnailUrl(artist.SpotifyImageUrl);
+                response.Embed.WithThumbnail(artist.SpotifyImageUrl);
             }
 
-            PublicProperties.UsedCommandsArtists.TryAdd(context.InteractionId, artist.Name);
+            response.ReferencedMusic = new ReferencedMusic { Artist = artist.Name };
 
             if (genres.Count != 0 && artist.ArtistGenres.Count != 0)
             {
                 var genreDescription = new StringBuilder();
-                selectMenu = new SelectMenuBuilder()
+                selectMenu = new StringMenuProperties(InteractionConstants.Genre.GenreSelectMenu)
                     .WithPlaceholder(selectCommandDescription)
-                    .WithCustomId(InteractionConstants.Genre.GenreSelectMenu)
                     .WithMinValues(1)
                     .WithMaxValues(1);
 
@@ -427,15 +427,14 @@ public class GenreBuilders
                                    artistGenre.Name.Equals(selectedValue, StringComparison.OrdinalIgnoreCase);
 
                     var optionId =
-                        $"{userSettings.DiscordUserId}~{context.ContextUser.DiscordUserId}~{selectCommandId}~{artistGenre.Name}~{artist.Name}";
-                    selectMenu.AddOption(artistGenre.Name.Transform(To.TitleCase), optionId,
-                        isDefault: selected);
+                        $"{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}:{selectCommandId}:{artistGenre.Name}:{artist.Name}";
+                    selectMenu.AddOption(artistGenre.Name.Transform(To.TitleCase), optionId, selected);
                 }
 
                 response.Embed.WithFooter($"Genre source: Spotify\n" +
                                           $"Add a genre to this command to see {commandDescription}");
 
-                response.Components = new ComponentBuilder().WithSelectMenu(selectMenu);
+                response.StringMenus.Add(selectMenu);
 
                 response.Embed.WithDescription(genreDescription.ToString());
 
@@ -461,9 +460,8 @@ public class GenreBuilders
                 var genreDescription = new StringBuilder();
                 if (artist.ArtistGenres != null && artist.ArtistGenres.Any())
                 {
-                    selectMenu = new SelectMenuBuilder()
+                    selectMenu = new StringMenuProperties(InteractionConstants.Genre.GenreSelectMenu)
                         .WithPlaceholder(selectCommandDescription)
-                        .WithCustomId(InteractionConstants.Genre.GenreSelectMenu)
                         .WithMinValues(1)
                         .WithMaxValues(1);
 
@@ -475,7 +473,7 @@ public class GenreBuilders
                                        artistGenre.Name.Equals(selectedValue, StringComparison.OrdinalIgnoreCase);
 
                         var optionId =
-                            $"{userSettings.DiscordUserId}~{context.ContextUser.DiscordUserId}~{selectCommandId}~{artistGenre.Name}~{genreOptions}";
+                            $"{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}:{selectCommandId}:{artistGenre.Name}:{genreOptions}";
                         selectMenu.AddOption(StringExtensions.TruncateLongString(artistGenre.Name.Transform(To.TitleCase), 25), optionId,
                             isDefault: selected);
                     }
@@ -483,7 +481,7 @@ public class GenreBuilders
                     response.Embed.WithFooter($"Genre source: Spotify\n" +
                                               $"Add a genre to this command to see {commandDescription}");
 
-                    response.Components = new ComponentBuilder().WithSelectMenu(selectMenu);
+                    response.StringMenus.Add(selectMenu);
                 }
                 else
                 {
@@ -495,10 +493,10 @@ public class GenreBuilders
                         artist.Name);
                 if (artist.SpotifyImageUrl != null && safeForChannel == CensorService.CensorResult.Safe)
                 {
-                    response.Embed.WithThumbnailUrl(artist.SpotifyImageUrl);
+                    response.Embed.WithThumbnail(artist.SpotifyImageUrl);
                 }
 
-                PublicProperties.UsedCommandsArtists.TryAdd(context.InteractionId, artist.Name);
+                response.ReferencedMusic = new ReferencedMusic { Artist = artist.Name };
 
                 response.Embed.WithDescription(genreDescription.ToString());
                 response.ResponseType = ResponseType.Embed;
@@ -533,19 +531,18 @@ public class GenreBuilders
         return (genres, selectMenu);
     }
 
-    private async Task<SelectMenuBuilder> GetGenreSearchOptions(ContextModel context, User userSettings,
+    private async Task<StringMenuProperties> GetGenreSearchOptions(ContextModel context, User userSettings,
         string genreOptions, List<string> genreResults, string selectCommandId, string selectedValue)
     {
-        SelectMenuBuilder selectMenu = null;
+        StringMenuProperties selectMenu = null;
 
         var topArtists = await this._artistsService.GetUserAllTimeTopArtists(userSettings.UserId, true);
         var topGenres = await this._genreService.GetTopGenresForTopArtists(topArtists);
 
         if (genreResults.Count > 1)
         {
-            selectMenu = new SelectMenuBuilder()
+            selectMenu = new StringMenuProperties(InteractionConstants.Genre.GenreSelectMenu)
                 .WithPlaceholder("Select similar genres")
-                .WithCustomId(InteractionConstants.Genre.GenreSelectMenu)
                 .WithMinValues(1)
                 .WithMaxValues(1);
 
@@ -555,7 +552,7 @@ public class GenreBuilders
             var firstResult = topGenresList.FirstOrDefault(f =>
                 f.GenreName.Equals(genreResults.First(), StringComparison.OrdinalIgnoreCase));
             selectMenu.AddOption(genreResults.First().Transform(To.TitleCase),
-                $"{userSettings.DiscordUserId}~{context.ContextUser.DiscordUserId}~{selectCommandId}~{genreResults.First()}~{genreOptions}",
+                $"{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}:{selectCommandId}:{genreResults.First()}:{genreOptions}",
                 description: firstResult == null
                     ? null
                     : $"{firstResult.UserPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(firstResult.UserPlaycount)}");
@@ -568,14 +565,14 @@ public class GenreBuilders
                                genre.GenreName.Equals(selectedValue, StringComparison.OrdinalIgnoreCase);
 
                 var optionId =
-                    $"{userSettings.DiscordUserId}~{context.ContextUser.DiscordUserId}~{selectCommandId}~{genre.GenreName}~{genreOptions}";
+                    $"{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}:{selectCommandId}:{genre.GenreName}:{genreOptions}";
                 selectMenu.AddOption(genre.GenreName.Transform(To.TitleCase), optionId,
                     description: $"{genre.UserPlaycount} {StringExtensions.GetPlaysString(genre.UserPlaycount)}",
                     isDefault: selected);
             }
         }
 
-        if (selectMenu == null || selectMenu.Options.Count == 1)
+        if (selectMenu == null || selectMenu.Options.Count() == 1)
         {
             return null;
         }
@@ -712,11 +709,11 @@ public class GenreBuilders
 
         var interaction = userView ? InteractionConstants.Genre.GenreGuild : InteractionConstants.Genre.GenreUser;
         var optionEmote =
-            userView ? Emote.Parse("<:server:961685224041902140>") : Emote.Parse("<:user:961687127249260634>");
+            userView ? EmojiProperties.Custom(DiscordConstants.Server) : EmojiProperties.Custom(DiscordConstants.User);
         var optionDescription = userView ? "View server overview" : "View user overview";
         var originalSearchValue = !string.IsNullOrWhiteSpace(originalSearch) ? originalSearch : "0";
         var optionId =
-            $"{interaction}~{userSettings.DiscordUserId}~{context.ContextUser.DiscordUserId}~{userGenre.GenreName}~{originalSearchValue}";
+            $"{interaction}:{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}:{userGenre.GenreName}:{originalSearchValue}";
 
         if (userView && context.DiscordGuild == null)
         {
@@ -735,12 +732,12 @@ public class GenreBuilders
         {
             if (genres.selectMenu != null)
             {
-                response.StaticPaginator =
-                    StringService.BuildStaticPaginatorWithSelectMenu(pages, genres.selectMenu, optionId, optionEmote);
+                response.ComponentPaginator =
+                    StringService.BuildComponentPaginatorWithSelectMenu(pages, genres.selectMenu, optionId, optionEmote);
             }
             else
             {
-                response.StaticPaginator = StringService.BuildStaticPaginator(pages, optionId, optionEmote);
+                response.ComponentPaginator = StringService.BuildComponentPaginator(pages, optionId, optionEmote);
             }
 
             response.ResponseType = ResponseType.Paginator;
@@ -750,7 +747,7 @@ public class GenreBuilders
     }
 
     private static List<PageBuilder> CreateGenrePageBuilder(List<List<TopArtist>> topArtists,
-        EmbedAuthorBuilder author,
+        EmbedAuthorProperties author,
         TopGenre topGenre,
         string view,
         NumberFormat numberFormat,
@@ -906,9 +903,9 @@ public class GenreBuilders
             footer.AppendLine(filterStats.FullDescription);
         }
 
-        if (genres.selectMenu != null)
+        if (genres.selectMenu != null && response.StringMenus.All(m => m.CustomId != genres.selectMenu.CustomId))
         {
-            response.Components = new ComponentBuilder().WithSelectMenu(genres.selectMenu);
+            response.StringMenus.Add(genres.selectMenu);
         }
 
         response.Embed.WithTitle($"{genres.genres.First().Transform(To.TitleCase)} in {context.DiscordGuild.Name}");
@@ -1010,9 +1007,9 @@ public class GenreBuilders
             footer.AppendLine();
         }
 
-        if (genres.selectMenu != null)
+        if (genres.selectMenu != null && response.StringMenus.All(m => m.CustomId != genres.selectMenu.CustomId))
         {
-            response.Components = new ComponentBuilder().WithSelectMenu(genres.selectMenu);
+            response.StringMenus.Add(genres.selectMenu);
         }
 
         response.Embed.WithTitle($"{genres.genres.First().Transform(To.TitleCase)} with friends");

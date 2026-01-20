@@ -93,7 +93,7 @@ namespace FMBot.Youtube.Services
             }
             catch (Exception ex)
             {
-                Log.Error("Something went wrong while deserializing the stuff from the Invidious API", ex);
+                Log.Error(ex, "Something went wrong while deserializing the stuff from the Invidious API");
                 return null;
             }
         }
@@ -141,7 +141,7 @@ namespace FMBot.Youtube.Services
             }
             catch (Exception ex)
             {
-                Log.Error("Something went wrong while deserializing the stuff from the Invidious API (video)", ex);
+                Log.Error(ex, "Something went wrong while deserializing the stuff from the Invidious API (video)");
                 return null;
             }
         }

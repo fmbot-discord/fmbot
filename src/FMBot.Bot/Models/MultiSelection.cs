@@ -1,8 +1,8 @@
-using System;
 using System.Collections.Generic;
-using Discord;
-using Fergun.Interactive;
+using System.Linq;
+
 using Fergun.Interactive.Selection;
+using NetCord.Rest;
 
 namespace FMBot.Bot.Models;
 
@@ -13,32 +13,33 @@ public class MultiSelection<T> : BaseSelection<MultiSelectionOption<T>>
     {
     }
 
-    public override ComponentBuilder GetOrAddComponents(bool disableAll, ComponentBuilder builder = null)
+    public override List<IMessageComponentProperties> GetOrAddComponents(bool disableAll, List<IMessageComponentProperties> builder = null)
     {
-        builder ??= new ComponentBuilder();
-        var selectMenus = new Dictionary<int, SelectMenuBuilder>();
+        builder ??= new List<IMessageComponentProperties>();
+        var selectMenus = new Dictionary<int, StringMenuProperties>();
 
         foreach (var option in Options)
         {
             if (!selectMenus.ContainsKey(option.Row))
             {
-                selectMenus[option.Row] = new SelectMenuBuilder()
-                    .WithCustomId($"selectmenu{option.Row}")
-                    .WithDisabled(disableAll);
+                selectMenus[option.Row] = new StringMenuProperties($"selectmenu{option.Row}")
+                {
+                    Disabled = disableAll
+                };
             }
 
-            var optionBuilder = new SelectMenuOptionBuilder()
-                .WithLabel(option.Option)
-                .WithValue(option.Value)
-                .WithDescription(option.Description)
-                .WithDefault(option.IsDefault);
+            var optionBuilder = new StringMenuSelectOptionProperties(option.Option, option.Value)
+            {
+                Description = option.Description,
+                Default = option.IsDefault
+            };
 
-            selectMenus[option.Row].AddOption(optionBuilder);
+            selectMenus[option.Row].Add(optionBuilder);
         }
 
-        foreach ((int row, var selectMenu) in selectMenus)
+        foreach (var selectMenu in selectMenus.OrderBy(kvp => kvp.Key).Select(kvp => kvp.Value))
         {
-            builder.WithSelectMenu(selectMenu, row);
+            builder.Add(selectMenu);
         }
 
         return builder;

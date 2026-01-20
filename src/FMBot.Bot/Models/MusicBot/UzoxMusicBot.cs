@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
-using Discord;
+using NetCord.Gateway;
+
 
 namespace FMBot.Bot.Models.MusicBot;
 
@@ -11,7 +12,7 @@ internal class UzoxMusicBot : MusicBot
     {
     }
 
-    public override bool ShouldIgnoreMessage(IUserMessage msg)
+    public override bool ShouldIgnoreMessage(Message msg)
     {
         if (msg.Embeds.Count != 1)
         {
@@ -23,10 +24,10 @@ internal class UzoxMusicBot : MusicBot
     }
 
     /**
-     * Example: 
+     * Example:
      * [`DJ BORING - Winona`](https://open.spotify.com/track/4rvnBqTmx66LlCJZLbLAOY)
      */
-    public override string GetTrackQuery(IUserMessage msg)
+    public override string GetTrackQuery(Message msg)
     {
         var track = msg.Embeds.First().Fields.FirstOrDefault(f => f.Name.Contains("Track:", StringComparison.OrdinalIgnoreCase));
 

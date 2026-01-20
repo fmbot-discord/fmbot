@@ -1,14 +1,14 @@
-using Discord.Interactions;
+using FMBot.Domain.Attributes;
 
 namespace FMBot.Bot.Models
 {
     public enum GapEntityType
     {
-        [ChoiceDisplay("Artists")]
+        [Option("Artist gaps")]
         Artist,
-        [ChoiceDisplay("Albums")]
+        [Option("Album gaps")]
         Album,
-        [ChoiceDisplay("Tracks")]
+        [Option("Track gaps")]
         Track
     }
 }

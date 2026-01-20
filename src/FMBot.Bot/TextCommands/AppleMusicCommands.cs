@@ -1,4 +1,3 @@
-using Discord.Commands;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
@@ -11,44 +10,36 @@ using FMBot.Domain;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
+using NetCord.Services.Commands;
 using Fergun.Interactive;
 
 namespace FMBot.Bot.TextCommands;
 
-[Name("AppleMusic")]
-public class AppleMusicCommands : BaseCommandModule
+[ModuleName("AppleMusic")]
+public class AppleMusicCommands(
+    IDataSourceFactory dataSourceFactory,
+    AppleMusicService appleMusicService,
+    UserService userService,
+    IPrefixService prefixService,
+    IOptions<BotSettings> botSettings,
+    InteractiveService interactivity)
+    : BaseCommandModule(botSettings)
 {
-    private readonly IDataSourceFactory _dataSourceFactory;
-    private readonly AppleMusicService _appleMusicService;
-
-    private readonly UserService _userService;
-    private readonly IPrefixService _prefixService;
-
-    private InteractiveService Interactivity { get; }
+    private InteractiveService Interactivity { get; } = interactivity;
 
 
-    public AppleMusicCommands(IDataSourceFactory dataSourceFactory, AppleMusicService appleMusicService, UserService userService, IPrefixService prefixService, IOptions<BotSettings> botSettings, InteractiveService interactivity) : base(botSettings)
-    {
-        this._dataSourceFactory = dataSourceFactory;
-        this._appleMusicService = appleMusicService;
-        this._userService = userService;
-        this._prefixService = prefixService;
-        this.Interactivity = interactivity;
-    }
-
-    [Command("applemusic")]
+    [Command("applemusic", "am", "apple")]
     [Summary("Shares a link to an Apple Music track based on what a user is listening to or searching for")]
-    [Alias("am", "apple")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.ThirdParty)]
-    public async Task AppleMusicAsync([Remainder] string searchValue = null)
+    public async Task AppleMusicAsync([CommandParameter(Remainder = true)] string searchValue = null)
     {
-        var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
         try
         {
-            _ = this.Context.Channel.TriggerTypingAsync();
+            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
             if (searchValue != null && searchValue.StartsWith("play ", StringComparison.OrdinalIgnoreCase))
             {
@@ -59,7 +50,7 @@ public class AppleMusicCommands : BaseCommandModule
             {
                 var internalLookup = CommandContextExtensions.GetReferencedMusic(this.Context.Message.ReferencedMessage.Id)
                                      ??
-                                     await this._userService.GetReferencedMusic(this.Context.Message.ReferencedMessage.Id);
+                                     await userService.GetReferencedMusic(this.Context.Message.ReferencedMessage.Id);
 
                 if (internalLookup?.Track != null)
                 {
@@ -80,9 +71,9 @@ public class AppleMusicCommands : BaseCommandModule
                     sessionKey = userSettings.SessionKeyLastFm;
                 }
 
-                var recentScrobbles = await this._dataSourceFactory.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
+                var recentScrobbles = await dataSourceFactory.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
 
-                if (await GenericEmbedService.RecentScrobbleCallFailedReply(recentScrobbles, userSettings.UserNameLastFM, this.Context))
+                if (await GenericEmbedService.RecentScrobbleCallFailedReply(recentScrobbles, userSettings.UserNameLastFM, this.Context, userService))
                 {
                     return;
                 }
@@ -92,7 +83,7 @@ public class AppleMusicCommands : BaseCommandModule
                 querystring = $"{currentTrack.TrackName} {currentTrack.ArtistName} {currentTrack.AlbumName}";
             }
 
-            var item = await this._appleMusicService.SearchAppleMusicSong(querystring);
+            var item = await appleMusicService.SearchAppleMusicSong(querystring);
 
             var response = new ResponseModel
             {
@@ -104,28 +95,30 @@ public class AppleMusicCommands : BaseCommandModule
                 response.Text = $"{item.Attributes.Url}";
 
                 var rnd = new Random();
-                if (rnd.Next(0, 8) == 1 && string.IsNullOrWhiteSpace(searchValue) && !await this._userService.HintShownBefore(userSettings.UserId, "applemusic"))
+                if (rnd.Next(0, 8) == 1 && string.IsNullOrWhiteSpace(searchValue) && !await userService.HintShownBefore(userSettings.UserId, "applemusic"))
                 {
                     response.Text += $"\n-# *Tip: Search for other songs by simply adding the searchvalue behind {prfx}applemusic.*";
                     response.HintShown = true;
                 }
 
-                PublicProperties.UsedCommandsArtists.TryAdd(this.Context.Message.Id, item.Attributes.ArtistName);
-                PublicProperties.UsedCommandsTracks.TryAdd(this.Context.Message.Id, item.Attributes.Name);
+                response.ReferencedMusic = new ReferencedMusic
+                {
+                    Artist = item.Attributes.ArtistName,
+                    Track = item.Attributes.Name
+                };
             }
             else
             {
-
                 response.Text = $"Sorry, Apple Music returned no results for *`{StringExtensions.Sanitize(querystring)}`*.";
                 response.CommandResponse = CommandResponse.NotFound;
             }
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 }

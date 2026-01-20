@@ -1,9 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Discord.Commands;
-using Discord.WebSocket;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
@@ -16,150 +15,129 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using NetCord;
+using NetCord.Rest;
+using NetCord.Services.Commands;
 
 namespace FMBot.Bot.TextCommands.Guild;
 
-[Name("Server settings")]
+[ModuleName("Server settings")]
 [ServerStaffOnly]
-public class GuildCommands : BaseCommandModule
+public class GuildCommands(
+    IPrefixService prefixService,
+    GuildService guildService,
+    IOptions<BotSettings> botSettings,
+    IMemoryCache cache,
+    GuildSettingBuilder guildSettingBuilder,
+    UserService userService,
+    InteractiveService interactivity,
+    GuildBuilders guildBuilders)
+    : BaseCommandModule(botSettings)
 {
-    private readonly GuildService _guildService;
-    private readonly UserService _userService;
-    private readonly GuildSettingBuilder _guildSettingBuilder;
-    private readonly GuildBuilders _guildBuilders;
+    private InteractiveService Interactivity { get; } = interactivity;
 
-    private readonly IMemoryCache _cache;
-
-    private readonly IPrefixService _prefixService;
-
-    private InteractiveService Interactivity { get; }
-
-    public GuildCommands(IPrefixService prefixService,
-        GuildService guildService,
-        IOptions<BotSettings> botSettings,
-        IMemoryCache cache,
-        GuildSettingBuilder guildSettingBuilder,
-        UserService userService,
-        InteractiveService interactivity,
-        GuildBuilders guildBuilders) : base(botSettings)
-    {
-        this._prefixService = prefixService;
-        this._guildService = guildService;
-        this._cache = cache;
-        this._guildSettingBuilder = guildSettingBuilder;
-        this._userService = userService;
-        this.Interactivity = interactivity;
-        this._guildBuilders = guildBuilders;
-    }
-
-    [Command("configuration", RunMode = RunMode.Async)]
+    [Command("configuration", "ss", "config", "serversettings", "fmbotconfig", "serverconfig")]
     [Summary("Shows server configuration for .fmbot")]
     [CommandCategories(CommandCategory.ServerSettings)]
-    [Alias("ss", "config", "serversettings", "fmbotconfig", "serverconfig")]
-    public async Task GuildSettingsAsync([Remainder] string searchValues = null)
+    public async Task GuildSettingsAsync([CommandParameter(Remainder = true)] string searchValues = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
         try
         {
             var guildPermissions = await GuildService.GetGuildPermissionsAsync(this.Context);
             var response =
-                await this._guildSettingBuilder.GetGuildSettings(new ContextModel(this.Context, prfx, contextUser), guildPermissions);
+                await guildSettingBuilder.GetGuildSettings(new ContextModel(this.Context, prfx, contextUser), guildPermissions);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
-    [Command("members", RunMode = RunMode.Async)]
+    [Command("members", "mb", "users", "memberoverview", "mo")]
     [Summary("view members in your server that have an .fmbot account")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.ServerSettings)]
-    [Alias("mb", "users", "memberoverview", "mo")]
-    public async Task MemberOverviewAsync([Remainder] string searchValues = null)
+    public async Task MemberOverviewAsync([CommandParameter(Remainder = true)] string searchValues = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+        var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
 
         try
         {
-            var response = await this._guildBuilders.MemberOverviewAsync(new ContextModel(this.Context, prfx, contextUser), guild,
+            var response = await guildBuilders.MemberOverviewAsync(new ContextModel(this.Context, prfx, contextUser), guild,
                 GuildViewType.Overview);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
-    [Command("keepdata", RunMode = RunMode.Async)]
+    [Command("keepdata")]
     [Summary("Allows you to keep your server data when removing the bot from your server")]
     [GuildOnly]
     [CommandCategories(CommandCategory.ServerSettings)]
-    public async Task KeepDataAsync(params string[] otherSettings)
+    public async Task KeepDataAsync([CommandParameter(Remainder = true)] string _ = null)
     {
-        this._cache.Set($"{this.Context.Guild.Id}-keep-data", true, TimeSpan.FromMinutes(30));
+        cache.Set($"{this.Context.Guild.Id}-keep-data", true, TimeSpan.FromMinutes(30));
 
-        await ReplyAsync(
-            "You can now kick this bot from your server in the next 30 minutes without losing the stored .fmbot data, like server settings and crown history.\n\n" +
-            "If you still wish to remove all server data from the bot you can kick the bot after the time period is over.");
+        await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "You can now kick this bot from your server in the next 30 minutes without losing the stored .fmbot data, like server settings and crown history.\n\nIf you still wish to remove all server data from the bot you can kick the bot after the time period is over." });
     }
 
-    [Command("servermode", RunMode = RunMode.Async)]
+    [Command("servermode", "guildmode")]
     [Summary("Sets the forced .fm mode for the server.\n\n" +
              "To view current settings, use `{{prfx}}servermode info`")]
     [Options("Modes: embedtiny/embedmini/embedfull/textmini/textfull")]
-    [Alias("guildmode")]
     [GuildOnly]
     [CommandCategories(CommandCategory.ServerSettings)]
-    public async Task SetServerModeAsync([Remainder] string unused = null)
+    public async Task SetServerModeAsync([CommandParameter(Remainder = true)] string unused = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        var response = await this._guildSettingBuilder.GuildMode(new ContextModel(this.Context, prfx));
+        var response = await guildSettingBuilder.GuildMode(new ContextModel(this.Context, prfx));
 
-        await this.Context.SendResponse(this.Interactivity, response);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendResponse(this.Interactivity, response, userService);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
-    [Command("serverreactions", RunMode = RunMode.Async)]
+    [Command("serverreactions", "serversetreactions", "serveremojis", "serverreacts")]
     [Summary("Sets the automatic emoji reactions for the `fm` and `featured` command.\n\n" +
              "Use this command without any emojis to disable.")]
     [Examples("serverreactions :PagChomp: :PensiveBlob:", "serverreactions 😀 😯 🥵", "serverreactions 😀 😯 :PensiveBlob:",
         "serverreactions")]
-    [Alias("serversetreactions", "serveremojis", "serverreacts")]
     [GuildOnly]
     [CommandCategories(CommandCategory.ServerSettings)]
-    public async Task SetGuildReactionsAsync([Remainder] string emojis = null)
+    public async Task SetGuildReactionsAsync([CommandParameter(Remainder = true)] string emojis = null)
     {
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
+        if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
         {
-            await ReplyAsync(GuildSettingBuilder.UserNotAllowedResponseText());
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = GuildSettingBuilder.UserNotAllowedResponseText() });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             return;
         }
 
         if (string.IsNullOrWhiteSpace(emojis))
         {
-            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+            var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
 
-            await this._guildService.SetGuildReactionsAsync(this.Context.Guild, null);
+            await guildService.SetGuildReactionsAsync(this.Context.Guild, null);
 
             if (guild?.EmoteReactions == null || !guild.EmoteReactions.Any())
             {
@@ -173,9 +151,9 @@ public class GuildCommands : BaseCommandModule
             }
 
             this._embed.WithColor(DiscordConstants.InformationColorBlue);
-            await ReplyAsync(embed: this._embed.Build());
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Embeds = [this._embed] });
 
-            this.Context.LogCommandUsed();
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
 
             return;
         }
@@ -187,8 +165,8 @@ public class GuildCommands : BaseCommandModule
         {
             this._embed.WithColor(DiscordConstants.WarningColorOrange);
             this._embed.WithDescription("Sorry, you can't set more then 3 emoji reacts. Please try again.");
-            await ReplyAsync(embed: this._embed.Build());
-            this.Context.LogCommandUsed(CommandResponse.WrongInput);
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Embeds = [this._embed] });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
 
             return;
         }
@@ -198,19 +176,19 @@ public class GuildCommands : BaseCommandModule
             this._embed.WithColor(DiscordConstants.WarningColorOrange);
             this._embed.WithDescription("Sorry, one or multiple of your reactions seems invalid. Please try again.\n" +
                                         "Please check if you have a space between every emoji.");
-            await ReplyAsync(embed: this._embed.Build());
-            this.Context.LogCommandUsed(CommandResponse.WrongInput);
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Embeds = [this._embed] });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
 
             return;
         }
 
-        await this._guildService.SetGuildReactionsAsync(this.Context.Guild, emoteArray);
+        await guildService.SetGuildReactionsAsync(this.Context.Guild, emoteArray);
 
 
         this._embed.WithTitle("Automatic server emoji reactions set");
         var description = new StringBuilder();
         description.AppendLine("Please check if all reactions have been applied to this message correctly.");
-        var user = await this._userService.GetUserAsync(this.Context.User.Id);
+        var user = await userService.GetUserAsync(this.Context.User.Id);
         if (user != null)
         {
             description.AppendLine();
@@ -219,12 +197,12 @@ public class GuildCommands : BaseCommandModule
         this._embed.WithDescription(description.ToString());
         this._embed.WithColor(DiscordConstants.InformationColorBlue);
 
-        var message = await ReplyAsync(embed: this._embed.Build());
-        this.Context.LogCommandUsed();
+        var message = await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Embeds = [this._embed] });
+        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
 
         try
         {
-            await this._guildService.AddGuildReactionsAsync(message, this.Context.Guild);
+            await guildService.AddGuildReactionsAsync(message, this.Context.Guild);
         }
         catch (Exception e)
         {
@@ -247,12 +225,12 @@ public class GuildCommands : BaseCommandModule
                                             "Make sure the permissions are set correctly and the emoji are from this server.");
             }
 
-            await ReplyAsync(embed: this._embed.Build());
-            this.Context.LogCommandUsed(CommandResponse.Error);
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Embeds = [this._embed] });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Error }, userService);
         }
     }
 
-    [Command("prefix", RunMode = RunMode.Async)]
+    [Command("prefix")]
     [Summary("Changes the `.fm` prefix for your server.\n\n" +
              "For example, with the prefix `!` commands will be used as `!chart` and `!whoknows`\n\n" +
              "To restore the default prefix, use this command without an option")]
@@ -264,21 +242,20 @@ public class GuildCommands : BaseCommandModule
     {
         try
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-            var response = await this._guildSettingBuilder.SetPrefix(new ContextModel(this.Context, prfx));
+            var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+            var response = await guildSettingBuilder.SetPrefix(new ContextModel(this.Context, prfx));
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
-    [Command("toggleservercommand", RunMode = RunMode.Async)]
+    [Command("toggleservercommand", "toggleservercommands", "toggleserver", "servertoggle")]
     [Summary("Enables or disables a command server-wide")]
-    [Alias("toggleservercommands", "toggleserver", "servertoggle")]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.ServerSettings)]
@@ -286,49 +263,48 @@ public class GuildCommands : BaseCommandModule
     {
         try
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-            var response = await this._guildSettingBuilder.ToggleGuildCommand(new ContextModel(this.Context, prfx));
+            var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+            var response = await guildSettingBuilder.ToggleGuildCommand(new ContextModel(this.Context, prfx));
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
     [GuildOnly]
     [RequiresIndex]
-    [Command("togglecommand", RunMode = RunMode.Async)]
-    [Summary("Enables or disables a command in a channel")]
-    [Alias("togglecommands", "channeltoggle", "togglechannel", "togglechannelcommand", "togglechannelcommands", "channelmode",
+    [Command("togglecommand", "togglecommands", "channeltoggle", "togglechannel", "togglechannelcommand", "togglechannelcommands", "channelmode",
         "channelfmmode")]
+    [Summary("Enables or disables a command in a channel")]
     [CommandCategories(CommandCategory.ServerSettings)]
     public async Task ToggleChannelCommand(string _ = null)
     {
         try
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
             var id = this.Context.Channel.Id;
-            if (this.Context.Channel is SocketThreadChannel threadChannel)
+            if (this.Context.Channel is GuildThread threadChannel)
             {
-                id = threadChannel.ParentChannel.Id;
+                id = threadChannel.ParentId ?? this.Context.Channel.Id;
             }
 
             var response =
-                await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context, prfx), id);
+                await guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context, prfx), id);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
-    [Command("cooldown", RunMode = RunMode.Async)]
+    [Command("cooldown")]
     [Summary("Sets a cooldown for the `fm` command in a channel.\n\n" +
              "To pick a channel, simply use this command in the channel you want the cooldown in.")]
     [Options("Cooldown in seconds (Min 2 seconds - Max 1200 seconds)")]
@@ -338,17 +314,17 @@ public class GuildCommands : BaseCommandModule
     [CommandCategories(CommandCategory.ServerSettings)]
     public async Task SetFmCooldownCommand(string command = null)
     {
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+        if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
         {
-            await ReplyAsync(GuildSettingBuilder.UserNotAllowedResponseText());
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = GuildSettingBuilder.UserNotAllowedResponseText() });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             return;
         }
 
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
+        var guild = await guildService.GetFullGuildAsync(this.Context.Guild.Id);
 
         int? newCooldown = null;
 
@@ -360,22 +336,23 @@ public class GuildCommands : BaseCommandModule
             }
         }
 
-        var existingFmCooldown = await this._guildService.GetChannelCooldown(this.Context.Channel.Id);
+        var existingFmCooldown = await guildService.GetChannelCooldown(this.Context.Channel.Id);
 
         this._embed.AddField("Previous .fm cooldown",
             existingFmCooldown.HasValue ? $"{existingFmCooldown.Value} seconds" : "No cooldown");
 
+        this.Context.Guild.Channels.TryGetValue(this.Context.Channel.Id, out var guildChannel);
         var newFmCooldown =
-            await this._guildService.SetChannelCooldownAsync(this.Context.Channel, guild.GuildId, newCooldown, this.Context.Guild.Id);
+            await guildService.SetChannelCooldownAsync(guildChannel, guild.GuildId, newCooldown, this.Context.Guild.Id);
 
         this._embed.AddField("New .fm cooldown",
             newFmCooldown.HasValue ? $"{newFmCooldown.Value} seconds" : "No cooldown");
 
-        this._embed.WithFooter($"Adjusting .fm cooldown for #{this.Context.Channel.Name}.\n" +
+        this._embed.WithFooter($"Adjusting .fm cooldown for #{guildChannel?.Name ?? "unknown"}.\n" +
                                "Min 2 seconds - Max 1200 seconds - Cooldown is per-user.\n" +
                                "Note that this cooldown can also expire after a bot restart.");
 
-        await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
-        this.Context.LogCommandUsed();
+        await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Embeds = [this._embed] });
+        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
     }
 }

@@ -1,18 +1,20 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Discord;
-using Discord.WebSocket;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
-using FMBot.Domain;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Caching.Memory;
+using NetCord;
+using NetCord.Gateway;
 using Serilog;
 using Shared.Domain.Enums;
+using DiscordGuild = NetCord.Gateway.Guild;
+using DiscordGuildUser = NetCord.GuildUser;
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
 
@@ -21,7 +23,7 @@ namespace FMBot.Bot.Handlers;
 public class ClientLogHandler
 {
     private readonly IMemoryCache _cache;
-    private readonly DiscordShardedClient _client;
+    private readonly ShardedGatewayClient _client;
     private readonly ChannelToggledCommandService _channelToggledCommandService;
     private readonly GuildDisabledCommandService _guildDisabledCommandService;
     private readonly DisabledChannelService _disabledChannelService;
@@ -29,7 +31,7 @@ public class ClientLogHandler
     private readonly GuildService _guildService;
     private readonly IndexService _indexService;
 
-    public ClientLogHandler(DiscordShardedClient client,
+    public ClientLogHandler(ShardedGatewayClient client,
         ChannelToggledCommandService channelToggledCommandService,
         GuildDisabledCommandService guildDisabledCommandService,
         GuildService guildService,
@@ -46,106 +48,77 @@ public class ClientLogHandler
         this._indexService = indexService;
         this._cache = cache;
         this._disabledChannelService = disabledChannelService;
-        this._client.Log += LogEvent;
-        this._client.ShardLatencyUpdated += ShardLatencyEvent;
-        this._client.ShardDisconnected += ShardDisconnectedEvent;
-        this._client.ShardConnected += ShardConnectedEvent;
-        this._client.JoinedGuild += ClientJoinedGuildEvent;
-        this._client.LeftGuild += ClientLeftGuildEvent;
+
+        // Shard connection events
+        this._client.Ready += ShardReady;
+        this._client.Connect += ShardConnected;
+        this._client.Disconnect += ShardDisconnected;
+        this._client.Resume += ShardResumed;
+
+        // Guild events
+        this._client.GuildCreate += ClientJoinedGuildEvent;
+        this._client.GuildDelete += ClientLeftGuildEvent;
     }
 
-    private Task ClientJoinedGuildEvent(SocketGuild guild)
+    private static ValueTask ShardReady(GatewayClient client, ReadyEventArgs args)
     {
-        _ = Task.Run(() => ClientJoinedGuild(guild));
-        return Task.CompletedTask;
+        Log.Information("ShardReady: Shard #{shardId} is ready with {guildCount} guilds",
+            client.Shard?.Id ?? 0, args.GuildIds.Count);
+        return ValueTask.CompletedTask;
     }
 
-    private Task ClientLeftGuildEvent(SocketGuild guild)
+    private static ValueTask ShardConnected(GatewayClient client)
     {
-        _ = Task.Run(() => ClientLeftGuild(guild));
-        return Task.CompletedTask;
+        Log.Information("ShardConnected: Shard #{shardId} connected",
+            client.Shard?.Id ?? 0);
+        return ValueTask.CompletedTask;
     }
 
-    private Task LogEvent(LogMessage logMessage)
+    private static ValueTask ShardDisconnected(GatewayClient client, DisconnectEventArgs args)
     {
-        Task.Run(() =>
+        Log.Warning("ShardDisconnected: Shard #{shardId} disconnected",
+            client.Shard?.Id ?? 0);
+        return ValueTask.CompletedTask;
+    }
+
+    private static ValueTask ShardResumed(GatewayClient client)
+    {
+        Log.Information("ShardResumed: Shard #{shardId} resumed session",
+            client.Shard?.Id ?? 0);
+        return ValueTask.CompletedTask;
+    }
+
+    private ValueTask ClientJoinedGuildEvent(GatewayClient client, GuildCreateEventArgs guildCreateEventArgs)
+    {
+        var guild = guildCreateEventArgs.Guild;
+        if (guild == null)
         {
-            switch (logMessage.Severity)
-            {
-                case LogSeverity.Critical:
-                    Log.Fatal(logMessage.Exception, "{logMessageSource} | {logMessage}", logMessage.Source, logMessage.Message);
-                    break;
-                case LogSeverity.Error:
-                    Log.Error(logMessage.Exception, "{logMessageSource} | {logMessage}", logMessage.Source, logMessage.Message);
-                    break;
-                case LogSeverity.Warning:
-                    Log.Warning(logMessage.Exception, "{logMessageSource} | {logMessage}", logMessage.Source, logMessage.Message);
-                    break;
-                case LogSeverity.Info:
-                    Log.Information(logMessage.Exception, "{logMessageSource} | {logMessage}", logMessage.Source, logMessage.Message);
-                    break;
-                case LogSeverity.Verbose:
-                    Log.Verbose(logMessage.Exception, "{logMessageSource} | {logMessage}", logMessage.Source, logMessage.Message);
-                    break;
-                case LogSeverity.Debug:
-                    Log.Debug(logMessage.Exception, "{logMessageSource} | {logMessage}", logMessage.Source, logMessage.Message);
-                    break;
-            }
+            return ValueTask.CompletedTask;
+        }
 
-        });
-        return Task.CompletedTask;
+        var isNewJoin = guild.JoinedAt > DateTimeOffset.UtcNow.AddMinutes(-10);
+        if (!isNewJoin)
+        {
+            return ValueTask.CompletedTask;
+        }
+
+        _ = Task.Run(() => ClientJoinedGuild(guild));
+        return ValueTask.CompletedTask;
     }
 
-    private Task ShardDisconnectedEvent(Exception exception, DiscordSocketClient shard)
+    private ValueTask ClientLeftGuildEvent(GatewayClient client, GuildDeleteEventArgs args)
     {
-        _ = Task.Run(() => ShardDisconnected(exception, shard));
-        return Task.CompletedTask;
+        if (!args.IsUnavailable)
+        {
+            _ = Task.Run(() => ClientLeftGuild(args));
+        }
+        return ValueTask.CompletedTask;
     }
 
-    private Task ShardLatencyEvent(int oldPing, int updatePing, DiscordSocketClient shard)
-    {
-        _ = Task.Run(() => ShardLatencyUpdated(oldPing, updatePing, shard));
-        return Task.CompletedTask;
-    }
-
-    private Task ShardConnectedEvent(DiscordSocketClient shard)
-    {
-        _ = Task.Run(() => ShardConnected(shard));
-        return Task.CompletedTask;
-    }
-
-    private void ShardDisconnected(Exception exception, DiscordSocketClient shard)
-    {
-        Statistics.ShardDisConnected.Inc();
-
-        Statistics.ConnectedShards.Set(this._client.Shards.Count(w => w.ConnectionState == ConnectionState.Connected));
-
-        Log.Warning("ShardDisconnected: shard #{shardId} Disconnected", shard.ShardId, exception);
-    }
-
-    private void ShardConnected(DiscordSocketClient shard)
-    {
-        Statistics.ShardConnected.Inc();
-
-        Statistics.ConnectedShards.Set(this._client.Shards.Count(w => w.ConnectionState == ConnectionState.Connected));
-
-        Log.Information("ShardConnected: shard #{shardId} with {shardLatency} ms", shard.ShardId, shard.Latency);
-    }
-
-    private void ShardLatencyUpdated(int oldPing, int updatePing, DiscordSocketClient shard)
-    {
-        Statistics.ConnectedShards.Set(this._client.Shards.Count(w => w.ConnectionState == ConnectionState.Connected));
-
-        if (updatePing < 400 && oldPing < 400) return;
-
-        Log.Information("Shard: #{shardId} Latency update from {oldPing} ms to {updatePing} ms",
-            shard.ShardId, oldPing, updatePing);
-    }
-
-    private async Task ClientJoinedGuild(SocketGuild guild)
+    private async Task ClientJoinedGuild(DiscordGuild guild)
     {
         Log.Information(
-            "JoinedGuild: {guildName} / {guildId} | {memberCount} members", guild.Name, guild.Id, guild.MemberCount);
+            "JoinedGuild: {guildName} / {guildId} | {memberCount} members", guild.Name, guild.Id, guild.ApproximateUserCount);
 
         var dbGuild = await this._guildService.GetGuildAsync(guild.Id);
         if (dbGuild?.GuildFlags.HasValue == true && dbGuild.GuildFlags.Value.HasFlag(GuildFlags.Banned))
@@ -163,14 +136,14 @@ public class ClientLogHandler
         _ = IndexServer(guild);
     }
 
-    private async Task IndexServer(SocketGuild guild)
+    private async Task IndexServer(DiscordGuild guild)
     {
         try
         {
-            var users = new List<IGuildUser>();
-            await foreach (var awaitedUsers in guild.GetUsersAsync())
+            var users = new List<DiscordGuildUser>();
+            await foreach (var user in guild.GetUsersAsync())
             {
-                users.AddRange(awaitedUsers);
+                users.Add(user);
             }
 
             Log.Information(
@@ -183,26 +156,26 @@ public class ClientLogHandler
         }
         catch (Exception e)
         {
-            Log.Error("Error in JoinedGuild / IndexServer", e);
+            Log.Error(e, "Error in JoinedGuild / IndexServer");
         }
     }
 
-    private async Task ClientLeftGuild(SocketGuild guild)
+    private async Task ClientLeftGuild(GuildDeleteEventArgs args)
     {
         var keepData = false;
 
-        var key = $"{guild.Id}-keep-data";
+        var key = $"{args.GuildId}-keep-data";
         if (this._cache.TryGetValue(key, out _))
         {
             keepData = true;
         }
 
-        if (BotTypeExtension.GetBotType(this._client.CurrentUser.Id) == BotType.Beta)
+        if (BotTypeExtension.GetBotType(this._client.GetCurrentUser()!.Id) == BotType.Beta)
         {
             keepData = true;
         }
 
-        var dbGuild = await this._guildService.GetGuildAsync(guild.Id);
+        var dbGuild = await this._guildService.GetGuildAsync(args.GuildId);
         if (dbGuild?.GuildFlags.HasValue == true && dbGuild.GuildFlags.Value.HasFlag(GuildFlags.Banned))
         {
             keepData = true;
@@ -211,16 +184,16 @@ public class ClientLogHandler
         if (!keepData)
         {
             Log.Information(
-                "LeftGuild: {guildName} / {guildId} | {memberCount} members", guild.Name, guild.Id, guild.MemberCount);
+                "LeftGuild: {guildId}", args.GuildId);
 
-            _ = this._channelToggledCommandService.RemoveToggledCommandsForGuild(guild.Id);
-            _ = this._disabledChannelService.RemoveDisabledChannelsForGuild(guild.Id);
-            _ = this._guildService.RemoveGuildAsync(guild.Id);
+            _ = this._channelToggledCommandService.RemoveToggledCommandsForGuild(args.GuildId);
+            _ = this._disabledChannelService.RemoveDisabledChannelsForGuild(args.GuildId);
+            _ = this._guildService.RemoveGuildAsync(args.GuildId);
         }
         else
         {
             Log.Information(
-                "LeftGuild: {guildName} / {guildId} | {memberCount} members (skipped delete)", guild.Name, guild.Id, guild.MemberCount);
+                "LeftGuild: {guildId} (skipped delete)", args.GuildId);
         }
     }
 }

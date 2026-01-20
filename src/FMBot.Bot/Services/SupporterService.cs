@@ -4,9 +4,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
-using Discord;
-using Discord.Webhook;
-using Discord.WebSocket;
+using FMBot.Bot.Extensions;
 using FMBot.Bot.Resources;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
@@ -18,7 +16,11 @@ using FMBot.Subscriptions.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using NetCord;
+using NetCord.Gateway;
+using NetCord.Rest;
 using Serilog;
+using FMBot.Bot.Services.Guild;
 using Shared.Domain.Enums;
 using Shared.Domain.Models;
 using Web.InternalApi;
@@ -35,7 +37,7 @@ public class SupporterService
     private readonly BotSettings _botSettings;
     private readonly IMemoryCache _cache;
     private readonly IndexService _indexService;
-    private readonly DiscordShardedClient _client;
+    private readonly ShardedGatewayClient _client;
     private readonly SupporterLinkService.SupporterLinkServiceClient _supporterLinkService;
 
     public SupporterService(IDbContextFactory<FMBotDbContext> contextFactory,
@@ -44,7 +46,7 @@ public class SupporterService
         IMemoryCache cache,
         IndexService indexService,
         DiscordSkuService discordSkuService,
-        DiscordShardedClient client,
+        ShardedGatewayClient client,
         SupporterLinkService.SupporterLinkServiceClient supporterLinkService)
     {
         this._contextFactory = contextFactory;
@@ -57,7 +59,7 @@ public class SupporterService
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<string> GetRandomSupporter(IGuild guild, UserType userUserType)
+    public async Task<string> GetRandomSupporter(NetCord.Gateway.Guild guild, UserType userUserType)
     {
         if (guild == null)
         {
@@ -127,10 +129,10 @@ public class SupporterService
         return true;
     }
 
-    public static async Task SendSupporterWelcomeMessage(IUser discordUser, bool hasDiscogs, Supporter supporter,
+    public static async Task SendSupporterWelcomeMessage(NetCord.User discordUser, bool hasDiscogs, Supporter supporter,
         bool reactivation = false, bool isGifted = false, StripeSupporter stripeSupporter = null)
     {
-        var thankYouEmbed = new EmbedBuilder();
+        var thankYouEmbed = new EmbedProperties();
         thankYouEmbed.WithColor(DiscordConstants.InformationColorBlue);
 
         var thankYouMessage = new StringBuilder();
@@ -217,25 +219,34 @@ public class SupporterService
 
         thankYouEmbed.WithDescription(thankYouMessage.ToString());
 
+        var dmChannel = await discordUser.GetDMChannelAsync();
+
         if (reactivation)
         {
-            var reactivateEmbed = new EmbedBuilder();
+            var reactivateEmbed = new EmbedProperties();
             reactivateEmbed.WithDescription(
                 "Welcome back. Please use the `/import manage` command to re-activate the import service if you've used it previously.");
             reactivateEmbed.WithColor(DiscordConstants.InformationColorBlue);
-            await discordUser.SendMessageAsync(embeds: [thankYouEmbed.Build(), reactivateEmbed.Build()]);
+            await dmChannel.SendMessageAsync(new MessageProperties
+            {
+                Embeds = [thankYouEmbed, reactivateEmbed]
+            });
         }
         else
         {
-            await discordUser.SendMessageAsync(embed: thankYouEmbed.Build());
+            await dmChannel.SendMessageAsync(new MessageProperties
+            {
+                Embeds = [thankYouEmbed]
+            });
         }
     }
 
-    public static async Task SendGiftPurchaserThankYouMessage(IUser purchaserUser, StripeSupporter stripeSupporter)
+    public static async Task SendGiftPurchaserThankYouMessage(NetCord.User purchaserUser,
+        StripeSupporter stripeSupporter)
     {
         try
         {
-            var thankYouEmbed = new EmbedBuilder();
+            var thankYouEmbed = new EmbedProperties();
             thankYouEmbed.WithColor(DiscordConstants.SuccessColorGreen);
             thankYouEmbed.WithAuthor("🎁 Thank you for gifting .fmbot supporter!");
 
@@ -254,7 +265,11 @@ public class SupporterService
 
             thankYouEmbed.WithDescription(thankYouMessage.ToString());
 
-            await purchaserUser.SendMessageAsync(embed: thankYouEmbed.Build());
+            var dmChannel = await purchaserUser.GetDMChannelAsync();
+            await dmChannel.SendMessageAsync(new MessageProperties
+            {
+                Embeds = [thankYouEmbed]
+            });
         }
         catch (Exception e)
         {
@@ -263,11 +278,11 @@ public class SupporterService
         }
     }
 
-    public static async Task SendSupporterGoodbyeMessage(IUser discordUser, bool hadImported = false)
+    public static async Task SendSupporterGoodbyeMessage(NetCord.User discordUser, bool hadImported = false)
     {
         try
         {
-            var goodbyeEmbed = new EmbedBuilder();
+            var goodbyeEmbed = new EmbedProperties();
             goodbyeEmbed.WithColor(DiscordConstants.InformationColorBlue);
 
             goodbyeEmbed.AddField("⭐ .fmbot supporter expired",
@@ -276,20 +291,25 @@ public class SupporterService
 
             if (hadImported)
             {
-                goodbyeEmbed.AddField($"{DiscordConstants.Imports} Importing service deactivated",
+                goodbyeEmbed.AddField($"{EmojiProperties.Custom(DiscordConstants.Imports).ToDiscordString("imports")} Importing service deactivated",
                     "The import service is no longer active, so the bot will now only use your Last.fm stats without imported .fmbot data. Your imports are however saved and will be available again if you resubscribe in the future.");
             }
 
-            var buttons = new ComponentBuilder()
+            var buttons = new ActionRowProperties()
                 .WithButton("Resubscribe", style: ButtonStyle.Secondary,
                     customId: InteractionConstants.SupporterLinks
                         .GeneratePurchaseButtons(source: "goodbye-resubscribe"))
-                .WithButton("Support server", style: ButtonStyle.Link, url: "https://discord.gg/fmbot");
+                .WithButton("Support server", url: "https://discord.gg/fmbot");
 
             goodbyeEmbed.AddField("🏷️ Annual deal",
                 "Resubscribe and save 50% on .fmbot supporter with our new yearly option.");
 
-            await discordUser.SendMessageAsync(embed: goodbyeEmbed.Build(), components: buttons.Build());
+            var dmChannel = await discordUser.GetDMChannelAsync();
+            await dmChannel.SendMessageAsync(new MessageProperties
+            {
+                Embeds = [goodbyeEmbed],
+                Components = [buttons]
+            });
         }
         catch (Exception e)
         {
@@ -383,7 +403,7 @@ public class SupporterService
                 {
                     SetGuildSupporterPromoCache(guildId);
                     message =
-                        $"*{DiscordConstants.Discoveries} View which artists you recently discovered with .fmbot supporter*";
+                        $"*{EmojiProperties.Custom(DiscordConstants.Discoveries).ToDiscordString("discoveries")} View which artists you recently discovered with .fmbot supporter*";
                     showUpgradeButton = true;
                     supporterSource = "updatepromo-discoveries";
                     break;
@@ -401,7 +421,7 @@ public class SupporterService
                 {
                     SetGuildSupporterPromoCache(guildId);
                     message =
-                        $"*{DiscordConstants.Discoveries} View which artists you recently returned to with .fmbot supporter*";
+                        $"*{EmojiProperties.Custom(DiscordConstants.Discoveries).ToDiscordString("discoveries")} View which artists you recently returned to with .fmbot supporter*";
                     showUpgradeButton = true;
                     supporterSource = "updatepromo-gaps";
                     break;
@@ -410,7 +430,7 @@ public class SupporterService
                 {
                     SetGuildSupporterPromoCache(guildId);
                     message =
-                        $"*{DiscordConstants.Discoveries} See your discovery date for an artist, album and track with `{prfx}discoverydate`/`{prfx}dd`*";
+                        $"*{EmojiProperties.Custom(DiscordConstants.Discoveries).ToDiscordString("discoveries")} See your discovery date for an artist, album and track with `{prfx}discoverydate`/`{prfx}dd`*";
                     showUpgradeButton = true;
                     supporterSource = "updatepromo-discoverydate";
                     break;
@@ -446,7 +466,7 @@ public class SupporterService
                 {
                     SetGuildSupporterPromoCache(guildId);
                     message =
-                        $"*{DiscordConstants.Shortcut} Supporters can set up up to 10 text command shortcuts*";
+                        $"*{EmojiProperties.Custom(DiscordConstants.Shortcut).ToDiscordString("shortcut")} Supporters can set up up to 10 text command shortcuts*";
                     showUpgradeButton = true;
                     supporterSource = "updatepromo-usershortcuts";
                     break;
@@ -552,7 +572,7 @@ public class SupporterService
                 case 8:
                 {
                     message =
-                        $"*{DiscordConstants.Discoveries} View when you discovered an artist, album and track with `{prfx}discoverydate` / `{prfx}dd`*";
+                        $"*{EmojiProperties.Custom(DiscordConstants.Discoveries).ToDiscordString("discoveries")} View when you discovered an artist, album and track with `{prfx}discoverydate` / `{prfx}dd`*";
 
                     break;
                 }
@@ -721,8 +741,9 @@ public class SupporterService
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
         return await db.StripeSupporters
-            .FirstOrDefaultAsync(f => f.PurchaserDiscordUserId == discordUserId && f.Type == StripeSupporterType.Supporter ||
-                                      f.GiftReceiverDiscordUserId == discordUserId && !f.EntitlementDeleted);
+            .FirstOrDefaultAsync(f =>
+                f.PurchaserDiscordUserId == discordUserId && f.Type == StripeSupporterType.Supporter ||
+                f.GiftReceiverDiscordUserId == discordUserId && !f.EntitlementDeleted);
     }
 
     public async Task<StripeSupporter> GetStripeSupporterByRecipient(ulong discordUserId)
@@ -807,17 +828,16 @@ public class SupporterService
 
         if (this._botSettings.Bot.SupporterAuditLogWebhookUrl != null)
         {
-            var supporterAuditLogChannel = new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
+            var supporterAuditLogChannel = WebhookService.CreateWebhookClientFromUrl(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
 
-            var embed = new EmbedBuilder();
+            var embed = new EmbedProperties();
 
             embed.WithTitle("Supporter expiry processed");
             embed.WithDescription($"Name: `{supporter.Name}`\n" +
                                   $"OpenCollective ID: `{supporter.OpenCollectiveId}`\n" +
                                   $"Subscription type: `{supporter.SubscriptionType}`");
 
-            await supporterAuditLogChannel.SendMessageAsync(null, false, new[] { embed.Build() });
-            supporterAuditLogChannel.Dispose();
+            await supporterAuditLogChannel.ExecuteAsync(new WebhookMessageProperties { Embeds = [embed] });
         }
 
         return supporter;
@@ -837,8 +857,8 @@ public class SupporterService
             .Where(w => w.OpenCollectiveId != null)
             .ToListAsync();
 
-        var supporterUpdateChannel = new DiscordWebhookClient(this._botSettings.Bot.SupporterUpdatesWebhookUrl);
-        var supporterAuditLogChannel = new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
+        var supporterUpdateChannel = WebhookService.CreateWebhookClientFromUrl(this._botSettings.Bot.SupporterUpdatesWebhookUrl);
+        var supporterAuditLogChannel = WebhookService.CreateWebhookClientFromUrl(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
 
         foreach (var newSupporter in openCollectiveSupporters.Users.Where(w =>
                      w.LastPayment >= DateTime.UtcNow.AddHours(-6)))
@@ -849,7 +869,7 @@ public class SupporterService
                 continue;
             }
 
-            var embed = new EmbedBuilder();
+            var embed = new EmbedProperties();
 
             var existingSupporter = existingSupporters.FirstOrDefault(f => f.OpenCollectiveId == newSupporter.Id);
             if (existingSupporter is { Expired: true })
@@ -860,8 +880,8 @@ public class SupporterService
                                       $"Subscription type: `{newSupporter.SubscriptionType}`\n\n" +
                                       $"No action should be required. Check <#821661156652875856> if it's reactivated in there.");
 
-                await supporterAuditLogChannel.SendMessageAsync(null, false, new[] { embed.Build() });
-                await supporterUpdateChannel.SendMessageAsync(null, false, new[] { embed.Build() });
+                await supporterAuditLogChannel.ExecuteAsync(new WebhookMessageProperties { Embeds = [embed] });
+                await supporterUpdateChannel.ExecuteAsync(new WebhookMessageProperties { Embeds = [embed] });
 
                 this._cache.Set(cacheKey, 1, TimeSpan.FromDays(1));
 
@@ -883,16 +903,11 @@ public class SupporterService
                                   $"OpenCollective ID: `{newSupporter.Id}`\n" +
                                   $"Subscription type: `{newSupporter.SubscriptionType}`\n\n");
 
-            await supporterAuditLogChannel.SendMessageAsync($"`.addsupporter \"discordUserId\" \"{newSupporter.Id}\"`",
-                false, new[] { embed.Build() });
-            await supporterUpdateChannel.SendMessageAsync($"`.addsupporter \"discordUserId\" \"{newSupporter.Id}\"`",
-                false, new[] { embed.Build() });
+            await supporterAuditLogChannel.ExecuteAsync(new WebhookMessageProperties { Content = $"`.addsupporter \"discordUserId\" \"{newSupporter.Id}\"`", Embeds = [embed] });
+            await supporterUpdateChannel.ExecuteAsync(new WebhookMessageProperties { Content = $"`.addsupporter \"discordUserId\" \"{newSupporter.Id}\"`", Embeds = [embed] });
 
             this._cache.Set(cacheKey, 1, TimeSpan.FromDays(1));
         }
-
-        supporterAuditLogChannel.Dispose();
-        supporterUpdateChannel.Dispose();
     }
 
     public async Task UpdateExistingOpenCollectiveSupporters()
@@ -905,9 +920,9 @@ public class SupporterService
             .ToListAsync();
 
         var supporterUpdateChannel =
-            new DiscordWebhookClient(this._botSettings.Bot.SupporterUpdatesWebhookUrl);
+            WebhookService.CreateWebhookClientFromUrl(this._botSettings.Bot.SupporterUpdatesWebhookUrl);
         var supporterAuditLogChannel =
-            new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
+            WebhookService.CreateWebhookClientFromUrl(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
 
         foreach (var existingSupporter in existingSupporters)
         {
@@ -971,11 +986,11 @@ public class SupporterService
 
                         reActivateDescription.AppendLine($"Notes: `{existingSupporter.Notes}`");
 
-                        var reactivateEmbed = new EmbedBuilder();
+                        var reactivateEmbed = new EmbedProperties();
                         reactivateEmbed.WithTitle("Re-activated supporter");
                         reactivateEmbed.WithDescription(reActivateDescription.ToString());
 
-                        await supporterAuditLogChannel.SendMessageAsync(null, false, new[] { reactivateEmbed.Build() });
+                        await supporterAuditLogChannel.ExecuteAsync(new WebhookMessageProperties { Embeds = [reactivateEmbed] });
                     }
 
                     var updatedDescription = new StringBuilder();
@@ -997,11 +1012,11 @@ public class SupporterService
                     db.Update(existingSupporter);
                     await db.SaveChangesAsync();
 
-                    var embed = new EmbedBuilder();
+                    var embed = new EmbedProperties();
                     embed.WithTitle("Updated supporter");
                     embed.WithDescription(updatedDescription.ToString());
 
-                    await supporterAuditLogChannel.SendMessageAsync(null, false, new[] { embed.Build() });
+                    await supporterAuditLogChannel.ExecuteAsync(new WebhookMessageProperties { Embeds = [embed] });
                 }
             }
 
@@ -1019,15 +1034,15 @@ public class SupporterService
                         continue;
                     }
 
-                    var embed = new EmbedBuilder();
+                    var embed = new EmbedProperties();
 
                     embed.WithTitle("Monthly supporter expired");
                     embed.WithDescription(OpenCollectiveSupporterToEmbedDescription(existingSupporter));
 
-                    await supporterAuditLogChannel.SendMessageAsync(
-                        $"`.removesupporter {existingSupporter.DiscordUserId}`", false, new[] { embed.Build() });
-                    await supporterUpdateChannel.SendMessageAsync(
-                        $"`.removesupporter {existingSupporter.DiscordUserId}`", false, new[] { embed.Build() });
+                    await supporterAuditLogChannel.ExecuteAsync(new WebhookMessageProperties { Content =
+                        $"`.removesupporter {existingSupporter.DiscordUserId}`", Embeds = [embed] });
+                    await supporterUpdateChannel.ExecuteAsync(new WebhookMessageProperties { Content =
+                        $"`.removesupporter {existingSupporter.DiscordUserId}`", Embeds = [embed] });
 
                     this._cache.Set(cacheKey, 1, TimeSpan.FromDays(2));
                 }
@@ -1048,22 +1063,19 @@ public class SupporterService
                         continue;
                     }
 
-                    var embed = new EmbedBuilder();
+                    var embed = new EmbedProperties();
 
                     embed.WithTitle("Yearly supporter expired");
                     embed.WithDescription(OpenCollectiveSupporterToEmbedDescription(existingSupporter));
 
-                    await supporterAuditLogChannel.SendMessageAsync(
-                        $"`.removesupporter {existingSupporter.DiscordUserId}`", false, new[] { embed.Build() });
-                    await supporterUpdateChannel.SendMessageAsync(null, false, new[] { embed.Build() });
+                    await supporterAuditLogChannel.ExecuteAsync(new WebhookMessageProperties { Content =
+                        $"`.removesupporter {existingSupporter.DiscordUserId}`", Embeds = [embed] });
+                    await supporterUpdateChannel.ExecuteAsync(new WebhookMessageProperties { Embeds = [embed] });
 
                     this._cache.Set(cacheKey, 1, TimeSpan.FromDays(2));
                 }
             }
         }
-
-        supporterAuditLogChannel.Dispose();
-        supporterUpdateChannel.Dispose();
     }
 
     private static string OpenCollectiveSupporterToEmbedDescription(Supporter supporter)
@@ -1086,7 +1098,7 @@ public class SupporterService
     {
         var discordSupporters =
             await this._discordSkuService.GetGroupedEntitlements(
-                after: SnowflakeUtils.ToSnowflake(DateTime.UtcNow.AddDays(-1)));
+                after: DateTime.UtcNow.AddDays(-1).ToSnowflake());
 
         await UpdateDiscordSupporters(discordSupporters);
     }
@@ -1101,7 +1113,7 @@ public class SupporterService
             .ToListAsync();
 
         var supporterAuditLogChannel =
-            new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
+            WebhookService.CreateWebhookClientFromUrl(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
 
         foreach (var userEntitlements in groupedEntitlements)
         {
@@ -1174,8 +1186,8 @@ public class SupporterService
                     }
                 }
 
-                var embed = new EmbedBuilder().WithDescription(auditLogMessage.ToString());
-                await supporterAuditLogChannel.SendMessageAsync(embeds: [embed.Build()]);
+                var embed = new EmbedProperties().WithDescription(auditLogMessage.ToString());
+                await supporterAuditLogChannel.ExecuteAsync(new WebhookMessageProperties { Embeds = [embed] });
 
                 Log.Information("Added supporter {discordUserId} - {subscriptionType}", userEntitlements.DiscordUserId,
                     newSupporter.SubscriptionType);
@@ -1201,10 +1213,10 @@ public class SupporterService
                         : "no end date";
 
                     var subType = Enum.GetName(existingSupporter.SubscriptionType.Value);
-                    var embed = new EmbedBuilder().WithDescription(
+                    var embed = new EmbedProperties().WithDescription(
                         $"Updated {subType} supporter {userEntitlements.DiscordUserId} - <@{userEntitlements.DiscordUserId}>\n" +
                         $"*End date from <t:{((DateTimeOffset?)oldDate)?.ToUnixTimeSeconds()}:f> to {endDate}*");
-                    await supporterAuditLogChannel.SendMessageAsync(embeds: new[] { embed.Build() });
+                    await supporterAuditLogChannel.ExecuteAsync(new WebhookMessageProperties { Embeds = [embed] });
                 }
 
                 if (existingSupporter.Expired == true && userEntitlements.Active)
@@ -1273,8 +1285,8 @@ public class SupporterService
                         }
                     }
 
-                    var embed = new EmbedBuilder().WithDescription(auditLogMessage.ToString());
-                    await supporterAuditLogChannel.SendMessageAsync(embeds: [embed.Build()]);
+                    var embed = new EmbedProperties().WithDescription(auditLogMessage.ToString());
+                    await supporterAuditLogChannel.ExecuteAsync(new WebhookMessageProperties { Embeds = [embed] });
 
                     Log.Information("Re-activated Discord supporter {discordUserId}", userEntitlements.DiscordUserId);
 
@@ -1307,16 +1319,14 @@ public class SupporterService
                     }
 
                     var subType = Enum.GetName(existingSupporter.SubscriptionType.Value);
-                    var embed = new EmbedBuilder().WithDescription(
+                    var embed = new EmbedProperties().WithDescription(
                         $"Removed {subType} supporter {userEntitlements.DiscordUserId} - <@{userEntitlements.DiscordUserId}>");
-                    await supporterAuditLogChannel.SendMessageAsync(embeds: new[] { embed.Build() });
+                    await supporterAuditLogChannel.ExecuteAsync(new WebhookMessageProperties { Embeds = [embed] });
 
                     Log.Information("Removed Discord supporter {discordUserId}", userEntitlements.DiscordUserId);
                 }
             }
         }
-
-        supporterAuditLogChannel.Dispose();
     }
 
     public async Task CheckExpiredDiscordSupporters()
@@ -1340,7 +1350,7 @@ public class SupporterService
         Log.Information("Checking expired supporters - {count} possibly expired", possiblyExpiredSupporters.Count);
 
         var supporterAuditLogChannel =
-            new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
+            WebhookService.CreateWebhookClientFromUrl(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
 
         foreach (var existingSupporter in possiblyExpiredSupporters)
         {
@@ -1371,11 +1381,11 @@ public class SupporterService
                     ? $"<t:{((DateTimeOffset?)discordSupporter.EndsAt)?.ToUnixTimeSeconds()}:f>"
                     : "no end date";
 
-                var embed = new EmbedBuilder().WithDescription(
+                var embed = new EmbedProperties().WithDescription(
                     $"Updated Discord supporter {discordSupporter.DiscordUserId} - <@{discordSupporter.DiscordUserId}>\n" +
                     $"*End date from <t:{((DateTimeOffset?)oldDate)?.ToUnixTimeSeconds()}:f> to {endDate}*");
 
-                await supporterAuditLogChannel.SendMessageAsync(embeds: new[] { embed.Build() });
+                await supporterAuditLogChannel.ExecuteAsync(new WebhookMessageProperties { Embeds = [embed] });
 
                 continue;
             }
@@ -1405,9 +1415,9 @@ public class SupporterService
                     await SendSupporterGoodbyeMessage(user, hadImported);
                 }
 
-                var embed = new EmbedBuilder().WithDescription(
+                var embed = new EmbedProperties().WithDescription(
                     $"Removed Discord supporter {discordSupporter.DiscordUserId} - <@{discordSupporter.DiscordUserId}>");
-                await supporterAuditLogChannel.SendMessageAsync(embeds: new[] { embed.Build() });
+                await supporterAuditLogChannel.ExecuteAsync(new WebhookMessageProperties { Embeds = [embed] });
 
                 Log.Information("Removed Discord supporter {discordUserId}", discordSupporter.DiscordUserId);
 
@@ -1423,13 +1433,11 @@ public class SupporterService
 
             await Task.Delay(500);
         }
-
-        supporterAuditLogChannel.Dispose();
     }
 
     private async Task<bool> DiscordSubbedElsewhereExpiryFlow(Supporter existingSupporter,
         DiscordEntitlement discordSupporter,
-        DiscordWebhookClient supporterAuditLogChannel)
+        WebhookClient supporterAuditLogChannel)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
@@ -1449,10 +1457,10 @@ public class SupporterService
                 Log.Information("Not removing Discord supporter because active OpenCollective sub - {discordUserId}",
                     discordSupporter.DiscordUserId);
 
-                var notCancellingEmbed = new EmbedBuilder().WithDescription(
+                var notCancellingEmbed = new EmbedProperties().WithDescription(
                     $"Prevented removal of Discord supporter who also has active OpenCollective sub\n" +
                     $"{discordSupporter.DiscordUserId} - <@{discordSupporter.DiscordUserId}>");
-                await supporterAuditLogChannel.SendMessageAsync(embeds: new[] { notCancellingEmbed.Build() });
+                await supporterAuditLogChannel.ExecuteAsync(new WebhookMessageProperties { Embeds = [notCancellingEmbed] });
             }
             else if (otherSupporterSubscription.SubscriptionType == SubscriptionType.Stripe &&
                      existingSupporter.SubscriptionType == SubscriptionType.Discord)
@@ -1460,10 +1468,10 @@ public class SupporterService
                 Log.Information("Not removing Discord supporter because active Stripe sub - {discordUserId}",
                     discordSupporter.DiscordUserId);
 
-                var notCancellingEmbed = new EmbedBuilder().WithDescription(
+                var notCancellingEmbed = new EmbedProperties().WithDescription(
                     $"Prevented removal of Discord supporter who also has active Stripe sub\n" +
                     $"{discordSupporter.DiscordUserId} - <@{discordSupporter.DiscordUserId}>");
-                await supporterAuditLogChannel.SendMessageAsync(embeds: new[] { notCancellingEmbed.Build() });
+                await supporterAuditLogChannel.ExecuteAsync(new WebhookMessageProperties { Embeds = [notCancellingEmbed] });
             }
             else if (otherSupporterSubscription.SubscriptionType == SubscriptionType.Discord &&
                      existingSupporter.SubscriptionType == SubscriptionType.Stripe)
@@ -1471,20 +1479,20 @@ public class SupporterService
                 Log.Information("Not removing Discord supporter because active Stripe sub - {discordUserId}",
                     discordSupporter.DiscordUserId);
 
-                var notCancellingEmbed = new EmbedBuilder().WithDescription(
+                var notCancellingEmbed = new EmbedProperties().WithDescription(
                     $"Prevented removal of Discord supporter who also has active Stripe sub\n" +
                     $"{discordSupporter.DiscordUserId} - <@{discordSupporter.DiscordUserId}>");
-                await supporterAuditLogChannel.SendMessageAsync(embeds: new[] { notCancellingEmbed.Build() });
+                await supporterAuditLogChannel.ExecuteAsync(new WebhookMessageProperties { Embeds = [notCancellingEmbed] });
             }
             else
             {
                 Log.Information("Not removing Discord supporter because active other {otherType} sub - {discordUserId}",
                     otherSupporterSubscription.SubscriptionType, discordSupporter.DiscordUserId);
 
-                var notCancellingEmbed = new EmbedBuilder().WithDescription(
+                var notCancellingEmbed = new EmbedProperties().WithDescription(
                     $"Prevented removal of Discord supporter who also has active {otherSupporterSubscription.SubscriptionType} sub\n" +
                     $"{discordSupporter.DiscordUserId} - <@{discordSupporter.DiscordUserId}>");
-                await supporterAuditLogChannel.SendMessageAsync(embeds: new[] { notCancellingEmbed.Build() });
+                await supporterAuditLogChannel.ExecuteAsync(new WebhookMessageProperties { Embeds = [notCancellingEmbed] });
             }
 
             await ExpireSupporter(discordSupporter.DiscordUserId, existingSupporter, false);
@@ -1516,7 +1524,7 @@ public class SupporterService
             usersThatShouldHaveSupporter.Count);
 
         var supporterAuditLogChannel =
-            new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
+            WebhookService.CreateWebhookClientFromUrl(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
 
         foreach (var dbUser in usersThatShouldHaveSupporter)
         {
@@ -1529,16 +1537,14 @@ public class SupporterService
             await ModifyGuildRole(discordSupporter.DiscordUserId.Value);
             await RunFullUpdate(discordSupporter.DiscordUserId.Value);
 
-            var embed = new EmbedBuilder().WithDescription(
+            var embed = new EmbedProperties().WithDescription(
                 $"Re-activated supporter {discordSupporter.DiscordUserId} - <@{discordSupporter.DiscordUserId}>\n" +
                 $"*User had an active subscription, but their .fmbot account didn't have supporter*");
-            await supporterAuditLogChannel.SendMessageAsync(embeds: new[] { embed.Build() });
+            await supporterAuditLogChannel.ExecuteAsync(new WebhookMessageProperties { Embeds = [embed] });
 
             Log.Information("Re-activated supporter (user was missing type) {discordUserId}",
                 discordSupporter.DiscordUserId);
         }
-
-        supporterAuditLogChannel.Dispose();
     }
 
     public async Task CheckExpiredStripeSupporters(ulong? specificDiscordUserId = null)
@@ -1573,7 +1579,7 @@ public class SupporterService
             possiblyExpiredSupporters.Count);
 
         var supporterAuditLogChannel =
-            new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
+            WebhookService.CreateWebhookClientFromUrl(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
 
         foreach (var existingStripeSupporter in possiblyExpiredSupporters)
         {
@@ -1611,9 +1617,9 @@ public class SupporterService
                     await SendSupporterGoodbyeMessage(user, hadImported);
                 }
 
-                var embed = new EmbedBuilder().WithDescription(
+                var embed = new EmbedProperties().WithDescription(
                     $"Removed Stripe supporter {discordUserId} - <@{discordUserId}>");
-                await supporterAuditLogChannel.SendMessageAsync(embeds: [embed.Build()]);
+                await supporterAuditLogChannel.ExecuteAsync(new WebhookMessageProperties { Embeds = [embed] });
 
                 Log.Information("Removed Stripe supporter {discordUserId}", discordUserId);
             }
@@ -1622,20 +1628,20 @@ public class SupporterService
                 Log.Information("Not removing Stripe supporter because active other {otherType} sub - {discordUserId}",
                     otherSupporterSubscription.SubscriptionType, discordUserId);
 
-                var notCancellingEmbed = new EmbedBuilder().WithDescription(
+                var notCancellingEmbed = new EmbedProperties().WithDescription(
                     $"Prevented removal of Stripe supporter who also has active {otherSupporterSubscription.SubscriptionType} sub (entitlement is still deleted though)\n" +
                     $"{discordUserId} - <@{discordUserId}>");
-                await supporterAuditLogChannel.SendMessageAsync(embeds: [notCancellingEmbed.Build()]);
+                await supporterAuditLogChannel.ExecuteAsync(new WebhookMessageProperties { Embeds = [notCancellingEmbed] });
             }
             else
             {
                 Log.Information("Not removing Stripe supporter because there is no main supporter? - {discordUserId}",
                     discordUserId);
 
-                var notCancellingEmbed = new EmbedBuilder().WithDescription(
+                var notCancellingEmbed = new EmbedProperties().WithDescription(
                     $"Prevented removal of Stripe supporter that has no main supporter in the database, this should never happen but I'm adding this code anyway\n" +
                     $"{discordUserId} - <@{discordUserId}>");
-                await supporterAuditLogChannel.SendMessageAsync(embeds: [notCancellingEmbed.Build()]);
+                await supporterAuditLogChannel.ExecuteAsync(new WebhookMessageProperties { Embeds = [notCancellingEmbed] });
             }
 
             var entitlements =
@@ -1654,8 +1660,6 @@ public class SupporterService
 
             await Task.Delay(500);
         }
-
-        supporterAuditLogChannel.Dispose();
     }
 
     public async Task MigrateDiscordForSupporter(ulong oldDiscordUserId, ulong newDiscordUserId)
@@ -1750,13 +1754,12 @@ public class SupporterService
         await RunFullUpdate(oldDiscordUserId);
         await RunFullUpdate(newDiscordUserId);
 
-        var supporterAuditLogChannel = new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
-        var embed = new EmbedBuilder().WithDescription(
+        var supporterAuditLogChannel = WebhookService.CreateWebhookClientFromUrl(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
+        var embed = new EmbedProperties().WithDescription(
             $"Moved supporter:\n" +
             $"- Old: {oldDiscordUserId} - <@{oldDiscordUserId}>\n" +
             $"- New: {newDiscordUserId} - <@{newDiscordUserId}>");
-        await supporterAuditLogChannel.SendMessageAsync(embeds: [embed.Build()]);
-        supporterAuditLogChannel.Dispose();
+        await supporterAuditLogChannel.ExecuteAsync(new WebhookMessageProperties { Embeds = [embed] });
     }
 
     public async Task AddRoleToNewSupporters()
@@ -1781,7 +1784,7 @@ public class SupporterService
 
     public async Task ModifyGuildRole(ulong discordUserId, bool add = true)
     {
-        var baseGuild = await this._client.Rest.GetGuildAsync(this._botSettings.Bot.BaseServerId);
+        var baseGuild = await this._client.GetGuildAsync(this._botSettings.Bot.BaseServerId);
 
         if (baseGuild != null)
         {
@@ -1790,13 +1793,13 @@ public class SupporterService
                 var guildUser = await baseGuild.GetUserAsync(discordUserId);
                 if (guildUser != null)
                 {
-                    var supporterRole = baseGuild.Roles.FirstOrDefault(x => x.Name == "Supporter");
+                    var supporterRole = baseGuild.Roles.FirstOrDefault(x => x.Value.Name == "Supporter");
 
-                    if (add && supporterRole != null)
+                    if (add && supporterRole.Key != 0)
                     {
-                        if (guildUser.RoleIds.All(a => a != supporterRole.Id))
+                        if (guildUser.RoleIds.All(a => a != supporterRole.Key))
                         {
-                            await guildUser.AddRoleAsync(supporterRole, new RequestOptions
+                            await guildUser.AddRoleAsync(supporterRole.Key, new RestRequestProperties
                             {
                                 AuditLogReason = "Automated supporter integration"
                             });
@@ -1806,9 +1809,9 @@ public class SupporterService
                             return;
                         }
                     }
-                    else if (supporterRole != null)
+                    else if (supporterRole.Key != 0)
                     {
-                        await guildUser.RemoveRoleAsync(supporterRole, new RequestOptions
+                        await guildUser.RemoveRoleAsync(supporterRole.Key, new RestRequestProperties
                         {
                             AuditLogReason = "Automated supporter integration"
                         });
@@ -1821,7 +1824,7 @@ public class SupporterService
             }
             catch (Exception e)
             {
-                Log.Error("Modifying supporter role failed for {id} - {exceptionMessage}", discordUserId, e.Message, e);
+                Log.Error(e, "Modifying supporter role failed for {id}", discordUserId);
             }
         }
     }

@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Dasync.Collections;
-using Discord;
 using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
@@ -19,6 +18,8 @@ using FMBot.Domain.Models;
 using FMBot.Domain.Types;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
+using NetCord;
+using NetCord.Rest;
 
 namespace FMBot.Bot.Builders;
 
@@ -81,7 +82,7 @@ public class FriendBuilders
         response.EmbedAuthor.WithName(embedTitle);
         if (!context.SlashCommand)
         {
-            response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
+            response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl()?.ToString());
         }
 
         response.EmbedAuthor.WithUrl(LastfmUrlExtensions.GetUserUrl(context.ContextUser.UserNameLastFM));
@@ -102,10 +103,9 @@ public class FriendBuilders
                     friendNameToDisplay = guildUser.UserName;
 
                     var user = await this._userService.GetUserForIdAsync(guildUser.UserId);
-                    var discordUser = await context.DiscordGuild.GetUserAsync(user.DiscordUserId, CacheMode.CacheOnly);
-                    if (discordUser?.Username != null)
+                    if (context.DiscordGuild?.Users.TryGetValue(user.DiscordUserId, out var discordGuildUser) == true)
                     {
-                        friendNameToDisplay = discordUser.DisplayName;
+                        friendNameToDisplay = discordGuildUser.GetDisplayName();
                     }
                 }
             }
@@ -253,7 +253,7 @@ public class FriendBuilders
                 response.Embed.AddField("Friend limit reached",
                     $"Sorry, but you can't have more than {Constants.MaxFriends} friends. \n\n" +
                     $".fmbot supporters can add up to {Constants.MaxFriendsSupporter} friends.");
-                response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton,
+                response.Components = new ActionRowProperties().WithButton(Constants.GetSupporterButton,
                     style: ButtonStyle.Primary,
                     customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "friends-limit"));
             }
@@ -444,7 +444,7 @@ public class FriendBuilders
             pageCounter++;
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+        response.ComponentPaginator = StringService.BuildComponentPaginator(pages);
         return response;
     }
 }

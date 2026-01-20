@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
-using Discord;
+using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -24,7 +24,7 @@ public class WhoKnowsAlbumService
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForAlbum(IGuild discordGuild,
+    public async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForAlbum(NetCord.Gateway.Guild discordGuild,
         IDictionary<int, FullGuildUser> guildUsers, int guildId, string artistName, string albumName)
     {
         const string sql = "BEGIN; " +
@@ -63,10 +63,9 @@ public class WhoKnowsAlbumService
 
             if (i < 15 && discordGuild != null)
             {
-                var discordGuildUser = await discordGuild.GetUserAsync(guildUser.DiscordUserId, CacheMode.CacheOnly);
-                if (discordGuildUser != null)
+                if (discordGuild.Users.TryGetValue(guildUser.DiscordUserId, out var discordGuildUser))
                 {
-                    userName = discordGuildUser.DisplayName;
+                    userName = discordGuildUser.GetDisplayName();
                 }
             }
 
@@ -85,7 +84,7 @@ public class WhoKnowsAlbumService
         return whoKnowsAlbumList;
     }
 
-    public async Task<IList<WhoKnowsObjectWithUser>> GetGlobalUsersForAlbum(IGuild guild, string artistName, string albumName)
+    public async Task<IList<WhoKnowsObjectWithUser>> GetGlobalUsersForAlbum(NetCord.Gateway.Guild guild, string artistName, string albumName)
     {
         const string sql = "SELECT * " +
                            "FROM (SELECT DISTINCT ON(UPPER(u.user_name_last_fm)) " +
@@ -122,13 +121,9 @@ public class WhoKnowsAlbumService
 
             if (i < 15)
             {
-                if (guild != null)
+                if (guild != null && guild.Users.TryGetValue(userAlbum.DiscordUserId, out var discordUser))
                 {
-                    var discordUser = await guild.GetUserAsync(userAlbum.DiscordUserId, CacheMode.CacheOnly);
-                    if (discordUser != null)
-                    {
-                        userName = discordUser.DisplayName;
-                    }
+                    userName = discordUser.GetDisplayName();
                 }
             }
 
@@ -146,7 +141,7 @@ public class WhoKnowsAlbumService
         return whoKnowsAlbumList;
     }
 
-    public async Task<IList<WhoKnowsObjectWithUser>> GetFriendUsersForAlbum(IGuild discordGuild,
+    public async Task<IList<WhoKnowsObjectWithUser>> GetFriendUsersForAlbum(NetCord.Gateway.Guild discordGuild,
         IDictionary<int, FullGuildUser> guildUsers, int guildId, int userId, string artistName, string albumName)
     {
         const string sql = "SELECT ub.user_id, " +
@@ -185,10 +180,9 @@ public class WhoKnowsAlbumService
             {
                 userName = guildUser.UserName;
 
-                var discordGuildUser = await discordGuild.GetUserAsync(guildUser.DiscordUserId, CacheMode.CacheOnly);
-                if (discordGuildUser != null)
+                if (discordGuild.Users.TryGetValue(guildUser.DiscordUserId, out var discordGuildUser))
                 {
-                    userName = discordGuildUser.DisplayName;
+                    userName = discordGuildUser.GetDisplayName();
                 }
             }
 

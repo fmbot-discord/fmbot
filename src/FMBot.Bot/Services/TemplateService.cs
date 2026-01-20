@@ -6,12 +6,14 @@ using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Discord;
+
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Models.TemplateOptions;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
+using NetCord;
+using NetCord.Rest;
 using Npgsql;
 
 namespace FMBot.Bot.Services;
@@ -119,11 +121,11 @@ public partial class TemplateService
             );
     }
 
-    public record TemplateResult(EmbedBuilder EmbedBuilder, Dictionary<EmbedOption, string> Content);
+    public record TemplateResult(EmbedProperties EmbedProperties, Dictionary<EmbedOption, string> Content);
 
     private static async Task<TemplateResult> TemplateToEmbed(Template template, TemplateContext context)
     {
-        var embed = new EmbedBuilder();
+        var embed = new EmbedProperties();
         var script = template.Content.Replace("$$fm-template", "").TrimStart();
         var lines = script.Split('\n', StringSplitOptions.RemoveEmptyEntries);
 
@@ -363,7 +365,7 @@ public partial class TemplateService
         return string.Join("", resultParts);
     }
 
-    private static void ApplyEmbedOption(EmbedBuilder embed, EmbedOption option, string content)
+    private static void ApplyEmbedOption(EmbedProperties embed, EmbedOption option, string content)
     {
         switch (option)
         {
@@ -374,17 +376,17 @@ public partial class TemplateService
                 embed.Description = content;
                 break;
             case EmbedOption.ThumbnailImageUrl:
-                embed.ThumbnailUrl = content;
+                embed.Thumbnail = content;
                 break;
             case EmbedOption.LargeImageUrl:
-                embed.ImageUrl = content;
+                embed.Image = content;
                 break;
             case EmbedOption.Footer:
-                embed.Footer ??= new EmbedFooterBuilder();
+                embed.Footer ??= new EmbedFooterProperties();
                 embed.Footer.Text = content;
                 break;
             case EmbedOption.FooterIconUrl:
-                embed.Footer ??= new EmbedFooterBuilder();
+                embed.Footer ??= new EmbedFooterProperties();
                 embed.Footer.IconUrl = content;
                 break;
             case EmbedOption.FooterTimestamp:
@@ -395,15 +397,15 @@ public partial class TemplateService
 
                 break;
             case EmbedOption.Author:
-                embed.Author ??= new EmbedAuthorBuilder();
+                embed.Author ??= new EmbedAuthorProperties();
                 embed.Author.Name = content;
                 break;
             case EmbedOption.AuthorIconUrl:
-                embed.Author ??= new EmbedAuthorBuilder();
+                embed.Author ??= new EmbedAuthorProperties();
                 embed.Author.IconUrl = content;
                 break;
             case EmbedOption.AuthorUrl:
-                embed.Author ??= new EmbedAuthorBuilder();
+                embed.Author ??= new EmbedAuthorProperties();
                 embed.Author.Url = content;
                 break;
             case EmbedOption.Url:
@@ -413,20 +415,21 @@ public partial class TemplateService
                 if (uint.TryParse(content.TrimStart('#'), System.Globalization.NumberStyles.HexNumber, null,
                         out var colorVal))
                 {
-                    embed.Color = new Color(colorVal);
+                    // TODO: hex to int
+                    // embed.Color = new Color(colorVal)
                 }
 
                 break;
         }
     }
 
-    public async Task<EmbedBuilder> GetTemplateVariablesAsync(int userId, TemplateContext context)
+    public async Task<EmbedProperties> GetTemplateVariablesAsync(int userId, TemplateContext context)
     {
         var template = ExampleTemplates.Templates.First();
 
         var result = await TemplateToEmbed(template, context);
 
-        return result.EmbedBuilder;
+        return result.EmbedProperties;
     }
 
     public async Task<List<Template>> GetTemplates(int userId)

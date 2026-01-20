@@ -1,10 +1,6 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Discord;
-using Discord.Commands;
-using Discord.WebSocket;
-using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
@@ -17,136 +13,126 @@ using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
+using NetCord.Services.Commands;
+using Fergun.Interactive;
+using NetCord;
+using NetCord.Rest;
 
 namespace FMBot.Bot.TextCommands.Guild;
 
-[Name("Crown settings")]
+[ModuleName("Crown settings")]
 [ServerStaffOnly]
-public class CrownGuildSettingCommands : BaseCommandModule
+public class CrownGuildSettingCommands(
+    IPrefixService prefixService,
+    GuildService guildService,
+    AdminService adminService,
+    SettingService settingService,
+    CrownService crownService,
+    UserService userService,
+    IOptions<BotSettings> botSettings,
+    InteractiveService interactivity,
+    GuildSettingBuilder guildSettingBuilder)
+    : BaseCommandModule(botSettings)
 {
-    private readonly AdminService _adminService;
-    private readonly CrownService _crownService;
-    private readonly GuildService _guildService;
-    private readonly SettingService _settingService;
-    private readonly GuildSettingBuilder _guildSettingBuilder;
-
-    private readonly IPrefixService _prefixService;
-    private InteractiveService Interactivity { get; }
+    private InteractiveService Interactivity { get; } = interactivity;
 
 
-    public CrownGuildSettingCommands(IPrefixService prefixService,
-        GuildService guildService,
-        AdminService adminService,
-        SettingService settingService,
-        CrownService crownService,
-        IOptions<BotSettings> botSettings,
-        InteractiveService interactivity,
-        GuildSettingBuilder guildSettingBuilder) : base(botSettings)
-    {
-        this._prefixService = prefixService;
-        this._guildService = guildService;
-        this._settingService = settingService;
-        this._crownService = crownService;
-        this.Interactivity = interactivity;
-        this._guildSettingBuilder = guildSettingBuilder;
-        this._adminService = adminService;
-    }
-
-    [Command("crownthreshold", RunMode = RunMode.Async)]
+    [Command("crownthreshold", "setcrownthreshold", "setcwthreshold", "cwthreshold", "crowntreshold")]
     [Summary("Sets amount of plays before someone can earn a crown in your server")]
-    [Alias("setcrownthreshold", "setcwthreshold", "cwthreshold", "crowntreshold")]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Crowns, CommandCategory.ServerSettings)]
-    public async Task SetCrownPlaycountThresholdAsync([Remainder] string _ = null)
+    public async Task SetCrownPlaycountThresholdAsync([CommandParameter(Remainder = true)] string _ = null)
     {
         try
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-            var response = await this._guildSettingBuilder.SetCrownMinPlaycount(new ContextModel(this.Context, prfx));
+            var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+            var response = await guildSettingBuilder.SetCrownMinPlaycount(new ContextModel(this.Context, prfx));
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
-    [Command("crownactivitythreshold", RunMode = RunMode.Async)]
+    [Command("crownactivitythreshold", "setcrownactivitythreshold", "setcwactivitythreshold", "cwactivitythreshold", "crownactivitytreshold")]
     [Summary("Sets amount of days to filter out users from earning crowns for inactivity. " +
              "Inactivity is counted by the last date that someone has used .fmbot")]
-    [Alias("setcrownactivitythreshold", "setcwactivitythreshold", "cwactivitythreshold", "crownactivitytreshold")]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Crowns, CommandCategory.ServerSettings)]
-    public async Task SetCrownActivityThresholdAsync([Remainder] string _ = null)
+    public async Task SetCrownActivityThresholdAsync([CommandParameter(Remainder = true)] string _ = null)
     {
         try
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-            var response = await this._guildSettingBuilder.SetCrownActivityThreshold(new ContextModel(this.Context, prfx));
+            var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+            var response = await guildSettingBuilder.SetCrownActivityThreshold(new ContextModel(this.Context, prfx));
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
-    [Command("crownblock", RunMode = RunMode.Async)]
+    [Command("crownblock", "crownblockuser", "crownban", "cwblock", "cwban", "crownbanuser", "crownbanmember")]
     [Summary("Block a user from gaining any crowns in your server")]
     [Options(Constants.UserMentionExample)]
-    [Alias("crownblockuser", "crownban", "cwblock", "cwban", "crownbanuser", "crownbanmember")]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Crowns, CommandCategory.ServerSettings)]
-    public async Task GuildBlockUserFromCrownsAsync([Remainder] string user = null)
+    public async Task GuildBlockUserFromCrownsAsync([CommandParameter(Remainder = true)] string user = null)
     {
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
+        if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
         {
-            await ReplyAsync(GuildSettingBuilder.UserNotAllowedResponseText());
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = GuildSettingBuilder.UserNotAllowedResponseText() });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             return;
         }
 
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         if (user == null)
         {
-            await ReplyAsync("Please mention a user, enter a discord id or enter a Last.fm username to block from gaining crowns on your server.");
-            this.Context.LogCommandUsed(CommandResponse.NotFound);
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
+                { Content = "Please mention a user, enter a discord id or enter a Last.fm username to block from gaining crowns on your server." });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
             return;
         }
 
-        var userToBlock = await this._settingService.GetDifferentUser(user);
+        var userToBlock = await settingService.GetDifferentUser(user);
 
         if (userToBlock == null)
         {
-            await ReplyAsync("User not found. Are you sure they are registered in .fmbot?");
-            this.Context.LogCommandUsed(CommandResponse.NotFound);
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "User not found. Are you sure they are registered in .fmbot?" });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
             return;
         }
 
-        var guildUsers = await this._guildService.GetGuildUsers(this.Context.Guild.Id);
+        var guildUsers = await guildService.GetGuildUsers(this.Context.Guild.Id);
 
         if (!guildUsers.TryGetValue(userToBlock.UserId, out var guildUser))
         {
-            var similarUsers = await this._adminService.GetUsersWithLfmUsernameAsync(userToBlock.UserNameLastFM);
+            var similarUsers = await adminService.GetUsersWithLfmUsernameAsync(userToBlock.UserNameLastFM);
 
             var userInThisServer = similarUsers.FirstOrDefault(f =>
                 f.UserNameLastFM.ToLower() == userToBlock.UserNameLastFM.ToLower() && guildUsers.ContainsKey(f.UserId));
 
             if (userInThisServer == null)
             {
-                await ReplyAsync("User not found. Are you sure they are in this server?\n" +
-                                 $"To refresh the cached memberlist on your server, use `{prfx}refreshmembers`.");
-                this.Context.LogCommandUsed(CommandResponse.NotFound);
+                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
+                {
+                    Content =
+                        $"User not found. Are you sure they are in this server?\nTo refresh the cached memberlist on your server, use `{prfx}refreshmembers`."
+                });
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
                 return;
             }
 
@@ -155,20 +141,23 @@ public class CrownGuildSettingCommands : BaseCommandModule
 
         if (guildUser == null)
         {
-            await ReplyAsync("User not found. Are you sure they are in this server?\n" +
-                             $"To refresh the cached memberlist on your server, use `{prfx}refreshmembers`.");
-            this.Context.LogCommandUsed(CommandResponse.NotFound);
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
+            {
+                Content = $"User not found. Are you sure they are in this server?\nTo refresh the cached memberlist on your server, use `{prfx}refreshmembers`."
+            });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
             return;
         }
 
         if (guildUser.BlockedFromCrowns)
         {
-            await ReplyAsync("The user you're trying to block from gaining crowns has already been blocked on this server.");
-            this.Context.LogCommandUsed(CommandResponse.WrongInput);
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
+                { Content = "The user you're trying to block from gaining crowns has already been blocked on this server." });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
             return;
         }
 
-        var userBlocked = await this._guildService.CrownBlockGuildUserAsync(this.Context.Guild, userToBlock.UserId);
+        var userBlocked = await guildService.CrownBlockGuildUserAsync(this.Context.Guild, userToBlock.UserId);
 
         if (userBlocked)
         {
@@ -178,49 +167,51 @@ public class CrownGuildSettingCommands : BaseCommandModule
 
             this._embed.WithFooter($"See all crownblocked users with {prfx}crownblockedusers");
 
-            await ReplyAsync("", false, this._embed.Build());
-            this.Context.LogCommandUsed();
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Embeds = [this._embed] });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
         }
         else
         {
-            await ReplyAsync("Something went wrong while attempting to crownblock user, please contact .fmbot staff.");
-            this.Context.LogCommandUsed(CommandResponse.Error);
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
+                { Content = "Something went wrong while attempting to crownblock user, please contact .fmbot staff." });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Error }, userService);
         }
     }
 
-    [Command("removeusercrowns", RunMode = RunMode.Async)]
+    [Command("removeusercrowns", "deleteusercrowns", "deleteusercrown", "removeusercrown", "removeusercws", "deleteusercws", "usercrownsdelete",
+        "usercrownsremove", "killusercrowns")]
     [Summary("Removes crowns from a user")]
     [Options(Constants.UserMentionExample)]
-    [Alias("deleteusercrowns", "deleteusercrown", "removeusercrown", "removeusercws", "deleteusercws", "usercrownsdelete", "usercrownsremove", "killusercrowns")]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Crowns, CommandCategory.ServerSettings)]
-    public async Task RemoveUserCrownsAsync([Remainder] string user = null)
+    public async Task RemoveUserCrownsAsync([CommandParameter(Remainder = true)] string user = null)
     {
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
+        if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
         {
-            await ReplyAsync(GuildSettingBuilder.UserNotAllowedResponseText());
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = GuildSettingBuilder.UserNotAllowedResponseText() });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             return;
         }
 
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         if (user == null)
         {
-            await ReplyAsync("Please mention a user, enter a discord id or enter a Last.fm username to remove their crowns from.");
-            this.Context.LogCommandUsed(CommandResponse.NotFound);
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
+                { Content = "Please mention a user, enter a discord id or enter a Last.fm username to remove their crowns from." });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
             return;
         }
 
-        var userToBlock = await this._settingService.GetDifferentUser(user);
+        var userToBlock = await settingService.GetDifferentUser(user);
 
         if (userToBlock == null)
         {
-            await ReplyAsync("User not found. Are you sure they are registered in .fmbot?");
-            this.Context.LogCommandUsed(CommandResponse.NotFound);
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "User not found. Are you sure they are registered in .fmbot?" });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
             return;
         }
 
@@ -232,27 +223,27 @@ public class CrownGuildSettingCommands : BaseCommandModule
                                         $"Last.fm username: `{userToBlock.UserNameLastFM}`");
             this._embed.WithFooter($"Expires in 30 seconds..");
 
-            var builder = new ComponentBuilder()
+            var builder = new ActionRowProperties()
                 .WithButton("Confirm", "id");
 
-            var msg = await ReplyAsync("", false, this._embed.Build(), components: builder.Build());
+            var msg = await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Embeds = [this._embed], Components = [builder] });
 
             var result = await this.Interactivity.NextInteractionAsync(x =>
-                    x is SocketMessageComponent c && c.Message.Id == msg.Id && x.User.Id == this.Context.User.Id,
-                    timeout: TimeSpan.FromSeconds(30));
+                    x is MessageComponentInteraction c && c.Message.Id == msg.Id && x.User.Id == this.Context.User.Id,
+                timeout: TimeSpan.FromSeconds(30));
 
             if (result.IsSuccess)
             {
-                await result.Value.DeferAsync();
-                await this._crownService.RemoveAllCrownsFromDiscordUser(userToBlock.DiscordUserId, this.Context.Guild.Id);
+                await result.Value.SendResponseAsync(InteractionCallback.DeferredModifyMessage);
+                await crownService.RemoveAllCrownsFromDiscordUser(userToBlock.DiscordUserId, this.Context.Guild.Id);
 
                 this._embed.WithTitle("Crowns have been removed for:");
                 this._embed.Footer = null;
                 await msg.ModifyAsync(x =>
                 {
-                    x.Embed = this._embed.Build();
-                    x.Components = new ComponentBuilder().Build(); // No components
-                    x.AllowedMentions = AllowedMentions.None;
+                    x.Embeds = [this._embed];
+                    x.Components = [new ActionRowProperties()];
+                    x.AllowedMentions = AllowedMentionsProperties.None;
                 });
             }
             else
@@ -260,81 +251,78 @@ public class CrownGuildSettingCommands : BaseCommandModule
                 this._embed.WithTitle("Crown removal timed out");
                 await msg.ModifyAsync(x =>
                 {
-                    x.Embed = this._embed.Build();
-                    x.Components = new ComponentBuilder().Build(); // No components
-                    x.AllowedMentions = AllowedMentions.None;
+                    x.Embeds = [this._embed];
+                    x.Components = [new ActionRowProperties()];
+                    x.AllowedMentions = AllowedMentionsProperties.None;
                 });
             }
 
-            this.Context.LogCommandUsed();
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
-    [Command("crownblockedusers", RunMode = RunMode.Async)]
+    [Command("crownblockedusers", "crownblocked", "crownbanned", "crownbannedusers", "crownbannedmembers")]
     [Summary("View all users that are blocked from earning crowns in your server")]
-    [Alias("crownblocked", "crownbanned", "crownbannedusers", "crownbannedmembers")]
     [GuildOnly]
     [RequiresIndex]
     [SupportsPagination]
     [CommandCategories(CommandCategory.Crowns, CommandCategory.ServerSettings)]
-    public async Task CrownBlockedUsersAsync([Remainder] string searchValue = null)
+    public async Task CrownBlockedUsersAsync([CommandParameter(Remainder = true)] string searchValue = null)
     {
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
+        if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
         {
-            await ReplyAsync(GuildSettingBuilder.UserNotAllowedResponseText());
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = GuildSettingBuilder.UserNotAllowedResponseText() });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             return;
         }
 
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var response = await this._guildSettingBuilder.BlockedUsersAsync(new ContextModel(this.Context, prfx), true, searchValue);
+        var response = await guildSettingBuilder.BlockedUsersAsync(new ContextModel(this.Context, prfx), true, searchValue);
 
-        await this.Context.SendResponse(this.Interactivity, response);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendResponse(this.Interactivity, response, userService);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
-    [Command("togglecrowns", RunMode = RunMode.Async)]
+    [Command("togglecrowns", "togglecrown")]
     [Summary("Completely enables/disables crowns for your server.")]
-    [Alias("togglecrown")]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Crowns, CommandCategory.ServerSettings)]
-    public async Task ToggleCrownsAsync([Remainder] string unused = null)
+    public async Task ToggleCrownsAsync([CommandParameter(Remainder = true)] string unused = null)
     {
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        _ = this.Context.Channel.TriggerTypingAsync();
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
+        if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
         {
-            await ReplyAsync(GuildSettingBuilder.UserNotAllowedResponseText());
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = GuildSettingBuilder.UserNotAllowedResponseText() });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             return;
         }
 
-        var response = await this._guildSettingBuilder.ToggleCrowns(new ContextModel(this.Context, prfx));
+        var response = await guildSettingBuilder.ToggleCrowns(new ContextModel(this.Context, prfx));
 
-        await this.Context.SendResponse(this.Interactivity, response);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendResponse(this.Interactivity, response, userService);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
-    [Command("killcrown", RunMode = RunMode.Async)]
+    [Command("killcrown", "kcw", "kcrown", "killcw")]
     [Summary("Removes all crowns from a specific artist for your server.")]
-    [Alias("kcw", "kcrown", "killcw", "kill crown", "crown kill")]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Crowns, CommandCategory.ServerSettings)]
-    public async Task KillCrownAsync([Remainder] string killCrownValues = null)
+    public async Task KillCrownAsync([CommandParameter(Remainder = true)] string killCrownValues = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+        var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
 
         if (!string.IsNullOrWhiteSpace(killCrownValues) && killCrownValues.ToLower() == "help")
         {
@@ -345,81 +333,79 @@ public class CrownGuildSettingCommands : BaseCommandModule
                 $"`{prfx}killcrown deadmau5` \n" +
                 $"`{prfx}killcrown the beatles`");
 
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-            this.Context.LogCommandUsed(CommandResponse.Help);
+            await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Help }, userService);
             return;
         }
 
         if (guild.CrownsDisabled == true)
         {
-            await ReplyAsync("Crown functionality has been disabled in this server.");
-            this.Context.LogCommandUsed(CommandResponse.Disabled);
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Crown functionality has been disabled in this server." });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Disabled }, userService);
             return;
         }
 
-        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
+        if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
         {
-            await ReplyAsync(GuildSettingBuilder.UserNotAllowedResponseText());
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = GuildSettingBuilder.UserNotAllowedResponseText() });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             return;
         }
 
         if (string.IsNullOrWhiteSpace(killCrownValues))
         {
-            await ReplyAsync("Please enter the artist you want to remove all crowns for.");
-            this.Context.LogCommandUsed(CommandResponse.WrongInput);
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Please enter the artist you want to remove all crowns for." });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
             return;
         }
 
-        var artistCrowns = await this._crownService.GetCrownsForArtist(guild.GuildId, killCrownValues);
+        var artistCrowns = await crownService.GetCrownsForArtist(guild.GuildId, killCrownValues);
 
         if (!artistCrowns.Any())
         {
             this._embed.WithDescription($"No crowns found for the artist `{killCrownValues}`");
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
             return;
         }
 
-        await this._crownService.RemoveCrowns(artistCrowns);
+        await crownService.RemoveCrowns(artistCrowns);
 
         this._embed.WithDescription($"All crowns for `{killCrownValues}` have been removed.");
-        await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-        this.Context.LogCommandUsed();
+        await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
+        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
     }
 
-    [Command("crownseeder", RunMode = RunMode.Async)]
+    [Command("crownseeder", "crownseed", "seedcrowns")]
     [Summary("Automatically generates or updates all crowns for your server")]
-    [Alias("crownseed", "seedcrowns")]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Crowns, CommandCategory.ServerSettings)]
-    public async Task SeedCrownsAsync([Remainder] string _ = null)
+    public async Task SeedCrownsAsync([CommandParameter(Remainder = true)] string _ = null)
     {
         try
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-            var response = await this._guildSettingBuilder.CrownSeeder(new ContextModel(this.Context, prfx));
+            var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+            var response = await guildSettingBuilder.CrownSeeder(new ContextModel(this.Context, prfx));
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
-    [Command("killallcrowns", RunMode = RunMode.Async)]
+    [Command("killallcrowns", "removeallcrowns")]
     [Summary("Removes all crowns from your server")]
-    [Alias("removeallcrowns")]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Crowns, CommandCategory.ServerSettings)]
-    public async Task KillAllCrownsAsync([Remainder] string confirmation = null)
+    public async Task KillAllCrownsAsync([CommandParameter(Remainder = true)] string confirmation = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+        var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
 
         if (!string.IsNullOrWhiteSpace(confirmation) && confirmation.ToLower() == "help")
         {
@@ -430,32 +416,32 @@ public class CrownGuildSettingCommands : BaseCommandModule
                 $"`{prfx}killallcrowns`\n" +
                 $"`{prfx}killallcrowns confirm`");
 
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-            this.Context.LogCommandUsed(CommandResponse.Help);
+            await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Help }, userService);
             return;
         }
 
         if (guild.CrownsDisabled == true)
         {
-            await ReplyAsync("Crown functionality has been disabled in this server.");
-            this.Context.LogCommandUsed(CommandResponse.Disabled);
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Crown functionality has been disabled in this server." });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Disabled }, userService);
             return;
         }
 
-        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
+        if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
         {
-            await ReplyAsync(GuildSettingBuilder.UserNotAllowedResponseText());
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = GuildSettingBuilder.UserNotAllowedResponseText() });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             return;
         }
 
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var guildCrowns = await this._crownService.GetAllCrownsForGuild(guild.GuildId);
+        var guildCrowns = await crownService.GetAllCrownsForGuild(guild.GuildId);
         if (guildCrowns == null || !guildCrowns.Any())
         {
-            await ReplyAsync("This server does not have any crowns.");
-            this.Context.LogCommandUsed(CommandResponse.IndexRequired);
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "This server does not have any crowns." });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.IndexRequired }, userService);
             return;
         }
 
@@ -463,29 +449,28 @@ public class CrownGuildSettingCommands : BaseCommandModule
         {
             this._embed.WithDescription($"Are you sure you want to remove all {guildCrowns.Count} crowns from your server?\n\n" +
                                         $"Type `{prfx}killallcrowns confirm` to confirm.");
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-            this.Context.LogCommandUsed(CommandResponse.WrongInput);
+            await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
             return;
         }
 
-        await this._crownService.RemoveAllCrownsFromGuild(guild.GuildId);
+        await crownService.RemoveAllCrownsFromGuild(guild.GuildId);
 
         this._embed.WithDescription("Removed all crowns for your server.");
-        await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-        this.Context.LogCommandUsed();
+        await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
+        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
     }
 
-    [Command("killallseededcrowns", RunMode = RunMode.Async)]
+    [Command("killallseededcrowns", "removeallseededcrowns")]
     [Summary("Removes all crowns seeded by the `crownseeder` command. All other manually claimed crowns will remain in place.")]
-    [Alias("removeallseededcrowns")]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Crowns, CommandCategory.ServerSettings)]
-    public async Task KillAllSeededCrownsAsync([Remainder] string confirmation = null)
+    public async Task KillAllSeededCrownsAsync([CommandParameter(Remainder = true)] string confirmation = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+        var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
 
         if (!string.IsNullOrWhiteSpace(confirmation) && confirmation.ToLower() == "help")
         {
@@ -496,48 +481,49 @@ public class CrownGuildSettingCommands : BaseCommandModule
                 $"`{prfx}killallseededcrowns`\n" +
                 $"`{prfx}killallseededcrowns confirm`");
 
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-            this.Context.LogCommandUsed(CommandResponse.Help);
+            await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Help }, userService);
             return;
         }
 
         if (guild.CrownsDisabled == true)
         {
-            await ReplyAsync("Crown functionality has been disabled in this server.");
-            this.Context.LogCommandUsed(CommandResponse.Disabled);
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Crown functionality has been disabled in this server." });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Disabled }, userService);
             return;
         }
 
-        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
+        if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
         {
-            await ReplyAsync(GuildSettingBuilder.UserNotAllowedResponseText());
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = GuildSettingBuilder.UserNotAllowedResponseText() });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             return;
         }
 
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var guildCrowns = await this._crownService.GetAllCrownsForGuild(guild.GuildId);
+        var guildCrowns = await crownService.GetAllCrownsForGuild(guild.GuildId);
         if (guildCrowns == null || !guildCrowns.Any())
         {
-            await ReplyAsync("This server does not have any crowns.");
-            this.Context.LogCommandUsed(CommandResponse.IndexRequired);
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "This server does not have any crowns." });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.IndexRequired }, userService);
             return;
         }
 
         if (string.IsNullOrWhiteSpace(confirmation) || confirmation.ToLower() != "confirm")
         {
-            this._embed.WithDescription($"Are you sure you want to remove all {guildCrowns.Count(c => c.SeededCrown)} automatically seeded crowns from your server?\n\n" +
-                                        $"Type `{prfx}killallseededcrowns confirm` to confirm.");
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-            this.Context.LogCommandUsed(CommandResponse.WrongInput);
+            this._embed.WithDescription(
+                $"Are you sure you want to remove all {guildCrowns.Count(c => c.SeededCrown)} automatically seeded crowns from your server?\n\n" +
+                $"Type `{prfx}killallseededcrowns confirm` to confirm.");
+            await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
             return;
         }
 
-        await this._crownService.RemoveAllSeededCrownsFromGuild(guild);
+        await crownService.RemoveAllSeededCrownsFromGuild(guild);
 
         this._embed.WithDescription("Removed all seeded crowns for your server.");
-        await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-        this.Context.LogCommandUsed();
+        await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
+        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
     }
 }

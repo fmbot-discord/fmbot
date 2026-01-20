@@ -1,5 +1,6 @@
-using Discord;
+
 using System.Linq;
+using NetCord.Gateway;
 
 namespace FMBot.Bot.Models.MusicBot;
 
@@ -12,7 +13,7 @@ internal partial class ListenMusicBot : MusicBot
     {
     }
 
-    public override bool ShouldIgnoreMessage(IUserMessage msg)
+    public override bool ShouldIgnoreMessage(Message msg)
     {
         if (msg.Embeds.Count != 1)
         {
@@ -32,7 +33,7 @@ internal partial class ListenMusicBot : MusicBot
      * Description: "-# The Weeknd"
      * Returns: "I Feel It Coming The Weeknd"
      */
-    public override string GetTrackQuery(IUserMessage msg)
+    public override string GetTrackQuery(Message msg)
     {
         var embed = msg.Embeds.First();
 

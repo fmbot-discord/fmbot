@@ -5,21 +5,24 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services;
 using FMBot.Persistence.Domain.Models;
 using System.Text;
+using Guild = FMBot.Persistence.Domain.Models.Guild;
 using System.Web;
 using System;
 using System.Linq;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
-using Fergun.Interactive;
 using System.Collections.Generic;
-using Discord;
+using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Resources;
-using Discord.Interactions;
 using FMBot.Bot.Factories;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
+using FMBot.Domain.Attributes;
+using NetCord;
+using NetCord.Rest;
+using User = FMBot.Persistence.Domain.Models.User;
 
 namespace FMBot.Bot.Builders;
 
@@ -97,8 +100,8 @@ public class CrownBuilders
 
         var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
 
-        response.Components = new ComponentBuilder()
-            .WithButton("WhoKnows", $"{InteractionConstants.Artist.WhoKnows}-{cachedArtist.Id}", style: ButtonStyle.Secondary, emote: new Emoji("📋"));
+        response.Components = new ActionRowProperties()
+            .WithButton("WhoKnows", $"{InteractionConstants.Artist.WhoKnows}:{cachedArtist.Id}", style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("📋"));
 
         if (!artistCrowns.Any(a => a.Active))
         {
@@ -203,20 +206,22 @@ public class CrownBuilders
             ? $"{crownType} for {userSettings.UserNameLastFm}, requested by {userTitle}"
             : $"{crownType} for {userTitle}";
 
-        var viewType = new SelectMenuBuilder()
+        var viewType =  new StringMenuProperties(InteractionConstants.User.CrownSelectMenu)
             .WithPlaceholder("Select crown view")
-            .WithCustomId(InteractionConstants.User.CrownSelectMenu)
             .WithMinValues(1)
             .WithMaxValues(1);
 
         foreach (var option in ((CrownViewType[])Enum.GetValues(typeof(CrownViewType))))
         {
-            var name = option.GetAttribute<ChoiceDisplayAttribute>().Name;
+            var name = option.GetAttribute<OptionAttribute>().Name;
             var value = $"{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}-{Enum.GetName(option)}";
 
             var active = option == crownViewType;
 
-            viewType.AddOption(new SelectMenuOptionBuilder(name, value, null, isDefault: active));
+            viewType.AddOptions(new StringMenuSelectOptionProperties(name, value)
+            {
+                Default = active
+            });
         }
 
         if (!userCrowns.Any())
@@ -234,7 +239,7 @@ public class CrownBuilders
 
             response.ResponseType = ResponseType.Embed;
             response.CommandResponse = CommandResponse.NotFound;
-            response.Components = new ComponentBuilder().WithSelectMenu(viewType);
+            response.StringMenus.Add(viewType);
             return response;
         }
 
@@ -276,7 +281,7 @@ public class CrownBuilders
             pageCounter++;
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginatorWithSelectMenu(pages, viewType);
+        response.ComponentPaginator = StringService.BuildComponentPaginatorWithSelectMenu(pages, viewType);
 
         return response;
     }

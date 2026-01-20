@@ -3,8 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
-using Discord;
-using Discord.WebSocket;
+using FMBot.Bot.Extensions;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
@@ -12,6 +11,9 @@ using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using NetCord;
+using NetCord.Gateway;
+using NetCord.Rest;
 using Npgsql;
 using Serilog;
 using Web.InternalApi;
@@ -23,11 +25,11 @@ public class CensorService
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
     private readonly IMemoryCache _cache;
     private readonly BotSettings _botSettings;
-    private readonly DiscordShardedClient _client;
+    private readonly ShardedGatewayClient _client;
     private readonly CensorHandler.CensorHandlerClient _censorHandler;
 
 
-    public CensorService(IDbContextFactory<FMBotDbContext> contextFactory, IMemoryCache cache, IOptions<BotSettings> botSettings, DiscordShardedClient client, CensorHandler.CensorHandlerClient censorHandler)
+    public CensorService(IDbContextFactory<FMBotDbContext> contextFactory, IMemoryCache cache, IOptions<BotSettings> botSettings, ShardedGatewayClient client, CensorHandler.CensorHandlerClient censorHandler)
     {
         this._contextFactory = contextFactory;
         this._cache = cache;
@@ -55,7 +57,7 @@ public class CensorService
         return result.HasBadWord;
     }
 
-    public async Task<CensorResult> IsSafeForChannel(IGuild guild, IChannel channel, string albumName, string artistName, string url, EmbedBuilder embedToUpdate = null)
+    public async Task<CensorResult> IsSafeForChannel(NetCord.Gateway.Guild guild, NetCord.Channel channel, string albumName, string artistName, string url, EmbedProperties embedToUpdate = null)
     {
         var result = await AlbumResult(albumName, artistName);
         if (result == CensorResult.NotSafe)
@@ -65,7 +67,7 @@ public class CensorService
             return result;
         }
 
-        if (result == CensorResult.Nsfw && (guild == null || ((SocketTextChannel)channel).IsNsfw))
+        if (result == CensorResult.Nsfw && (guild == null || ((TextGuildChannel)channel).Nsfw))
         {
             return CensorResult.Safe;
         }
@@ -73,7 +75,7 @@ public class CensorService
         return result;
     }
 
-    public async Task<CensorResult> IsSafeForChannel(IGuild guild, IChannel channel, string artistName, EmbedBuilder embedToUpdate = null)
+    public async Task<CensorResult> IsSafeForChannel(NetCord.Gateway.Guild guild, NetCord.Channel channel, string artistName, EmbedProperties embedToUpdate = null)
     {
         var result = await ArtistResult(artistName);
         if (result == CensorResult.NotSafe)
@@ -82,7 +84,7 @@ public class CensorService
             return result;
         }
 
-        if (result == CensorResult.Nsfw && (guild == null || ((SocketTextChannel)channel).IsNsfw))
+        if (result == CensorResult.Nsfw && (guild == null || ((TextGuildChannel)channel).Nsfw))
         {
             return CensorResult.Safe;
         }
@@ -374,8 +376,9 @@ public class CensorService
                 return;
             }
 
-            var guild = this._client.GetGuild(this._botSettings.Bot.BaseServerId);
-            var channel = guild?.GetTextChannel(this._botSettings.Bot.CensorReportChannelId);
+            var guild = await this._client.GetGuildAsync(this._botSettings.Bot.BaseServerId);
+            var channels = await guild.GetChannelsAsync();
+            var channel = channels?.FirstOrDefault(f => f.Id == this._botSettings.Bot.CensorReportChannelId) as TextGuildChannel;
 
             if (channel == null)
             {
@@ -383,33 +386,33 @@ public class CensorService
                 return;
             }
 
-            var embed = new EmbedBuilder();
+            var embed = new EmbedProperties();
             var type = report.IsArtist ? "Artist" : "Album";
             embed.WithTitle($"New censor report - {type}");
             embed.AddField("Artist", $"`{report.ArtistName}`");
 
-            var components = new ComponentBuilder()
-                .WithButton("NSFW", $"censor-report-mark-nsfw-{report.Id}", style: ButtonStyle.Success)
-                .WithButton("Censor", $"censor-report-mark-censored-{report.Id}", style: ButtonStyle.Success)
-                .WithButton("Deny", $"censor-report-deny-{report.Id}", style: ButtonStyle.Danger);
+            var components = new ActionRowProperties()
+                .WithButton("NSFW", $"censor-report-mark-nsfw:{report.Id}", style: ButtonStyle.Success)
+                .WithButton("Censor", $"censor-report-mark-censored:{report.Id}", style: ButtonStyle.Success)
+                .WithButton("Deny", $"censor-report-deny:{report.Id}", style: ButtonStyle.Danger);
 
             if (!report.IsArtist)
             {
                 embed.AddField("Album", $"`{report.AlbumName}`");
                 if (report.Album?.LastfmImageUrl != null)
                 {
-                    components.WithButton("Last.fm image", url: report.Album.LastfmImageUrl, row: 1, style: ButtonStyle.Link);
+                    components.WithButton("Last.fm image", url: report.Album.LastfmImageUrl, row: 1);
                 }
                 if (report.Album?.SpotifyImageUrl != null)
                 {
-                    components.WithButton("Spotify image", url: report.Album.SpotifyImageUrl, row: 1, style: ButtonStyle.Link);
+                    components.WithButton("Spotify image", url: report.Album.SpotifyImageUrl, row: 1);
                 }
             }
             else
             {
                 if (report.Artist?.SpotifyImageUrl != null)
                 {
-                    components.WithButton("Spotify image", url: report.Artist.SpotifyImageUrl, row: 1, style: ButtonStyle.Link);
+                    components.WithButton("Spotify image", url: report.Artist.SpotifyImageUrl, row: 1);
                 }
             }
 
@@ -418,15 +421,15 @@ public class CensorService
                 embed.AddField("Provided note", report.ProvidedNote);
             }
 
-            var reporter = guild.GetUser(report.ReportedByDiscordUserId);
+            var reporter = await this._client.GetUserAsync(report.ReportedByDiscordUserId);
             embed.AddField("Reporter",
-                $"**{reporter?.DisplayName}** - <@{report.ReportedByDiscordUserId}> - `{report.ReportedByDiscordUserId}`");
+                $"**{reporter?.GetDisplayName()}** - <@{report.ReportedByDiscordUserId}> - `{report.ReportedByDiscordUserId}`");
 
             embed.WithFooter(
                 "Reports might contain images that are not nice to see. \n" +
                 "Feel free to skip handling these if you don't feel comfortable doing so.");
 
-            await channel.SendMessageAsync(embed: embed.Build(), components: components.Build());
+            await channel.SendMessageAsync(new MessageProperties { Embeds = [embed], Components = [components] });
         }
         catch (Exception e)
         {

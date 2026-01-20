@@ -31,13 +31,20 @@ public class PuppeteerService
 
     private async Task InitializeAsync()
     {
-        Log.Information("Fetching puppeteer browser");
-        await new BrowserFetcher().DownloadAsync();
+        var executablePath = Environment.GetEnvironmentVariable("PUPPETEER_EXECUTABLE_PATH");
+
+        if (string.IsNullOrEmpty(executablePath) || !File.Exists(executablePath))
+        {
+            Log.Information("Fetching puppeteer browser");
+            await new BrowserFetcher().DownloadAsync();
+            executablePath = null;
+        }
 
         Log.Information("Starting puppeteer browser");
         this._browser = await Puppeteer.LaunchAsync(new LaunchOptions()
         {
             Headless = true,
+            ExecutablePath = executablePath,
             Args = new[]
             {
                 "--no-sandbox",

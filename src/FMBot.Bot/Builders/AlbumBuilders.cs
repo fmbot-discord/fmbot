@@ -6,7 +6,6 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Discord;
 using Fergun.Interactive;
 using FMBot.AppleMusic;
 using FMBot.Bot.Extensions;
@@ -26,6 +25,8 @@ using FMBot.Domain.Models;
 using FMBot.Images.Generators;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Primitives;
+using NetCord;
+using NetCord.Rest;
 using SkiaSharp;
 
 namespace FMBot.Bot.Builders;
@@ -252,7 +253,7 @@ public class AlbumBuilders
                 albumSearch.Album.AlbumName, albumSearch.Album.ArtistName, albumSearch.Album.AlbumUrl);
             if (safeForChannel == CensorService.CensorResult.Safe)
             {
-                response.Embed.WithThumbnailUrl(albumCoverUrl);
+                response.Embed.WithThumbnail(albumCoverUrl);
             }
         }
 
@@ -318,19 +319,20 @@ public class AlbumBuilders
             }
         }
 
-        response.Components = new ComponentBuilder()
+        response.Components = new ActionRowProperties()
             .WithButton(
                 "Album tracks",
-                $"{InteractionConstants.Album.Tracks}-{databaseAlbum.Id}-{userSettings?.DiscordUserId ?? context.ContextUser.DiscordUserId}-{context.ContextUser.DiscordUserId}",
+                $"{InteractionConstants.Album.Tracks}:{databaseAlbum.Id}:{userSettings?.DiscordUserId ?? context.ContextUser.DiscordUserId}:{context.ContextUser.DiscordUserId}",
                 style: ButtonStyle.Secondary,
-                emote: Emoji.Parse("🎶"))
+                emote: EmojiProperties.Standard("🎶"))
             .WithButton(
                 "Cover",
-                $"{InteractionConstants.Album.Cover}-{databaseAlbum.Id}-{userSettings?.DiscordUserId ?? context.ContextUser.DiscordUserId}-{context.ContextUser.DiscordUserId}-motion",
+                $"{InteractionConstants.Album.Cover}:{databaseAlbum.Id}:{userSettings?.DiscordUserId ?? context.ContextUser.DiscordUserId}:{context.ContextUser.DiscordUserId}:motion",
                 style: ButtonStyle.Secondary,
-                emote: Emoji.Parse("🖼️"));
+                emote: EmojiProperties.Standard("🖼️"));
 
         response.Embed.WithFooter(footer.ToString());
+
         return response;
     }
 
@@ -388,7 +390,7 @@ public class AlbumBuilders
                 album.Album.AlbumName, album.Album.ArtistName, album.Album.AlbumUrl);
             if (safeForChannel == CensorService.CensorResult.Safe)
             {
-                response.Embed.WithThumbnailUrl(albumCoverUrl);
+                response.Embed.WithThumbnail(albumCoverUrl);
             }
             else
             {
@@ -481,18 +483,16 @@ public class AlbumBuilders
         {
             if (PublicProperties.PremiumServers.ContainsKey(context.DiscordGuild.Id))
             {
-                var allowedRoles = new SelectMenuBuilder()
+                var allowedRoles = new RoleMenuProperties($"{InteractionConstants.WhoKnowsAlbumRolePicker}:{cachedAlbum.Id}")
                     .WithPlaceholder("Apply role filter..")
-                    .WithCustomId($"{InteractionConstants.WhoKnowsAlbumRolePicker}-{cachedAlbum.Id}")
-                    .WithType(ComponentType.RoleSelect)
                     .WithMinValues(0)
                     .WithMaxValues(25);
 
-                response.Components = new ComponentBuilder().WithSelectMenu(allowedRoles);
+                response.RoleMenu = allowedRoles;
             }
             else
             {
-                //response.Components = new ComponentBuilder().WithButton(Constants.GetPremiumServer, disabled: true, customId: "1");
+                //response.Components = new ActionRowProperties().WithButton(Constants.GetPremiumServer, disabled: true, customId: "1");
             }
         }
 
@@ -552,7 +552,7 @@ public class AlbumBuilders
                 album.Album.AlbumName, album.Album.ArtistName, album.Album.AlbumUrl);
             if (safeForChannel == CensorService.CensorResult.Safe)
             {
-                response.Embed.WithThumbnailUrl(albumCoverUrl);
+                response.Embed.WithThumbnail(albumCoverUrl);
             }
             else
             {
@@ -683,7 +683,7 @@ public class AlbumBuilders
                 album.Album.AlbumName, album.Album.ArtistName, album.Album.AlbumUrl);
             if (safeForChannel == CensorService.CensorResult.Safe)
             {
-                response.Embed.WithThumbnailUrl(albumCoverUrl);
+                response.Embed.WithThumbnail(albumCoverUrl);
             }
             else
             {
@@ -857,7 +857,7 @@ public class AlbumBuilders
             pageCounter++;
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+        response.ComponentPaginator = StringService.BuildComponentPaginator(pages);
         response.ResponseType = ResponseType.Paginator;
         return response;
     }
@@ -1031,8 +1031,8 @@ public class AlbumBuilders
             albumSearch.Album.AlbumName);
 
         var optionId =
-            $"{InteractionConstants.Album.Info}-{dbAlbum.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}";
-        var optionEmote = new Emoji("💽");
+            $"{InteractionConstants.Album.Info}:{dbAlbum.Id}:{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}";
+        var optionEmote = EmojiProperties.Standard("💽");
 
         if (pages.Count == 1)
         {
@@ -1042,7 +1042,7 @@ public class AlbumBuilders
         else
         {
             response.ResponseType = ResponseType.Paginator;
-            response.StaticPaginator = StringService.BuildStaticPaginator(pages, optionId, optionEmote);
+            response.ComponentPaginator = StringService.BuildComponentPaginator(pages, optionId, optionEmote);
         }
 
         return response;
@@ -1131,18 +1131,18 @@ public class AlbumBuilders
 
         var albumImages = await this._albumService.GetAlbumImages(databaseAlbum.Id);
 
-        response.Components = new ComponentBuilder()
+        response.Components = response.Components
             .WithButton("Album",
-                $"{InteractionConstants.Album.Info}-{databaseAlbum.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}",
-                style: ButtonStyle.Secondary, emote: new Emoji("💽"));
+                $"{InteractionConstants.Album.Info}:{databaseAlbum.Id}:{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}",
+                style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("💽"));
 
         if (albumSearch.IsRandom)
         {
             response.Embed.WithFooter(
                 $"Random album #{albumSearch.RandomAlbumPosition} ({albumSearch.RandomAlbumPlaycount} {StringExtensions.GetPlaysString(albumSearch.RandomAlbumPlaycount)})");
             response.Components.WithButton("Reroll",
-                $"{InteractionConstants.Album.RandomCover}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}",
-                style: ButtonStyle.Secondary, emote: new Emoji("🎲"));
+                $"{InteractionConstants.Album.RandomCover}:{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}",
+                style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("🎲"));
         }
 
         var gifResult = false;
@@ -1151,14 +1151,14 @@ public class AlbumBuilders
             albumCoverUrl = albumImages.First(f => f.ImageType == ImageType.VideoSquare).Url;
             gifResult = true;
             response.Components.WithButton("Still",
-                $"{InteractionConstants.Album.Cover}-{databaseAlbum.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}-still",
-                ButtonStyle.Secondary, new Emoji("🖼️"));
+                $"{InteractionConstants.Album.Cover}:{databaseAlbum.Id}:{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}:still",
+                ButtonStyle.Secondary, EmojiProperties.Standard("🖼️"));
         }
         else if (albumImages.Any(a => a.ImageType == ImageType.VideoSquare))
         {
             response.Components.WithButton("Motion",
-                $"{InteractionConstants.Album.Cover}-{databaseAlbum.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}-motion",
-                ButtonStyle.Secondary, new Emoji("▶️"));
+                $"{InteractionConstants.Album.Cover}:{databaseAlbum.Id}:{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}:motion",
+                ButtonStyle.Secondary, EmojiProperties.Standard("▶️"));
         }
 
         if (albumCoverUrl == null)
@@ -1458,7 +1458,7 @@ public class AlbumBuilders
                 .WithAuthor(response.EmbedAuthor));
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages, selectMenuBuilder: context.SelectMenu);
+        response.ComponentPaginator = StringService.BuildComponentPaginator(pages, selectMenuBuilder: context.SelectMenu);
         response.ResponseType = ResponseType.Paginator;
         return response;
     }

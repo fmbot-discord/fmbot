@@ -8,11 +8,6 @@ using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using Dapper;
-using Discord;
-using Discord.Commands;
-using Discord.Interactions;
-using Discord.Rest;
-using Discord.WebSocket;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Models.TemplateOptions;
@@ -29,9 +24,15 @@ using FMBot.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using NetCord;
+using NetCord.Gateway;
+using NetCord.Rest;
+using NetCord.Services.ApplicationCommands;
+using NetCord.Services.Commands;
 using Npgsql;
 using Serilog;
 using Shared.Domain.Models;
+using User = FMBot.Persistence.Domain.Models.User;
 
 namespace FMBot.Bot.Services;
 
@@ -49,7 +50,7 @@ public class UserService
     private readonly FriendsService _friendsService;
     private readonly AdminService _adminService;
     private readonly TemplateService _templateService;
-    private readonly DiscordShardedClient _client;
+    private readonly ShardedGatewayClient _client;
     private readonly HttpClient _httpClient;
     private readonly EurovisionService _eurovisionService;
 
@@ -65,7 +66,7 @@ public class UserService
         FriendsService friendsService,
         AdminService adminService,
         TemplateService templateService,
-        DiscordShardedClient client,
+        ShardedGatewayClient client,
         HttpClient httpClient,
         EurovisionService eurovisionService)
     {
@@ -86,7 +87,7 @@ public class UserService
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<User> GetUserSettingsAsync(IUser discordUser)
+    public async Task<User> GetUserSettingsAsync(NetCord.User discordUser)
     {
         return await GetUserAsync(discordUser.Id);
     }
@@ -144,7 +145,7 @@ public class UserService
         return $"user-{userNameLastFm.ToLower()}";
     }
 
-    public async Task<User> GetUserOrTempUser(IUser discordUser)
+    public async Task<User> GetUserOrTempUser(NetCord.User discordUser)
     {
         if (this._cache.TryGetValue(TempUserCacheKey(discordUser.Id), out string lastFmUserName))
         {
@@ -189,7 +190,7 @@ public class UserService
             .FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
     }
 
-    public async Task<bool> UserRegisteredAsync(IUser discordUser)
+    public async Task<bool> UserRegisteredAsync(NetCord.User discordUser)
     {
         var user = await GetUserAsync(discordUser.Id);
 
@@ -237,26 +238,19 @@ public class UserService
         return blockedUsernamesHashSet;
     }
 
-    public async Task<IUser> GetUserFromDiscord(ulong discordUserId)
+    public async Task<NetCord.User> GetUserFromDiscord(ulong discordUserId)
     {
-        var user = this._client.GetUser(discordUserId);
-
-        if (user == null)
-        {
-            return await this._client.Rest.GetUserAsync(discordUserId);
-        }
-
-        return user;
+        return await this._client.GetUserAsync(discordUserId);
     }
 
-    public async Task<bool> UserHasSessionAsync(IUser discordUser)
+    public async Task<bool> UserHasSessionAsync(NetCord.User discordUser)
     {
         var user = await GetUserSettingsAsync(discordUser);
 
         return !string.IsNullOrEmpty(user?.SessionKeyLastFm);
     }
 
-    public async Task<bool> UserIsSupporter(IUser discordUser)
+    public async Task<bool> UserIsSupporter(NetCord.User discordUser)
     {
         var user = await GetUserSettingsAsync(discordUser);
 
@@ -296,64 +290,18 @@ public class UserService
         }
     }
 
-    public async Task AddUserTextCommandInteraction(ShardedCommandContext context, string commandName)
+    public async Task InsertCommandInteractionAsync(CommandContext context, string commandName, CommandResponse? commandResponse = null)
     {
-        var user = await GetUserSettingsAsync(context.User);
         PublicProperties.UsedCommandDiscordUserIds.TryAdd(context.Message.Id, context.User.Id);
 
+        var user = await GetUserSettingsAsync(context.User);
         if (user == null)
         {
             return;
         }
 
-        await Task.Delay(12000);
-
         try
         {
-            var commandResponse = CommandResponse.Ok;
-            if (PublicProperties.UsedCommandsResponses.TryGetValue(context.Message.Id, out var fetchedResponse))
-            {
-                commandResponse = fetchedResponse;
-            }
-
-            string errorReference = null;
-            if (PublicProperties.UsedCommandsErrorReferences.TryGetValue(context.Message.Id,
-                    out var fetchedErrorId))
-            {
-                errorReference = fetchedErrorId;
-            }
-
-            string artist = null;
-            if (PublicProperties.UsedCommandsArtists.TryGetValue(context.Message.Id, out var fetchedArtist))
-            {
-                artist = fetchedArtist;
-            }
-
-            string album = null;
-            if (PublicProperties.UsedCommandsAlbums.TryGetValue(context.Message.Id, out var fetchedAlbum))
-            {
-                album = fetchedAlbum;
-            }
-
-            string track = null;
-            if (PublicProperties.UsedCommandsTracks.TryGetValue(context.Message.Id, out var fetchedTrack))
-            {
-                track = fetchedTrack;
-            }
-
-            ulong? responseId = null;
-            if (PublicProperties.UsedCommandsResponseMessageId.TryGetValue(context.Message.Id,
-                    out var fetchedResponseId))
-            {
-                responseId = fetchedResponseId;
-            }
-
-            bool? hintShown = null;
-            if (PublicProperties.UsedCommandsHintShown.Contains(context.Message.Id))
-            {
-                hintShown = true;
-            }
-
             var interaction = new UserInteraction
             {
                 Timestamp = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
@@ -363,14 +311,8 @@ public class UserService
                 DiscordGuildId = context.Guild?.Id,
                 DiscordChannelId = context.Channel?.Id,
                 DiscordId = context.Message.Id,
-                DiscordResponseId = responseId,
-                Response = commandResponse,
                 Type = UserInteractionType.TextCommand,
-                ErrorReferenceId = errorReference,
-                Artist = artist,
-                Album = album,
-                Track = track,
-                HintShown = hintShown
+                Response = commandResponse ?? CommandResponse.Incomplete
             };
 
             await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -379,72 +321,26 @@ public class UserService
         }
         catch (Exception e)
         {
-            Log.Error(e, "AddUserTextCommandInteraction: Error while adding user interaction");
+            Log.Error(e, "InsertCommandInteractionAsync: Error while inserting user interaction");
         }
     }
 
-    public async Task AddUserSlashCommandInteraction(ShardedInteractionContext context, string commandName)
+    public async Task InsertSlashCommandInteractionAsync(ApplicationCommandContext context, string commandName, CommandResponse? commandResponse = null)
     {
-        var user = await GetUserSettingsAsync(context.User);
         PublicProperties.UsedCommandDiscordUserIds.TryAdd(context.Interaction.Id, context.User.Id);
 
+        var user = await GetUserSettingsAsync(context.User);
         if (user == null)
         {
             return;
         }
 
-        await Task.Delay(12000);
-
         try
         {
-            var commandResponse = CommandResponse.Ok;
-            if (PublicProperties.UsedCommandsResponses.TryGetValue(context.Interaction.Id, out var fetchedResponse))
-            {
-                commandResponse = fetchedResponse;
-            }
-
-            string errorReference = null;
-            if (PublicProperties.UsedCommandsErrorReferences.TryGetValue(context.Interaction.Id,
-                    out var fetchedErrorId))
-            {
-                errorReference = fetchedErrorId;
-            }
-
-            string artist = null;
-            if (PublicProperties.UsedCommandsArtists.TryGetValue(context.Interaction.Id, out var fetchedArtist))
-            {
-                artist = fetchedArtist;
-            }
-
-            string album = null;
-            if (PublicProperties.UsedCommandsAlbums.TryGetValue(context.Interaction.Id, out var fetchedAlbum))
-            {
-                album = fetchedAlbum;
-            }
-
-            string track = null;
-            if (PublicProperties.UsedCommandsTracks.TryGetValue(context.Interaction.Id, out var fetchedTrack))
-            {
-                track = fetchedTrack;
-            }
-
-            ulong? responseId = null;
-            if (PublicProperties.UsedCommandsResponseMessageId.TryGetValue(context.Interaction.Id,
-                    out var fetchedResponseId))
-            {
-                responseId = fetchedResponseId;
-            }
-
-            bool? hintShown = null;
-            if (PublicProperties.UsedCommandsHintShown.Contains(context.Interaction.Id))
-            {
-                hintShown = true;
-            }
-
             var options = new Dictionary<string, string>();
-            if (context.Interaction is SocketSlashCommand command)
+            if (context.Interaction is SlashCommandInteraction slashCommand)
             {
-                foreach (var option in command.Data.Options)
+                foreach (var option in slashCommand.Data.Options)
                 {
                     options.Add(option.Name, option.Value?.ToString());
                 }
@@ -459,17 +355,11 @@ public class UserService
                 DiscordGuildId = context.Guild?.Id,
                 DiscordChannelId = context.Channel?.Id,
                 DiscordId = context.Interaction.Id,
-                DiscordResponseId = responseId,
-                Response = commandResponse,
-                Type = context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
-                       !context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall)
+                Type = context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
+                       !context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall)
                     ? UserInteractionType.SlashCommandUser
                     : UserInteractionType.SlashCommandGuild,
-                ErrorReferenceId = errorReference,
-                Artist = artist,
-                Album = album,
-                Track = track,
-                HintShown = hintShown
+                Response = commandResponse ?? CommandResponse.Incomplete
             };
 
             await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -478,7 +368,135 @@ public class UserService
         }
         catch (Exception e)
         {
-            Log.Error(e, "AddUserSlashCommandInteraction: Error while adding user interaction");
+            Log.Error(e, "InsertSlashCommandInteractionAsync: Error while inserting user interaction");
+        }
+    }
+
+    public async Task InsertAndCompleteInteractionAsync(
+        ulong discordId,
+        ulong discordUserId,
+        string commandName,
+        CommandResponse commandResponse,
+        ulong? guildId = null,
+        ulong? channelId = null,
+        UserInteractionType type = UserInteractionType.SlashCommandGuild,
+        string commandContent = null,
+        Dictionary<string, string> commandOptions = null,
+        string errorReference = null)
+    {
+        PublicProperties.UsedCommandDiscordUserIds.TryAdd(discordId, discordUserId);
+
+        try
+        {
+            await using var db = await this._contextFactory.CreateDbContextAsync();
+            var existingInteraction = await db.UserInteractions
+                .FirstOrDefaultAsync(f => f.DiscordId == discordId);
+
+            if (existingInteraction != null)
+            {
+                existingInteraction.Response = commandResponse;
+                if (errorReference != null)
+                {
+                    existingInteraction.ErrorReferenceId = errorReference;
+                }
+
+                db.UserInteractions.Update(existingInteraction);
+                await db.SaveChangesAsync();
+                return;
+            }
+
+            var user = await GetUserAsync(discordUserId);
+            if (user == null)
+            {
+                return;
+            }
+
+            var interaction = new UserInteraction
+            {
+                Timestamp = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
+                CommandName = commandName,
+                CommandContent = commandContent,
+                CommandOptions = commandOptions,
+                UserId = user.UserId,
+                DiscordGuildId = guildId,
+                DiscordChannelId = channelId,
+                DiscordId = discordId,
+                Type = type,
+                Response = commandResponse,
+                ErrorReferenceId = errorReference
+            };
+
+            await db.UserInteractions.AddAsync(interaction);
+            await db.SaveChangesAsync();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "InsertAndCompleteInteractionAsync: Error while inserting/updating user interaction for {discordId}", discordId);
+        }
+    }
+
+    public async Task UpdateCommandInteractionAsync(
+        ulong discordId,
+        ulong? responseId = null,
+        CommandResponse? commandResponse = null,
+        string errorReference = null,
+        string artist = null,
+        string album = null,
+        string track = null,
+        bool? hintShown = null)
+    {
+        try
+        {
+            await using var db = await this._contextFactory.CreateDbContextAsync();
+            var existingInteraction = await db.UserInteractions
+                .FirstOrDefaultAsync(f => f.DiscordId == discordId);
+
+            if (existingInteraction == null)
+            {
+                return;
+            }
+
+            if (responseId.HasValue)
+            {
+                existingInteraction.DiscordResponseId = responseId;
+            }
+
+            if (commandResponse.HasValue)
+            {
+                existingInteraction.Response = commandResponse.Value;
+            }
+
+            if (errorReference != null)
+            {
+                existingInteraction.ErrorReferenceId = errorReference;
+            }
+
+            if (artist != null)
+            {
+                existingInteraction.Artist = artist;
+            }
+
+            if (album != null)
+            {
+                existingInteraction.Album = album;
+            }
+
+            if (track != null)
+            {
+                existingInteraction.Track = track;
+            }
+
+            if (hintShown.HasValue)
+            {
+                existingInteraction.HintShown = hintShown;
+            }
+
+            db.UserInteractions.Update(existingInteraction);
+            await db.SaveChangesAsync();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "UpdateCommandInteractionAsync: Error while updating user interaction for {discordId}", discordId);
         }
     }
 
@@ -503,23 +521,8 @@ public class UserService
     {
         if (updateInternal)
         {
-            if (PublicProperties.UsedCommandsTracks.TryRemove(interactionId, out _))
-            {
-                PublicProperties.UsedCommandsTracks.TryAdd(interactionId, responseContext.Track);
-            }
-
-            if (PublicProperties.UsedCommandsAlbums.TryRemove(interactionId, out _))
-            {
-                if (responseContext.Album != null)
-                {
-                    PublicProperties.UsedCommandsAlbums.TryAdd(interactionId, responseContext.Album);
-                }
-            }
-
-            if (PublicProperties.UsedCommandsArtists.TryRemove(interactionId, out _))
-            {
-                PublicProperties.UsedCommandsArtists.TryAdd(interactionId, responseContext.Artist);
-            }
+            PublicProperties.UsedCommandsReferencedMusic.TryRemove(interactionId, out _);
+            PublicProperties.UsedCommandsReferencedMusic.TryAdd(interactionId, responseContext);
         }
 
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -667,7 +670,7 @@ public class UserService
         return stats;
     }
 
-    private Dictionary<TimeSpan, int> CalculateSessionStats(List<UserInteraction> orderedInteractions,
+    private static Dictionary<TimeSpan, int> CalculateSessionStats(List<UserInteraction> orderedInteractions,
         int sessionTimeoutMinutes)
     {
         var sessions = new List<TimeSpan>();
@@ -700,7 +703,7 @@ public class UserService
             .ToDictionary(g => g.Key, g => g.Count());
     }
 
-    private float CalculateAverageCommandsPerSession(List<UserInteraction> orderedInteractions,
+    private static float CalculateAverageCommandsPerSession(List<UserInteraction> orderedInteractions,
         int sessionTimeoutMinutes)
     {
         var sessionCounts = new List<int>();
@@ -728,7 +731,7 @@ public class UserService
         return (float)(sessionCounts.Any() ? sessionCounts.Average() : 0);
     }
 
-    private Dictionary<string, List<string>> CalculateCommandCombinations(List<UserInteraction> orderedInteractions)
+    private static Dictionary<string, List<string>> CalculateCommandCombinations(List<UserInteraction> orderedInteractions)
     {
         var combinations = new Dictionary<string, List<string>>();
         const int combinationTimeWindowMinutes = 5;
@@ -752,7 +755,7 @@ public class UserService
         return combinations;
     }
 
-    private TimeSpan CalculateAverageTimeBetweenCommands(List<UserInteraction> orderedInteractions)
+    private static TimeSpan CalculateAverageTimeBetweenCommands(List<UserInteraction> orderedInteractions)
     {
         var timeDiffs = new List<TimeSpan>();
         for (int i = 0; i < orderedInteractions.Count - 1; i++)
@@ -769,7 +772,7 @@ public class UserService
             : TimeSpan.Zero;
     }
 
-    private int CalculateLongestStreak(List<UserInteraction> orderedInteractions)
+    private static int CalculateLongestStreak(List<UserInteraction> orderedInteractions)
     {
         var dates = orderedInteractions
             .Select(i => i.Timestamp.Date)
@@ -934,7 +937,7 @@ public class UserService
         RemoveUserFromCache(user);
     }
 
-    public async Task<User> GetUserWithFriendsAsync(IUser discordUser)
+    public async Task<User> GetUserWithFriendsAsync(NetCord.User discordUser)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         return await db.Users
@@ -980,26 +983,29 @@ public class UserService
             .FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
     }
 
-    public static async Task<string> GetNameAsync(IGuild guild, IUser user)
+    public static async Task<string> GetNameAsync(NetCord.Gateway.Guild guild, NetCord.User user)
     {
         if (guild == null)
         {
-            return user.GlobalName ?? user.Username;
+            return user.GetDisplayName();
         }
 
-        var guildUser = await guild.GetUserAsync(user.Id, CacheMode.CacheOnly);
+        if (guild.Users.TryGetValue(user.Id, out var guildUser))
+        {
+            return guildUser.GetDisplayName();
+        }
 
-        return guildUser?.DisplayName ?? user.GlobalName ?? user.Username;
+        return user.GetDisplayName();
     }
 
-    public async Task<UserType> GetRankAsync(IUser discordUser)
+    public async Task<UserType> GetRankAsync(NetCord.User discordUser)
     {
         var user = await GetUserSettingsAsync(discordUser);
 
         return user?.UserType ?? UserType.User;
     }
 
-    public async Task<string> GetUserTitleAsync(ICommandContext context)
+    public async Task<string> GetUserTitleAsync(CommandContext context)
     {
         var name = await GetNameAsync(context.Guild, context.User);
         var userType = await GetRankAsync(context.User);
@@ -1011,7 +1017,7 @@ public class UserService
         return title;
     }
 
-    public async Task<string> GetUserTitleAsync(IGuild guild, IUser user)
+    public async Task<string> GetUserTitleAsync(NetCord.Gateway.Guild guild, NetCord.User user)
     {
         var name = await GetNameAsync(guild, user);
         var userType = await GetRankAsync(user);
@@ -1284,7 +1290,7 @@ public class UserService
         return (promo, description.ToString());
     }
 
-    private async Task AddOrUpdateUser(IUser discordUser, User newUserSettings)
+    private async Task AddOrUpdateUser(NetCord.User discordUser, User newUserSettings)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var user = await db.Users
@@ -1345,7 +1351,7 @@ public class UserService
         TimedOut
     }
 
-    public async Task<(LoginStatus Status, int AltCount)> GetAndStoreAuthSession(IUser contextUser, string token)
+    public async Task<(LoginStatus Status, int AltCount)> GetAndStoreAuthSession(NetCord.User contextUser, string token)
     {
         Log.Information("LastfmAuth: Login session starting for {user} | {discordUserId}", contextUser.Username,
             contextUser.Id);
@@ -1819,7 +1825,7 @@ public class UserService
     public async Task UpdateLinkedRole(ulong discordUserId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
-        var botType = BotTypeExtension.GetBotType(this._client.CurrentUser.Id);
+        var botType = BotTypeExtension.GetBotType(this._client.GetCurrentUser()!.Id);
         var userToken =
             await db.UserTokens.FirstOrDefaultAsync(f => f.BotType == botType && f.DiscordUserId == discordUserId);
 
@@ -1830,7 +1836,11 @@ public class UserService
 
         if (DateTime.UtcNow >= userToken.TokenExpiresAt)
         {
-            await RefreshDiscordToken(userToken, db);
+            var refreshed = await RefreshDiscordToken(userToken, db);
+            if (!refreshed)
+            {
+                return;
+            }
         }
 
         var userSettings = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
@@ -1841,22 +1851,26 @@ public class UserService
 
         try
         {
-            await using var client = new DiscordRestClient();
-            await client.LoginAsync(TokenType.Bearer, userToken.AccessToken);
+            using var client = new RestClient(new BearerToken(userToken.AccessToken));
 
             DateTimeOffset registeredDate =
                 TimeZoneInfo.ConvertTime((DateTime)userSettings.RegisteredLastFm.GetValueOrDefault(), TimeZoneInfo.Utc);
 
-            var properties = new RoleConnectionProperties("Last.fm", userSettings.UserNameLastFM)
-                .WithNumber("total_scrobbles", (int)userSettings.TotalPlaycount.GetValueOrDefault())
-                .WithDate("registered", registeredDate);
+            var properties = new ApplicationRoleConnectionProperties
+            {
+                PlatformName = "Last.fm",
+                PlatformUsername = userSettings.UserNameLastFM,
+                Metadata = new Dictionary<string, string>
+                {
+                    { "total_scrobbles", ((int)userSettings.TotalPlaycount.GetValueOrDefault()).ToString() },
+                    { "registered", registeredDate.ToString("o") }
+                }
+            };
 
-            await client.ModifyUserApplicationRoleConnectionAsync(
+            await client.UpdateCurrentUserApplicationRoleConnectionAsync(
                 this._botSettings.Discord.ApplicationId.GetValueOrDefault(), properties);
 
             Log.Information("Updated linked roles for {discordUserId}", discordUserId);
-
-            await client.DisposeAsync();
         }
         catch (Exception ex)
         {
@@ -1864,7 +1878,7 @@ public class UserService
         }
     }
 
-    private async Task RefreshDiscordToken(UserToken userToken, FMBotDbContext db)
+    private async Task<bool> RefreshDiscordToken(UserToken userToken, FMBotDbContext db)
     {
         try
         {
@@ -1892,6 +1906,7 @@ public class UserService
                 db.Update(userToken);
 
                 await db.SaveChangesAsync();
+                return true;
             }
             else
             {
@@ -1902,16 +1917,18 @@ public class UserService
                     db.UserTokens.Remove(userToken);
                     await db.SaveChangesAsync();
                     Log.Information("Removed discord token for {discordUserId}", userToken.DiscordUserId);
-                    return;
+                    return false;
                 }
 
                 Log.Error("Failed to refresh Discord token for {discordUserId}: {ErrorContent}",
                     userToken.DiscordUserId, errorContent);
+                return false;
             }
         }
         catch (Exception ex)
         {
             Log.Error(ex, "Exception while refreshing Discord token for user {discordUserId}", userToken.DiscordUserId);
+            return false;
         }
     }
 

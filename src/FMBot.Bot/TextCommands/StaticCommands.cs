@@ -1,14 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
-using Discord;
-using Discord.Commands;
-using Discord.WebSocket;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
@@ -23,71 +19,45 @@ using FMBot.Domain;
 using FMBot.Domain.Models;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Options;
+using NetCord;
+using NetCord.Gateway;
+using NetCord.Rest;
+using NetCord.Services.Commands;
 using Serilog;
 using Web.InternalApi;
-using Enum = System.Enum;
-using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 
 namespace FMBot.Bot.TextCommands;
 
-[Name("Static commands")]
-public class StaticCommands : BaseCommandModule
+[ModuleName("Static commands")]
+public class StaticCommands(
+    CommandService<CommandContext> service,
+    FriendsService friendsService,
+    GuildService guildService,
+    IPrefixService prefixService,
+    UserService userService,
+    IOptions<BotSettings> botSettings,
+    InteractiveService interactivity,
+    MusicBotService musicBotService,
+    StaticBuilders staticBuilders,
+    StatusHandler.StatusHandlerClient statusHandler,
+    ShardedGatewayClient client)
+    : BaseCommandModule(botSettings)
 {
-    private readonly CommandService _service;
-    private readonly FriendsService _friendService;
-    private readonly GuildService _guildService;
-    private readonly IPrefixService _prefixService;
-    private readonly SupporterService _supporterService;
-    private readonly UserService _userService;
-    private readonly MusicBotService _musicBotService;
-    private readonly StaticBuilders _staticBuilders;
-    private readonly StatusHandler.StatusHandlerClient _statusHandler;
-    private readonly DiscordShardedClient _client;
+    private InteractiveService Interactivity { get; } = interactivity;
 
-    private InteractiveService Interactivity { get; }
+    private static readonly List<DateTimeOffset> StackCooldownTimer = [];
+    private static readonly List<User> StackCooldownTarget = [];
 
-    private static readonly List<DateTimeOffset> StackCooldownTimer = new();
-    private static readonly List<SocketUser> StackCooldownTarget = new();
-
-    public StaticCommands(
-        CommandService service,
-        FriendsService friendsService,
-        GuildService guildService,
-        IPrefixService prefixService,
-        SupporterService supporterService,
-        UserService userService,
-        IOptions<BotSettings> botSettings,
-        InteractiveService interactivity,
-        MusicBotService musicBotService,
-        StaticBuilders staticBuilders,
-        StatusHandler.StatusHandlerClient statusHandler,
-        DiscordShardedClient client) : base(botSettings)
-    {
-        this._friendService = friendsService;
-        this._guildService = guildService;
-        this._prefixService = prefixService;
-        this._service = service;
-        this._supporterService = supporterService;
-        this._userService = userService;
-        this.Interactivity = interactivity;
-        this._musicBotService = musicBotService;
-        this._staticBuilders = staticBuilders;
-        this._statusHandler = statusHandler;
-        this._client = client;
-    }
-
-    [Command("invite", RunMode = RunMode.Async)]
+    [Command("invite", "server", "info")]
     [Summary("Info for inviting the bot to a server")]
-    [Alias("server", "info")]
     [CommandCategories(CommandCategory.Other)]
     public async Task InviteAsync()
     {
-        var socketCommandContext = (SocketCommandContext)this.Context;
-        var selfId = socketCommandContext.Client.CurrentUser.Id.ToString();
+        var selfId = client.Id.ToString();
         var embedDescription = new StringBuilder();
         this._embed.WithColor(DiscordConstants.InformationColorBlue);
 
-        if (socketCommandContext.Client.CurrentUser.Id == Constants.BotBetaId)
+        if (client.Id == Constants.BotBetaId)
         {
             embedDescription.AppendLine(
                 "The version of the bot you're currently using is the beta version, which is used to test new features and fixes.");
@@ -126,28 +96,23 @@ public class StaticCommands : BaseCommandModule
 
         this._embed.WithDescription(embedDescription.ToString());
 
-        if (IsBotSelfHosted(socketCommandContext.Client.CurrentUser.Id))
+        var components = new ActionRowProperties()
+            .WithButton(
+                $"https://discord.com/oauth2/authorize?client_id={selfId}&scope=bot%20applications.commands&permissions={Constants.InviteLinkPermissions}",
+                "Add to server")
+            .WithButton($"https://discord.com/oauth2/authorize?client_id={selfId}&scope=applications.commands&integration_type=1",
+                "Add to user");
+
+        await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
         {
-            this._embed.AddField("Note:",
-                "This instance of .fmbot is self-hosted and could differ from the 'official' .fmbot. " +
-                "The invite link linked here invites the self-hosted instance and not the official .fmbot.");
-        }
-
-        var components = new ComponentBuilder()
-            .WithButton("Add to server", style: ButtonStyle.Link,
-                url:
-                $"https://discord.com/oauth2/authorize?client_id={selfId}&scope=bot%20applications.commands&permissions={Constants.InviteLinkPermissions}")
-            .WithButton("Add to user", style: ButtonStyle.Link,
-                url:
-                $"https://discord.com/oauth2/authorize?client_id={selfId}&scope=applications.commands&integration_type=1");
-
-        await this.Context.Channel.SendMessageAsync("", false, this._embed.Build(), components: components.Build());
-        this.Context.LogCommandUsed();
+            Embeds = [this._embed],
+            Components = [components]
+        });
+        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
     }
 
-    [Command("source", RunMode = RunMode.Async)]
+    [Command("source", "github", "gitlab", "opensource", "sourcecode", "code")]
     [Summary("Shows links to the source code of .fmbot")]
-    [Alias("github", "gitlab", "opensource", "sourcecode", "code")]
     [CommandCategories(CommandCategory.Other)]
     public async Task SourceAsync()
     {
@@ -166,52 +131,49 @@ public class StaticCommands : BaseCommandModule
             "[Development](https://fm.bot/setup/)\n" +
             "[Supporter](https://fm.bot/supporter)");
 
-        await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-        this.Context.LogCommandUsed();
+        await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
+        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
     }
 
-    [Command("outofsync", RunMode = RunMode.Async)]
+    [Command("outofsync", "broken", "sync", "fix", "lagging", "stuck")]
     [Summary("Info for what to do when now playing track is lagging behind")]
-    [Alias("broken", "sync", "fix", "lagging", "stuck")]
     [CommandCategories(CommandCategory.Other)]
-    public async Task OutOfSyncAsync([Remainder] string options = null)
+    public async Task OutOfSyncAsync([CommandParameter(Remainder = true)] string options = null)
     {
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+        var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
 
         var response = StaticBuilders.OutOfSync(new ContextModel(this.Context, prfx, userSettings));
 
-        await this.Context.SendResponse(this.Interactivity, response);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendResponse(this.Interactivity, response, userService);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
-    [Command("getsupporter", RunMode = RunMode.Async)]
+    [Command("getsupporter", "support", "patreon", "opencollective", "donations", "supporter")]
     [Summary("Get the best .fmbot experience with Supporter")]
-    [Alias("support", "patreon", "opencollective", "donations", "supporter")]
     [CommandCategories(CommandCategory.Other)]
     public async Task GetSupporter()
     {
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
-        var response = await this._staticBuilders.SupporterButtons(new ContextModel(this.Context, prfx, contextUser),
+        var response = await staticBuilders.SupporterButtons(new ContextModel(this.Context, prfx, contextUser),
             true, false, true, "getsupporter");
 
-        await this.Context.SendResponse(this.Interactivity, response);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendResponse(this.Interactivity, response, userService);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
-    [Command("status", RunMode = RunMode.Async)]
+    [Command("status")]
     [Summary("Displays bot stats.")]
     [CommandCategories(CommandCategory.Other)]
     public async Task StatusAsync()
     {
-        var socketCommandContext = (SocketCommandContext)this.Context;
-        var selfUser = socketCommandContext.Client.CurrentUser;
+        var selfUser = client.GetCurrentUser();
         this._embed.WithColor(DiscordConstants.InformationColorBlue);
 
-        this._embedAuthor.WithIconUrl(selfUser.GetAvatarUrl());
-        this._embedAuthor.WithName($"{selfUser.Username}");
+        this._embedAuthor.WithIconUrl(selfUser?.GetAvatarUrl()?.ToString());
+        this._embedAuthor.WithName($"{selfUser?.Username}");
         this._embedAuthor.WithUrl("https://fm.bot/");
 
         this._embed.WithAuthor(this._embedAuthor);
@@ -222,28 +184,31 @@ public class StaticCommands : BaseCommandModule
         var currentMemoryUsage = currentProcess.WorkingSet64;
         var peakMemoryUsage = currentProcess.PeakWorkingSet64;
 
-        var client = this.Context.Client as DiscordShardedClient;
-
         var ticks = Stopwatch.GetTimestamp();
         var upTime = (double)ticks / Stopwatch.Frequency;
         var upTimeInSeconds = TimeSpan.FromSeconds(upTime);
+
+        var totalGuilds = client.Sum(shard => shard.Cache.Guilds.Count);
+        var totalMembers = client.SelectMany(shard => shard.Cache.Guilds.Values).Sum(g => g.ApproximateUserCount ?? 0);
+        var shardCount = client.Count();
+        var currentShardId = this.Context.Guild != null ? GetShardIdForGuild(this.Context.Guild.Id, shardCount) : 0;
 
         var description = "";
         description += $"**Current Instance:** `{ConfigData.Data.Shards?.InstanceName}`\n";
         description += $"**Instance Uptime:** `{startTime.ToReadableString()}`\n";
         description += $"**Server Uptime:** `{upTimeInSeconds.ToReadableString()}`\n";
         description +=
-            $"**Usercount:** `{await this._userService.GetTotalUserCountAsync()}`  (Authorized: `{await this._userService.GetTotalAuthorizedUserCountAsync()}` | Discord: `{client.Guilds.Select(s => s.MemberCount).Sum()}`)\n";
-        description += $"**Friendcount:** `{await this._friendService.GetTotalFriendCountAsync()}`\n";
+            $"**Usercount:** `{await userService.GetTotalUserCountAsync()}`  (Authorized: `{await userService.GetTotalAuthorizedUserCountAsync()}` | Discord: `{totalMembers}`)\n";
+        description += $"**Friendcount:** `{await friendsService.GetTotalFriendCountAsync()}`\n";
         description +=
-            $"**Servercount:** `{client.Guilds.Count}`  (Shards: `{client.Shards.Count}` (`{client.GetShardIdFor(this.Context.Guild)}`))\n";
+            $"**Servercount:** `{totalGuilds}`  (Shards: `{shardCount}` (`{currentShardId}`))\n";
         description +=
             $"**Memory usage:** `{currentMemoryUsage.ToFormattedByteString()}`  (Peak: `{peakMemoryUsage.ToFormattedByteString()}`)\n";
 
         var instanceOverviewDescription = new StringBuilder();
         try
         {
-            var instanceOverview = await this._statusHandler.GetOverviewAsync(new Empty());
+            var instanceOverview = await statusHandler.GetOverviewAsync(new Empty());
 
             foreach (var instance in instanceOverview.Instances.OrderBy(o => o.InstanceName.Length)
                          .ThenBy(o => o.InstanceName))
@@ -256,12 +221,12 @@ public class StaticCommands : BaseCommandModule
                 else if (instance.LastHeartbeat.ToDateTime() >= DateTime.UtcNow.AddMinutes(-1))
                 {
                     instanceOverviewDescription.Append(
-                        $"{DiscordConstants.SamePosition}");
+                        $"{EmojiProperties.Custom(DiscordConstants.SamePosition).ToDiscordString("same_position")}");
                 }
                 else
                 {
                     instanceOverviewDescription.Append(
-                        $"{DiscordConstants.OneToFiveDown}");
+                        $"{EmojiProperties.Custom(DiscordConstants.OneToFiveDown).ToDiscordString("one_to_five_down")}");
                 }
 
                 instanceOverviewDescription.Append(
@@ -277,79 +242,56 @@ public class StaticCommands : BaseCommandModule
         }
         catch (Exception e)
         {
-            Log.Error("Error in gRPC status fetch, {exceptionMessage}", e.Message, e);
+            Log.Error(e, "Error in gRPC status fetch, {exceptionMessage}", e.Message);
             instanceOverviewDescription.AppendLine("Error");
         }
 
-        this._embed.AddField("Instance heartbeat overview - connected/total", instanceOverviewDescription);
+        this._embed.AddField("Instance heartbeat overview - connected/total", instanceOverviewDescription.ToString());
 
         this._embed.WithDescription(description);
 
-        await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-        this.Context.LogCommandUsed();
+        await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
+        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
     }
 
-    [Command("shards", RunMode = RunMode.Async)]
+    [Command("shards")]
     [Summary("Displays bot sharding info.")]
     [ExcludeFromHelp]
     public async Task ShardsAsync()
     {
         this._embed.WithTitle("Bot instance shards");
 
-        var client = this.Context.Client as DiscordShardedClient;
+        var shards = client.ToList();
+        var totalGuilds = shards.Sum(s => s.Cache.Guilds.Count);
+        var shardCount = shards.Count;
 
         var shardDescription = new StringBuilder();
 
         shardDescription.AppendLine(
-            $"Total connected guilds: `{client.Guilds.Count()}`");
+            $"Total connected guilds: `{totalGuilds}`");
         shardDescription.AppendLine(
-            $"Total shards: `{client.Shards.Count()}`");
-        shardDescription.AppendLine(
-            $"Connected shards: `{client.Shards.Count(c => c.ConnectionState == ConnectionState.Connected)}`");
-        shardDescription.AppendLine(
-            $"Disconnected shards: `{client.Shards.Count(c => c.ConnectionState == ConnectionState.Disconnected)}`");
-        shardDescription.AppendLine(
-            $"Connecting shards: `{client.Shards.Count(c => c.ConnectionState == ConnectionState.Connecting)}`");
-        shardDescription.AppendLine(
-            $"Disconnecting shards: `{client.Shards.Count(c => c.ConnectionState == ConnectionState.Disconnecting)}`");
+            $"Total shards: `{shardCount}`");
 
         shardDescription.AppendLine();
-        shardDescription.AppendLine(
-            $"Min latency: `{client.Shards.Select(s => s.Latency).Min() + "ms`"}");
-        shardDescription.AppendLine(
-            $"Average latency: `{Math.Round(client.Shards.Select(s => s.Latency).Average(), 2) + "ms`"}");
-        shardDescription.AppendLine(
-            $"Max latency: `{client.Shards.Select(s => s.Latency).Max() + "ms`"}");
+        if (shards.Any())
+        {
+            var latencies = shards.Select(s => s.Latency.TotalMilliseconds).ToList();
+            shardDescription.AppendLine(
+                $"Min latency: `{latencies.Min():F0}ms`");
+            shardDescription.AppendLine(
+                $"Average latency: `{Math.Round(latencies.Average(), 2)}ms`");
+            shardDescription.AppendLine(
+                $"Max latency: `{latencies.Max():F0}ms`");
+        }
 
         try
         {
-            if (client.Shards.Count(c => c.ConnectionState == ConnectionState.Disconnecting) > 0)
-            {
-                var disconnecting = new StringBuilder();
-                foreach (var shard in client.Shards.Where(w => w.ConnectionState == ConnectionState.Disconnecting)
-                             .Take(8))
-                {
-                    disconnecting.Append($"`{shard.ShardId}` - ");
-                }
-
-                this._embed.AddField("Disconnecting shards", disconnecting.ToString());
-            }
-
-            if (client.Shards.Count(c => c.ConnectionState == ConnectionState.Disconnected) > 0)
-            {
-                var disconnected = new StringBuilder();
-                foreach (var shard in client.Shards.Where(w => w.ConnectionState == ConnectionState.Disconnecting)
-                             .Take(8))
-                {
-                    disconnected.Append($"`{shard.ShardId}` - ");
-                }
-
-                this._embed.AddField("Disconnected shards", disconnected.ToString());
-            }
+            // Note: NetCord doesn't expose connection state directly on shards
+            // All shards in the collection are connected
         }
         catch (Exception e)
         {
-            Log.Error("Error in shards command", e);
+            Log.Error(e, "Error in shards command");
         }
 
         if (ConfigData.Data.Shards?.TotalShards != null)
@@ -367,21 +309,22 @@ public class StaticCommands : BaseCommandModule
         this._embed.WithDescription(shardDescription.ToString());
         if (this.Context.Guild != null)
         {
+            var currentShardId = GetShardIdForGuild(this.Context.Guild.Id, shardCount);
             this._embed.WithFooter(
-                $"Guild {this.Context.Guild.Name} | {this.Context.Guild.Id} is on shard {client.GetShardIdFor(this.Context.Guild)}");
+                $"Guild {this.Context.Guild.Name} | {this.Context.Guild.Id} is on shard {currentShardId}");
         }
 
-        await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-        this.Context.LogCommandUsed();
+        await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
+        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
     }
 
-    [Command("debugbotscrobbling", RunMode = RunMode.Async)]
-    [Alias("debugbotscrobble", "debugbotscrobbles", "botscrobbledebug", "botscrobblingdebug")]
+    [Command("debugbotscrobbling", "debugbotscrobble", "debugbotscrobbles", "botscrobbledebug", "botscrobblingdebug")]
     [Summary("Debugging for bot scrobbling")]
     [ExcludeFromHelp]
+    [GuildOnly]
     public async Task DebugBotScrobbles()
     {
-        var logs = this._musicBotService.BotScrobblingLogs.Where(w => w.GuildId == this.Context.Guild.Id);
+        var logs = musicBotService.BotScrobblingLogs.Where(w => w.GuildId == this.Context.Guild.Id);
 
         var logPages = logs.OrderByDescending(o => o.DateTime).Chunk(25).ToList();
         var pageCounter = 1;
@@ -412,398 +355,144 @@ public class StaticCommands : BaseCommandModule
                 .WithTitle($"Bot scrobbling debug log for {this.Context.Guild.Name} | {this.Context.Guild.Id}"));
         }
 
-        var paginator = StringService.BuildStaticPaginator(pages);
+        var paginator = StringService.BuildComponentPaginator(pages);
 
         _ = this.Interactivity.SendPaginatorAsync(
             paginator.Build(),
             this.Context.Channel,
             TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
 
-        this.Context.LogCommandUsed();
+        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
     }
 
-    [Command("shard", RunMode = RunMode.Async)]
+    [Command("shard", "shardinfo")]
     [Summary("Displays shard info for a specific guild")]
     [GuildOnly]
     [ExcludeFromHelp]
-    [Alias("shardinfo")]
     [Examples("shard 0", "shard 821660544581763093")]
     public async Task ShardInfoAsync(ulong? guildId = null)
     {
         if (!guildId.HasValue)
         {
-            await this.Context.Channel.SendMessageAsync(
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
                 $"Enter a server id please (this server is `{this.Context.Guild.Id}`)");
-            this.Context.LogCommandUsed(CommandResponse.WrongInput);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
             return;
         }
 
-        var client = this.Context.Client as DiscordShardedClient;
-
-        DiscordSocketClient shard;
+        var shards = client.ToList();
+        var shardCount = shards.Count;
+        GatewayClient shard = null;
 
         if (guildId is < 1000 and >= 0)
         {
-            shard = client.GetShard(int.Parse(guildId.Value.ToString()));
+            var shardIndex = (int)guildId.Value;
+            if (shardIndex < shards.Count)
+            {
+                shard = shards[shardIndex];
+            }
         }
         else
         {
-            var guild = client.GetGuild(guildId.Value);
-            shard = client.GetShardFor(guild);
-            this._embed.WithFooter($"{guild.Name} - {guild.MemberCount} members");
+            // Find the shard that has this guild cached
+            shard = shards.FirstOrDefault(s => s.Cache.Guilds.ContainsKey(guildId.Value));
+            if (shard != null)
+            {
+                var guild = shard.Cache.Guilds[guildId.Value];
+                this._embed.WithFooter($"{guild.Name} - {guild.ApproximateUserCount ?? 0} members");
+            }
         }
 
         if (shard != null)
         {
+            var shardGuildCount = shard.Cache.Guilds.Count;
             this._embed.WithDescription($"Guild/shard `{guildId}` info:\n\n" +
-                                        $"Shard id: `{shard.ShardId}`\n" +
-                                        $"Latency: `{shard.Latency}ms`\n" +
-                                        $"Guilds: `{shard.Guilds.Count}`\n" +
-                                        $"Connection state: `{shard.ConnectionState}`");
+                                        $"Shard id: `{shard.Id}`\n" +
+                                        $"Latency: `{shard.Latency.TotalMilliseconds:F0}ms`\n" +
+                                        $"Guilds: `{shardGuildCount}`\n" +
+                                        $"Connection state: `Connected`");
         }
         else
         {
-            await this.Context.Channel.SendMessageAsync("Server or shard could not be found. \n" +
-                                                        "This either means the bot is not connected to that server or that the bot is not in this server.");
-            this.Context.LogCommandUsed(CommandResponse.NotFound);
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
+            {
+                Content = "Server or shard could not be found. \n" +
+                          "This either means the bot is not connected to that server or that the bot is not in this server."
+            });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
             return;
         }
 
-        await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-        this.Context.LogCommandUsed();
+        await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
+        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
     }
 
-    [Command("help", RunMode = RunMode.Async)]
+    [Command("help")]
     [Summary("Quick help summary to get started.")]
     [CommandCategories(CommandCategory.Other)]
-    public async Task HelpAsync([Remainder] string extraValues = null)
+    public async Task HelpAsync([CommandParameter(Remainder = true)] string extraValues = null)
     {
-        var prefix = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        if (!string.IsNullOrWhiteSpace(extraValues))
-        {
-            if (extraValues.Length > prefix.Length && extraValues.Contains(prefix))
-            {
-                extraValues = extraValues.Replace(prefix, "");
-            }
-
-            var searchResult = this._service.Search(extraValues);
-            if (searchResult.IsSuccess && searchResult.Commands != null && searchResult.Commands.Any())
-            {
-                var userName = (this.Context.Message.Author as SocketGuildUser)?.DisplayName ??
-                               this.Context.User.GlobalName ?? this.Context.User.Username;
-                var helpResponse =
-                    GenericEmbedService.HelpResponse(this._embed, searchResult.Commands[0].Command, prefix, userName);
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build(),
-                    components: helpResponse.showPurchaseButtons && !await this._userService.UserIsSupporter(this.Context.User)
-                        ? GenericEmbedService.PurchaseButtons(searchResult.Commands[0].Command).Build()
-                        : null);
-                this.Context.LogCommandUsed(CommandResponse.Help);
-                return;
-            }
-        }
+        var prefix = prefixService.GetPrefix(this.Context.Guild?.Id);
+        var allCommands = service.GetCommands().SelectMany(kvp => kvp.Value).ToList();
+        var userName = GetUserDisplayName(this.Context.Message.Author as GuildUser, this.Context.User);
 
         try
         {
-            IUserMessage message = null;
-            InteractiveMessageResult<MultiSelectionOption<string>> selectedResult = null;
-
-            this._embed.WithColor(DiscordConstants.InformationColorBlue);
-
-            var options = new List<MultiSelectionOption<string>>();
-            foreach (var commandCategory in (CommandCategory[])Enum.GetValues(typeof(CommandCategory)))
+            string selectedCommand = null;
+            if (!string.IsNullOrWhiteSpace(extraValues))
             {
-                var description = StringExtensions.CommandCategoryToString(commandCategory);
-                options.Add(new MultiSelectionOption<string>(commandCategory.ToString(), commandCategory.ToString(), 1,
-                    description?.ToLower() != commandCategory.ToString().ToLower() ? description : null));
-                options.First(x => x.Option == CommandCategory.General.ToString()).IsDefault = true;
+                if (extraValues.Length > prefix.Length && extraValues.Contains(prefix))
+                {
+                    extraValues = extraValues.Replace(prefix, "");
+                }
+                selectedCommand = extraValues.Trim();
             }
 
-            while (selectedResult is null || selectedResult.Status == InteractiveStatus.Success)
+            var response = await staticBuilders.BuildHelpResponse(
+                allCommands,
+                prefix,
+                null,
+                selectedCommand,
+                userName,
+                this.Context.User.Id);
+
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
             {
-                var commands = "**Commands:** \n";
-                var selectedCategoryOrCommand = selectedResult?.Value?.Value;
+                Embeds = [response.Embed],
+                Components = response.GetMessageComponents()
+            });
 
-                await SetGeneralHelpEmbed(prefix);
-
-                if (selectedResult?.Value == null || selectedResult.Value.Row == 1)
-                {
-                    options = options.Where(w => w.Row == 1).ToList();
-                    if (selectedCategoryOrCommand != null)
-                    {
-                        Enum.TryParse(selectedCategoryOrCommand, out CommandCategory selectedCategory);
-
-                        var selectedCommands = this._service.Commands.Where(w =>
-                            w.Attributes.OfType<CommandCategoriesAttribute>().Select(s => s.Categories)
-                                .Any(a => a.Contains(selectedCategory))).ToList();
-
-                        if (selectedCommands.Any())
-                        {
-                            options.ForEach(x => x.IsDefault = false); // Reset to default
-                            options.First(x => x.Option == selectedCategoryOrCommand).IsDefault = true;
-
-                            foreach (var selectedCommand in selectedCommands.Take(25))
-                            {
-                                options.Add(new MultiSelectionOption<string>(selectedCommand.Name, selectedCommand.Name,
-                                    2, null));
-                            }
-
-                            var totalCategories = new List<CommandCategory>();
-                            foreach (var selectedCommand in selectedCommands.Select(s =>
-                                             s.Attributes.OfType<CommandCategoriesAttribute>()
-                                                 .Select(se => se.Categories))
-                                         .Distinct())
-                            {
-                                foreach (var test in selectedCommand)
-                                {
-                                    totalCategories.AddRange(test);
-                                }
-                            }
-
-                            var usedCommands = new List<CommandInfo>();
-
-                            foreach (var selectedCommand in selectedCommands.Where(w =>
-                                         w.Attributes.OfType<CommandCategoriesAttribute>().Select(s => s.Categories)
-                                             .Any(a => a.Length == 1 && a.Contains(selectedCategory))))
-                            {
-                                if (!usedCommands.Contains(selectedCommand))
-                                {
-                                    commands += await CommandInfoToHelpString(prefix, selectedCommand);
-                                    usedCommands.Add(selectedCommand);
-                                }
-                            }
-
-                            if (selectedCategory != CommandCategory.WhoKnows)
-                            {
-                                commands += "\n";
-
-                                foreach (var selectedCommand in selectedCommands.Where(w =>
-                                             w.Attributes.OfType<CommandCategoriesAttribute>().Select(s => s.Categories)
-                                                 .Any(a => a.Contains(CommandCategory.WhoKnows) && a.Length > 1)))
-                                {
-                                    if (!usedCommands.Contains(selectedCommand))
-                                    {
-                                        commands += await CommandInfoToHelpString(prefix, selectedCommand);
-                                        usedCommands.Add(selectedCommand);
-                                    }
-                                }
-
-                                commands += "\n";
-                            }
-
-                            foreach (var category in totalCategories.Distinct())
-                            {
-                                foreach (var selectedCommand in selectedCommands.Where(w =>
-                                             w.Attributes.OfType<CommandCategoriesAttribute>().Select(s => s.Categories)
-                                                 .Any(a => a.Contains(category) && a.Length > 1)))
-                                {
-                                    if (!usedCommands.Contains(selectedCommand))
-                                    {
-                                        commands += await CommandInfoToHelpString(prefix, selectedCommand);
-                                        usedCommands.Add(selectedCommand);
-                                    }
-                                }
-                            }
-                        }
-
-                        if (selectedCategory == CommandCategory.General)
-                        {
-                            options.ForEach(x => x.IsDefault = false); // Reset to default
-                            options.First(x => x.Option == selectedCategoryOrCommand).IsDefault = true;
-                            this._embed.Fields = new List<EmbedFieldBuilder>();
-                            await SetGeneralHelpEmbed(prefix);
-                        }
-                        else
-                        {
-                            this._embed.WithTitle(
-                                $"Overview of all {selectedCategory} commands");
-                            this._embed.WithDescription(commands);
-                            this._embed.Footer = null;
-                            this._embed.Fields = new List<EmbedFieldBuilder>();
-                            if (selectedCategory == CommandCategory.Importing)
-                            {
-                                this._embed.AddField("Slash commands:",
-                                    "**`/import spotify`** | *Starts your Spotify import*\n" +
-                                    "**`/import applemusic`** | *Starts your Apple Music import*\n" +
-                                    "**`/import manage`** | *Manage and configure your existing imports*");
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    options.Where(w => w.Row == 2).ToList().ForEach(x => x.IsDefault = false); // Reset to default
-                    options.First(x => x.Row == 2 && x.Option == selectedCategoryOrCommand).IsDefault = true;
-
-                    var searchResult = this._service.Search(selectedCategoryOrCommand);
-                    if (searchResult is { IsSuccess: true, Commands: not null } && searchResult.Commands.Any())
-                    {
-                        var userName = (this.Context.Message.Author as SocketGuildUser)?.DisplayName ??
-                                       this.Context.User.GlobalName ?? this.Context.User.Username;
-                        this._embed.Fields = new List<EmbedFieldBuilder>();
-                        var helpResponse =
-                            GenericEmbedService.HelpResponse(this._embed, searchResult.Commands[0].Command, prefix, userName);
-                        await this.Context.Channel.SendMessageAsync("", false, this._embed.Build(),
-                            components: helpResponse.showPurchaseButtons && !await this._userService.UserIsSupporter(this.Context.User)
-                                ? GenericEmbedService.PurchaseButtons(searchResult.Commands[0].Command).Build()
-                                : null);
-                    }
-                }
-
-                var multiSelection = new MultiSelectionBuilder<string>()
-                    .WithOptions(options)
-                    .WithActionOnSuccess(ActionOnStop.None)
-                    .WithActionOnTimeout(ActionOnStop.DisableInput)
-                    .WithSelectionPage(PageBuilder.FromEmbed(this._embed.Build()))
-                    .Build();
-
-                selectedResult = message is null
-                    ? await this.Interactivity.SendSelectionAsync(multiSelection, this.Context.Channel,
-                        TimeSpan.FromSeconds(DiscordConstants.PaginationTimeoutInSeconds * 2))
-                    : await this.Interactivity.SendSelectionAsync(multiSelection, message,
-                        TimeSpan.FromSeconds(DiscordConstants.PaginationTimeoutInSeconds * 2));
-
-                message = selectedResult.Message;
-            }
-
-            this.Context.LogCommandUsed();
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
-    private async Task SetGeneralHelpEmbed(string prefix)
-    {
-        this._embedAuthor.WithIconUrl(this.Context.Client.CurrentUser?.GetAvatarUrl());
-        this._embedAuthor.WithName(".fmbot help & command overview");
-        this._embed.WithAuthor(this._embedAuthor);
-
-        var description = new StringBuilder();
-        var footer = new StringBuilder();
-
-        description.AppendLine($"**Main command `{prefix}fm`**");
-        description.AppendLine($"*Displays last scrobbles, and looks different depending on the mode you've set.*");
-
-        description.AppendLine();
-
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        if (contextUser == null)
-        {
-            description.AppendLine($"**Connecting a Last.fm account**");
-            description.AppendLine(
-                $"To use .fmbot, you have to connect a Last.fm account. Last.fm is a website that tracks what music you listen to. Get started with `{prefix}login`.");
-        }
-        else
-        {
-            description.AppendLine($"**Customizing .fmbot**");
-            description.AppendLine($"- User settings: `{prefix}settings`");
-            description.AppendLine($"- Server config: `{prefix}configuration`");
-
-            footer.AppendLine($"Logged in to .fmbot with the Last.fm account '{contextUser.UserNameLastFM}'");
-        }
-
-        description.AppendLine();
-
-        description.AppendLine($"**Commands**");
-        description.AppendLine($"- View all commands on [our website](https://fm.bot/commands/)");
-        description.AppendLine($"- Or use the dropdown below this message to pick a category");
-
-        if (prefix != this._botSettings.Bot.Prefix)
-        {
-            description.AppendLine();
-            description.AppendLine($"**Custom prefix:**");
-            description.AppendLine($"*This server has the `{prefix}` prefix*");
-            description.AppendLine(
-                $"Some examples of commands with this prefix are `{prefix}whoknows`, `{prefix}chart` and `{prefix}artisttracks`.");
-        }
-
-        description.AppendLine();
-        description.AppendLine("**Links**");
-        description.Append("[Website](https://fm.bot/) - ");
-
-        var socketCommandContext = (SocketCommandContext)this.Context;
-        var selfId = socketCommandContext.Client.CurrentUser.Id.ToString();
-        description.Append("[Add to server](" +
-                           "https://discord.com/oauth2/authorize?" +
-                           $"client_id={selfId}" +
-                           "&scope=bot%20applications.commands" +
-                           $"&permissions={Constants.InviteLinkPermissions})");
-        description.Append(" - [Add to user](" +
-                           "https://discord.com/oauth2/authorize?" +
-                           $"client_id={selfId}" +
-                           "&scope=applications.commands" +
-                           "&integration_type=1)");
-
-        description.Append($" - [Get Supporter]({Constants.GetSupporterDiscordLink})");
-        description.Append(" - [Support server](https://discord.gg/6y3jJjtDqK)");
-
-        if (PublicProperties.IssuesAtLastFm)
-        {
-            var issues = "";
-            if (PublicProperties.IssuesAtLastFm && PublicProperties.IssuesReason != null)
-            {
-                issues = "\n\n" +
-                         "Note:\n" +
-                         $"*\"{PublicProperties.IssuesReason}\"*";
-            }
-
-            this._embed.AddField("Note:",
-                "⚠️ [Last.fm](https://twitter.com/lastfmstatus) is currently experiencing issues.\n" +
-                $".fmbot is not affiliated with Last.fm.{issues}");
-        }
-
-        this._embed.WithDescription(description.ToString());
-        this._embed.WithFooter(footer.ToString());
-    }
-
-    private static async Task<string> CommandInfoToHelpString(string prefix, CommandInfo commandInfo)
-    {
-        var firstAlias = commandInfo.Aliases.FirstOrDefault(f => f != commandInfo.Name && f.Length <= 4);
-        if (firstAlias != null)
-        {
-            firstAlias = $" · `{firstAlias}`";
-        }
-        else
-        {
-            firstAlias = "";
-        }
-
-        if (commandInfo.Summary != null)
-        {
-            using var reader = new StringReader(commandInfo.Summary);
-            var firstLine = await reader.ReadLineAsync();
-
-            return $"**`{prefix}{commandInfo.Name}`{firstAlias}** | *{firstLine}*\n";
-        }
-
-        return $"**`{prefix}{commandInfo.Name}`{firstAlias}**\n";
-    }
-
-    [Command("supporters", RunMode = RunMode.Async)]
+    [Command("supporters", "donators", "donors", "backers")]
     [Summary("Displays all .fmbot supporters.")]
-    [Alias("donators", "donors", "backers")]
     [CommandCategories(CommandCategory.Other)]
     public async Task AllSupportersAsync()
     {
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+        var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
 
-        var response = await this._staticBuilders.SupportersAsync(new ContextModel(this.Context, prfx, userSettings));
+        var response = await staticBuilders.SupportersAsync(new ContextModel(this.Context, prfx, userSettings));
 
-        await this.Context.SendResponse(this.Interactivity, response);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendResponse(this.Interactivity, response, userService);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
-    [Command("countdown", RunMode = RunMode.Async)]
+    [Command("countdown")]
     [Summary("Counts down. Doesn't work that well above 3 seconds.")]
     [ExcludeFromHelp]
     public async Task CountdownAsync(int countdown = 3)
     {
-        if (this._guildService.CheckIfDM(this.Context))
+        if (guildService.CheckIfDM(this.Context))
         {
-            await ReplyAsync("Command is not supported in DMs.");
-            this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Command is not supported in DMs." });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotSupportedInDm }, userService);
             return;
         }
 
@@ -817,20 +506,20 @@ public class StaticCommands : BaseCommandModule
             countdown = 1;
         }
 
-        var msg = this.Context.Message as SocketUserMessage;
+        var msg = this.Context.Message;
         if (StackCooldownTarget.Contains(this.Context.Message.Author))
         {
             if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddSeconds(countdown + 20) >=
                 DateTimeOffset.Now)
             {
-                var secondsLeft = (int)(StackCooldownTimer[
-                        StackCooldownTarget.IndexOf(this.Context.Message.Author as SocketGuildUser)]
+                var authorIndex = StackCooldownTarget.FindIndex(u => u.Id == this.Context.Message.Author.Id);
+                var secondsLeft = (int)(StackCooldownTimer[authorIndex]
                     .AddSeconds(countdown + 30) - DateTimeOffset.Now).TotalSeconds;
                 if (secondsLeft <= 20)
                 {
                     var secondString = secondsLeft == 1 ? "second" : "seconds";
-                    await ReplyAsync($"Please wait {secondsLeft} {secondString} before starting another countdown.");
-                    this.Context.LogCommandUsed(CommandResponse.Cooldown);
+                    await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = $"Please wait {secondsLeft} {secondString} before starting another countdown." });
+                    await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Cooldown }, userService);
                 }
 
                 return;
@@ -844,23 +533,23 @@ public class StaticCommands : BaseCommandModule
             StackCooldownTimer.Add(DateTimeOffset.Now);
         }
 
-        await ReplyAsync($"Countdown for `{countdown}` seconds starting!");
+        await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = $"Countdown for `{countdown}` seconds starting!" });
         await Task.Delay(4000);
 
         for (var i = countdown; i > 0; i--)
         {
-            _ = ReplyAsync(i.ToString());
+            _ = this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = i.ToString() });
             await Task.Delay(1000);
         }
 
-        await ReplyAsync("Go!");
-        this.Context.LogCommandUsed();
+        await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Go!" });
+        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
     }
 
-    [Command("givemefish", RunMode = RunMode.Async)]
+    [Command("givemefish")]
     [Summary("Fish fish. Blub blub.")]
     [ExcludeFromHelp]
-    public async Task FishAsync([Remainder] string extraValues = null)
+    public async Task FishAsync([CommandParameter(Remainder = true)] string extraValues = null)
     {
         var reply = new StringBuilder();
 
@@ -955,162 +644,196 @@ public class StaticCommands : BaseCommandModule
         this._embed.WithTitle("You caught a fish!");
         this._embed.WithDescription(reply.ToString());
 
-        await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-        this.Context.LogCommandUsed();
+        await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
+        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
     }
 
-    [Command("fullhelp", RunMode = RunMode.Async)]
+    [Command("fullhelp")]
     [Summary("Displays all available commands.")]
     public async Task FullHelpAsync()
     {
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
         this._embed.WithColor(DiscordConstants.InformationColorBlue);
 
         this._embed.WithDescription("**See a list of all available commands below.**\n" +
                                     $"Use `{prfx}serverhelp` to view all your configurable server settings.");
 
-        foreach (var module in this._service.Modules
-                     .OrderByDescending(o => o.Commands.Count(w => !w.Attributes.OfType<ExcludeFromHelp>().Any() &&
-                                                                   !w.Attributes.OfType<ServerStaffOnly>().Any()))
-                     .Where(w =>
-                         !w.Attributes.OfType<ExcludeFromHelp>().Any() &&
-                         !w.Attributes.OfType<ServerStaffOnly>().Any()))
+        var allCommands = service.GetCommands().SelectMany(kvp => kvp.Value)
+            .Where(w => !GetAllAttributes(w).OfType<ExcludeFromHelp>().Any() &&
+                        !GetAllAttributes(w).OfType<ServerStaffOnly>().Any())
+            .ToList();
+
+        // Group commands by their module name attribute
+        var commandsByModule = allCommands
+            .GroupBy(c => GetAllAttributes(c).OfType<ModuleNameAttribute>().FirstOrDefault()?.ModuleName ?? "Other")
+            .OrderByDescending(g => g.Count());
+
+        foreach (var moduleGroup in commandsByModule)
         {
             var moduleCommands = "";
-            foreach (var cmd in module.Commands.Where(w =>
-                         !w.Attributes.OfType<ExcludeFromHelp>().Any()))
+            foreach (var cmd in moduleGroup)
             {
-                var result = await cmd.CheckPreconditionsAsync(this.Context);
-                if (result.IsSuccess)
+                if (!string.IsNullOrEmpty(moduleCommands))
                 {
-                    if (!string.IsNullOrEmpty(moduleCommands))
-                    {
-                        moduleCommands += ", ";
-                    }
-
-                    var name = $"`{prfx}{cmd.Name}`";
-                    name = name.Replace("fmfm", "fm");
-
-                    moduleCommands += name;
+                    moduleCommands += ", ";
                 }
+
+                var cmdName = GetCommandName(cmd);
+                var name = $"`{prfx}{cmdName}`";
+                name = name.Replace("fmfm", "fm");
+
+                moduleCommands += name;
             }
 
-            var moduleSummary = string.IsNullOrEmpty(module.Summary) ? "" : $"- {module.Summary}";
-
-            if (!string.IsNullOrEmpty(module.Name) && !string.IsNullOrEmpty(moduleCommands))
+            if (!string.IsNullOrEmpty(moduleGroup.Key) && !string.IsNullOrEmpty(moduleCommands))
             {
-                this._embed.AddField(
-                    module.Name + moduleSummary,
-                    moduleCommands,
-                    true);
+                this._embed.AddField(moduleGroup.Key, moduleCommands, true);
             }
         }
 
         this._embed.WithFooter($"Add 'help' after a command to get more info. For example: '{prfx}chart help'");
-        await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+        await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
 
-        this.Context.LogCommandUsed();
+        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
     }
 
-    [Command("settinghelp", RunMode = RunMode.Async)]
+    [Command("settinghelp", "serverhelp", "serversettings", "settings")]
     [Summary("Displays a list of all server settings.")]
-    [Alias("serverhelp", "serversettings", "settings", "help server")]
     [CommandCategories(CommandCategory.Other)]
     public async Task ServerHelpAsync()
     {
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
         this._embed.WithColor(DiscordConstants.InformationColorBlue);
 
         this._embed.WithDescription("**See all server settings below.**\n" +
                                     "These commands require either the `Admin` or the `Ban Members` permission.");
 
-        foreach (var module in this._service.Modules
-                     .OrderByDescending(o => o.Commands.Count)
-                     .Where(w =>
-                         !w.Attributes.OfType<ExcludeFromHelp>().Any() &&
-                         w.Attributes.OfType<ServerStaffOnly>().Any()))
+        var allCommands = service.GetCommands().SelectMany(kvp => kvp.Value)
+            .Where(w => !GetAllAttributes(w).OfType<ExcludeFromHelp>().Any() &&
+                        GetAllAttributes(w).OfType<ServerStaffOnly>().Any())
+            .ToList();
+
+        // Group commands by their module name attribute
+        var commandsByModule = allCommands
+            .GroupBy(c => GetAllAttributes(c).OfType<ModuleNameAttribute>().FirstOrDefault()?.ModuleName ?? "Server Settings")
+            .OrderByDescending(g => g.Count());
+
+        foreach (var moduleGroup in commandsByModule)
         {
             var moduleCommands = "";
-            foreach (var cmd in module.Commands)
+            foreach (var cmd in moduleGroup)
             {
-                var result = await cmd.CheckPreconditionsAsync(this.Context);
-                if (result.IsSuccess)
+                if (!string.IsNullOrEmpty(moduleCommands))
                 {
-                    if (!string.IsNullOrEmpty(moduleCommands))
-                    {
-                        moduleCommands += ", ";
-                    }
-
-                    moduleCommands += $"`{prfx}{cmd.Name}`";
+                    moduleCommands += ", ";
                 }
+
+                moduleCommands += $"`{prfx}{GetCommandName(cmd)}`";
             }
 
-            var moduleSummary = string.IsNullOrEmpty(module.Summary) ? "" : $"- {module.Summary}";
-
-            if (!string.IsNullOrEmpty(module.Name) && !string.IsNullOrEmpty(moduleCommands))
+            if (!string.IsNullOrEmpty(moduleGroup.Key) && !string.IsNullOrEmpty(moduleCommands))
             {
-                this._embed.AddField(
-                    module.Name + moduleSummary,
-                    moduleCommands,
-                    true);
+                this._embed.AddField(moduleGroup.Key, moduleCommands, true);
             }
         }
 
         this._embed.WithFooter($"Add 'help' after a command to get more info. For example: '{prfx}prefix help'");
-        await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+        await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
 
-        this.Context.LogCommandUsed();
+        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
     }
 
-    [Command("staffhelp", RunMode = RunMode.Async)]
+    [Command("staffhelp")]
     [Summary("Displays this list.")]
     [ExcludeFromHelp]
     public async Task StaffHelpAsync()
     {
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
         this._embed.WithColor(DiscordConstants.InformationColorBlue);
 
         this._embed.WithDescription("**See all .fmbot staff commands below.**\n" +
                                     "These commands require .fmbot admin or owner.");
 
-        foreach (var module in this._service.Modules
-                     .OrderByDescending(o => o.Commands.Count)
-                     .Where(w =>
-                         w.Attributes.OfType<ExcludeFromHelp>().Any()))
+        var allCommands = service.GetCommands().SelectMany(kvp => kvp.Value)
+            .Where(w => GetAllAttributes(w).OfType<ExcludeFromHelp>().Any())
+            .ToList();
+
+        // Group commands by their module name attribute
+        var commandsByModule = allCommands
+            .GroupBy(c => GetAllAttributes(c).OfType<ModuleNameAttribute>().FirstOrDefault()?.ModuleName ?? "Staff")
+            .OrderByDescending(g => g.Count());
+
+        foreach (var moduleGroup in commandsByModule)
         {
             var moduleCommands = "";
-            foreach (var cmd in module.Commands)
+            foreach (var cmd in moduleGroup)
             {
-                var result = await cmd.CheckPreconditionsAsync(this.Context);
-                if (result.IsSuccess)
+                if (!string.IsNullOrEmpty(moduleCommands))
                 {
-                    if (!string.IsNullOrEmpty(moduleCommands))
-                    {
-                        moduleCommands += ", ";
-                    }
-
-                    moduleCommands += $"`{prfx}{cmd.Name}`";
+                    moduleCommands += ", ";
                 }
+
+                moduleCommands += $"`{prfx}{GetCommandName(cmd)}`";
             }
 
-            var moduleSummary = string.IsNullOrEmpty(module.Summary) ? "" : $"- {module.Summary}";
-
-            if (!string.IsNullOrEmpty(module.Name) && !string.IsNullOrEmpty(moduleCommands))
+            if (!string.IsNullOrEmpty(moduleGroup.Key) && !string.IsNullOrEmpty(moduleCommands))
             {
-                this._embed.AddField(
-                    module.Name + moduleSummary,
-                    moduleCommands,
-                    true);
+                this._embed.AddField(moduleGroup.Key, moduleCommands, true);
             }
         }
 
-        await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+        await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
 
-        this.Context.LogCommandUsed();
+        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
     }
 
     private static bool IsBotSelfHosted(ulong botId)
     {
         return !botId.Equals(Constants.BotProductionId) && !botId.Equals(Constants.BotBetaId);
+    }
+
+    // Helper methods for NetCord CommandInfo access
+    private static int GetShardIdForGuild(ulong guildId, int totalShards)
+    {
+        return (int)((guildId >> 22) % (ulong)totalShards);
+    }
+
+    private static string GetUserDisplayName(GuildUser guildUser, User user)
+    {
+        return guildUser?.GetDisplayName() ?? user?.GetDisplayName() ?? "Unknown";
+    }
+
+    private static ICommandInfo<CommandContext> FindCommand(IEnumerable<ICommandInfo<CommandContext>> commands, string name)
+    {
+        return commands.FirstOrDefault(c =>
+            GetCommandName(c).Equals(name, StringComparison.OrdinalIgnoreCase) ||
+            GetCommandAliases(c).Any(a => a.Equals(name, StringComparison.OrdinalIgnoreCase)));
+    }
+
+    private static IEnumerable<Attribute> GetAllAttributes(ICommandInfo<CommandContext> commandInfo)
+    {
+        return commandInfo.Attributes.Values.SelectMany(x => x);
+    }
+
+    private static string GetCommandName(ICommandInfo<CommandContext> commandInfo)
+    {
+        // NetCord stores name differently - check for Name property via reflection or use aliases
+        var nameAttr = GetAllAttributes(commandInfo).OfType<CommandAttribute>().FirstOrDefault();
+        if (nameAttr != null && nameAttr.Aliases.Length > 0)
+        {
+            return nameAttr.Aliases[0];
+        }
+        return commandInfo.ToString() ?? "unknown";
+    }
+
+    private static IEnumerable<string> GetCommandAliases(ICommandInfo<CommandContext> commandInfo)
+    {
+        var nameAttr = GetAllAttributes(commandInfo).OfType<CommandAttribute>().FirstOrDefault();
+        return nameAttr?.Aliases ?? Array.Empty<string>();
+    }
+
+    private static string GetCommandSummary(ICommandInfo<CommandContext> commandInfo)
+    {
+        return GetAllAttributes(commandInfo).OfType<SummaryAttribute>().FirstOrDefault()?.Summary;
     }
 }

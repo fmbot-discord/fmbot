@@ -3,9 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
-using Discord;
-using Discord.Commands;
-using Discord.Interactions;
+using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain;
 using FMBot.Domain.Models;
@@ -14,8 +12,14 @@ using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using NetCord;
+using NetCord.Rest;
+using NetCord.Services.ApplicationCommands;
+using NetCord.Services.Commands;
 using Npgsql;
 using Serilog;
+using Channel = FMBot.Persistence.Domain.Models.Channel;
+using GuildUser = FMBot.Persistence.Domain.Models.GuildUser;
 
 namespace FMBot.Bot.Services.Guild;
 
@@ -34,7 +38,7 @@ public class GuildService
     }
 
     // Message is in dm?
-    public bool CheckIfDM(ICommandContext context)
+    public bool CheckIfDM(CommandContext context)
     {
         return context.Guild == null;
     }
@@ -262,18 +266,32 @@ public class GuildService
         return (stats, users);
     }
 
-    public static async Task<GuildPermissions> GetGuildPermissionsAsync(ICommandContext context)
+    public static async Task<Permissions> GetGuildPermissionsAsync(CommandContext context)
     {
-        var socketCommandContext = (SocketCommandContext)context;
-        var guildUser = await context.Guild.GetUserAsync(socketCommandContext.Client.CurrentUser.Id);
-        return guildUser.GuildPermissions;
+        var botUserId = context.Client.Id;
+        var guild = context.Guild;
+        var cachedUsers = context.Client.Cache.Guilds[guild.Id]?.Users;
+        if (cachedUsers != null && cachedUsers.TryGetValue(botUserId, out var cachedGuildUser))
+        {
+            return cachedGuildUser.GetPermissions(guild);
+        }
+
+        var guildUser = await guild.GetUserAsync(botUserId);
+        return guildUser.GetPermissions(guild);
     }
 
-    public static async Task<GuildPermissions> GetGuildPermissionsAsync(IInteractionContext context)
+    public static async Task<Permissions> GetGuildPermissionsAsync(ApplicationCommandContext context)
     {
-        var socketCommandContext = (ShardedInteractionContext)context;
-        var guildUser = await context.Guild.GetUserAsync(socketCommandContext.Client.CurrentUser.Id);
-        return guildUser.GuildPermissions;
+        var botUserId = context.Client.Id;
+        var guild = context.Guild;
+        var cachedUsers = context.Client.Cache.Guilds[guild.Id]?.Users;
+        if (cachedUsers != null && cachedUsers.TryGetValue(botUserId, out var cachedGuildUser))
+        {
+            return cachedGuildUser.GetPermissions(guild);
+        }
+
+        var guildUser = await guild.GetUserAsync(botUserId);
+        return guildUser.GetPermissions(guild);
     }
 
     public static GuildUser GetUserFromGuild(Persistence.Domain.Models.Guild guild, int userId)
@@ -282,7 +300,7 @@ public class GuildService
             .FirstOrDefault(f => f.UserId == userId);
     }
 
-    public async Task StaleGuildLastIndexedAsync(IGuild discordGuild)
+    public async Task StaleGuildLastIndexedAsync(NetCord.Gateway.Guild discordGuild)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var existingGuild = await db.Guilds
@@ -299,7 +317,7 @@ public class GuildService
         await RemoveGuildFromCache(discordGuild.Id);
     }
 
-    public async Task ChangeGuildAllowedRoles(IGuild discordGuild, ulong[] allowedRoles)
+    public async Task ChangeGuildAllowedRoles(NetCord.Gateway.Guild discordGuild, ulong[] allowedRoles)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var existingGuild = await db.Guilds
@@ -316,7 +334,7 @@ public class GuildService
         await RemoveGuildFromCache(discordGuild.Id);
     }
 
-    public async Task ChangeGuildBlockedRoles(IGuild discordGuild, ulong[] blockedRoles)
+    public async Task ChangeGuildBlockedRoles(NetCord.Gateway.Guild discordGuild, ulong[] blockedRoles)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var existingGuild = await db.Guilds
@@ -333,7 +351,7 @@ public class GuildService
         await RemoveGuildFromCache(discordGuild.Id);
     }
 
-    public async Task ChangeGuildBotManagementRoles(IGuild discordGuild, ulong[] botManagementRoles)
+    public async Task ChangeGuildBotManagementRoles(NetCord.Gateway.Guild discordGuild, ulong[] botManagementRoles)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var existingGuild = await db.Guilds
@@ -350,7 +368,7 @@ public class GuildService
         await RemoveGuildFromCache(discordGuild.Id);
     }
 
-    public async Task ChangeGuildSettingAsync(IGuild discordGuild, FmEmbedType? embedType)
+    public async Task ChangeGuildSettingAsync(NetCord.Gateway.Guild discordGuild, FmEmbedType? embedType)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var existingGuild = await db.Guilds
@@ -383,7 +401,7 @@ public class GuildService
         await RemoveGuildFromCache(discordGuild.Id);
     }
 
-    public async Task SetGuildReactionsAsync(IGuild discordGuild, string[] reactions)
+    public async Task SetGuildReactionsAsync(NetCord.Gateway.Guild discordGuild, string[] reactions)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var existingGuild = await db.Guilds
@@ -414,7 +432,7 @@ public class GuildService
         await RemoveGuildFromCache(discordGuild.Id);
     }
 
-    public async Task<bool?> ToggleCrownsAsync(IGuild discordGuild, bool disabled)
+    public async Task<bool?> ToggleCrownsAsync(NetCord.Gateway.Guild discordGuild, bool disabled)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var existingGuild = await db.Guilds
@@ -433,7 +451,7 @@ public class GuildService
         return existingGuild.CrownsDisabled;
     }
 
-    public async Task<bool> SetFmbotActivityThresholdDaysAsync(IGuild discordGuild, int? days)
+    public async Task<bool> SetFmbotActivityThresholdDaysAsync(NetCord.Gateway.Guild discordGuild, int? days)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var existingGuild = await db.Guilds
@@ -458,7 +476,7 @@ public class GuildService
         return true;
     }
 
-    public async Task<bool> SetGuildActivityThresholdDaysAsync(IGuild discordGuild, int? days)
+    public async Task<bool> SetGuildActivityThresholdDaysAsync(NetCord.Gateway.Guild discordGuild, int? days)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var existingGuild = await db.Guilds
@@ -483,7 +501,7 @@ public class GuildService
         return true;
     }
 
-    public async Task<bool> SetCrownActivityThresholdDaysAsync(IGuild discordGuild, int? days)
+    public async Task<bool> SetCrownActivityThresholdDaysAsync(NetCord.Gateway.Guild discordGuild, int? days)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var existingGuild = await db.Guilds
@@ -507,7 +525,7 @@ public class GuildService
         return true;
     }
 
-    public async Task<bool> SetMinimumCrownPlaycountThresholdAsync(IGuild discordGuild, int? playcount)
+    public async Task<bool> SetMinimumCrownPlaycountThresholdAsync(NetCord.Gateway.Guild discordGuild, int? playcount)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var existingGuild = await db.Guilds
@@ -531,7 +549,7 @@ public class GuildService
         return true;
     }
 
-    public async Task<bool> BlockGuildUserAsync(IGuild discordGuild, int userId)
+    public async Task<bool> BlockGuildUserAsync(NetCord.Gateway.Guild discordGuild, int userId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var existingGuild = await db.Guilds
@@ -581,7 +599,7 @@ public class GuildService
         return true;
     }
 
-    public async Task<bool> CrownBlockGuildUserAsync(IGuild discordGuild, int userId)
+    public async Task<bool> CrownBlockGuildUserAsync(NetCord.Gateway.Guild discordGuild, int userId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var existingGuild = await db.Guilds
@@ -629,7 +647,7 @@ public class GuildService
         return true;
     }
 
-    public async Task<bool> UnBlockGuildUserAsync(IGuild discordGuild, int userId)
+    public async Task<bool> UnBlockGuildUserAsync(NetCord.Gateway.Guild discordGuild, int userId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var existingGuild = await db.Guilds
@@ -660,7 +678,7 @@ public class GuildService
         return true;
     }
 
-    public async Task<Persistence.Domain.Models.Guild> SetGuildPrefixAsync(IGuild discordGuild, string prefix)
+    public async Task<Persistence.Domain.Models.Guild> SetGuildPrefixAsync(NetCord.Gateway.Guild discordGuild, string prefix)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var existingGuild = await db.Guilds
@@ -699,7 +717,7 @@ public class GuildService
         }
     }
 
-    public async Task SetGuildWhoKnowsWhitelistRoleAsync(IGuild discordGuild, ulong? roleId)
+    public async Task SetGuildWhoKnowsWhitelistRoleAsync(NetCord.Gateway.Guild discordGuild, ulong? roleId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var existingGuild = await db.Guilds
@@ -734,7 +752,7 @@ public class GuildService
         }
     }
 
-    public async Task<string[]> AddGuildDisabledCommandAsync(IGuild discordGuild, string command)
+    public async Task<string[]> AddGuildDisabledCommandAsync(NetCord.Gateway.Guild discordGuild, string command)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var existingGuild = await db.Guilds
@@ -782,7 +800,7 @@ public class GuildService
         return existingGuild.DisabledCommands;
     }
 
-    public async Task<string[]> RemoveGuildDisabledCommandAsync(IGuild discordGuild, string command)
+    public async Task<string[]> RemoveGuildDisabledCommandAsync(NetCord.Gateway.Guild discordGuild, string command)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var existingGuild = await db.Guilds
@@ -801,7 +819,7 @@ public class GuildService
         return existingGuild.DisabledCommands;
     }
 
-    public async Task<string[]> ClearGuildDisabledCommandAsync(IGuild discordGuild)
+    public async Task<string[]> ClearGuildDisabledCommandAsync(NetCord.Gateway.Guild discordGuild)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var existingGuild = await db.Guilds
@@ -840,7 +858,7 @@ public class GuildService
         return existingChannel;
     }
 
-    public async Task DisableChannelCommandsAsync(IChannel discordChannel, int guildId, List<string> commands,
+    public async Task DisableChannelCommandsAsync(IGuildChannel discordChannel, int guildId, List<string> commands,
         ulong discordGuildId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -892,7 +910,7 @@ public class GuildService
         await db.SaveChangesAsync();
     }
 
-    public async Task SetChannelEmbedType(IChannel discordChannel, int guildId, FmEmbedType? embedType,
+    public async Task SetChannelEmbedType(IGuildChannel discordChannel, int guildId, FmEmbedType? embedType,
         ulong discordGuildId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -928,7 +946,7 @@ public class GuildService
         await db.SaveChangesAsync();
     }
 
-    public async Task<string[]> EnableChannelCommandsAsync(IChannel discordChannel, List<string> commands,
+    public async Task<string[]> EnableChannelCommandsAsync(IGuildChannel discordChannel, List<string> commands,
         ulong discordGuildId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -948,7 +966,7 @@ public class GuildService
         return existingChannel.DisabledCommands;
     }
 
-    public async Task<string[]> ClearDisabledChannelCommandsAsync(IChannel discordChannel, ulong discordGuildId)
+    public async Task<string[]> ClearDisabledChannelCommandsAsync(IGuildChannel discordChannel, ulong discordGuildId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var existingChannel = await db.Channels
@@ -967,7 +985,7 @@ public class GuildService
         return existingChannel.DisabledCommands;
     }
 
-    public async Task DisableChannelAsync(IChannel discordChannel, int guildId, ulong discordGuildId)
+    public async Task DisableChannelAsync(IGuildChannel discordChannel, int guildId, ulong discordGuildId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var existingChannel = await db.Channels
@@ -1002,7 +1020,7 @@ public class GuildService
         await db.SaveChangesAsync();
     }
 
-    public async Task EnableChannelAsync(IChannel discordChannel, ulong discordGuildId)
+    public async Task EnableChannelAsync(IGuildChannel discordChannel, ulong discordGuildId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var existingChannel = await db.Channels
@@ -1039,7 +1057,7 @@ public class GuildService
         return existingChannel?.FmCooldown;
     }
 
-    public async Task<int?> SetChannelCooldownAsync(IChannel discordChannel, int guildId, int? cooldown,
+    public async Task<int?> SetChannelCooldownAsync(IGuildChannel discordChannel, int guildId, int? cooldown,
         ulong discordGuildId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -1079,7 +1097,7 @@ public class GuildService
         return existingChannel.FmCooldown;
     }
 
-    public async Task<DateTime?> GetGuildIndexTimestampAsync(IGuild discordGuild)
+    public async Task<DateTime?> GetGuildIndexTimestampAsync(NetCord.Gateway.Guild discordGuild)
     {
         var discordGuildIdCacheKey = CacheKeyForGuild(discordGuild.Id);
 
@@ -1101,7 +1119,7 @@ public class GuildService
         return guild?.LastIndexed;
     }
 
-    public async Task UpdateGuildIndexTimestampAsync(IGuild discordGuild, DateTime? timestamp = null)
+    public async Task UpdateGuildIndexTimestampAsync(NetCord.Gateway.Guild discordGuild, DateTime? timestamp = null)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var existingGuild = await db.Guilds
@@ -1144,7 +1162,7 @@ public class GuildService
             {
                 try
                 {
-                    var unused = new Emoji(emote);
+                    var unused = EmojiProperties.Standard(emote);
                 }
                 catch
                 {
@@ -1155,7 +1173,7 @@ public class GuildService
             {
                 try
                 {
-                    Emote.Parse(emote);
+                    var unused = new ReactionEmojiProperties(emote);
                 }
                 catch
                 {
@@ -1167,7 +1185,7 @@ public class GuildService
         return true;
     }
 
-    public async Task AddGuildReactionsAsync(IUserMessage message, IGuild guild, bool partyingFace = false)
+    public async Task AddGuildReactionsAsync(RestMessage message, NetCord.Gateway.Guild guild, bool partyingFace = false)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var dbGuild = await db.Guilds
@@ -1183,7 +1201,7 @@ public class GuildService
 
         if (partyingFace)
         {
-            var emote = new Emoji("🥳");
+            var emote = new ReactionEmojiProperties("🥳");
             await message.AddReactionAsync(emote);
         }
     }
@@ -1203,18 +1221,22 @@ public class GuildService
         return dbGuild.EmoteReactions;
     }
 
-    public static async Task AddReactionsAsync(IUserMessage message, IEnumerable<string> reactions)
+    public static async Task AddReactionsAsync(RestMessage message, IEnumerable<string> reactions)
     {
         foreach (var emoteString in reactions)
         {
             if (emoteString.Length is 1 or 2 or 3)
             {
-                var emote = new Emoji(emoteString);
+                var emote = new ReactionEmojiProperties(emoteString);
                 await message.AddReactionAsync(emote);
             }
             else
             {
-                var emote = Emote.Parse(emoteString);
+                // Custom emote format: <:name:id> or <a:name:id>
+                var parts = emoteString.Trim('<', '>').Split(':');
+                var name = parts[^2];
+                var id = ulong.Parse(parts[^1]);
+                var emote = new ReactionEmojiProperties(name, id);
                 await message.AddReactionAsync(emote);
             }
         }
@@ -1242,7 +1264,7 @@ public class GuildService
             .CountAsync();
     }
 
-    public async Task UpdateGuildUserLastMessageDate(IGuildUser discordGuildUser, int userId, int guildId)
+    public async Task UpdateGuildUserLastMessageDate(NetCord.GuildUser discordGuildUser, int userId, int guildId)
     {
         try
         {
@@ -1256,7 +1278,7 @@ public class GuildService
 
             await connection.ExecuteAsync(sql, new
             {
-                UserName = discordGuildUser.DisplayName,
+                UserName = discordGuildUser.GetDisplayName(),
                 LastMessage = DateTime.UtcNow,
                 GuildId = guildId,
                 UserId = userId
@@ -1274,7 +1296,7 @@ public class GuildService
         {
             await using var db = await this._contextFactory.CreateDbContextAsync();
             var guild = await db.Guilds.FirstOrDefaultAsync(g => g.GuildId == guildId);
-            
+
             if (guild != null)
             {
                 guild.GuildFlags = flags;

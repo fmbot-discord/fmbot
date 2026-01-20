@@ -4,7 +4,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Dapper;
-using Discord;
+
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Factories;
 using FMBot.Bot.Interfaces;
@@ -24,6 +24,7 @@ using Google.Protobuf.WellKnownTypes;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using NetCord.Rest;
 using Npgsql;
 using Serilog;
 using Web.InternalApi;
@@ -66,10 +67,10 @@ public class AlbumService
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<AlbumSearch> SearchAlbum(ResponseModel response, IUser discordUser, string albumValues,
+    public async Task<AlbumSearch> SearchAlbum(ResponseModel response, NetCord.User discordUser, string albumValues,
         string lastFmUserName, string sessionKey = null,
         string otherUserUsername = null, bool useCachedAlbums = false, int? userId = null, ulong? interactionId = null,
-        IUserMessage referencedMessage = null, bool redirectsEnabled = true)
+        RestMessage referencedMessage = null, bool redirectsEnabled = true)
     {
         string searchValue;
         if (referencedMessage != null && string.IsNullOrWhiteSpace(albumValues))
@@ -134,8 +135,6 @@ public class AlbumService
 
                 if (interactionId.HasValue)
                 {
-                    PublicProperties.UsedCommandsArtists.TryAdd(interactionId.Value, searchArtistName);
-                    PublicProperties.UsedCommandsAlbums.TryAdd(interactionId.Value, searchAlbumName);
                     response.ReferencedMusic = new ReferencedMusic
                     {
                         Artist = searchArtistName,
@@ -217,8 +216,6 @@ public class AlbumService
 
             if (interactionId.HasValue)
             {
-                PublicProperties.UsedCommandsArtists.TryAdd(interactionId.Value, lastPlayedTrack.ArtistName);
-                PublicProperties.UsedCommandsAlbums.TryAdd(interactionId.Value, lastPlayedTrack.AlbumName);
                 response.ReferencedMusic = new ReferencedMusic
                 {
                     Artist = lastPlayedTrack.ArtistName,
@@ -263,12 +260,6 @@ public class AlbumService
 
             if (albumInfo?.Content != null && interactionId is not null)
             {
-                PublicProperties.UsedCommandsArtists.TryAdd(interactionId.Value, albumInfo.Content.ArtistName);
-                if (albumInfo.Content.AlbumName != null)
-                {
-                    PublicProperties.UsedCommandsAlbums.TryAdd(interactionId.Value, albumInfo.Content.AlbumName);
-                }
-
                 response.ReferencedMusic = new ReferencedMusic
                 {
                     Artist = albumInfo.Content.ArtistName,
@@ -546,7 +537,7 @@ public class AlbumService
         }
         catch (Exception e)
         {
-            Log.Error($"Error in {nameof(GetLatestAlbums)}", e);
+            Log.Error(e, "Error in {method}", nameof(GetLatestAlbums));
             throw;
         }
     }
@@ -590,7 +581,7 @@ public class AlbumService
         }
         catch (Exception e)
         {
-            Log.Error($"Error in {nameof(GetRecentTopAlbums)}", e);
+            Log.Error(e, "Error in {method}", nameof(GetRecentTopAlbums));
             throw;
         }
     }
@@ -634,7 +625,7 @@ public class AlbumService
         }
         catch (Exception e)
         {
-            Log.Error($"Error in {nameof(SearchThroughAlbums)}", e);
+            Log.Error(e, "Error in {method}", nameof(SearchThroughAlbums));
             throw;
         }
     }

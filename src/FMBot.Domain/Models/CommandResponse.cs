@@ -2,6 +2,8 @@ namespace FMBot.Domain.Models;
 
 public enum CommandResponse
 {
+    Incomplete = 0,
+
     Ok = 1,
 
     Help = 2,

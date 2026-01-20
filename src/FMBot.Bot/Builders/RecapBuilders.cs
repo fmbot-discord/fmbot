@@ -3,17 +3,19 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Discord;
-using Discord.Interactions;
+
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain;
+using FMBot.Domain.Attributes;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
+using NetCord;
+using NetCord.Rest;
 
 namespace FMBot.Bot.Builders;
 
@@ -93,9 +95,8 @@ public class RecapBuilders
             TimespanString = timeSettings.Description
         };
 
-        var viewType = new SelectMenuBuilder()
+        var viewType = new StringMenuProperties(InteractionConstants.RecapPicker)
             .WithPlaceholder("Select recap page")
-            .WithCustomId(InteractionConstants.RecapPicker)
             .WithMinValues(1)
             .WithMaxValues(1);
 
@@ -113,19 +114,20 @@ public class RecapBuilders
                 continue;
             }
 
-            var name = option.GetAttribute<ChoiceDisplayAttribute>().Name;
+            var name = option.GetAttribute<OptionAttribute>().Name;
             var value =
                 $"{Enum.GetName(option)}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}-{timeSettings.Description}";
 
             var active = option == view;
 
-            viewType.AddOption(new SelectMenuOptionBuilder(name, value, null, isDefault: active));
+            viewType.AddOptions(new StringMenuSelectOptionProperties(name, value)
+            {
+                Default = active
+            });
         }
 
-        var componentBuilder = new ComponentBuilder()
-            .WithSelectMenu(viewType);
-        response.Components = componentBuilder;
         context.SelectMenu = viewType;
+        response.StringMenus.Add(viewType);
 
         switch (view)
         {
@@ -325,7 +327,7 @@ public class RecapBuilders
                 var trackResponse = await this._trackBuilders.TopTracksAsync(context, topListSettings, timeSettings,
                     userSettings, ResponseMode.Embed);
 
-                response.StaticPaginator = trackResponse.StaticPaginator;
+                response.ComponentPaginator = trackResponse.ComponentPaginator;
                 response.Embed = trackResponse.Embed;
                 response.ResponseType = trackResponse.ResponseType;
 
@@ -336,7 +338,7 @@ public class RecapBuilders
                 var albumResponse = await this._albumBuilders.TopAlbumsAsync(context, topListSettings, timeSettings,
                     userSettings, ResponseMode.Embed);
 
-                response.StaticPaginator = albumResponse.StaticPaginator;
+                response.ComponentPaginator = albumResponse.ComponentPaginator;
                 response.Embed = albumResponse.Embed;
                 response.ResponseType = albumResponse.ResponseType;
 
@@ -347,7 +349,7 @@ public class RecapBuilders
                 var artistResponse = await this._artistBuilders.TopArtistsAsync(context, topListSettings, timeSettings,
                     userSettings, ResponseMode.Embed);
 
-                response.StaticPaginator = artistResponse.StaticPaginator;
+                response.ComponentPaginator = artistResponse.ComponentPaginator;
                 response.Embed = artistResponse.Embed;
                 response.ResponseType = artistResponse.ResponseType;
 
@@ -358,7 +360,7 @@ public class RecapBuilders
                 var genreResponse = await this._genreBuilders.TopGenresAsync(context, userSettings, timeSettings,
                     topListSettings, ResponseMode.Embed);
 
-                response.StaticPaginator = genreResponse.StaticPaginator;
+                response.ComponentPaginator = genreResponse.ComponentPaginator;
                 response.Embed = genreResponse.Embed;
                 response.ResponseType = genreResponse.ResponseType;
 
@@ -369,7 +371,7 @@ public class RecapBuilders
                 var countryResponse = await this._countryBuilders.TopCountriesAsync(context, userSettings, timeSettings,
                     topListSettings, ResponseMode.Embed);
 
-                response.StaticPaginator = countryResponse.StaticPaginator;
+                response.ComponentPaginator = countryResponse.ComponentPaginator;
                 response.Embed = countryResponse.Embed;
                 response.ResponseType = countryResponse.ResponseType;
 
@@ -410,7 +412,7 @@ public class RecapBuilders
                         timeSettings,
                         userSettings, ResponseMode.Embed);
 
-                    response.StaticPaginator = artistResponse.StaticPaginator;
+                    response.ComponentPaginator = artistResponse.ComponentPaginator;
                     response.Embed = artistResponse.Embed;
                     response.ResponseType = artistResponse.ResponseType;
                 }

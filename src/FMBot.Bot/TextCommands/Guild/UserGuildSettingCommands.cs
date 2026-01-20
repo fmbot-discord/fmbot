@@ -1,9 +1,6 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Discord;
-using Discord.Commands;
-using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
@@ -15,109 +12,97 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
+using NetCord.Services.Commands;
+using Fergun.Interactive;
+using NetCord.Rest;
 
 namespace FMBot.Bot.TextCommands.Guild;
 
-[Name("Server member settings")]
+[ModuleName("Server member settings")]
 [ServerStaffOnly]
-public class UserGuildSettingCommands : BaseCommandModule
+public class UserGuildSettingCommands(
+    IPrefixService prefixService,
+    GuildService guildService,
+    AdminService adminService,
+    SettingService settingService,
+    UserService userService,
+    IOptions<BotSettings> botSettings,
+    GuildSettingBuilder guildSettingBuilder,
+    InteractiveService interactivity)
+    : BaseCommandModule(botSettings)
 {
-    private readonly AdminService _adminService;
-    private readonly GuildService _guildService;
-    private readonly SettingService _settingService;
-    private readonly GuildSettingBuilder _guildSettingBuilder;
-
-    private readonly IPrefixService _prefixService;
-
-    private InteractiveService Interactivity { get; }
+    private InteractiveService Interactivity { get; } = interactivity;
 
 
-    public UserGuildSettingCommands(IPrefixService prefixService,
-        GuildService guildService,
-        AdminService adminService,
-        SettingService settingService,
-        IOptions<BotSettings> botSettings, GuildSettingBuilder guildSettingBuilder, InteractiveService interactivity) : base(botSettings)
-    {
-        this._prefixService = prefixService;
-        this._guildService = guildService;
-        this._settingService = settingService;
-        this._guildSettingBuilder = guildSettingBuilder;
-        this.Interactivity = interactivity;
-        this._adminService = adminService;
-    }
-
-    [Command("fmbotactivitythreshold", RunMode = RunMode.Async)]
+    [Command("fmbotactivitythreshold", "setfmbotactivitythreshold", "setfmbotthreshold", "setfmbothreshold")]
     [Summary("Sets amount of days to filter out users for inactivity. Inactivity is counted by the last date that someone has used .fmbot")]
-    [Alias("setfmbotactivitythreshold", "setfmbotthreshold", "setfmbothreshold")]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.ServerSettings, CommandCategory.WhoKnows)]
-    public async Task SetWhoKnowsThresholdAsync([Remainder] string _ = null)
+    public async Task SetWhoKnowsThresholdAsync([CommandParameter(Remainder = true)] string _ = null)
     {
         try
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-            var response = await this._guildSettingBuilder.SetFmbotActivityThreshold(new ContextModel(this.Context, prfx));
+            var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+            var response = await guildSettingBuilder.SetFmbotActivityThreshold(new ContextModel(this.Context, prfx));
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
-    [Command("block", RunMode = RunMode.Async)]
+    [Command("block", "blockuser", "blockmember")]
     [Summary("Block a user from appearing in server-wide commands and charts")]
     [Options(Constants.UserMentionExample)]
-    [Alias("blockuser", "blockmember")]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.ServerSettings, CommandCategory.WhoKnows)]
-    public async Task GuildBlockUserAsync([Remainder] string user = null)
+    public async Task GuildBlockUserAsync([CommandParameter(Remainder = true)] string user = null)
     {
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
+        if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
         {
-            await ReplyAsync(GuildSettingBuilder.UserNotAllowedResponseText());
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = GuildSettingBuilder.UserNotAllowedResponseText() });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             return;
         }
 
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         if (user == null)
         {
-            await ReplyAsync("Please mention a user, enter a discord id or enter a Last.fm username to block on your server.");
-            this.Context.LogCommandUsed(CommandResponse.NotFound);
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Please mention a user, enter a discord id or enter a Last.fm username to block on your server." });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
             return;
         }
 
-        var userToBlock = await this._settingService.GetDifferentUser(user);
+        var userToBlock = await settingService.GetDifferentUser(user);
 
         if (userToBlock == null)
         {
-            await ReplyAsync("User not found. Are you sure they are registered in .fmbot?");
-            this.Context.LogCommandUsed(CommandResponse.NotFound);
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "User not found. Are you sure they are registered in .fmbot?" });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
             return;
         }
 
-        var guildUsers = await this._guildService.GetGuildUsers(this.Context.Guild.Id);
+        var guildUsers = await guildService.GetGuildUsers(this.Context.Guild.Id);
 
         if (!guildUsers.ContainsKey(userToBlock.UserId))
         {
-            var similarUsers = await this._adminService.GetUsersWithLfmUsernameAsync(userToBlock.UserNameLastFM);
+            var similarUsers = await adminService.GetUsersWithLfmUsernameAsync(userToBlock.UserNameLastFM);
 
             var userInThisServer = similarUsers.FirstOrDefault(f =>
                 f.UserNameLastFM.ToLower() == userToBlock.UserNameLastFM.ToLower() && guildUsers.ContainsKey(f.UserId));
 
             if (userInThisServer == null)
             {
-                await ReplyAsync("User not found. Are you sure they are in this server?\n" +
-                                 $"To refresh the cached memberlist on your server, use `{prfx}refreshmembers`.");
-                this.Context.LogCommandUsed(CommandResponse.NotFound);
+                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = $"User not found. Are you sure they are in this server?\nTo refresh the cached memberlist on your server, use `{prfx}refreshmembers`." });
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
                 return;
             }
 
@@ -129,12 +114,12 @@ public class UserGuildSettingCommands : BaseCommandModule
                 .Select(s => s.Key)
                 .Contains(userToBlock.UserId))
         {
-            await ReplyAsync("The user you're trying to block has already been blocked on this server.");
-            this.Context.LogCommandUsed(CommandResponse.WrongInput);
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "The user you're trying to block has already been blocked on this server." });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
             return;
         }
 
-        var userBlocked = await this._guildService.BlockGuildUserAsync(this.Context.Guild, userToBlock.UserId);
+        var userBlocked = await guildService.BlockGuildUserAsync(this.Context.Guild, userToBlock.UserId);
 
         if (userBlocked)
         {
@@ -144,62 +129,61 @@ public class UserGuildSettingCommands : BaseCommandModule
 
             this._embed.WithFooter($"See all blocked users with {prfx}blockedusers");
 
-            await ReplyAsync("", false, this._embed.Build());
-            this.Context.LogCommandUsed();
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Embeds = [this._embed] });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
         }
         else
         {
-            await ReplyAsync("Something went wrong while attempting to block user, please contact .fmbot staff.");
-            this.Context.LogCommandUsed(CommandResponse.Error);
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Something went wrong while attempting to block user, please contact .fmbot staff." });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Error }, userService);
         }
     }
 
-    [Command("unblock", RunMode = RunMode.Async)]
+    [Command("unblock", "unblockuser", "removeblock", "removeban", "crownunblock", "crownunban")]
     [Summary("Remove block from a user from appearing in server-wide commands")]
     [Options(Constants.UserMentionExample)]
-    [Alias("unblockuser", "removeblock", "removeban", "crownunblock", "crownunban")]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.ServerSettings, CommandCategory.WhoKnows)]
-    public async Task GuildUnBlockUserAsync([Remainder] string user = null)
+    public async Task GuildUnBlockUserAsync([CommandParameter(Remainder = true)] string user = null)
     {
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
+        if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
         {
-            await ReplyAsync(GuildSettingBuilder.UserNotAllowedResponseText());
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = GuildSettingBuilder.UserNotAllowedResponseText() });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             return;
         }
 
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         if (user == null)
         {
-            await ReplyAsync("Please mention a user, enter a discord id or enter a Last.fm username to unblock on your server.");
-            this.Context.LogCommandUsed(CommandResponse.NotFound);
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Please mention a user, enter a discord id or enter a Last.fm username to unblock on your server." });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
             return;
         }
 
-        var userToUnblock = await this._settingService.GetDifferentUser(user);
+        var userToUnblock = await settingService.GetDifferentUser(user);
 
         if (userToUnblock == null)
         {
-            await ReplyAsync("User not found. Are you sure they are registered in .fmbot?");
-            this.Context.LogCommandUsed(CommandResponse.NotFound);
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "User not found. Are you sure they are registered in .fmbot?" });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
             return;
         }
 
-        var guildUsers = await this._guildService.GetGuildUsers(this.Context.Guild.Id);
+        var guildUsers = await guildService.GetGuildUsers(this.Context.Guild.Id);
 
         if (guildUsers == null || !guildUsers.ContainsKey(userToUnblock.UserId))
         {
-            await ReplyAsync("The user you're trying to unblock was not blocked on this server.");
-            this.Context.LogCommandUsed(CommandResponse.WrongInput);
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "The user you're trying to unblock was not blocked on this server." });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
             return;
         }
 
-        var userUnblocked = await this._guildService.UnBlockGuildUserAsync(this.Context.Guild, userToUnblock.UserId);
+        var userUnblocked = await guildService.UnBlockGuildUserAsync(this.Context.Guild, userToUnblock.UserId);
 
         if (userUnblocked)
         {
@@ -209,39 +193,38 @@ public class UserGuildSettingCommands : BaseCommandModule
 
             this._embed.WithFooter($"See other blocked users with {prfx}blockedusers");
 
-            await ReplyAsync("", false, this._embed.Build());
-            this.Context.LogCommandUsed();
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Embeds = [this._embed] });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
         }
         else
         {
-            await ReplyAsync("Something went wrong while attempting to unblock user, please contact .fmbot staff.");
-            this.Context.LogCommandUsed(CommandResponse.Error);
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Something went wrong while attempting to unblock user, please contact .fmbot staff." });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Error }, userService);
         }
     }
 
-    [Command("blockedusers", RunMode = RunMode.Async)]
+    [Command("blockedusers", "blocked", "banned", "bannedusers", "blockedmembers", "bannedmembers")]
     [Summary("View all users that are blocked from appearing in server-wide commands")]
-    [Alias("blocked", "banned", "bannedusers", "blockedmembers", "bannedmembers")]
     [GuildOnly]
     [RequiresIndex]
     [SupportsPagination]
     [CommandCategories(CommandCategory.ServerSettings, CommandCategory.WhoKnows)]
-    public async Task BlockedUsersAsync([Remainder] string searchValue = null)
+    public async Task BlockedUsersAsync([CommandParameter(Remainder = true)] string searchValue = null)
     {
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
+        if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
         {
-            await ReplyAsync(GuildSettingBuilder.UserNotAllowedResponseText());
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = GuildSettingBuilder.UserNotAllowedResponseText() });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             return;
         }
 
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var response = await this._guildSettingBuilder.BlockedUsersAsync(new ContextModel(this.Context, prfx), searchValue: searchValue);
+        var response = await guildSettingBuilder.BlockedUsersAsync(new ContextModel(this.Context, prfx), searchValue: searchValue);
 
-        await this.Context.SendResponse(this.Interactivity, response);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendResponse(this.Interactivity, response, userService);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 }

@@ -9,7 +9,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Dapper;
-using Discord;
+
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
@@ -29,6 +29,7 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using NetCord.Rest;
 using Npgsql;
 using Serilog;
 
@@ -76,9 +77,9 @@ public class TrackService
         this._userService = userService;
     }
 
-    public async Task<TrackSearch> SearchTrack(ResponseModel response, IUser discordUser, string trackValues,
+    public async Task<TrackSearch> SearchTrack(ResponseModel response, NetCord.User discordUser, string trackValues,
         string lastFmUserName, string sessionKey = null, string otherUserUsername = null, bool useCachedTracks = false,
-        int? userId = null, ulong? interactionId = null, IUserMessage referencedMessage = null)
+        int? userId = null, ulong? interactionId = null, RestMessage referencedMessage = null)
     {
         string searchValue;
         if (referencedMessage != null && string.IsNullOrWhiteSpace(trackValues))
@@ -151,13 +152,6 @@ public class TrackService
 
                 if (interactionId.HasValue)
                 {
-                    PublicProperties.UsedCommandsArtists.TryAdd(interactionId.Value, trackArtist);
-                    PublicProperties.UsedCommandsTracks.TryAdd(interactionId.Value, trackName);
-                    if (!string.IsNullOrWhiteSpace(trackInfo.Content?.AlbumName))
-                    {
-                        PublicProperties.UsedCommandsAlbums.TryAdd(interactionId.Value, trackInfo.Content.AlbumName);
-                    }
-
                     response.ReferencedMusic = new ReferencedMusic
                     {
                         Artist = trackArtist,
@@ -235,13 +229,6 @@ public class TrackService
 
             if (interactionId.HasValue)
             {
-                PublicProperties.UsedCommandsArtists.TryAdd(interactionId.Value, lastPlayedTrack.ArtistName);
-                PublicProperties.UsedCommandsTracks.TryAdd(interactionId.Value, lastPlayedTrack.TrackName);
-                if (!string.IsNullOrWhiteSpace(lastPlayedTrack.AlbumName))
-                {
-                    PublicProperties.UsedCommandsAlbums.TryAdd(interactionId.Value, lastPlayedTrack.AlbumName);
-                }
-
                 response.ReferencedMusic = new ReferencedMusic
                 {
                     Artist = lastPlayedTrack.ArtistName,
@@ -306,13 +293,6 @@ public class TrackService
 
             if (interactionId.HasValue)
             {
-                PublicProperties.UsedCommandsArtists.TryAdd(interactionId.Value, trackSearch.ArtistName);
-                PublicProperties.UsedCommandsTracks.TryAdd(interactionId.Value, trackSearch.Name);
-                if (!string.IsNullOrWhiteSpace(trackInfo.Content?.AlbumName))
-                {
-                    PublicProperties.UsedCommandsAlbums.TryAdd(interactionId.Value, trackInfo.Content.AlbumName);
-                }
-
                 response.ReferencedMusic = new ReferencedMusic
                 {
                     Artist = trackSearch.ArtistName,
@@ -612,7 +592,7 @@ public class TrackService
         }
         catch (Exception e)
         {
-            Log.Error("BotScrobbling: Error while getting track for description: {description}", description, e);
+            Log.Error(e, "BotScrobbling: Error while getting track for description: {description}", description);
             return null;
         }
     }
@@ -923,7 +903,7 @@ public class TrackService
         }
         catch (Exception e)
         {
-            Log.Error($"Error in {nameof(GetLatestTracks)}", e);
+            Log.Error(e, "Error in {method}", nameof(GetLatestTracks));
             throw;
         }
     }
@@ -940,7 +920,7 @@ public class TrackService
         }
         catch (Exception e)
         {
-            Log.Error($"Error in {nameof(GetRecentTopTracks)}", e);
+            Log.Error(e, "Error in {method}", nameof(GetRecentTopTracks));
             throw;
         }
     }
@@ -998,7 +978,7 @@ public class TrackService
         }
         catch (Exception e)
         {
-            Log.Error($"Error in {nameof(GetRecentTopTracks)}", e);
+            Log.Error(e, "Error in {method}", nameof(GetRecentTopTracks));
             throw;
         }
     }
@@ -1042,7 +1022,7 @@ public class TrackService
         }
         catch (Exception e)
         {
-            Log.Error($"Error in {nameof(SearchThroughTracks)}", e);
+            Log.Error(e, "Error in {method}", nameof(SearchThroughTracks));
             throw;
         }
     }

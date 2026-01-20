@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Discord;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain.Enums;
@@ -25,7 +24,7 @@ public class WhoKnowsService
     }
 
     public static async Task<IList<WhoKnowsObjectWithUser>> AddOrReplaceUserToIndexList(
-        IList<WhoKnowsObjectWithUser> users, User contextUser, string name, IGuild discordGuild = null,
+        IList<WhoKnowsObjectWithUser> users, User contextUser, string name, NetCord.Gateway.Guild discordGuild = null,
         long? playcount = null)
     {
         if (!playcount.HasValue)
@@ -33,16 +32,16 @@ public class WhoKnowsService
             return users;
         }
 
-        IGuildUser discordGuildUser = null;
+        NetCord.GuildUser netcordGuildUser = null;
         if (discordGuild != null)
         {
-            discordGuildUser = await discordGuild.GetUserAsync(contextUser.DiscordUserId);
+            netcordGuildUser = await discordGuild.GetUserAsync(contextUser.DiscordUserId);
         }
 
         var guildUser = new GuildUser
         {
-            UserName = discordGuildUser != null ? discordGuildUser.DisplayName : contextUser.UserNameLastFM,
-            Roles = discordGuildUser?.RoleIds?.ToArray(),
+            UserName = netcordGuildUser != null ? netcordGuildUser.GetDisplayName() : contextUser.UserNameLastFM,
+            Roles = netcordGuildUser?.RoleIds?.ToArray(),
             LastMessage = DateTime.UtcNow,
             User = contextUser
         };

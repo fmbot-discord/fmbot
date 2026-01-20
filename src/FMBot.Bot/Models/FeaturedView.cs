@@ -1,15 +1,17 @@
-using Discord.Interactions;
+
+using FMBot.Domain.Attributes;
+using NetCord.Gateway;
 
 namespace FMBot.Bot.Models;
 
 public enum FeaturedView
 {
-    [ChoiceDisplay("Global")]
+    [Option("Global")]
     Global = 1,
-    [ChoiceDisplay("Server")]
+    [Option("Server")]
     Server = 2,
-    [ChoiceDisplay("Friends")]
+    [Option("Friends")]
     Friends = 3,
-    [ChoiceDisplay("User")]
+    [Option("User")]
     User = 4
 }

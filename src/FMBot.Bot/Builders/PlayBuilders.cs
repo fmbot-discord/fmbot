@@ -4,28 +4,28 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Discord;
-using Discord.Interactions;
 using Fergun.Interactive;
 using Fergun.Interactive.Pagination;
 using FMBot.Bot.Extensions;
-using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
+using FMBot.Domain.Attributes;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
-using FMBot.Domain.Types;
 using FMBot.Images.Generators;
 using FMBot.Persistence.Domain.Models;
+using NetCord;
+using NetCord.Rest;
 using SkiaSharp;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 using User = FMBot.Persistence.Domain.Models.User;
+using Guild = FMBot.Persistence.Domain.Models.Guild;
 
 namespace FMBot.Bot.Builders;
 
@@ -198,7 +198,7 @@ public class PlayBuilder
             sessionKey = context.ContextUser.SessionKeyLastFm;
         }
 
-        Response<RecentTrackList> recentTracks;
+        Domain.Types.Response<RecentTrackList> recentTracks;
 
         if (!userSettings.DifferentUser)
         {
@@ -246,7 +246,7 @@ public class PlayBuilder
             {
                 guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
                 var discordGuildUser =
-                    await context.DiscordGuild.GetUserAsync(context.ContextUser.DiscordUserId, CacheMode.CacheOnly);
+                    await context.DiscordGuild.GetUserAsync(context.ContextUser.DiscordUserId);
 
                 await this._indexService.UpdateGuildUser(guildUsers, discordGuildUser, context.ContextUser.UserId,
                     guild);
@@ -262,12 +262,12 @@ public class PlayBuilder
             totalPlaycount = recentTracks.Content.TotalAmount;
         }
 
-        PublicProperties.UsedCommandsArtists.TryAdd(context.InteractionId, currentTrack.ArtistName);
-        PublicProperties.UsedCommandsTracks.TryAdd(context.InteractionId, currentTrack.TrackName);
-        if (!string.IsNullOrWhiteSpace(currentTrack.AlbumName))
+        response.ReferencedMusic = new ReferencedMusic
         {
-            PublicProperties.UsedCommandsAlbums.TryAdd(context.InteractionId, currentTrack.AlbumName);
-        }
+            Artist = currentTrack.ArtistName,
+            Album = currentTrack.AlbumName,
+            Track = currentTrack.TrackName
+        };
 
         var requesterUserTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
         var embedTitle = !userSettings.DifferentUser
@@ -276,7 +276,7 @@ public class PlayBuilder
 
         // var embed = await this._userService.GetTemplateFmAsync(context.ContextUser.UserId, userSettings, currentTrack,
         //     previousTrack, totalPlaycount, guild, guildUsers);
-        // response.Embed = embed.EmbedBuilder;
+        // response.Embeds = [embed.EmbedProperties];
         // return response;
 
         var fmText = "";
@@ -395,7 +395,7 @@ public class PlayBuilder
 
                 if (embedType != FmEmbedType.EmbedTiny)
                 {
-                    response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
+                    response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl()?.ToString());
                     response.Embed.WithAuthor(response.EmbedAuthor);
                     response.Embed.WithUrl(recentTracks.Content.UserUrl);
                 }
@@ -414,7 +414,7 @@ public class PlayBuilder
                             currentTrack.AlbumName, currentTrack.ArtistName, albumCoverUrl);
                         if (safeForChannel == CensorService.CensorResult.Safe)
                         {
-                            response.Embed.WithThumbnailUrl(albumCoverUrl);
+                            response.Embed.WithThumbnail(albumCoverUrl);
                         }
                     }
                 }
@@ -452,7 +452,7 @@ public class PlayBuilder
             sessionKey = context.ContextUser.SessionKeyLastFm;
         }
 
-        Response<RecentTrackList> recentTracks;
+        Domain.Types.Response<RecentTrackList> recentTracks;
         if (!userSettings.DifferentUser)
         {
             if (context.ContextUser.LastIndexed == null)
@@ -521,17 +521,17 @@ public class PlayBuilder
             .WithPageCount(trackPages.Count)
             .WithActionOnTimeout(ActionOnStop.DisableInput);
 
-        response.ResponseType = ResponseType.ComponentPaginator;
+        response.ResponseType = ResponseType.Paginator;
         response.ComponentPaginator = paginator;
 
         return response;
 
-        IPage GeneratePage(IComponentPaginator p)
+        Fergun.Interactive.IPage GeneratePage(IComponentPaginator p)
         {
             var pageIndex = p.CurrentPageIndex;
             var trackPage = trackPages.ElementAtOrDefault(pageIndex);
 
-            var container = new ContainerBuilder();
+            var container = new ComponentContainerProperties();
 
             container.WithTextDisplay(
                 userSettings.DisplayName.ContainsEmoji()
@@ -545,10 +545,10 @@ public class PlayBuilder
                 if (track.AlbumCoverUrl != null && showImages)
                 {
                     container.WithSection([
-                            new TextDisplayBuilder(StringService
+                            new TextDisplayProperties(StringService
                                 .TrackToLinkedStringWithTimestamp(track, context.ContextUser.RymEnabled))
                         ],
-                        new ThumbnailBuilder(track.AlbumCoverUrl));
+                        track.AlbumCoverUrl);
                 }
                 else
                 {
@@ -585,12 +585,10 @@ public class PlayBuilder
                 ? StringService.GetPaginationActionRow(p)
                 : StringService.GetSimplePaginationActionRow(p));
 
-            var components = new ComponentBuilderV2()
-                .WithContainer(container);
-
             var pageBuilder = new PageBuilder()
-                .WithAllowedMentions(AllowedMentions.None)
-                .WithComponents(components.Build());
+                .WithAllowedMentions(AllowedMentionsProperties.None)
+                .WithMessageFlags(MessageFlags.IsComponentsV2)
+                .WithComponents([container]);
 
             return pageBuilder.Build();
         }
@@ -675,20 +673,12 @@ public class PlayBuilder
                 }
             }
 
-            if (!string.IsNullOrWhiteSpace(streak.ArtistName))
+            response.ReferencedMusic = new ReferencedMusic
             {
-                PublicProperties.UsedCommandsArtists.TryAdd(context.InteractionId, streak.ArtistName);
-            }
-
-            if (!string.IsNullOrWhiteSpace(streak.AlbumName))
-            {
-                PublicProperties.UsedCommandsAlbums.TryAdd(context.InteractionId, streak.AlbumName);
-            }
-
-            if (!string.IsNullOrWhiteSpace(streak.TrackName))
-            {
-                PublicProperties.UsedCommandsTracks.TryAdd(context.InteractionId, streak.TrackName);
-            }
+                Artist = streak.ArtistName,
+                Album = streak.AlbumName,
+                Track = streak.TrackName
+            };
 
             emoji = PlayService.GetEmojiForStreakCount(streak.ArtistPlaycount.GetValueOrDefault());
         }
@@ -700,7 +690,7 @@ public class PlayBuilder
 
         if (!userSettings.DifferentUser)
         {
-            response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
+            response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl()?.ToString());
         }
 
         response.EmbedAuthor.WithUrl($"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library");
@@ -825,15 +815,15 @@ public class PlayBuilder
 
             if (editMode)
             {
-                response.Components = new ComponentBuilder()
-                    .WithButton(emote: new Emoji("🗑️"), customId: InteractionConstants.DeleteStreak);
+                response.Components = new ActionRowProperties()
+                    .WithButton(null, InteractionConstants.DeleteStreak, ButtonStyle.Secondary, EmojiProperties.Standard("🗑️"));
             }
 
             return response;
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages,
-            editMode ? InteractionConstants.DeleteStreak : null, editMode ? new Emoji("🗑️") : null);
+        response.ComponentPaginator = StringService.BuildComponentPaginator(pages,
+            editMode ? InteractionConstants.DeleteStreak : null, editMode ? EmojiProperties.Standard("🗑️") : null);
 
         return response;
     }
@@ -910,17 +900,17 @@ public class PlayBuilder
             .WithPageCount(dayPages.Count)
             .WithActionOnTimeout(ActionOnStop.DisableInput);
 
-        response.ResponseType = ResponseType.ComponentPaginator;
+        response.ResponseType = ResponseType.Paginator;
         response.ComponentPaginator = paginator;
 
         return response;
 
-        IPage GeneratePage(IComponentPaginator p)
+        Fergun.Interactive.IPage GeneratePage(IComponentPaginator p)
         {
             var page = dayPages.ElementAtOrDefault(p.CurrentPageIndex);
             var plays = new List<UserPlay>();
 
-            var container = new ContainerBuilder();
+            var container = new ComponentContainerProperties();
 
             container.WithTextDisplay(
                 userSettings.DisplayName.ContainsEmoji()
@@ -961,8 +951,8 @@ public class PlayBuilder
                                    $"{StringExtensions.GetListeningTimeString(day.ListeningTime)} — " +
                                    $"{day.Playcount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(day.Playcount)}**");
                 content.AppendLine(fieldContent.ToString());
-                container.Components.Add(new TextDisplayBuilder(content.ToString()));
-                container.Components.Add(new SeparatorBuilder());
+                container.WithTextDisplay(content.ToString());
+                container.WithSeparator();
 
                 plays.AddRange(day.Plays);
             }
@@ -992,12 +982,10 @@ public class PlayBuilder
                 .WithTextDisplay(footer.ToString())
                 .WithActionRow(StringService.GetPaginationActionRow(p));
 
-            var components = new ComponentBuilderV2()
-                .WithContainer(container);
-
             return new PageBuilder()
-                .WithComponents(components.Build())
-                .WithAllowedMentions(AllowedMentions.None)
+                .WithComponents(new List<IMessageComponentProperties> { container })
+                .WithAllowedMentions(AllowedMentionsProperties.None)
+                .WithMessageFlags(MessageFlags.IsComponentsV2)
                 .Build();
         }
     }
@@ -1120,7 +1108,7 @@ public class PlayBuilder
                 mileStonePlay.Content.AlbumName, mileStonePlay.Content.ArtistName, albumCoverUrl);
             if (safeForChannel == CensorService.CensorResult.Safe)
             {
-                response.Embed.WithThumbnailUrl(albumCoverUrl);
+                response.Embed.WithThumbnail(albumCoverUrl);
             }
         }
 
@@ -1132,13 +1120,6 @@ public class PlayBuilder
 
             reply.AppendLine($"Date played: **<t:{mileStonePlay.Content.TimePlayed.Value.ToUnixEpochDate()}:D>**");
 
-            PublicProperties.UsedCommandsArtists.TryAdd(context.InteractionId, mileStonePlay.Content.ArtistName);
-            PublicProperties.UsedCommandsTracks.TryAdd(context.InteractionId, mileStonePlay.Content.TrackName);
-            if (!string.IsNullOrWhiteSpace(mileStonePlay.Content.AlbumName))
-            {
-                PublicProperties.UsedCommandsAlbums.TryAdd(context.InteractionId, mileStonePlay.Content.AlbumName);
-            }
-
             response.ReferencedMusic = new ReferencedMusic
             {
                 Artist = mileStonePlay.Content.ArtistName,
@@ -1149,9 +1130,9 @@ public class PlayBuilder
 
         if (isRandom)
         {
-            response.Components = new ComponentBuilder().WithButton("Reroll",
-                $"{InteractionConstants.RandomMilestone}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}",
-                style: ButtonStyle.Secondary, emote: new Emoji("🎲"));
+            response.Components = new ActionRowProperties().WithButton("Reroll",
+                $"{InteractionConstants.RandomMilestone}:{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}",
+                style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("🎲"));
         }
 
         response.Embed.WithDescription(reply.ToString());
@@ -1194,7 +1175,7 @@ public class PlayBuilder
         var pages = new List<PageBuilder>();
 
         var description = new StringBuilder();
-        var fields = new List<EmbedFieldBuilder>();
+        var fields = new List<EmbedFieldProperties>();
 
         if (yearOverview.PreviousTopArtists?.TopArtists is { Count: > 0 })
         {
@@ -1235,8 +1216,8 @@ public class PlayBuilder
             }
         }
 
-        fields.Add(new EmbedFieldBuilder().WithName("Genres").WithValue(genreDescription.ToString())
-            .WithIsInline(true));
+        fields.Add(new EmbedFieldProperties().WithName("Genres").WithValue(genreDescription.ToString())
+            .WithInline(true));
 
         var artistDescription = new StringBuilder();
         for (var i = 0; i < yearOverview.TopArtists.TopArtists.Count; i++)
@@ -1260,8 +1241,8 @@ public class PlayBuilder
             }
         }
 
-        fields.Add(new EmbedFieldBuilder().WithName("Artists").WithValue(artistDescription.ToString())
-            .WithIsInline(true));
+        fields.Add(new EmbedFieldProperties().WithName("Artists").WithValue(artistDescription.ToString())
+            .WithInline(true));
 
         var rises = lines
             .Where(w => w.OldPosition is >= 20 && w.NewPosition <= 15 && w.PositionsMoved >= 15)
@@ -1281,7 +1262,7 @@ public class PlayBuilder
 
         if (risesDescription.Length > 0)
         {
-            fields.Add(new EmbedFieldBuilder().WithName("Rises").WithValue(risesDescription.ToString()));
+            fields.Add(new EmbedFieldProperties().WithName("Rises").WithValue(risesDescription.ToString()));
         }
 
         var drops = lines
@@ -1302,7 +1283,7 @@ public class PlayBuilder
 
         if (dropsDescription.Length > 0)
         {
-            fields.Add(new EmbedFieldBuilder().WithName("Drops").WithValue(dropsDescription.ToString()));
+            fields.Add(new EmbedFieldProperties().WithName("Drops").WithValue(dropsDescription.ToString()));
         }
 
         pages.Add(new PageBuilder()
@@ -1310,7 +1291,7 @@ public class PlayBuilder
             .WithDescription(description.ToString())
             .WithTitle($"{userTitle} {year} in Review - 1/{pagesAmount}"));
 
-        fields = new List<EmbedFieldBuilder>();
+        fields = new List<EmbedFieldProperties>();
 
         var albumDescription = new StringBuilder();
         if (yearOverview.TopAlbums.TopAlbums.Any())
@@ -1333,7 +1314,7 @@ public class PlayBuilder
                         i, previousPosition).Text);
             }
 
-            fields.Add(new EmbedFieldBuilder().WithName("Albums").WithValue(albumDescription.ToString()));
+            fields.Add(new EmbedFieldProperties().WithName("Albums").WithValue(albumDescription.ToString()));
         }
 
         var trackDescription = new StringBuilder();
@@ -1353,7 +1334,7 @@ public class PlayBuilder
                 .GetBillboardLine($"**{topTrack.ArtistName}** - **{topTrack.TrackName}**", i, previousPosition).Text);
         }
 
-        fields.Add(new EmbedFieldBuilder().WithName("Tracks").WithValue(trackDescription.ToString()));
+        fields.Add(new EmbedFieldProperties().WithName("Tracks").WithValue(trackDescription.ToString()));
 
         var countries = await this._countryService.GetTopCountriesForTopArtists(yearOverview.TopArtists.TopArtists);
 
@@ -1383,8 +1364,8 @@ public class PlayBuilder
             }
         }
 
-        fields.Add(new EmbedFieldBuilder().WithName("Countries").WithValue(countryDescription.ToString())
-            .WithIsInline(true));
+        fields.Add(new EmbedFieldProperties().WithName("Countries").WithValue(countryDescription.ToString())
+            .WithInline(true));
 
         var tracksAudioOverview =
             await this._trackService.GetAverageTrackAudioFeaturesForTopTracks(yearOverview.TopTracks.TopTracks);
@@ -1394,7 +1375,7 @@ public class PlayBuilder
 
         if (tracksAudioOverview.Total > 0)
         {
-            fields.Add(new EmbedFieldBuilder().WithName("Top track analysis")
+            fields.Add(new EmbedFieldProperties().WithName("Top track analysis")
                 .WithValue(TrackService.AudioFeatureAnalysisComparisonString(tracksAudioOverview,
                     previousTracksAudioOverview)));
         }
@@ -1410,7 +1391,7 @@ public class PlayBuilder
 
         if (userSettings.UserType != UserType.User)
         {
-            fields = new List<EmbedFieldBuilder>();
+            fields = new List<EmbedFieldProperties>();
 
             var allPlays = await this._playService.GetAllUserPlays(userSettings.UserId);
             allPlays = (await this._timeService.EnrichPlaysWithPlayTime(allPlays)).enrichedPlays;
@@ -1453,7 +1434,7 @@ public class PlayBuilder
 
             if (newArtistDescription.Length > 0)
             {
-                fields.Add(new EmbedFieldBuilder().WithName("Artist discoveries")
+                fields.Add(new EmbedFieldProperties().WithName("Artist discoveries")
                     .WithValue(newArtistDescription.ToString()));
             }
 
@@ -1487,7 +1468,7 @@ public class PlayBuilder
 
             if (monthDescription.Length > 0)
             {
-                fields.Add(new EmbedFieldBuilder().WithName("Months")
+                fields.Add(new EmbedFieldProperties().WithName("Months")
                     .WithValue(monthDescription.ToString()));
             }
 
@@ -1497,7 +1478,7 @@ public class PlayBuilder
                 .WithDescription("⭐ .fmbot Supporter stats"));
         }
 
-        response.StaticPaginator = StringService.BuildSimpleStaticPaginator(pages);
+        response.ComponentPaginator = StringService.BuildSimpleComponentPaginator(pages);
         return response;
     }
 
@@ -1513,7 +1494,7 @@ public class PlayBuilder
             response.Embed.WithDescription(
                 $"To see the biggest gaps between when you listened to certain artists we need to store your lifetime Last.fm history. Your lifetime history and more are only available for supporters.");
 
-            response.Components = new ComponentBuilder()
+            response.Components = new ActionRowProperties()
                 .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
                     customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "gaps"));
             response.Embed.WithColor(DiscordConstants.InformationColorBlue);
@@ -1527,7 +1508,7 @@ public class PlayBuilder
             response.Embed.WithDescription(
                 $"Sorry, artist gaps uses somebody's lifetime listening history. You can only use this command on other supporters.");
 
-            response.Components = new ComponentBuilder()
+            response.Components = new ActionRowProperties()
                 .WithButton(".fmbot supporter", style: ButtonStyle.Secondary,
                     customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "gaps"));
             response.Embed.WithColor(DiscordConstants.InformationColorBlue);
@@ -1558,7 +1539,7 @@ public class PlayBuilder
         {
             if (!context.SlashCommand)
             {
-                response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
+                response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl()?.ToString());
             }
 
             userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
@@ -1589,7 +1570,7 @@ public class PlayBuilder
                 .WithDescription($"No plays found in your listening history.")
                 .WithAuthor(response.EmbedAuthor));
 
-            response.StaticPaginator = StringService.BuildStaticPaginator(pages, selectMenuBuilder: context.SelectMenu);
+            response.ComponentPaginator = StringService.BuildComponentPaginator(pages, selectMenuBuilder: context.SelectMenu);
             response.ResponseType = ResponseType.Paginator;
             return response;
         }
@@ -1671,20 +1652,24 @@ public class PlayBuilder
             .OrderByDescending(o => o.GapDuration.TotalDays)
             .ToList();
 
-        var viewType = new SelectMenuBuilder()
+        var viewType = new StringMenuProperties(InteractionConstants.GapView)
             .WithPlaceholder("Select gap view")
-            .WithCustomId(InteractionConstants.GapView)
             .WithMinValues(1)
             .WithMaxValues(1);
 
         foreach (var option in Enum.GetValues<GapEntityType>())
         {
-            var name = option.GetAttribute<ChoiceDisplayAttribute>().Name;
+            var name = option.GetAttribute<OptionAttribute>().Name;
             var value =
                 $"{Enum.GetName(option)}-{Enum.GetName(mode)}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}";
 
             var active = option == entityType;
-            viewType.AddOption(new SelectMenuOptionBuilder(name, value, null, isDefault: active));
+            var menuOption = new StringMenuSelectOptionProperties(name, value);
+            if (active)
+            {
+                menuOption = menuOption.WithDefault();
+            }
+            viewType.AddOption(menuOption);
         }
 
         if (mode == ResponseMode.Image && sortedEntitiesWithGaps.Count != 0)
@@ -1724,7 +1709,7 @@ public class PlayBuilder
             response.FileName = $"{entityTypeDisplay.ToLower()}-gaps-{userSettings.DiscordUserId}.png";
             response.ResponseType = ResponseType.ImageOnly;
             response.Embed = null;
-            response.Components = new ComponentBuilder().WithSelectMenu(viewType);
+            response.StringMenus.Add(viewType);
 
             return response;
         }
@@ -1796,7 +1781,7 @@ public class PlayBuilder
                 .WithAuthor(response.EmbedAuthor));
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginatorWithSelectMenu(pages, viewType);
+        response.ComponentPaginator = StringService.BuildComponentPaginatorWithSelectMenu(pages, viewType);
         response.ResponseType = ResponseType.Paginator;
         return response;
     }

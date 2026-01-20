@@ -2,8 +2,6 @@ using System;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Discord;
-using Discord.WebSocket;
 using FMBot.Bot.Factories;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
@@ -14,6 +12,8 @@ using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Domain.Types;
+using NetCord;
+using NetCord.Rest;
 using SkiaSharp;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 
@@ -117,7 +117,9 @@ public class ChartBuilders
                 reply.AppendLine(
                     $"Not enough scrobbled albums ({count} of required {chartSettings.ImagesNeeded}) from **[{chartSettings.FilteredArtist.Name}]({LastfmUrlExtensions.GetArtistUrl(chartSettings.FilteredArtist.Name)})** in {chartSettings.TimeSettings.Description} time period.");
                 reply.AppendLine();
-                reply.AppendLine($"Try a smaller chart, bigger time period ({Constants.CompactTimePeriodList}) or remove the artist filter.");}
+                reply.AppendLine(
+                    $"Try a smaller chart, bigger time period ({Constants.CompactTimePeriodList}) or remove the artist filter.");
+            }
             else
             {
                 reply.AppendLine(
@@ -129,7 +131,8 @@ public class ChartBuilders
             if (chartSettings.SkipWithoutImage && chartSettings.FilteredArtist == null)
             {
                 reply.AppendLine();
-                reply.AppendLine($"Note that {extraAlbums} extra albums are required because you are skipping albums without an image.");
+                reply.AppendLine(
+                    $"Note that {extraAlbums} extra albums are required because you are skipping albums without an image.");
             }
 
             response.Embed.Description = reply.ToString();
@@ -223,7 +226,7 @@ public class ChartBuilders
             await this._supporterService.GetRandomSupporter(context.DiscordGuild, context.ContextUser.UserType);
         ChartService.AddSettingsToDescription(chartSettings, embedDescription, supporter, context.Prefix);
 
-        var nsfwAllowed = context.DiscordGuild == null || ((SocketTextChannel)context.DiscordChannel).IsNsfw;
+        var nsfwAllowed = context.DiscordGuild == null || ((TextGuildChannel)context.DiscordChannel).Nsfw;
         var chart = await this._chartService.GenerateChartAsync(chartSettings);
 
         if (chartSettings.CensoredItems is > 0)
@@ -235,32 +238,40 @@ public class ChartBuilders
         if (chartSettings.ContainsNsfw && !nsfwAllowed)
         {
             response.ComponentsContainer.AddComponent(
-                new TextDisplayBuilder("**⚠️ Contains NSFW covers - Click to reveal**"));
+                new TextDisplayProperties("**⚠️ Contains NSFW covers - Click to reveal**"));
         }
 
         response.FileDescription = StringExtensions.TruncateLongString(chartSettings.FileDescription.ToString(), 1024);
         response.FileName =
             $"album-chart-{chartSettings.Width}w-{chartSettings.Height}h-{chartSettings.TimeSettings.TimePeriod}-{userSettings.UserNameLastFm}.png";
 
-        response.ComponentsContainer.AddComponent(new MediaGalleryBuilder().AddItem($"attachment://{response.FileName}",
-            StringExtensions.TruncateLongString(response.FileDescription, 256),
-            isSpoiler: chartSettings.ContainsNsfw));
+        var mediaGallery =
+            new MediaGalleryItemProperties(new ComponentMediaProperties($"attachment://{response.FileName}"))
+            {
+                Description = StringExtensions.TruncateLongString(response.FileDescription, 256),
+                Spoiler = chartSettings.ContainsNsfw
+            };
 
-        response.ComponentsContainer.AddComponent(new TextDisplayBuilder($"**{embedTitle}**"));
+        response.ComponentsContainer.AddComponent(new MediaGalleryProperties
+        {
+            mediaGallery
+        });
+
+        response.ComponentsContainer.AddComponent(new TextDisplayProperties($"**{embedTitle}**"));
 
         if (embedDescription.Length > 0)
         {
-            response.ComponentsContainer.AddComponent(new TextDisplayBuilder(embedDescription.ToString()));
+            response.ComponentsContainer.AddComponent(new TextDisplayProperties(embedDescription.ToString()));
         }
 
         if (!userSettings.DifferentUser)
         {
-            response.ComponentsContainer.AddComponent(new TextDisplayBuilder(
+            response.ComponentsContainer.AddComponent(new TextDisplayProperties(
                 $"-# {userSettings.UserNameLastFm} has {context.ContextUser.TotalPlaycount.Format(context.NumberFormat)} scrobbles"));
         }
         else
         {
-            response.ComponentsContainer.AddComponent(new TextDisplayBuilder(
+            response.ComponentsContainer.AddComponent(new TextDisplayProperties(
                 $"-# Chart requested by {await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser)}"));
         }
 
@@ -274,12 +285,12 @@ public class ChartBuilders
             response.Embed.WithDescription($"**{embedTitle}**");
             response.Spoiler = chartSettings.ContainsNsfw;
             response.ResponseType = ResponseType.Embed;
-            response.Components = new ComponentBuilder().WithSelectMenu(context.SelectMenu);
+            response.StringMenus.Add(context.SelectMenu);
         }
 
         if (supporter != null)
         {
-            var actionRow = new ActionRowBuilder();
+            var actionRow = new ActionRowProperties();
             actionRow.WithButton(Constants.GetSupporterButton,
                 customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "chart-broughtby"),
                 style: ButtonStyle.Secondary);
@@ -397,12 +408,12 @@ public class ChartBuilders
         ChartService.AddSettingsToDescription(chartSettings, embedDescription, supporter, context.Prefix);
         if (supporter != null)
         {
-            response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton,
+            response.Components = new ActionRowProperties().WithButton(Constants.GetSupporterButton,
                 style: ButtonStyle.Secondary,
                 customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "chart-broughtby"));
         }
 
-        var nsfwAllowed = context.DiscordGuild == null || ((SocketTextChannel)context.DiscordChannel).IsNsfw;
+        var nsfwAllowed = context.DiscordGuild == null || ((TextGuildChannel)context.DiscordChannel).Nsfw;
         var chart = await this._chartService.GenerateChartAsync(chartSettings);
 
         if (chartSettings.CensoredItems is > 0)
@@ -414,23 +425,32 @@ public class ChartBuilders
         if (chartSettings.ContainsNsfw && !nsfwAllowed)
         {
             response.ComponentsContainer.AddComponent(
-                new TextDisplayBuilder("**⚠️ Contains NSFW images - Click to reveal**"));
+                new TextDisplayProperties("**⚠️ Contains NSFW images - Click to reveal**"));
         }
 
         response.FileName =
             $"artist-chart-{chartSettings.Width}w-{chartSettings.Height}h-{chartSettings.TimeSettings.TimePeriod}-{userSettings.UserNameLastFm}.png";
 
-        response.ComponentsContainer.AddComponent(new MediaGalleryBuilder().AddItem($"attachment://{response.FileName}",
-            isSpoiler: chartSettings.ContainsNsfw));
+        var mediaGallery =
+            new MediaGalleryItemProperties(new ComponentMediaProperties($"attachment://{response.FileName}"))
+            {
+                Description = StringExtensions.TruncateLongString(response.FileDescription, 256),
+                Spoiler = chartSettings.ContainsNsfw
+            };
 
-        response.ComponentsContainer.AddComponent(new TextDisplayBuilder($"**{embedTitle}**"));
+        response.ComponentsContainer.AddComponent(new MediaGalleryProperties
+        {
+            mediaGallery
+        });
+
+        response.ComponentsContainer.AddComponent(new TextDisplayProperties($"**{embedTitle}**"));
 
         if (embedDescription.Length > 0)
         {
-            response.ComponentsContainer.AddComponent(new TextDisplayBuilder(embedDescription.ToString()));
+            response.ComponentsContainer.AddComponent(new TextDisplayProperties(embedDescription.ToString()));
         }
 
-        response.ComponentsContainer.AddComponent(new TextDisplayBuilder(footer.ToString()));
+        response.ComponentsContainer.AddComponent(new TextDisplayProperties(footer.ToString()));
 
         var encoded = chart.Encode(SKEncodedImageFormat.Png, 100);
         response.Stream = encoded.AsStream();
@@ -442,7 +462,7 @@ public class ChartBuilders
             response.Embed.WithDescription($"**{embedTitle}**");
             response.Spoiler = chartSettings.ContainsNsfw;
             response.ResponseType = ResponseType.Embed;
-            response.Components = new ComponentBuilder().WithSelectMenu(context.SelectMenu);
+            response.StringMenus.Add(context.SelectMenu);
         }
 
         return response;

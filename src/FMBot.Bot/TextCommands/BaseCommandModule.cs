@@ -1,25 +1,25 @@
-using Discord;
-using Discord.Commands;
 using FMBot.Bot.Resources;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
+using NetCord.Rest;
+using NetCord.Services.Commands;
 
 namespace FMBot.Bot.TextCommands;
 
-public class BaseCommandModule : ModuleBase
+public class BaseCommandModule : CommandModule<CommandContext>
 {
-    internal readonly EmbedAuthorBuilder _embedAuthor;
-    internal readonly EmbedBuilder _embed;
-    internal readonly EmbedFooterBuilder _embedFooter;
+    internal readonly EmbedAuthorProperties _embedAuthor;
+    internal readonly EmbedProperties  _embed;
+    internal readonly EmbedFooterProperties _embedFooter;
 
     internal readonly BotSettings _botSettings;
 
     public BaseCommandModule(IOptions<BotSettings> botSettings)
     {
-        this._embedAuthor = new EmbedAuthorBuilder();
-        this._embed = new EmbedBuilder()
+        this._embedAuthor = new EmbedAuthorProperties();
+        this._embed = new EmbedProperties()
             .WithColor(DiscordConstants.LastFmColorRed);
-        this._embedFooter = new EmbedFooterBuilder();
+        this._embedFooter = new EmbedFooterProperties();
 
         this._botSettings = botSettings.Value;
     }

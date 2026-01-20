@@ -20,6 +20,8 @@ using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Serilog;
+using NetCord.Gateway;
+using DiscordGuild = NetCord.Gateway.Guild;
 
 namespace FMBot.Bot.Services;
 

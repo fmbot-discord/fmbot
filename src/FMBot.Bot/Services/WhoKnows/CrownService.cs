@@ -135,6 +135,12 @@ public class CrownService
                 };
             }
 
+            // Temp fix for Last.fm returning 0 playcount
+            if (currentPlaycountForCrownHolder == 0)
+            {
+                currentPlaycountForCrownHolder = topUser.Playcount;
+            }
+
             var currentCrownHolderIndex = users.IndexOf(currentCrownHolderUser);
 
             // Current crownholder playcount is still higher after extra check

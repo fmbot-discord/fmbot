@@ -1,6 +1,6 @@
-using Discord;
+
 using FMBot.Domain.Enums;
-using FMBot.Domain.Models;
+using NetCord;
 
 namespace FMBot.Bot.Models;
 
@@ -48,4 +48,4 @@ public enum TasteType
     Table = 2
 }
 
-public sealed record Item(string Name, IEmote Emote);
+public sealed record Item(string Name, EmojiProperties Emote);

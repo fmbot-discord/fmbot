@@ -24,7 +24,7 @@ public class YoutubeService
             }
             catch (Exception ex)
             {
-                Log.Error("Error initializing YouTube service", ex);
+                Log.Error(ex, "Error initializing YouTube service");
                 throw;
             }
         }
@@ -44,7 +44,7 @@ public class YoutubeService
             }
             catch (Exception ex)
             {
-                Log.Error("Error searching YouTube video", ex);
+                Log.Error(ex, "Error searching YouTube video");
                 return null;
             }
         }
@@ -62,7 +62,7 @@ public class YoutubeService
             }
             catch (Exception ex)
             {
-                Log.Error("Error getting YouTube video details", ex);
+                Log.Error(ex, "Error getting YouTube video details");
                 return null;
             }
         }

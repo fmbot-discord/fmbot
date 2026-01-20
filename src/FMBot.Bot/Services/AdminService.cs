@@ -1,20 +1,22 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Discord;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using System.Linq;
+
 using FMBot.Domain.Enums;
 using Serilog;
 using Microsoft.Extensions.Options;
-using Discord.WebSocket;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
+using NetCord;
+using NetCord.Gateway;
+using NetCord.Rest;
 using User = FMBot.Persistence.Domain.Models.User;
 
 namespace FMBot.Bot.Services;
@@ -24,9 +26,9 @@ public class AdminService
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
     private readonly IMemoryCache _cache;
     private readonly BotSettings _botSettings;
-    private readonly DiscordShardedClient _client;
+    private readonly ShardedGatewayClient _client;
 
-    public AdminService(IDbContextFactory<FMBotDbContext> contextFactory, IOptions<BotSettings> botSettings, IMemoryCache cache, DiscordShardedClient client)
+    public AdminService(IDbContextFactory<FMBotDbContext> contextFactory, IOptions<BotSettings> botSettings, IMemoryCache cache, ShardedGatewayClient client)
     {
         this._contextFactory = contextFactory;
         this._cache = cache;
@@ -34,7 +36,7 @@ public class AdminService
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<bool> HasCommandAccessAsync(IUser discordUser, UserType minUserType)
+    public async Task<bool> HasCommandAccessAsync(NetCord.User discordUser, UserType minUserType)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var contextUser = await db.Users
@@ -375,8 +377,9 @@ public class AdminService
                 return;
             }
 
-            var guild = this._client.GetGuild(this._botSettings.Bot.BaseServerId);
-            var channel = guild?.GetTextChannel(this._botSettings.Bot.GlobalWhoKnowsReportChannelId);
+            var guild = await this._client.GetGuildAsync(this._botSettings.Bot.BaseServerId);
+            var channels = await guild.GetChannelsAsync();
+            var channel = channels?.FirstOrDefault(f => f.Id == this._botSettings.Bot.GlobalWhoKnowsReportChannelId) as TextGuildChannel;
 
             if (channel == null)
             {
@@ -384,14 +387,14 @@ public class AdminService
                 return;
             }
 
-            var embed = new EmbedBuilder();
+            var embed = new EmbedProperties();
             embed.WithTitle($"New gwk botted user report");
 
-            var components = new ComponentBuilder()
-                .WithButton("Ban", $"gwk-report-ban-{report.Id}", style: ButtonStyle.Success)
-                .WithButton("Deny", $"gwk-report-deny-{report.Id}", style: ButtonStyle.Danger);
+            var components = new ActionRowProperties()
+                .WithButton("Ban", $"gwk-report-ban:{report.Id}", style: ButtonStyle.Success)
+                .WithButton("Deny", $"gwk-report-deny:{report.Id}", style: ButtonStyle.Danger);
 
-            components.WithButton("User", url: $"{Constants.LastFMUserUrl}{report.UserNameLastFM}", row: 1, style: ButtonStyle.Link);
+            components.WithButton("User", url: $"{Constants.LastFMUserUrl}{report.UserNameLastFM}", row: 1);
 
             embed.AddField("User", $"**[{report.UserNameLastFM}]({Constants.LastFMUserUrl}{report.UserNameLastFM})**");
 
@@ -406,14 +409,16 @@ public class AdminService
             {
                 embed.AddField("User is currently filtered:", WhoKnowsFilterService.FilteredUserReason(filteredUser));
 
-                components.WithButton($"Convert filter to ban", $"gwk-filtered-user-to-ban-{filteredUser.GlobalFilteredUserId}", style: ButtonStyle.Secondary, row: 2);
+                components.WithButton($"Convert filter to ban", $"gwk-filtered-user-to-ban:{filteredUser.GlobalFilteredUserId}", style: ButtonStyle.Secondary, row: 2);
             }
 
-            var reporter = guild.GetUser(report.ReportedByDiscordUserId);
+            var reporter = await guild.GetUserAsync(report.ReportedByDiscordUserId);
             embed.AddField("Reporter",
-                $"**{reporter?.DisplayName}** - <@{report.ReportedByDiscordUserId}> - `{report.ReportedByDiscordUserId}`");
+                $"**{reporter?.GetDisplayName()}** - <@{report.ReportedByDiscordUserId}> - `{report.ReportedByDiscordUserId}`");
 
-            await channel.SendMessageAsync(embed: embed.Build(), components: components.Build());
+            await channel.SendMessageAsync(new MessageProperties()
+                .WithEmbeds([embed])
+                .WithComponents([components]));
         }
         catch (Exception e)
         {
@@ -435,7 +440,7 @@ public class AdminService
         await db.SaveChangesAsync();
     }
 
-    public async Task<bool?> ToggleSpecialGuildAsync(IGuild guild)
+    public async Task<bool?> ToggleSpecialGuildAsync(NetCord.Gateway.Guild guild)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var existingGuild = await db.Guilds

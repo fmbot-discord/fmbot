@@ -1,4 +1,3 @@
-using System.Linq;
 using Fergun.Interactive;
 using Fergun.Interactive.Selection;
 

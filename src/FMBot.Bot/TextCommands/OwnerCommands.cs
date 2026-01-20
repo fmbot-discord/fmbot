@@ -5,131 +5,116 @@ using System.Linq;
 using System.Runtime;
 using System.Text;
 using System.Threading.Tasks;
-using Discord;
-using Discord.Commands;
-using Discord.WebSocket;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
+using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using NetCord.Rest;
+using NetCord.Services.Commands;
+using NetCord.Gateway;
 
 namespace FMBot.Bot.TextCommands;
 
-[Name("Owner commands")]
+[ModuleName("Owner commands")]
 [Summary(".fmbot Owners Only")]
 [ExcludeFromHelp]
-public class OwnerCommands : BaseCommandModule
+public class OwnerCommands(
+    AdminService adminService,
+    UserService userService,
+    IOptions<BotSettings> botSettings,
+    IMemoryCache cache,
+    ShardedGatewayClient client)
+    : BaseCommandModule(botSettings)
 {
-    private readonly AdminService _adminService;
-    private readonly UserService _userService;
-    private readonly IMemoryCache _cache;
-    private readonly DiscordShardedClient _client;
-
-    public OwnerCommands(
-        AdminService adminService,
-        UserService userService,
-        IOptions<BotSettings> botSettings,
-        IMemoryCache cache,
-        DiscordShardedClient client) : base(botSettings)
-    {
-        this._adminService = adminService;
-        this._userService = userService;
-        this._cache = cache;
-        this._client = client;
-    }
-
     [Command("say"), Summary("Says something")]
     [UsernameSetRequired]
-    public async Task SayAsync([Remainder] string say)
+    public async Task SayAsync([CommandParameter(Remainder = true)] string say)
     {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
         {
             try
             {
-                await ReplyAsync(say);
-                this.Context.LogCommandUsed();
+                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = say });
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
             }
             catch (Exception e)
             {
-                await this.Context.HandleCommandException(e);
+                await this.Context.HandleCommandException(e, userService);
             }
         }
     }
 
-    [Command("botrestart")]
+    [Command("botrestart", "restart")]
     [Summary("Reboots the bot.")]
-    [Alias("restart")]
     public async Task BotRestartAsync()
     {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
         {
-            await ReplyAsync("Restarting bot...");
-            this.Context.LogCommandUsed();
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Restarting bot..." });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
             Environment.Exit(1);
         }
         else
         {
-            await ReplyAsync("Error: Insufficient rights. Only FMBot admins can restart the bot.");
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Error: Insufficient rights. Only FMBot admins can restart the bot." });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
         }
     }
 
-    [Command("setusertype"), Summary("Sets usertype for other users")]
-    [Alias("setperms")]
+    [Command("setusertype", "setperms"), Summary("Sets usertype for other users")]
     [UsernameSetRequired]
     public async Task SetUserTypeAsync(string userId = null, string userType = null)
     {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
         {
             if (userId == null || userType == null || userId == "help")
             {
-                await ReplyAsync(
-                    "Please format your command like this: `.fmsetusertype 'discord id' 'User/Admin/Owner'`");
-                this.Context.LogCommandUsed(CommandResponse.Help);
+                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Please format your command like this: `.fmsetusertype 'discord id' 'User/Admin/Owner'`" });
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Help }, userService);
                 return;
             }
 
             if (!Enum.TryParse(userType, true, out UserType userTypeEnum))
             {
-                await ReplyAsync("Invalid usertype. Please use 'User', 'Contributor', 'Admin', or 'Owner'.");
-                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Invalid usertype. Please use 'User', 'Contributor', 'Admin', or 'Owner'." });
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
                 return;
             }
 
-            if (await this._adminService.SetUserTypeAsync(ulong.Parse(userId), userTypeEnum))
+            if (await adminService.SetUserTypeAsync(ulong.Parse(userId), userTypeEnum))
             {
-                await ReplyAsync("You got it. User perms changed.");
-                this.Context.LogCommandUsed();
+                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "You got it. User perms changed." });
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
             }
             else
             {
-                await ReplyAsync("Setting user failed. Are you sure the user exists?");
-                this.Context.LogCommandUsed(CommandResponse.NotFound);
+                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Setting user failed. Are you sure the user exists?" });
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
             }
         }
         else
         {
-            await ReplyAsync("Error: Insufficient rights. Only FMBot owners can change your usertype.");
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Error: Insufficient rights. Only FMBot owners can change your usertype." });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
         }
     }
 
-    [Command("storagecheck"), Summary("Checks how much storage is left on the server.")]
-    [Alias("checkstorage", "storage")]
+    [Command("storagecheck", "checkstorage", "storage"), Summary("Checks how much storage is left on the server.")]
     [UsernameSetRequired]
     public async Task StorageCheckAsync()
     {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
         {
             try
             {
                 var drives = DriveInfo.GetDrives();
 
-                var builder = new EmbedBuilder();
+                var builder = new EmbedProperties();
                 builder.WithDescription("Server Drive Info");
 
                 foreach (var drive in drives.Where(w => w.IsReady && w.TotalSize > 10000))
@@ -139,75 +124,76 @@ public class OwnerCommands : BaseCommandModule
                         drive.TotalSize.ToFormattedByteString());
                 }
 
-                await this.Context.Channel.SendMessageAsync("", false, builder.Build());
-                this.Context.LogCommandUsed();
+                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties().AddEmbeds(builder));
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
             }
             catch (Exception e)
             {
-                await this.Context.HandleCommandException(e);
+                await this.Context.HandleCommandException(e, userService);
             }
         }
         else
         {
-            await ReplyAsync("Only .fmbot admins or owners can execute this command.");
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Only .fmbot admins or owners can execute this command." });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
         }
     }
 
-    [Command("serverlist"),
-     Summary("Displays a list showing information related to every server the bot has joined.")]
-    public async Task ServerListAsync()
-    {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
-        {
-            var client = this.Context.Client as DiscordShardedClient;
-            string desc = null;
-
-            foreach (var guild in client.Guilds.OrderByDescending(o => o.MemberCount).Take(100))
-            {
-                desc += $"{guild.Name} - Users: {guild.MemberCount}, Owner: {guild.Owner}\n";
-            }
-
-            if (!string.IsNullOrWhiteSpace(desc))
-            {
-                string[] descChunks = desc.SplitByMessageLength().ToArray();
-                foreach (string chunk in descChunks)
-                {
-                    await this.Context.User.SendMessageAsync(chunk);
-                }
-            }
-
-            await this.Context.Channel.SendMessageAsync("Check your DMs!");
-            this.Context.LogCommandUsed();
-        }
-        else
-        {
-            await ReplyAsync("Only .fmbot owners can execute this command.");
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
-        }
-    }
+    // [Command("serverlist"),
+    //  Summary("Displays a list showing information related to every server the bot has joined.")]
+    // public async Task ServerListAsync()
+    // {
+    //     if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+    //     {
+    //         var client = this.Context.Client as ShardedGatewayClient;
+    //         string desc = null;
+    //
+    //         foreach (var guild in client.SelectMany(shard => shard.Cache.Guilds.Values).OrderByDescending(o => o.ApproximateUserCount ?? 0).Take(100))
+    //         {
+    //             desc += $"{guild.Name} - Users: {guild.ApproximateUserCount}, Owner: {guild.OwnerId}\n";
+    //         }
+    //
+    //         if (!string.IsNullOrWhiteSpace(desc))
+    //         {
+    //             var dmChannel = await this.Context.User.GetDMChannelAsync();
+    //             string[] descChunks = desc.SplitByMessageLength().ToArray();
+    //             foreach (string chunk in descChunks)
+    //             {
+    //                 await dmChannel.SendMessageAsync(new MessageProperties { Content = chunk });
+    //             }
+    //         }
+    //
+    //         await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Check your DMs!" });
+    //         this.Context.LogCommandUsed();
+    //     }
+    //     else
+    //     {
+    //         await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Only .fmbot owners can execute this command." });
+    //         this.Context.LogCommandUsed(CommandResponse.NoPermission);
+    //     }
+    // }
 
     [Command("deleteinactiveusers")]
     [Summary("Removes users who have deleted their Last.fm account from .fmbot")]
     public async Task TimerStatusAsync()
     {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
         {
             try
             {
-                await ReplyAsync($"Starting removed Last.fm user deleter.");
-                var deletedUsers = await this._userService.DeleteInactiveUsers();
-                await ReplyAsync($"Deleted {deletedUsers} users from the database with deleted Last.fm");
+                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Starting removed Last.fm user deleter." });
+                var deletedUsers = await userService.DeleteInactiveUsers();
+                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = $"Deleted {deletedUsers} users from the database with deleted Last.fm" });
             }
             catch (Exception e)
             {
-                await this.Context.HandleCommandException(e);
+                await this.Context.HandleCommandException(e, userService);
             }
         }
         else
         {
-            await ReplyAsync("Error: Insufficient rights. Only .fmbot owners can remove deleted users.");
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Error: Insufficient rights. Only .fmbot owners can remove deleted users." });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
         }
     }
 
@@ -215,23 +201,23 @@ public class OwnerCommands : BaseCommandModule
     [Summary("Removes duplicate users and moves their data to their new account")]
     public async Task DeleteOldDuplicateUsersAsync()
     {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
         {
             try
             {
-                await ReplyAsync($"Starting inactive user deleter / de-duplicater.");
-                var deletedUsers = await this._userService.DeleteOldDuplicateUsers();
-                await ReplyAsync($"Deleted {deletedUsers} inactive users from the database");
+                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Starting inactive user deleter / de-duplicater." });
+                var deletedUsers = await userService.DeleteOldDuplicateUsers();
+                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = $"Deleted {deletedUsers} inactive users from the database" });
             }
             catch (Exception e)
             {
-                await this.Context.HandleCommandException(e);
+                await this.Context.HandleCommandException(e, userService);
             }
         }
         else
         {
-            await ReplyAsync("Error: Insufficient rights. Only .fmbot owners can remove deleted users.");
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Error: Insufficient rights. Only .fmbot owners can remove deleted users." });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
         }
     }
 
@@ -239,63 +225,63 @@ public class OwnerCommands : BaseCommandModule
     [Summary("Removes plays outside of last 1000 for inactive users")]
     public async Task PrunePlaysForInactiveUsers()
     {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
         {
             try
             {
-                await ReplyAsync($"Starting play pruner for inactive users.");
-                var usersPruned = await this._userService.PrunePlaysForInactiveUsers();
-                await ReplyAsync($"Pruned plays for {usersPruned} inactive users");
+                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Starting play pruner for inactive users." });
+                var usersPruned = await userService.PrunePlaysForInactiveUsers();
+                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = $"Pruned plays for {usersPruned} inactive users" });
             }
             catch (Exception e)
             {
-                await this.Context.HandleCommandException(e);
+                await this.Context.HandleCommandException(e, userService);
             }
         }
         else
         {
-            await ReplyAsync("Error: Insufficient rights. Only .fmbot owners can start the prune process.");
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Error: Insufficient rights. Only .fmbot owners can start the prune process." });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
         }
     }
 
-    [Command("togglespecialguild", RunMode = RunMode.Async)]
+    [Command("togglespecialguild")]
     [Summary("Makes the server a special server")]
     [GuildOnly]
     public async Task ToggleSpecialGuildAsync()
     {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
         {
-            var specialGuild = await this._adminService.ToggleSpecialGuildAsync(this.Context.Guild);
+            var specialGuild = await adminService.ToggleSpecialGuildAsync(this.Context.Guild);
 
             if (specialGuild == true)
             {
-                await ReplyAsync("This is now a special guild!!1!");
+                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "This is now a special guild!!1!" });
             }
             else
             {
-                await ReplyAsync($"Not a special guild anymore :(");
+                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Not a special guild anymore :(" });
             }
 
-            this.Context.LogCommandUsed();
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
         }
         else
         {
-            await ReplyAsync("Only .fmbot owners can execute this command.");
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Only .fmbot owners can execute this command." });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
         }
     }
 
-    [Command("memorydiag", RunMode = RunMode.Async)]
+    [Command("memorydiag")]
     [Summary("Displays detailed memory diagnostics.")]
     public async Task MemoryDiagnosticsAsync()
     {
-        if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             return;
         }
 
-        var embed = new EmbedBuilder()
+        var embed = new EmbedProperties()
             .WithColor(DiscordConstants.InformationColorBlue)
             .WithTitle("Detailed Memory Diagnostics");
 
@@ -358,7 +344,7 @@ public class OwnerCommands : BaseCommandModule
         embed.AddField("Performance", perfInfo.ToString());
 
         var cacheStats = GetCacheStatistics();
-        cacheStats += $"\n**Downloaded members**: {this._client.Guilds.Sum(s => s.DownloadedMemberCount)}";
+        cacheStats += $"\n**Downloaded members**: {client.Sum(shard => shard.Cache.Guilds.Values.Sum(g => g.Users?.Count ?? 0))}";
         if (!string.IsNullOrEmpty(cacheStats))
         {
             embed.AddField("Cache Statistics", cacheStats);
@@ -380,8 +366,8 @@ public class OwnerCommands : BaseCommandModule
         unmanagedInfo.AppendLine($"**Handle Count:** `{process.HandleCount}`");
         embed.AddField("Unmanaged Memory", unmanagedInfo.ToString());
 
-        await this.Context.Channel.SendMessageAsync("", false, embed.Build());
-        this.Context.LogCommandUsed();
+        await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties().AddEmbeds(embed));
+        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
     }
 
     private string GetCacheStatistics()
@@ -390,7 +376,7 @@ public class OwnerCommands : BaseCommandModule
 
         try
         {
-            if (_cache is MemoryCache memoryCache)
+            if (cache is MemoryCache memoryCache)
             {
                 var stats = memoryCache.GetCurrentStatistics();
                 if (stats != null)
@@ -405,13 +391,13 @@ public class OwnerCommands : BaseCommandModule
                 }
                 else
                 {
-                    sb.AppendLine($"**Cache Type:** `{_cache.GetType().Name}`");
+                    sb.AppendLine($"**Cache Type:** `{cache.GetType().Name}`");
                     sb.AppendLine("**Statistics:** Not available (enable MemoryCacheOptions.TrackStatistics)");
                 }
             }
             else
             {
-                sb.AppendLine($"**Cache Type:** `{_cache.GetType().Name}`");
+                sb.AppendLine($"**Cache Type:** `{cache.GetType().Name}`");
             }
         }
         catch (Exception ex)
@@ -430,15 +416,9 @@ public class OwnerCommands : BaseCommandModule
         sb.AppendLine($"**Command Responses:** `{PublicProperties.UsedCommandsResponses.Count:N0}`");
         sb.AppendLine($"**Response Messages:** `{PublicProperties.UsedCommandsResponseMessageId.Count:N0}`");
         sb.AppendLine($"**Response Contexts:** `{PublicProperties.UsedCommandsResponseContextId.Count:N0}`");
-        sb.AppendLine($"**Error References:** `{PublicProperties.UsedCommandsErrorReferences.Count:N0}`");
         sb.AppendLine($"**Discord User IDs:** `{PublicProperties.UsedCommandDiscordUserIds.Count:N0}`");
-        sb.AppendLine($"**Hints Shown:** `{PublicProperties.UsedCommandsHintShown.Count:N0}`");
 
         sb.AppendLine();
-        sb.AppendLine("**Music References:**");
-        sb.AppendLine($"**Artists:** `{PublicProperties.UsedCommandsArtists.Count:N0}`");
-        sb.AppendLine($"**Albums:** `{PublicProperties.UsedCommandsAlbums.Count:N0}`");
-        sb.AppendLine($"**Tracks:** `{PublicProperties.UsedCommandsTracks.Count:N0}`");
         sb.AppendLine($"**Referenced Music:** `{PublicProperties.UsedCommandsReferencedMusic.Count:N0}`");
 
         var estimatedSize = EstimateCollectionMemory();
@@ -483,14 +463,7 @@ public class OwnerCommands : BaseCommandModule
 
         totalSize += EstimateDictionarySize(PublicProperties.UsedCommandsResponseMessageId.Count, 18, 18);
         totalSize += EstimateDictionarySize(PublicProperties.UsedCommandsResponseContextId.Count, 18, 18);
-        totalSize += EstimateDictionarySize(PublicProperties.UsedCommandsErrorReferences.Count, 18, 18);
         totalSize += EstimateDictionarySize(PublicProperties.UsedCommandDiscordUserIds.Count, 18, 18);
-
-        totalSize += PublicProperties.UsedCommandsHintShown.Count * 16;
-
-        totalSize += EstimateDictionarySize(PublicProperties.UsedCommandsArtists.Count, 18, 20);
-        totalSize += EstimateDictionarySize(PublicProperties.UsedCommandsAlbums.Count, 18, 30);
-        totalSize += EstimateDictionarySize(PublicProperties.UsedCommandsTracks.Count, 18, 20);
 
         totalSize += EstimateDictionarySize(PublicProperties.UsedCommandsReferencedMusic.Count, 18, 100);
 

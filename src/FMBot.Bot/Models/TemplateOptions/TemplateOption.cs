@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Linq;
 using System.Threading.Tasks;
-using Discord;
+
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Services;
@@ -14,6 +14,7 @@ using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.Repositories;
+using NetCord;
 using Npgsql;
 
 namespace FMBot.Bot.Models.TemplateOptions;
@@ -71,8 +72,8 @@ public sealed class ComplexTemplateOption : TemplateOption
 public class TemplateContext
 {
     public UserSettingsModel UserSettings { get; set; }
-    public IUser DiscordContextUser { get; set; }
-    public IGuild DiscordContextGuild { get; set; }
+    public NetCord.User DiscordContextUser { get; set; }
+    public NetCord.Gateway.Guild DiscordContextGuild { get; set; }
 
     public NpgsqlConnection Connection { get; set; }
 
@@ -102,70 +103,43 @@ public class TemplateContext
 
 public enum EmbedOption
 {
-    [Option("Author")]
     [EmbedOption("author")]
     [EmbedOptionAccepts(VariableType.Text)]
     Author = 10,
-
-    [Option("Author icon url")]
     [EmbedOption("author-icon-url")]
     [EmbedOptionAccepts(VariableType.ImageUrl)]
     AuthorIconUrl = 11,
-
-    [Option("Author url")]
     [EmbedOption("author-url")]
     [EmbedOptionAccepts(VariableType.ResourceUrl)]
     AuthorUrl = 12,
-
-    [Option("Title")]
     [EmbedOption("title")]
     [EmbedOptionAccepts(VariableType.Text)]
     Title = 20,
-
-    [Option("Url")]
     [EmbedOption("url")]
     [EmbedOptionAccepts(VariableType.ResourceUrl, VariableType.ImageUrl)]
     Url = 21,
-
-    [Option("Description")]
     [EmbedOption("description")]
     [EmbedOptionAccepts(VariableType.Text, VariableType.ResourceUrl, VariableType.ImageUrl)]
     Description = 22,
-
-    [Option("Thumbnail image url")]
     [EmbedOption("thumbnail-image-url")]
     [EmbedOptionAccepts(VariableType.ImageUrl)]
     ThumbnailImageUrl = 23,
-
-    [Option("Large image url")]
     [EmbedOption("large-image-url")]
     [EmbedOptionAccepts(VariableType.ImageUrl)]
     LargeImageUrl = 24,
-
-    [Option("Color (hex code)")]
     [EmbedOption("embed-color-hex")]
     [EmbedOptionAccepts(VariableType.HexColor)]
     ColorHex = 25,
-
-    [Option("Add field")]
     AddField = 30,
-
-    [Option("Footer")]
     [EmbedOption("footer")]
     [EmbedOptionAccepts(VariableType.Text)]
     Footer = 40,
-
-    [Option("Footer icon url")]
     [EmbedOption("footer-icon-url")]
     [EmbedOptionAccepts(VariableType.ImageUrl)]
     FooterIconUrl = 41,
-
-    [Option("Footer timestamp")]
     [EmbedOption("footer-timestamp")]
     [EmbedOptionAccepts(VariableType.Timestamp)]
     FooterTimestamp = 42,
-
-    [Option("Add button")]
     AddButton = 50,
 }
 
@@ -271,7 +245,7 @@ public static class TemplateOptions
             Description = "Authors Discord avatar url",
             VariableType = VariableType.ImageUrl,
             ExecutionLogic = context =>
-                Task.FromResult(new VariableResult(context.DiscordContextUser.GetDisplayAvatarUrl()))
+                Task.FromResult(new VariableResult(context.DiscordContextUser.GetAvatarUrl()?.ToString()))
         },
         new ComplexTemplateOption
         {
@@ -315,7 +289,7 @@ public static class TemplateOptions
             VariableType = VariableType.ImageUrl,
             ExecutionLogic = context =>
                 Task.FromResult(context.DiscordContextGuild != null
-                    ? new VariableResult(context.DiscordContextGuild.IconUrl)
+                    ? new VariableResult(context.DiscordContextGuild.GetIconUrl()?.ToString())
                     : null)
         },
         new ComplexTemplateOption
@@ -325,7 +299,7 @@ public static class TemplateOptions
             VariableType = VariableType.ImageUrl,
             ExecutionLogic = context =>
                 Task.FromResult(context.DiscordContextGuild != null
-                    ? new VariableResult(context.DiscordContextGuild.BannerUrl)
+                    ? new VariableResult(context.DiscordContextGuild.GetBannerUrl()?.ToString())
                     : null)
         },
         new ComplexTemplateOption
@@ -841,8 +815,8 @@ public static class TemplateOptions
                     var currentPlaycount = await reader.GetFieldValueAsync<int>(0);
                     var userName = await reader.GetFieldValueAsync<string>(2);
                     return new VariableResult(
-                        $"👑 {Format.Sanitize(userName)} ({currentPlaycount.Format(context.NumberFormat)} plays)",
-                        Format.Sanitize(userName));
+                        $"👑 {StringExtensions.Sanitize(userName)} ({currentPlaycount.Format(context.NumberFormat)} plays)",
+                        StringExtensions.Sanitize(userName));
                 }
 
                 return null;

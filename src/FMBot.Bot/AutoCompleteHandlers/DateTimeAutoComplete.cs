@@ -3,14 +3,16 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
-using Discord;
-using Discord.Interactions;
 using FMBot.Bot.Extensions;
 using FMBot.Domain.Models;
+using NetCord;
+using NetCord.Rest;
+using NetCord.Services.ApplicationCommands;
+
 
 namespace FMBot.Bot.AutoCompleteHandlers;
 
-public class DateTimeAutoComplete : AutocompleteHandler
+public class DateTimeAutoComplete : IAutocompleteProvider<AutocompleteInteractionContext>
 {
     private readonly List<string> _allPossibleCombinations;
     public DateTimeAutoComplete()
@@ -38,13 +40,13 @@ public class DateTimeAutoComplete : AutocompleteHandler
         }
     }
 
-    public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context,
-        IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+    public async ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>> GetChoicesAsync(
+        ApplicationCommandInteractionDataOption option,
+        AutocompleteInteractionContext context)
     {
         var results = new List<string>();
 
-        if (autocompleteInteraction?.Data?.Current?.Value == null ||
-            string.IsNullOrWhiteSpace(autocompleteInteraction?.Data?.Current?.Value.ToString()))
+        if (string.IsNullOrWhiteSpace(option.Value))
         {
             results
                 .ReplaceOrAddToList(new List<string>
@@ -62,7 +64,7 @@ public class DateTimeAutoComplete : AutocompleteHandler
         }
         else
         {
-            var searchValue = autocompleteInteraction.Data.Current.Value.ToString();
+            var searchValue = option.Value;
 
             results.ReplaceOrAddToList(this._allPossibleCombinations
                 .Where(w => w.StartsWith(searchValue, StringComparison.OrdinalIgnoreCase))
@@ -73,7 +75,7 @@ public class DateTimeAutoComplete : AutocompleteHandler
                 .Take(4));
         }
 
-        return await Task.FromResult(
-            AutocompletionResult.FromSuccess(results.Select(s => new AutocompleteResult(s, s))));
+        return new List<ApplicationCommandOptionChoiceProperties>(results.Select(s =>
+            new ApplicationCommandOptionChoiceProperties(s, s)));
     }
 }

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <OutputType>Exe</OutputType>
         <TargetFramework>net10.0</TargetFramework>
@@ -20,81 +20,80 @@
         <LangVersion>latest</LangVersion>
     </PropertyGroup>
     <ItemGroup>
-        <PackageReference Include="AsyncEnumerator" Version="4.0.2"/>
-        <PackageReference Include="CsvHelper" Version="33.1.0"/>
-        <PackageReference Include="Dapper" Version="2.1.66"/>
-        <PackageReference Include="Discord.Net" Version="3.18.0" />
-        <PackageReference Include="Discord.Net.Core" Version="3.18.0" />
-        <PackageReference Include="Discord.Net.Rest" Version="3.18.0" />
-        <PackageReference Include="Discord.Net.WebSocket" Version="3.18.0" />
-        <PackageReference Include="Fergun.Interactive" Version="1.9.1" />
-        <PackageReference Include="Google.Apis" Version="1.70.0"/>
-        <PackageReference Include="Google.Apis.YouTube.v3" Version="1.70.0.3847" />
-        <PackageReference Include="Google.Protobuf" Version="3.31.1"/>
-        <PackageReference Include="Grpc.Net.Client" Version="2.71.0"/>
-        <PackageReference Include="Grpc.Net.ClientFactory" Version="2.71.0"/>
-        <PackageReference Include="Grpc.Tools" Version="2.72.0">
+        <PackageReference Include="AsyncEnumerator" Version="4.0.2" />
+        <PackageReference Include="CsvHelper" Version="33.1.0" />
+        <PackageReference Include="Dapper" Version="2.1.66" />
+        <PackageReference Include="Fergun.Interactive.NetCord" Version="0.1.1" />
+        <PackageReference Include="Google.Apis" Version="1.73.0" />
+        <PackageReference Include="Google.Apis.YouTube.v3" Version="1.73.0.4029" />
+        <PackageReference Include="Google.Protobuf" Version="3.33.4" />
+        <PackageReference Include="Grpc.Net.Client" Version="2.76.0" />
+        <PackageReference Include="Grpc.Net.ClientFactory" Version="2.76.0" />
+        <PackageReference Include="Grpc.Tools" Version="2.76.0">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Hangfire.Core" Version="1.8.20"/>
+        <PackageReference Include="Hangfire.Core" Version="1.8.20" />
         <PackageReference Include="Hangfire.MemoryStorage" Version="1.8.1.2" />
-        <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" Version="8.3.1.1"/>
-        <PackageReference Include="Humanizer.Core" Version="2.14.1"/>
-        <PackageReference Include="MetaBrainz.MusicBrainz" Version="6.1.0"/>
-        <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.7" />
-        <PackageReference Include="Microsoft.Extensions.Configuration.CommandLine" Version="9.0.7" />
-        <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="9.0.7" />
-        <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="9.0.7" />
-        <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.7" />
-        <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="9.0.7" />
-        <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.7" />
-        <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.7" />
-        <PackageReference Include="Microsoft.Extensions.Http.Polly" Version="9.0.7" />
+        <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" Version="8.3.1.1" />
+        <PackageReference Include="Humanizer.Core" Version="2.14.1" />
+        <PackageReference Include="MetaBrainz.MusicBrainz" Version="6.1.0" />
+        <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.2" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.CommandLine" Version="10.0.2" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.0.2" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="10.0.2" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.2" />
+        <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="10.0.2" />
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.2" />
+        <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.2" />
+        <PackageReference Include="Microsoft.Extensions.Http.Polly" Version="10.0.2" />
         <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
-        <PackageReference Include="Npgsql" Version="9.0.3"/>
-        <PackageReference Include="PostgreSQLCopyHelper" Version="2.8.0"/>
-        <PackageReference Include="prometheus-net" Version="8.2.1"/>
-        <PackageReference Include="Serilog" Version="4.3.0"/>
-        <PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1"/>
-        <PackageReference Include="Serilog.Exceptions" Version="8.4.0"/>
-        <PackageReference Include="Serilog.Sinks.Async" Version="2.1.0"/>
-        <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0"/>
-        <PackageReference Include="Serilog.Sinks.Discord" Version="1.2.1"/>
-        <PackageReference Include="Serilog.Sinks.Seq" Version="9.0.0"/>
-        <PackageReference Include="SkiaSharp" Version="3.119.0"/>
-        <PackageReference Include="SkiaSharp.HarfBuzz" Version="3.119.0"/>
-        <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="3.119.0"/>
-        <PackageReference Include="SkiaSharp.Views.Desktop.Common" Version="3.119.0"/>
-        <PackageReference Include="SpotifyAPI.Web" Version="7.2.1"/>
-        <PackageReference Include="SpotifyAPI.Web.Auth" Version="7.2.1"/>
-        <PackageReference Include="System.Drawing.Common" Version="9.0.7" />
-        <PackageReference Include="System.Reactive" Version="6.0.1"/>
-        <PackageReference Include="System.Reactive.Linq" Version="6.0.1"/>
-        <Protobuf Include="..\Shared.Domain\Protos\time.proto" GrpcServices="Client" Link="Protos\time.proto"/>
-        <Protobuf Include="..\Shared.Domain\Protos\status.proto" GrpcServices="Client" Link="Protos\status.proto"/>
-        <Protobuf Include="..\Shared.Domain\Protos\censor.proto" GrpcServices="Client" Link="Protos\censor.proto"/>
-        <Protobuf Include="..\Shared.Domain\Protos\album.proto" GrpcServices="Client" Link="Protos\album.proto"/>
-        <Protobuf Include="..\Shared.Domain\Protos\artist.proto" GrpcServices="Client" Link="Protos\artist.proto"/>
-        <Protobuf Include="..\Shared.Domain\Protos\track.proto" GrpcServices="Client" Link="Protos\track.proto"/>
-        <Protobuf Include="..\Shared.Domain\Protos\supporter.proto" GrpcServices="Client" Link="Protos\supporter.proto"/>
-        <Protobuf Include="..\Shared.Domain\Protos\eurovision.proto" GrpcServices="Client" Link="Protos\eurovision.proto"/>
+        <PackageReference Include="NetCord" Version="1.0.0-alpha.455" />
+        <PackageReference Include="NetCord.Hosting" Version="1.0.0-alpha.455" />
+        <PackageReference Include="NetCord.Hosting.Services" Version="1.0.0-alpha.455" />
+        <PackageReference Include="NetCord.Services" Version="1.0.0-alpha.455" />
+        <PackageReference Include="Npgsql" Version="9.0.3" />
+        <PackageReference Include="PostgreSQLCopyHelper" Version="2.8.0" />
+        <PackageReference Include="prometheus-net" Version="8.2.1" />
+        <PackageReference Include="Serilog" Version="4.3.0" />
+        <PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
+        <PackageReference Include="Serilog.Exceptions" Version="8.4.0" />
+        <PackageReference Include="Serilog.Sinks.Async" Version="2.1.0" />
+        <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+        <PackageReference Include="Serilog.Sinks.Seq" Version="9.0.0" />
+        <PackageReference Include="SkiaSharp" Version="3.119.1" />
+        <PackageReference Include="SkiaSharp.HarfBuzz" Version="3.119.1" />
+        <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="3.119.1" />
+        <PackageReference Include="SkiaSharp.Views.Desktop.Common" Version="3.119.1" />
+        <PackageReference Include="SpotifyAPI.Web" Version="7.2.1" />
+        <PackageReference Include="SpotifyAPI.Web.Auth" Version="7.2.1" />
+        <PackageReference Include="System.Drawing.Common" Version="10.0.2" />
+        <PackageReference Include="System.Reactive" Version="6.1.0" />
+        <PackageReference Include="System.Reactive.Linq" Version="6.1.0" />
+        <Protobuf Include="..\Shared.Domain\Protos\time.proto" GrpcServices="Client" Link="Protos\time.proto" />
+        <Protobuf Include="..\Shared.Domain\Protos\status.proto" GrpcServices="Client" Link="Protos\status.proto" />
+        <Protobuf Include="..\Shared.Domain\Protos\censor.proto" GrpcServices="Client" Link="Protos\censor.proto" />
+        <Protobuf Include="..\Shared.Domain\Protos\album.proto" GrpcServices="Client" Link="Protos\album.proto" />
+        <Protobuf Include="..\Shared.Domain\Protos\artist.proto" GrpcServices="Client" Link="Protos\artist.proto" />
+        <Protobuf Include="..\Shared.Domain\Protos\track.proto" GrpcServices="Client" Link="Protos\track.proto" />
+        <Protobuf Include="..\Shared.Domain\Protos\supporter.proto" GrpcServices="Client" Link="Protos\supporter.proto" />
+        <Protobuf Include="..\Shared.Domain\Protos\eurovision.proto" GrpcServices="Client" Link="Protos\eurovision.proto" />
     </ItemGroup>
     <ItemGroup>
-        <ProjectReference Include="..\FMBot.AppleMusic\FMBot.AppleMusic.csproj"/>
-        <ProjectReference Include="..\FMBot.Discogs\FMBot.Discogs.csproj"/>
-        <ProjectReference Include="..\FMBot.Domain\FMBot.Domain.csproj"/>
-        <ProjectReference Include="..\FMBot.Images\FMBot.Images.csproj"/>
-        <ProjectReference Include="..\FMBot.LastFM.Domain\FMBot.LastFM.Domain.csproj"/>
-        <ProjectReference Include="..\FMBot.Persistence\FMBot.Persistence.csproj"/>
-        <ProjectReference Include="..\FMBot.Persistence.Domain\FMBot.Persistence.Domain.csproj"/>
-        <ProjectReference Include="..\FMBot.Persistence.EntityFrameWork\FMBot.Persistence.EntityFrameWork.csproj"/>
-        <ProjectReference Include="..\FMBot.LastFM\FMBot.LastFM.csproj"/>
-        <ProjectReference Include="..\FMBot.Subscriptions\FMBot.Subscriptions.csproj"/>
-        <ProjectReference Include="..\FMBot.Youtube\FMBot.Youtube.csproj"/>
+        <ProjectReference Include="..\FMBot.AppleMusic\FMBot.AppleMusic.csproj" />
+        <ProjectReference Include="..\FMBot.Discogs\FMBot.Discogs.csproj" />
+        <ProjectReference Include="..\FMBot.Domain\FMBot.Domain.csproj" />
+        <ProjectReference Include="..\FMBot.Images\FMBot.Images.csproj" />
+        <ProjectReference Include="..\FMBot.LastFM.Domain\FMBot.LastFM.Domain.csproj" />
+        <ProjectReference Include="..\FMBot.Persistence\FMBot.Persistence.csproj" />
+        <ProjectReference Include="..\FMBot.Persistence.Domain\FMBot.Persistence.Domain.csproj" />
+        <ProjectReference Include="..\FMBot.Persistence.EntityFrameWork\FMBot.Persistence.EntityFrameWork.csproj" />
+        <ProjectReference Include="..\FMBot.LastFM\FMBot.LastFM.csproj" />
+        <ProjectReference Include="..\FMBot.Subscriptions\FMBot.Subscriptions.csproj" />
+        <ProjectReference Include="..\FMBot.Youtube\FMBot.Youtube.csproj" />
     </ItemGroup>
     <ItemGroup>
-        <Folder Include="Properties\"/>
+        <Folder Include="Properties\" />
     </ItemGroup>
     <ItemGroup>
         <None Update="configs\config.json">

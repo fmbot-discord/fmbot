@@ -1,5 +1,7 @@
 using System.Linq;
-using Discord;
+using NetCord;
+using NetCord.Gateway;
+
 
 namespace FMBot.Bot.Models.MusicBot;
 
@@ -13,7 +15,7 @@ internal class BettyMusicBot : MusicBot
     {
     }
 
-    public override bool ShouldIgnoreMessage(IUserMessage msg)
+    public override bool ShouldIgnoreMessage(Message msg)
     {
         if (msg.Components.Count == 0)
         {
@@ -22,10 +24,9 @@ internal class BettyMusicBot : MusicBot
 
         foreach (var component in msg.Components)
         {
-            if (component.Type == ComponentType.MediaGallery)
+            if (component is MediaGallery mediaGallery)
             {
                 // Check if the media gallery contains an item with a description including | in the alt text of the image
-                var mediaGallery = (MediaGalleryComponent)component;
                 if (mediaGallery.Items.Any(item => item.Description != null && item.Description.Contains('|')))
                 {
                     return false;
@@ -36,13 +37,12 @@ internal class BettyMusicBot : MusicBot
         return true;
     }
 
-    public override string GetTrackQuery(IUserMessage msg)
+    public override string GetTrackQuery(Message msg)
     {
         foreach (var component in msg.Components)
         {
-            if (component.Type == ComponentType.MediaGallery)
+            if (component is MediaGallery mediaGallery)
             {
-                var mediaGallery = (MediaGalleryComponent)component;
                 var item = mediaGallery.Items.FirstOrDefault(i => i.Description != null && i.Description.Contains('|'));
                 var parts = item.Description.Split('|');
                 if (parts.Length == 2)

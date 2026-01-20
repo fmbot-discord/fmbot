@@ -1,33 +1,14 @@
-using Discord;
-using FMBot.Bot.Models.MusicBot;
-using Moq;
-using System.Threading.Tasks;
-using FMBot.Bot.Models;
-
 namespace FMBot.Tests.MusicBotTests;
 
 public class BleedMusicBotTests
 {
-    private readonly Mock<IUserMessage> _mockedMessage = new();
-    private readonly Mock<IEmbed> _mockedEmbed = new();
-
-    [SetUp]
-    public void SetUp()
-    {
-        _mockedMessage.Setup(m => m.Embeds).Returns(new List<IEmbed>{_mockedEmbed.Object});
-    }
-
     [Test]
-    [TestCase("**Now Playing**\nTESS - LUCID", "TESS", "LUCID")]
-    [TestCase("**Now Playing**\nKendrick Lamar - PRIDE.", "Kendrick Lamar", "PRIDE.")]
+    [TestCase("Now playing [`Dive (Official Video)`](https://www.youtube.com/watch?v=jetLHzTiTHc) by **Mall Grab**", "Mall Grab", "Dive (Official Video)")]
+    [TestCase("Now playing [`HUMBLE.`](https://www.youtube.com/watch?v=tvTRZJ-4EyI) by **Kendrick Lamar**", "Kendrick Lamar", "HUMBLE.")]
     public void GetTrackQuery_ShouldExtractCorrectText(string description, string expectedArtist, string expectedTrack)
     {
-        // Arrange
-        var bot = new BleedMusicBot();
-        _mockedEmbed.Setup(m => m.Description).Returns(description);
-
         // Act
-        var trackQuery = bot.GetTrackQuery(_mockedMessage.Object);
+        var trackQuery = MusicBotTestHelper.ParseBleedFormat(description);
 
         // Assert
         Assert.That(trackQuery, Contains.Substring(expectedArtist));

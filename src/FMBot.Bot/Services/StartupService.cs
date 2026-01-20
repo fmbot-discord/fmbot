@@ -1,15 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Eventing.Reader;
 using System.IO;
-using System.Linq;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using Discord;
-using Discord.Commands;
-using Discord.Interactions;
-using Discord.WebSocket;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Services.Guild;
@@ -21,6 +14,10 @@ using Hangfire.MemoryStorage;
 using IF.Lastfm.Core.Api;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using NetCord.Gateway;
+using NetCord.Services.ApplicationCommands;
+using NetCord.Services.Commands;
+using NetCord.Services.ComponentInteractions;
 using Prometheus;
 using Serilog;
 
@@ -30,17 +27,17 @@ namespace FMBot.Bot.Services;
 
 public class StartupService
 {
-    private readonly CommandService _commands;
-    private readonly InteractionService _interactions;
+    private readonly CommandService<CommandContext> _textCommands;
+    private readonly ApplicationCommandService<ApplicationCommandContext, AutocompleteInteractionContext> _appCommands;
+    private readonly ComponentInteractionService<ComponentInteractionContext> _componentCommands;
     private readonly GuildDisabledCommandService _guildDisabledCommands;
     private readonly ChannelToggledCommandService _channelToggledCommands;
     private readonly DisabledChannelService _disabledChannelService;
-    private readonly DiscordShardedClient _client;
+    private readonly ShardedGatewayClient  _client;
     private readonly IPrefixService _prefixService;
     private readonly IServiceProvider _provider;
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
     private readonly BotSettings _botSettings;
-    private readonly InteractionService _interactionService;
     private readonly GuildService _guildService;
     private readonly UserService _userService;
     private readonly TimerService _timerService;
@@ -50,32 +47,29 @@ public class StartupService
 
     public StartupService(
         IServiceProvider provider,
-        DiscordShardedClient discord,
-        CommandService commands,
+        ShardedGatewayClient discord,
         IPrefixService prefixService,
         GuildDisabledCommandService guildDisabledCommands,
         ChannelToggledCommandService channelToggledCommands,
         IDbContextFactory<FMBotDbContext> contextFactory,
         IOptions<BotSettings> botSettings,
-        InteractionService interactionService,
-        InteractionService interactions,
         GuildService guildService,
         UserService userService,
         DisabledChannelService disabledChannelService,
         TimerService timerService,
         SupporterService supporterService,
         ChartService chartService,
-        ShortcutService shortcutService)
+        ShortcutService shortcutService,
+        CommandService<CommandContext> textCommands,
+        ApplicationCommandService<ApplicationCommandContext, AutocompleteInteractionContext> appCommands,
+        ComponentInteractionService<ComponentInteractionContext> componentCommands)
     {
         this._provider = provider;
         this._client = discord;
-        this._commands = commands;
         this._prefixService = prefixService;
         this._guildDisabledCommands = guildDisabledCommands;
         this._channelToggledCommands = channelToggledCommands;
         this._contextFactory = contextFactory;
-        this._interactionService = interactionService;
-        this._interactions = interactions;
         this._guildService = guildService;
         this._userService = userService;
         this._disabledChannelService = disabledChannelService;
@@ -83,6 +77,9 @@ public class StartupService
         this._supporterService = supporterService;
         this._chartService = chartService;
         this._shortcutService = shortcutService;
+        this._textCommands = textCommands;
+        this._appCommands = appCommands;
+        this._componentCommands = componentCommands;
         this._botSettings = botSettings.Value;
     }
 
@@ -122,29 +119,17 @@ public class StartupService
         Log.Information("Loading all disabled channels");
         await this._disabledChannelService.LoadAllDisabledChannels();
 
-        Log.Information("Logging into Discord");
-        await this._client.LoginAsync(TokenType.Bot, discordToken);
+        Log.Information("Loading interaction modules");
+        this._appCommands.AddModules(typeof(Program).Assembly);
 
-        Log.Information("Setting Discord user status");
-        await this._client.SetStatusAsync(UserStatus.DoNotDisturb);
-
-        if (!string.IsNullOrEmpty(this._botSettings.Bot.Status))
-        {
-            Log.Information($"Setting custom status to '{this._botSettings.Bot.Status}'");
-            await this._client.SetGameAsync(this._botSettings.Bot.Status);
-        }
+        Log.Information("Loading component interaction modules");
+        this._componentCommands.AddModules(typeof(Program).Assembly);
 
         Log.Information("Loading command modules");
-        await this._commands
-            .AddModulesAsync(
-                Assembly.GetEntryAssembly(),
-                this._provider);
+        this._textCommands.AddModules(typeof(Program).Assembly);
 
-        Log.Information("Loading interaction modules");
-        await this._interactions
-            .AddModulesAsync(
-                Assembly.GetEntryAssembly(),
-                this._provider);
+        Log.Information("Logging into Discord");
+        await this._client.StartAsync();
 
         Log.Information("Preparing cache folder");
         PrepareCacheFolder();
@@ -155,7 +140,7 @@ public class StartupService
         Log.Information("Loading shortcuts");
         await this._shortcutService.LoadAllShortcuts();
 
-        var gateway = await this._client.GetBotGatewayAsync();
+        var gateway = await this._client.Rest.GetGatewayBotAsync();
         Log.Information("ShardStarter: connects left {connectsLeft} - reset after {resetAfter}",
             gateway.SessionStartLimit.Remaining, gateway.SessionStartLimit.ResetAfter);
 
@@ -165,42 +150,42 @@ public class StartupService
             maxConcurrency = 8;
         }
 
-        Log.Information("ShardStarter: max concurrency {maxConcurrency}, total shards {shardCount}", maxConcurrency,
-            this._client.Shards.Count);
-
-        var connectTasks = new List<Task>();
-        var connectingShards = new List<int>();
-
-        foreach (var shard in this._client.Shards)
-        {
-            Log.Information("ShardConnectionStart: shard #{shardId}", shard.ShardId);
-
-            connectTasks.Add(shard.StartAsync());
-            connectingShards.Add(shard.ShardId);
-
-            if (connectTasks.Count >= maxConcurrency)
-            {
-                await Task.WhenAll(connectTasks);
-
-                while (this._client.Shards
-                       .Where(w => connectingShards.Contains(w.ShardId))
-                       .Any(a => a.ConnectionState != ConnectionState.Connected))
-                {
-                    await Task.Delay(100);
-                }
-
-                Log.Information("ShardStarter: All shards in group concurrently connected");
-                await Task.Delay(3000);
-
-                connectTasks = new();
-            }
-        }
-
-        Log.Information("ShardStarter: All connects started, waiting until all are connected");
-        while (this._client.Shards.Any(a => a.ConnectionState != ConnectionState.Connected))
-        {
-            await Task.Delay(100);
-        }
+        // Log.Information("ShardStarter: max concurrency {maxConcurrency}, total shards {shardCount}", maxConcurrency,
+        //     this._client.Shards.Count);
+        //
+        // var connectTasks = new List<Task>();
+        // var connectingShards = new List<int>();
+        //
+        // foreach (var shard in this._client.Shards)
+        // {
+        //     Log.Information("ShardConnectionStart: shard #{shardId}", shard.ShardId);
+        //
+        //     connectTasks.Add(shard.StartAsync());
+        //     connectingShards.Add(shard.ShardId);
+        //
+        //     if (connectTasks.Count >= maxConcurrency)
+        //     {
+        //         await Task.WhenAll(connectTasks);
+        //
+        //         while (this._client.Shards
+        //                .Where(w => connectingShards.Contains(w.ShardId))
+        //                .Any(a => a.ConnectionState != ConnectionState.Connected))
+        //         {
+        //             await Task.Delay(100);
+        //         }
+        //
+        //         Log.Information("ShardStarter: All shards in group concurrently connected");
+        //         await Task.Delay(3000);
+        //
+        //         connectTasks = new();
+        //     }
+        // }
+        //
+        // Log.Information("ShardStarter: All connects started, waiting until all are connected");
+        // while (this._client.Shards.Any(a => a.ConnectionState != ConnectionState.Connected))
+        // {
+        //     await Task.Delay(100);
+        // }
 
         Log.Information("ShardStarter: Done");
 
@@ -214,7 +199,8 @@ public class StartupService
 
         this.StartMetricsPusher();
 
-        var startDelay = (this._client.Shards.Count * 1) + 10;
+        // TODO configure based on shard count
+        var startDelay = 10;
 
         if (ConfigData.Data.Shards == null || ConfigData.Data.Shards.MainInstance == true)
         {
@@ -298,7 +284,7 @@ public class StartupService
         Log.Information("Starting slash command registration");
 
         Log.Information("Registering slash commands globally");
-        await this._interactionService.RegisterCommandsGloballyAsync();
+        await this._appCommands.RegisterCommandsAsync(this._client.Rest, ConfigData.Data.Discord.ApplicationId.GetValueOrDefault());
     }
 
     private static void PrepareCacheFolder()
@@ -312,7 +298,7 @@ public class StartupService
 
     public async Task CacheSlashCommandIds()
     {
-        var commands = await this._client.Rest.GetGlobalApplicationCommands();
+        var commands = await this._client.Rest.GetGlobalApplicationCommandsAsync(ConfigData.Data.Discord.ApplicationId.GetValueOrDefault());
         Log.Information("Found {slashCommandCount} registered slash commands", commands.Count);
 
         foreach (var cmd in commands)

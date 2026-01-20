@@ -170,7 +170,7 @@ public class WhoKnowsFilterService
         }
         catch (Exception e)
         {
-            Log.Error("GWKFilter: error", e);
+            Log.Error(e, "GWKFilter: error");
             throw;
         }
     }

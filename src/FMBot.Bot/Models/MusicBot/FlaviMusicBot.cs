@@ -1,6 +1,8 @@
 using System;
 using System.Linq;
-using Discord;
+using NetCord;
+using NetCord.Gateway;
+
 
 namespace FMBot.Bot.Models.MusicBot;
 
@@ -12,40 +14,38 @@ internal class FlaviMusicBot : MusicBot
     {
     }
 
-    public override bool ShouldIgnoreMessage(IUserMessage msg)
+    public override bool ShouldIgnoreMessage(Message msg)
     {
         if (msg.Components.Count == 0)
         {
             return true;
         }
 
-        if (msg.InteractionMetadata is ApplicationCommandInteractionMetadata metaData)
-        {
-            if (metaData.Name.Equals("queue", StringComparison.OrdinalIgnoreCase))
-            {
-                return true;
-            }
-        }
-
-        var container = msg.Components.FirstOrDefault(c => c.Type == ComponentType.Container);
-        if (container is not ContainerComponent containerComponent)
+        // Check if this message was created by a "queue" command
+        if (msg.Interaction?.Name?.Equals("queue", StringComparison.OrdinalIgnoreCase) == true)
         {
             return true;
         }
 
-        var section = containerComponent.Components.FirstOrDefault(c => c.Type == ComponentType.Section);
-        if (section is not SectionComponent sectionComponent)
+        var container = msg.Components.OfType<ComponentContainer>().FirstOrDefault();
+        if (container is null)
         {
             return true;
         }
 
-        var text = sectionComponent.Components.FirstOrDefault(f => f.Type == ComponentType.TextDisplay);
-        if (text is not TextDisplayComponent textComponent)
+        var section = container.Components.OfType<ComponentSection>().FirstOrDefault();
+        if (section is null)
         {
             return true;
         }
 
-        return string.IsNullOrEmpty(textComponent?.Content) || !textComponent.Content.Contains(NowPlaying);
+        var textComponent = section.Components.OfType<TextDisplay>().FirstOrDefault();
+        if (textComponent is null)
+        {
+            return true;
+        }
+
+        return string.IsNullOrEmpty(textComponent.Content) || !textComponent.Content.Contains(NowPlaying);
     }
 
     /**
@@ -53,22 +53,22 @@ internal class FlaviMusicBot : MusicBot
      * ### **[Michael Jackson - Billie Jean](https://open.spotify.com/track/7J1uxwnxfQLu4APicE5Rnj)** - `04:54`
      *
      */
-    public override string GetTrackQuery(IUserMessage msg)
+    public override string GetTrackQuery(Message msg)
     {
-        var container = msg.Components.FirstOrDefault(c => c.Type == ComponentType.Container);
-        if (container is not ContainerComponent containerComponent)
+        var container = msg.Components.OfType<ComponentContainer>().FirstOrDefault();
+        if (container is null)
         {
             return string.Empty;
         }
 
-        var section = containerComponent.Components.FirstOrDefault(c => c.Type == ComponentType.Section);
-        if (section is not SectionComponent sectionComponent)
+        var section = container.Components.OfType<ComponentSection>().FirstOrDefault();
+        if (section is null)
         {
             return string.Empty;
         }
 
-        var text = sectionComponent.Components.Skip(1).FirstOrDefault(f => f.Type == ComponentType.TextDisplay);
-        if (text is not TextDisplayComponent textComponent)
+        var textComponent = section.Components.OfType<TextDisplay>().Skip(1).FirstOrDefault();
+        if (textComponent is null)
         {
             return string.Empty;
         }

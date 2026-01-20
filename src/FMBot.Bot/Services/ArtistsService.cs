@@ -5,9 +5,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using Dapper;
-using Discord;
 using FMBot.Bot.Extensions;
-using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
@@ -22,6 +20,7 @@ using FMBot.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using NetCord.Rest;
 using Npgsql;
 using Serilog;
 using Web.InternalApi;
@@ -67,10 +66,10 @@ public class ArtistsService
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<ArtistSearch> SearchArtist(ResponseModel response, IUser discordUser, string artistValues,
+    public async Task<ArtistSearch> SearchArtist(ResponseModel response, NetCord.User discordUser, string artistValues,
         string lastFmUserName, string sessionKey = null, string otherUserUsername = null,
         bool useCachedArtists = false, int? userId = null, bool redirectsEnabled = true, ulong? interactionId = null,
-        IUserMessage referencedMessage = null)
+        RestMessage referencedMessage = null)
     {
         if (referencedMessage != null && string.IsNullOrWhiteSpace(artistValues))
         {
@@ -126,7 +125,6 @@ public class ArtistsService
 
             if (interactionId.HasValue)
             {
-                PublicProperties.UsedCommandsArtists.TryAdd(interactionId.Value, artistValues);
                 response.ReferencedMusic = new ReferencedMusic
                 {
                     Artist = artistValues
@@ -195,7 +193,6 @@ public class ArtistsService
 
             if (interactionId.HasValue)
             {
-                PublicProperties.UsedCommandsArtists.TryAdd(interactionId.Value, lastPlayedTrack.ArtistName);
                 response.ReferencedMusic = new ReferencedMusic
                 {
                     Artist = lastPlayedTrack.ArtistName
@@ -658,7 +655,7 @@ public class ArtistsService
         }
         catch (Exception e)
         {
-            Log.Error("Error in GetLatestArtists", e);
+            Log.Error(e, "Error in GetLatestArtists");
             throw;
         }
     }
@@ -712,7 +709,7 @@ public class ArtistsService
         }
         catch (Exception e)
         {
-            Log.Error("Error in GetRecentTopArtists", e);
+            Log.Error(e, "Error in GetRecentTopArtists");
             throw;
         }
     }
@@ -752,7 +749,7 @@ public class ArtistsService
         }
         catch (Exception e)
         {
-            Log.Error("Error in SearchThroughArtists", e);
+            Log.Error(e, "Error in SearchThroughArtists");
             throw;
         }
     }

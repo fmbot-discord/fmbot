@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using FMBot.Discogs.Apis;
 using FMBot.Discogs.Models;
-using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;

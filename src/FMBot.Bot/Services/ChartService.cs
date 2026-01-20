@@ -163,7 +163,7 @@ public class ChartService
                             }
                             catch (Exception e)
                             {
-                                Log.Error("Error while loading image for generated chart", e);
+                                Log.Error(e, "Error while loading image for generated chart");
                                 chartImage = SKBitmap.Decode(this._loadingErrorImagePath);
                                 validImage = false;
                             }
@@ -250,7 +250,7 @@ public class ChartService
                             }
                             catch (Exception e)
                             {
-                                Log.Error("Error while loading image for generated artist chart", e);
+                                Log.Error(e, "Error while loading image for generated artist chart");
                                 chartImage = SKBitmap.Decode(this._loadingErrorImagePath);
                                 validImage = false;
                             }

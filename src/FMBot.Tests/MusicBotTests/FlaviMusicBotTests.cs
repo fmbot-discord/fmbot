@@ -1,33 +1,16 @@
-using Discord;
-using FMBot.Bot.Models.MusicBot;
-using Moq;
-using System.Threading.Tasks;
-using FMBot.Bot.Models;
-
 namespace FMBot.Tests.MusicBotTests;
 
 public class FlaviMusicBotTests
 {
-    private readonly Mock<IUserMessage> _mockedMessage = new();
-    private readonly Mock<IEmbed> _mockedEmbed = new();
-
-    [SetUp]
-    public void SetUp()
-    {
-        _mockedMessage.Setup(m => m.Embeds).Returns(new List<IEmbed>{_mockedEmbed.Object});
-    }
-
+    // Note: FlaviMusicBot now uses Components (ComponentContainer/ComponentSection/TextDisplay)
+    // instead of embeds. These tests verify the string parsing logic.
     [Test]
-    [TestCase("Now playing: **Arctic Monkeys - 505**", "Arctic Monkeys", "505")]
-    [TestCase("Now playing: **Radiohead - Karma Police**", "Radiohead", "Karma Police")]
+    [TestCase("### **[Michael Jackson - Billie Jean](https://open.spotify.com/track/7J1uxwnxfQLu4APicE5Rnj)** - `04:54`", "Michael Jackson", "Billie Jean")]
+    [TestCase("### **[Radiohead - Karma Police](https://open.spotify.com/track/abc123)** - `04:24`", "Radiohead", "Karma Police")]
     public void GetTrackQuery_ShouldExtractCorrectText(string description, string expectedArtist, string expectedTrack)
     {
-        // Arrange
-        var bot = new FlaviMusicBot();
-        _mockedEmbed.Setup(m => m.Description).Returns(description);
-
         // Act
-        var trackQuery = bot.GetTrackQuery(_mockedMessage.Object);
+        var trackQuery = MusicBotTestHelper.ParseFlaviFormat(description);
 
         // Assert
         Assert.That(trackQuery, Contains.Substring(expectedArtist));

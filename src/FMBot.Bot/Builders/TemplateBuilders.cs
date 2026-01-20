@@ -2,7 +2,6 @@
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Discord;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Models.TemplateOptions;
@@ -14,6 +13,8 @@ using FMBot.Domain.Attributes;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
+using NetCord;
+using NetCord.Rest;
 
 namespace FMBot.Bot.Builders;
 
@@ -45,26 +46,23 @@ public class TemplateBuilders
 
         var templates = await this._templateService.GetTemplates(context.ContextUser.UserId);
 
-        var templateManagePicker = new SelectMenuBuilder()
+        var templateManagePicker = new StringMenuProperties(InteractionConstants.Template.ManagePicker)
             .WithPlaceholder("Select template to change")
-            .WithCustomId(InteractionConstants.Template.ManagePicker)
             .WithMinValues(1)
             .WithMaxValues(1);
 
         foreach (var template in templates)
         {
-            templateManagePicker.AddOption(new SelectMenuOptionBuilder(template.Name, $"{InteractionConstants.Template.ManagePicker}-{template.Id}"));
+            templateManagePicker.AddOption(new StringMenuSelectOptionProperties(template.Name, $"{InteractionConstants.Template.ManagePicker}:{template.Id}"));
         }
 
-        var templateGlobalPicker = new SelectMenuBuilder()
+        var templateGlobalPicker = new StringMenuProperties(InteractionConstants.Template.SetGlobalDefaultPicker)
             .WithPlaceholder("Template you use globally")
-            .WithCustomId(InteractionConstants.Template.SetGlobalDefaultPicker)
             .WithMinValues(1)
             .WithMaxValues(1);
 
-        var templateGuildPicker = new SelectMenuBuilder()
+        var templateGuildPicker = new StringMenuProperties(InteractionConstants.Template.SetGuildDefaultPicker)
             .WithPlaceholder("Template you use in this server")
-            .WithCustomId(InteractionConstants.Template.SetGuildDefaultPicker)
             .WithMinValues(1)
             .WithMaxValues(1);
 
@@ -72,8 +70,8 @@ public class TemplateBuilders
         response.Embed.WithDescription("Select the template you want to change, or pick which one you want used as a default.");
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
-        response.Components = new ComponentBuilder()
-            .WithSelectMenu(templateManagePicker)
+        response.StringMenus.Add(templateManagePicker);
+        response.Components = new ActionRowProperties()
             .WithButton("Create", InteractionConstants.Template.Create, ButtonStyle.Secondary)
             .WithButton("Import sharecode", InteractionConstants.Template.ImportCode, ButtonStyle.Secondary)
             .WithButton("Import script", InteractionConstants.Template.ImportScript, ButtonStyle.Secondary);
@@ -93,9 +91,8 @@ public class TemplateBuilders
 
         var template = await this._templateService.GetTemplate(templateId);
 
-        var templateOptionPicker = new SelectMenuBuilder()
+        var templateOptionPicker = new StringMenuProperties(InteractionConstants.Template.SetOptionPicker)
             .WithPlaceholder("Select embed option you want to change")
-            .WithCustomId(InteractionConstants.Template.SetOptionPicker)
             .WithMinValues(1)
             .WithMaxValues(1);
 
@@ -122,16 +119,19 @@ public class TemplateBuilders
 
             fmEmbed.Content.TryGetValue(option, out var description);
 
-            templateOptionPicker.AddOption(new SelectMenuOptionBuilder(name, value, StringExtensions.TruncateLongString(description, 95) ?? "Not set"));
+            templateOptionPicker.AddOption(new StringMenuSelectOptionProperties(name, value)
+            {
+                Description = StringExtensions.TruncateLongString(description, 95) ?? "Not set"
+            });
         }
 
-        response.Components = new ComponentBuilder()
-            .WithSelectMenu(templateOptionPicker)
-            .WithButton("Rename", $"{InteractionConstants.Template.Rename}-{template.Id}", ButtonStyle.Secondary)
-            .WithButton("Copy", $"{InteractionConstants.Template.Copy}-{template.Id}", ButtonStyle.Secondary)
-            .WithButton("Script", $"{InteractionConstants.Template.ViewScript}-{template.Id}", ButtonStyle.Secondary)
+        response.StringMenus.Add(templateOptionPicker);
+        response.Components = new ActionRowProperties()
+            .WithButton("Rename", $"{InteractionConstants.Template.Rename}:{template.Id}", ButtonStyle.Secondary)
+            .WithButton("Copy", $"{InteractionConstants.Template.Copy}:{template.Id}", ButtonStyle.Secondary)
+            .WithButton("Script", $"{InteractionConstants.Template.ViewScript}:{template.Id}", ButtonStyle.Secondary)
             .WithButton("Variables", $"{InteractionConstants.Template.ViewVariables}", ButtonStyle.Secondary)
-            .WithButton("Delete", $"{InteractionConstants.Template.Delete}-{template.Id}", ButtonStyle.Danger);
+            .WithButton("Delete", $"{InteractionConstants.Template.Delete}:{template.Id}", ButtonStyle.Danger);
 
         response.Embed.WithAuthor($"Editing template '{template.Name}'");
         response.Embed.WithDescription($"Sharecode: `{template.ShareCode}`");
@@ -140,7 +140,7 @@ public class TemplateBuilders
         var extraResponse = new ResponseModel
         {
             ResponseType = ResponseType.Embed,
-            Embed = fmEmbed.EmbedBuilder
+            Embed = fmEmbed.EmbedProperties
         };
 
         return (response, extraResponse);
@@ -181,7 +181,7 @@ public class TemplateBuilders
         response.Embed.WithDescription($"Only supporters can configure templates and fully customize their fm commands.\n\n" +
                                        $"[Get supporter here]({Constants.GetSupporterDiscordLink}).");
 
-        response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
+        response.Components = new ActionRowProperties().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
             customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "fm-templates"));
 
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);

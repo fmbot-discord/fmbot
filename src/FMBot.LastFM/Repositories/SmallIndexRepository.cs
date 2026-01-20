@@ -89,7 +89,7 @@ public class SmallIndexRepository
         catch (Exception e)
         {
             await connection.CloseAsync();
-            Log.Error("Error in smallindexuser", e);
+            Log.Error(e, "Error in smallindexuser");
             throw;
         }
 

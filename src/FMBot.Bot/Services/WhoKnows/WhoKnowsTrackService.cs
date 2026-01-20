@@ -1,9 +1,8 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
-using Discord;
+using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -25,7 +24,7 @@ public class WhoKnowsTrackService
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForTrack(IGuild discordGuild,
+    public async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForTrack(NetCord.Gateway.Guild discordGuild,
         IDictionary<int, FullGuildUser> guildUsers, int guildId, string artistName, string trackName)
     {
         const string sql = "BEGIN; " +
@@ -64,10 +63,9 @@ public class WhoKnowsTrackService
 
             if (i < 15 && discordGuild != null)
             {
-                var discordUser = await discordGuild.GetUserAsync(guildUser.DiscordUserId, CacheMode.CacheOnly);
-                if (discordUser != null)
+                if (discordGuild.Users.TryGetValue(guildUser.DiscordUserId, out var discordUser))
                 {
-                    userName = discordUser.DisplayName;
+                    userName = discordUser.GetDisplayName();
                 }
             }
 
@@ -86,7 +84,7 @@ public class WhoKnowsTrackService
         return whoKnowsTrackList;
     }
 
-    public async Task<IList<WhoKnowsObjectWithUser>> GetGlobalUsersForTrack(IGuild discordGuild, string artistName, string trackName)
+    public async Task<IList<WhoKnowsObjectWithUser>> GetGlobalUsersForTrack(NetCord.Gateway.Guild discordGuild, string artistName, string trackName)
     {
         const string sql = "SELECT * " +
                            "FROM(SELECT DISTINCT ON(UPPER(u.user_name_last_fm)) " +
@@ -123,13 +121,9 @@ public class WhoKnowsTrackService
 
             if (i < 15)
             {
-                if (discordGuild != null)
+                if (discordGuild != null && discordGuild.Users.TryGetValue(userTrack.DiscordUserId, out var discordUser))
                 {
-                    var discordUser = await discordGuild.GetUserAsync(userTrack.DiscordUserId, CacheMode.CacheOnly);
-                    if (discordUser != null)
-                    {
-                        userName = discordUser.DisplayName;
-                    }
+                    userName = discordUser.GetDisplayName();
                 }
             }
 
@@ -147,7 +141,7 @@ public class WhoKnowsTrackService
         return whoKnowsTrackList;
     }
 
-    public async Task<IList<WhoKnowsObjectWithUser>> GetFriendUsersForTrack(IGuild discordGuild,
+    public async Task<IList<WhoKnowsObjectWithUser>> GetFriendUsersForTrack(NetCord.Gateway.Guild discordGuild,
         IDictionary<int, FullGuildUser> guildUsers, int guildId, int userId, string artistName, string trackName)
     {
         const string sql = "SELECT ut.user_id, " +
@@ -186,10 +180,9 @@ public class WhoKnowsTrackService
             {
                 userName = guildUser.UserName;
 
-                var discordGuildUser = await discordGuild.GetUserAsync(guildUser.DiscordUserId, CacheMode.CacheOnly);
-                if (discordGuildUser != null)
+                if (discordGuild.Users.TryGetValue(guildUser.DiscordUserId, out var discordGuildUser))
                 {
-                    userName = discordGuildUser.DisplayName;
+                    userName = discordGuildUser.GetDisplayName();
                 }
             }
 

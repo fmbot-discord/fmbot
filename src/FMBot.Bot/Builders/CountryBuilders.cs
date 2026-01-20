@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Discord;
 using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Factories;
@@ -16,6 +15,7 @@ using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Domain.Types;
 using FMBot.Images.Generators;
+using NetCord.Rest;
 using SkiaSharp;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 
@@ -123,10 +123,10 @@ public class CountryBuilders
 
                 if (artist.SpotifyImageUrl != null)
                 {
-                    response.Embed.WithThumbnailUrl(artist.SpotifyImageUrl);
+                    response.Embed.WithThumbnail(artist.SpotifyImageUrl);
                 }
 
-                PublicProperties.UsedCommandsArtists.TryAdd(context.InteractionId, artist.Name);
+                response.ReferencedMusic = new ReferencedMusic { Artist = artist.Name };
 
                 var description = new StringBuilder();
                 foundCountry = this._countryService.GetValidCountry(artist.CountryCode);
@@ -177,7 +177,7 @@ public class CountryBuilders
 
                     if (artist.SpotifyImageUrl != null)
                     {
-                        response.Embed.WithThumbnailUrl(artist.SpotifyImageUrl);
+                        response.Embed.WithThumbnail(artist.SpotifyImageUrl);
                     }
 
                     foundCountry = this._countryService.GetValidCountry(artist.CountryCode);
@@ -194,7 +194,7 @@ public class CountryBuilders
                             $"*{artist.Location}*");
                     }
 
-                    PublicProperties.UsedCommandsArtists.TryAdd(context.InteractionId, artist.Name);
+                    response.ReferencedMusic = new ReferencedMusic { Artist = artist.Name };
                     response.Embed.WithDescription(description.ToString());
 
                     response.Embed.WithFooter($"Country source: MusicBrainz\n" +
@@ -286,7 +286,7 @@ public class CountryBuilders
             pageCounter++;
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+        response.ComponentPaginator = StringService.BuildComponentPaginator(pages);
         response.ResponseType = ResponseType.Paginator;
         return response;
     }
@@ -459,7 +459,7 @@ public class CountryBuilders
             pageCounter++;
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages, selectMenuBuilder: context.SelectMenu);
+        response.ComponentPaginator = StringService.BuildComponentPaginator(pages, selectMenuBuilder: context.SelectMenu);
 
         return response;
     }
@@ -532,10 +532,17 @@ public class CountryBuilders
         response.Stream = encoded.AsStream();
         response.FileName = "artist-map.png";
 
-        response.ComponentsContainer.AddComponent(new TextDisplayBuilder($"**{embedTitle}**"));
-        response.ComponentsContainer.AddComponent(
-            new MediaGalleryBuilder().AddItem($"attachment://{response.FileName}"));
-        response.ComponentsContainer.AddComponent(new TextDisplayBuilder("-# Country source: Musicbrainz"));
+        response.ComponentsContainer.AddComponent(new TextDisplayProperties($"**{embedTitle}**"));
+
+        var mediaGallery =
+            new MediaGalleryItemProperties(new ComponentMediaProperties($"attachment://{response.FileName}"));
+
+        response.ComponentsContainer.AddComponent(new MediaGalleryProperties
+        {
+            mediaGallery
+        });
+
+        response.ComponentsContainer.AddComponent(new TextDisplayProperties("-# Country source: Musicbrainz"));
 
         response.ResponseType = ResponseType.ComponentsV2;
         response.ComponentsContainer.WithAccentColor(DiscordConstants.LastFmColorRed);

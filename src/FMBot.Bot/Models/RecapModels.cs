@@ -1,49 +1,50 @@
-﻿using Discord.Interactions;
+﻿
+using FMBot.Domain.Attributes;
 
 namespace FMBot.Bot.Models;
 
 
 public enum RecapPage
 {
-    [ChoiceDisplay("Overview")]
+    [Option("Overview")]
     Overview = 1,
 
-    [ChoiceDisplay("Top artists")]
+    [Option("Top artists")]
     TopArtists = 2,
 
-    [ChoiceDisplay("Top albums")]
+    [Option("Top albums")]
     TopAlbums = 3,
 
-    [ChoiceDisplay("Top tracks")]
+    [Option("Top tracks")]
     TopTracks = 4,
 
-    [ChoiceDisplay("Top genres")]
+    [Option("Top genres")]
     TopGenres = 5,
 
-    [ChoiceDisplay("Top countries")]
+    [Option("Top countries")]
     TopCountries = 6,
 
-    [ChoiceDisplay("Artist chart")]
+    [Option("Artist chart")]
     ArtistChart = 7,
 
-    [ChoiceDisplay("Album chart")]
+    [Option("Album chart")]
     AlbumChart = 8,
 
-    [ChoiceDisplay("Discoveries ⭐")]
+    [Option("Discoveries ⭐")]
     Discoveries = 10,
 
-    [ChoiceDisplay("Listening time ⭐")]
+    [Option("Listening time ⭐")]
     ListeningTime = 11,
 
-    [ChoiceDisplay("Bot stats - Overview")]
+    [Option("Bot stats - Overview")]
     BotStats = 20,
 
-    [ChoiceDisplay("Bot stats - Commands")]
+    [Option("Bot stats - Commands")]
     BotStatsCommands = 21,
 
-    [ChoiceDisplay("Bot stats - Shown artists")]
+    [Option("Bot stats - Shown artists")]
     BotStatsArtists = 22,
 
-    [ChoiceDisplay("Bot stats - Games")]
+    [Option("Bot stats - Games")]
     Games = 23,
 }

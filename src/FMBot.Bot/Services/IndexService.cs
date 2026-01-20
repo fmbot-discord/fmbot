@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
-using Discord;
+
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
@@ -93,7 +93,7 @@ public class IndexService
         }
         catch (Exception e)
         {
-            Log.Error($"Index: Error happened! User {user.DiscordUserId} / {user.UserId} - {e.Message} - {e.InnerException} - {e.StackTrace}", e);
+            Log.Error(e, "Index: Error happened! User {userDiscordId} / {userId}", user.DiscordUserId, user.UserId);
             throw;
         }
     }
@@ -246,7 +246,7 @@ public class IndexService
         }
         catch (Exception e)
         {
-            Log.Error("Index: Reculculate toplists error happened! User {userDiscordId} / {userId} - {exceptionMessage} - {innerException} - {stackTrace}", user.DiscordUserId, user.UserId, e.Message, e.InnerException, e.StackTrace, e);
+            Log.Error(e, "Index: Recalculate toplists error happened! User {userDiscordId} / {userId}", user.DiscordUserId, user.UserId);
             throw;
         }
     }
@@ -377,7 +377,7 @@ public class IndexService
         };
     }
 
-    public async Task<int> StoreGuildUsers(IGuild discordGuild, IReadOnlyCollection<IGuildUser> discordGuildUsers)
+    public async Task<int> StoreGuildUsers(NetCord.Gateway.Guild discordGuild, List<NetCord.GuildUser> discordGuildUsers)
     {
         var userIds = discordGuildUsers.Select(s => s.Id).ToList();
 
@@ -419,7 +419,7 @@ public class IndexService
         {
             var discordUser = discordGuildUsers.First(f => f.Id == user.User.DiscordUserId);
 
-            user.UserName = discordUser.DisplayName;
+            user.UserName = discordUser.GetDisplayName();
             user.Bot = discordUser.IsBot;
 
             if (PublicProperties.PremiumServers.ContainsKey(discordGuild.Id))
@@ -464,7 +464,7 @@ public class IndexService
     public async Task<GuildUser> GetOrAddUserToGuild(
         IDictionary<int, FullGuildUser> guildUsers,
         Persistence.Domain.Models.Guild guild,
-        IGuildUser discordGuildUser,
+        NetCord.GuildUser discordGuildUser,
         User user)
     {
         try
@@ -475,7 +475,7 @@ public class IndexService
                 {
                     GuildId = guild.GuildId,
                     UserId = user.UserId,
-                    UserName = discordGuildUser.DisplayName
+                    UserName = discordGuildUser.GetDisplayName()
                 };
 
                 if (PublicProperties.PremiumServers.ContainsKey(guild.DiscordGuildId))
@@ -491,13 +491,13 @@ public class IndexService
             }
             else
             {
-                guildUser.UserName = discordGuildUser.DisplayName;
+                guildUser.UserName = discordGuildUser.GetDisplayName();
 
                 return new GuildUser
                 {
                     GuildId = guild.GuildId,
                     UserId = user.UserId,
-                    UserName = discordGuildUser.DisplayName,
+                    UserName = discordGuildUser.GetDisplayName(),
                     Roles = discordGuildUser.RoleIds.ToArray(),
                     Bot = false,
                     LastMessage = DateTime.UtcNow,
@@ -513,7 +513,7 @@ public class IndexService
                 GuildId = guild.GuildId,
                 UserId = user.UserId,
                 User = user,
-                UserName = discordGuildUser?.DisplayName ?? user.UserNameLastFM
+                UserName = discordGuildUser?.GetDisplayName() ?? user.UserNameLastFM
             };
         }
     }
@@ -540,7 +540,7 @@ public class IndexService
         Log.Information("Added user {guildUserName} | {userId} to guild {guildName}", guildUserToAdd.UserName, guildUserToAdd.UserId, guildUserToAdd.GuildId);
     }
 
-    public async Task UpdateGuildUser(IDictionary<int, FullGuildUser> fullGuildUsers, IGuildUser discordGuildUser,
+    public async Task UpdateGuildUser(IDictionary<int, FullGuildUser> fullGuildUsers, NetCord.GuildUser discordGuildUser,
         int userId, Persistence.Domain.Models.Guild guild)
     {
         try
@@ -552,7 +552,7 @@ public class IndexService
 
             fullGuildUsers.TryGetValue(userId, out var existingGuildUser);
             if (existingGuildUser != null &&
-                existingGuildUser.UserName == discordGuildUser.DisplayName &&
+                existingGuildUser.UserName == discordGuildUser.GetDisplayName() &&
                 !PublicProperties.PremiumServers.ContainsKey(guild.DiscordGuildId))
             {
                 return;
@@ -569,7 +569,7 @@ public class IndexService
 
             var dto = new IndexedUserUpdateDto
             {
-                UserName = discordGuildUser.DisplayName,
+                UserName = discordGuildUser.GetDisplayName(),
                 GuildId = guild.GuildId,
                 UserId = userId
             };
@@ -587,7 +587,7 @@ public class IndexService
         }
     }
 
-    public async Task AddOrUpdateGuildUser(IGuildUser discordGuildUser, bool checkIfRegistered = true)
+    public async Task AddOrUpdateGuildUser(NetCord.GuildUser discordGuildUser, bool checkIfRegistered = true)
     {
         try
         {
@@ -624,7 +624,7 @@ public class IndexService
                     Bot = false,
                     GuildId = guild.GuildId,
                     UserId = userId,
-                    UserName = discordGuildUser?.DisplayName,
+                    UserName = discordGuildUser?.GetDisplayName(),
                 };
 
                 if (PublicProperties.PremiumServers.ContainsKey(guild.DiscordGuildId))
@@ -647,7 +647,7 @@ public class IndexService
 
             var dto = new IndexedUserUpdateDto
             {
-                UserName = discordGuildUser.DisplayName,
+                UserName = discordGuildUser.GetDisplayName(),
                 GuildId = guild.GuildId,
                 UserId = userId
             };

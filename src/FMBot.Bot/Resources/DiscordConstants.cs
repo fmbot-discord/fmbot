@@ -1,6 +1,6 @@
 using System.Collections.Generic;
-using Discord;
 using Fergun.Interactive.Pagination;
+using NetCord;
 
 namespace FMBot.Bot.Resources;
 
@@ -19,45 +19,51 @@ public static class DiscordConstants
 
     public static Color AppleMusicRed = new(249, 87, 107);
 
+    public static Color Gold = new(241, 196, 15);
+
     public static readonly List<PaginatorButton> PaginationEmotes =
     [
-        new(Emote.Parse(PagesFirst), PaginatorAction.SkipToStart, ButtonStyle.Secondary),
-        new(Emote.Parse(PagesPrevious), PaginatorAction.Backward, ButtonStyle.Secondary),
-        new(Emote.Parse(PagesNext), PaginatorAction.Forward, ButtonStyle.Secondary),
-        new(Emote.Parse(PagesLast), PaginatorAction.SkipToEnd, ButtonStyle.Secondary)
+        new(EmojiProperties.Custom(PagesFirst), PaginatorAction.SkipToStart, ButtonStyle.Secondary),
+        new(EmojiProperties.Custom(PagesPrevious), PaginatorAction.Backward, ButtonStyle.Secondary),
+        new(EmojiProperties.Custom(PagesNext), PaginatorAction.Forward, ButtonStyle.Secondary),
+        new(EmojiProperties.Custom(PagesLast), PaginatorAction.SkipToEnd, ButtonStyle.Secondary)
     ];
 
-    public const string PagesFirst = "<:pages_first:883825508633182208>";
-    public const string PagesPrevious = "<:pages_previous:883825508507336704>";
-    public const string PagesNext = "<:pages_next:883825508087922739>";
-    public const string PagesLast = "<:pages_last:883825508482183258>";
-    public const string PagesGoTo = "<:pages_goto:1138849626234036264>";
-
+    public const ulong PagesFirst = 883825508633182208;
+    public const ulong PagesPrevious = 883825508507336704;
+    public const ulong PagesNext = 883825508087922739;
+    public const ulong PagesLast = 883825508482183258;
+    public const ulong PagesGoTo = 1138849626234036264;
 
     public const int PaginationTimeoutInSeconds = 120;
 
-    public const string FiveOrMoreUp = "<:5_or_more_up:912380324841918504>";
-    public const string OneToFiveUp = "<:1_to_5_up:912085138232442920>";
-    public const string SamePosition = "<:same_position:912374491752046592>";
-    public const string OneToFiveDown = "<:1_to_5_down:912085138245029888>";
-    public const string FiveOrMoreDown = "<:5_or_more_down:912380324753838140>";
-    public const string New = "<:new:912087988001980446>";
+    public const ulong FiveOrMoreUp = 912380324841918504;
+    public const ulong OneToFiveUp = 912085138232442920;
+    public const ulong SamePosition = 912374491752046592;
+    public const ulong OneToFiveDown = 912085138245029888;
+    public const ulong FiveOrMoreDown = 912380324753838140;
+    public const ulong New = 912087988001980446;
 
-    public const string Info = "<:info:1183840696457777153>";
-    public const string Vinyl = "<:vinyl:1043644602969763861>";
+    public const ulong Info = 1183840696457777153;
+    public const ulong Vinyl = 1043644602969763861;
 
-    public const string Facebook = "<:social_facebook:1183830516533825656>";
-    public const string Twitter = "<:social_twitter:1183831922917511298>";
-    public const string Instagram = "<:social_instagram:1183829878458548224>";
-    public const string TikTok = "<:social_tiktok:1183831072413335742>";
-    public const string Bandcamp = "<:social_bandcamp:1183838619270643823>";
-    public const string Spotify = "<:spotify:882221219334725662>";
-    public const string RateYourMusic = "<:rym:1183851241151930399>";
-    public const string YouTube = "<:youtube:1230496939355934730>";
-    public const string AppleMusic = "<:apple_music:1218182727149420544>";
+    public const ulong Server = 961685224041902140;
+    public const ulong User = 961687127249260634;
 
-    public const string Loading = "<a:loading:821676038102056991>";
-    public const string Imports = "<:fmbot_importing:1131511469096312914>";
-    public const string Discoveries = "<:fmbot_discoveries:1145740579284713512>";
-    public const string Shortcut = "<:shortcut:1416430054061117610>";
+    public const ulong Facebook = 1183830516533825656;
+    public const ulong Twitter = 1183831922917511298;
+    public const ulong Instagram = 1183829878458548224;
+    public const ulong TikTok = 1183831072413335742;
+    public const ulong Bandcamp = 1183838619270643823;
+    public const ulong Spotify = 882221219334725662;
+    public const ulong RateYourMusic = 1183851241151930399;
+    public const ulong YouTube = 1230496939355934730;
+    public const ulong AppleMusic = 1218182727149420544;
+    public const ulong LastFm = 882227627287515166;
+
+    public const ulong Loading = 821676038102056991;
+    public const ulong Imports = 1131511469096312914;
+    public const ulong Discoveries = 1145740579284713512;
+    public const ulong Shortcut = 1416430054061117610;
+    public const ulong PlayPreview = 1305607890941378672;
 }

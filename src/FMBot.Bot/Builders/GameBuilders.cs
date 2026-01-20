@@ -1,24 +1,25 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Discord;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using System.Text;
 using System.Threading;
 using FMBot.Domain.Models;
 using System.Threading.Tasks;
+using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Services;
-using Discord.Commands;
 using FMBot.Domain;
 using FMBot.Domain.Interfaces;
 using Serilog;
 using FMBot.Persistence.Domain.Models;
 using SkiaSharp;
-using Fergun.Interactive;
-using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
+using NetCord;
+using NetCord.Gateway;
+using NetCord.Rest;
+using NetCord.Services.Commands;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 
 namespace FMBot.Bot.Builders;
@@ -30,19 +31,16 @@ public class GameBuilders
     private readonly ArtistsService _artistsService;
     private readonly CountryService _countryService;
     private readonly AlbumService _albumService;
-    private readonly IDataSourceFactory _dataSourceFactory;
     private readonly CensorService _censorService;
 
     public GameBuilders(UserService userService, GameService gameService, ArtistsService artistsService,
-        CountryService countryService, AlbumService albumService, IDataSourceFactory dataSourceFactory,
-        CensorService censorService)
+        CountryService countryService, AlbumService albumService, CensorService censorService)
     {
         this._userService = userService;
         this._gameService = gameService;
         this._artistsService = artistsService;
         this._countryService = countryService;
         this._albumService = albumService;
-        this._dataSourceFactory = dataSourceFactory;
         this._censorService = censorService;
     }
 
@@ -84,7 +82,7 @@ public class GameBuilders
             response.Embed.WithColor(DiscordConstants.InformationColorBlue);
             response.Embed.WithDescription(
                 $"You've used up all your {jumbleLimit} jumbles of today. Get supporter to play unlimited jumble games and much more.");
-            response.Components = new ComponentBuilder()
+            response.Components = new ActionRowProperties()
                 .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
                     customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "jumble-dailylimit"));
             response.CommandResponse = CommandResponse.SupporterRequired;
@@ -174,7 +172,7 @@ public class GameBuilders
             response.Embed.WithColor(DiscordConstants.InformationColorBlue);
             response.Embed.WithDescription(
                 $"You've used up all your {jumbleLimit} pixel jumbles of today. Get supporter to play unlimited jumble games and much more.");
-            response.Components = new ComponentBuilder()
+            response.Components = new ActionRowProperties()
                 .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
                     customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "pixel-dailylimit"));
             response.CommandResponse = CommandResponse.SupporterRequired;
@@ -246,7 +244,7 @@ public class GameBuilders
         return response;
     }
 
-    private static void BuildJumbleEmbed(EmbedBuilder embed, string jumbledArtist, List<JumbleSessionHint> hints,
+    private static void BuildJumbleEmbed(EmbedProperties embed, string jumbledArtist, List<JumbleSessionHint> hints,
         bool canBeAnswered = true, JumbleType jumbleType = JumbleType.Artist)
     {
         var hintsShown = hints.Count(w => w.HintShown);
@@ -340,7 +338,7 @@ public class GameBuilders
         }
 
         pages.Add(userPage);
-        response.Embed = userPage.GetEmbedBuilder();
+        response.Embed = userPage.GetEmbedProperties();
 
         var guildPage = new PageBuilder();
         guildPage.WithAuthor($"{name} server stats - {context.DiscordGuild.Name}");
@@ -388,27 +386,28 @@ public class GameBuilders
 
         pages.Add(guildPage);
 
-        response.StaticPaginator = StringService.BuildSimpleStaticPaginator(pages);
+        response.ComponentPaginator = StringService.BuildSimpleComponentPaginator(pages);
 
         return response;
     }
 
-    private static ComponentBuilder BuildJumbleComponents(int gameId, List<JumbleSessionHint> hints, float? blur = null,
+    private static ActionRowProperties BuildJumbleComponents(int gameId, List<JumbleSessionHint> hints,
+        float? blur = null,
         bool shuffledHidden = false)
     {
         var addHintDisabled = hints.Count(c => c.HintShown) == hints.Count;
         var offerUnblur = blur is > 0.01f;
 
-        return new ComponentBuilder()
+        return new ActionRowProperties()
             .WithButton(addHintDisabled && offerUnblur ? "Unblur" : "Add hint",
                 addHintDisabled && offerUnblur
-                    ? $"{InteractionConstants.Game.JumbleUnblur}-{gameId}"
-                    : $"{InteractionConstants.Game.AddJumbleHint}-{gameId}",
+                    ? $"{InteractionConstants.Game.JumbleUnblur}:{gameId}"
+                    : $"{InteractionConstants.Game.AddJumbleHint}:{gameId}",
                 ButtonStyle.Secondary,
                 disabled: addHintDisabled && !offerUnblur)
             .WithButton(shuffledHidden ? "Jumbled name" : "Reshuffle",
-                $"{InteractionConstants.Game.JumbleReshuffle}-{gameId}", ButtonStyle.Secondary)
-            .WithButton("Give up", $"{InteractionConstants.Game.JumbleGiveUp}-{gameId}", ButtonStyle.Secondary);
+                $"{InteractionConstants.Game.JumbleReshuffle}:{gameId}", ButtonStyle.Secondary)
+            .WithButton("Give up", $"{InteractionConstants.Game.JumbleGiveUp}:{gameId}", ButtonStyle.Secondary);
     }
 
     public async Task<ResponseModel> JumbleAddHint(ContextModel context, int parsedGameId)
@@ -432,7 +431,8 @@ public class GameBuilders
             var image = await this._gameService.GetImageFromCache(currentGame.JumbleSessionId);
             if (image == null)
             {
-                response.Embed.WithDescription("Sorry, something went wrong while getting the album cover for your album.");
+                response.Embed.WithDescription(
+                    "Sorry, something went wrong while getting the album cover for your album.");
                 response.CommandResponse = CommandResponse.Error;
                 response.ResponseType = ResponseType.Embed;
                 return response;
@@ -473,7 +473,8 @@ public class GameBuilders
             var image = await this._gameService.GetImageFromCache(currentGame.JumbleSessionId);
             if (image == null)
             {
-                response.Embed.WithDescription("Sorry, something went wrong while getting the album cover for your album.");
+                response.Embed.WithDescription(
+                    "Sorry, something went wrong while getting the album cover for your album.");
                 response.CommandResponse = CommandResponse.Error;
                 response.ResponseType = ResponseType.Embed;
                 return response;
@@ -583,14 +584,14 @@ public class GameBuilders
         response.Components = null;
         response.Embed.WithColor(DiscordConstants.AppleMusicRed);
 
-        var playAgainButton = new ComponentBuilder().WithButton("Play again",
-            $"{InteractionConstants.Game.JumblePlayAgain}-{currentGame.JumbleType}",
+        var playAgainButton = new ActionRowProperties().WithButton("Play again",
+            $"{InteractionConstants.Game.JumblePlayAgain}:{currentGame.JumbleType}",
             ButtonStyle.Secondary);
 
         if (currentGame.Answers is { Count: >= 1 })
         {
             var dayCount = await dayStreakTask;
-            var separateResponse = new EmbedBuilder();
+            var separateResponse = new EmbedProperties();
             separateResponse.WithDescription(currentGame.JumbleType == JumbleType.Artist
                 ? $"**{userTitle}** gave up! It was `{currentGame.CorrectAnswer}`"
                 : $"**{userTitle}** gave up! It was `{currentGame.CorrectAnswer}` by {currentGame.ArtistName}");
@@ -607,7 +608,7 @@ public class GameBuilders
                 separateResponse.WithFooter(footer.ToString());
             }
 
-            if (context.DiscordChannel is IMessageChannel msgChannel)
+            if (context.DiscordChannel is TextGuildChannel msgChannel)
             {
                 _ = Task.Run(() => SendSeparateResponse(msgChannel, separateResponse, playAgainButton,
                     new ReferencedMusic
@@ -642,15 +643,19 @@ public class GameBuilders
         return response;
     }
 
-    private static async Task SendSeparateResponse(IMessageChannel msgChannel, EmbedBuilder separateResponse,
-        ComponentBuilder components, ReferencedMusic referencedMusic)
+    private static async Task SendSeparateResponse(TextGuildChannel msgChannel, EmbedProperties separateResponse,
+        ActionRowProperties components, ReferencedMusic referencedMusic)
     {
-        var msg = await msgChannel.SendMessageAsync(embed: separateResponse.Build(), components: components.Build());
+        var msg = await msgChannel.SendMessageAsync(new MessageProperties
+        {
+            Embeds = [separateResponse],
+            Components = [components]
+        });
 
         PublicProperties.UsedCommandsReferencedMusic.TryAdd(msg.Id, referencedMusic);
     }
 
-    public async Task JumbleProcessAnswer(ContextModel context, ICommandContext commandContext)
+    public async Task JumbleProcessAnswer(ContextModel context, CommandContext commandContext)
     {
         var response = new ResponseModel
         {
@@ -684,7 +689,7 @@ public class GameBuilders
                     var dayStreakTask =
                         this._gameService.GetConsecutiveDaysStreak(context.DiscordUser.Id, currentGame.JumbleType);
 
-                    _ = Task.Run(() => commandContext.Message.AddReactionAsync(new Emoji("✅")));
+                    _ = Task.Run(() => commandContext.Message.AddReactionAsync(new ReactionEmojiProperties("✅")));
 
                     _ = Task.Run(() => this._gameService.JumbleAddAnswer(currentGame, commandContext.User.Id, true));
 
@@ -692,7 +697,7 @@ public class GameBuilders
 
                     var userTitle = await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser);
 
-                    var separateResponse = new EmbedBuilder();
+                    var separateResponse = new EmbedProperties();
                     separateResponse.WithDescription(
                         currentGame.JumbleType == JumbleType.Artist
                             ? $"**{userTitle}** got it! It was `{currentGame.CorrectAnswer}`"
@@ -718,10 +723,10 @@ public class GameBuilders
 
                     separateResponse.WithFooter(footer.ToString());
                     separateResponse.WithColor(DiscordConstants.SpotifyColorGreen);
-                    var playAgainComponent = new ComponentBuilder().WithButton("Play again",
-                        $"{InteractionConstants.Game.JumblePlayAgain}-{currentGame.JumbleType}",
+                    var playAgainComponent = new ActionRowProperties().WithButton("Play again",
+                        $"{InteractionConstants.Game.JumblePlayAgain}:{currentGame.JumbleType}",
                         ButtonStyle.Secondary);
-                    if (context.DiscordChannel is IMessageChannel msgChannel)
+                    if (context.DiscordChannel is TextGuildChannel msgChannel)
                     {
                         _ = Task.Run(() => SendSeparateResponse(msgChannel, separateResponse, playAgainComponent,
                             new ReferencedMusic
@@ -747,7 +752,7 @@ public class GameBuilders
                         }
 
                         var msg = await commandContext.Channel.GetMessageAsync(currentGame.DiscordResponseId.Value);
-                        if (msg is not IUserMessage message)
+                        if (msg is not RestMessage message)
                         {
                             return;
                         }
@@ -763,16 +768,12 @@ public class GameBuilders
 
                         await message.ModifyAsync(m =>
                         {
-                            m.Components = null;
-                            m.Embed = response.Embed.Build();
+                            m.Components = [];
+                            m.Embeds = [response.Embed];
                             m.Attachments = response.Stream != null
-                                ? new Optional<IEnumerable<FileAttachment>>(new List<FileAttachment>
-                                {
-                                    new(response.Stream,
-                                        response.Spoiler
-                                            ? $"SPOILER_{response.FileName}.png"
-                                            : $"{response.FileName}.png")
-                                })
+                                ? [new AttachmentProperties(response.Spoiler
+                                    ? $"SPOILER_{response.FileName}.png"
+                                    : $"{response.FileName}.png", response.Stream)]
                                 : null;
                         });
                     }
@@ -786,11 +787,11 @@ public class GameBuilders
                     if (levenshteinDistance == 1 ||
                         levenshteinDistance == 2 && commandContext.Message.Content.Length > 4)
                     {
-                        await commandContext.Message.AddReactionAsync(new Emoji("🤏"));
+                        await commandContext.Message.AddReactionAsync(new ReactionEmojiProperties("🤏"));
                     }
                     else
                     {
-                        await commandContext.Message.AddReactionAsync(new Emoji("❌"));
+                        await commandContext.Message.AddReactionAsync(new ReactionEmojiProperties("❌"));
                     }
 
                     await this._gameService.JumbleAddAnswer(currentGame, commandContext.User.Id, false);
@@ -799,11 +800,14 @@ public class GameBuilders
         }
         catch (Exception e)
         {
-            Log.Error("Error in JumbleProcessAnswer: {exception}", e.Message, e);
+            Log.Error(e, "Error in JumbleProcessAnswer: {exception}", e.Message);
             if (e.Message.Contains("error 50001", StringComparison.OrdinalIgnoreCase))
             {
-                await commandContext.Channel.SendMessageAsync("❌ Error: I can't properly process your jumble answers, because this server hasn't given me the necessary permissions.\n" +
-                                                              "Please ensure .fmbot has access to the **Add Reactions** permission.");
+                await commandContext.Client.Rest.SendMessageAsync(commandContext.Message.ChannelId, new MessageProperties
+                {
+                    Content = "❌ Error: I can't properly process your jumble answers, because this server hasn't given me the necessary permissions.\n" +
+                              "Please ensure .fmbot has access to the **Add Reactions** permission."
+                });
             }
         }
     }
@@ -831,18 +835,18 @@ public class GameBuilders
         response.Components = null;
         response.Embed.WithColor(DiscordConstants.AppleMusicRed);
 
-        var playAgainComponent = new ComponentBuilder().WithButton("Play again",
-            $"{InteractionConstants.Game.JumblePlayAgain}-{currentGame.JumbleType}",
+        var playAgainComponent = new ActionRowProperties().WithButton("Play again",
+            $"{InteractionConstants.Game.JumblePlayAgain}:{currentGame.JumbleType}",
             ButtonStyle.Secondary);
 
         if (currentGame.Answers is { Count: >= 1 })
         {
-            var separateResponse = new EmbedBuilder();
+            var separateResponse = new EmbedProperties();
             separateResponse.WithDescription(currentGame.JumbleType == JumbleType.Artist
                 ? $"Nobody guessed it right. It was `{currentGame.CorrectAnswer}`"
                 : $"Nobody guessed it right. It was `{currentGame.CorrectAnswer}` by {currentGame.ArtistName}");
             separateResponse.WithColor(DiscordConstants.AppleMusicRed);
-            if (context.DiscordChannel is IMessageChannel msgChannel)
+            if (context.DiscordChannel is TextGuildChannel msgChannel)
             {
                 _ = Task.Run(() => SendSeparateResponse(msgChannel, separateResponse, playAgainComponent,
                     new ReferencedMusic

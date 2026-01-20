@@ -18,13 +18,8 @@ public static class PublicProperties
     public static ConcurrentDictionary<ulong, CommandResponse> UsedCommandsResponses = new();
     public static ConcurrentDictionary<ulong, ulong> UsedCommandsResponseMessageId = new();
     public static ConcurrentDictionary<ulong, ulong> UsedCommandsResponseContextId = new();
-    public static ConcurrentDictionary<ulong, string> UsedCommandsErrorReferences = new();
     public static ConcurrentDictionary<ulong, ulong> UsedCommandDiscordUserIds = new();
-    public static ConcurrentBag<ulong> UsedCommandsHintShown = new();
 
-    public static ConcurrentDictionary<ulong, string> UsedCommandsArtists = new();
-    public static ConcurrentDictionary<ulong, string> UsedCommandsAlbums = new();
-    public static ConcurrentDictionary<ulong, string> UsedCommandsTracks = new();
     public static ConcurrentDictionary<ulong, ReferencedMusic> UsedCommandsReferencedMusic = new();
 
     public static SpotifyClientConfig SpotifyConfig = null;

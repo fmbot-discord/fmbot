@@ -6,7 +6,6 @@ using System.Linq;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
-using Discord;
 using Fergun.Interactive;
 using FMBot.AppleMusic;
 using FMBot.Bot.Extensions;
@@ -26,7 +25,12 @@ using FMBot.Domain.Models;
 using FMBot.Images.Generators;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
+using NetCord;
+using NetCord.Gateway;
+using DiscordGuild = NetCord.Gateway.Guild;
+using NetCord.Rest;
 using SkiaSharp;
+using Guild = FMBot.Persistence.Domain.Models.Guild;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 
 namespace FMBot.Bot.Builders;
@@ -53,6 +57,8 @@ public class ArtistBuilders
     private readonly CensorService _censorService;
     private readonly FeaturedService _featuredService;
     private readonly MusicDataFactory _musicDataFactory;
+    private readonly ShardedGatewayClient _client;
+
 
     public ArtistBuilders(ArtistsService artistsService,
         IDataSourceFactory dataSourceFactory,
@@ -73,7 +79,7 @@ public class ArtistBuilders
         DiscogsService discogsService,
         CensorService censorService,
         FeaturedService featuredService,
-        MusicDataFactory musicDataFactory)
+        MusicDataFactory musicDataFactory, ShardedGatewayClient client)
     {
         this._artistsService = artistsService;
         this._dataSourceFactory = dataSourceFactory;
@@ -95,6 +101,7 @@ public class ArtistBuilders
         this._censorService = censorService;
         this._featuredService = featuredService;
         this._musicDataFactory = musicDataFactory;
+        this._client = client;
     }
 
     public async Task<ResponseModel> ArtistInfoAsync(ContextModel context,
@@ -137,7 +144,7 @@ public class ArtistBuilders
 
         if (fullArtist.SpotifyImageUrl != null)
         {
-            response.Embed.WithThumbnailUrl(fullArtist.SpotifyImageUrl);
+            response.Embed.WithThumbnail(fullArtist.SpotifyImageUrl);
             footer.AppendLine("Image source: Spotify");
         }
 
@@ -286,7 +293,8 @@ public class ArtistBuilders
                 var usersWithArtist = await this._whoKnowsArtistService.GetIndexedUsersForArtist(context.DiscordGuild,
                     guildUsers, contextGuild.GuildId, artistSearch.Artist.ArtistName);
                 var (filterStats, filteredUsersWithArtist) =
-                    WhoKnowsService.FilterWhoKnowsObjects(usersWithArtist, guildUsers, contextGuild, context.ContextUser.UserId);
+                    WhoKnowsService.FilterWhoKnowsObjects(usersWithArtist, guildUsers, contextGuild,
+                        context.ContextUser.UserId);
 
                 if (filteredUsersWithArtist.Count != 0)
                 {
@@ -364,28 +372,28 @@ public class ArtistBuilders
             footer.AppendLine(GenreService.GenresToString(fullArtist.ArtistGenres.ToList()));
         }
 
-        response.Components = new ComponentBuilder()
+        response.Components = response.Components
             .WithButton("Overview",
-                $"{InteractionConstants.Artist.Overview}-{fullArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}",
-                style: ButtonStyle.Secondary, emote: new Emoji("\ud83d\udcca"));
+                $"{InteractionConstants.Artist.Overview}:{fullArtist.Id}:{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}",
+                style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("\ud83d\udcca"));
 
         if (context.ContextUser.RymEnabled == true && fullArtist.ArtistLinks != null &&
             fullArtist.ArtistLinks.Any(a => a.Type == LinkType.RateYourMusic))
         {
             var rym = fullArtist.ArtistLinks.First(f => f.Type == LinkType.RateYourMusic);
-            response.Components.WithButton(style: ButtonStyle.Link, emote: Emote.Parse(DiscordConstants.RateYourMusic),
+            response.Components.WithButton(emote: EmojiProperties.Custom(DiscordConstants.RateYourMusic),
                 url: rym.Url);
         }
         else if (fullArtist.SpotifyId != null)
         {
-            response.Components.WithButton(style: ButtonStyle.Link,
-                emote: Emote.Parse(DiscordConstants.Spotify),
+            response.Components.WithButton(
+                emote: EmojiProperties.Custom(DiscordConstants.Spotify),
                 url: $"https://open.spotify.com/artist/{fullArtist.SpotifyId}");
 
             if (fullArtist.AppleMusicUrl != null)
             {
-                response.Components.WithButton(style: ButtonStyle.Link,
-                    emote: Emote.Parse(DiscordConstants.AppleMusic), url: fullArtist.AppleMusicUrl);
+                response.Components.WithButton(
+                    emote: EmojiProperties.Custom(DiscordConstants.AppleMusic), url: fullArtist.AppleMusicUrl);
             }
         }
 
@@ -394,40 +402,41 @@ public class ArtistBuilders
             var facebook = fullArtist.ArtistLinks.FirstOrDefault(f => f.Type == LinkType.Facebook);
             if (facebook != null && fullArtist.ArtistLinks.All(a => a.Type != LinkType.Instagram))
             {
-                response.Components.WithButton(style: ButtonStyle.Link,
-                    emote: Emote.Parse(DiscordConstants.Facebook), url: facebook.Url);
+                response.Components.WithButton(
+                    emote: EmojiProperties.Custom(DiscordConstants.Facebook), url: facebook.Url);
             }
 
             var instagram = fullArtist.ArtistLinks.FirstOrDefault(f => f.Type == LinkType.Instagram);
             if (instagram != null)
             {
-                response.Components.WithButton(style: ButtonStyle.Link,
-                    emote: Emote.Parse(DiscordConstants.Instagram), url: instagram.Url);
+                response.Components.WithButton(
+                    emote: EmojiProperties.Custom(DiscordConstants.Instagram), url: instagram.Url);
             }
 
             var twitter = fullArtist.ArtistLinks.FirstOrDefault(f => f.Type == LinkType.Twitter);
             if (twitter != null)
             {
-                response.Components.WithButton(style: ButtonStyle.Link,
-                    emote: Emote.Parse(DiscordConstants.Twitter), url: twitter.Url);
+                response.Components.WithButton(
+                    emote: EmojiProperties.Custom(DiscordConstants.Twitter), url: twitter.Url);
             }
 
             var tiktok = fullArtist.ArtistLinks.FirstOrDefault(f => f.Type == LinkType.TikTok);
             if (tiktok != null)
             {
-                response.Components.WithButton(style: ButtonStyle.Link,
-                    emote: Emote.Parse(DiscordConstants.TikTok), url: tiktok.Url);
+                response.Components.WithButton(
+                    emote: EmojiProperties.Custom(DiscordConstants.TikTok), url: tiktok.Url);
             }
 
             var bandcamp = fullArtist.ArtistLinks.FirstOrDefault(f => f.Type == LinkType.Bandcamp);
             if (bandcamp != null)
             {
-                response.Components.WithButton(style: ButtonStyle.Link,
-                    emote: Emote.Parse(DiscordConstants.Bandcamp), url: bandcamp.Url);
+                response.Components.WithButton(
+                    emote: EmojiProperties.Custom(DiscordConstants.Bandcamp), url: bandcamp.Url);
             }
         }
 
         response.Embed.WithFooter(footer.ToString());
+
         return response;
     }
 
@@ -610,18 +619,18 @@ public class ArtistBuilders
             footer.AppendLine(GenreService.GenresToString(fullArtist.ArtistGenres.ToList()));
         }
 
-        var components = new ComponentBuilder()
+        var components = new ActionRowProperties()
             .WithButton("Artist",
-                $"{InteractionConstants.Artist.Info}-{fullArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}",
-                style: ButtonStyle.Secondary, emote: Emote.Parse(DiscordConstants.Info));
+                $"{InteractionConstants.Artist.Info}:{fullArtist.Id}:{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}",
+                style: ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.Info));
 
         components.WithButton("All top tracks",
-            $"{InteractionConstants.Artist.Tracks}-{fullArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}",
-            style: ButtonStyle.Secondary, disabled: !artistTracksButton, emote: Emoji.Parse("🎶"));
+            $"{InteractionConstants.Artist.Tracks}:{fullArtist.Id}:{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}",
+            style: ButtonStyle.Secondary, disabled: !artistTracksButton, emote: EmojiProperties.Standard("🎶"));
 
         components.WithButton("All top albums",
-            $"{InteractionConstants.Artist.Albums}-{fullArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}",
-            style: ButtonStyle.Secondary, disabled: !artistAlbumsButton, emote: Emoji.Parse("💽"));
+            $"{InteractionConstants.Artist.Albums}:{fullArtist.Id}:{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}",
+            style: ButtonStyle.Secondary, disabled: !artistAlbumsButton, emote: EmojiProperties.Standard("💽"));
 
         response.Components = components;
 
@@ -769,8 +778,8 @@ public class ArtistBuilders
         }
 
         var optionId =
-            $"{InteractionConstants.Artist.Overview}-{dbArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}";
-        var optionEmote = new Emoji("\ud83d\udcca");
+            $"{InteractionConstants.Artist.Overview}:{dbArtist.Id}:{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}";
+        var optionEmote = EmojiProperties.Standard("\ud83d\udcca");
 
         if (pages.Count == 1)
         {
@@ -779,7 +788,7 @@ public class ArtistBuilders
         }
         else
         {
-            response.StaticPaginator = StringService.BuildStaticPaginator(pages, optionId, optionEmote);
+            response.ComponentPaginator = StringService.BuildComponentPaginator(pages, optionId, optionEmote);
         }
 
         return response;
@@ -900,8 +909,8 @@ public class ArtistBuilders
         }
 
         var optionId =
-            $"{InteractionConstants.Artist.Overview}-{dbArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}";
-        var optionEmote = new Emoji("\ud83d\udcca");
+            $"{InteractionConstants.Artist.Overview}:{dbArtist.Id}:{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}";
+        var optionEmote = EmojiProperties.Standard("\ud83d\udcca");
 
         if (pages.Count == 1)
         {
@@ -910,7 +919,7 @@ public class ArtistBuilders
         }
         else
         {
-            response.StaticPaginator = StringService.BuildStaticPaginator(pages, optionId, optionEmote);
+            response.ComponentPaginator = StringService.BuildComponentPaginator(pages, optionId, optionEmote);
         }
 
         return response;
@@ -1012,7 +1021,7 @@ public class ArtistBuilders
             pageCounter++;
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+        response.ComponentPaginator = StringService.BuildComponentPaginator(pages);
         response.ResponseType = ResponseType.Paginator;
         return response;
     }
@@ -1175,7 +1184,7 @@ public class ArtistBuilders
             pageCounter++;
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages, selectMenuBuilder: context.SelectMenu);
+        response.ComponentPaginator = StringService.BuildComponentPaginator(pages, selectMenuBuilder: context.SelectMenu);
         response.ResponseType = ResponseType.Paginator;
         return response;
     }
@@ -1192,7 +1201,7 @@ public class ArtistBuilders
             response.Embed.WithDescription(
                 $"To see what music you've recently discovered we need to store your lifetime Last.fm history. Your lifetime history and more are only available for supporters.");
 
-            response.Components = new ComponentBuilder()
+            response.Components = new ActionRowProperties()
                 .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
                     customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "discoveries"));
             response.Embed.WithColor(DiscordConstants.InformationColorBlue);
@@ -1206,7 +1215,7 @@ public class ArtistBuilders
             response.Embed.WithDescription(
                 $"Sorry, discovery commands uses somebody's lifetime listening history. You can only use this command on other supporters.");
 
-            response.Components = new ComponentBuilder()
+            response.Components = new ActionRowProperties()
                 .WithButton(".fmbot supporter", style: ButtonStyle.Secondary,
                     customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "discoveries"));
             response.Embed.WithColor(DiscordConstants.InformationColorBlue);
@@ -1347,7 +1356,7 @@ public class ArtistBuilders
                 .WithAuthor(response.EmbedAuthor));
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages, selectMenuBuilder: context.SelectMenu);
+        response.ComponentPaginator = StringService.BuildComponentPaginator(pages, selectMenuBuilder: context.SelectMenu);
         response.ResponseType = ResponseType.Paginator;
         return response;
     }
@@ -1553,7 +1562,8 @@ public class ArtistBuilders
             artistSearch.Artist.ArtistName, context.DiscordGuild, artistSearch.Artist.UserPlaycount);
 
         var (filterStats, filteredUsersWithArtist) =
-            WhoKnowsService.FilterWhoKnowsObjects(usersWithArtist, guildUsers, contextGuild, context.ContextUser.UserId, roles);
+            WhoKnowsService.FilterWhoKnowsObjects(usersWithArtist, guildUsers, contextGuild, context.ContextUser.UserId,
+                roles);
 
         CrownModel crownModel = null;
         if (contextGuild.CrownsDisabled != true && filteredUsersWithArtist.Count >= 1 && !displayRoleSelector &&
@@ -1571,9 +1581,9 @@ public class ArtistBuilders
         if (showCrownButton)
         {
             var stolen = crownModel?.Stolen == true;
-            response.Components = new ComponentBuilder()
-                .WithButton("Crown history", $"{InteractionConstants.Artist.Crown}-{cachedArtist.Id}-{stolen}",
-                    style: ButtonStyle.Secondary, emote: new Emoji("👑"));
+            response.Components = new ActionRowProperties()
+                .WithButton("Crown history", $"{InteractionConstants.Artist.Crown}:{cachedArtist.Id}:{stolen}",
+                    style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("👑"));
         }
 
         if (mode == ResponseMode.Image)
@@ -1672,45 +1682,43 @@ public class ArtistBuilders
 
         if (imgUrl != null && safeForChannel == CensorService.CensorResult.Safe)
         {
-            response.Embed.WithThumbnailUrl(imgUrl);
+            response.Embed.WithThumbnail(imgUrl);
         }
 
         if (displayRoleSelector)
         {
             if (PublicProperties.PremiumServers.ContainsKey(context.DiscordGuild.Id))
             {
-                var allowedRoles = new SelectMenuBuilder()
-                    .WithPlaceholder("Apply role filter..")
-                    .WithCustomId($"{InteractionConstants.WhoKnowsRolePicker}-{cachedArtist.Id}")
-                    .WithType(ComponentType.RoleSelect)
-                    .WithMinValues(0)
-                    .WithMaxValues(25);
+                var allowedRoles =
+                    new RoleMenuProperties($"{InteractionConstants.WhoKnowsRolePicker}:{cachedArtist.Id}")
+                        .WithPlaceholder("Apply role filter..")
+                        .WithMinValues(0)
+                        .WithMaxValues(25);
 
-                response.Components = new ComponentBuilder().WithSelectMenu(allowedRoles);
+                response.RoleMenu = allowedRoles;
             }
             else
             {
-                //response.Components = new ComponentBuilder().WithButton(Constants.GetPremiumServer, disabled: true, customId: "1");
+                //response.Components = new ActionRowProperties().WithButton(Constants.GetPremiumServer, disabled: true, customId: "1");
             }
         }
 
         return response;
     }
 
-    public SelectMenuBuilder GetFilterSelectMenu(string customId, Guild guild,
+    public StringMenuProperties GetFilterSelectMenu(string customId, Guild guild,
         IDictionary<int, FullGuildUser> guildUsers)
     {
-        var builder = new SelectMenuBuilder();
+        var builder = new StringMenuProperties(customId);
 
         builder
             .WithPlaceholder("Set filter options")
-            .WithCustomId(customId)
             .WithMinValues(0);
 
         if (guildUsers.Any(a => a.Value.BlockedFromWhoKnows))
         {
-            builder.AddOption(new SelectMenuOptionBuilder("Blocked users", "blocked-users",
-                "Filter out users you've manually blocked", isDefault: true));
+            builder.AddOptions(new StringMenuSelectOptionProperties("Blocked users",
+                "Filter out users you've manually blocked").WithValue("blocked-users").WithDefault(true));
         }
 
         return builder;
@@ -1853,7 +1861,7 @@ public class ArtistBuilders
 
         if (imgUrl != null && safeForChannel == CensorService.CensorResult.Safe)
         {
-            response.Embed.WithThumbnailUrl(imgUrl);
+            response.Embed.WithThumbnail(imgUrl);
         }
 
         return response;
@@ -1961,8 +1969,10 @@ public class ArtistBuilders
             var globalPlaycount = usersWithArtist.Sum(a => a.Playcount);
             var avgPlaycount = usersWithArtist.Average(a => a.Playcount);
 
-            footer.Append($"{globalListeners.Format(context.NumberFormat)} {StringExtensions.GetListenersString(globalListeners)} - ");
-            footer.Append($"{globalPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(globalPlaycount)} - ");
+            footer.Append(
+                $"{globalListeners.Format(context.NumberFormat)} {StringExtensions.GetListenersString(globalListeners)} - ");
+            footer.Append(
+                $"{globalPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(globalPlaycount)} - ");
             footer.AppendLine($"{((int)avgPlaycount).Format(context.NumberFormat)} avg");
         }
 
@@ -1980,7 +1990,7 @@ public class ArtistBuilders
 
         if (imgUrl != null && safeForChannel == CensorService.CensorResult.Safe)
         {
-            response.Embed.WithThumbnailUrl(imgUrl);
+            response.Embed.WithThumbnail(imgUrl);
         }
 
         return response;
@@ -2088,17 +2098,12 @@ public class ArtistBuilders
 
         var url = LastfmUrlExtensions.GetUserUrl(lastfmToCompare, $"/library/artists?{timeSettings.UrlParameter}");
 
-        var ownName = context.DiscordUser.GlobalName ?? context.DiscordUser.Username;
+        var ownName = context.DiscordUser.GetDisplayName();
         var otherName = userSettings.DisplayName;
 
-        if (context.DiscordGuild != null)
+        if (context.DiscordGuild?.Users.TryGetValue(context.ContextUser.DiscordUserId, out var discordGuildUser) == true)
         {
-            var discordGuildUser =
-                await context.DiscordGuild.GetUserAsync(context.ContextUser.DiscordUserId, CacheMode.CacheOnly);
-            if (discordGuildUser != null)
-            {
-                ownName = discordGuildUser.DisplayName;
-            }
+            ownName = discordGuildUser.GetDisplayName();
         }
 
         var ownTopArtists =
@@ -2231,7 +2236,7 @@ public class ArtistBuilders
                 this._smallIndexRepository.UpdateUserArtists(context.ContextUser, ownArtists.Content.TopArtists));
         }
 
-        response.StaticPaginator = StringService.BuildSimpleStaticPaginator(pages);
+        response.ComponentPaginator = StringService.BuildSimpleComponentPaginator(pages);
         return response;
     }
 
@@ -2333,7 +2338,7 @@ public class ArtistBuilders
                 .WithDescription("Could not find users with a similar music taste."));
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+        response.ComponentPaginator = StringService.BuildComponentPaginator(pages);
 
         return response;
     }

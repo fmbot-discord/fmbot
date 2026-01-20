@@ -2,12 +2,15 @@ using System;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Discord;
+
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
+using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain.Models;
+using NetCord;
+using NetCord.Rest;
 
 namespace FMBot.Bot.Builders;
 
@@ -20,7 +23,7 @@ public class PremiumSettingBuilder
         this._guildService = guildService;
     }
 
-    public async Task<ResponseModel> AllowedRoles(ContextModel context, IUser lastModifier = null)
+    public async Task<ResponseModel> AllowedRoles(ContextModel context, NetCord.User lastModifier = null)
     {
         var response = new ResponseModel
         {
@@ -29,10 +32,9 @@ public class PremiumSettingBuilder
 
         var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
 
-        var allowedRoles = new SelectMenuBuilder()
+        var allowedRoles = new RoleMenuProperties(InteractionConstants.SetAllowedRoleMenu)
             .WithPlaceholder("Pick allowed roles")
             .WithCustomId(InteractionConstants.SetAllowedRoleMenu)
-            .WithType(ComponentType.RoleSelect)
             .WithMinValues(0)
             .WithMaxValues(25);
 
@@ -48,7 +50,7 @@ public class PremiumSettingBuilder
             description.AppendLine($"**Picked roles:**");
             foreach (var roleId in guild.AllowedRoles)
             {
-                var role = context.DiscordGuild.GetRole(roleId);
+                var role = await context.DiscordGuild.GetRoleAsync(roleId);
                 if (role != null)
                 {
                     description.AppendLine($"- <@&{roleId}>");
@@ -81,12 +83,12 @@ public class PremiumSettingBuilder
 
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
-        response.Components = new ComponentBuilder().WithSelectMenu(allowedRoles);
+        response.RoleMenu = allowedRoles;
 
         return response;
     }
 
-    public async Task<ResponseModel> BlockedRoles(ContextModel context, IUser lastModifier = null)
+    public async Task<ResponseModel> BlockedRoles(ContextModel context, NetCord.User lastModifier = null)
     {
         var response = new ResponseModel
         {
@@ -95,10 +97,8 @@ public class PremiumSettingBuilder
 
         var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
 
-        var blockedRoles = new SelectMenuBuilder()
+        var blockedRoles = new RoleMenuProperties(InteractionConstants.SetBlockedRoleMenu)
             .WithPlaceholder("Pick blocked roles")
-            .WithCustomId(InteractionConstants.SetBlockedRoleMenu)
-            .WithType(ComponentType.RoleSelect)
             .WithMinValues(0)
             .WithMaxValues(25);
 
@@ -114,7 +114,7 @@ public class PremiumSettingBuilder
             description.AppendLine($"**Picked roles:**");
             foreach (var roleId in guild.BlockedRoles)
             {
-                var role = context.DiscordGuild.GetRole(roleId);
+                var role = await context.DiscordGuild.GetRoleAsync(roleId);
                 if (role != null)
                 {
                     description.AppendLine($"- <@&{roleId}>");
@@ -138,12 +138,12 @@ public class PremiumSettingBuilder
 
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
-        response.Components = new ComponentBuilder().WithSelectMenu(blockedRoles);
+        response.RoleMenu = blockedRoles;
 
         return response;
     }
 
-    public async Task<ResponseModel> BotManagementRoles(ContextModel context, IUser lastModifier = null)
+    public async Task<ResponseModel> BotManagementRoles(ContextModel context, NetCord.User lastModifier = null)
     {
         var response = new ResponseModel
         {
@@ -152,10 +152,8 @@ public class PremiumSettingBuilder
 
         var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
 
-        var botManagementRoles = new SelectMenuBuilder()
+        var botManagementRoles = new RoleMenuProperties(InteractionConstants.SetBotManagementRoleMenu)
             .WithPlaceholder("Pick bot management roles")
-            .WithCustomId(InteractionConstants.SetBotManagementRoleMenu)
-            .WithType(ComponentType.RoleSelect)
             .WithMinValues(0)
             .WithMaxValues(25);
 
@@ -176,7 +174,7 @@ public class PremiumSettingBuilder
             description.AppendLine($"**Picked roles:**");
             foreach (var roleId in guild.BotManagementRoles)
             {
-                var role = context.DiscordGuild.GetRole(roleId);
+                var role = await context.DiscordGuild.GetRoleAsync(roleId);
                 if (role != null)
                 {
                     description.AppendLine($"- <@&{roleId}>");
@@ -200,12 +198,12 @@ public class PremiumSettingBuilder
 
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
-        response.Components = new ComponentBuilder().WithSelectMenu(botManagementRoles);
+        response.RoleMenu = botManagementRoles;
 
         return response;
     }
 
-    public async Task<ResponseModel> SetGuildActivityThreshold(ContextModel context, IUser lastModifier = null)
+    public async Task<ResponseModel> SetGuildActivityThreshold(ContextModel context, NetCord.User lastModifier = null)
     {
         var response = new ResponseModel
         {
@@ -226,7 +224,7 @@ public class PremiumSettingBuilder
 
         var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
 
-        var components = new ComponentBuilder();
+        var components = new ActionRowProperties();
 
         if (!guild.UserActivityThresholdDays.HasValue)
         {

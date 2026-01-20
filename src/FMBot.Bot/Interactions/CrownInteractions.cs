@@ -1,0 +1,94 @@
+using System;
+using System.Linq;
+using System.Threading.Tasks;
+using Fergun.Interactive;
+using FMBot.Bot.Attributes;
+using FMBot.Bot.Builders;
+using FMBot.Bot.Extensions;
+using FMBot.Bot.Models;
+using FMBot.Bot.Resources;
+using FMBot.Bot.Services;
+using FMBot.Bot.Services.Guild;
+using NetCord;
+using NetCord.Rest;
+using NetCord.Services.ComponentInteractions;
+
+namespace FMBot.Bot.Interactions;
+
+public class CrownInteractions(
+    CrownBuilders crownBuilders,
+    UserService userService,
+    GuildService guildService,
+    SettingService settingService,
+    ArtistsService artistsService,
+    InteractiveService interactivity)
+    : ComponentInteractionModule<ComponentInteractionContext>
+{
+    [ComponentInteraction(InteractionConstants.Artist.Crown)]
+    [UsernameSetRequired]
+    public async Task CrownButtonAsync(string artistId, string stolen)
+    {
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var artist = await artistsService.GetArtistForId(int.Parse(artistId));
+        var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
+
+        try
+        {
+            var response = await crownBuilders.CrownAsync(new ContextModel(this.Context, contextUser), guild, artist.Name);
+
+            if (stolen.Equals("true", StringComparison.OrdinalIgnoreCase))
+            {
+                _ = this.Context.DisableInteractionButtons();
+                response.Components = null;
+                await this.Context.SendResponse(interactivity, response, userService);
+                await this.Context.LogCommandUsedAsync(response, userService);
+            }
+            else
+            {
+                await this.Context.UpdateInteractionEmbed(response);
+                await this.Context.LogCommandUsedAsync(response, userService);
+            }
+
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.User.CrownSelectMenu)]
+    [UsernameSetRequired]
+    public async Task CrownSelectMenu(params string[] inputs)
+    {
+        await RespondAsync(InteractionCallback.DeferredModifyMessage);
+
+        var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
+        var options = stringMenuInteraction.Data.SelectedValues.First().Split("-");
+
+        var discordUserId = ulong.Parse(options[0]);
+        var requesterDiscordUserId = ulong.Parse(options[1]);
+
+        if (!Enum.TryParse(options[2], out CrownViewType viewType))
+        {
+            return;
+        }
+
+        var contextUser = await userService.GetUserWithFriendsAsync(requesterDiscordUserId);
+        var discordContextUser = await this.Context.GetUserAsync(requesterDiscordUserId);
+        var userSettings = await settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
+
+        var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
+
+        try
+        {
+            var response = await crownBuilders.CrownOverviewAsync(new ContextModel(this.Context, contextUser, discordContextUser), guild, userSettings, viewType);
+
+            await this.Context.UpdateInteractionEmbed(response, interactivity, false);
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+}

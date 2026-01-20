@@ -2,9 +2,6 @@ using System;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Discord;
-using Discord.Commands;
-using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
@@ -14,46 +11,35 @@ using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Repositories;
 using Microsoft.Extensions.Options;
+using NetCord.Services.Commands;
+using Fergun.Interactive;
+using NetCord.Rest;
 
 namespace FMBot.Bot.TextCommands;
 
-[Name("Genius")]
-public class GeniusCommands : BaseCommandModule
+[ModuleName("Genius")]
+public class GeniusCommands(
+    GeniusService geniusService,
+    IPrefixService prefixService,
+    IDataSourceFactory dataSourceFactory,
+    UserService userService,
+    IOptions<BotSettings> botSettings,
+    InteractiveService interactivity)
+    : BaseCommandModule(botSettings)
 {
-    private readonly GeniusService _geniusService;
-    private readonly IPrefixService _prefixService;
-    private readonly IDataSourceFactory _dataSourceFactory;
-    private readonly UserService _userService;
+    private InteractiveService Interactivity { get; } = interactivity;
 
-    private InteractiveService Interactivity { get; }
-
-    public GeniusCommands(
-        GeniusService geniusService,
-        IPrefixService prefixService,
-        IDataSourceFactory dataSourceFactory,
-        UserService userService,
-        IOptions<BotSettings> botSettings, InteractiveService interactivity) : base(botSettings)
-    {
-        this._geniusService = geniusService;
-        this._dataSourceFactory = dataSourceFactory;
-        this._prefixService = prefixService;
-        this._userService = userService;
-        this.Interactivity = interactivity;
-    }
-
-    [Command("genius")]
+    [Command("genius", "gen")]
     [Summary("Shares a link to the Genius lyrics based on what a user is listening to or what the user is searching for.")]
-    [Alias("gen")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.ThirdParty)]
-    public async Task GeniusAsync([Remainder] string searchValue = null)
+    public async Task GeniusAsync([CommandParameter(Remainder = true)] string searchValue = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
         try
         {
@@ -64,7 +50,7 @@ public class GeniusCommands : BaseCommandModule
             {
                 var internalLookup = CommandContextExtensions.GetReferencedMusic(this.Context.Message.ReferencedMessage.Id)
                                      ??
-                                     await this._userService.GetReferencedMusic(this.Context.Message.ReferencedMessage.Id);
+                                     await userService.GetReferencedMusic(this.Context.Message.ReferencedMessage.Id);
 
                 if (internalLookup?.Track != null)
                 {
@@ -85,9 +71,9 @@ public class GeniusCommands : BaseCommandModule
                     sessionKey = userSettings.SessionKeyLastFm;
                 }
 
-                var recentScrobbles = await this._dataSourceFactory.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
+                var recentScrobbles = await dataSourceFactory.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
 
-                if (await GenericEmbedService.RecentScrobbleCallFailedReply(recentScrobbles, userSettings.UserNameLastFM, this.Context))
+                if (await GenericEmbedService.RecentScrobbleCallFailedReply(recentScrobbles, userSettings.UserNameLastFM, this.Context, userService))
                 {
                     return;
                 }
@@ -98,25 +84,24 @@ public class GeniusCommands : BaseCommandModule
                 currentTrackName = currentTrack.TrackName;
                 currentTrackArtist = currentTrack.ArtistName;
 
-                PublicProperties.UsedCommandsArtists.TryAdd(this.Context.Message.Id, currentTrack.ArtistName);
-                PublicProperties.UsedCommandsTracks.TryAdd(this.Context.Message.Id, currentTrack.TrackName);
-                if (!string.IsNullOrWhiteSpace(currentTrack.AlbumName))
-                {
-                    PublicProperties.UsedCommandsAlbums.TryAdd(this.Context.Message.Id, currentTrack.AlbumName);
-                }
             }
 
             var response = new ResponseModel
             {
-                ResponseType = ResponseType.Embed
+                ResponseType = ResponseType.Embed,
+                ReferencedMusic = currentTrackArtist != null ? new ReferencedMusic
+                {
+                    Artist = currentTrackArtist,
+                    Track = currentTrackName
+                } : null
             };
 
-            var geniusResults = await this._geniusService.SearchGeniusAsync(querystring, currentTrackName, currentTrackArtist);
+            var geniusResults = await geniusService.SearchGeniusAsync(querystring, currentTrackName, currentTrackArtist);
 
             if (geniusResults != null && geniusResults.Any())
             {
                 var rnd = new Random();
-                if (rnd.Next(0, 8) == 1 && string.IsNullOrWhiteSpace(searchValue) && !await this._userService.HintShownBefore(userSettings.UserId, "genius"))
+                if (rnd.Next(0, 8) == 1 && string.IsNullOrWhiteSpace(searchValue) && !await userService.HintShownBefore(userSettings.UserId, "genius"))
                 {
                     response.EmbedFooter.WithText($"Tip: Search for other songs by simply adding the searchvalue behind '{prfx}genius'.");
                     response.HintShown = true;
@@ -130,19 +115,19 @@ public class GeniusCommands : BaseCommandModule
                 {
                     response.Embed.WithTitle(firstResult.TitleWithFeatured);
                     response.Embed.WithUrl(firstResult.Url);
-                    response.Embed.WithThumbnailUrl(firstResult.SongArtImageThumbnailUrl);
+                    response.Embed.WithThumbnail(firstResult.SongArtImageThumbnailUrl);
 
                     response.Embed.WithDescription($"By **[{firstResult.PrimaryArtist.Name}]({firstResult.PrimaryArtist.Url})**");
 
-                    response.Components = new ComponentBuilder().WithButton("View on Genius", style: ButtonStyle.Link, url: firstResult.Url);
+                    response.Components = new ActionRowProperties().WithButton("View on Genius",  url: firstResult.Url);
 
-                    await this.Context.SendResponse(this.Interactivity, response);
-                    this.Context.LogCommandUsed(response.CommandResponse);
+                    await this.Context.SendResponse(this.Interactivity, response, userService);
+                    await this.Context.LogCommandUsedAsync(response, userService);
                     return;
                 }
 
                 response.Embed.WithTitle($"Genius results for {querystring}");
-                response.Embed.WithThumbnailUrl(firstResult.SongArtImageThumbnailUrl);
+                response.Embed.WithThumbnail(firstResult.SongArtImageThumbnailUrl);
 
                 var embedDescription = new StringBuilder();
 
@@ -164,12 +149,12 @@ public class GeniusCommands : BaseCommandModule
                 response.CommandResponse = CommandResponse.NotFound;
             }
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 }

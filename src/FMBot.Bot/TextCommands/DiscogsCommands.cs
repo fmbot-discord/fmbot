@@ -1,7 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using Discord;
-using Discord.Commands;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Models;
@@ -10,135 +8,132 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
-using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
-using static System.Text.RegularExpressions.Regex;
+using NetCord.Rest;
+using NetCord.Services.Commands;
+using Fergun.Interactive;
 
 namespace FMBot.Bot.TextCommands;
 
-public class DiscogsCommands : BaseCommandModule
+public class DiscogsCommands(
+    DiscogsBuilder discogsBuilder,
+    IOptions<BotSettings> botSettings,
+    UserService userService,
+    DiscogsService discogsService,
+    InteractiveService interactivity,
+    SettingService settingService,
+    IPrefixService prefixService)
+    : BaseCommandModule(botSettings)
 {
-    private readonly DiscogsBuilder _discogsBuilder;
-    private readonly UserService _userService;
-    private readonly DiscogsService _discogsService;
-    private readonly SettingService _settingService;
-    private readonly IPrefixService _prefixService;
+    private readonly DiscogsService _discogsService = discogsService;
 
-    private InteractiveService Interactivity { get; }
+    private InteractiveService Interactivity { get; } = interactivity;
 
 
-    public DiscogsCommands(DiscogsBuilder discogsBuilder,
-        IOptions<BotSettings> botSettings,
-        UserService userService,
-        DiscogsService discogsService,
-        InteractiveService interactivity,
-        SettingService settingService, IPrefixService prefixService) : base(botSettings)
-    {
-        this._discogsBuilder = discogsBuilder;
-        this._userService = userService;
-        this._discogsService = discogsService;
-        this.Interactivity = interactivity;
-        this._settingService = settingService;
-        this._prefixService = prefixService;
-    }
-
-    [Command("discogs", RunMode = RunMode.Async)]
+    [Command("discogs")]
     [Summary("Connects your Discogs account.\n\n" +
              "Not receiving a DM? Please check if you have direct messages from server members enabled.")]
     [CommandCategories(CommandCategory.ThirdParty)]
     [UsernameSetRequired]
-    [Alias("login discogs")]
-    public async Task DiscogsAsync([Remainder] string unusedValues = null)
+    public async Task DiscogsAsync([CommandParameter(Remainder = true)] string unusedValues = null)
     {
-        var contextUser = await this._userService.GetUserWithDiscogs(this.Context.User.Id);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserWithDiscogs(this.Context.User.Id);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
         if (contextUser.UserDiscogs == null)
         {
             if (this.Context.Guild != null)
             {
-                var serverEmbed = new EmbedBuilder()
+                var serverEmbed = new EmbedProperties()
                     .WithColor(DiscordConstants.InformationColorBlue);
 
                 serverEmbed.WithDescription("Check your DMs for a link to connect your Discogs account to .fmbot!");
-                await this.Context.Channel.SendMessageAsync("", false, serverEmbed.Build());
+                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties().AddEmbeds(serverEmbed));
             }
 
             var response =
-                this._discogsBuilder.DiscogsLoginGetLinkAsync(new ContextModel(this.Context, prfx, contextUser));
-            await this.Context.User.SendMessageAsync("", false, response.Embed.Build(),
-                components: response.Components.Build());
-            this.Context.LogCommandUsed(response.CommandResponse);
+                discogsBuilder.DiscogsLoginGetLinkAsync(new ContextModel(this.Context, prfx, contextUser));
+            var dmChannel = await this.Context.User.GetDMChannelAsync();
+            await dmChannel.SendMessageAsync(new MessageProperties
+            {
+                Embeds = [response.Embed],
+                Components = [response.Components]
+            });
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         else
         {
             if (this.Context.Guild != null)
             {
-                var serverEmbed = new EmbedBuilder()
+                var serverEmbed = new EmbedProperties()
                     .WithColor(DiscordConstants.InformationColorBlue);
 
                 serverEmbed.WithDescription("Check your DMs for a message to manage your connected Discogs account!");
-                await this.Context.Channel.SendMessageAsync("", embed: serverEmbed.Build());
+                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Embeds = [serverEmbed] });
             }
 
             var response = DiscogsBuilder.DiscogsManage(new ContextModel(this.Context, prfx, contextUser));
-            await this.Context.User.SendMessageAsync("", false, response.Embed.Build(), components: response.Components.Build());
-            this.Context.LogCommandUsed(response.CommandResponse);
+            var manageDmChannel = await this.Context.User.GetDMChannelAsync();
+            await manageDmChannel.SendMessageAsync(new MessageProperties
+            {
+                Embeds = [response.Embed],
+                Components = [response.Components]
+            });
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
     }
 
-    [Command("collection", RunMode = RunMode.Async)]
+    [Command("collection", "coll", "vinyl", "discogscollection")]
     [Summary("You or someone else their Discogs collection")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.ThirdParty)]
-    [Alias("coll", "vinyl", "discogscollection")]
-    public async Task CollectionAsync([Remainder] string searchValues = null)
+    public async Task CollectionAsync([CommandParameter(Remainder = true)] string searchValues = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var userSettings = await this._settingService.GetUser(searchValues, contextUser, this.Context);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var userSettings = await settingService.GetUser(searchValues, contextUser, this.Context);
         var collectionSettings = SettingService.SetDiscogsCollectionSettings(userSettings.NewSearchValue);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
         try
         {
-            var response = await this._discogsBuilder.DiscogsCollectionAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, collectionSettings, collectionSettings.NewSearchValue);
+            var response = await discogsBuilder.DiscogsCollectionAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, collectionSettings, collectionSettings.NewSearchValue);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
-    //[Command("whohas", RunMode = RunMode.Async)]
+    //[Command("whohas")]
     //[Summary("Shows who has the most Discogs merch of a certain artist in a server")]
     //[UsernameSetRequired]
     //[CommandCategories(CommandCategory.ThirdParty)]
     //[Alias("wh", "whohasvinyl")]
-    public async Task WhoHasAsync([Remainder] string searchValues = null)
+    public async Task WhoHasAsync([CommandParameter(Remainder = true)] string searchValues = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var userSettings = await this._settingService.GetUser(searchValues, contextUser, this.Context);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var userSettings = await settingService.GetUser(searchValues, contextUser, this.Context);
         var collectionSettings = SettingService.SetDiscogsCollectionSettings(userSettings.NewSearchValue);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
         try
         {
-            var response = await this._discogsBuilder.DiscogsCollectionAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, collectionSettings, collectionSettings.NewSearchValue);
+            var response = await discogsBuilder.DiscogsCollectionAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, collectionSettings, collectionSettings.NewSearchValue);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 }

@@ -1,10 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
-using Discord;
-using Discord.Commands;
-using Discord.WebSocket;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
@@ -17,113 +13,89 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
-using MetaBrainz.MusicBrainz.Interfaces;
 using Microsoft.Extensions.Options;
-using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
+using NetCord.Services.Commands;
 using TimePeriod = FMBot.Domain.Models.TimePeriod;
+using NetCord.Rest;
 
 namespace FMBot.Bot.TextCommands.LastFM;
 
-[Name("Plays")]
-public class PlayCommands : BaseCommandModule
+[ModuleName("Plays")]
+public class PlayCommands(
+    GuildService guildService,
+    IndexService indexService,
+    IPrefixService prefixService,
+    IDataSourceFactory dataSourceFactory,
+    SettingService settingService,
+    UserService userService,
+    InteractiveService interactivity,
+    IOptions<BotSettings> botSettings,
+    PlayBuilder playBuilder,
+    GuildBuilders guildBuilders,
+    RecapBuilders recapBuilders)
+    : BaseCommandModule(botSettings)
 {
-    private readonly GuildService _guildService;
-    private readonly IndexService _indexService;
-    private readonly IPrefixService _prefixService;
-    private readonly IDataSourceFactory _dataSourceFactory;
-    private readonly SettingService _settingService;
-    private readonly UserService _userService;
-    private readonly PlayBuilder _playBuilder;
-    private readonly GuildBuilders _guildBuilders;
-    private readonly RecapBuilders _recapBuilders;
-    private InteractiveService Interactivity { get; }
+    private InteractiveService Interactivity { get; } = interactivity;
 
-    private static readonly List<DateTimeOffset> StackCooldownTimer = new();
-    private static readonly List<SocketUser> StackCooldownTarget = new();
+    private static readonly List<DateTimeOffset> StackCooldownTimer = [];
+    private static readonly List<NetCord.User> StackCooldownTarget = [];
 
 
-    public PlayCommands(
-        GuildService guildService,
-        IndexService indexService,
-        IPrefixService prefixService,
-        IDataSourceFactory dataSourceFactory,
-        SettingService settingService,
-        UserService userService,
-        InteractiveService interactivity,
-        IOptions<BotSettings> botSettings,
-        PlayBuilder playBuilder,
-        GuildBuilders guildBuilders,
-        RecapBuilders recapBuilders) : base(botSettings)
-    {
-        this._guildService = guildService;
-        this._indexService = indexService;
-        this._dataSourceFactory = dataSourceFactory;
-        this._prefixService = prefixService;
-        this._settingService = settingService;
-        this._userService = userService;
-        this.Interactivity = interactivity;
-        this._playBuilder = playBuilder;
-        this._guildBuilders = guildBuilders;
-        this._recapBuilders = recapBuilders;
-    }
-
-    [Command("discoverydate", RunMode = RunMode.Async)]
+    [Command("discoverydate", "dd", "datediscovered", "datediscovery")]
     [Summary("Shows the date you discovered the artist, album, and track")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks)]
-    [Alias("dd", "datediscovered", "datediscovery")]
     [SupporterExclusive(
         "To see when you've discovered this artist, album and track we need to store your lifetime Last.fm history. Your lifetime history and more are only available for supporters")]
-    public async Task DateDiscoveredAsync([Remainder] string options = null)
+    public async Task DateDiscoveredAsync([CommandParameter(Remainder = true)] string options = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
         try
         {
             var context = new ContextModel(this.Context, prfx, contextUser);
-            var userSettings = await this._settingService.GetUser(options, contextUser, this.Context);
+            var userSettings = await settingService.GetUser(options, contextUser, this.Context);
 
             var supporterRequiredResponse = ArtistBuilders.DiscoverySupporterRequired(context, userSettings);
             if (supporterRequiredResponse != null)
             {
-                await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse);
-                this.Context.LogCommandUsed(supporterRequiredResponse.CommandResponse);
+                await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse, userService);
+                await this.Context.LogCommandUsedAsync(supporterRequiredResponse, userService);
                 return;
             }
 
-            var response = await this._playBuilder.DiscoveryDate(context, userSettings.NewSearchValue, userSettings);
+            var response = await playBuilder.DiscoveryDate(context, userSettings.NewSearchValue, userSettings);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
-    [Command("fm", RunMode = RunMode.Async)]
-    [Summary("Shows you or someone else's current track")]
-    [Alias("np", "qm", "wm", "em", "rm", "tm", "ym", "om", "pm", "gm", "sm", "hm", "jm", "km",
+    [Command("fm", "np", "qm", "wm", "em", "rm", "tm", "ym", "om", "pm", "gm", "sm", "hm", "jm", "km",
         "lm", "zm", "xm", "cm", "vm", "bm", "nm", "mm", "nowplaying", "ɯɟ")]
+    [Summary("Shows you or someone else's current track")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks)]
-    public async Task NowPlayingAsync([Remainder] string options = null)
+    public async Task NowPlayingAsync([CommandParameter(Remainder = true)] string options = null)
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
         if (contextUser?.UserNameLastFM == null)
         {
-            var userNickname = (this.Context.User as SocketGuildUser)?.DisplayName;
+            var discordGuildUser = this.Context.User as NetCord.GuildUser;
             this._embed.UsernameNotSetErrorResponse(prfx,
-                userNickname ?? this.Context.User.GlobalName ?? this.Context.User.Username);
+                discordGuildUser?.GetDisplayName() ?? this.Context.User.GetDisplayName());
 
-            await ReplyAsync("", false, this._embed.Build(), components: GenericEmbedService.UsernameNotSetErrorComponents().Build());
-            this.Context.LogCommandUsed(CommandResponse.UsernameNotSet);
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new () { Embeds = [this._embed], Components = [GenericEmbedService.UsernameNotSetErrorComponents()] });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.UsernameNotSet }, userService);
             return;
         }
 
@@ -151,233 +123,227 @@ public class PlayCommands : BaseCommandModule
 
             this._embed.WithFooter($"For more information on the bot in general, use '{prfx}help'");
 
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-            this.Context.LogCommandUsed(CommandResponse.Help);
+            await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Help }, userService);
             return;
         }
 
         try
         {
-            var existingFmCooldown = await this._guildService.GetChannelCooldown(this.Context.Channel.Id);
+            var existingFmCooldown = await guildService.GetChannelCooldown(this.Context.Channel?.Id);
             if (existingFmCooldown.HasValue)
             {
-                var msg = this.Context.Message as SocketUserMessage;
-                if (StackCooldownTarget.Contains(this.Context.Message.Author))
+                var author = this.Context.Message.Author;
+                if (StackCooldownTarget.Contains(author))
                 {
-                    if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)]
+                    if (StackCooldownTimer[StackCooldownTarget.IndexOf(author)]
                             .AddSeconds(existingFmCooldown.Value) >= DateTimeOffset.Now)
                     {
                         var secondsLeft = (int)(StackCooldownTimer[
-                                StackCooldownTarget.IndexOf(this.Context.Message.Author as SocketGuildUser)]
+                                StackCooldownTarget.IndexOf(author)]
                             .AddSeconds(existingFmCooldown.Value) - DateTimeOffset.Now).TotalSeconds;
                         if (secondsLeft <= existingFmCooldown.Value - 2)
                         {
-                            _ = this.Interactivity.DelayedDeleteMessageAsync(
-                                await this.Context.Channel.SendMessageAsync(
-                                    $"This channel has a `{existingFmCooldown.Value}` second cooldown on `{prfx}fm`. Please wait for this to expire before using this command again."),
-                                TimeSpan.FromSeconds(6));
-                            this.Context.LogCommandUsed(CommandResponse.Cooldown);
+                            _ = (await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
+                                {
+                                    Content = $"This channel has a `{existingFmCooldown.Value}` second cooldown on `{prfx}fm`. Please wait for this to expire before using this command again."
+                                })).DeleteAfterAsync(6);
+                            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Cooldown }, userService);
                         }
 
                         return;
                     }
 
-                    StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)] = DateTimeOffset.Now;
+                    StackCooldownTimer[StackCooldownTarget.IndexOf(author)] = DateTimeOffset.Now;
                 }
                 else
                 {
-                    StackCooldownTarget.Add(msg.Author);
+                    StackCooldownTarget.Add(author);
                     StackCooldownTimer.Add(DateTimeOffset.Now);
                 }
             }
 
-            _ = this.Context.Channel.TriggerTypingAsync();
-            var userSettings = await this._settingService.GetUser(options, contextUser, this.Context);
+            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+            var userSettings = await settingService.GetUser(options, contextUser, this.Context);
             var configuredFmType = SettingService.GetEmbedType(userSettings.NewSearchValue, contextUser.FmEmbedType);
 
             var response =
-                await this._playBuilder.NowPlayingAsync(new ContextModel(this.Context, prfx, contextUser),
+                await playBuilder.NowPlayingAsync(new ContextModel(this.Context, prfx, contextUser),
                     userSettings, configuredFmType.embedType);;
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
             if (!string.IsNullOrEmpty(e.Message) &&
                 e.Message.Contains("The server responded with error 50013: Missing Permissions"))
             {
-                await this.Context.HandleCommandException(e, sendReply: false);
-                await ReplyAsync("Error while replying: The bot is missing permissions.\n" +
-                                 "Make sure it has permission to 'Embed links' and 'Attach Images'");
+                await this.Context.HandleCommandException(e, userService, sendReply: false);
+                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Error while replying: The bot is missing permissions.\nMake sure it has permission to 'Embed links' and 'Attach Images'" });
             }
             else
             {
-                await this.Context.HandleCommandException(e);
+                await this.Context.HandleCommandException(e, userService);
             }
         }
     }
 
-    [Command("recent", RunMode = RunMode.Async)]
+    [Command("recent", "recenttracks", "recents", "r", "rc")]
     [Summary("Shows you or someone else's recent tracks")]
     [Options(Constants.UserMentionExample, "Artist name")]
     [Examples("recent", "r", "recent @user", "recent lfm:fm-bot")]
-    [Alias("recenttracks", "recents", "r", "rc")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks)]
     [SupporterEnhanced("Supporters can view their lifetime history")]
-    public async Task RecentAsync([Remainder] string extraOptions = null)
+    public async Task RecentAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var userSettings = await settingService.GetUser(extraOptions, contextUser, this.Context);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
         try
         {
-            var response = await this._playBuilder.RecentAsync(new ContextModel(this.Context, prfx, contextUser),
+            var response = await playBuilder.RecentAsync(new ContextModel(this.Context, prfx, contextUser),
                 userSettings, userSettings.NewSearchValue);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
-    [Command("overview", RunMode = RunMode.Async)]
+    [Command("overview", "o", "ov")]
     [Summary("Shows a daily overview")]
     [Options("Amount of days to show (max 8)")]
     [Examples("o", "overview", "overview 7")]
-    [Alias("o", "ov")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks, CommandCategory.Albums, CommandCategory.Artists)]
     [SupporterEnhanced("See your lifetime history day to day as a supporter")]
-    public async Task OverviewAsync([Remainder] string extraOptions = null)
+    public async Task OverviewAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var userSettings = await settingService.GetUser(extraOptions, contextUser, this.Context);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
         var amountOfDays = SettingService.GetAmount(extraOptions, 4, 8);
 
         try
         {
-            var response = await this._playBuilder.OverviewAsync(new ContextModel(this.Context, prfx, contextUser),
+            var response = await playBuilder.OverviewAsync(new ContextModel(this.Context, prfx, contextUser),
                 userSettings, amountOfDays);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
-    [Command("year", RunMode = RunMode.Async)]
+    [Command("year", "yr", "lastyear", "yearoverview", "yearov", "yov", "last.year")]
     [Summary("Shows an overview of your year")]
-    [Alias("yr", "lastyear", "yearoverview", "yearov", "yov", "last.year")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks, CommandCategory.Albums, CommandCategory.Artists)]
     [SupporterEnhanced("Get an extra page with artist discoveries and a monthly overview")]
-    public async Task YearAsync([Remainder] string extraOptions = null)
+    public async Task YearAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
+        var userSettings = await settingService.GetUser(extraOptions, contextUser, this.Context);
         var year = SettingService.GetYear(extraOptions).GetValueOrDefault(DateTime.UtcNow.AddDays(-30).Year);
 
         try
         {
-            var response = await this._playBuilder.YearAsync(new ContextModel(this.Context, prfx, contextUser),
+            var response = await playBuilder.YearAsync(new ContextModel(this.Context, prfx, contextUser),
                 userSettings, year);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
-    [Command("recap", RunMode = RunMode.Async)]
+    [Command("recap", "rcp", "wrapped")]
     [Summary("A recap to easily view multiple .fmbot commands into one")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks, CommandCategory.Albums, CommandCategory.Artists)]
-    [Alias("rcp", "wrapped")]
-    public async Task RecapAsync([Remainder] string extraOptions = null)
+    public async Task RecapAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
         var year = SettingService.GetYear(extraOptions).GetValueOrDefault(DateTime.UtcNow.AddDays(-90).Year);
         var timePeriod = !string.IsNullOrWhiteSpace(extraOptions) ? extraOptions : year.ToString();
 
-        var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
+        var userSettings = await settingService.GetUser(extraOptions, contextUser, this.Context);
         var timeSettings = SettingService.GetTimePeriod(timePeriod, registeredLastFm: userSettings.RegisteredLastFm,
             timeZone: userSettings.TimeZone, defaultTimePeriod: TimePeriod.Yearly);
 
         try
         {
             var loading = false;
-            if (!this._recapBuilders.RecapCacheHot(timeSettings.Description, userSettings.UserNameLastFm))
+            if (!recapBuilders.RecapCacheHot(timeSettings.Description, userSettings.UserNameLastFm))
             {
-                await Context.Message.AddReactionAsync(Emote.Parse(DiscordConstants.Loading));
+                await Context.Message.AddReactionAsync(new ReactionEmojiProperties("Loading", DiscordConstants.Loading));
                 loading = true;
             }
 
-            var response = await this._recapBuilders.RecapAsync(new ContextModel(this.Context, prfx, contextUser),
+            var response = await recapBuilders.RecapAsync(new ContextModel(this.Context, prfx, contextUser),
                 userSettings, timeSettings, RecapPage.Overview);
 
-            await this.Context.SendResponse(this.Interactivity, response);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
 
             if (loading)
             {
-                await Context.Message.RemoveReactionAsync(Emote.Parse(DiscordConstants.Loading),
+                await Context.Message.DeleteUserReactionAsync(new ReactionEmojiProperties("Loading", DiscordConstants.Loading),
                     this._botSettings.Discord.ApplicationId.GetValueOrDefault());
             }
 
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
-    [Command("pace", RunMode = RunMode.Async)]
+    [Command("pace", "pc")]
     [Summary("Shows estimated date you reach a scrobble goal based on average scrobbles per day")]
     [Options(Constants.CompactTimePeriodList, "Optional goal amount: For example `10000` or `10k`",
         Constants.UserMentionExample)]
     [Examples("pc", "pc 100k q", "pc 40000 h @user", "pace", "pace yearly @user 250000")]
     [UsernameSetRequired]
-    [Alias("pc")]
     [CommandCategories(CommandCategory.Other)]
-    public async Task PaceAsync([Remainder] string extraOptions = null)
+    public async Task PaceAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
-        var userInfo = await this._dataSourceFactory.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
+        var userSettings = await settingService.GetUser(extraOptions, contextUser, this.Context);
+        var userInfo = await dataSourceFactory.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
 
         var goalAmount = SettingService.GetGoalAmount(extraOptions, userInfo.Playcount);
         var timeSettings =
             SettingService.GetTimePeriod(extraOptions, TimePeriod.AllTime, timeZone: userSettings.TimeZone);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
         if (string.IsNullOrWhiteSpace(extraOptions) &&
             !string.IsNullOrWhiteSpace(this.Context.Message.ReferencedMessage?.Content))
@@ -386,33 +352,32 @@ public class PlayCommands : BaseCommandModule
                 SettingService.GetGoalAmount(this.Context.Message.ReferencedMessage.Content, userInfo.Playcount);
         }
 
-        var response = await this._playBuilder.PaceAsync(new ContextModel(this.Context, prfx, contextUser),
+        var response = await playBuilder.PaceAsync(new ContextModel(this.Context, prfx, contextUser),
             userSettings, timeSettings, goalAmount, userInfo.Playcount, userInfo.RegisteredUnix);
 
-        await this.Context.SendResponse(this.Interactivity, response);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendResponse(this.Interactivity, response, userService);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
-    [Command("milestone", RunMode = RunMode.Async)]
+    [Command("milestone", "m", "ms")]
     [Summary("Shows a milestone scrobble")]
     [Options("Optional milestone amount: For example `10000` or `10k`", Constants.UserMentionExample)]
     [Examples("ms", "ms 10k", "milestone 500 @user", "milestone", "milestone @user 250k")]
     [UsernameSetRequired]
-    [Alias("m", "ms")]
     [CommandCategories(CommandCategory.Other)]
-    public async Task MilestoneAsync([Remainder] string extraOptions = null)
+    public async Task MilestoneAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         try
         {
-            var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
+            var userSettings = await settingService.GetUser(extraOptions, contextUser, this.Context);
 
-            var userInfo = await this._dataSourceFactory.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
+            var userInfo = await dataSourceFactory.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
             var mileStoneAmount = SettingService.GetMilestoneAmount(extraOptions, userInfo.Playcount);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
             if (string.IsNullOrWhiteSpace(extraOptions) &&
                 !string.IsNullOrWhiteSpace(this.Context.Message.ReferencedMessage?.Content))
@@ -421,167 +386,162 @@ public class PlayCommands : BaseCommandModule
                     userInfo.Playcount);
             }
 
-            var response = await this._playBuilder.MileStoneAsync(new ContextModel(this.Context, prfx, contextUser),
+            var response = await playBuilder.MileStoneAsync(new ContextModel(this.Context, prfx, contextUser),
                 userSettings, mileStoneAmount.amount, userInfo.Playcount, mileStoneAmount.isRandom);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
-    [Command("plays", RunMode = RunMode.Async)]
+    [Command("plays", "p", "scrobbles")]
     [Summary("Shows your total scrobble count for a specific time period")]
     [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample)]
     [Examples("p", "plays", "plays @frikandel", "plays monthly")]
-    [Alias("p", "scrobbles")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Other)]
     [SupporterEnhanced($"For non-supporters, the maximum amount of cached plays is limited to their last 15000 scrobbles, meaning this is also the limit for streaks")]
-    public async Task PlaysAsync([Remainder] string extraOptions = null)
+    public async Task PlaysAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
+        var userSettings = await settingService.GetUser(extraOptions, contextUser, this.Context);
         var timeSettings = SettingService.GetTimePeriod(userSettings.NewSearchValue, TimePeriod.AllTime,
             timeZone: userSettings.TimeZone);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        var response = await this._playBuilder.PlaysAsync(new ContextModel(this.Context, prfx, contextUser),
+        var response = await playBuilder.PlaysAsync(new ContextModel(this.Context, prfx, contextUser),
             userSettings, timeSettings);
 
-        await this.Context.SendResponse(this.Interactivity, response);
-        this.Context.LogCommandUsed(response.CommandResponse);
+        await this.Context.SendResponse(this.Interactivity, response, userService);
+        await this.Context.LogCommandUsedAsync(response, userService);
     }
 
-    [Command("streak", RunMode = RunMode.Async)]
+    [Command("streak", "str", "combo", "cb")]
     [Summary("Shows you or someone else's streak")]
     [UsernameSetRequired]
-    [Alias("str", "combo", "cb")]
     [CommandCategories(CommandCategory.Albums, CommandCategory.Artists, CommandCategory.Tracks)]
     [SupporterEnhanced(
         "Streaks for non-supporters are limited to 25k plays, due to the bot not caching plays beyond this limit for free users")]
-    public async Task StreakAsync([Remainder] string extraOptions = null)
+    public async Task StreakAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
         if (contextUser.LastIndexed == null)
         {
-            await this._indexService.IndexUser(contextUser);
+            await indexService.IndexUser(contextUser);
         }
 
         try
         {
-            var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
-            var userWithStreak = await this._userService.GetUserAsync(userSettings.DiscordUserId);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            var userSettings = await settingService.GetUser(extraOptions, contextUser, this.Context);
+            var userWithStreak = await userService.GetUserAsync(userSettings.DiscordUserId);
+            var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
-            var response = await this._playBuilder.StreakAsync(new ContextModel(this.Context, prfx, contextUser),
+            var response = await playBuilder.StreakAsync(new ContextModel(this.Context, prfx, contextUser),
                 userSettings, userWithStreak);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
-    [Command("streaks", RunMode = RunMode.Async)]
+    [Command("streaks", "strs", "combos", "cbs", "streakhistory", "combohistory", "combolist", "streaklist")]
     [Summary("Shows you your past streaks")]
     [UsernameSetRequired]
-    [Alias("strs", "combos", "cbs", "streakhistory", "combohistory", "combolist", "streaklist")]
     [CommandCategories(CommandCategory.Albums, CommandCategory.Artists, CommandCategory.Tracks)]
-    public async Task StreakHistoryAsync([Remainder] string extraOptions = null)
+    public async Task StreakHistoryAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
         try
         {
-            var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            var userSettings = await settingService.GetUser(extraOptions, contextUser, this.Context);
+            var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
-            var response = await this._playBuilder.StreakHistoryAsync(new ContextModel(this.Context, prfx, contextUser),
+            var response = await playBuilder.StreakHistoryAsync(new ContextModel(this.Context, prfx, contextUser),
                 userSettings, artist: userSettings.NewSearchValue);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
-    [Command("playleaderboard", RunMode = RunMode.Async)]
+    [Command("playleaderboard", "sblb", "scrobblelb", "scrobbleleaderboard")]
     [Summary("Shows users with the most plays in your server")]
-    [Alias("sblb", "scrobblelb", "scrobbleleaderboard", "scrobble leaderboard")]
     [UsernameSetRequired]
     [GuildOnly]
     [SupportsPagination]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Crowns)]
-    public async Task PlayLeaderboardAsync([Remainder] string options = null)
+    public async Task PlayLeaderboardAsync([CommandParameter(Remainder = true)] string options = null)
     {
         try
         {
-            _ = this.Context.Channel.TriggerTypingAsync();
+            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-            var guild = await this._guildService.GetGuildForWhoKnows(this.Context.Guild?.Id);
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+            var guild = await guildService.GetGuildForWhoKnows(this.Context.Guild?.Id);
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
-            var response = await this._guildBuilders.MemberOverviewAsync(
+            var response = await guildBuilders.MemberOverviewAsync(
                 new ContextModel(this.Context, prfx, contextUser),
                 guild, GuildViewType.Plays);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
-    [Command("timeleaderboard", RunMode = RunMode.Async)]
+    [Command("timeleaderboard", "playtimeleaderboard", "listeningtimeleaderboard", "ptlb", "ltlb", "tlb", "sleepscrobblers")]
     [Summary("Shows users with the most playtime in your server")]
-    [Alias("playtimeleaderboard", "listeningtimeleaderboard", "ptlb", "ltlb", "tlb", "sleepscrobblers")]
     [UsernameSetRequired]
     [GuildOnly]
     [SupportsPagination]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Crowns)]
-    public async Task TimeLeaderboardAsync([Remainder] string options = null)
+    public async Task TimeLeaderboardAsync([CommandParameter(Remainder = true)] string options = null)
     {
         try
         {
-            _ = this.Context.Channel.TriggerTypingAsync();
+            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-            var guild = await this._guildService.GetGuildForWhoKnows(this.Context.Guild?.Id);
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+            var guild = await guildService.GetGuildForWhoKnows(this.Context.Guild?.Id);
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
-            var response = await this._guildBuilders.MemberOverviewAsync(
+            var response = await guildBuilders.MemberOverviewAsync(
                 new ContextModel(this.Context, prfx, contextUser),
                 guild, GuildViewType.ListeningTime);
 
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 }

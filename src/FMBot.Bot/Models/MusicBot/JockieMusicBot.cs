@@ -1,18 +1,18 @@
 using System;
 using System.Linq;
-using Discord;
-using Discord.WebSocket;
+
+using NetCord.Gateway;
 
 namespace FMBot.Bot.Models.MusicBot;
 
 internal class JockieMusicBot : MusicBot
 {
-    private const string StartedPlaying = " ​ Started playing ";
+    private const string StartedPlaying = " ​ Started playing";
     public JockieMusicBot() : base("Jockie Music", true)
     {
     }
 
-    public override bool ShouldIgnoreMessage(IUserMessage msg)
+    public override bool ShouldIgnoreMessage(Message msg)
     {
         if (msg.Embeds.Count != 1)
         {
@@ -38,19 +38,20 @@ internal class JockieMusicBot : MusicBot
      * Example: :spotify: ​ Started playing Giants by Lights
      * Or extended (m!set text announce extended on/off)
      */
-    public override string GetTrackQuery(IUserMessage msg)
+    public override string GetTrackQuery(Message msg)
     {
-        var description = msg.Embeds.First().Description;
+        var description = msg.Embeds[0].Description;
         if (description != null &&
             description.Contains(StartedPlaying, StringComparison.OrdinalIgnoreCase))
         {
-            var songByArtist = description[description.IndexOf(StartedPlaying, StringComparison.OrdinalIgnoreCase)..];
-            return songByArtist.Replace("\\", "");
+            var startIndex = description.IndexOf(StartedPlaying, StringComparison.OrdinalIgnoreCase) + StartedPlaying.Length;
+            var songByArtist = description[startIndex..];
+            return songByArtist.TrimStart().TrimEnd().Replace("\\", "");
         }
 
-        if (msg.Embeds.First().Author.HasValue &&
-            msg.Embeds.First().Author?.Name != null &&
-            msg.Embeds.First().Author.Value.Name.Contains("Started playing", StringComparison.OrdinalIgnoreCase))
+        if (msg.Embeds[0].Author != null &&
+            msg.Embeds.First().Author.Name != null &&
+            msg.Embeds.First().Author.Name.Contains("Started playing", StringComparison.OrdinalIgnoreCase))
         {
             var field = msg.Embeds.First().Fields
                 .FirstOrDefault(f => f.Name.Contains("Playing", StringComparison.OrdinalIgnoreCase));

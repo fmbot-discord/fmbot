@@ -1,6 +1,8 @@
 using System;
 using System.Linq;
-using Discord;
+using NetCord;
+using NetCord.Gateway;
+
 
 namespace FMBot.Bot.Models.MusicBot;
 
@@ -10,29 +12,29 @@ internal class EaraMusicBot : MusicBot
     {
     }
 
-    public override bool ShouldIgnoreMessage(IUserMessage msg)
+    public override bool ShouldIgnoreMessage(Message msg)
     {
         if (msg.Components.Count == 0)
         {
             return true;
         }
 
-        var container = msg.Components.FirstOrDefault(c => c.Type == ComponentType.Container);
-        if (container is not ContainerComponent containerComponent)
+        var container = msg.Components.OfType<ComponentContainer>().FirstOrDefault();
+        if (container is null)
         {
             return true;
         }
 
-        var section = containerComponent.Components.FirstOrDefault(c => c.Type == ComponentType.Section);
-        if (section is not SectionComponent sectionComponent)
+        var section = container.Components.OfType<ComponentSection>().FirstOrDefault();
+        if (section is null)
         {
             return true;
         }
 
-        var textComponents = sectionComponent.Components.Where(f => f.Type == ComponentType.TextDisplay);
-        foreach (var text in textComponents)
+        var textComponents = section.Components.OfType<TextDisplay>();
+        foreach (var textComponent in textComponents)
         {
-            if (text is TextDisplayComponent textComponent && textComponent.Content.Contains("—"))
+            if (textComponent.Content.Contains("—"))
             {
                 return false;
             }
@@ -48,25 +50,25 @@ internal class EaraMusicBot : MusicBot
 
 00:00<:emoji:1284320259922329725><:emoji:1284320227009761360><:emoji:1284320227009761360><:emoji:1284320227009761360><:emoji:1284320227009761360><:emoji:1284320227009761360><:emoji:1284320227009761360><:emoji:1284320227009761360><:emoji:1284320227009761360><:emoji:1284320227009761360><:emoji:1284320227009761360><:emoji:1284320227009761360><:emoji:1284320227009761360><:emoji:1284320202955161610>09:07
      */
-    public override string GetTrackQuery(IUserMessage msg)
+    public override string GetTrackQuery(Message msg)
     {
-        var container = msg.Components.FirstOrDefault(c => c.Type == ComponentType.Container);
-        if (container is not ContainerComponent containerComponent)
+        var container = msg.Components.OfType<ComponentContainer>().FirstOrDefault();
+        if (container is null)
         {
             return string.Empty;
         }
 
-        var section = containerComponent.Components.FirstOrDefault(c => c.Type == ComponentType.Section);
-        if (section is not SectionComponent sectionComponent)
+        var section = container.Components.OfType<ComponentSection>().FirstOrDefault();
+        if (section is null)
         {
             return string.Empty;
         }
 
-        var textComponents = sectionComponent.Components.Where(f => f.Type == ComponentType.TextDisplay);
+        var textComponents = section.Components.OfType<TextDisplay>();
 
-        foreach (var text in textComponents)
+        foreach (var textComponent in textComponents)
         {
-            if (text is not TextDisplayComponent textComponent || !textComponent.Content.Contains("—"))
+            if (!textComponent.Content.Contains("—"))
             {
                 continue;
             }

@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Discord;
 using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Factories;
@@ -22,6 +21,8 @@ using FMBot.Images.Generators;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Subscriptions.Services;
+using NetCord;
+using NetCord.Rest;
 using Serilog;
 using SkiaSharp;
 
@@ -266,7 +267,7 @@ public class TrackBuilders
             response.Embed.AddField("Info", info.ToString(), true);
         }
 
-        response.Components = new ComponentBuilder();
+        response.Components = new ActionRowProperties();
 
         if (dbTrack?.SpotifyId != null)
         {
@@ -279,13 +280,11 @@ public class TrackBuilders
                 response.Embed.AddField($"Eurovision <:eurovision:1084971471610323035> ", eurovisionDescription.full);
                 if (eurovisionEntry.VideoLink != null)
                 {
-                    response.Components.WithButton(style: ButtonStyle.Link,
-                        emote: Emote.Parse(DiscordConstants.YouTube), url: eurovisionEntry.VideoLink);
+                    response.Components.WithButton(
+                        emote: EmojiProperties.Custom(DiscordConstants.YouTube), url: eurovisionEntry.VideoLink);
                 }
             }
         }
-
-
 
         if (!string.IsNullOrWhiteSpace(trackSearch.Track.Description))
         {
@@ -296,9 +295,9 @@ public class TrackBuilders
         {
             response.Components.WithButton(
                     "Preview",
-                    $"{InteractionConstants.TrackPreview}-{dbTrack.Id}",
+                    $"{InteractionConstants.TrackPreview}:{dbTrack.Id}",
                     style: ButtonStyle.Secondary,
-                    emote: Emote.Parse("<:playpreview:1305607890941378672>"));
+                    emote: EmojiProperties.Custom(DiscordConstants.PlayPreview));
         }
 
         if (SupporterService.IsSupporter(context.ContextUser.UserType) &&
@@ -306,9 +305,9 @@ public class TrackBuilders
         {
             response.Components.WithButton(
                 "Lyrics",
-                $"{InteractionConstants.TrackLyrics}-{dbTrack.Id}",
+                $"{InteractionConstants.TrackLyrics}:{dbTrack.Id}",
                 style: ButtonStyle.Secondary,
-                emote: Emoji.Parse("🎤"));
+                emote: EmojiProperties.Standard("🎤"));
         }
 
         //if (track.Tags != null && track.Tags.Any())
@@ -451,18 +450,16 @@ public class TrackBuilders
         {
             if (PublicProperties.PremiumServers.ContainsKey(context.DiscordGuild.Id))
             {
-                var allowedRoles = new SelectMenuBuilder()
+                var allowedRoles = new RoleMenuProperties($"{InteractionConstants.WhoKnowsTrackRolePicker}:{cachedTrack.Id}")
                     .WithPlaceholder("Apply role filter..")
-                    .WithCustomId($"{InteractionConstants.WhoKnowsTrackRolePicker}-{cachedTrack.Id}")
-                    .WithType(ComponentType.RoleSelect)
                     .WithMinValues(0)
                     .WithMaxValues(25);
 
-                response.Components = new ComponentBuilder().WithSelectMenu(allowedRoles);
+                response.RoleMenu = allowedRoles;
             }
             else
             {
-                //response.Components = new ComponentBuilder().WithButton(Constants.GetPremiumServer, disabled: true, customId: "1");
+                //response.Components = new ActionRowProperties().WithButton(Constants.GetPremiumServer, disabled: true, customId: "1");
             }
         }
 
@@ -734,7 +731,7 @@ public class TrackBuilders
                 track.Track.AlbumName, track.Track.ArtistName, track.Track.AlbumUrl);
             if (safeForChannel == CensorService.CensorResult.Safe)
             {
-                response.Embed.WithThumbnailUrl(albumCoverUrl);
+                response.Embed.WithThumbnail(albumCoverUrl);
             }
             else
             {
@@ -849,12 +846,12 @@ public class TrackBuilders
 
         if (spotifyTrack?.SpotifyPreviewUrl != null)
         {
-            response.Components = new ComponentBuilder()
+            response.Components = new ActionRowProperties()
                 .WithButton(
                     "Preview",
-                    $"{InteractionConstants.TrackPreview}-{spotifyTrack.Id}",
+                    $"{InteractionConstants.TrackPreview}:{spotifyTrack.Id}",
                     style: ButtonStyle.Secondary,
-                    emote: Emote.Parse("<:playpreview:1305607890941378672>"));
+                    emote: EmojiProperties.Custom(DiscordConstants.PlayPreview));
         }
 
         return response;
@@ -887,7 +884,7 @@ public class TrackBuilders
         }
         catch (Exception e)
         {
-            Log.Error("Error while sending voice message followup", e);
+            Log.Error(e, "Error while sending voice message followup");
             throw;
         }
 
@@ -1037,7 +1034,7 @@ public class TrackBuilders
 
         if (!userSettings.DifferentUser)
         {
-            response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
+            response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl()?.ToString());
         }
 
         var firstTrack = lovedTracks.Content.RecentTracks[0];
@@ -1084,7 +1081,7 @@ public class TrackBuilders
             pages.Add(page);
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+        response.ComponentPaginator = StringService.BuildComponentPaginator(pages);
         return response;
     }
 
@@ -1196,7 +1193,7 @@ public class TrackBuilders
             pageCounter++;
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+        response.ComponentPaginator = StringService.BuildComponentPaginator(pages);
         response.ResponseType = ResponseType.Paginator;
         return response;
     }
@@ -1385,7 +1382,7 @@ public class TrackBuilders
             pageCounter++;
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages, selectMenuBuilder: context.SelectMenu);
+        response.ComponentPaginator = StringService.BuildComponentPaginator(pages, selectMenuBuilder: context.SelectMenu);
         response.ResponseType = ResponseType.Paginator;
         return response;
     }
@@ -1778,10 +1775,7 @@ public class TrackBuilders
                 .WithAuthor(response.EmbedAuthor)
                 .WithFooter(footer.ToString());
 
-            if (response.Embed.Color.HasValue)
-            {
-                page.WithColor(response.Embed.Color.Value);
-            }
+            page.WithColor(response.Embed.Color);
 
             pages.Add(page);
         }
@@ -1794,7 +1788,7 @@ public class TrackBuilders
         else
         {
             response.ResponseType = ResponseType.Paginator;
-            response.StaticPaginator = StringService.BuildSimpleStaticPaginator(pages);
+            response.ComponentPaginator = StringService.BuildSimpleComponentPaginator(pages);
         }
 
         response.CommandResponse = CommandResponse.Ok;
@@ -1815,7 +1809,7 @@ public class TrackBuilders
             response.Embed.WithDescription(
                 "Viewing track lyrics in .fmbot is only available for .fmbot supporters.");
 
-            response.Components = new ComponentBuilder()
+            response.Components = new ActionRowProperties()
                 .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
                     customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "lyrics"));
             response.Embed.WithColor(DiscordConstants.InformationColorBlue);

@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Web;
 using Dapper;
-using Discord;
+
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain;
@@ -720,7 +720,7 @@ public class PlayService
             .ToList();
     }
 
-    public async Task<List<WhoKnowsObjectWithUser>> GetGuildUsersTotalPlaycount(IGuild discordGuild,
+    public async Task<List<WhoKnowsObjectWithUser>> GetGuildUsersTotalPlaycount(NetCord.Gateway.Guild discordGuild,
         IDictionary<int, FullGuildUser> guildUsers,
         int guildId)
     {
@@ -755,10 +755,9 @@ public class PlayService
 
             if (i <= 10)
             {
-                var discordUser = await discordGuild.GetUserAsync(guildUser.DiscordUserId, CacheMode.CacheOnly);
-                if (discordUser != null)
+                if (discordGuild.Users.TryGetValue(guildUser.DiscordUserId, out var discordUser))
                 {
-                    userName = discordUser.DisplayName;
+                    userName = discordUser.GetDisplayName();
                 }
             }
 

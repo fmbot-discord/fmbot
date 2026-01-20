@@ -1,7 +1,5 @@
 using System.Threading.Tasks;
 using System;
-using System.Collections.Generic;
-using Discord.Commands;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
@@ -10,83 +8,70 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Services;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
-using Fergun.Interactive;
-using Discord;
 using System.Threading;
 using FMBot.Domain;
+using NetCord.Services.Commands;
+using Fergun.Interactive;
+using NetCord.Rest;
 
 namespace FMBot.Bot.TextCommands;
 
-[Name("Games")]
-public class GameCommands : BaseCommandModule
+[ModuleName("Games")]
+public class GameCommands(
+    IOptions<BotSettings> botSettings,
+    UserService userService,
+    GameBuilders gameBuilders,
+    IPrefixService prefixService,
+    InteractiveService interactivity,
+    GameService gameService,
+    SettingService settingService)
+    : BaseCommandModule(botSettings)
 {
-    private readonly UserService _userService;
-    private readonly GameBuilders _gameBuilders;
-    private readonly IPrefixService _prefixService;
-    private readonly GameService _gameService;
-    private readonly SettingService _settingService;
+    private InteractiveService Interactivity { get; } = interactivity;
 
-    private InteractiveService Interactivity { get; }
-
-    public GameCommands(IOptions<BotSettings> botSettings,
-        UserService userService,
-        GameBuilders gameBuilders,
-        IPrefixService prefixService,
-        InteractiveService interactivity,
-        GameService gameService,
-        SettingService settingService) : base(botSettings)
-    {
-        this._userService = userService;
-        this._gameBuilders = gameBuilders;
-        this._prefixService = prefixService;
-        this.Interactivity = interactivity;
-        this._gameService = gameService;
-        this._settingService = settingService;
-    }
-
-    [Command("jumble", RunMode = RunMode.Async)]
+    [Command("jumble", "j", "jmbl", "jum", "jumbmle")]
     [Summary("Play the Jumble game.")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Games)]
-    [Alias("j", "jmbl", "jum", "jumbmle")]
     [Options("stats")]
     [SupporterEnhanced("Supporters can play unlimited Jumble games without a daily limit")]
-    public async Task JumbleAsync([Remainder] string options = null)
+    public async Task JumbleAsync([CommandParameter(Remainder = true)] string options = null)
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
         try
         {
             var context = new ContextModel(this.Context, prfx, contextUser);
-            if (options != null && (options.Contains("stats", StringComparison.OrdinalIgnoreCase) || options.Contains("statistics", StringComparison.OrdinalIgnoreCase)))
+            if (options != null && (options.Contains("stats", StringComparison.OrdinalIgnoreCase) ||
+                                    options.Contains("statistics", StringComparison.OrdinalIgnoreCase)))
             {
-                _ = this.Context.Channel.TriggerTypingAsync();
+                _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-                var userSettings = await this._settingService.GetUser(options, contextUser, this.Context);
+                var userSettings = await settingService.GetUser(options, contextUser, this.Context);
 
-                var statResponse = await this._gameBuilders.GetJumbleUserStats(context, userSettings, JumbleType.Artist);
-                await this.Context.SendResponse(this.Interactivity, statResponse);
-                this.Context.LogCommandUsed(statResponse.CommandResponse);
+                var statResponse = await gameBuilders.GetJumbleUserStats(context, userSettings, JumbleType.Artist);
+                await this.Context.SendResponse(this.Interactivity, statResponse, userService);
+                await this.Context.LogCommandUsedAsync(statResponse, userService);
                 return;
             }
 
             var cancellationTokenSource = new CancellationTokenSource();
-            var response = await this._gameBuilders.StartArtistJumble(context, contextUser.UserId, cancellationTokenSource);
+            var response = await gameBuilders.StartArtistJumble(context, contextUser.UserId, cancellationTokenSource);
 
             if (response.CommandResponse == CommandResponse.Cooldown)
             {
-                _ = Task.Run(() => this.Context.Message.AddReactionAsync(new Emoji("❌")));
-                this.Context.LogCommandUsed(response.CommandResponse);
+                _ = Task.Run(() => this.Context.Message.AddReactionAsync(new ReactionEmojiProperties("❌")));
+                await this.Context.LogCommandUsedAsync(response, userService);
                 return;
             }
 
-            var responseId = await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            var responseId = await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
 
             if (responseId?.Id != null && response.GameSessionId.HasValue)
             {
-                await this._gameService.JumbleAddResponseId(response.GameSessionId.Value, responseId.Id);
+                await gameService.JumbleAddResponseId(response.GameSessionId.Value, responseId.Id);
                 await JumbleTimeExpired(context, responseId.Id, cancellationTokenSource.Token, response.GameSessionId.Value, GameService.JumbleSecondsToGuess);
             }
         }
@@ -95,7 +80,7 @@ public class GameCommands : BaseCommandModule
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 
@@ -109,81 +94,75 @@ public class GameCommands : BaseCommandModule
             return;
         }
 
-        var response = await this._gameBuilders.JumbleTimeExpired(context, gameSessionId);
+        var response = await gameBuilders.JumbleTimeExpired(context, gameSessionId);
 
         if (response == null)
         {
             return;
         }
 
-        var msg = await this.Context.Channel.GetMessageAsync(responseId);
-        if (msg is not IUserMessage message)
+        await this.Context.Client.Rest.ModifyMessageAsync(context.DiscordChannel.Id, responseId, m =>
         {
-            return;
-        }
-
-        if (PublicProperties.UsedCommandsResponseContextId.TryGetValue(message.Id, out var contextId))
-        {
-            await this._userService.UpdateInteractionContext(contextId, response.ReferencedMusic);
-        }
-
-        await message.ModifyAsync(m =>
-        {
-            m.Components = null;
-            m.Embed = response.Embed.Build();
-            m.Attachments = response.Stream != null ? new Optional<IEnumerable<FileAttachment>>(new List<FileAttachment>
-            {
-                new(response.Stream, response.Spoiler ? $"SPOILER_{response.FileName}" : $"{response.FileName}")
-            }) : null;
+            m.Components = [];
+            m.Embeds = [response.Embed];
+            m.Attachments = response.Stream != null
+                ? [new AttachmentProperties(response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName, response.Stream)]
+                : null;
         });
+
+        if (PublicProperties.UsedCommandsResponseContextId.TryGetValue(responseId, out var contextId))
+        {
+            await userService.UpdateInteractionContext(contextId, response.ReferencedMusic);
+        }
     }
 
-    [Command("pixel", RunMode = RunMode.Async)]
+    [Command("pixel", "px", "pixelation", "aj", "abj", "popidle", "pixeljumble", "pxj")]
     [Summary("Play the pixel jumble game with albums.")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Games)]
-    [Alias("px", "pixelation", "aj", "abj", "popidle", "pixeljumble", "pxj")]
     [Options("stats")]
     [SupporterEnhanced("Supporters can play unlimited Pixel Jumble games without a daily limit")]
-    public async Task PixelAsync([Remainder] string options = null)
+    public async Task PixelAsync([CommandParameter(Remainder = true)] string options = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
         try
         {
             var context = new ContextModel(this.Context, prfx, contextUser);
-            if (options != null && (options.Contains("stats", StringComparison.OrdinalIgnoreCase) || options.Contains("statistics", StringComparison.OrdinalIgnoreCase)))
+            if (options != null && (options.Contains("stats", StringComparison.OrdinalIgnoreCase) ||
+                                    options.Contains("statistics", StringComparison.OrdinalIgnoreCase)))
             {
-                _ = this.Context.Channel.TriggerTypingAsync();
+                _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
-                var userSettings = await this._settingService.GetUser(options, contextUser, this.Context);
+                var userSettings = await settingService.GetUser(options, contextUser, this.Context);
 
-                var statResponse = await this._gameBuilders.GetJumbleUserStats(context, userSettings, JumbleType.Pixelation);
-                await this.Context.SendResponse(this.Interactivity, statResponse);
-                this.Context.LogCommandUsed(statResponse.CommandResponse);
+                var statResponse = await gameBuilders.GetJumbleUserStats(context, userSettings, JumbleType.Pixelation);
+                await this.Context.SendResponse(this.Interactivity, statResponse, userService);
+                await this.Context.LogCommandUsedAsync(statResponse, userService);
                 return;
             }
 
             var cancellationTokenSource = new CancellationTokenSource();
-            var response = await this._gameBuilders.StartPixelJumble(context, contextUser.UserId, cancellationTokenSource);
+            var response = await gameBuilders.StartPixelJumble(context, contextUser.UserId, cancellationTokenSource);
 
             if (response.CommandResponse == CommandResponse.Cooldown)
             {
-                _ = Task.Run(() => this.Context.Message.AddReactionAsync(new Emoji("❌")));
-                this.Context.LogCommandUsed(response.CommandResponse);
+                _ = Task.Run(() => this.Context.Message.AddReactionAsync(new ReactionEmojiProperties("❌")));
+                await this.Context.LogCommandUsedAsync(response, userService);
                 return;
             }
 
-            var responseId = await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            var responseId = await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
 
             if (responseId?.Id != null && response.GameSessionId.HasValue)
             {
-                await this._gameService.JumbleAddResponseId(response.GameSessionId.Value, responseId.Id);
-                await JumbleTimeExpired(context, responseId.Id, cancellationTokenSource.Token, response.GameSessionId.Value, GameService.PixelationSecondsToGuess);
+                await gameService.JumbleAddResponseId(response.GameSessionId.Value, responseId.Id);
+                await JumbleTimeExpired(context, responseId.Id, cancellationTokenSource.Token, response.GameSessionId.Value,
+                    GameService.PixelationSecondsToGuess);
             }
         }
         catch (OperationCanceledException)
@@ -191,8 +170,7 @@ public class GameCommands : BaseCommandModule
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
-
 }

@@ -1,8 +1,7 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Discord;
-using Discord.Commands;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
@@ -11,13 +10,16 @@ using FMBot.Domain;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 using FMBot.Domain.Types;
+using NetCord;
+using NetCord.Rest;
+using NetCord.Services.Commands;
 using Serilog;
 
 namespace FMBot.Bot.Services;
 
 public static class GenericEmbedService
 {
-    public static void UsernameNotSetErrorResponse(this EmbedBuilder embed, string prfx, string name)
+    public static void UsernameNotSetErrorResponse(this EmbedProperties embed, string prfx, string name)
     {
         var loginCommand = PublicProperties.SlashCommands.ContainsKey("login")
             ? $"</login:{PublicProperties.SlashCommands["login"]}>"
@@ -31,37 +33,37 @@ public static class GenericEmbedService
         embed.WithColor(DiscordConstants.WarningColorOrange);
     }
 
-    public static ComponentBuilder UsernameNotSetErrorComponents()
+    public static ActionRowProperties UsernameNotSetErrorComponents()
     {
-        return new ComponentBuilder()
-            .WithButton("Sign up", style: ButtonStyle.Link, url: "https://www.last.fm/join")
+        return new ActionRowProperties()
+            .WithButton("Sign up", url: "https://www.last.fm/join")
             .WithButton("Connect Last.fm account", style: ButtonStyle.Secondary,
                 customId: InteractionConstants.User.Login);
     }
 
-    public static ComponentBuilder ReconnectComponents()
+    public static ActionRowProperties ReconnectComponents()
     {
-        return new ComponentBuilder()
+        return new ActionRowProperties()
             .WithButton("Reconnect Last.fm account", style: ButtonStyle.Secondary,
                 customId: InteractionConstants.User.Login);
     }
 
-    public static void RateLimitedResponse(this EmbedBuilder embed)
+    public static void RateLimitedResponse(this EmbedProperties embed)
     {
         embed.WithDescription(
             $"Sorry, you're being ratelimited. Please cool down and wait a minute before using commands again.");
         embed.WithColor(DiscordConstants.WarningColorOrange);
     }
 
-    public static void UserBlockedResponse(this EmbedBuilder embed, string prfx)
+    public static void UserBlockedResponse(this EmbedProperties embed, string prfx)
     {
         embed.WithDescription("You're banned from using .fmbot.");
-        embed.WithThumbnailUrl("https://i.imgur.com/wNmcoR5.jpg");
+        embed.WithThumbnail("https://i.imgur.com/wNmcoR5.jpg");
 
         embed.WithColor(DiscordConstants.WarningColorOrange);
     }
 
-    public static void SessionRequiredResponse(this EmbedBuilder embed, string prfx)
+    public static void SessionRequiredResponse(this EmbedProperties embed, string prfx)
     {
         embed.WithDescription(
             "While you have set your username, you haven't connected .fmbot to your Last.fm account yet, which is required for the command you're trying to use.\n" +
@@ -70,7 +72,7 @@ public static class GenericEmbedService
         embed.WithColor(DiscordConstants.WarningColorOrange);
     }
 
-    private static void NoScrobblesFoundErrorResponse(this EmbedBuilder embed, string userName)
+    private static void NoScrobblesFoundErrorResponse(this EmbedProperties embed, string userName)
     {
         var description = new StringBuilder();
         description.AppendLine(
@@ -89,15 +91,15 @@ public static class GenericEmbedService
         embed.WithColor(DiscordConstants.WarningColorOrange);
     }
 
-    private static ComponentBuilder NoScrobblesFoundComponents()
+    private static ActionRowProperties NoScrobblesFoundComponents()
     {
-        return new ComponentBuilder()
-            .WithButton("Track my music app", style: ButtonStyle.Link, url: "https://www.last.fm/about/trackmymusic")
-            .WithButton("Track Spotify", style: ButtonStyle.Link, url: "https://www.last.fm/settings/applications");
+        return new ActionRowProperties()
+            .WithButton("Track my music app", url: "https://www.last.fm/about/trackmymusic")
+            .WithButton("Track Spotify", url: "https://www.last.fm/settings/applications");
     }
 
-    public static void ErrorResponse(this EmbedBuilder embed, ResponseStatus? responseStatus, string message,
-        string commandContent, IUser contextUser = null, string expectedResultType = null)
+    public static void ErrorResponse(this EmbedProperties embed, ResponseStatus? responseStatus, string message,
+        string commandContent, NetCord.User contextUser = null, string expectedResultType = null)
     {
         embed.WithTitle("Problem while contacting Last.fm");
 
@@ -178,33 +180,39 @@ public static class GenericEmbedService
     }
 
     public static async Task<bool> RecentScrobbleCallFailedReply(Response<RecentTrackList> recentScrobbles,
-        string lastFmUserName, ICommandContext context)
+        string lastFmUserName, CommandContext context, UserService userService)
     {
-        var embed = new EmbedBuilder();
+        var embed = new EmbedProperties();
         if (!recentScrobbles.Success || recentScrobbles.Content == null)
         {
             embed.ErrorResponse(recentScrobbles.Error, recentScrobbles.Message, context.Message.Content, context.User);
-            context.LogCommandUsed(CommandResponse.LastFmError);
-            await context.Channel.SendMessageAsync("", false, embed.Build());
+            await context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.LastFmError }, userService);
+            await context.Channel.SendMessageAsync(new MessageProperties
+            {
+                Embeds = [embed]
+            });
             return true;
         }
 
         if (!recentScrobbles.Content.RecentTracks.Any())
         {
             embed.NoScrobblesFoundErrorResponse(lastFmUserName);
-            context.LogCommandUsed(CommandResponse.NoScrobbles);
-            await context.Channel.SendMessageAsync("", false, embed.Build(),
-                components: NoScrobblesFoundComponents().Build());
+            await context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoScrobbles }, userService);
+            await context.Channel.SendMessageAsync(new MessageProperties
+            {
+                Embeds = [embed],
+                Components = [NoScrobblesFoundComponents()]
+            });
             return true;
         }
 
         return false;
     }
 
-    public static EmbedBuilder RecentScrobbleCallFailedBuilder(Response<RecentTrackList> recentScrobbles,
+    public static EmbedProperties RecentScrobbleCallFailedBuilder(Response<RecentTrackList> recentScrobbles,
         string lastFmUserName)
     {
-        var embed = new EmbedBuilder();
+        var embed = new EmbedProperties();
         if (recentScrobbles.Content?.RecentTracks == null || !recentScrobbles.Success)
         {
             embed.ErrorResponse(recentScrobbles.Error, recentScrobbles.Message, null);
@@ -246,18 +254,20 @@ public static class GenericEmbedService
         return null;
     }
 
-    public static (EmbedBuilder embedBuilder, bool showPurchaseButtons) HelpResponse(EmbedBuilder embed,
-        CommandInfo commandInfo, string prfx, string userName)
+    public static (EmbedProperties EmbedProperties, bool showPurchaseButtons) HelpResponse(EmbedProperties embed,
+        ICommandInfo<CommandContext> commandInfo, string prfx, string userName)
     {
         embed.WithColor(DiscordConstants.InformationColorBlue);
-        embed.WithTitle($"Information about '{prfx}{commandInfo.Name}' for {userName}");
+        embed.WithTitle($"Information about '{prfx}{commandInfo.Aliases[0]}' for {userName}");
 
-        if (!string.IsNullOrWhiteSpace(commandInfo.Summary))
+        var allAttributes = commandInfo.Attributes.Values.SelectMany(x => x);
+        var summary = allAttributes.OfType<SummaryAttribute>().FirstOrDefault()?.Summary;
+        if (!string.IsNullOrWhiteSpace(summary))
         {
-            embed.WithDescription(commandInfo.Summary.Replace("{{prfx}}", prfx));
+            embed.WithDescription(summary.Replace("{{prfx}}", prfx));
         }
 
-        var options = commandInfo.Attributes.OfType<OptionsAttribute>()
+        var options = allAttributes.OfType<OptionsAttribute>()
             .FirstOrDefault();
         if (options?.Options != null && options.Options.Any())
         {
@@ -270,7 +280,7 @@ public static class GenericEmbedService
             embed.AddField("Options", optionsString.ToString());
         }
 
-        var examples = commandInfo.Attributes.OfType<ExamplesAttribute>()
+        var examples = allAttributes.OfType<ExamplesAttribute>()
             .FirstOrDefault();
         if (examples?.Examples != null && examples.Examples.Any())
         {
@@ -283,7 +293,7 @@ public static class GenericEmbedService
             embed.AddField("Examples", examplesString.ToString());
         }
 
-        var aliases = commandInfo.Aliases.Where(a => a != commandInfo.Name).ToList();
+        var aliases = commandInfo.Aliases.Skip(1).ToList();
         if (aliases.Any())
         {
             var aliasesString = new StringBuilder();
@@ -302,7 +312,7 @@ public static class GenericEmbedService
         }
 
         var showPurchaseButtons = false;
-        var supporterEnhanced = commandInfo.Attributes.OfType<SupporterEnhancedAttribute>()
+        var supporterEnhanced = allAttributes.OfType<SupporterEnhancedAttribute>()
             .FirstOrDefault();
         if (supporterEnhanced?.Explainer != null)
         {
@@ -310,7 +320,7 @@ public static class GenericEmbedService
             embed.AddField("⭐ Enhanced for .fmbot supporters", supporterEnhanced.Explainer);
         }
 
-        var supporterExclusive = commandInfo.Attributes.OfType<SupporterExclusiveAttribute>()
+        var supporterExclusive = allAttributes.OfType<SupporterExclusiveAttribute>()
             .FirstOrDefault();
         if (supporterExclusive?.Explainer != null)
         {
@@ -321,11 +331,184 @@ public static class GenericEmbedService
         return (embed, showPurchaseButtons);
     }
 
-    public static ComponentBuilder PurchaseButtons(CommandInfo commandInfo)
+    public static ActionRowProperties PurchaseButtons(ICommandInfo<CommandContext> commandInfo)
     {
-        return new ComponentBuilder()
+        return new ActionRowProperties()
             .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
                 customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(
-                    source: $"help-{commandInfo.Name}"));
+                    source: $"help-{commandInfo.Aliases[0]}"));
+    }
+
+    extension(EmbedProperties embed)
+    {
+        public void AddField(string name, string value, bool inline = false)
+        {
+            embed.AddFields(new EmbedFieldProperties
+            {
+                Name = name,
+                Value = value,
+                Inline = inline
+            });
+        }
+
+        public void WithFooter(string value)
+        {
+            embed.WithFooter(new EmbedFooterProperties
+            {
+                Text = value
+            });
+        }
+
+        public void WithAuthor(string value)
+        {
+            embed.WithAuthor(new EmbedAuthorProperties
+            {
+                Name = value
+            });
+        }
+    }
+
+    public static ActionRowProperties WithButton(this ActionRowProperties actionRow, EmojiProperties emote,
+        string url = null, string label = null)
+    {
+        var linkButton = label == null
+            ? new LinkButtonProperties(url, emote)
+            : new LinkButtonProperties(url, label, emote);
+        actionRow.Add(linkButton);
+        return actionRow;
+    }
+
+    public static ActionRowProperties WithButton(this ActionRowProperties actionRow, string label,
+        string customId = null, ButtonStyle style = ButtonStyle.Secondary, EmojiProperties emote = null,
+        bool disabled = false, string url = null, int row = 0)
+    {
+        if (url != null)
+        {
+            var linkButton = emote == null
+                ? new LinkButtonProperties(url, label)
+                : new LinkButtonProperties(url, label, emote);
+            actionRow.Add(linkButton);
+        }
+        else if (customId != null)
+        {
+            var button = emote == null
+                ? new ButtonProperties(customId, label, style)
+                : new ButtonProperties(customId, label, emote, style);
+            button.Disabled = disabled;
+            actionRow.Add(button);
+        }
+
+        return actionRow;
+    }
+
+    public static List<ActionRowProperties> WithButton(this List<ActionRowProperties> rows, string label,
+        string customId = null, ButtonStyle style = ButtonStyle.Secondary, EmojiProperties emote = null,
+        bool disabled = false, string url = null, int row = 0)
+    {
+        while (rows.Count <= row)
+        {
+            rows.Add(new ActionRowProperties());
+        }
+
+        if (url != null)
+        {
+            rows[row].WithButton(label, url: url, emote: emote);
+        }
+        else if (customId != null)
+        {
+            rows[row].WithButton(label, customId, style, emote, disabled);
+        }
+
+        return rows;
+    }
+
+    public static Dictionary<int, ActionRowProperties> WithButton(this Dictionary<int, ActionRowProperties> rows, string label,
+        string customId = null, ButtonStyle style = ButtonStyle.Secondary, EmojiProperties emote = null,
+        bool disabled = false, string url = null, int row = 0)
+    {
+        if (!rows.ContainsKey(row))
+        {
+            rows[row] = new ActionRowProperties();
+        }
+
+        if (url != null)
+        {
+            rows[row].WithButton(label, url: url, emote: emote);
+        }
+        else if (customId != null)
+        {
+            rows[row].WithButton(label, customId, style, emote, disabled);
+        }
+
+        return rows;
+    }
+
+    public static List<ActionRowProperties> AddComponent(this List<ActionRowProperties> components, ActionRowProperties actionRow)
+    {
+        components.Add(actionRow);
+        return components;
+    }
+
+    public static StringMenuProperties AddOption(this StringMenuProperties menu,
+        StringMenuSelectOptionProperties properties)
+    {
+        menu.Add(properties);
+        return menu;
+    }
+
+    public static StringMenuProperties AddOption(this StringMenuProperties menu, string label, string value,
+        bool isDefault = false, string description = null)
+    {
+        var option = new StringMenuSelectOptionProperties(label, value)
+        {
+            Default = isDefault,
+            Description = description
+        };
+
+        menu.Add(option);
+        return menu;
+    }
+
+    public static ComponentContainerProperties AddComponent(this ComponentContainerProperties component,
+        IComponentContainerComponentProperties properties)
+    {
+        component.AddComponents(properties);
+        return component;
+    }
+
+    public static ComponentContainerProperties WithSection(this ComponentContainerProperties component,
+        IEnumerable<TextDisplayProperties> textDisplays, string thumbnailUrl)
+    {
+        var section = new ComponentSectionProperties(
+            new ComponentSectionThumbnailProperties(new ComponentMediaProperties(thumbnailUrl)),
+            textDisplays);
+        component.AddComponents(section);
+        return component;
+    }
+
+    public static ComponentContainerProperties WithSection(this ComponentContainerProperties component,
+        IEnumerable<TextDisplayProperties> textDisplays, ComponentSectionThumbnailProperties thumbnail)
+    {
+        var section = new ComponentSectionProperties(thumbnail, textDisplays);
+        component.AddComponents(section);
+        return component;
+    }
+
+    public static ComponentContainerProperties WithTextDisplay(this ComponentContainerProperties component, string text)
+    {
+        component.AddComponents(new TextDisplayProperties(text));
+        return component;
+    }
+
+    public static ComponentContainerProperties WithSeparator(this ComponentContainerProperties component)
+    {
+        component.AddComponents(new ComponentSeparatorProperties());
+        return component;
+    }
+
+    public static ComponentContainerProperties WithActionRow(this ComponentContainerProperties component, ActionRowProperties actionRow)
+    {
+        component.AddComponents(actionRow);
+        return component;
     }
 }

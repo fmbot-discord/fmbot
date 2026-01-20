@@ -1,9 +1,8 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Discord;
-using Discord.Commands;
-using Discord.WebSocket;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
@@ -15,71 +14,62 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
+using NetCord;
+using NetCord.Services.Commands;
 using Serilog;
+using NetCord.Rest;
 
 namespace FMBot.Bot.TextCommands;
 
-[Name("Indexing")]
-public class IndexCommands : BaseCommandModule
+[ModuleName("Indexing")]
+public class IndexCommands(
+    GuildService guildService,
+    IndexService indexService,
+    IPrefixService prefixService,
+    UserService userService,
+    IOptions<BotSettings> botSettings,
+    UserBuilder userBuilder,
+    InteractiveService interactivity)
+    : BaseCommandModule(botSettings)
 {
-    private readonly GuildService _guildService;
-    private readonly IndexService _indexService;
-    private readonly IPrefixService _prefixService;
-    private readonly UserService _userService;
-    private readonly UserBuilder _userBuilder;
+    private InteractiveService Interactivity { get; } = interactivity;
 
-    private InteractiveService Interactivity { get; }
-
-    public IndexCommands(
-        GuildService guildService,
-        IndexService indexService,
-        IPrefixService prefixService,
-        UserService userService,
-        IOptions<BotSettings> botSettings,
-        UserBuilder userBuilder,
-        InteractiveService interactivity) : base(botSettings)
-    {
-        this._guildService = guildService;
-        this._indexService = indexService;
-        this._prefixService = prefixService;
-        this._userService = userService;
-        this._userBuilder = userBuilder;
-        this.Interactivity = interactivity;
-    }
-
-    [Command("refreshmembers", RunMode = RunMode.Async)]
+    [Command("refreshmembers", "index", "refresh", "cachemembers", "refreshserver", "serverset")]
     [Summary("Refreshes the cached member list that .fmbot has for your server.")]
-    [Alias("index", "refresh", "cachemembers", "refreshserver", "serverset", "refresh members")]
     [GuildOnly]
     [CommandCategories(CommandCategory.ServerSettings)]
     public async Task IndexGuildAsync()
     {
-        var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
+        var lastIndex = await guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
 
         if (lastIndex > DateTime.UtcNow.AddMinutes(-1))
         {
             this._embed.WithColor(DiscordConstants.InformationColorBlue);
             this._embed.WithDescription("This server has already been updated in the last minute, please wait.");
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-            this.Context.LogCommandUsed(CommandResponse.Cooldown);
+            await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Cooldown }, userService);
             return;
         }
 
         this._embed.WithDescription(
             "<a:loading:821676038102056991> Updating memberlist, this can take a while on larger servers...");
-        var indexMessage = await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+        var indexMessage = await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
 
         try
         {
-            await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow);
+            await guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow);
 
-            var guildUsers = await this.Context.Guild.GetUsersAsync();
+            var guildUsers = new List<GuildUser>();
+            await foreach (var user in this.Context.Guild.GetUsersAsync())
+            {
+                guildUsers.Add(user);
+            }
 
             Log.Information("Downloaded {guildUserCount} users for guild {guildId} / {guildName} from Discord",
                 guildUsers.Count, this.Context.Guild.Id, this.Context.Guild.Name);
 
             var reply = new StringBuilder();
-            var registeredUserCount = await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
+            var registeredUserCount = await indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
 
             reply.AppendLine($"✅ Cached memberlist for server has been updated.");
 
@@ -90,17 +80,16 @@ public class IndexCommands : BaseCommandModule
 
             await indexMessage.ModifyAsync(m =>
             {
-                m.Embed = new EmbedBuilder()
+                m.Embeds = [new EmbedProperties()
                     .WithDescription(reply.ToString())
-                    .WithColor(DiscordConstants.SuccessColorGreen)
-                    .Build();
+                    .WithColor(DiscordConstants.SuccessColorGreen)]
+                    ;
             });
 
-            if (this.Context.Guild is SocketGuild socketGuild)
+            if (this.Context.Guild is NetCord.Gateway.Guild socketGuild)
             {
-                socketGuild.PurgeUserCache();
             }
-            this.Context.LogCommandUsed();
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
 
             // if (usersToFullyUpdate != null && usersToFullyUpdate.Count != 0)
             // {
@@ -109,12 +98,12 @@ public class IndexCommands : BaseCommandModule
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
-            await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow);
+            await this.Context.HandleCommandException(e, userService);
+            await guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow);
         }
     }
 
-    [Command("update", RunMode = RunMode.Async)]
+    [Command("update", "u")]
     [Summary("Updates a users cached playcounts based on their recent plays\n\n" +
              "You can also update parts of your cached playcounts by using one of the options")]
     [Options("Full", "Plays", "Artists", "Albums", "Tracks")]
@@ -122,52 +111,51 @@ public class IndexCommands : BaseCommandModule
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.UserSettings)]
     [SupporterEnhanced("Supporters get their lifetime data cached in the bot, so all the commands that rely on this have the most complete data")]
-    [Alias("u")]
-    public async Task UpdateAsync([Remainder] string options = null)
+    public async Task UpdateAsync([CommandParameter(Remainder = true)] string options = null)
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
         var updateType = SettingService.GetUpdateType(options, SupporterService.IsSupporter(contextUser.UserType));
 
         if (!updateType.optionPicked)
         {
             var initialResponse = UserBuilder.UpdatePlaysInit(new ContextModel(this.Context, prfx, contextUser));
-            var message = await this.Context.SendResponse(this.Interactivity,initialResponse);
+            var message = await this.Context.SendResponse(this.Interactivity, initialResponse, userService);
 
             var updatedResponse =
-                await this._userBuilder.UpdatePlays(new ContextModel(this.Context, prfx, contextUser));
+                await userBuilder.UpdatePlays(new ContextModel(this.Context, prfx, contextUser));
 
             await message.ModifyAsync(m =>
             {
-                m.Embed = updatedResponse.Embed.Build();
-                m.Components = updatedResponse.Components?.Build();
+                m.Embeds = [updatedResponse.Embed];
+                m.Components = updatedResponse.Components != null && updatedResponse.Components.Any() ? [updatedResponse.Components] : [];
             });
 
-            this.Context.LogCommandUsed(updatedResponse.CommandResponse);
+            await this.Context.LogCommandUsedAsync(updatedResponse, userService);
         }
         else
         {
-            var initialResponse = this._userBuilder.UpdateOptionsInit(new ContextModel(this.Context, prfx, contextUser),
+            var initialResponse = userBuilder.UpdateOptionsInit(new ContextModel(this.Context, prfx, contextUser),
                 updateType.updateType, updateType.description);
-            var message = await this.Context.SendResponse(this.Interactivity,initialResponse);
+            var message = await this.Context.SendResponse(this.Interactivity, initialResponse, userService);
 
             if (initialResponse.CommandResponse != CommandResponse.Ok)
             {
-                this.Context.LogCommandUsed(initialResponse.CommandResponse);
+                await this.Context.LogCommandUsedAsync(initialResponse, userService);
                 return;
             }
 
             var updatedResponse =
-                await this._userBuilder.UpdateOptions(new ContextModel(this.Context, prfx, contextUser),
+                await userBuilder.UpdateOptions(new ContextModel(this.Context, prfx, contextUser),
                     updateType.updateType);
 
             await message.ModifyAsync(m =>
             {
-                m.Embed = updatedResponse.Embed.Build();
-                m.Components = updatedResponse.Components?.Build();
+                m.Embeds = [updatedResponse.Embed];
+                m.Components = updatedResponse.Components != null && updatedResponse.Components.Any() ? [updatedResponse.Components] : [];
             });
 
-            this.Context.LogCommandUsed(updatedResponse.CommandResponse);
+            await this.Context.LogCommandUsedAsync(updatedResponse, userService);
         }
     }
 }

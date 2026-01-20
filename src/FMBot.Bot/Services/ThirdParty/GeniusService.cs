@@ -98,7 +98,7 @@ public class GeniusService
         }
         catch (Exception ex)
         {
-            Log.Error("Something went wrong while deserializing the response from the Genius API - {exceptionMessage}", ex);
+            Log.Error(ex, "Something went wrong while deserializing the response from the Genius API");
             return null;
         }
     }
