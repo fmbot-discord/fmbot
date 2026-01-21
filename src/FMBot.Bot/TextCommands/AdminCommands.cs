@@ -1776,7 +1776,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                             "Found album artwork or an artist image that should be marked NSFW or censored entirely? Please report that here. \n\n" +
                             "Note that artwork is censored according to Discord guidelines and only as required by Discord. .fmbot is fundamentally opposed to artistic censorship."),
                         new TextDisplayProperties("**Marked NSFW**\n" +
-                                               "Frontal nudity [genitalia, exposed anuses, and 'female presenting nipples,' which is not our terminology], furry art in an erotic context and people covered in blood and/or wounds"),
+                                               "Frontal nudity [genitalia, exposed anuses, and 'female presenting nipples,' which is not our terminology], certain art in an erotic context and people covered in blood and/or wounds"),
                         new TextDisplayProperties(
                             "**Fully censored / NSFL**\n" +
                             "Hate speech [imagery or text promoting prejudice against a group], gore [detailed, realistic, or semi realistic depictions of viscera or extreme bodily harm, not blood alone] and pornographic content [depictions of sex]"),

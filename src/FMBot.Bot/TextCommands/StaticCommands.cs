@@ -152,6 +152,7 @@ public class StaticCommands(
     [Command("getsupporter", "support", "patreon", "opencollective", "donations", "supporter")]
     [Summary("Get the best .fmbot experience with Supporter")]
     [CommandCategories(CommandCategory.Other)]
+    [UsernameSetRequired]
     public async Task GetSupporter()
     {
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);

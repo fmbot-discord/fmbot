@@ -344,7 +344,7 @@ public class InteractionHandler
             }
         }
 
-        if (HasAttribute<UsernameSetRequired>())
+        if (HasAttribute<UsernameSetRequired>() || HasAttribute<UserSessionRequired>())
         {
             var userIsRegistered = await this._userService.UserRegisteredAsync(user);
 

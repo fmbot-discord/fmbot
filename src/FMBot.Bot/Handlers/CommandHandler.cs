@@ -323,7 +323,7 @@ public class CommandHandler
                 searchResult.Command.Attributes.ContainsKey(typeof(T)) &&
                 searchResult.Command.Attributes[typeof(T)].Count > 0;
 
-            if (HasAttribute<UsernameSetRequired>())
+            if (HasAttribute<UsernameSetRequired>() || HasAttribute<UserSessionRequired>())
             {
                 var userIsRegistered = await this._userService.UserRegisteredAsync(context.User);
                 if (!userIsRegistered)
