@@ -1065,7 +1065,6 @@ public class UserInteractions(
     }
 
     [ComponentInteraction(InteractionConstants.ManageAlts.ManageAltsPicker)]
-    [UserSessionRequired]
     public async Task ManageAltsPicker()
     {
         try
