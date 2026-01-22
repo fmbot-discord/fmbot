@@ -202,6 +202,16 @@ public static class Statistics
         .CreateGauge("bot_update_queue_size", "Amount of users in update queue");
 
 
+    public static readonly Counter ShortcutsUsed = Metrics
+        .CreateCounter("bot_feature_shortcuts", "Amount of shortcuts used");
+
+    public static readonly Counter JumblesPlayed = Metrics
+        .CreateCounter("bot_jumbles_played", "Amount of shortcuts used", new CounterConfiguration
+        {
+            LabelNames = ["type"]
+        });
+
+
     public static readonly Counter ShardConnected = Metrics
         .CreateCounter("bot_shard_connected", "A shard has connected");
 
