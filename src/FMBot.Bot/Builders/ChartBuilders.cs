@@ -227,7 +227,7 @@ public class ChartBuilders
         ChartService.AddSettingsToDescription(chartSettings, embedDescription, supporter, context.Prefix);
 
         var nsfwAllowed = context.DiscordGuild == null || ((TextGuildChannel)context.DiscordChannel).Nsfw;
-        var chart = await this._chartService.GenerateChartAsync(chartSettings);
+        using var chart = await this._chartService.GenerateChartAsync(chartSettings);
 
         if (chartSettings.CensoredItems is > 0)
         {
@@ -276,7 +276,7 @@ public class ChartBuilders
         }
 
         var encoded = chart.Encode(SKEncodedImageFormat.Png, 100);
-        response.Stream = encoded.AsStream();
+        response.Stream = encoded.AsStream(true);
         response.ResponseType = ResponseType.ComponentsV2;
         response.ComponentsContainer.WithAccentColor(DiscordConstants.LastFmColorRed);
 
@@ -414,7 +414,7 @@ public class ChartBuilders
         }
 
         var nsfwAllowed = context.DiscordGuild == null || ((TextGuildChannel)context.DiscordChannel).Nsfw;
-        var chart = await this._chartService.GenerateChartAsync(chartSettings);
+        using var chart = await this._chartService.GenerateChartAsync(chartSettings);
 
         if (chartSettings.CensoredItems is > 0)
         {
@@ -453,7 +453,7 @@ public class ChartBuilders
         response.ComponentsContainer.AddComponent(new TextDisplayProperties(footer.ToString()));
 
         var encoded = chart.Encode(SKEncodedImageFormat.Png, 100);
-        response.Stream = encoded.AsStream();
+        response.Stream = encoded.AsStream(true);
         response.ResponseType = ResponseType.ComponentsV2;
         response.ComponentsContainer.WithAccentColor(DiscordConstants.LastFmColorRed);
 

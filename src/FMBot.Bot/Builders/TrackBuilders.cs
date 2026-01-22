@@ -371,12 +371,12 @@ public class TrackBuilders
 
         if (mode == ResponseMode.Image)
         {
-            var image = await this._puppeteerService.GetWhoKnows("WhoKnows Track",
+            using var image = await this._puppeteerService.GetWhoKnows("WhoKnows Track",
                 $"in <b>{context.DiscordGuild.Name}</b>", albumCoverUrl, trackName,
                 filteredUsersWithTrack, context.ContextUser.UserId, PrivacyLevel.Server, context.NumberFormat);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
-            response.Stream = encoded.AsStream();
+            response.Stream = encoded.AsStream(true);
             response.FileName = $"whoknows-track-{track.Track.ArtistName}-{track.Track.TrackName}.png";
             response.ResponseType = ResponseType.ImageOnly;
 
@@ -515,12 +515,12 @@ public class TrackBuilders
 
         if (mode == ResponseMode.Image)
         {
-            var image = await this._puppeteerService.GetWhoKnows("WhoKnows Track", $"from <b>{userTitle}</b>'s friends",
+            using var image = await this._puppeteerService.GetWhoKnows("WhoKnows Track", $"from <b>{userTitle}</b>'s friends",
                 albumCoverUrl, trackName,
                 usersWithTrack, context.ContextUser.UserId, PrivacyLevel.Server, context.NumberFormat);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
-            response.Stream = encoded.AsStream();
+            response.Stream = encoded.AsStream(true);
             response.FileName = $"friends-whoknow-track-{track.Track.ArtistName}-{track.Track.TrackName}.png";
             response.ResponseType = ResponseType.ImageOnly;
 
@@ -644,13 +644,13 @@ public class TrackBuilders
 
         if (settings.ResponseMode == ResponseMode.Image)
         {
-            var image = await this._puppeteerService.GetWhoKnows("WhoKnows Track", $"in <b>.fmbot 🌐</b>",
+            using var image = await this._puppeteerService.GetWhoKnows("WhoKnows Track", $"in <b>.fmbot 🌐</b>",
                 albumCoverUrl, trackName,
                 filteredUsersWithTrack, context.ContextUser.UserId, privacyLevel, context.NumberFormat,
                 hidePrivateUsers: settings.HidePrivateUsers);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
-            response.Stream = encoded.AsStream();
+            response.Stream = encoded.AsStream(true);
             response.FileName = $"global-whoknows-track-{track.Track.ArtistName}-{track.Track.TrackName}.png";
             response.ResponseType = ResponseType.ImageOnly;
 
@@ -1256,13 +1256,13 @@ public class TrackBuilders
             var backgroundImage = (await this._artistsService.GetArtistFromDatabase(topTracks.Content.TopTracks.First()
                 .ArtistName))?.SpotifyImageUrl;
 
-            var image = await this._puppeteerService.GetTopList(userTitle, "Top Tracks", "tracks",
+            using var image = await this._puppeteerService.GetTopList(userTitle, "Top Tracks", "tracks",
                 timeSettings.Description,
                 topTracks.Content.TotalAmount.GetValueOrDefault(), totalPlays.GetValueOrDefault(), backgroundImage,
                 topTracks.TopList, context.NumberFormat);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
-            response.Stream = encoded.AsStream();
+            response.Stream = encoded.AsStream(true);
             response.FileName = $"top-tracks-{userSettings.DiscordUserId}.png";
             response.ResponseType = ResponseType.ImageOnly;
 
@@ -1434,10 +1434,10 @@ public class TrackBuilders
         var count = await this._dataSourceFactory.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm,
             timeSettings.TimeFrom, userSettings.SessionKeyLastFm, timeSettings.TimeUntil);
 
-        var image = await this._puppeteerService.GetReceipt(userSettings, topTracks.Content, timeSettings, count);
+        using var image = await this._puppeteerService.GetReceipt(userSettings, topTracks.Content, timeSettings, count);
 
         var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
-        response.Stream = encoded.AsStream();
+        response.Stream = encoded.AsStream(true);
         response.FileName = "receipt.png";
 
         return response;

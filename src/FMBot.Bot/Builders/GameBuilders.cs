@@ -236,7 +236,7 @@ public class GameBuilders
         image = GameService.PixelateCoverImage(image, game.BlurLevel.GetValueOrDefault());
 
         var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
-        response.Stream = encoded.AsStream();
+        response.Stream = encoded.AsStream(true);
         response.FileName = $"pixelation-{game.JumbleSessionId}-{game.BlurLevel.GetValueOrDefault()}.png";
 
         response.Components =
@@ -446,7 +446,7 @@ public class GameBuilders
             image = GameService.PixelateCoverImage(image, blurLevel);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
-            response.Stream = encoded.AsStream();
+            response.Stream = encoded.AsStream(true);
             response.FileName = $"pixelation-{currentGame.JumbleSessionId}-{blurLevel}.png";
         }
 
@@ -488,7 +488,7 @@ public class GameBuilders
             image = GameService.PixelateCoverImage(image, blurLevel);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
-            response.Stream = encoded.AsStream();
+            response.Stream = encoded.AsStream(true);
             response.FileName = $"pixelation-{currentGame.JumbleSessionId}-{blurLevel}.png";
         }
 
@@ -541,7 +541,7 @@ public class GameBuilders
                 image = GameService.PixelateCoverImage(image, currentGame.BlurLevel.Value);
 
                 var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
-                response.Stream = encoded.AsStream();
+                response.Stream = encoded.AsStream(true);
                 response.FileName = $"pixelation-{currentGame.JumbleSessionId}-{currentGame.BlurLevel.Value}.png";
             }
         }
@@ -631,7 +631,7 @@ public class GameBuilders
             if (image != null)
             {
                 var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
-                response.Stream = encoded.AsStream();
+                response.Stream = encoded.AsStream(true);
                 response.FileName = $"pixelation-{currentGame.JumbleSessionId}.png";
             }
         }
@@ -749,7 +749,7 @@ public class GameBuilders
                         if (image != null)
                         {
                             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
-                            response.Stream = encoded.AsStream();
+                            response.Stream = encoded.AsStream(true);
                             response.FileName = $"pixelation-{currentGame.JumbleSessionId}.png";
                         }
 
@@ -869,7 +869,7 @@ public class GameBuilders
             if (image != null)
             {
                 var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
-                response.Stream = encoded.AsStream();
+                response.Stream = encoded.AsStream(true);
                 response.FileName = $"pixelation-{currentGame.JumbleSessionId}.png";
             }
         }

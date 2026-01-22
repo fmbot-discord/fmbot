@@ -1093,13 +1093,13 @@ public class ArtistBuilders
             var firstArtistImage =
                 artists.Content.TopArtists.FirstOrDefault(f => f.ArtistImageUrl != null)?.ArtistImageUrl;
 
-            var image = await this._puppeteerService.GetTopList(userTitle, "Top Artists", "artists",
+            using var image = await this._puppeteerService.GetTopList(userTitle, "Top Artists", "artists",
                 timeSettings.Description,
                 artists.Content.TotalAmount.GetValueOrDefault(), totalPlays.GetValueOrDefault(), firstArtistImage,
                 artists.TopList, context.NumberFormat);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
-            response.Stream = encoded.AsStream();
+            response.Stream = encoded.AsStream(true);
             response.FileName = $"top-artists-{userSettings.DiscordUserId}.png";
             response.ResponseType = ResponseType.ImageOnly;
 
@@ -1303,12 +1303,12 @@ public class ArtistBuilders
             var backgroundImage = (await this._artistsService.GetArtistFromDatabase(topNewArtists.First().ArtistName))
                 ?.SpotifyImageUrl;
 
-            var image = await this._puppeteerService.GetTopList(userTitle, "Newly discovered artists", "new artists",
+            using var image = await this._puppeteerService.GetTopList(userTitle, "Newly discovered artists", "new artists",
                 timeSettings.Description,
                 topNewArtists.Count, totalPlays, backgroundImage, topList, context.NumberFormat);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
-            response.Stream = encoded.AsStream();
+            response.Stream = encoded.AsStream(true);
             response.FileName = $"top-tracks-{userSettings.DiscordUserId}.png";
             response.ResponseType = ResponseType.ImageOnly;
 
@@ -1588,14 +1588,14 @@ public class ArtistBuilders
 
         if (mode == ResponseMode.Image)
         {
-            var image = await this._puppeteerService.GetWhoKnows("WhoKnows", $"in <b>{context.DiscordGuild.Name}</b>",
+            using var image = await this._puppeteerService.GetWhoKnows("WhoKnows", $"in <b>{context.DiscordGuild.Name}</b>",
                 imgUrl, artistSearch.Artist.ArtistName,
                 filteredUsersWithArtist, context.ContextUser.UserId, PrivacyLevel.Server, context.NumberFormat,
                 crownModel?.Crown,
                 crownModel?.CrownHtmlResult);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
-            response.Stream = encoded.AsStream();
+            response.Stream = encoded.AsStream(true);
             response.FileName = $"whoknows-{artistSearch.Artist.ArtistName}.png";
             response.ResponseType = ResponseType.ImageOnly;
 
@@ -1783,13 +1783,13 @@ public class ArtistBuilders
 
         if (settings.ResponseMode == ResponseMode.Image)
         {
-            var image = await this._puppeteerService.GetWhoKnows("WhoKnows", $"in <b>.fmbot 🌐</b>", imgUrl,
+            using var image = await this._puppeteerService.GetWhoKnows("WhoKnows", $"in <b>.fmbot 🌐</b>", imgUrl,
                 artistSearch.Artist.ArtistName,
                 filteredUsersWithArtist, context.ContextUser.UserId, privacyLevel, context.NumberFormat,
                 hidePrivateUsers: settings.HidePrivateUsers);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
-            response.Stream = encoded.AsStream();
+            response.Stream = encoded.AsStream(true);
             response.FileName = $"global-whoknows-{artistSearch.Artist.ArtistName}.png";
             response.ResponseType = ResponseType.ImageOnly;
 
@@ -1920,12 +1920,12 @@ public class ArtistBuilders
 
         if (mode == ResponseMode.Image)
         {
-            var image = await this._puppeteerService.GetWhoKnows("WhoKnows", $"from <b>{userTitle}</b>'s friends",
+            using var image = await this._puppeteerService.GetWhoKnows("WhoKnows", $"from <b>{userTitle}</b>'s friends",
                 imgUrl, artistSearch.Artist.ArtistName,
                 usersWithArtist, context.ContextUser.UserId, PrivacyLevel.Server, context.NumberFormat);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
-            response.Stream = encoded.AsStream();
+            response.Stream = encoded.AsStream(true);
             response.FileName = $"friends-whoknow-{artistSearch.Artist.ArtistName}.png";
             response.ResponseType = ResponseType.ImageOnly;
 
@@ -2420,7 +2420,7 @@ public class ArtistBuilders
             timeSettings.Description, artists);
 
         var encoded = bitmap.Encode(SKEncodedImageFormat.Png, 100);
-        response.Stream = encoded.AsStream();
+        response.Stream = encoded.AsStream(true);
         response.FileName = "iceberg.png";
 
         return response;

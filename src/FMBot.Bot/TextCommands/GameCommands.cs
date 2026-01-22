@@ -68,6 +68,7 @@ public class GameCommands(
 
             var responseId = await this.Context.SendResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);
+            Statistics.JumblesPlayed.WithLabels(nameof(JumbleType.Artist)).Inc();
 
             if (responseId?.Id != null && response.GameSessionId.HasValue)
             {
@@ -157,6 +158,7 @@ public class GameCommands(
 
             var responseId = await this.Context.SendResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);
+            Statistics.JumblesPlayed.WithLabels(nameof(JumbleType.Pixelation)).Inc();
 
             if (responseId?.Id != null && response.GameSessionId.HasValue)
             {

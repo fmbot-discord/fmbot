@@ -400,12 +400,12 @@ public class AlbumBuilders
 
         if (mode == ResponseMode.Image)
         {
-            var image = await this._puppeteerService.GetWhoKnows("WhoKnows Album",
+            using var image = await this._puppeteerService.GetWhoKnows("WhoKnows Album",
                 $"in <b>{context.DiscordGuild.Name}</b>", albumCoverUrl, fullAlbumName,
                 filteredUsersWithAlbum, context.ContextUser.UserId, PrivacyLevel.Server, context.NumberFormat);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
-            response.Stream = encoded.AsStream();
+            response.Stream = encoded.AsStream(true);
             response.FileName = $"whoknows-album-{album.Album.ArtistName}-{album.Album.AlbumName}.png";
             response.ResponseType = ResponseType.ImageOnly;
 
@@ -564,12 +564,12 @@ public class AlbumBuilders
 
         if (mode == ResponseMode.Image)
         {
-            var image = await this._puppeteerService.GetWhoKnows("WhoKnows Album", $"from <b>{userTitle}</b>'s friends",
+            using var image = await this._puppeteerService.GetWhoKnows("WhoKnows Album", $"from <b>{userTitle}</b>'s friends",
                 albumCoverUrl, albumName,
                 usersWithAlbum, context.ContextUser.UserId, PrivacyLevel.Server, context.NumberFormat);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
-            response.Stream = encoded.AsStream();
+            response.Stream = encoded.AsStream(true);
             response.FileName = $"friends-whoknow-album-{album.Album.ArtistName}-{album.Album.AlbumName}.png";
             response.ResponseType = ResponseType.ImageOnly;
 
@@ -693,13 +693,13 @@ public class AlbumBuilders
 
         if (settings.ResponseMode == ResponseMode.Image)
         {
-            var image = await this._puppeteerService.GetWhoKnows("WhoKnows Album", $"in <b>.fmbot 🌐</b>",
+            using var image = await this._puppeteerService.GetWhoKnows("WhoKnows Album", $"in <b>.fmbot 🌐</b>",
                 albumCoverUrl, albumName,
                 filteredUsersWithAlbum, context.ContextUser.UserId, privacyLevel, context.NumberFormat,
                 hidePrivateUsers: settings.HidePrivateUsers);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
-            response.Stream = encoded.AsStream();
+            response.Stream = encoded.AsStream(true);
             response.FileName = $"global-whoknows-album-{album.Album.ArtistName}-{album.Album.AlbumName}.png";
             response.ResponseType = ResponseType.ImageOnly;
 
@@ -1342,12 +1342,12 @@ public class AlbumBuilders
                 title = $"Top Albums from the {topListSettings.ReleaseDecadeFilter}s";
             }
 
-            var image = await this._puppeteerService.GetTopList(userTitle, title, "albums", timeSettings.Description,
+            using var image = await this._puppeteerService.GetTopList(userTitle, title, "albums", timeSettings.Description,
                 albums.Content.TotalAmount.GetValueOrDefault(), totalPlays.GetValueOrDefault(), firstAlbumImage,
                 albums.TopList, context.NumberFormat);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
-            response.Stream = encoded.AsStream();
+            response.Stream = encoded.AsStream(true);
             response.FileName = $"top-albums-{userSettings.DiscordUserId}.png";
             response.ResponseType = ResponseType.ImageOnly;
 

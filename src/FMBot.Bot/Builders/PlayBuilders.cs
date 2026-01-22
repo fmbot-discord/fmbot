@@ -1698,13 +1698,13 @@ public class PlayBuilder
                     ?.SpotifyImageUrl;
             }
 
-            var image = await this._puppeteerService.GetTopList(userTitle, $"{entityTypeDisplay} listening gaps",
+            using var image = await this._puppeteerService.GetTopList(userTitle, $"{entityTypeDisplay} listening gaps",
                 $"returning {entityTypeDisplay.ToLower()}s",
                 "Alltime", sortedEntitiesWithGaps.Count, sortedEntitiesWithGaps.Sum(s => s.TotalPlays), backgroundImage,
                 topList, context.NumberFormat);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
-            response.Stream = encoded.AsStream();
+            response.Stream = encoded.AsStream(true);
 
             response.FileName = $"{entityTypeDisplay.ToLower()}-gaps-{userSettings.DiscordUserId}.png";
             response.ResponseType = ResponseType.ImageOnly;

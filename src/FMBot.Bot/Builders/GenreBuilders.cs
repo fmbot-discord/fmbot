@@ -275,13 +275,13 @@ public class GenreBuilders
                     .FirstOrDefault(f => validArtists.Contains(f.ArtistName.ToLower()) && f.ArtistImageUrl != null)
                     ?.ArtistImageUrl;
 
-            var image = await this._puppeteerService.GetTopList(userTitle, "Top Genres", "genres",
+            using var image = await this._puppeteerService.GetTopList(userTitle, "Top Genres", "genres",
                 timeSettings.Description,
                 genres.Count, totalPlays.GetValueOrDefault(), firstArtistImage,
                 this._genreService.GetTopListForTopGenres(genres), context.NumberFormat);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
-            response.Stream = encoded.AsStream();
+            response.Stream = encoded.AsStream(true);
             response.FileName = $"top-genres-{userSettings.DiscordUserId}.png";
             response.ResponseType = ResponseType.ImageOnly;
 
@@ -472,8 +472,8 @@ public class GenreBuilders
                         var selected = selectedValue != null &&
                                        artistGenre.Name.Equals(selectedValue, StringComparison.OrdinalIgnoreCase);
 
-                        var optionId =
-                            $"{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}:{selectCommandId}:{artistGenre.Name}:{genreOptions}";
+                        var optionId = StringExtensions.TruncateLongString(
+                            $"{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}:{selectCommandId}:{artistGenre.Name}:{genreOptions}", 100);
                         selectMenu.AddOption(StringExtensions.TruncateLongString(artistGenre.Name.Transform(To.TitleCase), 25), optionId,
                             isDefault: selected);
                     }
@@ -551,8 +551,10 @@ public class GenreBuilders
 
             var firstResult = topGenresList.FirstOrDefault(f =>
                 f.GenreName.Equals(genreResults.First(), StringComparison.OrdinalIgnoreCase));
+            var firstOptionId = StringExtensions.TruncateLongString(
+                $"{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}:{selectCommandId}:{genreResults.First()}:{genreOptions}", 100);
             selectMenu.AddOption(genreResults.First().Transform(To.TitleCase),
-                $"{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}:{selectCommandId}:{genreResults.First()}:{genreOptions}",
+                firstOptionId,
                 description: firstResult == null
                     ? null
                     : $"{firstResult.UserPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(firstResult.UserPlaycount)}");
@@ -564,8 +566,8 @@ public class GenreBuilders
                 var selected = selectedValue != null &&
                                genre.GenreName.Equals(selectedValue, StringComparison.OrdinalIgnoreCase);
 
-                var optionId =
-                    $"{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}:{selectCommandId}:{genre.GenreName}:{genreOptions}";
+                var optionId = StringExtensions.TruncateLongString(
+                    $"{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}:{selectCommandId}:{genre.GenreName}:{genreOptions}", 100);
                 selectMenu.AddOption(genre.GenreName.Transform(To.TitleCase), optionId,
                     description: $"{genre.UserPlaycount} {StringExtensions.GetPlaysString(genre.UserPlaycount)}",
                     isDefault: selected);

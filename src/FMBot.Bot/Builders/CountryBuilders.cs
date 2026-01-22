@@ -390,13 +390,13 @@ public class CountryBuilders
                     .FirstOrDefault(f => validArtists.Contains(f.ArtistName.ToLower()) && f.ArtistImageUrl != null)
                     ?.ArtistImageUrl;
 
-            var image = await this._puppeteerService.GetTopList(userTitle, "Top Countries", "countries",
+            using var image = await this._puppeteerService.GetTopList(userTitle, "Top Countries", "countries",
                 timeSettings.Description,
                 countries.Count, totalPlays.GetValueOrDefault(), firstArtistImage,
                 this._countryService.GetTopListForTopCountries(countries), context.NumberFormat);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
-            response.Stream = encoded.AsStream();
+            response.Stream = encoded.AsStream(true);
             response.FileName = $"top-countries-{userSettings.DiscordUserId}.png";
             response.ResponseType = ResponseType.ImageOnly;
 
@@ -527,9 +527,9 @@ public class CountryBuilders
 
         var countries = await this._countryService.GetTopCountriesForTopArtists(artists.Content.TopArtists, true);
 
-        var image = await this._puppeteerService.GetWorldArtistMap(countries);
+        using var image = await this._puppeteerService.GetWorldArtistMap(countries);
         var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
-        response.Stream = encoded.AsStream();
+        response.Stream = encoded.AsStream(true);
         response.FileName = "artist-map.png";
 
         response.ComponentsContainer.AddComponent(new TextDisplayProperties($"**{embedTitle}**"));

@@ -14,13 +14,17 @@ using SkiaSharp.HarfBuzz;
 
 namespace FMBot.Images.Generators;
 
-public class PuppeteerService
+public class PuppeteerService : IDisposable
 {
     private IBrowser _browser;
     private readonly Task _initializationTask;
     private int _orderNr;
 
     private static string cachedAppleMusicAuthToken;
+
+    // Cache typeface to avoid repeated file loads and ensure proper disposal
+    private readonly Lazy<SKTypeface> _cachedTypeface = new(() =>
+        SKTypeface.FromFile(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", "bot", "sourcehansans-medium.otf")));
 
 
     public PuppeteerService()
@@ -89,7 +93,8 @@ public class PuppeteerService
 
         var img = await page.ScreenshotDataAsync();
 
-        var skImg = SKBitmap.FromImage(SKImage.FromEncodedData(img));
+        using var skImage = SKImage.FromEncodedData(img);
+        var skImg = SKBitmap.FromImage(skImage);
         AddCountryListToMap(skImg, groupedCountries);
 
         return skImg;
@@ -265,7 +270,8 @@ public class PuppeteerService
         await page.WaitForSelectorAsync(".result-list");
 
         var img = await page.ScreenshotDataAsync();
-        return SKBitmap.FromImage(SKImage.FromEncodedData(img));
+        using var skImage = SKImage.FromEncodedData(img);
+        return SKBitmap.FromImage(skImage);
     }
 
     private static string GetWhoKnowsLine(string position, string name, int plays, NumberFormat numberFormat,
@@ -401,7 +407,8 @@ public class PuppeteerService
         await page.WaitForSelectorAsync(".result-list");
 
         var img = await page.ScreenshotDataAsync();
-        return SKBitmap.FromImage(SKImage.FromEncodedData(img));
+        using var skImage = SKImage.FromEncodedData(img);
+        return SKBitmap.FromImage(skImage);
     }
 
     private static string GetTopLine(string position, string name, long plays, HtmlSanitizer htmlSanitizer,
@@ -529,7 +536,8 @@ public class PuppeteerService
         await page.WaitForSelectorAsync("table");
 
         var img = await page.ScreenshotDataAsync();
-        return SKBitmap.FromImage(SKImage.FromEncodedData(img));
+        using var skImage = SKImage.FromEncodedData(img);
+        return SKBitmap.FromImage(skImage);
     }
 
     private static List<GroupedCountries> GetGroupedCountries(IEnumerable<TopCountry> artists)
@@ -554,10 +562,9 @@ public class PuppeteerService
 
     private record GroupedCountries(List<string> CountryCodes, int MinAmount, int MaxAmount, double Opacity);
 
-    private static void AddCountryListToMap(SKBitmap chartImage, List<GroupedCountries> lines)
+    private void AddCountryListToMap(SKBitmap chartImage, List<GroupedCountries> lines)
     {
-        var typeface =
-            SKTypeface.FromFile(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", "bot",  "sourcehansans-medium.otf"));
+        var typeface = _cachedTypeface.Value;
 
         using var titleFont = new SKFont(typeface, 42);
         using var titlePaint = new SKPaint
@@ -723,8 +730,7 @@ public class PuppeteerService
     public void CreatePopularityIcebergImage(SKBitmap chartImage, string username, string timePeriod,
         List<ArtistPopularity> artists)
     {
-        var typeface =
-            SKTypeface.FromFile(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", "bot", "sourcehansans-medium.otf"));
+        var typeface = _cachedTypeface.Value;
 
         using var bitmapCanvas = new SKCanvas(chartImage);
 
@@ -837,5 +843,16 @@ public class PuppeteerService
 
         cachedAppleMusicAuthToken = match.Value;
         return $"Bearer {cachedAppleMusicAuthToken}";
+    }
+
+    public void Dispose()
+    {
+        if (_cachedTypeface.IsValueCreated)
+        {
+            _cachedTypeface.Value.Dispose();
+        }
+
+        _browser?.Dispose();
+        GC.SuppressFinalize(this);
     }
 }
