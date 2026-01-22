@@ -493,6 +493,32 @@ public class AlbumService
         return freshTopAlbums;
     }
 
+    public async Task<List<AlbumPopularity>> GetAlbumsPopularity(List<TopAlbum> topAlbums)
+    {
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        var albumsWithPopularity = await AlbumRepository.GetAlbumsPopularity(topAlbums, connection);
+
+        var albumLookup = topAlbums
+            .GroupBy(g => (g.ArtistName.ToLowerInvariant(), g.AlbumName.ToLowerInvariant()))
+            .ToDictionary(
+                d => d.Key,
+                d => d.OrderByDescending(o => o.UserPlaycount).First().UserPlaycount ?? 0
+            );
+
+        foreach (var album in albumsWithPopularity)
+        {
+            var key = (album.ArtistName.ToLowerInvariant(), album.Name.ToLowerInvariant());
+            if (albumLookup.TryGetValue(key, out var playcount))
+            {
+                album.Playcount = playcount;
+            }
+        }
+
+        return albumsWithPopularity;
+    }
+
     public async Task<List<AlbumAutoCompleteSearchModel>> GetLatestAlbums(ulong discordUserId, bool cacheEnabled = true)
     {
         try

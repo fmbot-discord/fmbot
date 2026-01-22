@@ -180,4 +180,25 @@ LIMIT 1;";
         public string ReleaseDate { get; set; }
         public string ReleaseDatePrecision { get; set; }
     }
+
+    public static async Task<List<AlbumPopularity>> GetAlbumsPopularity(List<TopAlbum> topAlbums,
+        NpgsqlConnection connection)
+    {
+        const string getAlbumsQuery = @"
+        SELECT a.name, a.artist_name, a.popularity
+        FROM public.albums a
+        WHERE (UPPER(a.artist_name), UPPER(a.name)) IN (
+            SELECT UPPER(CAST(unnest(@artistNames) AS CITEXT)),
+                   UPPER(CAST(unnest(@albumNames) AS CITEXT))
+        ) AND a.popularity IS NOT NULL";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        var albums = await connection.QueryAsync<AlbumPopularity>(getAlbumsQuery, new
+        {
+            artistNames = topAlbums.Select(a => a.ArtistName).ToArray(),
+            albumNames = topAlbums.Select(a => a.AlbumName).ToArray()
+        });
+
+        return albums.ToList();
+    }
 }

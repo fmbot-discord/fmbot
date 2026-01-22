@@ -46,7 +46,39 @@ public class GameService
         this._botSettings = botSettings.Value;
     }
 
+    private static float ComputePlaycountPercentile(long playcount, long maxPlaycount)
+    {
+        if (maxPlaycount == 0) return 50;
+        return (float)playcount / maxPlaycount * 100;
+    }
+
+    private static float ComputeNameComplexity(string name)
+    {
+        var lengthScore = Math.Min(name.Length / 25f, 1f) * 40;
+        var nonAscii = name.Count(c => c > 127);
+        var specialScore = Math.Min(nonAscii / 3f, 1f) * 35;
+        var wordScore = Math.Min((name.Split(' ').Length - 1) / 3f, 1f) * 25;
+        return lengthScore + specialScore + wordScore;
+    }
+
+    private static T WeightedRandomSelect<T>(List<(T item, double weight)> items)
+    {
+        var total = items.Sum(x => x.weight);
+        var randomBytes = new byte[8];
+        RandomNumberGenerator.Fill(randomBytes);
+        var rand = (BitConverter.ToUInt64(randomBytes, 0) / (double)ulong.MaxValue) * total;
+
+        var cumulative = 0.0;
+        foreach (var (item, weight) in items)
+        {
+            cumulative += weight;
+            if (rand <= cumulative) return item;
+        }
+        return items[^1].item;
+    }
+
     public static (string artist, long userPlaycount) PickArtistForJumble(List<TopArtist> topArtists,
+        List<ArtistPopularity> artistPopularities = null,
         List<JumbleSession> recentJumbles = null)
     {
         recentJumbles ??= [];
@@ -123,11 +155,50 @@ public class GameService
             return fallbackArtist != null ? (fallbackArtist.ArtistName, fallbackArtist.UserPlaycount) : (null, 0);
         }
 
-        var randomIndex = RandomNumberGenerator.GetInt32(eligibleArtists.Count);
-        return (eligibleArtists[randomIndex].ArtistName, eligibleArtists[randomIndex].UserPlaycount);
+        if (artistPopularities == null || artistPopularities.Count == 0)
+        {
+            var randomIndex = RandomNumberGenerator.GetInt32(eligibleArtists.Count);
+            return (eligibleArtists[randomIndex].ArtistName, eligibleArtists[randomIndex].UserPlaycount);
+        }
+
+        var popLookup = artistPopularities
+            .GroupBy(a => a.Name, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(
+                g => g.Key,
+                g => g.Max(a => a.Popularity),
+                StringComparer.OrdinalIgnoreCase);
+
+        var maxPlaycount = topArtists.Max(a => a.UserPlaycount);
+
+        const int defaultPopularity = 40;
+
+        var scored = eligibleArtists.Select(a =>
+        {
+            var globalPop = popLookup.GetValueOrDefault(a.ArtistName, defaultPopularity);
+            var userPercentile = ComputePlaycountPercentile(a.UserPlaycount, maxPlaycount);
+            var nameComplexity = ComputeNameComplexity(a.ArtistName);
+
+            var difficulty = (100 - globalPop) * 0.35f +
+                            (100 - userPercentile) * 0.45f +
+                            nameComplexity * 0.20f;
+
+            var weight = Math.Pow(100 - difficulty + 10, 2);
+            return (artist: a, weight);
+        }).ToList();
+
+        var selected = WeightedRandomSelect(scored);
+
+        Log.Information(
+            "PickArtistForJumble: Selected '{artistName}' with {playcount} plays, global pop: {globalPop}",
+            selected.ArtistName, selected.UserPlaycount,
+            popLookup.GetValueOrDefault(selected.ArtistName, defaultPopularity));
+
+        return (selected.ArtistName, selected.UserPlaycount);
     }
 
-    public static TopAlbum PickAlbumForPixelation(List<TopAlbum> topAlbums, List<JumbleSession> recentJumbles = null)
+    public static TopAlbum PickAlbumForPixelation(List<TopAlbum> topAlbums,
+        List<AlbumPopularity> albumPopularities = null,
+        List<JumbleSession> recentJumbles = null)
     {
         recentJumbles ??= [];
 
@@ -215,8 +286,47 @@ public class GameService
             return fallbackAlbum;
         }
 
-        var randomIndex = RandomNumberGenerator.GetInt32(eligibleAlbums.Count);
-        return eligibleAlbums[randomIndex];
+        if (albumPopularities == null || albumPopularities.Count == 0)
+        {
+            var randomIndex = RandomNumberGenerator.GetInt32(eligibleAlbums.Count);
+            return eligibleAlbums[randomIndex];
+        }
+
+        var popLookup = albumPopularities
+            .GroupBy(a => $"{a.ArtistName}|||{a.Name}".ToLowerInvariant(), StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(
+                g => g.Key,
+                g => g.Max(a => a.Popularity),
+                StringComparer.OrdinalIgnoreCase);
+
+        var maxPlaycount = topAlbums.Max(a => a.UserPlaycount ?? 0);
+
+        const int defaultPopularity = 40;
+
+        var scored = eligibleAlbums.Select(a =>
+        {
+            var key = $"{a.ArtistName}|||{a.AlbumName}".ToLowerInvariant();
+            var globalPop = popLookup.GetValueOrDefault(key, defaultPopularity);
+            var userPercentile = ComputePlaycountPercentile(a.UserPlaycount ?? 0, maxPlaycount);
+            var nameComplexity = ComputeNameComplexity(a.AlbumName);
+
+            var difficulty = (100 - globalPop) * 0.35f +
+                            (100 - userPercentile) * 0.45f +
+                            nameComplexity * 0.20f;
+
+            var weight = Math.Pow(100 - difficulty + 10, 2);
+            return (album: a, weight);
+        }).ToList();
+
+        var selected = WeightedRandomSelect(scored);
+
+        var selectedKey = $"{selected.ArtistName}|||{selected.AlbumName}".ToLowerInvariant();
+        Log.Information(
+            "PickAlbumForPixelation: Selected '{albumName}' by '{artistName}' with {playcount} plays, global pop: {globalPop}",
+            selected.AlbumName, selected.ArtistName, selected.UserPlaycount,
+            popLookup.GetValueOrDefault(selectedKey, defaultPopularity));
+
+        return selected;
     }
 
     public async Task<JumbleSession> StartJumbleGame(int userId, ContextModel context, JumbleType jumbleType,

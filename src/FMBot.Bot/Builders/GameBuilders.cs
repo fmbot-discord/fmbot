@@ -90,7 +90,8 @@ public class GameBuilders
         }
 
         var topArtists = await this._artistsService.GetUserAllTimeTopArtists(userId, true);
-        var artist = GameService.PickArtistForJumble(topArtists, recentJumbles);
+        var artistPopularities = await this._artistsService.GetArtistsPopularity(topArtists);
+        var artist = GameService.PickArtistForJumble(topArtists, artistPopularities, recentJumbles);
 
         if (artist.artist == null)
         {
@@ -106,7 +107,7 @@ public class GameBuilders
         if (databaseArtist == null)
         {
             // Pick someone else and hope for the best
-            artist = GameService.PickArtistForJumble(topArtists);
+            artist = GameService.PickArtistForJumble(topArtists, artistPopularities);
             databaseArtist = await this._artistsService.GetArtistFromDatabase(artist.artist);
         }
 
@@ -184,7 +185,8 @@ public class GameBuilders
 
         await this._albumService.FillMissingAlbumCovers(topAlbums);
         topAlbums = await this._censorService.RemoveNsfwAlbums(topAlbums);
-        var album = GameService.PickAlbumForPixelation(topAlbums, recentJumbles);
+        var albumPopularities = await this._albumService.GetAlbumsPopularity(topAlbums);
+        var album = GameService.PickAlbumForPixelation(topAlbums, albumPopularities, recentJumbles);
 
         if (album == null)
         {
@@ -199,7 +201,7 @@ public class GameBuilders
         if (databaseAlbum == null)
         {
             // Pick someone else and hope for the best
-            album = GameService.PickAlbumForPixelation(topAlbums, null);
+            album = GameService.PickAlbumForPixelation(topAlbums, albumPopularities);
             databaseAlbum = await this._albumService.GetAlbumFromDatabase(album.ArtistName, album.AlbumName);
         }
 
