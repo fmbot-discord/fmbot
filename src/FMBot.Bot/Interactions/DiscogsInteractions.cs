@@ -53,7 +53,13 @@ public class DiscogsInteractions(
 
             contextUser = await userService.GetUserWithDiscogs(this.Context.User.Id);
             var updatedMsg = DiscogsBuilder.DiscogsManage(new ContextModel(this.Context, contextUser));
-            await this.Context.UpdateInteractionEmbed(updatedMsg, interactivity, false);
+
+            var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
+            await message.ModifyAsync(m =>
+            {
+                m.Components = updatedMsg.GetMessageComponents();
+                m.Embeds = [updatedMsg.Embed];
+            });
         }
         catch (Exception e)
         {
@@ -65,11 +71,16 @@ public class DiscogsInteractions(
     [UsernameSetRequired]
     public async Task RemoveDiscogsLogin()
     {
-        await this.Context.DisableInteractionButtons();
-        var contextUser = await userService.GetUserWithDiscogs(this.Context.User.Id);
-
         try
         {
+            var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
+            await message.ModifyAsync(m =>
+            {
+                m.Components = [];
+            });
+
+            var contextUser = await userService.GetUserWithDiscogs(this.Context.User.Id);
+
             var response = await discogsBuilder.DiscogsRemove(new ContextModel(this.Context, contextUser));
             await this.Context.SendResponse(interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);
@@ -98,8 +109,7 @@ public class DiscogsInteractions(
         await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
             .WithEmbeds([embed])));
 
-        var components = new ActionRowProperties();
-        await message.ModifyAsync(m => m.Components = [components]);
+        await message.ModifyAsync(m => m.Components = []);
 
         try
         {
@@ -116,7 +126,7 @@ public class DiscogsInteractions(
     public async Task CollectionAsync(string discordUser, string requesterDiscordUser)
     {
         await RespondAsync(InteractionCallback.DeferredModifyMessage);
-        await this.Context.DisableActionRows(specificButtonOnly:$"{InteractionConstants.Discogs.Collection}:{discordUser}:{requesterDiscordUser}");
+        await this.Context.DisableActionRows(specificButtonOnly: $"{InteractionConstants.Discogs.Collection}:{discordUser}:{requesterDiscordUser}");
 
         var discordUserId = ulong.Parse(discordUser);
         var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
@@ -132,7 +142,8 @@ public class DiscogsInteractions(
 
         try
         {
-            var response = await discogsBuilder.DiscogsCollectionAsync(new ContextModel(this.Context, contextUser, discordContextUser), userSettings, collectionSettings, null);
+            var response = await discogsBuilder.DiscogsCollectionAsync(new ContextModel(this.Context, contextUser, discordContextUser), userSettings,
+                collectionSettings, null);
 
             await this.Context.SendFollowUpResponse(interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);

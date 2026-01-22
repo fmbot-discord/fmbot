@@ -115,7 +115,7 @@ public class DiscogsBuilder
         response.Embed.Footer = null;
 
         var result =
-            await this._interactivity.NextMessageAsync(x => x.Channel.Id == dm.Id, timeout: TimeSpan.FromMinutes(15));
+            await this._interactivity.NextMessageAsync(x => x.ChannelId == dmChannel.Id, timeout: TimeSpan.FromMinutes(15));
 
         if (!result.IsSuccess)
         {
