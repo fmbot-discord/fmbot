@@ -312,24 +312,21 @@ public static class CommandContextExtensions
             if (userService != null)
             {
                 var messageId = context.Message.Id;
-                var responseIdForDb = responseMessage?.Id;
+                var responseIdForDb = responseMessage.Id;
                 var commandResponse = response.CommandResponse;
                 var artist = response.ReferencedMusic?.Artist;
                 var album = response.ReferencedMusic?.Album;
                 var track = response.ReferencedMusic?.Track;
                 var hintShown = response.HintShown;
 
-                _ = Task.Run(async () =>
-                {
-                    await userService.UpdateCommandInteractionAsync(
-                        messageId,
-                        responseId: responseIdForDb,
-                        commandResponse: commandResponse,
-                        artist: artist,
-                        album: album,
-                        track: track,
-                        hintShown: hintShown);
-                });
+                await userService.UpdateCommandInteractionAsync(
+                    messageId,
+                    responseId: responseIdForDb,
+                    commandResponse: commandResponse,
+                    artist: artist,
+                    album: album,
+                    track: track,
+                    hintShown: hintShown);
             }
 
             return responseMessage;

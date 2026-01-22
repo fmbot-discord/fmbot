@@ -137,7 +137,7 @@ public class ArtistSlashCommands(
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
 
-        var timeSettings = SettingService.GetTimePeriod(Enum.GetName(typeof(PlayTimePeriod), timePeriod), TimePeriod.AllTime);
+        var timeSettings = SettingService.GetTimePeriod(Enum.GetName(timePeriod), TimePeriod.AllTime);
 
         var response = await artistBuilders.ArtistTracksAsync(new ContextModel(this.Context, contextUser), timeSettings,
             userSettings, name, redirectsEnabled);

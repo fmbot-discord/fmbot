@@ -23,23 +23,6 @@ namespace FMBot.Bot.Extensions;
 
 public static class InteractionContextExtensions
 {
-    /// <summary>
-    /// Gets a TextInput value from a modal interaction by custom ID.
-    /// </summary>
-    public static string GetModalValue(this ComponentInteractionContext context, string customId)
-    {
-        if (context.Interaction is not ModalInteraction modal)
-            return null;
-
-        // In NetCord, modal TextInput components are wrapped in Label containers
-        return modal.Data.Components
-            .OfType<Label>()
-            .Select(l => l.Component)
-            .OfType<TextInput>()
-            .FirstOrDefault(t => string.Equals(t.CustomId, customId, StringComparison.OrdinalIgnoreCase))
-            ?.Value;
-    }
-
     private static EmojiProperties ToEmojiProperties(EmojiReference emoji)
     {
         if (emoji == null)
@@ -50,82 +33,83 @@ public static class InteractionContextExtensions
             : EmojiProperties.Standard(emoji.Name);
     }
 
-    public static void LogCommandUsed(this ApplicationCommandContext context,
-        CommandResponse commandResponse = CommandResponse.Ok)
+    extension(ApplicationCommandContext context)
     {
-        string commandName = context.Interaction switch
+        private void LogCommandUsed(CommandResponse commandResponse = CommandResponse.Ok)
         {
-            SlashCommandInteraction slashCommand => slashCommand.Data.Name,
-            UserCommandInteraction userCommand => userCommand.Data.Name,
-            MessageCommandInteraction messageCommand => messageCommand.Data.Name,
-            _ => null
-        };
-
-        if (context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
-            !context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall))
-        {
-            Log.Information(
-                "SlashCommandUsed: {discordUserName} / {discordUserId} | UserApp | {commandResponse} | {messageContent}",
-                context.User?.Username, context.User?.Id, commandResponse, commandName);
-        }
-        else
-        {
-            Log.Information(
-                "SlashCommandUsed: {discordUserName} / {discordUserId} | {guildName} / {guildId} | {commandResponse} | {messageContent}",
-                context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, commandResponse,
-                commandName);
-        }
-
-        PublicProperties.UsedCommandsResponses.TryAdd(context.Interaction.Id, commandResponse);
-    }
-
-    public static async Task LogCommandUsedAsync(this ApplicationCommandContext context,
-        ResponseModel response,
-        UserService userService,
-        string commandName = null)
-    {
-        // 1. Serilog logging + in-memory dictionary
-        LogCommandUsed(context, response.CommandResponse);
-
-        // 2. Database storage - always happens
-        var resolvedCommandName = commandName ?? context.Interaction switch
-        {
-            SlashCommandInteraction slashCommand => slashCommand.Data.Name,
-            UserCommandInteraction userCommand => userCommand.Data.Name,
-            MessageCommandInteraction messageCommand => messageCommand.Data.Name,
-            _ => null
-        };
-
-        var type = context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
-                   !context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall)
-            ? UserInteractionType.SlashCommandUser
-            : UserInteractionType.SlashCommandGuild;
-
-        Dictionary<string, string> options = null;
-        if (context.Interaction is SlashCommandInteraction slashCommandInteraction)
-        {
-            options = new Dictionary<string, string>();
-            foreach (var option in slashCommandInteraction.Data.Options)
+            var commandName = context.Interaction switch
             {
-                options.Add(option.Name, option.Value?.ToString());
+                SlashCommandInteraction slashCommand => slashCommand.Data.Name,
+                UserCommandInteraction userCommand => userCommand.Data.Name,
+                MessageCommandInteraction messageCommand => messageCommand.Data.Name,
+                _ => null
+            };
+
+            if (context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
+                !context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall))
+            {
+                Log.Information(
+                    "SlashCommandUsed: {discordUserName} / {discordUserId} | UserApp | {commandResponse} | {messageContent}",
+                    context.User?.Username, context.User?.Id, commandResponse, commandName);
+            }
+            else
+            {
+                Log.Information(
+                    "SlashCommandUsed: {discordUserName} / {discordUserId} | {guildName} / {guildId} | {commandResponse} | {messageContent}",
+                    context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, commandResponse,
+                    commandName);
             }
 
-            if (!options.Any())
-            {
-                options = null;
-            }
+            PublicProperties.UsedCommandsResponses.TryAdd(context.Interaction.Id, commandResponse);
         }
 
-        await userService.InsertAndCompleteInteractionAsync(
-            context.Interaction.Id,
-            context.User.Id,
-            resolvedCommandName,
-            response.CommandResponse,
-            context.Guild?.Id,
-            context.Channel?.Id,
-            type,
-            commandOptions: options,
-            referencedMusic: response.ReferencedMusic);
+        public async Task LogCommandUsedAsync(ResponseModel response,
+            UserService userService,
+            string commandName = null)
+        {
+            // 1. Serilog logging + in-memory dictionary
+            context.LogCommandUsed(response.CommandResponse);
+
+            // 2. Database storage - always happens
+            var resolvedCommandName = commandName ?? context.Interaction switch
+            {
+                SlashCommandInteraction slashCommand => slashCommand.Data.Name,
+                UserCommandInteraction userCommand => userCommand.Data.Name,
+                MessageCommandInteraction messageCommand => messageCommand.Data.Name,
+                _ => null
+            };
+
+            var type = context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
+                       !context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall)
+                ? UserInteractionType.SlashCommandUser
+                : UserInteractionType.SlashCommandGuild;
+
+            Dictionary<string, string> options = null;
+            if (context.Interaction is SlashCommandInteraction slashCommandInteraction)
+            {
+                options = new Dictionary<string, string>();
+                foreach (var option in slashCommandInteraction.Data.Options)
+                {
+                    options.Add(option.Name, option.Value);
+                }
+
+                if (options.Count == 0)
+                {
+                    options = null;
+                }
+            }
+
+            await userService.InsertAndCompleteInteractionAsync(
+                context.Interaction.Id,
+                context.User.Id,
+                resolvedCommandName,
+                response.CommandResponse,
+                context.Guild?.Id,
+                context.Channel?.Id,
+                type,
+                commandOptions: options,
+                referencedMusic: response.ReferencedMusic);
+        }
     }
 
     extension(ComponentInteractionContext context)
@@ -198,6 +182,20 @@ public static class InteractionContextExtensions
                 context.Channel?.Id,
                 type,
                 referencedMusic: response.ReferencedMusic);
+        }
+
+        public string GetModalValue(string customId)
+        {
+            if (context.Interaction is not ModalInteraction modal)
+                return null;
+
+            // In NetCord, modal TextInput components are wrapped in Label containers
+            return modal.Data.Components
+                .OfType<Label>()
+                .Select(l => l.Component)
+                .OfType<TextInput>()
+                .FirstOrDefault(t => string.Equals(t.CustomId, customId, StringComparison.OrdinalIgnoreCase))
+                ?.Value;
         }
     }
 
@@ -277,8 +275,8 @@ public static class InteractionContextExtensions
 
     extension(IInteractionContext context)
     {
-        public async Task SendResponse(InteractiveService interactiveService,
-            ResponseModel response, UserService userService, bool ephemeral = false, ResponseModel extraResponse = null)
+        public async Task SendResponse(InteractiveService interactiveService, ResponseModel response, UserService userService, bool ephemeral = false,
+            ResponseModel extraResponse = null)
         {
             var embeds = new[] { response.Embed };
             if (extraResponse != null)
@@ -286,39 +284,43 @@ public static class InteractionContextExtensions
                 embeds = [response.Embed, extraResponse.Embed];
             }
 
+            ulong? interactionResponseId = null;
             var flags = ephemeral ? MessageFlags.Ephemeral : (MessageFlags?)null;
 
             switch (response.ResponseType)
             {
                 case ResponseType.Text:
-                    await context.Interaction.SendResponseAsync(InteractionCallback.Message(
+                    var text = await context.Interaction.SendResponseAsync(InteractionCallback.Message(
                         new InteractionMessageProperties()
                             .WithContent(response.Text)
                             .WithAllowedMentions(AllowedMentionsProperties.None)
                             .WithFlags(flags)
                             .WithComponents(response.GetMessageComponents())));
+                    interactionResponseId = text?.Interaction.ResponseMessageId;
                     break;
                 case ResponseType.Embed:
-                    await context.Interaction.SendResponseAsync(InteractionCallback.Message(
+                    var embed = await context.Interaction.SendResponseAsync(InteractionCallback.Message(
                         new InteractionMessageProperties()
                             .WithEmbeds(embeds)
                             .WithFlags(flags)
                             .WithComponents(response.GetMessageComponents())));
+                    interactionResponseId = embed?.Interaction.ResponseMessageId;
                     break;
                 case ResponseType.ComponentsV2:
                     var componentsV2Flags = ephemeral
                         ? MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral
                         : MessageFlags.IsComponentsV2;
-                    await context.Interaction.SendResponseAsync(InteractionCallback.Message(
+                    var componentsv2 = await context.Interaction.SendResponseAsync(InteractionCallback.Message(
                         new InteractionMessageProperties()
                             .WithComponents(response.GetComponentsV2())
                             .WithFlags(componentsV2Flags)
                             .WithAllowedMentions(AllowedMentionsProperties.None)));
+                    interactionResponseId = componentsv2?.Interaction.ResponseMessageId;
                     break;
                 case ResponseType.ImageWithEmbed:
                     response.FileName =
                         StringExtensions.ReplaceInvalidChars(response.FileName);
-                    await context.Interaction.SendResponseAsync(InteractionCallback.Message(
+                    var imageWithEmbed = await context.Interaction.SendResponseAsync(InteractionCallback.Message(
                         new InteractionMessageProperties()
                             .AddAttachments(new AttachmentProperties(
                                 response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName,
@@ -326,13 +328,15 @@ public static class InteractionContextExtensions
                             .WithEmbeds([response.Embed])
                             .WithFlags(flags)
                             .WithComponents(response.GetMessageComponents())));
+                    interactionResponseId = imageWithEmbed?.Interaction.ResponseMessageId;
                     break;
                 case ResponseType.Paginator:
-                    _ = interactiveService.SendPaginatorAsync(
+                    var paginator = await interactiveService.SendPaginatorAsync(
                         response.ComponentPaginator.Build(),
                         context.Interaction,
                         TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
                         ephemeral: ephemeral);
+                    interactionResponseId = paginator.Message.Id;
                     break;
                 case ResponseType.SupporterRequired:
                     await context.Interaction.SendResponseAsync(InteractionCallback.Message(
@@ -379,16 +383,25 @@ public static class InteractionContextExtensions
                 var track = response.ReferencedMusic?.Track;
                 var hintShown = response.HintShown;
 
-                _ = Task.Run(async () =>
+                if (!interactionResponseId.HasValue)
                 {
-                    await userService.UpdateCommandInteractionAsync(
-                        interactionId,
-                        commandResponse: commandResponse,
-                        artist: artist,
-                        album: album,
-                        track: track,
-                        hintShown: hintShown);
-                });
+                    var ogResponse = await context.Interaction.GetResponseAsync();
+                    interactionResponseId = ogResponse?.Id;
+                }
+                if (interactionResponseId.HasValue)
+                {
+                    PublicProperties.UsedCommandsResponseMessageId.TryAdd(context.Interaction.Id, interactionResponseId.Value);
+                    PublicProperties.UsedCommandsResponseContextId.TryAdd(interactionResponseId.Value, context.Interaction.Id);
+                }
+
+                await userService.UpdateCommandInteractionAsync(
+                    interactionId,
+                    commandResponse: commandResponse,
+                    artist: artist,
+                    album: album,
+                    track: track,
+                    hintShown: hintShown,
+                    responseId: interactionResponseId);
             }
         }
 
@@ -525,17 +538,14 @@ public static class InteractionContextExtensions
                 var track = response.ReferencedMusic?.Track;
                 var hintShown = response.HintShown;
 
-                _ = Task.Run(async () =>
-                {
-                    await userService.UpdateCommandInteractionAsync(
-                        interactionId,
-                        responseId: responseIdForDb,
-                        commandResponse: commandResponse,
-                        artist: artist,
-                        album: album,
-                        track: track,
-                        hintShown: hintShown);
-                });
+                await userService.UpdateCommandInteractionAsync(
+                    interactionId,
+                    responseId: responseIdForDb,
+                    commandResponse: commandResponse,
+                    artist: artist,
+                    album: album,
+                    track: track,
+                    hintShown: hintShown);
             }
 
             return responseId;

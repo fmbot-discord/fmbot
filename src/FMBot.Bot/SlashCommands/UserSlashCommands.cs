@@ -284,6 +284,7 @@ public class UserSlashCommands(
     [UsernameSetRequired]
     public async Task DeleteResponseAsync(RestMessage message)
     {
+        var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
         var interactionToDelete = await userService.GetMessageIdToDelete(message.Id);
 
         if (interactionToDelete == null)
@@ -295,7 +296,7 @@ public class UserSlashCommands(
             return;
         }
 
-        if (interactionToDelete.DiscordUserId != this.Context.User.Id)
+        if (interactionToDelete.UserId != userSettings.UserId)
         {
             await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
                 .WithContent("You can only delete .fmbot responses to your own commands.")
@@ -303,29 +304,36 @@ public class UserSlashCommands(
             return;
         }
 
-        var fetchedMessage = await this.Context.Channel.GetMessageAsync(interactionToDelete.MessageId);
-
-        if (fetchedMessage == null)
+        if (!interactionToDelete.DiscordResponseId.HasValue)
         {
             await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
-                .WithContent("Sorry, .fmbot couldn't fetch the message you want to delete.")
+                .WithContent("No response was stored in .fmbot for this command. It might be an older command for which we no longer support deletion.")
                 .WithFlags(MessageFlags.Ephemeral)));
             return;
         }
 
-        var ogMessage = await this.Context.Channel.GetMessageAsync(interactionToDelete.ContextId);
-        if (ogMessage != null)
+        try
         {
-            await ogMessage.AddReactionAsync(new ReactionEmojiProperties("🚮"));
+            var fetchedMessage = await this.Context.Channel.GetMessageAsync(interactionToDelete.DiscordResponseId.Value);
+
+            if (interactionToDelete.DiscordId.HasValue && interactionToDelete.Type == UserInteractionType.TextCommand)
+            {
+                var ogMessage = await this.Context.Channel.GetMessageAsync(interactionToDelete.DiscordId.Value);
+                await ogMessage.AddReactionAsync(new ReactionEmojiProperties("🚮"));
+            }
+
+            await fetchedMessage.DeleteAsync(new RestRequestProperties
+                { AuditLogReason = "Deleted by user through message command" });
+
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("Removed .fmbot response.")
+                .WithFlags(MessageFlags.Ephemeral)));
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
         }
-
-        await fetchedMessage.DeleteAsync(new RestRequestProperties
-            { AuditLogReason = "Deleted by user through message command" });
-
-        await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
-            .WithContent("Removed .fmbot response.")
-            .WithFlags(MessageFlags.Ephemeral)));
-        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService, deferFirst: true);
+        }
     }
 
     [SlashCommand("judge", "Judges your music taste using AI", Contexts =

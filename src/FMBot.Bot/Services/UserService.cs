@@ -858,28 +858,8 @@ public class UserService
         return null;
     }
 
-    public record ContextMessageIdAndUserId(ulong ContextId, ulong MessageId, ulong DiscordUserId);
-
-    public async Task<ContextMessageIdAndUserId> GetMessageIdToDelete(ulong lookupId)
+    public async Task<UserInteraction> GetMessageIdToDelete(ulong lookupId)
     {
-        if (PublicProperties.UsedCommandsResponseContextId.ContainsKey(lookupId))
-        {
-            PublicProperties.UsedCommandsResponseContextId.TryGetValue(lookupId, out var originalMessageId);
-            PublicProperties.UsedCommandDiscordUserIds.TryGetValue(originalMessageId, out var discordUserId);
-
-            return new ContextMessageIdAndUserId(originalMessageId, lookupId, discordUserId);
-        }
-
-        // Lookup is on the command itself
-        if (PublicProperties.UsedCommandsResponseMessageId.ContainsKey(lookupId) &&
-            PublicProperties.UsedCommandDiscordUserIds.ContainsKey(lookupId))
-        {
-            PublicProperties.UsedCommandsResponseMessageId.TryGetValue(lookupId, out var responseId);
-            PublicProperties.UsedCommandDiscordUserIds.TryGetValue(lookupId, out var discordUserId);
-
-            return new ContextMessageIdAndUserId(lookupId, responseId, discordUserId);
-        }
-
         const string sql =
             "SELECT * FROM public.user_interactions WHERE discord_id = @lookupId OR discord_response_id = @lookupId ";
 
@@ -887,22 +867,10 @@ public class UserService
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        var interaction = await connection.QueryFirstOrDefaultAsync<UserInteraction>(sql, new
+        return await connection.QueryFirstOrDefaultAsync<UserInteraction>(sql, new
         {
             lookupId = (decimal)lookupId
         });
-
-        if (interaction?.DiscordResponseId != null && interaction.DiscordId.HasValue)
-        {
-            var user = await GetUserForIdAsync(interaction.UserId);
-            if (user != null)
-            {
-                return new ContextMessageIdAndUserId(interaction.DiscordId.Value, interaction.DiscordResponseId.Value,
-                    user.DiscordUserId);
-            }
-        }
-
-        return null;
     }
 
     public async Task<int> GetCommandExecutedAmount(int userId, string command, DateTime filterDateTime)
