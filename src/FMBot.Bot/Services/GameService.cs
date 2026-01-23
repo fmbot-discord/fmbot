@@ -182,7 +182,7 @@ public class GameService
                             (100 - userPercentile) * 0.45f +
                             nameComplexity * 0.20f;
 
-            var weight = Math.Pow(100 - difficulty + 10, 2);
+            var weight = Math.Pow(100 - difficulty + 10, 1.3);
             return (artist: a, weight);
         }).ToList();
 
@@ -314,7 +314,7 @@ public class GameService
                             (100 - userPercentile) * 0.45f +
                             nameComplexity * 0.20f;
 
-            var weight = Math.Pow(100 - difficulty + 10, 2);
+            var weight = Math.Pow(100 - difficulty + 10, 1.3);
             return (album: a, weight);
         }).ToList();
 

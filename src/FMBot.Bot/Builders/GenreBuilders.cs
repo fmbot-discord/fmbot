@@ -426,8 +426,8 @@ public class GenreBuilders
                     var selected = selectedValue != null &&
                                    artistGenre.Name.Equals(selectedValue, StringComparison.OrdinalIgnoreCase);
 
-                    var optionId =
-                        $"{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}:{selectCommandId}:{artistGenre.Name}:{artist.Name}";
+                    var optionId = StringExtensions.TruncateLongString(
+                        $"{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}:{selectCommandId}:{artistGenre.Name}:{artist.Name}", 100);
                     selectMenu.AddOption(artistGenre.Name.Transform(To.TitleCase), optionId, selected);
                 }
 
