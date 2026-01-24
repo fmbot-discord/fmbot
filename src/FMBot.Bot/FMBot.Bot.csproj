@@ -90,7 +90,6 @@
         <ProjectReference Include="..\FMBot.Persistence.EntityFrameWork\FMBot.Persistence.EntityFrameWork.csproj" />
         <ProjectReference Include="..\FMBot.LastFM\FMBot.LastFM.csproj" />
         <ProjectReference Include="..\FMBot.Subscriptions\FMBot.Subscriptions.csproj" />
-        <ProjectReference Include="..\FMBot.Youtube\FMBot.Youtube.csproj" />
     </ItemGroup>
     <ItemGroup>
         <Folder Include="Properties\" />

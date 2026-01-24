@@ -20,7 +20,6 @@ using FMBot.LastFM.Repositories;
 using FMBot.Persistence.EntityFrameWork;
 using FMBot.Persistence.Repositories;
 using FMBot.Subscriptions.Services;
-using FMBot.Youtube.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
