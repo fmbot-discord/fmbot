@@ -2,39 +2,35 @@ name: Publish docker container
 
 on:
   push:
-    branches: [ main, dev ]
-    tags: [ 'v*.*.*' ]
-
+    branches: [main, dev]
+    tags: ['v*.*.*']
 
 jobs:
-    
-
   build:
     name: Docker Build, Tag, Push
     runs-on: ubuntu-latest
-    strategy:
-      max-parallel: 4
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v1
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Checkout
-        uses: actions/checkout@v2
-
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v3
 
       - name: Extract branch name
-        shell: bash
-        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
         id: extract_branch
+        run: echo "branch=${GITHUB_REF#refs/heads/}" >> $GITHUB_OUTPUT
 
       - name: Build and Push Docker Image
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: src/Dockerfile
@@ -42,5 +38,5 @@ jobs:
           tags: |
             ghcr.io/fmbot-discord/fmbot:latest
             ghcr.io/fmbot-discord/fmbot:${{ steps.extract_branch.outputs.branch }}
-          secrets: |
-            GIT_AUTH_TOKEN=${{ secrets.GITHUB_TOKEN }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
