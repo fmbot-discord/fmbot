@@ -133,7 +133,7 @@ public class DiscordSkuService
                 httpResponse.ReasonPhrase);
         }
 
-        var stream = await httpResponse.Content.ReadAsStreamAsync();
+        await using var stream = await httpResponse.Content.ReadAsStreamAsync();
         using var streamReader = new StreamReader(stream);
         var requestBody = await streamReader.ReadToEndAsync();
 
@@ -244,7 +244,7 @@ public class DiscordSkuService
 
         var response = await _client.SendAsync(request);
 
-        var stream = await response.Content.ReadAsStreamAsync();
+        await using var stream = await response.Content.ReadAsStreamAsync();
         using var streamReader = new StreamReader(stream);
         var requestBody = await streamReader.ReadToEndAsync();
 

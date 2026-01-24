@@ -1,37 +1,40 @@
-#See https://aka.ms/containerfastmode to understand how Visual Studio uses this Dockerfile to build your images for faster debugging.
-
 FROM mcr.microsoft.com/dotnet/runtime:10.0-noble-amd64 AS base
-RUN apt-get update -y && apt-get install -y libgdiplus software-properties-common curl
-RUN add-apt-repository ppa:ubuntuhandbook1/ffmpeg7 && apt update -y && apt install ffmpeg -y
+
+RUN apt-get update -y && apt-get install -y --no-install-recommends \
+    libjemalloc2 \
+    libgdiplus \
+    software-properties-common \
+    curl \
+    wget \
+    gnupg2 \
+    apt-utils \
+    && add-apt-repository ppa:ubuntuhandbook1/ffmpeg7 \
+    && wget --no-verbose -O /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
+    && apt-get update -y \
+    && apt-get install -y --no-install-recommends \
+    ffmpeg \
+    /tmp/chrome.deb \
+    fonts-ipafont-gothic \
+    fonts-noto-color-emoji \
+    fonts-wqy-zenhei \
+    fonts-thai-tlwg \
+    fonts-kacst \
+    fonts-freefont-ttf \
+    && rm /tmp/chrome.deb \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2
+ENV PUPPETEER_EXECUTABLE_PATH="/usr/bin/google-chrome-stable"
 
 WORKDIR /app
-
-#####################
-#PUPPETEER RECIPE
-#####################
-# Install latest chrome dev package and fonts to support major charsets (Chinese, Japanese, Arabic, Hebrew, Thai and a few others)
-# Note: this installs the necessary libs to make the bundled version of Chromium that Puppeteer
-# installs, work.
-RUN apt-get update && apt-get -f install && apt-get -y install wget gnupg2 apt-utils
-RUN wget --no-verbose -O /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
-    && apt-get update \
-    && apt-get install -y /tmp/chrome.deb --no-install-recommends --allow-downgrades fonts-ipafont-gothic fonts-noto-color-emoji fonts-wqy-zenhei fonts-thai-tlwg fonts-kacst fonts-freefont-ttf \
-    && rm /tmp/chrome.deb
-
-#####################
-#END PUPPETEER RECIPE
-#####################
-
-ENV PUPPETEER_EXECUTABLE_PATH "/usr/bin/google-chrome-stable"
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
-# Install dotnet diagnostic tools
-RUN dotnet tool install --global dotnet-dump
-RUN dotnet tool install --global dotnet-counters
-RUN dotnet tool install --global dotnet-trace
-RUN dotnet tool install --global dotnet-gcdump
+RUN dotnet tool install --global dotnet-dump \
+    && dotnet tool install --global dotnet-counters \
+    && dotnet tool install --global dotnet-trace \
+    && dotnet tool install --global dotnet-gcdump
 
 COPY ["src/FMBot.Bot", "FMBot.Bot/"]
 COPY ["src/FMBot.Images", "FMBot.Images/"]

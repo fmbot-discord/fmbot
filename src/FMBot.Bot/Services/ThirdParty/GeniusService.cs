@@ -53,7 +53,7 @@ public class GeniusService
                 return null;
             }
 
-            var stream = await httpResponse.Content.ReadAsStreamAsync();
+            await using var stream = await httpResponse.Content.ReadAsStreamAsync();
             using var streamReader = new StreamReader(stream);
             var requestBody = await streamReader.ReadToEndAsync();
 

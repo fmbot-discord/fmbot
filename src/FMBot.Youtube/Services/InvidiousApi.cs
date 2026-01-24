@@ -55,7 +55,7 @@ namespace FMBot.Youtube.Services
                     return null;
                 }
 
-                var stream = await httpResponse.Content.ReadAsStreamAsync();
+                await using var stream = await httpResponse.Content.ReadAsStreamAsync();
                 using var streamReader = new StreamReader(stream);
                 var requestBody = await streamReader.ReadToEndAsync();
 
@@ -72,7 +72,7 @@ namespace FMBot.Youtube.Services
 
                     using var backupHttpResponse = await this._client.SendAsync(backupRequest);
 
-                    var backupStream = await backupHttpResponse.Content.ReadAsStreamAsync();
+                    await using var backupStream = await backupHttpResponse.Content.ReadAsStreamAsync();
                     using var backupStreamReader = new StreamReader(backupStream);
                     requestBody = await backupStreamReader.ReadToEndAsync();
                 }
@@ -113,10 +113,10 @@ namespace FMBot.Youtube.Services
             {
                 using var httpResponse = await this._client.SendAsync(request);
                 
-                var stream = await httpResponse.Content.ReadAsStreamAsync();
+                await using var stream = await httpResponse.Content.ReadAsStreamAsync();
                 using var streamReader = new StreamReader(stream);
                 var requestBody = await streamReader.ReadToEndAsync();
-                
+
                 if (!httpResponse.IsSuccessStatusCode && this._backupUrl != null)
                 {
                     var backupRequest = new HttpRequestMessage
@@ -127,7 +127,7 @@ namespace FMBot.Youtube.Services
 
                     using var backupHttpResponse = await this._client.SendAsync(backupRequest);
 
-                    var backupStream = await backupHttpResponse.Content.ReadAsStreamAsync();
+                    await using var backupStream = await backupHttpResponse.Content.ReadAsStreamAsync();
                     using var backupStreamReader = new StreamReader(backupStream);
                     requestBody = await backupStreamReader.ReadToEndAsync();
                 }

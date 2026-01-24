@@ -2394,19 +2394,11 @@ public class ArtistBuilders
         var artists = await this._artistsService.GetArtistsPopularity(topArtists.Content.TopArtists);
 
         var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", "bot", "iceberg.png");
-        Stream gifStream;
-        var saveFile = false;
+        var saveFile = !File.Exists(path);
 
-        if (!File.Exists(path))
-        {
-            gifStream =
-                await this._dataSourceFactory.GetAlbumImageAsStreamAsync("https://fm.bot/img/bot/iceberg.png");
-            saveFile = true;
-        }
-        else
-        {
-            gifStream = File.OpenRead(path);
-        }
+        await using Stream gifStream = saveFile
+            ? await this._dataSourceFactory.GetAlbumImageAsStreamAsync("https://fm.bot/img/bot/iceberg.png")
+            : File.OpenRead(path);
 
         using var bitmap = SKBitmap.Decode(gifStream);
 
