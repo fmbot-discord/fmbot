@@ -318,8 +318,15 @@ public class UserSlashCommands(
 
             if (interactionToDelete.DiscordId.HasValue && interactionToDelete.Type == UserInteractionType.TextCommand)
             {
-                var ogMessage = await this.Context.Channel.GetMessageAsync(interactionToDelete.DiscordId.Value);
-                await ogMessage.AddReactionAsync(new ReactionEmojiProperties("🚮"));
+                try
+                {
+                    var ogMessage = await this.Context.Channel.GetMessageAsync(interactionToDelete.DiscordId.Value);
+                    await ogMessage.AddReactionAsync(new ReactionEmojiProperties("🚮"));
+                }
+                catch (RestException)
+                {
+                    // Original command message was already deleted, continue with response deletion
+                }
             }
 
             await fetchedMessage.DeleteAsync(new RestRequestProperties
@@ -329,6 +336,12 @@ public class UserSlashCommands(
                 .WithContent("Removed .fmbot response.")
                 .WithFlags(MessageFlags.Ephemeral)));
             await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
+        }
+        catch (RestException)
+        {
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("This message has already been deleted or is no longer accessible.")
+                .WithFlags(MessageFlags.Ephemeral)));
         }
         catch (Exception e)
         {
