@@ -4,10 +4,7 @@ x-instance-defaults: &instance-defaults
   image: ghcr.io/fmbot-discord/fmbot:main
   restart: always
   network_mode: host
-  mem_limit: 32g
-  environment:
-    - DOTNET_GCHeapHardLimitPercent=70
-    - DOTNET_GCConserveMemory=5
+  mem_limit: 34g
   volumes:
     - /fmbot/prod/:/app/configs/
     - /fmbot/cache/:/app/cache/
