@@ -55,6 +55,8 @@ COPY --from=build /root/.dotnet/tools /root/.dotnet/tools
 
 ENV PATH="/root/.dotnet/tools:${PATH}"
 ENV DOTNET_EnableDiagnostics=1
+ENV DOTNET_GCHeapHardLimitPercent=70
+ENV DOTNET_GCConserveMemory=5
 
 ENTRYPOINT ["dotnet", "FMBot.Bot.dll"]
 
