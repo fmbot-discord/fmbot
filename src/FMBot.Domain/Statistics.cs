@@ -211,12 +211,11 @@ public static class Statistics
             LabelNames = ["type"]
         });
 
-
-    public static readonly Counter ShardConnected = Metrics
-        .CreateCounter("bot_shard_connected", "A shard has connected");
-
-    public static readonly Counter ShardDisConnected = Metrics
-        .CreateCounter("bot_shard_disconnected", "A shard has disconnected");
+    public static readonly Counter ShardEvent = Metrics
+        .CreateCounter("bot_shard_event", "A shard event", new CounterConfiguration
+        {
+            LabelNames = ["event", "shard_id"]
+        });
 
     public static readonly Gauge ConnectedShards = Metrics
         .CreateGauge("bot_connected_shards", "Gauge of amount of shards that are connected");

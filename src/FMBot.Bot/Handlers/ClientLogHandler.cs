@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -7,9 +6,9 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
+using FMBot.Domain;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Caching.Memory;
-using NetCord;
 using NetCord.Gateway;
 using Serilog;
 using Shared.Domain.Enums;
@@ -62,6 +61,7 @@ public class ClientLogHandler
 
     private static ValueTask ShardReady(GatewayClient client, ReadyEventArgs args)
     {
+        Statistics.ShardEvent.WithLabels("ready", client.Shard?.Id.ToString() ?? "0").Inc();
         Log.Information("ShardReady: Shard #{shardId} is ready with {guildCount} guilds",
             client.Shard?.Id ?? 0, args.GuildIds.Count);
         return ValueTask.CompletedTask;
@@ -69,6 +69,7 @@ public class ClientLogHandler
 
     private static ValueTask ShardConnected(GatewayClient client)
     {
+        Statistics.ShardEvent.WithLabels("connected", client.Shard?.Id.ToString() ?? "0").Inc();
         Log.Information("ShardConnected: Shard #{shardId} connected",
             client.Shard?.Id ?? 0);
         return ValueTask.CompletedTask;
@@ -76,6 +77,7 @@ public class ClientLogHandler
 
     private static ValueTask ShardDisconnected(GatewayClient client, DisconnectEventArgs args)
     {
+        Statistics.ShardEvent.WithLabels("disconnected", client.Shard?.Id.ToString() ?? "0").Inc();
         Log.Warning("ShardDisconnected: Shard #{shardId} disconnected",
             client.Shard?.Id ?? 0);
         return ValueTask.CompletedTask;
@@ -83,6 +85,7 @@ public class ClientLogHandler
 
     private static ValueTask ShardResumed(GatewayClient client)
     {
+        Statistics.ShardEvent.WithLabels("resumed", client.Shard?.Id.ToString() ?? "0").Inc();
         Log.Information("ShardResumed: Shard #{shardId} resumed session",
             client.Shard?.Id ?? 0);
         return ValueTask.CompletedTask;
