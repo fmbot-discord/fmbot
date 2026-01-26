@@ -444,14 +444,10 @@ public class Startup
     }
 }
 
-public class SerilogGatewayLogger : IGatewayLogger
+public class SerilogGatewayLogger(Shard? shard) : IGatewayLogger
 {
-    private readonly ILogger _logger;
-
-    public SerilogGatewayLogger(Shard? shard)
-    {
-        _logger = Log.Logger.ForContext("ShardId", shard?.Id);
-    }
+    private readonly ILogger _logger = Log.Logger;
+    private readonly int? _shardId = shard?.Id;
 
     void IGatewayLogger.Log<TState>(LogLevel logLevel, TState state, Exception exception, Func<TState, Exception, string> formatter)
     {
@@ -468,9 +464,13 @@ public class SerilogGatewayLogger : IGatewayLogger
 
         var message = formatter(state, exception);
         if (exception != null)
-            _logger.Write(serilogLevel, exception, "[Gateway] {Message}", message);
+        {
+            _logger.Write(serilogLevel, exception, "Gateway: #{shardId} | {Message}", _shardId, message);
+        }
         else
-            _logger.Write(serilogLevel, "[Gateway] {Message}", message);
+        {
+            _logger.Write(serilogLevel, "Gateway: #{shardId} | {Message}", _shardId, message);
+        }
     }
 
     public bool IsEnabled(LogLevel logLevel) => logLevel != LogLevel.None;
