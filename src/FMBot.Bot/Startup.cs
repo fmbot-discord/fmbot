@@ -38,6 +38,7 @@ using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.SystemTextJson;
 using NetCord;
 using NetCord.Gateway;
+using NetCord.Logging;
 using NetCord.Services.ApplicationCommands;
 using NetCord.Services.Commands;
 using NetCord.Services.ComponentInteractions;
@@ -179,7 +180,8 @@ public class Startup
                 IntentsFactory = _ => intents,
                 TotalShardCount = ConfigData.Data.Shards.TotalShards,
                 ShardRange = startShard..(endShard + 1), // End is exclusive in NetCord
-                MaxConcurrency = maxConcurrency
+                MaxConcurrency = maxConcurrency,
+                LoggerFactory = shard => new SerilogGatewayLogger(shard)
             });
         }
 
@@ -187,7 +189,8 @@ public class Startup
         return new ShardedGatewayClient(new BotToken(ConfigData.Data.Discord.Token), new ShardedGatewayClientConfiguration
         {
             IntentsFactory = _ => intents,
-            MaxConcurrency = maxConcurrency
+            MaxConcurrency = maxConcurrency,
+            LoggerFactory = shard => new SerilogGatewayLogger(shard)
         });
     }
 
@@ -341,10 +344,7 @@ public class Startup
         MetaBrainz.MusicBrainz.Query.DefaultUserAgent.Add(new ProductInfoHeaderValue("fmbot", "1.0"));
         MetaBrainz.MusicBrainz.Query.DefaultUserAgent.Add(new ProductInfoHeaderValue("(+contact@fm.bot)"));
 
-        services.AddHttpClient("MusicBrainz", client =>
-        {
-            client.Timeout = TimeSpan.FromSeconds(8);
-        });
+        services.AddHttpClient("MusicBrainz", client => { client.Timeout = TimeSpan.FromSeconds(8); });
         services.AddSingleton<MusicBrainzService>();
     }
 
@@ -442,4 +442,36 @@ public class Startup
     {
         Log.Logger?.Error(e, ".fmbot crashed");
     }
+}
+
+public class SerilogGatewayLogger : IGatewayLogger
+{
+    private readonly ILogger _logger;
+
+    public SerilogGatewayLogger(Shard? shard)
+    {
+        _logger = Log.Logger.ForContext("ShardId", shard?.Id);
+    }
+
+    void IGatewayLogger.Log<TState>(LogLevel logLevel, TState state, Exception exception, Func<TState, Exception, string> formatter)
+    {
+        var serilogLevel = logLevel switch
+        {
+            LogLevel.Trace => LogEventLevel.Verbose,
+            LogLevel.Debug => LogEventLevel.Debug,
+            LogLevel.Information => LogEventLevel.Information,
+            LogLevel.Warning => LogEventLevel.Warning,
+            LogLevel.Error => LogEventLevel.Error,
+            LogLevel.Critical => LogEventLevel.Fatal,
+            _ => LogEventLevel.Information
+        };
+
+        var message = formatter(state, exception);
+        if (exception != null)
+            _logger.Write(serilogLevel, exception, "[Gateway] {Message}", message);
+        else
+            _logger.Write(serilogLevel, "[Gateway] {Message}", message);
+    }
+
+    public bool IsEnabled(LogLevel logLevel) => logLevel != LogLevel.None;
 }
