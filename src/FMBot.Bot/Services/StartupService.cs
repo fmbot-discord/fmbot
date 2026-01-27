@@ -141,51 +141,10 @@ public class StartupService
         await this._shortcutService.LoadAllShortcuts();
 
         var gateway = await this._client.Rest.GetGatewayBotAsync();
-        Log.Information("ShardStarter: connects left {connectsLeft} - reset after {resetAfter}",
-            gateway.SessionStartLimit.Remaining, gateway.SessionStartLimit.ResetAfter);
+        Log.Information("Gateway: connects left {connectsLeft} - reset after {resetAfter} - recommended shards {shardCount}",
+            gateway.SessionStartLimit.Remaining, gateway.SessionStartLimit.ResetAfter, gateway.ShardCount);
 
-        // Log.Information("ShardStarter: max concurrency {maxConcurrency}, total shards {shardCount}", maxConcurrency,
-        //     this._client.Shards.Count);
-        //
-        // var connectTasks = new List<Task>();
-        // var connectingShards = new List<int>();
-        //
-        // foreach (var shard in this._client.Shards)
-        // {
-        //     Log.Information("ShardConnectionStart: shard #{shardId}", shard.ShardId);
-        //
-        //     connectTasks.Add(shard.StartAsync());
-        //     connectingShards.Add(shard.ShardId);
-        //
-        //     if (connectTasks.Count >= maxConcurrency)
-        //     {
-        //         await Task.WhenAll(connectTasks);
-        //
-        //         while (this._client.Shards
-        //                .Where(w => connectingShards.Contains(w.ShardId))
-        //                .Any(a => a.ConnectionState != ConnectionState.Connected))
-        //         {
-        //             await Task.Delay(100);
-        //         }
-        //
-        //         Log.Information("ShardStarter: All shards in group concurrently connected");
-        //         await Task.Delay(3000);
-        //
-        //         connectTasks = new();
-        //     }
-        // }
-        //
-        // Log.Information("ShardStarter: All connects started, waiting until all are connected");
-        // while (this._client.Shards.Any(a => a.ConnectionState != ConnectionState.Connected))
-        // {
-        //     await Task.Delay(100);
-        // }
-
-        Log.Information("ShardStarter: Done");
-
-        await this._timerService.UpdateStatus();
         await this._timerService.UpdateHealthCheck();
-
         await this.RegisterSlashCommands();
 
         InitializeHangfireConfig();
@@ -193,16 +152,16 @@ public class StartupService
 
         this.StartMetricsPusher();
 
-        // TODO configure based on shard count
-        var startDelay = 10;
+        const int warmupDelay = 15;
 
         if (ConfigData.Data.Shards == null || ConfigData.Data.Shards.MainInstance == true)
         {
-            BackgroundJob.Schedule(() => this.RegisterSlashCommands(), TimeSpan.FromSeconds(startDelay));
-            BackgroundJob.Schedule(() => this._supporterService.AddRoleToNewSupporters(), TimeSpan.FromSeconds(10));
+            BackgroundJob.Schedule(() => this.RegisterSlashCommands(), TimeSpan.FromSeconds(warmupDelay));
+            BackgroundJob.Schedule(() => this._supporterService.AddRoleToNewSupporters(), TimeSpan.FromSeconds(warmupDelay));
         }
 
-        BackgroundJob.Schedule(() => this.CacheSlashCommandIds(), TimeSpan.FromSeconds(startDelay));
+        BackgroundJob.Schedule(() => this.CacheSlashCommandIds(), TimeSpan.FromSeconds(warmupDelay));
+        BackgroundJob.Schedule(() => this._timerService.UpdateStatus(), TimeSpan.FromSeconds(warmupDelay));
 
         await this.CachePremiumGuilds();
         await this.CacheDiscordUserIds();
