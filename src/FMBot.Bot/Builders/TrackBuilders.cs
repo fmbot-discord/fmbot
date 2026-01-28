@@ -291,7 +291,7 @@ public class TrackBuilders
             response.Embed.AddField("Summary", trackSearch.Track.Description);
         }
 
-        if (dbTrack?.SpotifyPreviewUrl != null)
+        if (!string.IsNullOrEmpty(dbTrack?.SpotifyPreviewUrl) || !string.IsNullOrEmpty(dbTrack?.AppleMusicPreviewUrl))
         {
             response.Components.WithButton(
                     "Preview",
@@ -849,7 +849,7 @@ public class TrackBuilders
 
         response.Text = reply.ToString();
 
-        if (spotifyTrack?.SpotifyPreviewUrl != null)
+        if (!string.IsNullOrEmpty(spotifyTrack?.SpotifyPreviewUrl) || !string.IsNullOrEmpty(spotifyTrack?.AppleMusicPreviewUrl))
         {
             response.Components = new ActionRowProperties()
                 .WithButton(
@@ -881,11 +881,13 @@ public class TrackBuilders
             return trackSearch.Response;
         }
 
-        var spotifyTrack = await this._musicDataFactory.GetOrStoreTrackAsync(trackSearch.Track);
+        var track = await this._musicDataFactory.GetOrStoreTrackAsync(trackSearch.Track);
+
+        var previewUrl = track.SpotifyPreviewUrl ?? track.AppleMusicPreviewUrl;
 
         try
         {
-            await this._discordSkuService.SendVoiceMessage(spotifyTrack.SpotifyPreviewUrl, interactionToken);
+            await this._discordSkuService.SendVoiceMessage(previewUrl, interactionToken);
         }
         catch (Exception e)
         {

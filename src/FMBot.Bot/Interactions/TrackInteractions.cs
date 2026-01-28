@@ -61,10 +61,17 @@ public class TrackInteractions(
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
-        var linkButton = new LinkButtonProperties(
-            "https://open.spotify.com/track/" + dbTrack.SpotifyId,
-            "Open on Spotify",
-            EmojiProperties.Custom(DiscordConstants.Spotify));
+        var useSpotify = !string.IsNullOrEmpty(dbTrack.SpotifyPreviewUrl);
+
+        var linkButton = useSpotify
+            ? new LinkButtonProperties(
+                "https://open.spotify.com/track/" + dbTrack.SpotifyId,
+                "Open on Spotify",
+                EmojiProperties.Custom(DiscordConstants.Spotify))
+            : new LinkButtonProperties(
+                dbTrack.AppleMusicUrl,
+                "Open on Apple Music",
+                EmojiProperties.Custom(DiscordConstants.AppleMusic));
 
         await this.Context.AddLinkButton(linkButton);
 

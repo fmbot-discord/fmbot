@@ -203,13 +203,16 @@ public class DiscordSkuService
     {
         var audioBytes = await _client.GetByteArrayAsync(audioUrl);
 
-        var (waveform, durationSecs) = await GenerateWaveformFromAudioBytesAsync(audioBytes);
+        var isAac = audioUrl.Contains(".m4a", StringComparison.OrdinalIgnoreCase) ||
+                    audioUrl.Contains("itunes", StringComparison.OrdinalIgnoreCase);
+
+        var (waveform, durationSecs, oggBytes) = await GenerateWaveformAndTranscodeAsync(audioBytes, isAac);
 
         using var multipartContent = new MultipartFormDataContent();
 
-        var audioContent = new ByteArrayContent(audioBytes);
-        audioContent.Headers.ContentType = new MediaTypeHeaderValue("audio/mpeg");
-        multipartContent.Add(audioContent, "files[0]", "voice_message.mp3");
+        var audioContent = new ByteArrayContent(oggBytes);
+        audioContent.Headers.ContentType = new MediaTypeHeaderValue("audio/ogg");
+        multipartContent.Add(audioContent, "files[0]", "voice-message.ogg");
 
         var payload = new
         {
@@ -219,7 +222,7 @@ public class DiscordSkuService
                 new
                 {
                     id = "0",
-                    filename = "voice_message.mp3",
+                    filename = "voice-message.ogg",
                     duration_secs = durationSecs,
                     waveform = waveform
                 }
@@ -256,19 +259,35 @@ public class DiscordSkuService
         response.EnsureSuccessStatusCode();
     }
 
-    private static async Task<(string waveform, double durationSecs)> GenerateWaveformFromAudioBytesAsync(
-        byte[] audioBytes)
+    private static async Task<(string waveform, double durationSecs, byte[] oggBytes)> GenerateWaveformAndTranscodeAsync(
+        byte[] audioBytes, bool isAac)
+    {
+        // Step 1: Decode source to PCM once (this is the expensive decode operation)
+        var pcmBytes = await DecodeToPcmAsync(audioBytes, isAac);
+
+        // Step 2: Generate waveform from PCM data
+        var (waveform, durationSecs) = GenerateWaveformFromPcm(pcmBytes);
+
+        // Step 3: Encode PCM to OGG Opus (fast - no decoding needed, just encoding)
+        var oggBytes = await EncodePcmToOggOpusAsync(pcmBytes);
+
+        return (waveform, durationSecs, oggBytes);
+    }
+
+    private static async Task<byte[]> DecodeToPcmAsync(byte[] audioBytes, bool isAac)
     {
         using var audioStream = new MemoryStream(audioBytes);
         using var pcmStream = new MemoryStream();
+
+        // Use explicit format for AAC/M4A since pipe input can't seek for container parsing
+        var formatArg = isAac ? "-f m4a" : "-f mp3";
 
         var ffmpegProcess = new Process
         {
             StartInfo = new ProcessStartInfo
             {
                 FileName = "ffmpeg",
-                // Add -t to get duration info in stderr
-                Arguments = $"-f mp3 -i pipe:0 -ac 1 -ar 48000 -f s16le pipe:1",
+                Arguments = $"{formatArg} -i pipe:0 -ac 1 -ar 48000 -f s16le pipe:1",
                 RedirectStandardInput = true,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
@@ -295,7 +314,7 @@ public class DiscordSkuService
                        await ffmpegProcess.StandardError.ReadLineAsync(cts.Token) is { } line)
                 {
                     errorBuilder.AppendLine(line);
-                    Log.Debug("FFmpeg: {line}", line);
+                    Log.Debug("FFmpeg decode: {line}", line);
                 }
             }, cts.Token);
 
@@ -305,49 +324,121 @@ public class DiscordSkuService
             if (ffmpegProcess.ExitCode != 0)
             {
                 throw new Exception(
-                    $"FFmpeg failed with exit code: {ffmpegProcess.ExitCode}. Error output: {errorBuilder}");
+                    $"FFmpeg decode failed with exit code: {ffmpegProcess.ExitCode}. Error output: {errorBuilder}");
             }
 
-            // Calculate duration based on PCM data
-            var durationSecs = (double)pcmStream.Length / (48000 * 2); // bytes / (sample_rate * bytes_per_sample)
-
-            // Calculate number of samples needed
-            var samplesNeeded = Math.Min(256, (int)(durationSecs * 10)); // 10 samples per second (100ms intervals)
-            var samplesPerPoint = (int)(pcmStream.Length / (2 * samplesNeeded)); // 2 bytes per sample
-
-            pcmStream.Position = 0;
-            var waveformPoints = new byte[samplesNeeded];
-
-            using var reader = new BinaryReader(pcmStream);
-            for (int i = 0; i < samplesNeeded; i++)
+            return pcmStream.ToArray();
+        }
+        finally
+        {
+            if (!ffmpegProcess.HasExited)
             {
-                float maxAmplitude = 0;
-                for (int j = 0; j < samplesPerPoint && pcmStream.Position < pcmStream.Length - 1; j++)
+                ffmpegProcess.Kill();
+            }
+
+            ffmpegProcess.Dispose();
+        }
+    }
+
+    private static (string waveform, double durationSecs) GenerateWaveformFromPcm(byte[] pcmBytes)
+    {
+        // Calculate duration based on PCM data (mono 16-bit 48kHz)
+        var durationSecs = (double)pcmBytes.Length / (48000 * 2); // bytes / (sample_rate * bytes_per_sample)
+
+        // Calculate number of samples needed for waveform
+        var samplesNeeded = Math.Min(256, (int)(durationSecs * 10)); // 10 samples per second (100ms intervals)
+        if (samplesNeeded <= 0) samplesNeeded = 1;
+
+        var samplesPerPoint = pcmBytes.Length / (2 * samplesNeeded); // 2 bytes per sample
+        var waveformPoints = new byte[samplesNeeded];
+
+        using var pcmStream = new MemoryStream(pcmBytes);
+        using var reader = new BinaryReader(pcmStream);
+
+        for (int i = 0; i < samplesNeeded; i++)
+        {
+            float maxAmplitude = 0;
+            for (int j = 0; j < samplesPerPoint && pcmStream.Position < pcmStream.Length - 1; j++)
+            {
+                try
                 {
-                    try
-                    {
-                        var sample = reader.ReadInt16() / 32768f; // Normalize to [-1, 1]
-                        maxAmplitude = Math.Max(maxAmplitude, Math.Abs(sample));
-                    }
-                    catch (EndOfStreamException)
-                    {
-                        Log.Warning("Reached end of stream while reading PCM data");
-                        break;
-                    }
+                    var sample = reader.ReadInt16() / 32768f; // Normalize to [-1, 1]
+                    maxAmplitude = Math.Max(maxAmplitude, Math.Abs(sample));
                 }
-
-                // Scale to [0, 255]
-                waveformPoints[i] = (byte)Math.Min(255, Math.Floor(maxAmplitude * 255));
-
-                // Skip to next sampling point if we have remaining data
-                var bytesToSkip = (long)(((i + 1) * pcmStream.Length / samplesNeeded) - pcmStream.Position);
-                if (bytesToSkip > 0)
+                catch (EndOfStreamException)
                 {
-                    pcmStream.Seek(bytesToSkip, SeekOrigin.Current);
+                    Log.Warning("Reached end of stream while reading PCM data");
+                    break;
                 }
             }
 
-            return (Convert.ToBase64String(waveformPoints), durationSecs);
+            // Scale to [0, 255]
+            waveformPoints[i] = (byte)Math.Min(255, Math.Floor(maxAmplitude * 255));
+
+            // Skip to next sampling point if we have remaining data
+            var bytesToSkip = (long)(((i + 1) * pcmBytes.Length / samplesNeeded) - pcmStream.Position);
+            if (bytesToSkip > 0)
+            {
+                pcmStream.Seek(bytesToSkip, SeekOrigin.Current);
+            }
+        }
+
+        return (Convert.ToBase64String(waveformPoints), durationSecs);
+    }
+
+    private static async Task<byte[]> EncodePcmToOggOpusAsync(byte[] pcmBytes)
+    {
+        using var pcmStream = new MemoryStream(pcmBytes);
+        using var oggStream = new MemoryStream();
+
+        var ffmpegProcess = new Process
+        {
+            StartInfo = new ProcessStartInfo
+            {
+                FileName = "ffmpeg",
+                // Input is raw PCM: mono, 16-bit signed little-endian, 48kHz
+                // Output is OGG Opus for Discord voice messages
+                Arguments = "-f s16le -ar 48000 -ac 1 -i pipe:0 -c:a libopus -b:a 64k -f ogg pipe:1",
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            }
+        };
+
+        try
+        {
+            ffmpegProcess.Start();
+
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+
+            var inputTask = pcmStream.CopyToAsync(ffmpegProcess.StandardInput.BaseStream, cts.Token)
+                .ContinueWith(t => ffmpegProcess.StandardInput.Close(), cts.Token);
+
+            var outputTask = ffmpegProcess.StandardOutput.BaseStream.CopyToAsync(oggStream, cts.Token);
+
+            var errorBuilder = new StringBuilder();
+            var errorTask = Task.Run(async () =>
+            {
+                while (!cts.Token.IsCancellationRequested &&
+                       await ffmpegProcess.StandardError.ReadLineAsync(cts.Token) is { } line)
+                {
+                    errorBuilder.AppendLine(line);
+                    Log.Debug("FFmpeg encode: {line}", line);
+                }
+            }, cts.Token);
+
+            await Task.WhenAll(inputTask, outputTask, errorTask);
+            await ffmpegProcess.WaitForExitAsync(cts.Token);
+
+            if (ffmpegProcess.ExitCode != 0)
+            {
+                throw new Exception(
+                    $"FFmpeg encode failed with exit code: {ffmpegProcess.ExitCode}. Error output: {errorBuilder}");
+            }
+
+            return oggStream.ToArray();
         }
         finally
         {
