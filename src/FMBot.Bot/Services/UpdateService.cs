@@ -89,7 +89,7 @@ public class UpdateService
         DateTime timeUnauthorizedFilter)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
-        var lastUsed = DateTime.UtcNow.AddMonths(-3);
+        var lastUsed = DateTime.UtcNow.AddMonths(-2);
         return await db.Users
             .AsQueryable()
             .Where(f => f.LastIndexed != null &&

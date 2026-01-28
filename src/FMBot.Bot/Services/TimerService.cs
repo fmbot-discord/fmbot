@@ -88,7 +88,7 @@ public class TimerService : IDisposable
         this._botSettings = botSettings.Value;
 
         this.CurrentFeatured = this._featuredService.GetFeaturedForDateTime(DateTime.UtcNow).Result;
-        this._updateQueueHandler = new UpdateQueueHandler(this._updateService, TimeSpan.FromMilliseconds(100));
+        this._updateQueueHandler = new UpdateQueueHandler(this._updateService, TimeSpan.FromMilliseconds(200));
     }
 
     public void QueueJobs()
