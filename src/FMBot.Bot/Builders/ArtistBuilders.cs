@@ -2164,6 +2164,7 @@ public class ArtistBuilders
                 timeSettings.TimePeriod, ownLastFmUsername, lastfmToCompare, "Artist");
 
             artistPage.WithDescription(taste.result);
+            artistPage.WithColor(DiscordConstants.LastFmColorRed);
             artistPage.WithFooter("➡️ Genres");
         }
 
@@ -2185,6 +2186,7 @@ public class ArtistBuilders
                 timeSettings.TimePeriod, ownLastFmUsername, lastfmToCompare, "Genre");
 
             genrePage.WithDescription(taste.result);
+            genrePage.WithColor(DiscordConstants.LastFmColorRed);
             genrePage.WithFooter("⬅️ Artists\n" +
                                  "➡️ Countries");
 
@@ -2218,6 +2220,7 @@ public class ArtistBuilders
                 countryPage.WithFooter("⬅️ Genres");
             }
 
+            countryPage.WithColor(DiscordConstants.LastFmColorRed);
             pages.Add(countryPage);
         }
 
@@ -2247,6 +2250,7 @@ public class ArtistBuilders
 
             discogsPage.WithDescription(taste.result);
             discogsPage.WithFooter($"⬅️ Countries");
+            discogsPage.WithColor(DiscordConstants.LastFmColorRed);
 
             pages.Add(discogsPage);
         }
