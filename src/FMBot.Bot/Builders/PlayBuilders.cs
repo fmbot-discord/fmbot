@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -269,7 +270,7 @@ public class PlayBuilder
             Track = currentTrack.TrackName
         };
 
-        var requesterUserTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
+        var requesterUserTitle = await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser);
         var embedTitle = !userSettings.DifferentUser
             ? $"{requesterUserTitle}"
             : $"{userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}, requested by {requesterUserTitle}";
@@ -280,10 +281,9 @@ public class PlayBuilder
         // return response;
 
         var fmText = "";
-        var useSmallMarkdown = embedType == FmEmbedType.TextFull || embedType == FmEmbedType.TextMini;
         var footerText = await this._userService.GetFooterAsync(
             context.ContextUser.FmFooterOptions, userSettings, currentTrack, previousTrack, totalPlaycount, context,
-            guild, guildUsers, useSmallMarkdown);
+            guild, guildUsers);
 
         if (!userSettings.DifferentUser &&
             !currentTrack.NowPlaying &&
@@ -291,7 +291,7 @@ public class PlayBuilder
             currentTrack.TimePlayed < DateTime.UtcNow.AddHours(-1) &&
             currentTrack.TimePlayed > DateTime.UtcNow.AddDays(-5))
         {
-            footerText.Append($"Using Spotify and lagging behind? Check '{context.Prefix}outofsync' - ");
+            footerText.Append($"-# Using Spotify and lagging behind? Check '{context.Prefix}outofsync'");
         }
 
         switch (embedType)
@@ -334,87 +334,144 @@ public class PlayBuilder
                 response.ResponseType = ResponseType.Text;
                 response.Text = fmText;
                 break;
-            default:
-                if (embedType == FmEmbedType.EmbedMini || embedType == FmEmbedType.EmbedTiny)
-                {
-                    fmText += StringService.TrackToLinkedString(currentTrack, context.ContextUser.RymEnabled,
-                        embedType == FmEmbedType.EmbedMini);
-                    response.Embed.WithDescription(fmText);
-                }
-                else if (previousTrack != null)
-                {
-                    var embedFull = new StringBuilder();
-                    embedFull.AppendLine(currentTrack.NowPlaying ? $"-# *Current:*" : $"-# *Last:*");
-                    embedFull.AppendLine(
-                        StringService.TrackToLinkedString(currentTrack, context.ContextUser.RymEnabled, false));
-                    embedFull.AppendLine("-# *Previous:*");
-                    embedFull.Append(StringService.TrackToLinkedString(previousTrack, context.ContextUser.RymEnabled,
-                        false));
-                    response.Embed.WithDescription(embedFull.ToString());
-                }
+            case FmEmbedType.EmbedMini:
+            case FmEmbedType.EmbedTiny:
+            case FmEmbedType.EmbedFull:
+                response.ResponseType = ResponseType.ComponentsV2;
 
-                string headerText;
-                if (currentTrack.NowPlaying)
-                {
-                    headerText = "Now playing - ";
-                }
-                else
-                {
-                    headerText = embedType == FmEmbedType.EmbedMini
-                        ? "Last track for "
-                        : "Last tracks for ";
-                }
-
-                headerText += embedTitle;
-
-                response.EmbedAuthor.WithName(headerText);
-                response.EmbedAuthor.WithUrl(recentTracks.Content.UserUrl);
-
-                if (!currentTrack.NowPlaying && currentTrack.TimePlayed.HasValue)
-                {
-                    footerText.AppendLine("Last scrobble:");
-                    response.Embed.WithTimestamp(currentTrack.TimePlayed.Value);
-                }
-
-                if (guild != null && !userSettings.DifferentUser)
-                {
-                    var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingTrack(context.ContextUser.UserId,
-                        guildUsers, guild, currentTrack.ArtistName, currentTrack.TrackName);
-
-                    if (guildAlsoPlaying != null)
-                    {
-                        footerText.AppendLine(guildAlsoPlaying);
-                    }
-                }
-
-                if (footerText.Length > 0)
-                {
-                    response.EmbedFooter.WithText(footerText.ToString());
-                    response.Embed.WithFooter(response.EmbedFooter);
-                }
-
-                if (embedType != FmEmbedType.EmbedTiny)
-                {
-                    response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl()?.ToString());
-                    response.Embed.WithAuthor(response.EmbedAuthor);
-                    response.Embed.WithUrl(recentTracks.Content.UserUrl);
-                }
-
-                if (currentTrack.AlbumName != null)
+                // Get album cover URL and color for non-Tiny embeds
+                string albumCoverUrl = null;
+                var accentColor = DiscordConstants.LastFmColorRed;
+                if (currentTrack.AlbumName != null && embedType != FmEmbedType.EmbedTiny)
                 {
                     var dbAlbum =
                         await this._albumService.GetAlbumFromDatabase(currentTrack.ArtistName, currentTrack.AlbumName);
+                    albumCoverUrl = dbAlbum?.SpotifyImageUrl ?? currentTrack.AlbumCoverUrl;
 
-                    var albumCoverUrl = dbAlbum?.SpotifyImageUrl ?? currentTrack.AlbumCoverUrl;
+                    accentColor = await this._albumService.GetAlbumAccentColorAsync(
+                        dbAlbum?.Id, currentTrack.AlbumName, currentTrack.ArtistName);
 
-                    if (albumCoverUrl != null && embedType != FmEmbedType.EmbedTiny)
+                    if (albumCoverUrl != null)
                     {
                         var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild,
                             context.DiscordChannel,
                             currentTrack.AlbumName, currentTrack.ArtistName, albumCoverUrl);
-                        if (safeForChannel == CensorService.CensorResult.Safe)
+                        if (safeForChannel != CensorService.CensorResult.Safe)
                         {
-                            response.Embed.WithThumbnail(albumCoverUrl);
+                            albumCoverUrl = null;
+                        }
+                    }
+                }
+
+                if (embedType != FmEmbedType.EmbedTiny)
+                {
+                    response.ComponentsContainer.WithAccentColor(accentColor);
+                }
+
+                // Build guild context for footer
+                string guildAlsoPlaying = null;
+                if (guild != null && !userSettings.DifferentUser && embedType != FmEmbedType.EmbedTiny)
+                {
+                    guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingTrack(context.ContextUser.UserId,
+                        guildUsers, guild, currentTrack.ArtistName, currentTrack.TrackName);
+                }
+
+                var miniHeader = new StringBuilder();
+                miniHeader.Append("-# ");
+                miniHeader.Append(embedTitle);
+                miniHeader.Append(currentTrack.NowPlaying ? " - Now playing" : " - Played");
+
+                if (!currentTrack.NowPlaying && currentTrack.TimePlayed.HasValue)
+                {
+                    var specifiedDateTime = DateTime.SpecifyKind(currentTrack.TimePlayed.Value, DateTimeKind.Utc);
+                    var timestampUnix = ((DateTimeOffset)specifiedDateTime).ToUnixTimeSeconds();
+                    miniHeader.Append($" <t:{timestampUnix}:R>");
+                }
+
+                miniHeader.AppendLine();
+
+                if (embedType == FmEmbedType.EmbedTiny)
+                {
+                    // EmbedTiny: Compact layout - no thumbnail, no user header
+                    response.ComponentsContainer.WithTextDisplay(StringService.TrackToLinkedString(currentTrack, context.ContextUser.RymEnabled, false));
+
+                    if (footerText.Length > 0)
+                    {
+                        response.ComponentsContainer.WithSeparator();
+                        response.ComponentsContainer.WithTextDisplay(footerText.ToString().TrimEnd());
+                    }
+                }
+                else if (embedType == FmEmbedType.EmbedFull)
+                {
+                    // EmbedFull: Two tracks with thumbnail on current track
+                    var currentTrackText = new StringBuilder();
+                    // currentTrackText.AppendLine(currentTrack.NowPlaying ? "-# *Current:*" : "-# *Last:*");
+                    currentTrackText.Append(StringService.TrackToLinkedString(currentTrack, context.ContextUser.RymEnabled, true));
+
+                    if (!string.IsNullOrEmpty(albumCoverUrl))
+                    {
+                        response.ComponentsContainer.WithSection([
+                            new TextDisplayProperties(miniHeader + currentTrackText.ToString())
+                        ], albumCoverUrl);
+                    }
+                    else
+                    {
+                        response.ComponentsContainer.WithTextDisplay(miniHeader + currentTrackText.ToString());
+                    }
+
+                    // Previous track (if available)
+                    if (previousTrack != null)
+                    {
+                        response.ComponentsContainer.WithSeparator();
+                        var previousTrackText = new StringBuilder();
+                        previousTrackText.AppendLine("-# Previous:");
+                        previousTrackText.Append(StringService.TrackToLinkedString(previousTrack, context.ContextUser.RymEnabled, false));
+                        response.ComponentsContainer.WithTextDisplay(previousTrackText.ToString());
+                    }
+
+                    // Footer
+                    if (footerText.Length > 0 || guildAlsoPlaying != null)
+                    {
+                        response.ComponentsContainer.WithSeparator();
+                        if (footerText.Length > 0)
+                        {
+                            response.ComponentsContainer.WithTextDisplay(footerText.ToString().TrimEnd());
+                        }
+
+                        if (guildAlsoPlaying != null)
+                        {
+                            response.ComponentsContainer.WithTextDisplay($"-# {guildAlsoPlaying}");
+                        }
+                    }
+                }
+                else
+                {
+                    // EmbedMini: Single track with thumbnail
+                    var miniTrackText = StringService.TrackToLinkedString(currentTrack, context.ContextUser.RymEnabled, true);
+
+                    if (!string.IsNullOrEmpty(albumCoverUrl))
+                    {
+                        response.ComponentsContainer.WithSection([
+                            new TextDisplayProperties(miniHeader + miniTrackText)
+                        ], albumCoverUrl);
+                    }
+                    else
+                    {
+                        response.ComponentsContainer.WithTextDisplay(miniHeader + miniTrackText);
+                    }
+
+                    // Footer
+                    if (footerText.Length > 0 || guildAlsoPlaying != null)
+                    {
+                        // response.ComponentsContainer.WithSeparator();
+                        if (footerText.Length > 0)
+                        {
+                            response.ComponentsContainer.WithTextDisplay(footerText.ToString().TrimEnd());
+                        }
+
+                        if (guildAlsoPlaying != null)
+                        {
+                            response.ComponentsContainer.WithTextDisplay($"-# {guildAlsoPlaying}");
                         }
                     }
                 }
@@ -526,7 +583,7 @@ public class PlayBuilder
 
         return response;
 
-        Fergun.Interactive.IPage GeneratePage(IComponentPaginator p)
+        IPage GeneratePage(IComponentPaginator p)
         {
             var pageIndex = p.CurrentPageIndex;
             var trackPage = trackPages.ElementAtOrDefault(pageIndex);
@@ -1669,6 +1726,7 @@ public class PlayBuilder
             {
                 menuOption = menuOption.WithDefault();
             }
+
             viewType.AddOption(menuOption);
         }
 

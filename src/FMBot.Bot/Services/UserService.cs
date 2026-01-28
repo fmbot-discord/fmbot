@@ -1009,8 +1009,7 @@ public class UserService
         long totalScrobbles,
         ContextModel contextModel,
         Persistence.Domain.Models.Guild guild = null,
-        IDictionary<int, FullGuildUser> guildUsers = null,
-        bool useSmallMarkdown = false)
+        IDictionary<int, FullGuildUser> guildUsers = null)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
@@ -1042,7 +1041,7 @@ public class UserService
         };
 
         var footer = await TemplateService.GetFooterAsync(footerOptions, footerContext);
-        return CreateFooter(footer, footerContext.Genres, useSmallMarkdown);
+        return CreateFooter(footer, footerContext.Genres);
     }
 
     public async Task<TemplateService.TemplateResult> GetTemplateFmAsync(
@@ -1080,23 +1079,17 @@ public class UserService
         return await this._templateService.GetTemplateFmAsync(userId, footerContext);
     }
 
-    private static StringBuilder CreateFooter(IReadOnlyList<string> options, string genres, bool useSmallMarkdown)
+    private static StringBuilder CreateFooter(IReadOnlyList<string> options, string genres)
     {
         var footer = new StringBuilder();
 
         var genresAdded = false;
-        if (genres != null && genres.Length <= 48 && options.Count > 2)
+        if (genres is { Length: <= 48 } && options.Count > 2)
         {
-            if (useSmallMarkdown)
-            {
-                footer.Append("-# ");
-            }
+            footer.Append("-# ");
 
             footer.AppendLine(genres);
-            if (useSmallMarkdown)
-            {
-                footer.Append("-# ");
-            }
+            footer.Append("-# ");
 
             genresAdded = true;
         }
@@ -1110,11 +1103,7 @@ public class UserService
             if ((lineLength > 38 || (lineLength > 28 && option.Length > 18)) && nextOption != null)
             {
                 footer.AppendLine();
-                if (useSmallMarkdown)
-                {
-                    footer.Append("-# ");
-                }
-
+                footer.Append("-# ");
                 lineLength = option.Length;
                 footer.Append(option);
             }
@@ -1123,6 +1112,11 @@ public class UserService
                 if (lineLength != 0)
                 {
                     footer.Append(" · ");
+                }
+
+                if (footer.Length == 0)
+                {
+                    footer.Append("-# ");
                 }
 
                 footer.Append(option);
@@ -1137,11 +1131,7 @@ public class UserService
 
         if (!genresAdded && genres != null)
         {
-            if (useSmallMarkdown)
-            {
-                footer.Append("-# ");
-            }
-
+            footer.Append("-# ");
             footer.AppendLine(genres);
         }
 

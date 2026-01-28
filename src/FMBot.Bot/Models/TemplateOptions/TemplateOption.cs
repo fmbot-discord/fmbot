@@ -1158,10 +1158,10 @@ public static class TemplateOptions
                 var firstPlay =
                     await context.PlayService.GetArtistFirstPlayDate(context.UserSettings.UserId,
                         context.CurrentTrack.ArtistName);
-                return firstPlay != null
-                    ? new VariableResult($"Artist discovered {firstPlay.Value.ToString("MMMM d yyyy")}",
-                        $"{firstPlay.Value.ToString("MMMM d yyyy")}")
-                    : null;
+                if (firstPlay == null) return null;
+
+                var timestamp = ((DateTimeOffset)DateTime.SpecifyKind(firstPlay.Value, DateTimeKind.Utc)).ToUnixTimeSeconds();
+                return new VariableResult($"Artist discovered <t:{timestamp}:D>", $"<t:{timestamp}:D>");
             }
         },
         new ComplexTemplateOption
@@ -1181,10 +1181,10 @@ public static class TemplateOptions
 
                 var firstPlay = await context.PlayService.GetAlbumFirstPlayDate(context.UserSettings.UserId,
                     context.CurrentTrack.ArtistName, context.CurrentTrack.AlbumName);
-                return firstPlay != null
-                    ? new VariableResult($"Album discovered {firstPlay.Value.ToString("MMMM d yyyy")}",
-                        $"{firstPlay.Value.ToString("MMMM d yyyy")}")
-                    : null;
+                if (firstPlay == null) return null;
+
+                var timestamp = ((DateTimeOffset)DateTime.SpecifyKind(firstPlay.Value, DateTimeKind.Utc)).ToUnixTimeSeconds();
+                return new VariableResult($"Album discovered <t:{timestamp}:D>", $"<t:{timestamp}:D>");
             }
         },
         new ComplexTemplateOption
@@ -1203,10 +1203,10 @@ public static class TemplateOptions
 
                 var firstPlay = await context.PlayService.GetTrackFirstPlayDate(context.UserSettings.UserId,
                     context.CurrentTrack.ArtistName, context.CurrentTrack.TrackName);
-                return firstPlay != null
-                    ? new VariableResult($"Track discovered {firstPlay.Value.ToString("MMMM d yyyy")}",
-                        $"{firstPlay.Value.ToString("MMMM d yyyy")}")
-                    : null;
+                if (firstPlay == null) return null;
+
+                var timestamp = ((DateTimeOffset)DateTime.SpecifyKind(firstPlay.Value, DateTimeKind.Utc)).ToUnixTimeSeconds();
+                return new VariableResult($"Track discovered <t:{timestamp}:D>", $"<t:{timestamp}:D>");
             }
         }
     };

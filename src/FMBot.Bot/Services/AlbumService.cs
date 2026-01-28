@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
@@ -7,8 +9,8 @@ using Dapper;
 
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Factories;
-using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
+using FMBot.Bot.Resources;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
@@ -20,13 +22,14 @@ using FMBot.Domain.Types;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using FMBot.Persistence.Repositories;
-using Google.Protobuf.WellKnownTypes;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using NetCord;
 using NetCord.Rest;
 using Npgsql;
 using Serilog;
+using SkiaSharp;
 using Web.InternalApi;
 
 namespace FMBot.Bot.Services;
@@ -379,7 +382,7 @@ public class AlbumService
 
     private async Task EnrichTopAlbums(IReadOnlyCollection<TopAlbum> list)
     {
-        var minTimestamp = Timestamp.FromDateTime(DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Utc));
+        var minTimestamp = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Utc));
         var request = new AlbumReleaseDateRequest
         {
             Albums =
@@ -447,6 +450,53 @@ public class AlbumService
         await connection.CloseAsync();
 
         return album;
+    }
+
+    public async Task<string> GetAlbumColorAsync(int albumId)
+    {
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        const string sql = @"
+            SELECT bg_color FROM album_images
+            WHERE album_id = @albumId AND bg_color IS NOT NULL
+            LIMIT 1";
+
+        return await connection.QueryFirstOrDefaultAsync<string>(sql, new { albumId });
+    }
+
+    public async Task<Color> GetAlbumAccentColorAsync(int? albumId, string albumName, string artistName)
+    {
+        // Check cached image file
+        if (!string.IsNullOrEmpty(albumName) && !string.IsNullOrEmpty(artistName))
+        {
+            var cachePath = ChartService.AlbumUrlToCacheFilePath(albumName, artistName);
+            if (File.Exists(cachePath))
+            {
+                using var bitmap = SKBitmap.Decode(cachePath);
+                if (bitmap != null)
+                {
+                    var avgColor = bitmap.GetAverageRgbColor();
+                    return new Color(avgColor.R, avgColor.G, avgColor.B);
+                }
+            }
+        }
+
+        // Try database
+        if (albumId.HasValue)
+        {
+            var colorHex = await GetAlbumColorAsync(albumId.Value);
+            if (!string.IsNullOrEmpty(colorHex) &&
+                int.TryParse(colorHex, NumberStyles.HexNumber, null, out var rgb))
+            {
+                return new Color(rgb);
+            }
+        }
+
+
+
+        // Default
+        return DiscordConstants.LastFmColorRed;
     }
 
     public AlbumInfo CachedAlbumToAlbumInfo(Album album)
