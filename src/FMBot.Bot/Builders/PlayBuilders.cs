@@ -272,8 +272,8 @@ public class PlayBuilder
 
         var requesterUserTitle = await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser);
         var embedTitle = !userSettings.DifferentUser
-            ? $"{requesterUserTitle}"
-            : $"{userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}, requested by {requesterUserTitle}";
+            ? $"[{requesterUserTitle}]({LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}) {userSettings.UserType.UserTypeToIcon()}"
+            : $"[{userSettings.DisplayName}]({LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}) {userSettings.UserType.UserTypeToIcon()}, requested by {requesterUserTitle}";
 
         // var embed = await this._userService.GetTemplateFmAsync(context.ContextUser.UserId, userSettings, currentTrack,
         //     previousTrack, totalPlaycount, guild, guildUsers);
@@ -378,16 +378,18 @@ public class PlayBuilder
 
                 var miniHeader = new StringBuilder();
                 miniHeader.Append("-# ");
-                miniHeader.Append(embedTitle);
-                miniHeader.Append(currentTrack.NowPlaying ? " - Now playing" : " - Played");
-
                 if (!currentTrack.NowPlaying && currentTrack.TimePlayed.HasValue)
                 {
                     var specifiedDateTime = DateTime.SpecifyKind(currentTrack.TimePlayed.Value, DateTimeKind.Utc);
                     var timestampUnix = ((DateTimeOffset)specifiedDateTime).ToUnixTimeSeconds();
-                    miniHeader.Append($" <t:{timestampUnix}:R>");
+                    miniHeader.Append($"Last played <t:{timestampUnix}:R> for ");
+                }
+                else
+                {
+                    miniHeader.Append("Now playing for ");
                 }
 
+                miniHeader.Append(embedTitle);
                 miniHeader.AppendLine();
 
                 if (embedType == FmEmbedType.EmbedTiny)
