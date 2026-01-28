@@ -233,6 +233,7 @@ public static class StringService
         response.Embed.WithUrl(page.Url);
         response.Embed.WithThumbnail(page.Thumbnail);
         response.Embed.WithFooter(page.Footer);
+        response.Embed.WithColor(page.Color);
 
         if (customOptionId != null || selectMenu != null)
         {

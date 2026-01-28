@@ -358,7 +358,7 @@ public class PlayBuilder
                     albumCoverUrl = dbAlbum?.SpotifyImageUrl ?? currentTrack.AlbumCoverUrl;
 
                     accentColor = await this._albumService.GetAlbumAccentColorAsync(
-                        dbAlbum?.Id, currentTrack.AlbumName, currentTrack.ArtistName);
+                        albumCoverUrl, dbAlbum?.Id, currentTrack.AlbumName, currentTrack.ArtistName);
 
                     if (albumCoverUrl != null)
                     {
@@ -444,15 +444,20 @@ public class PlayBuilder
                     if (footerText.Length > 0 || guildAlsoPlaying != null)
                     {
                         response.ComponentsContainer.WithSeparator();
+
+                        var fullFooterText = new StringBuilder();
                         if (footerText.Length > 0)
                         {
-                            response.ComponentsContainer.WithTextDisplay(footerText.ToString().TrimEnd());
+                            fullFooterText.Append(footerText.ToString().TrimEnd());
                         }
 
                         if (guildAlsoPlaying != null)
                         {
-                            response.ComponentsContainer.WithTextDisplay($"-# {guildAlsoPlaying}");
+                            if (fullFooterText.Length > 0) fullFooterText.AppendLine();
+                            fullFooterText.Append($"-# {guildAlsoPlaying}");
                         }
+
+                        response.ComponentsContainer.WithTextDisplay(fullFooterText.ToString());
                     }
                 }
                 else
@@ -475,15 +480,19 @@ public class PlayBuilder
                     if (footerText.Length > 0 || guildAlsoPlaying != null)
                     {
                         // response.ComponentsContainer.WithSeparator();
+                        var miniFooterText = new StringBuilder();
                         if (footerText.Length > 0)
                         {
-                            response.ComponentsContainer.WithTextDisplay(footerText.ToString().TrimEnd());
+                            miniFooterText.Append(footerText.ToString().TrimEnd());
                         }
 
                         if (guildAlsoPlaying != null)
                         {
-                            response.ComponentsContainer.WithTextDisplay($"-# {guildAlsoPlaying}");
+                            if (miniFooterText.Length > 0) miniFooterText.AppendLine();
+                            miniFooterText.Append($"-# {guildAlsoPlaying}");
                         }
+
+                        response.ComponentsContainer.WithTextDisplay(miniFooterText.ToString());
                     }
                 }
 
@@ -1163,11 +1172,11 @@ public class PlayBuilder
         response.Embed.WithTitle(
             $"{mileStoneAmount.Format(context.NumberFormat)}{StringExtensions.GetAmountEnd(mileStoneAmount)} scrobble from {userTitle}");
 
-        var dbAlbum =
+        var databaseAlbum =
             await this._albumService.GetAlbumFromDatabase(mileStonePlay.Content.ArtistName,
                 mileStonePlay.Content.AlbumName);
-        var albumCoverUrl = dbAlbum != null
-            ? dbAlbum.SpotifyImageUrl ?? dbAlbum.LastfmImageUrl
+        var albumCoverUrl = databaseAlbum != null
+            ? databaseAlbum.SpotifyImageUrl ?? databaseAlbum.LastfmImageUrl
             : mileStonePlay.Content.AlbumCoverUrl;
         if (albumCoverUrl != null)
         {
@@ -1178,6 +1187,11 @@ public class PlayBuilder
             {
                 response.Embed.WithThumbnail(albumCoverUrl);
             }
+
+            var accentColor = await this._albumService.GetAlbumAccentColorAsync(
+                albumCoverUrl, databaseAlbum?.Id, mileStonePlay.Content.AlbumName, mileStonePlay.Content.ArtistName);
+
+            response.Embed.WithColor(accentColor);
         }
 
         if (mileStonePlay.Content.TimePlayed.HasValue)

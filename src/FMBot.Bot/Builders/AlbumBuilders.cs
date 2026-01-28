@@ -257,7 +257,7 @@ public class AlbumBuilders
             }
 
             var accentColor = await this._albumService.GetAlbumAccentColorAsync(
-                databaseAlbum?.Id, albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
+                albumCoverUrl, databaseAlbum?.Id, albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
 
             response.Embed.WithColor(accentColor);
         }
@@ -401,6 +401,11 @@ public class AlbumBuilders
             {
                 albumCoverUrl = null;
             }
+
+            var accentColor = await this._albumService.GetAlbumAccentColorAsync(
+                albumCoverUrl, databaseAlbum?.Id, albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
+
+            response.Embed.WithColor(accentColor);
         }
 
         if (mode == ResponseMode.Image)
@@ -563,8 +568,9 @@ public class AlbumBuilders
             {
                 albumCoverUrl = null;
             }
+
             var accentColor = await this._albumService.GetAlbumAccentColorAsync(
-                databaseAlbum?.Id, albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
+                albumCoverUrl, databaseAlbum?.Id, albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
 
             response.Embed.WithColor(accentColor);
         }
@@ -642,27 +648,27 @@ public class AlbumBuilders
             ResponseType = ResponseType.Embed,
         };
 
-        var album = await this._albumService.SearchAlbum(response, context.DiscordUser, albumValues,
+        var albumSearch = await this._albumService.SearchAlbum(response, context.DiscordUser, albumValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedAlbums: true,
             userId: context.ContextUser.UserId, interactionId: context.InteractionId,
             referencedMessage: context.ReferencedMessage);
-        if (album.Album == null)
+        if (albumSearch.Album == null)
         {
-            return album.Response;
+            return albumSearch.Response;
         }
 
-        var databaseAlbum = await this._musicDataFactory.GetOrStoreAlbumAsync(album.Album);
+        var databaseAlbum = await this._musicDataFactory.GetOrStoreAlbumAsync(albumSearch.Album);
 
-        var albumName = $"{album.Album.AlbumName} by {album.Album.ArtistName}";
+        var albumName = $"{albumSearch.Album.AlbumName} by {albumSearch.Album.ArtistName}";
 
         var usersWithAlbum = await this._whoKnowsAlbumService.GetGlobalUsersForAlbum(context.DiscordGuild,
-            album.Album.ArtistName, album.Album.AlbumName);
+            albumSearch.Album.ArtistName, albumSearch.Album.AlbumName);
 
         var filteredUsersWithAlbum =
             await this._whoKnowsService.FilterGlobalUsersAsync(usersWithAlbum, settings.QualityFilterDisabled);
 
         filteredUsersWithAlbum = await WhoKnowsService.AddOrReplaceUserToIndexList(filteredUsersWithAlbum,
-            context.ContextUser, albumName, context.DiscordGuild, album.Album.UserPlaycount);
+            context.ContextUser, albumName, context.DiscordGuild, albumSearch.Album.UserPlaycount);
 
         var privacyLevel = PrivacyLevel.Global;
 
@@ -679,7 +685,7 @@ public class AlbumBuilders
             }
         }
 
-        var albumCoverUrl = album.Album.AlbumCoverUrl;
+        var albumCoverUrl = albumSearch.Album.AlbumCoverUrl;
         if (databaseAlbum.SpotifyImageUrl != null)
         {
             albumCoverUrl = databaseAlbum.SpotifyImageUrl;
@@ -689,7 +695,7 @@ public class AlbumBuilders
         {
             var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild,
                 context.DiscordChannel,
-                album.Album.AlbumName, album.Album.ArtistName, album.Album.AlbumUrl);
+                albumSearch.Album.AlbumName, albumSearch.Album.ArtistName, albumSearch.Album.AlbumUrl);
             if (safeForChannel == CensorService.CensorResult.Safe)
             {
                 response.Embed.WithThumbnail(albumCoverUrl);
@@ -698,6 +704,11 @@ public class AlbumBuilders
             {
                 albumCoverUrl = null;
             }
+
+            var accentColor = await this._albumService.GetAlbumAccentColorAsync(
+                albumCoverUrl, databaseAlbum?.Id, albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
+
+            response.Embed.WithColor(accentColor);
         }
 
         if (settings.ResponseMode == ResponseMode.Image)
@@ -709,7 +720,7 @@ public class AlbumBuilders
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
             response.Stream = encoded.AsStream(true);
-            response.FileName = $"global-whoknows-album-{album.Album.ArtistName}-{album.Album.AlbumName}.png";
+            response.FileName = $"global-whoknows-album-{albumSearch.Album.ArtistName}-{albumSearch.Album.AlbumName}.png";
             response.ResponseType = ResponseType.ImageOnly;
 
             return response;
@@ -745,8 +756,8 @@ public class AlbumBuilders
         response.Embed.WithTitle($"{albumName} globally");
 
         var url = context.ContextUser.RymEnabled == true
-            ? StringExtensions.GetRymUrl(album.Album.AlbumName, album.Album.ArtistName)
-            : album.Album.AlbumUrl;
+            ? StringExtensions.GetRymUrl(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName)
+            : albumSearch.Album.AlbumUrl;
 
         if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
         {
@@ -1024,6 +1035,7 @@ public class AlbumBuilders
                     var page = new PageBuilder()
                         .WithDescription(description.ToString())
                         .WithTitle($"Track playcounts for {albumName}")
+                        .WithColor(DiscordConstants.LastFmColorRed)
                         .WithFooter(pageNumberDesc.ToString() + footer);
 
                     if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
@@ -1142,6 +1154,8 @@ public class AlbumBuilders
 
         var albumImages = await this._albumService.GetAlbumImages(databaseAlbum.Id);
 
+        var staticAlbumCoverUrl = albumCoverUrl;
+
         response.Components = response.Components
             .WithButton("Album",
                 $"{InteractionConstants.Album.Info}:{databaseAlbum.Id}:{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}",
@@ -1221,11 +1235,6 @@ public class AlbumBuilders
 
         response.Embed.WithDescription(description.ToString());
 
-        var accentColor = await this._albumService.GetAlbumAccentColorAsync(
-            databaseAlbum?.Id, albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
-
-        response.Embed.WithColor(accentColor);
-
         response.Stream = image;
         var extension = gifResult ? "webp" : "png";
         response.FileName =
@@ -1259,6 +1268,11 @@ public class AlbumBuilders
 
             response.Stream = gifStream;
         }
+
+        var accentColor = await this._albumService.GetAlbumAccentColorAsync(
+            staticAlbumCoverUrl, databaseAlbum?.Id, albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
+
+        response.Embed.WithColor(accentColor);
 
         await cacheStream.DisposeAsync();
 

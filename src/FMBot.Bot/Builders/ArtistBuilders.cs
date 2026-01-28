@@ -142,10 +142,15 @@ public class ArtistBuilders
                 $"Featured {featuredHistory.Count} {StringExtensions.GetTimesString(featuredHistory.Count)}");
         }
 
-        if (fullArtist.SpotifyImageUrl != null)
+        if (fullArtist.SpotifyImageUrl != null &&
+            await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel, fullArtist.Name) == CensorService.CensorResult.Safe)
         {
             response.Embed.WithThumbnail(fullArtist.SpotifyImageUrl);
             footer.AppendLine("Image source: Spotify");
+
+            var accentColor = await this._artistsService.GetArtistAccentColorAsync(
+                fullArtist.SpotifyImageUrl, fullArtist.Id, fullArtist.Name);
+            response.Embed.WithColor(accentColor);
         }
 
         if (context.ContextUser.TotalPlaycount.HasValue && artistSearch.Artist.UserPlaycount is >= 10)
@@ -772,6 +777,7 @@ public class ArtistBuilders
 
             pages.Add(new PageBuilder()
                 .WithDescription(albumPageString.ToString())
+                .WithColor(DiscordConstants.LastFmColorRed)
                 .WithAuthor(response.EmbedAuthor)
                 .WithFooter(footer.ToString()));
             pageCounter++;
@@ -901,6 +907,7 @@ public class ArtistBuilders
 
             var page = new PageBuilder()
                 .WithDescription(albumPageString.ToString())
+                .WithColor(DiscordConstants.LastFmColorRed)
                 .WithAuthor(response.EmbedAuthor)
                 .WithFooter(footer.ToString());
 
@@ -1016,6 +1023,7 @@ public class ArtistBuilders
             pages.Add(new PageBuilder()
                 .WithTitle(title)
                 .WithDescription(pageString.ToString())
+                .WithColor(DiscordConstants.LastFmColorRed)
                 .WithAuthor(response.EmbedAuthor)
                 .WithFooter(pageFooter.ToString()));
             pageCounter++;
@@ -1344,6 +1352,7 @@ public class ArtistBuilders
 
             pages.Add(new PageBuilder()
                 .WithDescription(artistPageString.ToString())
+                .WithColor(DiscordConstants.LastFmColorRed)
                 .WithAuthor(response.EmbedAuthor)
                 .WithFooter(footer.ToString()));
             pageCounter++;
@@ -1683,6 +1692,10 @@ public class ArtistBuilders
         if (imgUrl != null && safeForChannel == CensorService.CensorResult.Safe)
         {
             response.Embed.WithThumbnail(imgUrl);
+
+            var accentColor = await this._artistsService.GetArtistAccentColorAsync(
+                imgUrl, cachedArtist.Id, cachedArtist.Name);
+            response.Embed.WithColor(accentColor);
         }
 
         if (displayRoleSelector)
@@ -1862,6 +1875,10 @@ public class ArtistBuilders
         if (imgUrl != null && safeForChannel == CensorService.CensorResult.Safe)
         {
             response.Embed.WithThumbnail(imgUrl);
+
+            var accentColor = await this._artistsService.GetArtistAccentColorAsync(
+                imgUrl, cachedArtist.Id, cachedArtist.Name);
+            response.Embed.WithColor(accentColor);
         }
 
         return response;
@@ -1991,6 +2008,10 @@ public class ArtistBuilders
         if (imgUrl != null && safeForChannel == CensorService.CensorResult.Safe)
         {
             response.Embed.WithThumbnail(imgUrl);
+
+            var accentColor = await this._artistsService.GetArtistAccentColorAsync(
+                imgUrl, cachedArtist.Id, cachedArtist.Name);
+            response.Embed.WithColor(accentColor);
         }
 
         return response;
@@ -2327,6 +2348,7 @@ public class ArtistBuilders
 
             pages.Add(new PageBuilder()
                 .WithTitle($"Server neighbors for {userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}")
+                .WithColor(DiscordConstants.LastFmColorRed)
                 .WithDescription(pageString.ToString())
                 .WithFooter(pageFooter.ToString()));
             pageCounter++;

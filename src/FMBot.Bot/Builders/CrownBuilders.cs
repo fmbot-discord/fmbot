@@ -276,6 +276,7 @@ public class CrownBuilders
 
             pages.Add(new PageBuilder()
                 .WithDescription(crownPageString.ToString())
+                .WithColor(DiscordConstants.LastFmColorRed)
                 .WithTitle(title)
                 .WithFooter(footer.ToString()));
             pageCounter++;

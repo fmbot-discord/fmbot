@@ -224,15 +224,10 @@ public class ChartService
 
                     var nsfw = censorResult == CensorService.CensorResult.Nsfw;
 
-                    var encodedId = StringExtensions.ReplaceInvalidChars(
-                        artist.ArtistUrl.Replace("https://www.last.fm/music/", ""));
-                    var localArtistId = StringExtensions.TruncateLongString($"artist_{encodedId}", 60);
-
                     SKBitmap chartImage;
                     var validImage = true;
 
-                    var fileName = localArtistId + ".png";
-                    var localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", fileName);
+                    var localPath = ArtistUrlToCacheFilePath(artist.ArtistName);
 
                     if (File.Exists(localPath) && cacheEnabled)
                     {
@@ -387,6 +382,16 @@ public class ChartService
         var localAlbumId = StringExtensions.TruncateLongString($"album_{encodedId}", 100);
 
         var fileName = localAlbumId + extension;
+        var localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", fileName);
+        return localPath;
+    }
+
+    public static string ArtistUrlToCacheFilePath(string artistName, string extension = ".png")
+    {
+        var encodedId = EncodeToBase64(StringExtensions.TruncateLongString(artistName, 80));
+        var localArtistId = StringExtensions.TruncateLongString($"artist_{encodedId}", 100);
+
+        var fileName = localArtistId + extension;
         var localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", fileName);
         return localPath;
     }

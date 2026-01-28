@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -7,6 +9,7 @@ using System.Threading.Tasks;
 using Dapper;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
+using FMBot.Bot.Resources;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
@@ -20,9 +23,11 @@ using FMBot.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using NetCord;
 using NetCord.Rest;
 using Npgsql;
 using Serilog;
+using SkiaSharp;
 using Web.InternalApi;
 
 namespace FMBot.Bot.Services;
@@ -746,6 +751,82 @@ public class ArtistsService
             Log.Error(e, "Error in SearchThroughArtists");
             throw;
         }
+    }
+
+    private async Task<string> GetArtistColorAsync(int artistId)
+    {
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        const string sql = @"
+            SELECT bg_color FROM artist_images
+            WHERE artist_id = @artistId AND bg_color IS NOT NULL
+            LIMIT 1";
+
+        return await connection.QueryFirstOrDefaultAsync<string>(sql, new { artistId });
+    }
+
+    public async Task<Color> GetArtistAccentColorAsync(string artistImageUrl, int? artistId, string artistName)
+    {
+        if (string.IsNullOrEmpty(artistName))
+        {
+            return DiscordConstants.LastFmColorRed;
+        }
+
+        var cachePath = ChartService.ArtistUrlToCacheFilePath(artistName);
+        if (File.Exists(cachePath))
+        {
+            using var bitmap = SKBitmap.Decode(cachePath);
+            if (bitmap != null)
+            {
+                var avgColor = bitmap.GetAverageRgbColor();
+                return new Color(avgColor.R, avgColor.G, avgColor.B);
+            }
+        }
+
+        if (artistId.HasValue)
+        {
+            var colorHex = await GetArtistColorAsync(artistId.Value);
+            if (!string.IsNullOrEmpty(colorHex) &&
+                int.TryParse(colorHex, NumberStyles.HexNumber, null, out var rgb))
+            {
+                return new Color(rgb);
+            }
+        }
+
+        if (!string.IsNullOrEmpty(artistImageUrl))
+        {
+            try
+            {
+                var imageStream = await this._dataSourceFactory.GetAlbumImageAsStreamAsync(artistImageUrl);
+                if (imageStream != null)
+                {
+                    var cacheStream = new MemoryStream();
+                    await imageStream.CopyToAsync(cacheStream);
+                    imageStream.Position = 0;
+
+                    using var bitmap = SKBitmap.Decode(imageStream);
+                    if (bitmap != null)
+                    {
+                        cacheStream.Position = 0;
+                        await ChartService.OverwriteCache(cacheStream, cachePath);
+                        await cacheStream.DisposeAsync();
+
+                        var avgColor = bitmap.GetAverageRgbColor();
+                        return new Color(avgColor.R, avgColor.G, avgColor.B);
+                    }
+
+                    await cacheStream.DisposeAsync();
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Error(e, "Error while downloading artist image for accent color");
+            }
+        }
+
+        // Default
+        return DiscordConstants.LastFmColorRed;
     }
 
     public static string IsArtistBirthday(DateTime? startDateTime = null)

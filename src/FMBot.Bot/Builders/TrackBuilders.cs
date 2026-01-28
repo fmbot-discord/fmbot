@@ -737,6 +737,11 @@ public class TrackBuilders
             {
                 albumCoverUrl = null;
             }
+
+            var accentColor = await this._albumService.GetAlbumAccentColorAsync(
+                albumCoverUrl, databaseAlbum?.Id, track.Track.AlbumName, track.Track.ArtistName);
+
+            response.Embed.WithColor(accentColor);
         }
 
         return albumCoverUrl;
