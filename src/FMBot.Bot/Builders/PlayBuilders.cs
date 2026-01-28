@@ -271,10 +271,19 @@ public class PlayBuilder
         };
 
         var requesterUserTitle = await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser);
-        var embedTitle = !userSettings.DifferentUser
-            ? $"[{requesterUserTitle}]({LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}) {userSettings.UserType.UserTypeToIcon()}"
-            : $"[{userSettings.DisplayName}]({LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}) {userSettings.UserType.UserTypeToIcon()}, requested by {requesterUserTitle}";
-
+        string embedTitle;
+        if (userSettings.DisplayName.ContainsEmoji())
+        {
+            embedTitle = !userSettings.DifferentUser
+                ? $"{userSettings.DisplayName} {userSettings.UserType.UserTypeToIcon()}"
+                : $"{userSettings.DisplayName} {userSettings.UserType.UserTypeToIcon()}, requested by {requesterUserTitle}";
+        }
+        else
+        {
+            embedTitle = !userSettings.DifferentUser
+                ? $"[{userSettings.DisplayName}]({LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}) {userSettings.UserType.UserTypeToIcon()}"
+                : $"[{userSettings.DisplayName}]({LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}) {userSettings.UserType.UserTypeToIcon()}, requested by {requesterUserTitle}";
+        }
         // var embed = await this._userService.GetTemplateFmAsync(context.ContextUser.UserId, userSettings, currentTrack,
         //     previousTrack, totalPlaycount, guild, guildUsers);
         // response.Embeds = [embed.EmbedProperties];
