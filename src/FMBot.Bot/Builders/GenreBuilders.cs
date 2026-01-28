@@ -162,6 +162,7 @@ public class GenreBuilders
 
             pages.Add(new PageBuilder()
                 .WithTitle(title)
+                .WithColor(DiscordConstants.LastFmColorRed)
                 .WithDescription(pageString.ToString())
                 .WithFooter(pageFooter.ToString()));
             pageCounter++;

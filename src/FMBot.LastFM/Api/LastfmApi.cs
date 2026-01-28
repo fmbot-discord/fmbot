@@ -116,6 +116,7 @@ public class LastfmApi : ILastfmApi
         if (httpResponse.StatusCode is HttpStatusCode.InternalServerError or HttpStatusCode.BadGateway or HttpStatusCode.ServiceUnavailable or HttpStatusCode.GatewayTimeout)
         {
             Statistics.LastfmErrors.WithLabels(call).Inc();
+            Statistics.LastfmFailureErrors.WithLabels(call).Inc();
             return new Response<T>
             {
                 Success = false,
