@@ -617,13 +617,10 @@ public class ArtistCommands(
                     .AffinityAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, guild, guildUsers,
                         largeGuild);
 
-                if (message is Message gatewayMessage)
-                {
-                    _ = this.Interactivity.SendPaginatorAsync(
-                        response.ComponentPaginator.Build(),
-                        gatewayMessage,
-                        TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
-                }
+                _ = this.Interactivity.SendPaginatorAsync(
+                    response.ComponentPaginator.Build(),
+                    message,
+                    TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
             }
             else
             {
