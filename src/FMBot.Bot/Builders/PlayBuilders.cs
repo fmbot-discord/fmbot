@@ -307,7 +307,7 @@ public class PlayBuilder
         {
             case FmEmbedType.TextOneLine:
                 response.Text =
-                    $"**{embedTitle}** is listening to **{currentTrack.TrackName}** by **{currentTrack.ArtistName}**"
+                    $"**{userSettings.DisplayName}** is listening to **{currentTrack.TrackName}** by **{currentTrack.ArtistName}**"
                         .FilterOutMentions();
 
                 response.ResponseType = ResponseType.Text;
