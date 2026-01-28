@@ -115,8 +115,8 @@ public static class CommandContextExtensions
                             msg =>
                             {
                                 msg.Content = response.Text;
-                                msg.Embeds = null;
-                                msg.Components = response.Components?.Any() == true ? new[] { response.Components } : null;
+                                msg.Embeds = [];
+                                msg.Components = response.Components?.Any() == true ? new[] { response.Components } : [];
                             });
                         break;
                     case ResponseType.Embed:
@@ -127,11 +127,11 @@ public static class CommandContextExtensions
                             PublicProperties.UsedCommandsResponseMessageId[context.Message.Id],
                             msg =>
                             {
-                                msg.Content = response.Text;
+                                msg.Content = response.Text ?? string.Empty;
                                 msg.Embeds = response.ResponseType == ResponseType.ImageOnly
-                                    ? null
+                                    ? []
                                     : new[] { response.Embed };
-                                msg.Components = response.Components?.Any() == true ? new[] { response.Components } : null;
+                                msg.Components = response.Components?.Any() == true ? new[] { response.Components } : [];
                                 msg.Attachments = response.Stream != null
                                     ? new List<AttachmentProperties>
                                     {
@@ -139,7 +139,7 @@ public static class CommandContextExtensions
                                             response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName,
                                             response.Stream).WithDescription(response.FileDescription)
                                     }
-                                    : null;
+                                    : [];
                             });
 
                         if (response.Stream != null)

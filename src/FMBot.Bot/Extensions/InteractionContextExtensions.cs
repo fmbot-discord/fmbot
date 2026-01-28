@@ -857,7 +857,7 @@ public static class InteractionContextExtensions
                 await context.Interaction.ModifyResponseAsync(m =>
                 {
                     m.Components = components;
-                    m.Embeds = response.ResponseType == ResponseType.ComponentsV2 ? null : [response.Embed];
+                    m.Embeds = response.ResponseType == ResponseType.ComponentsV2 ? [] : [response.Embed];
                     m.Attachments = attachments;
                     m.AllowedMentions = AllowedMentionsProperties.None;
                 });
@@ -867,7 +867,7 @@ public static class InteractionContextExtensions
                 await message.ModifyAsync(m =>
                 {
                     m.Components = components;
-                    m.Embeds = response.ResponseType == ResponseType.ComponentsV2 ? null : [response.Embed];
+                    m.Embeds = response.ResponseType == ResponseType.ComponentsV2 ? [] : [response.Embed];
                     m.Attachments = attachments;
                     m.AllowedMentions = AllowedMentionsProperties.None;
                 });
