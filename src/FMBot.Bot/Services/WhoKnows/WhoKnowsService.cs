@@ -437,7 +437,7 @@ public class WhoKnowsService
         return reply.ToString();
     }
 
-    public static string NameWithLink(WhoKnowsObjectWithUser user)
+    public static string NameWithLink(WhoKnowsObjectWithUser user, bool doNotLinkEmojis = false)
     {
         var discordName = user.DiscordName != null
             ? StringExtensions.Sanitize(user.DiscordName
@@ -450,6 +450,11 @@ public class WhoKnowsService
         if (string.IsNullOrWhiteSpace(discordName))
         {
             discordName = user.LastFMUsername;
+        }
+
+        if (doNotLinkEmojis && user.DiscordName.ContainsEmoji())
+        {
+            return $"\u2066{discordName}\u2069";
         }
 
         var nameWithLink = $"[\u2066{discordName}\u2069]({LastfmUrlExtensions.GetUserUrl(user.LastFMUsername)})";
@@ -507,7 +512,6 @@ public class WhoKnowsService
             pages.Add([]);
         }
 
-        var spacer = crownModel?.Crown == null ? "" : " ";
         var requestedUser = deduplicated.FirstOrDefault(f => f.UserId == requestedUserId);
         var requestedUserIndex = requestedUser != null ? deduplicated.IndexOf(requestedUser) + 1 : -1;
 
@@ -541,7 +545,7 @@ public class WhoKnowsService
                 }
                 else
                 {
-                    nameWithLink = NameWithLink(user);
+                    nameWithLink = NameWithLink(user, true);
                     if (user.UserId == requestedUserId)
                     {
                         nameWithLink = $"**{nameWithLink}";
@@ -550,9 +554,9 @@ public class WhoKnowsService
 
                 var playString = StringExtensions.GetPlaysString(user.Playcount);
 
-                var positionCounter = $"{spacer}{indexNumber}.";
+                var positionCounter = $"{indexNumber}.";
                 positionCounter = user.UserId == requestedUserId
-                    ? user.SameServer == true ? $"__**{positionCounter}** __" : $"**{positionCounter}** "
+                    ? user.SameServer == true ? $"__{positionCounter}__" : $"{positionCounter} "
                     : user.SameServer == true
                         ? $"__{positionCounter}__ "
                         : $"{positionCounter} ";
@@ -591,17 +595,17 @@ public class WhoKnowsService
                 var reqNameWithLink = NameWithLink(requestedUser);
                 var reqPlayString = StringExtensions.GetPlaysString(requestedUser.Playcount);
                 container.WithTextDisplay(
-                    $"**{spacer}{requestedUserIndex}.  {reqNameWithLink}  - {requestedUser.Playcount.Format(numberFormat)} {reqPlayString}**");
+                    $"**{requestedUserIndex}.  {reqNameWithLink}  - {requestedUser.Playcount.Format(numberFormat)} {reqPlayString}**");
             }
 
             container.WithSeparator();
 
             var footerBuilder = new StringBuilder();
-            footerBuilder.Append($"{pageIndex + 1}/{pages.Count}");
+            footerBuilder.Append($"{pageIndex + 1}/{pages.Count} pages");
 
             if (!string.IsNullOrWhiteSpace(footerText))
             {
-                footerBuilder.Append($" · {footerText}");
+                footerBuilder.Append($"\n{footerText}");
             }
 
             if (crownModel?.CrownResult != null)
