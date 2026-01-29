@@ -91,7 +91,8 @@ public class SettingService
             if (year.HasValue && month.HasValue)
             {
                 settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue,
-                    [year.Value.ToString(), month.Value.monthName, DateTimeFormatInfo.CurrentInfo.GetMonthName(month.Value.monthNumber)]);;
+                    [year.Value.ToString(), month.Value.monthName, DateTimeFormatInfo.CurrentInfo.GetMonthName(month.Value.monthNumber)]);
+                ;
 
                 settingsModel.Description = $"{startUnspecified:MMMM} {year}";
                 settingsModel.AltDescription = $"month {startUnspecified:MMMM} of {year}";
@@ -561,8 +562,38 @@ public class SettingService
         return (userMode.Value, newSearchValue);
     }
 
+    private static (WhoKnowsResponseMode mode, string newSearchValue) SetWhoKnowsMode(string extraOptions, WhoKnowsResponseMode? userMode, bool supportImageMode)
+    {
+        var newSearchValue = extraOptions;
+
+        var image = new[] { "img", "image" };
+        if (Contains(extraOptions, image) && supportImageMode)
+        {
+            newSearchValue = ContainsAndRemove(newSearchValue, image);
+            userMode = WhoKnowsResponseMode.Image;
+        }
+
+        var embed = new[] { "embed", "text", "txt" };
+        if (Contains(extraOptions, embed))
+        {
+            newSearchValue = ContainsAndRemove(newSearchValue, embed);
+            userMode = WhoKnowsResponseMode.Default;
+        }
+
+        var pages = new[] { "pp", "page", "pages", "pagination" };
+        if (Contains(extraOptions, pages))
+        {
+            newSearchValue = ContainsAndRemove(newSearchValue, pages);
+            userMode = WhoKnowsResponseMode.Pagination;
+        }
+
+        userMode ??= WhoKnowsResponseMode.Default;
+
+        return (userMode.Value, newSearchValue);
+    }
+
     public static WhoKnowsSettings SetWhoKnowsSettings(WhoKnowsSettings currentWhoKnowsSettings, string extraOptions,
-        UserType userType = UserType.User, bool globalWhoKnows = false)
+        UserType userType = UserType.User, bool globalWhoKnows = false, bool supportImageMode = true)
     {
         var whoKnowsSettings = currentWhoKnowsSettings;
 
@@ -571,7 +602,7 @@ public class SettingService
             return whoKnowsSettings;
         }
 
-        var mode = SetMode(extraOptions, currentWhoKnowsSettings.ResponseMode);
+        var mode = SetWhoKnowsMode(extraOptions, currentWhoKnowsSettings.ResponseMode, supportImageMode);
 
         whoKnowsSettings.ResponseMode = mode.mode;
         whoKnowsSettings.NewSearchValue = mode.newSearchValue;

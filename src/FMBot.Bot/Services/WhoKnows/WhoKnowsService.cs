@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Fergun.Interactive;
+using Fergun.Interactive.Pagination;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain.Enums;
@@ -11,6 +13,7 @@ using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
+using NetCord.Rest;
 
 namespace FMBot.Bot.Services.WhoKnows;
 
@@ -280,12 +283,12 @@ public class WhoKnowsService
     {
         if (settings.AdminView)
         {
-            footer.AppendLine("Admin view enabled - not for public channels");
+            footer.AppendLine($"Admin view enabled - not for public channels");
         }
 
         if (settings.QualityFilterDisabled)
         {
-            footer.AppendLine("Globally botted and filtered users are visible");
+            footer.AppendLine($"Globally botted and filtered users are visible");
         }
 
         if (context.ContextUser.PrivacyLevel != PrivacyLevel.Global)
@@ -295,7 +298,7 @@ public class WhoKnowsService
 
         if (settings.HidePrivateUsers)
         {
-            footer.AppendLine("All private users are hidden from results");
+            footer.AppendLine($"All private users are hidden from results");
         }
 
         return footer;
@@ -456,5 +459,171 @@ public class WhoKnowsService
     private static string PrivateName()
     {
         return "Private user";
+    }
+
+    public static ComponentPaginatorBuilder CreateWhoKnowsPaginator(
+        IList<WhoKnowsObjectWithUser> whoKnowsObjects,
+        int requestedUserId,
+        PrivacyLevel minPrivacyLevel,
+        NumberFormat numberFormat,
+        string title,
+        string footerText,
+        CrownModel crownModel = null,
+        bool hidePrivateUsers = false,
+        int usersPerPage = 10)
+    {
+        var usersToShow = whoKnowsObjects
+            .OrderByDescending(o => o.Playcount)
+            .ToList();
+
+        var deduplicated = new List<WhoKnowsObjectWithUser>();
+        var addedUsers = new HashSet<int>();
+        var addedLastFmUsers = new HashSet<string>();
+
+        foreach (var user in usersToShow)
+        {
+            if (addedUsers.Contains(user.UserId) ||
+                addedLastFmUsers.Contains(user.LastFMUsername))
+            {
+                continue;
+            }
+
+            if (minPrivacyLevel == PrivacyLevel.Global && user.PrivacyLevel != PrivacyLevel.Global && hidePrivateUsers)
+            {
+                continue;
+            }
+
+            addedUsers.Add(user.UserId);
+            addedLastFmUsers.Add(user.LastFMUsername);
+            deduplicated.Add(user);
+        }
+
+        var pages = deduplicated
+            .ChunkBy(usersPerPage)
+            .ToList();
+
+        if (pages.Count == 0)
+        {
+            pages.Add([]);
+        }
+
+        var spacer = crownModel?.Crown == null ? "" : " ";
+        var requestedUser = deduplicated.FirstOrDefault(f => f.UserId == requestedUserId);
+        var requestedUserIndex = requestedUser != null ? deduplicated.IndexOf(requestedUser) + 1 : -1;
+
+        var paginator = new ComponentPaginatorBuilder()
+            .WithPageFactory(GeneratePage)
+            .WithPageCount(pages.Count)
+            .WithActionOnTimeout(ActionOnStop.DisableInput);
+
+        return paginator;
+
+        IPage GeneratePage(IComponentPaginator p)
+        {
+            var pageIndex = p.CurrentPageIndex;
+            var pageUsers = pages.ElementAtOrDefault(pageIndex) ?? [];
+
+            var container = new ComponentContainerProperties();
+
+            container.WithTextDisplay($"### {title}");
+            container.WithSeparator();
+
+            var description = new StringBuilder();
+            var indexNumber = pageIndex * usersPerPage + 1;
+            var requestedUserOnPage = false;
+
+            foreach (var user in pageUsers)
+            {
+                string nameWithLink;
+                if (minPrivacyLevel == PrivacyLevel.Global && user.PrivacyLevel != PrivacyLevel.Global)
+                {
+                    nameWithLink = "Private user";
+                }
+                else
+                {
+                    nameWithLink = NameWithLink(user);
+                    if (user.UserId == requestedUserId)
+                    {
+                        nameWithLink = $"**{nameWithLink}";
+                    }
+                }
+
+                var playString = StringExtensions.GetPlaysString(user.Playcount);
+
+                var positionCounter = $"{spacer}{indexNumber}.";
+                positionCounter = user.UserId == requestedUserId
+                    ? user.SameServer == true ? $"__**{positionCounter}** __" : $"**{positionCounter}** "
+                    : user.SameServer == true
+                        ? $"__{positionCounter}__ "
+                        : $"{positionCounter} ";
+
+                if (crownModel?.Crown != null && crownModel.Crown.UserId == user.UserId)
+                {
+                    positionCounter = "👑 ";
+                }
+
+                description.Append($"{positionCounter} {nameWithLink}");
+
+                if (user.UserId == requestedUserId)
+                {
+                    description.Append($" - {user.Playcount.Format(numberFormat)} {playString}**\n");
+                    requestedUserOnPage = true;
+                }
+                else
+                {
+                    description.Append($" - **{user.Playcount.Format(numberFormat)}** {playString}\n");
+                }
+
+                indexNumber++;
+            }
+
+            if (description.Length == 0)
+            {
+                description.Append("No listeners found.");
+            }
+
+            container.WithTextDisplay(description.ToString());
+
+            if (pageIndex == 0 && !requestedUserOnPage && requestedUser != null)
+            {
+                container.WithSeparator();
+
+                var reqNameWithLink = NameWithLink(requestedUser);
+                var reqPlayString = StringExtensions.GetPlaysString(requestedUser.Playcount);
+                container.WithTextDisplay(
+                    $"**{spacer}{requestedUserIndex}.  {reqNameWithLink}  - {requestedUser.Playcount.Format(numberFormat)} {reqPlayString}**");
+            }
+
+            container.WithSeparator();
+
+            var footerBuilder = new StringBuilder();
+            footerBuilder.Append($"{pageIndex + 1}/{pages.Count}");
+
+            if (!string.IsNullOrWhiteSpace(footerText))
+            {
+                footerBuilder.Append($" · {footerText}");
+            }
+
+            if (crownModel?.CrownResult != null)
+            {
+                footerBuilder.Append($"\n{crownModel.CrownResult}");
+            }
+
+            var footer = "-# " + footerBuilder
+                .Replace("\n", "\n-# ")
+                .ToString()
+                .TrimEnd("\n-# ")
+                .ToString();
+            container.WithTextDisplay(footer);
+
+            container.WithActionRow(StringService.GetPaginationActionRow(p));
+
+            var pageBuilder = new PageBuilder()
+                .WithAllowedMentions(AllowedMentionsProperties.None)
+                .WithMessageFlags(NetCord.MessageFlags.IsComponentsV2)
+                .WithComponents([container]);
+
+            return pageBuilder.Build();
+        }
     }
 }

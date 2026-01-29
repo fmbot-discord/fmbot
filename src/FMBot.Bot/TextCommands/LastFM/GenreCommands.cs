@@ -111,7 +111,17 @@ public class GenreCommands(
 
         try
         {
-            var response = await genreBuilders.WhoKnowsGenreAsync(new ContextModel(this.Context, prfx, contextUser), genreValues);
+            var currentSettings = new WhoKnowsSettings
+            {
+                ResponseMode = contextUser.WhoKnowsMode ?? WhoKnowsResponseMode.Default,
+                NewSearchValue = genreValues
+            };
+
+            var settings =
+                SettingService.SetWhoKnowsSettings(currentSettings, genreValues, contextUser.UserType, supportImageMode: false);
+
+            var response = await genreBuilders.WhoKnowsGenreAsync(new ContextModel(this.Context, prfx, contextUser),
+                settings.ResponseMode, settings.NewSearchValue);
 
             await this.Context.SendResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);
@@ -188,8 +198,18 @@ public class GenreCommands(
 
         try
         {
+            var currentSettings = new WhoKnowsSettings
+            {
+                ResponseMode = contextUser.WhoKnowsMode ?? WhoKnowsResponseMode.Default,
+                NewSearchValue = genreValues
+            };
+
+            var settings =
+                SettingService.SetWhoKnowsSettings(currentSettings, genreValues, contextUser.UserType, supportImageMode: false);
+
             var response = await genreBuilders
-                .FriendsWhoKnowsGenreAsync(new ContextModel(this.Context, prfx, contextUser), genreValues);
+                .FriendsWhoKnowsGenreAsync(new ContextModel(this.Context, prfx, contextUser),
+                    settings.ResponseMode, settings.NewSearchValue);
 
             await this.Context.SendResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);

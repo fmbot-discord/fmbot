@@ -70,7 +70,7 @@ public class WhoKnowsArtistService
 
             var userName = guildUser.UserName ?? guildUser.UserNameLastFM;
 
-            if (i < 15 && discordGuild != null)
+            if (discordGuild != null)
             {
                 if (discordGuild.Users.TryGetValue(guildUser.DiscordUserId, out var discordGuildUser))
                 {

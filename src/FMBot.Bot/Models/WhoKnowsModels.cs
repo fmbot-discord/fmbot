@@ -21,7 +21,7 @@ public class WhoKnowsSettings
 
     public string NewSearchValue { get; set; }
 
-    public ResponseMode ResponseMode { get; set; }
+    public WhoKnowsResponseMode ResponseMode { get; set; }
 
     public bool DisplayRoleFilter { get; set; }
 

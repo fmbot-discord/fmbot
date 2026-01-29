@@ -8,6 +8,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
+using FMBot.Domain.Models;
 using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
@@ -64,6 +65,8 @@ public class GenreSlashCommands(
         [SlashCommandParameter(Name = "search", Description = "The genre or artist you want to view",
             AutocompleteProviderType = typeof(GenreArtistAutoComplete))]
         string search = null,
+        [SlashCommandParameter(Name = "mode", Description = "The type of response you want - change default with /responsemode")]
+        WhoKnowsResponseMode? mode = null,
         [SlashCommandParameter(Name = "private", Description = "Only show response to you")]
         bool privateResponse = false)
     {
@@ -71,9 +74,16 @@ public class GenreSlashCommands(
 
         var contextUser = await userService.GetUserWithFriendsAsync(this.Context.User);
 
+        mode ??= contextUser.WhoKnowsMode ?? WhoKnowsResponseMode.Default;
+        if (mode == WhoKnowsResponseMode.Image)
+        {
+            mode = WhoKnowsResponseMode.Default;
+        }
+
         try
         {
-            var response = await genreBuilders.FriendsWhoKnowsGenreAsync(new ContextModel(this.Context, contextUser), search);
+            var response = await genreBuilders.FriendsWhoKnowsGenreAsync(new ContextModel(this.Context, contextUser),
+                mode.Value, search);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response, userService, privateResponse);
             await this.Context.LogCommandUsedAsync(response, userService);

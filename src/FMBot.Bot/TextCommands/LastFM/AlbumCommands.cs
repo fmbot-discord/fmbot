@@ -186,7 +186,7 @@ public class AlbumCommands(
         {
             var currentSettings = new WhoKnowsSettings
             {
-                ResponseMode = contextUser.WhoKnowsMode.ToResponseMode(),
+                ResponseMode = contextUser.WhoKnowsMode ?? WhoKnowsResponseMode.Default,
                 NewSearchValue = albumValues,
                 DisplayRoleFilter = false
             };
@@ -220,7 +220,7 @@ public class AlbumCommands(
 
         var currentSettings = new WhoKnowsSettings
         {
-            ResponseMode = contextUser.WhoKnowsMode.ToResponseMode(),
+            ResponseMode = contextUser.WhoKnowsMode ?? WhoKnowsResponseMode.Default,
             HidePrivateUsers = false,
             ShowBotters = false,
             AdminView = false,
@@ -271,7 +271,7 @@ public class AlbumCommands(
         {
             var currentSettings = new WhoKnowsSettings
             {
-                ResponseMode = contextUser.WhoKnowsMode.ToResponseMode(),
+                ResponseMode = contextUser.WhoKnowsMode ?? WhoKnowsResponseMode.Default,
                 NewSearchValue = albumValues
             };
 
@@ -279,7 +279,7 @@ public class AlbumCommands(
 
             var response = await albumBuilders
                 .FriendsWhoKnowAlbumAsync(new ContextModel(this.Context, prfx, contextUser),
-                    currentSettings.ResponseMode, settings.NewSearchValue);
+                    settings.ResponseMode, settings.NewSearchValue);
 
             await this.Context.SendResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);

@@ -57,7 +57,7 @@ public class AlbumSlashCommands(
             AutocompleteProviderType = typeof(AlbumAutoComplete))]
         string name = null,
         [SlashCommandParameter(Name = "mode", Description = "The type of response you want - change default with /responsemode")]
-        ResponseMode? mode = null,
+        WhoKnowsResponseMode? mode = null,
         [SlashCommandParameter(Name = "role-picker", Description = "Display a rolepicker to filter with roles")]
         bool displayRoleFilter = false)
     {
@@ -65,7 +65,7 @@ public class AlbumSlashCommands(
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
-        mode ??= contextUser.WhoKnowsMode.ToResponseMode();
+        mode ??= contextUser.WhoKnowsMode ?? WhoKnowsResponseMode.Default;
 
         try
         {
@@ -89,7 +89,7 @@ public class AlbumSlashCommands(
             AutocompleteProviderType = typeof(AlbumAutoComplete))]
         string name = null,
         [SlashCommandParameter(Name = "mode", Description = "The type of response you want - change default with /responsemode")]
-        ResponseMode? mode = null,
+        WhoKnowsResponseMode? mode = null,
         [SlashCommandParameter(Name = "private", Description = "Only show response to you")]
         bool privateResponse = false)
     {
@@ -97,7 +97,7 @@ public class AlbumSlashCommands(
 
         var contextUser = await userService.GetUserWithFriendsAsync(this.Context.User);
 
-        mode ??= contextUser.WhoKnowsMode.ToResponseMode();
+        mode ??= contextUser.WhoKnowsMode ?? WhoKnowsResponseMode.Default;
 
         try
         {
@@ -121,7 +121,7 @@ public class AlbumSlashCommands(
             AutocompleteProviderType = typeof(AlbumAutoComplete))]
         string name = null,
         [SlashCommandParameter(Name = "mode", Description = "The type of response you want - change default with /responsemode")]
-        ResponseMode? mode = null,
+        WhoKnowsResponseMode? mode = null,
         [SlashCommandParameter(Name = "hide-private", Description = "Hide or show private users")]
         bool hidePrivate = false)
     {
@@ -135,7 +135,7 @@ public class AlbumSlashCommands(
             ShowBotters = false,
             AdminView = false,
             NewSearchValue = name,
-            ResponseMode = mode ?? contextUser.WhoKnowsMode.ToResponseMode()
+            ResponseMode = mode ?? contextUser.WhoKnowsMode ?? WhoKnowsResponseMode.Default
         };
 
         try

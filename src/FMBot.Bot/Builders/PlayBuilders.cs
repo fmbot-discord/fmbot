@@ -705,7 +705,7 @@ public class PlayBuilder
     {
         var result = new List<IActionRowComponentProperties>();
 
-        foreach (FmButton flag in Enum.GetValues(typeof(FmButton)))
+        foreach (FmButton flag in Enum.GetValues<FmButton>())
         {
             if ((buttons & flag) == 0)
             {
@@ -719,20 +719,17 @@ public class PlayBuilder
                 continue;
             }
 
-            // Skip placeholder entries (no emoji configured)
             if (attr.CustomEmojiId is null or 0 && attr.StandardEmoji == null)
             {
                 continue;
             }
 
-            // Skip supporter-only buttons for non-supporters
             var optionAttr = fieldInfo.GetCustomAttribute<OptionAttribute>();
             if (optionAttr is { SupporterOnly: true } && !isSupporter)
             {
                 continue;
             }
 
-            // Skip buttons that need a DB track if we don't have one
             if (attr.RequiresDbTrack && dbTrack == null)
             {
                 continue;
@@ -744,7 +741,6 @@ public class PlayBuilder
 
             if (attr.CustomId != null)
             {
-                // Build custom ID based on button type
                 string customId;
                 switch (flag)
                 {
@@ -765,7 +761,6 @@ public class PlayBuilder
                         break;
                 }
 
-                // Skip preview button if no preview URL available
                 if (flag == FmButton.TrackPreview &&
                     string.IsNullOrEmpty(dbTrack.SpotifyPreviewUrl) &&
                     string.IsNullOrEmpty(dbTrack.AppleMusicPreviewUrl))
@@ -773,7 +768,6 @@ public class PlayBuilder
                     continue;
                 }
 
-                // Skip lyrics button if no lyrics available
                 if (flag == FmButton.TrackLyrics &&
                     string.IsNullOrWhiteSpace(dbTrack.PlainLyrics))
                 {
@@ -790,7 +784,6 @@ public class PlayBuilder
             }
             else
             {
-                // Link button - build URL based on flag
                 var url = flag switch
                 {
                     FmButton.LastFmTrackLink => currentTrack.TrackUrl ?? LastfmUrlExtensions.GetTrackUrl(currentTrack.ArtistName, currentTrack.TrackName),

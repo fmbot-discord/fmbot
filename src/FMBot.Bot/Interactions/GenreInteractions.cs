@@ -9,7 +9,7 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
-using FMBot.Domain;
+using FMBot.Domain.Models;
 using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ComponentInteractions;
@@ -146,11 +146,21 @@ public class GenreInteractions(
                     response = await genreBuilders.GenreAsync(context, selectedOption, userSettings, guild, false, originalSearch: originalSearch);
                     break;
                 case "whoknows":
-                    response = await genreBuilders.WhoKnowsGenreAsync(context, selectedOption, originalSearch: originalSearch);
+                {
+                    var wkMode = contextUser.WhoKnowsMode ?? WhoKnowsResponseMode.Default;
+                    if (wkMode == WhoKnowsResponseMode.Image) wkMode = WhoKnowsResponseMode.Default;
+                    response = await genreBuilders.WhoKnowsGenreAsync(context,
+                        wkMode, selectedOption, originalSearch: originalSearch);
                     break;
+                }
                 case "friendwhoknows":
-                    response = await genreBuilders.FriendsWhoKnowsGenreAsync(context, selectedOption, originalSearch: originalSearch);
+                {
+                    var fwkMode = contextUser.WhoKnowsMode ?? WhoKnowsResponseMode.Default;
+                    if (fwkMode == WhoKnowsResponseMode.Image) fwkMode = WhoKnowsResponseMode.Default;
+                    response = await genreBuilders.FriendsWhoKnowsGenreAsync(context,
+                        fwkMode, selectedOption, originalSearch: originalSearch);
                     break;
+                }
 
             }
 

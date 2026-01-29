@@ -71,7 +71,7 @@ public class AlbumInteractions(
 
         try
         {
-            var response = await albumBuilders.WhoKnowsAlbumAsync(new ContextModel(this.Context, contextUser), ResponseMode.Embed, $"{album.ArtistName} | {album.Name}", true, roleIds);
+            var response = await albumBuilders.WhoKnowsAlbumAsync(new ContextModel(this.Context, contextUser), WhoKnowsResponseMode.Default, $"{album.ArtistName} | {album.Name}", true, roleIds);
 
             await this.Context.UpdateInteractionEmbed(response);
             await this.Context.LogCommandUsedAsync(response, userService);

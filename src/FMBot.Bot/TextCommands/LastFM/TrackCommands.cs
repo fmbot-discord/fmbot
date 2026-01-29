@@ -302,7 +302,7 @@ public class TrackCommands(
         {
             var currentSettings = new WhoKnowsSettings
             {
-                ResponseMode = contextUser.WhoKnowsMode.ToResponseMode(),
+                ResponseMode = contextUser.WhoKnowsMode ?? WhoKnowsResponseMode.Default,
                 NewSearchValue = trackValues,
                 DisplayRoleFilter = false
             };
@@ -337,7 +337,7 @@ public class TrackCommands(
 
         var currentSettings = new WhoKnowsSettings
         {
-            ResponseMode = contextUser.WhoKnowsMode.ToResponseMode(),
+            ResponseMode = contextUser.WhoKnowsMode ?? WhoKnowsResponseMode.Default,
             HidePrivateUsers = false,
             ShowBotters = false,
             AdminView = false,
@@ -384,7 +384,7 @@ public class TrackCommands(
 
         var currentSettings = new WhoKnowsSettings
         {
-            ResponseMode = contextUser.WhoKnowsMode.ToResponseMode(),
+            ResponseMode = contextUser.WhoKnowsMode ?? WhoKnowsResponseMode.Default,
             HidePrivateUsers = false,
             NewSearchValue = trackValues
         };

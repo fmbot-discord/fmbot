@@ -179,7 +179,7 @@ public class ArtistInteractions(
         try
         {
             // TODO add redirects
-            var response = await artistBuilders.WhoKnowsArtistAsync(new ContextModel(this.Context, contextUser), ResponseMode.Embed, artist.Name, true, roleIds);
+            var response = await artistBuilders.WhoKnowsArtistAsync(new ContextModel(this.Context, contextUser), WhoKnowsResponseMode.Default, artist.Name, true, roleIds);
 
             await this.Context.UpdateInteractionEmbed(response);
             await this.Context.LogCommandUsedAsync(response, userService);
@@ -200,7 +200,7 @@ public class ArtistInteractions(
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var artist = await artistsService.GetArtistForId(int.Parse(artistId));
-        var mode = contextUser.WhoKnowsMode.ToResponseMode();
+        var mode = contextUser.WhoKnowsMode ?? WhoKnowsResponseMode.Default;
 
         try
         {

@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
 using Fergun.Interactive;
+using Fergun.Interactive.Pagination;
 using FMBot.AppleMusic;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Factories;
@@ -1522,7 +1523,7 @@ public class ArtistBuilders
     }
 
     public async Task<ResponseModel> WhoKnowsArtistAsync(ContextModel context,
-        ResponseMode mode,
+        WhoKnowsResponseMode mode,
         string artistValues,
         bool displayRoleSelector = false,
         List<ulong> roles = null,
@@ -1595,7 +1596,7 @@ public class ArtistBuilders
                     style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("👑"));
         }
 
-        if (mode == ResponseMode.Image)
+        if (mode == WhoKnowsResponseMode.Image)
         {
             using var image = await this._puppeteerService.GetWhoKnows("WhoKnows", $"in <b>{context.DiscordGuild.Name}</b>",
                 imgUrl, artistSearch.Artist.ArtistName,
@@ -1622,14 +1623,7 @@ public class ArtistBuilders
             return response;
         }
 
-        var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithArtist, context.ContextUser.UserId,
-            PrivacyLevel.Server, context.NumberFormat, crownModel);
-        if (filteredUsersWithArtist.Count == 0)
-        {
-            serverUsers = "Nobody in this server (not even you) has listened to this artist.";
-        }
-
-        response.Embed.WithDescription(serverUsers);
+        var title = $"{artistSearch.Artist.ArtistName}{ArtistsService.IsArtistBirthday(cachedArtist?.StartDate)} in {context.DiscordGuild.Name}";
 
         var footer = new StringBuilder();
         if (artistSearch.IsRandom)
@@ -1677,8 +1671,27 @@ public class ArtistBuilders
             footer.AppendLine(guildAlsoPlaying);
         }
 
-        response.Embed.WithTitle(
-            $"{artistSearch.Artist.ArtistName}{ArtistsService.IsArtistBirthday(cachedArtist?.StartDate)} in {context.DiscordGuild.Name}");
+        if (mode == WhoKnowsResponseMode.Pagination)
+        {
+            var paginator = WhoKnowsService.CreateWhoKnowsPaginator(filteredUsersWithArtist,
+                context.ContextUser.UserId, PrivacyLevel.Server, context.NumberFormat,
+                title, footer.ToString(), crownModel);
+
+            response.ResponseType = ResponseType.Paginator;
+            response.ComponentPaginator = paginator;
+            return response;
+        }
+
+        var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithArtist, context.ContextUser.UserId,
+            PrivacyLevel.Server, context.NumberFormat, crownModel);
+        if (filteredUsersWithArtist.Count == 0)
+        {
+            serverUsers = "Nobody in this server (not even you) has listened to this artist.";
+        }
+
+        response.Embed.WithDescription(serverUsers);
+
+        response.Embed.WithTitle(title);
 
         if (artistSearch.Artist.ArtistUrl != null &&
             Uri.IsWellFormedUriString(artistSearch.Artist.ArtistUrl, UriKind.Absolute))
@@ -1794,7 +1807,7 @@ public class ArtistBuilders
             }
         }
 
-        if (settings.ResponseMode == ResponseMode.Image)
+        if (settings.ResponseMode == WhoKnowsResponseMode.Image)
         {
             using var image = await this._puppeteerService.GetWhoKnows("WhoKnows", $"in <b>.fmbot 🌐</b>", imgUrl,
                 artistSearch.Artist.ArtistName,
@@ -1816,14 +1829,8 @@ public class ArtistBuilders
             return response;
         }
 
-        var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithArtist, context.ContextUser.UserId,
-            privacyLevel, context.NumberFormat, hidePrivateUsers: settings.HidePrivateUsers);
-        if (filteredUsersWithArtist.Count == 0)
-        {
-            serverUsers = "Nobody that uses .fmbot has listened to this artist.";
-        }
-
-        response.Embed.WithDescription(serverUsers);
+        var title =
+            $"{artistSearch.Artist.ArtistName}{ArtistsService.IsArtistBirthday(cachedArtist?.StartDate)} globally";
 
         var footer = new StringBuilder();
         if (artistSearch.IsRandom)
@@ -1853,16 +1860,27 @@ public class ArtistBuilders
             footer.AppendLine($"{((int)avgPlaycount).Format(context.NumberFormat)} avg");
         }
 
-        //var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingArtist(context.ContextUser.UserId,
-        //    contextGuild, usersWithArtist, artistSearch.Artist.ArtistName);
+        if (settings.ResponseMode == WhoKnowsResponseMode.Pagination)
+        {
+            var paginator = WhoKnowsService.CreateWhoKnowsPaginator(filteredUsersWithArtist,
+                context.ContextUser.UserId, privacyLevel, context.NumberFormat,
+                title, footer.ToString(), hidePrivateUsers: settings.HidePrivateUsers);
 
-        //if (guildAlsoPlaying != null)
-        //{
-        //    footer.AppendLine(guildAlsoPlaying);
-        //}
+            response.ResponseType = ResponseType.Paginator;
+            response.ComponentPaginator = paginator;
+            return response;
+        }
 
-        response.Embed.WithTitle(
-            $"{artistSearch.Artist.ArtistName}{ArtistsService.IsArtistBirthday(cachedArtist?.StartDate)} globally");
+        var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithArtist, context.ContextUser.UserId,
+            privacyLevel, context.NumberFormat, hidePrivateUsers: settings.HidePrivateUsers);
+        if (filteredUsersWithArtist.Count == 0)
+        {
+            serverUsers = "Nobody that uses .fmbot has listened to this artist.";
+        }
+
+        response.Embed.WithDescription(serverUsers);
+
+        response.Embed.WithTitle(title);
 
         if (Uri.IsWellFormedUriString(artistSearch.Artist.ArtistUrl, UriKind.Absolute))
         {
@@ -1885,7 +1903,7 @@ public class ArtistBuilders
     }
 
     public async Task<ResponseModel> FriendsWhoKnowArtistAsync(ContextModel context,
-        ResponseMode mode,
+        WhoKnowsResponseMode mode,
         string artistValues, bool redirectsEnabled)
     {
         var response = new ResponseModel
@@ -1935,7 +1953,7 @@ public class ArtistBuilders
             artistSearch.Artist.ArtistName, context.DiscordGuild, artistSearch.Artist.UserPlaycount);
         var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
 
-        if (mode == ResponseMode.Image)
+        if (mode == WhoKnowsResponseMode.Image)
         {
             using var image = await this._puppeteerService.GetWhoKnows("WhoKnows", $"from <b>{userTitle}</b>'s friends",
                 imgUrl, artistSearch.Artist.ArtistName,
@@ -1956,15 +1974,7 @@ public class ArtistBuilders
             return response;
         }
 
-        var serverUsers =
-            WhoKnowsService.WhoKnowsListToString(usersWithArtist, context.ContextUser.UserId, PrivacyLevel.Server,
-                context.NumberFormat);
-        if (usersWithArtist.Count == 0)
-        {
-            serverUsers = "None of your friends has listened to this artist.";
-        }
-
-        response.Embed.WithDescription(serverUsers);
+        var title = $"{cachedArtist.Name} with friends";
 
         var footer = new StringBuilder();
 
@@ -1995,7 +2005,28 @@ public class ArtistBuilders
 
         footer.AppendLine($"Friends WhoKnow artist for {userTitle}");
 
-        response.Embed.WithTitle($"{cachedArtist.Name} with friends");
+        if (mode == WhoKnowsResponseMode.Pagination)
+        {
+            var paginator = WhoKnowsService.CreateWhoKnowsPaginator(usersWithArtist,
+                context.ContextUser.UserId, PrivacyLevel.Server, context.NumberFormat,
+                title, footer.ToString());
+
+            response.ResponseType = ResponseType.Paginator;
+            response.ComponentPaginator = paginator;
+            return response;
+        }
+
+        var serverUsers =
+            WhoKnowsService.WhoKnowsListToString(usersWithArtist, context.ContextUser.UserId, PrivacyLevel.Server,
+                context.NumberFormat);
+        if (usersWithArtist.Count == 0)
+        {
+            serverUsers = "None of your friends has listened to this artist.";
+        }
+
+        response.Embed.WithDescription(serverUsers);
+
+        response.Embed.WithTitle(title);
 
         if (Uri.IsWellFormedUriString(cachedArtist.LastFmUrl, UriKind.Absolute))
         {

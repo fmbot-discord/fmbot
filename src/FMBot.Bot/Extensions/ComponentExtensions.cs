@@ -25,6 +25,9 @@ public static class ComponentExtensions
                 AccentColor = container.AccentColor
             },
 
+            ActionRow row => new ActionRowProperties(
+                row.Components.Select(c => ToRowComponentProperties(c, specificButtonOnly))),
+
             _ => throw new NotSupportedException($"Unknown component: {component.GetType().Name}")
         };
     }
@@ -101,7 +104,7 @@ public static class ComponentExtensions
             LinkButton btn => new LinkButtonProperties(btn.Url, btn.Label)
             {
                 Emoji = ToEmojiProperties(btn.Emoji),
-                Disabled = specificButtonOnly == null  || btn.Disabled
+                Disabled = false
             },
             ComponentSectionThumbnail thumb => new ComponentSectionThumbnailProperties(
                 new ComponentMediaProperties(thumb.Media.Url)),
@@ -124,7 +127,7 @@ public static class ComponentExtensions
             LinkButton btn => new LinkButtonProperties(btn.Url, btn.Label)
             {
                 Emoji = ToEmojiProperties(btn.Emoji),
-                Disabled = specificButtonOnly == null  || btn.Disabled
+                Disabled = false
             },
 
             _ => throw new NotSupportedException($"Unknown row component: {component.GetType().Name}")

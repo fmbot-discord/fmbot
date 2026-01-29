@@ -390,7 +390,7 @@ public class ArtistCommands(
 
             var currentSettings = new WhoKnowsSettings
             {
-                ResponseMode = contextUser.WhoKnowsMode.ToResponseMode(),
+                ResponseMode = contextUser.WhoKnowsMode ?? WhoKnowsResponseMode.Default,
                 NewSearchValue = artistValues,
                 DisplayRoleFilter = false
             };
@@ -445,7 +445,7 @@ public class ArtistCommands(
                 ShowBotters = false,
                 AdminView = false,
                 NewSearchValue = artistValues,
-                ResponseMode = contextUser.WhoKnowsMode.ToResponseMode()
+                ResponseMode = contextUser.WhoKnowsMode ?? WhoKnowsResponseMode.Default
             };
 
             var settings =
@@ -490,7 +490,7 @@ public class ArtistCommands(
         {
             var currentSettings = new WhoKnowsSettings
             {
-                ResponseMode = contextUser.WhoKnowsMode.ToResponseMode(),
+                ResponseMode = contextUser.WhoKnowsMode ?? WhoKnowsResponseMode.Default,
                 NewSearchValue = artistValues
             };
 
@@ -499,7 +499,7 @@ public class ArtistCommands(
 
             var response = await artistBuilders
                 .FriendsWhoKnowArtistAsync(new ContextModel(this.Context, prfx, contextUser),
-                    currentSettings.ResponseMode, settings.NewSearchValue, settings.RedirectsEnabled);
+                    settings.ResponseMode, settings.NewSearchValue, settings.RedirectsEnabled);
 
             await this.Context.SendResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);

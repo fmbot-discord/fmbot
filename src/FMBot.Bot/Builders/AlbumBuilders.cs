@@ -7,6 +7,7 @@ using System.Text.Encodings.Web;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Fergun.Interactive;
+using Fergun.Interactive.Pagination;
 using FMBot.AppleMusic;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Factories;
@@ -343,7 +344,7 @@ public class AlbumBuilders
 
     public async Task<ResponseModel> WhoKnowsAlbumAsync(
         ContextModel context,
-        ResponseMode mode,
+        WhoKnowsResponseMode mode,
         string albumValues,
         bool displayRoleSelector = false,
         List<ulong> roles = null)
@@ -408,7 +409,7 @@ public class AlbumBuilders
             response.Embed.WithColor(accentColor);
         }
 
-        if (mode == ResponseMode.Image)
+        if (mode == WhoKnowsResponseMode.Image)
         {
             using var image = await this._puppeteerService.GetWhoKnows("WhoKnows Album",
                 $"in <b>{context.DiscordGuild.Name}</b>", albumCoverUrl, fullAlbumName,
@@ -422,15 +423,7 @@ public class AlbumBuilders
             return response;
         }
 
-        var serverUsers =
-            WhoKnowsService.WhoKnowsListToString(filteredUsersWithAlbum, context.ContextUser.UserId,
-                PrivacyLevel.Server, context.NumberFormat);
-        if (filteredUsersWithAlbum.Count == 0)
-        {
-            serverUsers = "Nobody in this server (not even you) has listened to this album.";
-        }
-
-        response.Embed.WithDescription(serverUsers);
+        var title = StringExtensions.TruncateLongString($"{fullAlbumName} in {context.DiscordGuild.Name}", 255);
 
         var footer = new StringBuilder();
 
@@ -474,8 +467,28 @@ public class AlbumBuilders
             footer.AppendLine(guildAlsoPlaying);
         }
 
-        response.Embed.WithTitle(
-            StringExtensions.TruncateLongString($"{fullAlbumName} in {context.DiscordGuild.Name}", 255));
+        if (mode == WhoKnowsResponseMode.Pagination)
+        {
+            var paginator = WhoKnowsService.CreateWhoKnowsPaginator(filteredUsersWithAlbum,
+                context.ContextUser.UserId, PrivacyLevel.Server, context.NumberFormat,
+                title, footer.ToString());
+
+            response.ResponseType = ResponseType.Paginator;
+            response.ComponentPaginator = paginator;
+            return response;
+        }
+
+        var serverUsers =
+            WhoKnowsService.WhoKnowsListToString(filteredUsersWithAlbum, context.ContextUser.UserId,
+                PrivacyLevel.Server, context.NumberFormat);
+        if (filteredUsersWithAlbum.Count == 0)
+        {
+            serverUsers = "Nobody in this server (not even you) has listened to this album.";
+        }
+
+        response.Embed.WithDescription(serverUsers);
+
+        response.Embed.WithTitle(title);
 
         var url = context.ContextUser.RymEnabled == true
             ? StringExtensions.GetRymUrl(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName)
@@ -511,7 +524,7 @@ public class AlbumBuilders
 
     public async Task<ResponseModel> FriendsWhoKnowAlbumAsync(
         ContextModel context,
-        ResponseMode mode,
+        WhoKnowsResponseMode mode,
         string albumValues)
     {
         var response = new ResponseModel
@@ -577,7 +590,7 @@ public class AlbumBuilders
 
         var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
 
-        if (mode == ResponseMode.Image)
+        if (mode == WhoKnowsResponseMode.Image)
         {
             using var image = await this._puppeteerService.GetWhoKnows("WhoKnows Album", $"from <b>{userTitle}</b>'s friends",
                 albumCoverUrl, albumName,
@@ -591,15 +604,7 @@ public class AlbumBuilders
             return response;
         }
 
-        var serverUsers =
-            WhoKnowsService.WhoKnowsListToString(usersWithAlbum, context.ContextUser.UserId, PrivacyLevel.Server,
-                context.NumberFormat);
-        if (usersWithAlbum.Count == 0)
-        {
-            serverUsers = "None of your friends have listened to this album.";
-        }
-
-        response.Embed.WithDescription(serverUsers);
+        var title = $"{albumName} with friends";
 
         var footer = "";
 
@@ -625,7 +630,28 @@ public class AlbumBuilders
 
         footer += $"\nFriends WhoKnow album for {userTitle}";
 
-        response.Embed.WithTitle($"{albumName} with friends");
+        if (mode == WhoKnowsResponseMode.Pagination)
+        {
+            var paginator = WhoKnowsService.CreateWhoKnowsPaginator(usersWithAlbum,
+                context.ContextUser.UserId, PrivacyLevel.Server, context.NumberFormat,
+                title, footer);
+
+            response.ResponseType = ResponseType.Paginator;
+            response.ComponentPaginator = paginator;
+            return response;
+        }
+
+        var serverUsers =
+            WhoKnowsService.WhoKnowsListToString(usersWithAlbum, context.ContextUser.UserId, PrivacyLevel.Server,
+                context.NumberFormat);
+        if (usersWithAlbum.Count == 0)
+        {
+            serverUsers = "None of your friends have listened to this album.";
+        }
+
+        response.Embed.WithDescription(serverUsers);
+
+        response.Embed.WithTitle(title);
 
         if (Uri.IsWellFormedUriString(albumSearch.Album.AlbumUrl, UriKind.Absolute))
         {
@@ -711,7 +737,7 @@ public class AlbumBuilders
             response.Embed.WithColor(accentColor);
         }
 
-        if (settings.ResponseMode == ResponseMode.Image)
+        if (settings.ResponseMode == WhoKnowsResponseMode.Image)
         {
             using var image = await this._puppeteerService.GetWhoKnows("WhoKnows Album", $"in <b>.fmbot 🌐</b>",
                 albumCoverUrl, albumName,
@@ -726,14 +752,7 @@ public class AlbumBuilders
             return response;
         }
 
-        var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithAlbum, context.ContextUser.UserId,
-            privacyLevel, context.NumberFormat, hidePrivateUsers: settings.HidePrivateUsers);
-        if (filteredUsersWithAlbum.Count == 0)
-        {
-            serverUsers = "Nobody that uses .fmbot has listened to this album.";
-        }
-
-        response.Embed.WithDescription(serverUsers);
+        var title = $"{albumName} globally";
 
         var footer = new StringBuilder();
 
@@ -753,7 +772,27 @@ public class AlbumBuilders
             footer.AppendLine($"{((int)avgPlaycount).Format(context.NumberFormat)} avg");
         }
 
-        response.Embed.WithTitle($"{albumName} globally");
+        if (settings.ResponseMode == WhoKnowsResponseMode.Pagination)
+        {
+            var paginator = WhoKnowsService.CreateWhoKnowsPaginator(filteredUsersWithAlbum,
+                context.ContextUser.UserId, privacyLevel, context.NumberFormat,
+                title, footer.ToString(), hidePrivateUsers: settings.HidePrivateUsers);
+
+            response.ResponseType = ResponseType.Paginator;
+            response.ComponentPaginator = paginator;
+            return response;
+        }
+
+        var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithAlbum, context.ContextUser.UserId,
+            privacyLevel, context.NumberFormat, hidePrivateUsers: settings.HidePrivateUsers);
+        if (filteredUsersWithAlbum.Count == 0)
+        {
+            serverUsers = "Nobody that uses .fmbot has listened to this album.";
+        }
+
+        response.Embed.WithDescription(serverUsers);
+
+        response.Embed.WithTitle(title);
 
         var url = context.ContextUser.RymEnabled == true
             ? StringExtensions.GetRymUrl(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName)

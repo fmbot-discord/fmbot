@@ -38,7 +38,7 @@ public class TrackInteractions(
         try
         {
             var response = await trackBuilders.WhoKnowsTrackAsync(new ContextModel(this.Context, contextUser),
-                ResponseMode.Embed, $"{track.ArtistName} | {track.Name}", true, roleIds);
+                WhoKnowsResponseMode.Default, $"{track.ArtistName} | {track.Name}", true, roleIds);
 
             await this.Context.UpdateInteractionEmbed(response);
             await this.Context.LogCommandUsedAsync(response, userService);

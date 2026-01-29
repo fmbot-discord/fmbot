@@ -93,41 +93,37 @@ public class UserBuilder
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed
+            ResponseType = ResponseType.ComponentsV2,
         };
 
-        response.Embed.WithTitle($".fmbot user settings - {context.DiscordUser.GlobalName}");
+        var container = response.ComponentsContainer;
+        container.WithAccentColor(DiscordConstants.InformationColorBlue);
 
-        response.Embed.WithFooter($"Use '{context.Prefix}configuration' for server-wide settings");
+        container.WithTextDisplay($"## .fmbot user settings — {context.DiscordUser.GlobalName}");
 
-        var settings = new StringBuilder();
-
-        settings.AppendLine(
+        container.WithSeparator();
+        container.WithTextDisplay(
             $"Connected with Last.fm account [{context.ContextUser.UserNameLastFM}]({LastfmUrlExtensions.GetUserUrl(context.ContextUser.UserNameLastFM)}). Use `/login` to change.");
-        settings.AppendLine();
-        settings.AppendLine($"Click the dropdown below to change your user settings.");
+        container.WithTextDisplay($"For server-wide settings, use `{context.Prefix}configuration`.");
 
-        response.Embed.WithDescription(settings.ToString());
 
-        var guildSettings = new StringMenuProperties(InteractionConstants.UserSetting)
+        var settingsMenu = new StringMenuProperties(InteractionConstants.UserSetting)
             .WithPlaceholder("Select setting to view or change")
             .WithMaxValues(1);
 
-        foreach (var setting in ((UserSetting[])Enum.GetValues(typeof(UserSetting))))
+        foreach (var setting in Enum.GetValues<UserSetting>())
         {
             var name = setting.GetAttribute<OptionAttribute>().Name;
             var description = setting.GetAttribute<OptionAttribute>().Description;
             var value = Enum.GetName(setting);
 
-            guildSettings.AddOption(new StringMenuSelectOptionProperties(name, $"us-view-{value}")
+            settingsMenu.AddOption(new StringMenuSelectOptionProperties(name, $"us-view-{value}")
             {
                 Description = description
             });
         }
 
-        response.StringMenus.Add(guildSettings);
-
-        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+        container.AddComponents(settingsMenu);
 
         return response;
     }
@@ -394,7 +390,7 @@ public class UserBuilder
         container.WithAccentColor(DiscordConstants.InformationColorBlue);
 
         var description = new StringBuilder();
-        description.AppendLine("## Customizing your `fm`");
+        description.AppendLine("### Customizing your `fm` command");
 
         container.WithTextDisplay(description.ToString());
 
@@ -506,13 +502,19 @@ public class UserBuilder
             var name = option.GetAttribute<OptionAttribute>().Name;
             var optionDescription = option.GetAttribute<OptionAttribute>().Description;
             var value = Enum.GetName(option);
-
+            var buttonAttr = option.GetAttribute<FmButtonAttribute>();
             var active = fmSetting?.Buttons?.HasFlag(option) == true;
 
             buttonsMenu.AddOption(new StringMenuSelectOptionProperties(name, value)
             {
                 Description = optionDescription,
-                Default = active
+                Default = active,
+                Emoji = buttonAttr switch
+                {
+                    { CustomEmojiId: > 0 } => EmojiProperties.Custom(buttonAttr.CustomEmojiId.Value),
+                    { StandardEmoji: not null } => EmojiProperties.Standard(buttonAttr.StandardEmoji),
+                    _ => null
+                }
             });
         }
 
@@ -533,8 +535,6 @@ public class UserBuilder
             .WithPlaceholder("Select button response visibility")
             .WithMinValues(0)
             .WithMaxValues(1);
-
-        var isPrivate = fmSetting?.PrivateButtonResponse == true;
 
         privateButtonsMenu.AddOption(new StringMenuSelectOptionProperties("Yes - ephemeral", "true")
         {
@@ -641,7 +641,7 @@ public class UserBuilder
         var container = response.ComponentsContainer;
         container.WithAccentColor(DiscordConstants.InformationColorBlue);
 
-        container.WithTextDisplay("## Configuring your default response modes");
+        container.WithTextDisplay("### Configuring your default response modes");
 
         container.WithSeparator();
         container.WithTextDisplay("**WhoKnows mode**");
@@ -700,7 +700,7 @@ public class UserBuilder
         var container = response.ComponentsContainer;
         container.WithAccentColor(DiscordConstants.InformationColorBlue);
 
-        container.WithTextDisplay("## Pick which mode you want to modify");
+        container.WithTextDisplay("### Pick which mode you want to modify");
         container.WithSeparator();
         container.AddComponent(new ComponentSectionProperties(
             new ButtonProperties(InteractionConstants.FmCommand.FmModeChange, "Customize", ButtonStyle.Primary))
@@ -727,8 +727,21 @@ public class UserBuilder
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed,
+            ResponseType = ResponseType.ComponentsV2,
         };
+
+        var container = response.ComponentsContainer;
+        container.WithAccentColor(DiscordConstants.InformationColorBlue);
+
+        container.WithTextDisplay("### Configuring your Global WhoKnows visibility");
+
+        container.WithSeparator();
+        container.WithTextDisplay(
+            "**Global**\n" +
+            "You will be visible everywhere in global WhoKnows with your Last.fm username.");
+        container.WithTextDisplay(
+            "**Server**\n" +
+            "You won't be visible in global WhoKnows, but users in the same server will still see your name.");
 
         var privacySetting = new StringMenuProperties(InteractionConstants.FmPrivacySetting)
             .WithPlaceholder("Select Global WhoKnows privacy")
@@ -745,19 +758,7 @@ public class UserBuilder
             });
         }
 
-        response.StringMenus.Add(privacySetting);
-
-        response.Embed.WithAuthor("Configuring your Global WhoKnows visibility");
-        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
-
-        var embedDescription = new StringBuilder();
-
-        response.Embed.AddField("Global",
-            "*You are visible everywhere in global WhoKnows with your Last.fm username.*");
-        response.Embed.AddField("Server",
-            "*You are not visible in global WhoKnows, but users in the same server will still see your name.*");
-
-        response.Embed.WithDescription(embedDescription.ToString());
+        container.AddComponents(privacySetting);
 
         return response;
     }

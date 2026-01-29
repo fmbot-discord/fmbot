@@ -831,6 +831,7 @@ public class GenreBuilders
 
     public async Task<ResponseModel> WhoKnowsGenreAsync(
         ContextModel context,
+        WhoKnowsResponseMode mode,
         string genreValues,
         string originalSearch = null)
     {
@@ -869,15 +870,7 @@ public class GenreBuilders
         var (filterStats, filteredUsersWithGenre) =
             WhoKnowsService.FilterWhoKnowsObjects(usersWithGenre, guildUsers, guild, context.ContextUser.UserId);
 
-        var serverUsers =
-            WhoKnowsService.WhoKnowsListToString(filteredUsersWithGenre, context.ContextUser.UserId,
-                PrivacyLevel.Server, context.NumberFormat);
-        if (filteredUsersWithGenre.Count == 0)
-        {
-            serverUsers = "Nobody in this server (not even you) has listened to this genre.";
-        }
-
-        response.Embed.WithDescription(serverUsers);
+        var title = $"{genres.genres.First().Transform(To.TitleCase)} in {context.DiscordGuild.Name}";
 
         var footer = new StringBuilder();
 
@@ -906,12 +899,33 @@ public class GenreBuilders
             footer.AppendLine(filterStats.FullDescription);
         }
 
+        if (mode == WhoKnowsResponseMode.Pagination)
+        {
+            var paginator = WhoKnowsService.CreateWhoKnowsPaginator(filteredUsersWithGenre,
+                context.ContextUser.UserId, PrivacyLevel.Server, context.NumberFormat,
+                title, footer.ToString());
+
+            response.ResponseType = ResponseType.Paginator;
+            response.ComponentPaginator = paginator;
+            return response;
+        }
+
+        var serverUsers =
+            WhoKnowsService.WhoKnowsListToString(filteredUsersWithGenre, context.ContextUser.UserId,
+                PrivacyLevel.Server, context.NumberFormat);
+        if (filteredUsersWithGenre.Count == 0)
+        {
+            serverUsers = "Nobody in this server (not even you) has listened to this genre.";
+        }
+
+        response.Embed.WithDescription(serverUsers);
+
         if (genres.selectMenu != null && response.StringMenus.All(m => m.CustomId != genres.selectMenu.CustomId))
         {
             response.StringMenus.Add(genres.selectMenu);
         }
 
-        response.Embed.WithTitle($"{genres.genres.First().Transform(To.TitleCase)} in {context.DiscordGuild.Name}");
+        response.Embed.WithTitle(title);
         response.EmbedFooter.WithText(footer.ToString());
         response.Embed.WithFooter(response.EmbedFooter);
 
@@ -920,6 +934,7 @@ public class GenreBuilders
 
     public async Task<ResponseModel> FriendsWhoKnowsGenreAsync(
         ContextModel context,
+        WhoKnowsResponseMode mode,
         string genreValues,
         string originalSearch = null)
     {
@@ -976,14 +991,7 @@ public class GenreBuilders
             await this._indexService.UpdateGuildUser(guildUsers, discordGuildUser, currentUser.UserId, guild);
         }
 
-        var serverUsers = WhoKnowsService.WhoKnowsListToString(usersWithGenre.ToList(), context.ContextUser.UserId,
-            PrivacyLevel.Server, context.NumberFormat);
-        if (usersWithGenre.Count == 0)
-        {
-            serverUsers = "None of your friends have listened to this genre.";
-        }
-
-        response.Embed.WithDescription(serverUsers);
+        var title = $"{genres.genres.First().Transform(To.TitleCase)} with friends";
 
         var footer = new StringBuilder();
 
@@ -1010,12 +1018,32 @@ public class GenreBuilders
             footer.AppendLine();
         }
 
+        if (mode == WhoKnowsResponseMode.Pagination)
+        {
+            var paginator = WhoKnowsService.CreateWhoKnowsPaginator(usersWithGenre.ToList(),
+                context.ContextUser.UserId, PrivacyLevel.Server, context.NumberFormat,
+                title, footer.ToString());
+
+            response.ResponseType = ResponseType.Paginator;
+            response.ComponentPaginator = paginator;
+            return response;
+        }
+
+        var serverUsers = WhoKnowsService.WhoKnowsListToString(usersWithGenre.ToList(), context.ContextUser.UserId,
+            PrivacyLevel.Server, context.NumberFormat);
+        if (usersWithGenre.Count == 0)
+        {
+            serverUsers = "None of your friends have listened to this genre.";
+        }
+
+        response.Embed.WithDescription(serverUsers);
+
         if (genres.selectMenu != null && response.StringMenus.All(m => m.CustomId != genres.selectMenu.CustomId))
         {
             response.StringMenus.Add(genres.selectMenu);
         }
 
-        response.Embed.WithTitle($"{genres.genres.First().Transform(To.TitleCase)} with friends");
+        response.Embed.WithTitle(title);
         response.EmbedFooter.WithText(footer.ToString());
         response.Embed.WithFooter(response.EmbedFooter);
 

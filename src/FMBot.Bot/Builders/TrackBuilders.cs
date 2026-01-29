@@ -294,10 +294,10 @@ public class TrackBuilders
         if (!string.IsNullOrEmpty(dbTrack?.SpotifyPreviewUrl) || !string.IsNullOrEmpty(dbTrack?.AppleMusicPreviewUrl))
         {
             response.Components.WithButton(
-                    "Preview",
-                    $"{InteractionConstants.TrackPreview}:{dbTrack.Id}:",
-                    style: ButtonStyle.Secondary,
-                    emote: EmojiProperties.Custom(DiscordConstants.PlayPreview));
+                "Preview",
+                $"{InteractionConstants.TrackPreview}:{dbTrack.Id}:",
+                style: ButtonStyle.Secondary,
+                emote: EmojiProperties.Custom(DiscordConstants.PlayPreview));
         }
 
         if (SupporterService.IsSupporter(context.ContextUser.UserType) &&
@@ -322,7 +322,7 @@ public class TrackBuilders
 
     public async Task<ResponseModel> WhoKnowsTrackAsync(
         ContextModel context,
-        ResponseMode mode,
+        WhoKnowsResponseMode mode,
         string trackValues,
         bool displayRoleSelector = false,
         List<ulong> roles = null)
@@ -369,7 +369,7 @@ public class TrackBuilders
             albumCoverUrl = await GetAlbumCoverUrl(context, track, response);
         }
 
-        if (mode == ResponseMode.Image)
+        if (mode == WhoKnowsResponseMode.Image)
         {
             using var image = await this._puppeteerService.GetWhoKnows("WhoKnows Track",
                 $"in <b>{context.DiscordGuild.Name}</b>", albumCoverUrl, trackName,
@@ -383,15 +383,7 @@ public class TrackBuilders
             return response;
         }
 
-        var serverUsers =
-            WhoKnowsService.WhoKnowsListToString(filteredUsersWithTrack, context.ContextUser.UserId,
-                PrivacyLevel.Server, context.NumberFormat);
-        if (filteredUsersWithTrack.Count == 0)
-        {
-            serverUsers = "Nobody in this server (not even you) has listened to this track.";
-        }
-
-        response.Embed.WithDescription(serverUsers);
+        var title = StringExtensions.TruncateLongString($"{trackName} in {context.DiscordGuild.Name}", 255);
 
         var footer = new StringBuilder();
 
@@ -435,8 +427,28 @@ public class TrackBuilders
             footer.AppendLine(guildAlsoPlaying);
         }
 
-        response.Embed.WithTitle(
-            StringExtensions.TruncateLongString($"{trackName} in {context.DiscordGuild.Name}", 255));
+        if (mode == WhoKnowsResponseMode.Pagination)
+        {
+            var paginator = WhoKnowsService.CreateWhoKnowsPaginator(filteredUsersWithTrack,
+                context.ContextUser.UserId, PrivacyLevel.Server, context.NumberFormat,
+                title, footer.ToString());
+
+            response.ResponseType = ResponseType.Paginator;
+            response.ComponentPaginator = paginator;
+            return response;
+        }
+
+        var serverUsers =
+            WhoKnowsService.WhoKnowsListToString(filteredUsersWithTrack, context.ContextUser.UserId,
+                PrivacyLevel.Server, context.NumberFormat);
+        if (filteredUsersWithTrack.Count == 0)
+        {
+            serverUsers = "Nobody in this server (not even you) has listened to this track.";
+        }
+
+        response.Embed.WithDescription(serverUsers);
+
+        response.Embed.WithTitle(title);
 
         if (track.Track.TrackUrl != null)
         {
@@ -468,7 +480,7 @@ public class TrackBuilders
 
     public async Task<ResponseModel> FriendsWhoKnowTrackAsync(
         ContextModel context,
-        ResponseMode mode,
+        WhoKnowsResponseMode mode,
         string trackValues)
     {
         var response = new ResponseModel
@@ -513,7 +525,7 @@ public class TrackBuilders
             albumCoverUrl = await GetAlbumCoverUrl(context, track, response);
         }
 
-        if (mode == ResponseMode.Image)
+        if (mode == WhoKnowsResponseMode.Image)
         {
             using var image = await this._puppeteerService.GetWhoKnows("WhoKnows Track", $"from <b>{userTitle}</b>'s friends",
                 albumCoverUrl, trackName,
@@ -527,15 +539,7 @@ public class TrackBuilders
             return response;
         }
 
-        var serverUsers =
-            WhoKnowsService.WhoKnowsListToString(usersWithTrack, context.ContextUser.UserId, PrivacyLevel.Server,
-                context.NumberFormat);
-        if (!usersWithTrack.Any())
-        {
-            serverUsers = "None of your friends have listened to this track.";
-        }
-
-        response.Embed.WithDescription(serverUsers);
+        var title = $"{trackName} with friends";
 
         var footer = "";
 
@@ -561,7 +565,28 @@ public class TrackBuilders
 
         footer += $"\nFriends WhoKnow track for {userTitle}";
 
-        response.Embed.WithTitle($"{trackName} with friends");
+        if (mode == WhoKnowsResponseMode.Pagination)
+        {
+            var paginator = WhoKnowsService.CreateWhoKnowsPaginator(usersWithTrack,
+                context.ContextUser.UserId, PrivacyLevel.Server, context.NumberFormat,
+                title, footer);
+
+            response.ResponseType = ResponseType.Paginator;
+            response.ComponentPaginator = paginator;
+            return response;
+        }
+
+        var serverUsers =
+            WhoKnowsService.WhoKnowsListToString(usersWithTrack, context.ContextUser.UserId, PrivacyLevel.Server,
+                context.NumberFormat);
+        if (!usersWithTrack.Any())
+        {
+            serverUsers = "None of your friends have listened to this track.";
+        }
+
+        response.Embed.WithDescription(serverUsers);
+
+        response.Embed.WithTitle(title);
 
         if (Uri.IsWellFormedUriString(track.Track.TrackUrl, UriKind.Absolute))
         {
@@ -642,7 +667,7 @@ public class TrackBuilders
             albumCoverUrl = await GetAlbumCoverUrl(context, track, response);
         }
 
-        if (settings.ResponseMode == ResponseMode.Image)
+        if (settings.ResponseMode == WhoKnowsResponseMode.Image)
         {
             using var image = await this._puppeteerService.GetWhoKnows("WhoKnows Track", $"in <b>.fmbot 🌐</b>",
                 albumCoverUrl, trackName,
@@ -654,6 +679,33 @@ public class TrackBuilders
             response.FileName = $"global-whoknows-track-{track.Track.ArtistName}-{track.Track.TrackName}.png";
             response.ResponseType = ResponseType.ImageOnly;
 
+            return response;
+        }
+
+        var title = StringExtensions.TruncateLongString($"{trackName} globally", 255);
+
+        if (filteredUsersWithTrack.Any() && filteredUsersWithTrack.Count > 1)
+        {
+            var globalListeners = filteredUsersWithTrack.Count;
+            var globalPlaycount = filteredUsersWithTrack.Sum(a => a.Playcount);
+            var avgPlaycount = filteredUsersWithTrack.Average(a => a.Playcount);
+
+            footer.Append($"Global track - ");
+            footer.Append(
+                $"{globalListeners.Format(context.NumberFormat)} {StringExtensions.GetListenersString(globalListeners)} - ");
+            footer.Append(
+                $"{globalPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(globalPlaycount)} - ");
+            footer.AppendLine($"{((int)avgPlaycount).Format(context.NumberFormat)} avg");
+        }
+
+        if (settings.ResponseMode == WhoKnowsResponseMode.Pagination)
+        {
+            var paginator = WhoKnowsService.CreateWhoKnowsPaginator(filteredUsersWithTrack,
+                context.ContextUser.UserId, privacyLevel, context.NumberFormat,
+                title, footer.ToString(), hidePrivateUsers: settings.HidePrivateUsers);
+
+            response.ResponseType = ResponseType.Paginator;
+            response.ComponentPaginator = paginator;
             return response;
         }
 
@@ -685,21 +737,7 @@ public class TrackBuilders
             }
         }
 
-        if (filteredUsersWithTrack.Any() && filteredUsersWithTrack.Count > 1)
-        {
-            var globalListeners = filteredUsersWithTrack.Count;
-            var globalPlaycount = filteredUsersWithTrack.Sum(a => a.Playcount);
-            var avgPlaycount = filteredUsersWithTrack.Average(a => a.Playcount);
-
-            footer.Append($"Global track - ");
-            footer.Append(
-                $"{globalListeners.Format(context.NumberFormat)} {StringExtensions.GetListenersString(globalListeners)} - ");
-            footer.Append(
-                $"{globalPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(globalPlaycount)} - ");
-            footer.AppendLine($"{((int)avgPlaycount).Format(context.NumberFormat)} avg");
-        }
-
-        response.Embed.WithTitle(StringExtensions.TruncateLongString($"{trackName} globally", 255));
+        response.Embed.WithTitle(title);
 
         if (!string.IsNullOrWhiteSpace(track.Track.TrackUrl))
         {
@@ -1163,7 +1201,9 @@ public class TrackBuilders
             var pageString = new StringBuilder();
             foreach (var track in page)
             {
-                var trackName = string.IsNullOrWhiteSpace(guildListSettings.NewSearchValue) ? $"**{track.ArtistName}** - **{track.TrackName}**" : $"**{track.TrackName}**";
+                var trackName = string.IsNullOrWhiteSpace(guildListSettings.NewSearchValue)
+                    ? $"**{track.ArtistName}** - **{track.TrackName}**"
+                    : $"**{track.TrackName}**";
                 var name = guildListSettings.OrderType == OrderType.Listeners
                     ? $"`{track.ListenerCount.Format(context.NumberFormat)}` · {trackName} · *{track.TotalPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(track.TotalPlaycount)}*"
                     : $"`{track.TotalPlaycount.Format(context.NumberFormat)}` · {trackName} · *{track.ListenerCount.Format(context.NumberFormat)} {StringExtensions.GetListenersString(track.ListenerCount)}*";
@@ -1713,8 +1753,6 @@ public class TrackBuilders
 
             if (track.SyncedLyrics != null && track.SyncedLyrics.Any())
             {
-
-
                 var firstLine = track.SyncedLyrics.ElementAtOrDefault(syncedLyricIndex);
                 if (firstLine != null)
                 {
@@ -1751,9 +1789,7 @@ public class TrackBuilders
                         end = syncedLine.Timestamp;
                         syncedLyricIndex++;
                     }
-
                 }
-
             }
 
             lyricsPages.Add(new LyricPage(pageContent, start, end));
@@ -1769,7 +1805,8 @@ public class TrackBuilders
 
             if (lyricPage.Start.HasValue && lyricPage.End.HasValue)
             {
-                footer.Append($" — {StringExtensions.GetTrackLength(lyricPage.Start.Value)} until {StringExtensions.GetTrackLength(lyricPage.End.Value.Add(TimeSpan.FromSeconds(3)))}");
+                footer.Append(
+                    $" — {StringExtensions.GetTrackLength(lyricPage.Start.Value)} until {StringExtensions.GetTrackLength(lyricPage.End.Value.Add(TimeSpan.FromSeconds(3)))}");
             }
             else if (track.DurationMs.HasValue)
             {

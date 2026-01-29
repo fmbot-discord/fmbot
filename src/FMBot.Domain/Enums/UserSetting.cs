@@ -12,11 +12,11 @@ public enum UserSetting
     WkMode = 4,
     [Option("Out of sync", "Info on what to do when Spotify and Last.fm are out of sync")]
     OutOfSync = 6,
-    [Option("Spotify & Apple Music imports ⭐", "Add and manage your Spotify & Apple Music imports")]
+    [Option("⭐ Spotify & Apple Music imports", "Add and manage your Spotify & Apple Music imports")]
     SpotifyImport = 10,
-    [Option("Command shortcuts ⭐", "Configure your text command shortcuts")]
+    [Option("⭐ Command shortcuts", "Configure your text command shortcuts")]
     CommandShortcuts = 11,
-    [Option("User reactions ⭐", "Set personal automated emoji reactions")]
+    [Option("⭐ User reactions", "Set personal automated emoji reactions")]
     UserReactions = 12,
     [Option("Localization", "Set your timezone and number formatting")]
     Localization = 15,
