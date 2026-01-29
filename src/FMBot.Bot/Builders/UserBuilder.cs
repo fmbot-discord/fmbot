@@ -491,7 +491,10 @@ public class UserBuilder
         container.WithSeparator();
 
         var maxButtons = isSupporter ? Constants.MaxButtonsSupporter : Constants.MaxButtons;
-        container.WithTextDisplay($"**Buttons** (up to {maxButtons})");
+
+        container.WithTextDisplay(fmSetting?.Buttons is null or 0
+            ? $"**Buttons** (up to {maxButtons})"
+            : $"**Buttons** (up to {maxButtons}) — only shown when available");
 
         var buttonsMenu = new StringMenuProperties(InteractionConstants.FmCommand.FmSettingButtons)
             .WithPlaceholder("Select buttons")

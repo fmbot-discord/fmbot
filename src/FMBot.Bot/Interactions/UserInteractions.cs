@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -708,7 +707,6 @@ public class UserInteractions(
     [UsernameSetRequired]
     public async Task SetEmbedType()
     {
-        var embed = new EmbedProperties();
         var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
 
         var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
@@ -717,16 +715,7 @@ public class UserInteractions(
         if (Enum.TryParse(selectedValue, out FmEmbedType embedType))
         {
             await fmSettingService.SetEmbedType(userSettings, embedType);
-
-            var name = embedType.GetAttribute<OptionAttribute>().Name;
-            var description = embedType.GetAttribute<OptionAttribute>().Description;
-
-            embed.WithDescription($"Your `fm` mode has been set to **{name}**.");
-            embed.WithFooter(description);
-            embed.WithColor(DiscordConstants.InformationColorBlue);
-            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
-                .WithEmbeds([embed])
-                .WithFlags(MessageFlags.Ephemeral)));
+            await RefreshFmModeEmbed();
         }
     }
 
@@ -767,15 +756,7 @@ public class UserInteractions(
             }
 
             await fmSettingService.SetAccentColor(userSettings, accentColor);
-
-            var name = accentColor.GetAttribute<OptionAttribute>().Name;
-            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
-                .WithEmbeds([
-                    new EmbedProperties()
-                        .WithDescription($"Your `fm` accent color has been set to **{name}**.")
-                        .WithColor(DiscordConstants.InformationColorBlue)
-                ])
-                .WithFlags(MessageFlags.Ephemeral)));
+            await RefreshFmModeEmbed();
         }
     }
 
@@ -797,6 +778,8 @@ public class UserInteractions(
             return;
         }
 
+        await this.Context.Interaction.SendResponseAsync(InteractionCallback.DeferredModifyMessage);
+
         if (!hexValue.StartsWith('#'))
         {
             hexValue = $"#{hexValue}";
@@ -805,15 +788,7 @@ public class UserInteractions(
         var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
         await fmSettingService.SetAccentColor(userSettings, FmAccentColor.Custom, hexValue);
 
-        int.TryParse(hexValue.TrimStart('#'), NumberStyles.HexNumber, null, out var customRgb);
-
-        await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
-            .WithEmbeds([
-                new EmbedProperties()
-                    .WithDescription($"Your `fm` accent color has been set to custom color `{hexValue}`.")
-                    .WithColor(new Color(customRgb))
-            ])
-            .WithFlags(MessageFlags.Ephemeral)));
+        await RefreshFmModeEmbed(deferred: true);
     }
 
     [ComponentInteraction(InteractionConstants.FmCommand.FmSettingTextType)]
@@ -828,21 +803,7 @@ public class UserInteractions(
         if (Enum.TryParse(selectedValue, out FmTextType textType))
         {
             await fmSettingService.SetTextType(userSettings, textType);
-
-            var name = textType switch
-            {
-                FmTextType.SmallText => "Small text",
-                FmTextType.NormalText => "Normal text",
-                _ => selectedValue
-            };
-
-            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
-                .WithEmbeds([
-                    new EmbedProperties()
-                        .WithDescription($"Your `fm` text size has been set to **{name}**.")
-                        .WithColor(DiscordConstants.InformationColorBlue)
-                ])
-                .WithFlags(MessageFlags.Ephemeral)));
+            await RefreshFmModeEmbed();
         }
     }
 
@@ -884,7 +845,23 @@ public class UserInteractions(
         }
 
         await fmSettingService.SetButtons(userSettings, buttons);
-        await RespondButtonsConfirmation(buttons, supporterOptionSelected);
+        await RefreshFmModeEmbed();
+
+        if (supporterOptionSelected)
+        {
+            await this.Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
+                .WithEmbeds([
+                    new EmbedProperties()
+                        .WithDescription("You selected a supporter-exclusive button. Please pick a different button or purchase supporter below.")
+                        .WithColor(DiscordConstants.InformationColorBlue)
+                ])
+                .WithComponents([
+                    new ActionRowProperties()
+                        .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
+                            customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "fm-buttons"))
+                ])
+                .WithFlags(MessageFlags.Ephemeral));
+        }
     }
 
     [ComponentInteraction(InteractionConstants.FmCommand.FmSettingButtonsSupporter)]
@@ -929,57 +906,25 @@ public class UserInteractions(
         }
 
         await fmSettingService.SetButtons(userSettings, buttons);
-        await RespondButtonsConfirmation(buttons);
+        await RefreshFmModeEmbed();
     }
 
-    private async Task RespondButtonsConfirmation(FmButton buttons, bool supporterOptionSelected = false)
+    private async Task RefreshFmModeEmbed(bool deferred = false)
     {
-        var description = new StringBuilder();
+        var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
+        userSettings.FmSetting ??= await fmSettingService.GetOrCreateFmSetting(userSettings.UserId);
+        var guild = await guildService.GetGuildAsync(this.Context.Guild?.Id);
+        var response = UserBuilder.FmMode(new ContextModel(this.Context, userSettings), guild);
 
-        if (buttons != 0)
+        if (deferred)
         {
-            description.AppendLine("Your `fm` buttons have been set to:");
-
-            foreach (var flag in buttons.GetUniqueFlags())
-            {
-                if (buttons.HasFlag(flag))
-                {
-                    var name = flag.GetAttribute<OptionAttribute>().Name;
-                    description.AppendLine($"- **{name}**");
-                }
-            }
-
-            description.AppendLine("Keep in mind that if a button is not available it will not be displayed.");
+            await this.Context.Interaction.ModifyResponseAsync(m =>
+                m.Components = response.GetComponentsV2());
         }
         else
         {
-            description.AppendLine("You have removed all `fm` buttons.");
+            await this.Context.UpdateInteractionEmbed(response);
         }
-
-        if (supporterOptionSelected)
-        {
-            description.AppendLine();
-            description.AppendLine("You a supporter-exclusive button. Please pick a different button or purchase supporter below.");
-        }
-
-        var message = new InteractionMessageProperties()
-            .WithEmbeds([
-                new EmbedProperties()
-                    .WithDescription(description.ToString())
-                    .WithColor(DiscordConstants.InformationColorBlue)
-            ])
-            .WithFlags(MessageFlags.Ephemeral);
-
-        if (supporterOptionSelected)
-        {
-            message.WithComponents([
-                new ActionRowProperties()
-                    .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
-                        customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "fm-buttons"))
-            ]);
-        }
-
-        await RespondAsync(InteractionCallback.Message(message));
     }
 
     [ComponentInteraction(InteractionConstants.FmCommand.FmSettingPrivateButtons)]
@@ -993,20 +938,7 @@ public class UserInteractions(
 
         bool? isPrivate = selectedValues.Count > 0 ? selectedValues[0] == "true" : null;
         await fmSettingService.SetPrivateButtonResponse(userSettings, isPrivate);
-
-        var label = isPrivate switch
-        {
-            true => "private (ephemeral)",
-            false => "visible to everyone",
-            null => "default, let .fmbot decide"
-        };
-        await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
-            .WithEmbeds([
-                new EmbedProperties()
-                    .WithDescription($"Your `fm` button responses are now **{label}**.")
-                    .WithColor(DiscordConstants.InformationColorBlue)
-            ])
-            .WithFlags(MessageFlags.Ephemeral)));
+        await RefreshFmModeEmbed();
     }
 
     [ComponentInteraction(InteractionConstants.FmCommand.FmSettingFooter)]
@@ -1092,33 +1024,7 @@ public class UserInteractions(
     private async Task SaveFooterOptions(User userSettings, FmFooterOption footerOptions)
     {
         await fmSettingService.SetFooterOptions(userSettings, footerOptions);
-
-        var embed = new EmbedProperties();
-        var description = new StringBuilder();
-
-        if (footerOptions.GetUniqueFlags().Any())
-        {
-            description.AppendLine("Your `fm` footer options have been set to:");
-
-            foreach (var flag in footerOptions.GetUniqueFlags())
-            {
-                if (footerOptions.HasFlag(flag))
-                {
-                    var name = flag.GetAttribute<OptionAttribute>().Name;
-                    description.AppendLine($"- **{name}**");
-                }
-            }
-        }
-        else
-        {
-            description.AppendLine("You have removed all `fm` footer options.");
-        }
-
-        embed.WithDescription(description.ToString());
-        embed.WithColor(DiscordConstants.InformationColorBlue);
-        await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
-            .WithEmbeds([embed])
-            .WithFlags(MessageFlags.Ephemeral)));
+        await RefreshFmModeEmbed();
     }
 
     [ComponentInteraction(InteractionConstants.ResponseModeChange)]
