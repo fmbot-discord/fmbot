@@ -9,6 +9,7 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
+using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
 using NetCord.Services.Commands;
@@ -185,7 +186,7 @@ public class AlbumCommands(
         {
             var currentSettings = new WhoKnowsSettings
             {
-                ResponseMode = contextUser.Mode ?? ResponseMode.Embed,
+                ResponseMode = contextUser.WhoKnowsMode.ToResponseMode(),
                 NewSearchValue = albumValues,
                 DisplayRoleFilter = false
             };
@@ -219,7 +220,7 @@ public class AlbumCommands(
 
         var currentSettings = new WhoKnowsSettings
         {
-            ResponseMode = contextUser.Mode ?? ResponseMode.Embed,
+            ResponseMode = contextUser.WhoKnowsMode.ToResponseMode(),
             HidePrivateUsers = false,
             ShowBotters = false,
             AdminView = false,
@@ -270,7 +271,7 @@ public class AlbumCommands(
         {
             var currentSettings = new WhoKnowsSettings
             {
-                ResponseMode = contextUser.Mode ?? ResponseMode.Embed,
+                ResponseMode = contextUser.WhoKnowsMode.ToResponseMode(),
                 NewSearchValue = albumValues
             };
 

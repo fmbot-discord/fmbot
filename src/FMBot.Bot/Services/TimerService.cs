@@ -194,9 +194,6 @@ public class TimerService : IDisposable
         // Log.Information($"RecurringJob: Adding {nameof(UpdateExistingOcSupporters)}");
         // RecurringJob.AddOrUpdate(nameof(UpdateExistingOcSupporters), () => UpdateExistingOcSupporters(), "0 * * * *");
 
-        Log.Information($"RecurringJob: Adding {nameof(CheckDiscordSupportersUserType)}");
-        RecurringJob.AddOrUpdate(nameof(CheckDiscordSupportersUserType), () => CheckDiscordSupportersUserType(), "*/10 * * * *");
-
         Log.Information($"RecurringJob: Adding {nameof(UpdateBotLists)}");
         RecurringJob.AddOrUpdate(nameof(UpdateBotLists), () => UpdateBotLists(), "*/10 * * * *");
 

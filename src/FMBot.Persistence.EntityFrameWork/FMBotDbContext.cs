@@ -26,6 +26,7 @@ namespace FMBot.Persistence.EntityFrameWork
         public virtual DbSet<DiscogsRelease> DiscogsReleases { get; set; }
         public virtual DbSet<UserDiscogsReleases> UserDiscogsReleases { get; set; }
         public virtual DbSet<UserDiscogs> UserDiscogs { get; set; }
+        public virtual DbSet<UserFmSetting> UserFmSettings { get; set; }
 
         public virtual DbSet<BottedUser> BottedUsers { get; set; }
         public virtual DbSet<GlobalFilteredUser> GlobalFilteredUsers { get; set; }
@@ -514,6 +515,16 @@ namespace FMBot.Persistence.EntityFrameWork
                 entity.HasOne(u => u.User)
                     .WithOne(a => a.UserDiscogs)
                     .HasForeignKey<UserDiscogs>(f => f.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<UserFmSetting>(entity =>
+            {
+                entity.HasKey(a => a.UserId);
+
+                entity.HasOne(u => u.User)
+                    .WithOne(a => a.FmSetting)
+                    .HasForeignKey<UserFmSetting>(f => f.UserId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
 

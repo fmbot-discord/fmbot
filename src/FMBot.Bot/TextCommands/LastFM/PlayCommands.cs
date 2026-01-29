@@ -165,7 +165,7 @@ public class PlayCommands(
 
             _ = this.Context.Channel?.TriggerTypingStateAsync()!;
             var userSettings = await settingService.GetUser(options, contextUser, this.Context);
-            var configuredFmType = SettingService.GetEmbedType(userSettings.NewSearchValue, contextUser.FmEmbedType);
+            var configuredFmType = SettingService.GetEmbedType(userSettings.NewSearchValue, contextUser.FmSetting?.EmbedType ?? FmEmbedType.EmbedMini);
 
             var response =
                 await playBuilder.NowPlayingAsync(new ContextModel(this.Context, prfx, contextUser),

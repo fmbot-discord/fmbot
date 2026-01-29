@@ -327,12 +327,12 @@ public class AlbumBuilders
         response.Components = new ActionRowProperties()
             .WithButton(
                 "Album tracks",
-                $"{InteractionConstants.Album.Tracks}:{databaseAlbum.Id}:{userSettings?.DiscordUserId ?? context.ContextUser.DiscordUserId}:{context.ContextUser.DiscordUserId}",
+                $"{InteractionConstants.Album.Tracks}:{databaseAlbum.Id}:{userSettings?.DiscordUserId ?? context.ContextUser.DiscordUserId}:{context.ContextUser.DiscordUserId}:",
                 style: ButtonStyle.Secondary,
                 emote: EmojiProperties.Standard("🎶"))
             .WithButton(
                 "Cover",
-                $"{InteractionConstants.Album.Cover}:{databaseAlbum.Id}:{userSettings?.DiscordUserId ?? context.ContextUser.DiscordUserId}:{context.ContextUser.DiscordUserId}:motion",
+                $"{InteractionConstants.Album.Cover}:{databaseAlbum.Id}:{userSettings?.DiscordUserId ?? context.ContextUser.DiscordUserId}:{context.ContextUser.DiscordUserId}:motion:",
                 style: ButtonStyle.Secondary,
                 emote: EmojiProperties.Standard("🖼️"));
 
@@ -1176,13 +1176,13 @@ public class AlbumBuilders
             albumCoverUrl = albumImages.First(f => f.ImageType == ImageType.VideoSquare).Url;
             gifResult = true;
             response.Components.WithButton("Still",
-                $"{InteractionConstants.Album.Cover}:{databaseAlbum.Id}:{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}:still",
+                $"{InteractionConstants.Album.Cover}:{databaseAlbum.Id}:{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}:still:",
                 ButtonStyle.Secondary, EmojiProperties.Standard("🖼️"));
         }
         else if (albumImages.Any(a => a.ImageType == ImageType.VideoSquare))
         {
             response.Components.WithButton("Motion",
-                $"{InteractionConstants.Album.Cover}:{databaseAlbum.Id}:{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}:motion",
+                $"{InteractionConstants.Album.Cover}:{databaseAlbum.Id}:{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}:motion:",
                 ButtonStyle.Secondary, EmojiProperties.Standard("▶️"));
         }
 

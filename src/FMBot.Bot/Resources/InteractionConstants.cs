@@ -9,6 +9,13 @@ public static class InteractionConstants
         public const string FmSettingFooterSupporter = "fm-footer-menu-supporter";
 
         public const string FmModeChange = "fm-mode-pick";
+
+        public const string FmSettingAccentColor = "fm-accent-color-menu";
+        public const string FmSettingTextType = "fm-text-type-menu";
+        public const string FmSettingButtons = "fm-buttons-menu";
+        public const string FmSettingButtonsSupporter = "fm-buttons-menu-supporter";
+        public const string FmSettingPrivateButtons = "fm-private-buttons-menu";
+        public const string FmSettingCustomColorModal = "fm-custom-color-modal";
     }
 
     public const string GuildSetting = "guild-setting-picker";
@@ -27,7 +34,8 @@ public static class InteractionConstants
         public const string RemoveAccount = "discogs-remove";
     }
 
-    public const string ResponseModeSetting = "response-mode-set";
+    public const string WhoKnowsModeSetting = "wk-mode-set";
+    public const string TopListModeSetting = "toplist-mode-set";
     public const string ResponseModeChange = "response-mode-pick";
 
     public const string RemoveFmbotAccount = "remove-account-confirm";
@@ -84,6 +92,10 @@ public static class InteractionConstants
 
     public const string TrackPreview = "track-preview";
     public const string TrackLyrics = "track-lyrics";
+
+    public const string FmTrackDetails = "fm-track-details";
+    public const string FmTrackLove = "fm-track-love";
+    public const string FmTrackUnlove = "fm-track-unlove";
 
     public static class ManageAlts
     {

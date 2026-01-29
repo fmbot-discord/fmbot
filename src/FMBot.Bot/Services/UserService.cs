@@ -104,6 +104,7 @@ public class UserService
         await using var db = await this._contextFactory.CreateDbContextAsync();
         user = await db.Users
             .AsNoTracking()
+            .Include(u => u.FmSetting)
             .FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
 
         if (user != null)
@@ -1009,7 +1010,8 @@ public class UserService
         long totalScrobbles,
         ContextModel contextModel,
         Persistence.Domain.Models.Guild guild = null,
-        IDictionary<int, FullGuildUser> guildUsers = null)
+        IDictionary<int, FullGuildUser> guildUsers = null,
+        bool useSmallText = true)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
@@ -1041,7 +1043,7 @@ public class UserService
         };
 
         var footer = await TemplateService.GetFooterAsync(footerOptions, footerContext);
-        return CreateFooter(footer, footerContext.Genres);
+        return CreateFooter(footer, footerContext.Genres, useSmallText);
     }
 
     public async Task<TemplateService.TemplateResult> GetTemplateFmAsync(
@@ -1079,18 +1081,18 @@ public class UserService
         return await this._templateService.GetTemplateFmAsync(userId, footerContext);
     }
 
-    private static StringBuilder CreateFooter(IReadOnlyList<string> options, string genres)
+    private static StringBuilder CreateFooter(IReadOnlyList<string> options, string genres, bool useSmallText = true)
     {
         var footer = new StringBuilder();
+        var prefix = useSmallText ? "-# " : "";
+        const int maxLineLength = 45;
+        const string separator = " · ";
 
         var genresAdded = false;
-        if (genres is { Length: <= 48 } && options.Count > 2)
+        if (genres != null && options.Count > 2)
         {
-            footer.Append("-# ");
-
+            footer.Append(prefix);
             footer.AppendLine(genres);
-            footer.Append("-# ");
-
             genresAdded = true;
         }
 
@@ -1098,40 +1100,36 @@ public class UserService
         for (var index = 0; index < options.Count; index++)
         {
             var option = options[index];
-            var nextOption = options.ElementAtOrDefault(index + 1);
 
-            if ((lineLength > 38 || (lineLength > 28 && option.Length > 18)) && nextOption != null)
+            if (lineLength == 0)
+            {
+                footer.Append(prefix);
+                footer.Append(option);
+                lineLength = option.Length;
+            }
+            else if (lineLength + separator.Length + option.Length > maxLineLength)
             {
                 footer.AppendLine();
-                footer.Append("-# ");
-                lineLength = option.Length;
+                footer.Append(prefix);
                 footer.Append(option);
+                lineLength = option.Length;
             }
             else
             {
-                if (lineLength != 0)
-                {
-                    footer.Append(" · ");
-                }
-
-                if (footer.Length == 0)
-                {
-                    footer.Append("-# ");
-                }
-
+                footer.Append(separator);
                 footer.Append(option);
-                lineLength += option.Length;
+                lineLength += separator.Length + option.Length;
             }
+        }
 
-            if (nextOption == null)
-            {
-                footer.AppendLine();
-            }
+        if (options.Count > 0)
+        {
+            footer.AppendLine();
         }
 
         if (!genresAdded && genres != null)
         {
-            footer.Append("-# ");
+            footer.Append(prefix);
             footer.AppendLine(genres);
         }
 
@@ -1266,11 +1264,9 @@ public class UserService
                 DiscordUserId = discordUser.Id,
                 UserType = UserType.User,
                 UserNameLastFM = newUserSettings.UserNameLastFM,
-                FmEmbedType = newUserSettings.FmEmbedType,
                 SessionKeyLastFm = newUserSettings.SessionKeyLastFm,
                 DataSource = DataSource.LastFm,
                 PrivacyLevel = PrivacyLevel.Server,
-                FmFooterOptions = FmFooterOption.TotalScrobbles
             };
 
             await db.Users.AddAsync(newUser);
@@ -1294,8 +1290,8 @@ public class UserService
         else
         {
             user.UserNameLastFM = newUserSettings.UserNameLastFM;
-            user.FmEmbedType = newUserSettings.FmEmbedType;
             user.Mode = newUserSettings.Mode;
+            user.WhoKnowsMode = newUserSettings.WhoKnowsMode;
             user.SessionKeyLastFm = newUserSettings.SessionKeyLastFm;
 
             db.Update(user);
@@ -1433,22 +1429,6 @@ public class UserService
         return user.NumberFormat.Value;
     }
 
-    public async Task<User> SetSettings(User userToUpdate, FmEmbedType embedType, FmCountType? countType)
-    {
-        await using var db = await this._contextFactory.CreateDbContextAsync();
-        var user = await db.Users.FirstAsync(f => f.UserId == userToUpdate.UserId);
-
-        user.FmEmbedType = embedType;
-
-        db.Update(user);
-
-        await db.SaveChangesAsync();
-
-        RemoveUserFromCache(userToUpdate);
-
-        return user;
-    }
-
     public async Task<User> SetDataSource(User userToUpdate, DataSource dataSource)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -1468,24 +1448,22 @@ public class UserService
         return user;
     }
 
-    public async Task<User> SetFooterOptions(User userToUpdate, FmFooterOption fmFooterOption)
+    public async Task SetWhoKnowsMode(User userToUpdate, WhoKnowsResponseMode mode)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var user = await db.Users.FirstAsync(f => f.UserId == userToUpdate.UserId);
 
-        user.FmFooterOptions = fmFooterOption;
-        db.Entry(user).State = EntityState.Modified;
+        user.WhoKnowsMode = mode;
 
         db.Update(user);
+        db.Entry(user).State = EntityState.Modified;
 
         await db.SaveChangesAsync();
 
         RemoveUserFromCache(user);
-
-        return user;
     }
 
-    public async Task<User> SetResponseMode(User userToUpdate, ResponseMode mode)
+    public async Task SetTopListMode(User userToUpdate, ResponseMode mode)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var user = await db.Users.FirstAsync(f => f.UserId == userToUpdate.UserId);
@@ -1498,8 +1476,6 @@ public class UserService
         await db.SaveChangesAsync();
 
         RemoveUserFromCache(user);
-
-        return user;
     }
 
     public async Task DeleteUser(int userId)

@@ -348,7 +348,7 @@ public class SupporterService
                 }
                 case 4:
                 {
-                    if (user.FmFooterOptions == FmFooterOption.TotalScrobbles)
+                    if ((user.FmSetting?.FooterOptions ?? FmFooterOption.TotalScrobbles) == FmFooterOption.TotalScrobbles)
                     {
                         message =
                             $"*⚙️ Customize your `{prfx}fm` with the custom footer options. Get started by using `/fmmode`*";
@@ -531,7 +531,7 @@ public class SupporterService
                 }
                 case 4:
                 {
-                    if (user.FmFooterOptions == FmFooterOption.TotalScrobbles)
+                    if ((user.FmSetting?.FooterOptions ?? FmFooterOption.TotalScrobbles) == FmFooterOption.TotalScrobbles)
                     {
                         message =
                             $"*⭐ Customize your `{prfx}fm` with the custom footer options. Get started by using `/fmmode`.*";
@@ -1501,6 +1501,55 @@ public class SupporterService
         }
 
         return false;
+    }
+
+    public async Task ActivateSupporterIfEligible(ulong discordUserId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        var activeSupporter = await db.Supporters
+            .AsQueryable()
+            .FirstOrDefaultAsync(w =>
+                w.DiscordUserId == discordUserId &&
+                (w.SubscriptionType == SubscriptionType.Discord || w.SubscriptionType == SubscriptionType.Stripe) &&
+                w.Expired != true);
+
+        if (activeSupporter == null)
+        {
+            return;
+        }
+
+        var user = await db.Users
+            .AsQueryable()
+            .FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
+
+        if (user == null || user.UserType != UserType.User)
+        {
+            return;
+        }
+
+        user.UserType = UserType.Supporter;
+        db.Update(user);
+        await db.SaveChangesAsync();
+
+        await ModifyGuildRole(discordUserId);
+
+        try
+        {
+            var supporterAuditLogChannel =
+                WebhookService.CreateWebhookClientFromUrl(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
+
+            var embed = new EmbedProperties().WithDescription(
+                $"Activated supporter on login {discordUserId} - <@{discordUserId}>\n" +
+                $"*User had an active subscription, but their .fmbot account didn't have supporter*");
+            await supporterAuditLogChannel.ExecuteAsync(new WebhookMessageProperties { Embeds = [embed] });
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Failed to send supporter activation audit log for {discordUserId}", discordUserId);
+        }
+
+        Log.Information("Activated supporter on login for {discordUserId}", discordUserId);
     }
 
     public async Task CheckIfDiscordSupportersHaveCorrectUserType()

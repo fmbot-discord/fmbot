@@ -10,6 +10,7 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain.Enums;
+using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
 using NetCord;
 using NetCord.Rest;
@@ -22,7 +23,8 @@ public class ArtistInteractions(
     ArtistBuilders artistBuilders,
     SettingService settingService,
     ArtistsService artistsService,
-    InteractiveService interactivity)
+    InteractiveService interactivity,
+    FmSettingService fmSettingService)
     : ComponentInteractionModule<ComponentInteractionContext>
 {
     [ComponentInteraction(InteractionConstants.Artist.Info)]
@@ -85,10 +87,30 @@ public class ArtistInteractions(
     }
 
     [ComponentInteraction(InteractionConstants.Artist.Tracks)]
-    public async Task ArtistTracksAsync(string artistId, string discordUser, string requesterDiscordUser)
+    public async Task ArtistTracksAsync(string artistId, string discordUser, string requesterDiscordUser, string fmFlag = null)
     {
-        await RespondAsync(InteractionCallback.DeferredModifyMessage);
-        await this.Context.DisableInteractionButtons();
+        var isFmContext = fmFlag == "fm";
+
+        var ephemeral = false;
+        if (isFmContext)
+        {
+            var clickingUser = await userService.GetUserSettingsAsync(this.Context.User);
+            var fmSetting = await fmSettingService.GetOrCreateFmSetting(clickingUser.UserId);
+            ephemeral = fmSetting.PrivateButtonResponse != false; // null/true → private
+        }
+
+        if (ephemeral)
+        {
+            await RespondAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
+        }
+        else
+        {
+            await RespondAsync(InteractionCallback.DeferredModifyMessage);
+            if (this.Context.Interaction is ButtonInteraction buttonInteraction && isFmContext)
+            {
+                await this.Context.DisableButtonsAndMenus(buttonInteraction.Data.CustomId);
+            }
+        }
 
         var discordUserId = ulong.Parse(discordUser);
         var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
@@ -103,7 +125,20 @@ public class ArtistInteractions(
         var response = await artistBuilders.ArtistTracksAsync(new ContextModel(this.Context, contextUser, discordContextUser), timeSettings,
             userSettings, artist.Name, false);
 
-        await this.Context.UpdateInteractionEmbed(response, interactivity, false);
+        if (isFmContext && ephemeral)
+        {
+            response.Components = null;
+        }
+
+        if (ephemeral)
+        {
+            await this.Context.SendFollowUpResponse(interactivity, response, userService, ephemeral: true);
+        }
+        else
+        {
+            await this.Context.UpdateInteractionEmbed(response, interactivity, false);
+        }
+
         await this.Context.LogCommandUsedAsync(response, userService);
     }
 
@@ -165,7 +200,7 @@ public class ArtistInteractions(
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var artist = await artistsService.GetArtistForId(int.Parse(artistId));
-        var mode = contextUser.Mode ?? ResponseMode.Embed;
+        var mode = contextUser.WhoKnowsMode.ToResponseMode();
 
         try
         {

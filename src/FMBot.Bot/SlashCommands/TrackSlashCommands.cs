@@ -7,6 +7,7 @@ using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services;
+using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
 using NetCord.Services.ApplicationCommands;
 using NetCord;
@@ -71,7 +72,7 @@ public class TrackSlashCommands(
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
-        mode ??= contextUser.Mode ?? ResponseMode.Embed;
+        mode ??= contextUser.WhoKnowsMode.ToResponseMode();
 
         try
         {
@@ -109,7 +110,7 @@ public class TrackSlashCommands(
 
         var contextUser = await userService.GetUserWithFriendsAsync(this.Context.User);
 
-        mode ??= contextUser.Mode ?? ResponseMode.Embed;
+        mode ??= contextUser.WhoKnowsMode.ToResponseMode();
 
         try
         {
@@ -152,7 +153,7 @@ public class TrackSlashCommands(
             ShowBotters = false,
             AdminView = false,
             NewSearchValue = name,
-            ResponseMode = mode ?? contextUser.Mode ?? ResponseMode.Embed
+            ResponseMode = mode ?? contextUser.WhoKnowsMode.ToResponseMode()
         };
 
         try

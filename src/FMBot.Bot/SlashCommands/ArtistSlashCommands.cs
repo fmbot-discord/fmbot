@@ -9,6 +9,7 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain.Enums;
+using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using NetCord;
@@ -233,7 +234,7 @@ public class ArtistSlashCommands(
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
-        mode ??= contextUser.Mode ?? ResponseMode.Embed;
+        mode ??= contextUser.WhoKnowsMode.ToResponseMode();
 
         try
         {
@@ -269,7 +270,7 @@ public class ArtistSlashCommands(
 
         var contextUser = await userService.GetUserWithFriendsAsync(this.Context.User);
 
-        mode ??= contextUser.Mode ?? ResponseMode.Embed;
+        mode ??= contextUser.WhoKnowsMode.ToResponseMode();
 
         try
         {
@@ -311,7 +312,7 @@ public class ArtistSlashCommands(
             ShowBotters = false,
             AdminView = false,
             NewSearchValue = name,
-            ResponseMode = mode ?? contextUser.Mode ?? ResponseMode.Embed,
+            ResponseMode = mode ?? contextUser.WhoKnowsMode.ToResponseMode(),
             RedirectsEnabled = redirectsEnabled
         };
 

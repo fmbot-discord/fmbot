@@ -12,6 +12,7 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
+using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
 using NetCord.Gateway;
@@ -389,7 +390,7 @@ public class ArtistCommands(
 
             var currentSettings = new WhoKnowsSettings
             {
-                ResponseMode = contextUser.Mode ?? ResponseMode.Embed,
+                ResponseMode = contextUser.WhoKnowsMode.ToResponseMode(),
                 NewSearchValue = artistValues,
                 DisplayRoleFilter = false
             };
@@ -444,7 +445,7 @@ public class ArtistCommands(
                 ShowBotters = false,
                 AdminView = false,
                 NewSearchValue = artistValues,
-                ResponseMode = contextUser.Mode ?? ResponseMode.Embed
+                ResponseMode = contextUser.WhoKnowsMode.ToResponseMode()
             };
 
             var settings =
@@ -489,7 +490,7 @@ public class ArtistCommands(
         {
             var currentSettings = new WhoKnowsSettings
             {
-                ResponseMode = contextUser.Mode ?? ResponseMode.Embed,
+                ResponseMode = contextUser.WhoKnowsMode.ToResponseMode(),
                 NewSearchValue = artistValues
             };
 

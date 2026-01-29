@@ -294,6 +294,7 @@ public class Startup
             .AddSingleton<TrackService>()
             .AddSingleton<UpdateService, UpdateService>()
             .AddSingleton<UserService>()
+            .AddSingleton<FmSettingService>()
             .AddSingleton<YoutubeService>();
 
         // Guild-specific services

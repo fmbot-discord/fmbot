@@ -26,6 +26,7 @@ public class UserCommands(
     IPrefixService prefixService,
     SettingService settingService,
     UserService userService,
+    FmSettingService fmSettingService,
     IOptions<BotSettings> botSettings,
     UserBuilder userBuilder,
     InteractiveService interactivity,
@@ -436,10 +437,20 @@ public class UserCommands(
             var guild = await guildService.GetGuildAsync(this.Context.Guild?.Id);
 
             var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+            contextUser.FmSetting ??= await fmSettingService.GetOrCreateFmSetting(contextUser.UserId);
             var response = UserBuilder.FmMode(new ContextModel(this.Context, prfx, contextUser), guild);
 
             var dmChannel = await this.Context.User.GetDMChannelAsync();
-            await dmChannel.SendMessageAsync(new MessageProperties().AddEmbeds(response.Embed).WithComponents(response.Components?.Any() == true ? [response.Components] : null));
+            if (response.ResponseType == ResponseType.ComponentsV2)
+            {
+                await dmChannel.SendMessageAsync(new MessageProperties()
+                    .WithComponents(response.GetComponentsV2())
+                    .WithFlags(MessageFlags.IsComponentsV2));
+            }
+            else
+            {
+                await dmChannel.SendMessageAsync(new MessageProperties().AddEmbeds(response.Embed).WithComponents(response.Components?.Any() == true ? [response.Components] : null));
+            }
 
             if (this.Context.Guild != null)
             {

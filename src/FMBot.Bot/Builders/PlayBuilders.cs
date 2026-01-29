@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Fergun.Interactive;
@@ -193,6 +194,8 @@ public class PlayBuilder
             ResponseType = ResponseType.Embed,
         };
 
+        var fmSetting = !userSettings.DifferentUser ? context.ContextUser.FmSetting : null;
+
         string sessionKey = null;
         if (!userSettings.DifferentUser && !string.IsNullOrEmpty(context.ContextUser.SessionKeyLastFm))
         {
@@ -281,8 +284,8 @@ public class PlayBuilder
         else
         {
             embedTitle = !userSettings.DifferentUser
-                ? $"[{userSettings.DisplayName}]({LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}) {userSettings.UserType.UserTypeToIcon()}"
-                : $"[{userSettings.DisplayName}]({LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}) {userSettings.UserType.UserTypeToIcon()}, requested by {requesterUserTitle}";
+                ? $"[{userSettings.DisplayName}](<{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}>) {userSettings.UserType.UserTypeToIcon()}"
+                : $"[{userSettings.DisplayName}](<{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}>) {userSettings.UserType.UserTypeToIcon()}, requested by {requesterUserTitle}";
         }
         // var embed = await this._userService.GetTemplateFmAsync(context.ContextUser.UserId, userSettings, currentTrack,
         //     previousTrack, totalPlaycount, guild, guildUsers);
@@ -290,9 +293,23 @@ public class PlayBuilder
         // return response;
 
         var fmText = "";
+        var footerOptions = context.ContextUser.FmSetting?.FooterOptions ?? FmFooterOption.TotalScrobbles;
+        if (!SupporterService.IsSupporter(context.ContextUser.UserType))
+        {
+            foreach (var option in Enum.GetValues<FmFooterOption>())
+            {
+                if (option.GetAttribute<OptionAttribute>()?.SupporterOnly == true)
+                {
+                    footerOptions &= ~option;
+                }
+            }
+        }
+
+        var useSmallText = fmSetting?.SmallTextType != FmTextType.NormalText;
+
         var footerText = await this._userService.GetFooterAsync(
-            context.ContextUser.FmFooterOptions, userSettings, currentTrack, previousTrack, totalPlaycount, context,
-            guild, guildUsers);
+            footerOptions, userSettings, currentTrack, previousTrack, totalPlaycount, context,
+            guild, guildUsers, useSmallText);
 
         if (!userSettings.DifferentUser &&
             !currentTrack.NowPlaying &&
@@ -300,7 +317,27 @@ public class PlayBuilder
             currentTrack.TimePlayed < DateTime.UtcNow.AddHours(-1) &&
             currentTrack.TimePlayed > DateTime.UtcNow.AddDays(-5))
         {
-            footerText.Append($"-# Using Spotify and lagging behind? Check '{context.Prefix}outofsync'");
+            var oosPrefix = useSmallText ? "-# " : "";
+            footerText.Append($"{oosPrefix}Using Spotify and lagging behind? Check '{context.Prefix}outofsync'");
+        }
+
+        List<IActionRowComponentProperties> fmButtonComponents = null;
+        if (!userSettings.DifferentUser && fmSetting?.Buttons != null)
+        {
+            var configuredButtons = fmSetting.Buttons.Value;
+
+            Track dbTrack = null;
+            if (NeedsDbTrack(configuredButtons))
+            {
+                dbTrack = await this._trackService.GetTrackFromDatabase(
+                    currentTrack.ArtistName, currentTrack.TrackName);
+            }
+
+            var isSupporter = SupporterService.IsSupporter(context.ContextUser.UserType);
+            fmButtonComponents = BuildNowPlayingButtons(
+                configuredButtons, currentTrack, dbTrack,
+                userSettings.UserNameLastFm, isSupporter,
+                context.DiscordUser.Id);
         }
 
         switch (embedType)
@@ -311,6 +348,15 @@ public class PlayBuilder
                         .FilterOutMentions();
 
                 response.ResponseType = ResponseType.Text;
+
+                if (fmButtonComponents is { Count: > 0 })
+                {
+                    foreach (var button in fmButtonComponents)
+                    {
+                        response.Components.Add(button);
+                    }
+                }
+
                 break;
             case FmEmbedType.TextMini:
             case FmEmbedType.TextFull:
@@ -342,23 +388,60 @@ public class PlayBuilder
 
                 response.ResponseType = ResponseType.Text;
                 response.Text = fmText;
+
+                if (fmButtonComponents is { Count: > 0 })
+                {
+                    foreach (var button in fmButtonComponents)
+                    {
+                        response.Components.Add(button);
+                    }
+                }
+
                 break;
             case FmEmbedType.EmbedMini:
             case FmEmbedType.EmbedTiny:
             case FmEmbedType.EmbedFull:
                 response.ResponseType = ResponseType.ComponentsV2;
 
-                // Get album cover URL and color for non-Tiny embeds
                 string albumCoverUrl = null;
                 var accentColor = DiscordConstants.LastFmColorRed;
                 if (currentTrack.AlbumName != null && embedType != FmEmbedType.EmbedTiny)
                 {
                     var dbAlbum =
                         await this._albumService.GetAlbumFromDatabase(currentTrack.ArtistName, currentTrack.AlbumName);
-                    albumCoverUrl = dbAlbum?.SpotifyImageUrl ?? currentTrack.AlbumCoverUrl;
+                    albumCoverUrl = dbAlbum != null ? dbAlbum.SpotifyImageUrl ?? dbAlbum.LastfmImageUrl : currentTrack.AlbumCoverUrl;
+
+                    var accentPreference = fmSetting?.AccentColor;
+                    string customColorHex = null;
+                    Color? roleColor = null;
+
+                    if (accentPreference != null && SupporterService.IsSupporter(context.ContextUser.UserType))
+                    {
+                        switch (accentPreference)
+                        {
+                            case FmAccentColor.Custom:
+                                customColorHex = fmSetting.CustomColor;
+                                break;
+                            case FmAccentColor.RoleColor when context.DiscordGuild != null:
+                            {
+                                var guildUser = await context.DiscordGuild.GetUserAsync(context.ContextUser.DiscordUserId);
+                                if (guildUser != null)
+                                {
+                                    roleColor = GetHighestRoleColor(context.DiscordGuild, guildUser);
+                                }
+
+                                break;
+                            }
+                        }
+                    }
+                    else if (accentPreference is FmAccentColor.RoleColor or FmAccentColor.Custom)
+                    {
+                        accentPreference = null;
+                    }
 
                     accentColor = await this._albumService.GetAlbumAccentColorAsync(
-                        albumCoverUrl, dbAlbum?.Id, currentTrack.AlbumName, currentTrack.ArtistName);
+                        albumCoverUrl, dbAlbum?.Id, currentTrack.AlbumName, currentTrack.ArtistName,
+                        accentPreference, customColorHex, roleColor);
 
                     if (albumCoverUrl != null)
                     {
@@ -377,7 +460,6 @@ public class PlayBuilder
                     response.ComponentsContainer.WithAccentColor(accentColor);
                 }
 
-                // Build guild context for footer
                 string guildAlsoPlaying = null;
                 if (guild != null && !userSettings.DifferentUser && embedType != FmEmbedType.EmbedTiny)
                 {
@@ -386,7 +468,11 @@ public class PlayBuilder
                 }
 
                 var miniHeader = new StringBuilder();
-                miniHeader.Append("-# ");
+                if (useSmallText)
+                {
+                    miniHeader.Append("-# ");
+                }
+
                 if (!currentTrack.NowPlaying && currentTrack.TimePlayed.HasValue)
                 {
                     var specifiedDateTime = DateTime.SpecifyKind(currentTrack.TimePlayed.Value, DateTimeKind.Utc);
@@ -401,6 +487,9 @@ public class PlayBuilder
                 miniHeader.Append(embedTitle);
                 miniHeader.AppendLine();
 
+                var singleFmButton = fmButtonComponents is { Count: 1 };
+                string sectionFooterText = null;
+
                 if (embedType == FmEmbedType.EmbedTiny)
                 {
                     // EmbedTiny: Compact layout - no thumbnail, no user header
@@ -408,15 +497,21 @@ public class PlayBuilder
 
                     if (footerText.Length > 0)
                     {
-                        response.ComponentsContainer.WithSeparator();
-                        response.ComponentsContainer.WithTextDisplay(footerText.ToString().TrimEnd());
+                        if (singleFmButton)
+                        {
+                            sectionFooterText = footerText.ToString().TrimEnd();
+                        }
+                        else
+                        {
+                            response.ComponentsContainer.WithSeparator();
+                            response.ComponentsContainer.WithTextDisplay(footerText.ToString().TrimEnd());
+                        }
                     }
                 }
                 else if (embedType == FmEmbedType.EmbedFull)
                 {
                     // EmbedFull: Two tracks with thumbnail on current track
                     var currentTrackText = new StringBuilder();
-                    // currentTrackText.AppendLine(currentTrack.NowPlaying ? "-# *Current:*" : "-# *Last:*");
                     currentTrackText.Append(StringService.TrackToLinkedString(currentTrack, context.ContextUser.RymEnabled, true));
 
                     if (!string.IsNullOrEmpty(albumCoverUrl))
@@ -443,8 +538,6 @@ public class PlayBuilder
                     // Footer
                     if (footerText.Length > 0 || guildAlsoPlaying != null)
                     {
-                        response.ComponentsContainer.WithSeparator();
-
                         var fullFooterText = new StringBuilder();
                         if (footerText.Length > 0)
                         {
@@ -454,10 +547,19 @@ public class PlayBuilder
                         if (guildAlsoPlaying != null)
                         {
                             if (fullFooterText.Length > 0) fullFooterText.AppendLine();
-                            fullFooterText.Append($"-# {guildAlsoPlaying}");
+                            var gapPrefix = useSmallText ? "-# " : "";
+                            fullFooterText.Append($"{gapPrefix}{guildAlsoPlaying}");
                         }
 
-                        response.ComponentsContainer.WithTextDisplay(fullFooterText.ToString());
+                        if (singleFmButton)
+                        {
+                            sectionFooterText = fullFooterText.ToString();
+                        }
+                        else
+                        {
+                            response.ComponentsContainer.WithSeparator();
+                            response.ComponentsContainer.WithTextDisplay(fullFooterText.ToString());
+                        }
                     }
                 }
                 else
@@ -479,7 +581,6 @@ public class PlayBuilder
                     // Footer
                     if (footerText.Length > 0 || guildAlsoPlaying != null)
                     {
-                        // response.ComponentsContainer.WithSeparator();
                         var miniFooterText = new StringBuilder();
                         if (footerText.Length > 0)
                         {
@@ -489,11 +590,51 @@ public class PlayBuilder
                         if (guildAlsoPlaying != null)
                         {
                             if (miniFooterText.Length > 0) miniFooterText.AppendLine();
-                            miniFooterText.Append($"-# {guildAlsoPlaying}");
+                            var gapPrefix = useSmallText ? "-# " : "";
+                            miniFooterText.Append($"{gapPrefix}{guildAlsoPlaying}");
                         }
 
-                        response.ComponentsContainer.WithTextDisplay(miniFooterText.ToString());
+                        if (singleFmButton)
+                        {
+                            sectionFooterText = miniFooterText.ToString();
+                        }
+                        else
+                        {
+                            // response.ComponentsContainer.WithSeparator();
+                            response.ComponentsContainer.WithTextDisplay(miniFooterText.ToString());
+                        }
                     }
+                }
+
+                if (singleFmButton)
+                {
+                    var sectionButton = fmButtonComponents[0] switch
+                    {
+                        ButtonProperties bp => new ComponentSectionProperties(bp)
+                        {
+                            Components = [new TextDisplayProperties(sectionFooterText ?? "-# \u200B")]
+                        },
+                        LinkButtonProperties lbp => new ComponentSectionProperties(lbp)
+                        {
+                            Components = [new TextDisplayProperties(sectionFooterText ?? "-# \u200B")]
+                        },
+                        _ => null
+                    };
+
+                    if (sectionButton != null)
+                    {
+                        response.ComponentsContainer.AddComponent(sectionButton);
+                    }
+                }
+                else if (fmButtonComponents is { Count: > 1 })
+                {
+                    var actionRow = new ActionRowProperties();
+                    foreach (var button in fmButtonComponents)
+                    {
+                        actionRow.Add(button);
+                    }
+
+                    response.ComponentsContainer.WithActionRow(actionRow);
                 }
 
                 break;
@@ -510,6 +651,171 @@ public class PlayBuilder
         }
 
         return response;
+    }
+
+    private static bool NeedsDbTrack(FmButton buttons)
+    {
+        foreach (FmButton flag in Enum.GetValues(typeof(FmButton)))
+        {
+            if ((buttons & flag) == 0)
+            {
+                continue;
+            }
+
+            var attr = typeof(FmButton).GetField(flag.ToString())
+                ?.GetCustomAttribute<FmButtonAttribute>();
+            if (attr is { RequiresDbTrack: true })
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static Color? GetHighestRoleColor(NetCord.Gateway.Guild guild, NetCord.GuildUser guildUser)
+    {
+        Color? result = null;
+        var highestPosition = -1;
+
+        foreach (var roleId in guildUser.RoleIds)
+        {
+            if (!guild.Roles.TryGetValue(roleId, out var role))
+            {
+                continue;
+            }
+
+            if (role.Color.RawValue != 0 && role.Position > highestPosition)
+            {
+                highestPosition = role.Position;
+                result = role.Color;
+            }
+        }
+
+        return result;
+    }
+
+    private static List<IActionRowComponentProperties> BuildNowPlayingButtons(
+        FmButton buttons,
+        RecentTrack currentTrack,
+        Track dbTrack,
+        string userNameLastFm,
+        bool isSupporter,
+        ulong discordUserId)
+    {
+        var result = new List<IActionRowComponentProperties>();
+
+        foreach (FmButton flag in Enum.GetValues(typeof(FmButton)))
+        {
+            if ((buttons & flag) == 0)
+            {
+                continue;
+            }
+
+            var fieldInfo = typeof(FmButton).GetField(flag.ToString());
+            var attr = fieldInfo?.GetCustomAttribute<FmButtonAttribute>();
+            if (attr == null)
+            {
+                continue;
+            }
+
+            // Skip placeholder entries (no emoji configured)
+            if (attr.CustomEmojiId is null or 0 && attr.StandardEmoji == null)
+            {
+                continue;
+            }
+
+            // Skip supporter-only buttons for non-supporters
+            var optionAttr = fieldInfo.GetCustomAttribute<OptionAttribute>();
+            if (optionAttr is { SupporterOnly: true } && !isSupporter)
+            {
+                continue;
+            }
+
+            // Skip buttons that need a DB track if we don't have one
+            if (attr.RequiresDbTrack && dbTrack == null)
+            {
+                continue;
+            }
+
+            var emoji = attr.CustomEmojiId.HasValue
+                ? EmojiProperties.Custom(attr.CustomEmojiId.Value)
+                : EmojiProperties.Standard(attr.StandardEmoji);
+
+            if (attr.CustomId != null)
+            {
+                // Build custom ID based on button type
+                string customId;
+                switch (flag)
+                {
+                    case FmButton.AlbumCover:
+                        if (dbTrack?.AlbumId == null) continue;
+                        customId = $"{attr.CustomId}:{dbTrack.AlbumId}:{discordUserId}:{discordUserId}:still";
+                        break;
+                    case FmButton.AlbumTracks:
+                        if (dbTrack?.AlbumId == null) continue;
+                        customId = $"{attr.CustomId}:{dbTrack.AlbumId}:{discordUserId}:{discordUserId}";
+                        break;
+                    case FmButton.ArtistTracks:
+                        if (dbTrack?.ArtistId == null) continue;
+                        customId = $"{attr.CustomId}:{dbTrack.ArtistId}:{discordUserId}:{discordUserId}";
+                        break;
+                    default:
+                        customId = $"{attr.CustomId}:{dbTrack!.Id}";
+                        break;
+                }
+
+                // Skip preview button if no preview URL available
+                if (flag == FmButton.TrackPreview &&
+                    string.IsNullOrEmpty(dbTrack.SpotifyPreviewUrl) &&
+                    string.IsNullOrEmpty(dbTrack.AppleMusicPreviewUrl))
+                {
+                    continue;
+                }
+
+                // Skip lyrics button if no lyrics available
+                if (flag == FmButton.TrackLyrics &&
+                    string.IsNullOrWhiteSpace(dbTrack.PlainLyrics))
+                {
+                    continue;
+                }
+
+                if (flag is FmButton.TrackPreview or FmButton.TrackLyrics
+                    or FmButton.AlbumCover or FmButton.AlbumTracks or FmButton.ArtistTracks)
+                {
+                    customId += ":fm";
+                }
+
+                result.Add(new ButtonProperties(customId, emoji, ButtonStyle.Secondary));
+            }
+            else
+            {
+                // Link button - build URL based on flag
+                var url = flag switch
+                {
+                    FmButton.LastFmTrackLink => currentTrack.TrackUrl ?? LastfmUrlExtensions.GetTrackUrl(currentTrack.ArtistName, currentTrack.TrackName),
+                    FmButton.LastFmAlbumLink => LastfmUrlExtensions.GetAlbumUrl(currentTrack.ArtistName, currentTrack.AlbumName),
+                    FmButton.LastFmArtistLink => LastfmUrlExtensions.GetArtistUrl(currentTrack.ArtistName),
+                    FmButton.LastFmUserLibraryLink => LastfmUrlExtensions.GetUserMusicLibraryUrl(userNameLastFm, currentTrack.ArtistName,
+                        trackName: currentTrack.TrackName),
+                    FmButton.SpotifyLink => dbTrack?.SpotifyId != null ? $"https://open.spotify.com/track/{dbTrack.SpotifyId}" : null,
+                    FmButton.AppleMusicLink => dbTrack?.AppleMusicUrl,
+                    FmButton.RymLink => currentTrack.AlbumName != null
+                        ? StringExtensions.GetRymUrl(currentTrack.AlbumName, currentTrack.ArtistName)
+                        : null,
+                    _ => null
+                };
+
+                if (string.IsNullOrEmpty(url))
+                {
+                    continue;
+                }
+
+                result.Add(new LinkButtonProperties(url, emoji));
+            }
+        }
+
+        return result;
     }
 
     public async Task<ResponseModel> RecentAsync(

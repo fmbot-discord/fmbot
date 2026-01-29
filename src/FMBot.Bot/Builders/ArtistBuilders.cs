@@ -630,11 +630,11 @@ public class ArtistBuilders
                 style: ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.Info));
 
         components.WithButton("All top tracks",
-            $"{InteractionConstants.Artist.Tracks}:{fullArtist.Id}:{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}",
+            $"{InteractionConstants.Artist.Tracks}:{fullArtist.Id}:{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}:",
             style: ButtonStyle.Secondary, disabled: !artistTracksButton, emote: EmojiProperties.Standard("🎶"));
 
         components.WithButton("All top albums",
-            $"{InteractionConstants.Artist.Albums}:{fullArtist.Id}:{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}",
+            $"{InteractionConstants.Artist.Albums}:{fullArtist.Id}:{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}:",
             style: ButtonStyle.Secondary, disabled: !artistAlbumsButton, emote: EmojiProperties.Standard("💽"));
 
         response.Components = components;

@@ -129,7 +129,7 @@ public class PlaySlashCommands(
 
             var response =
                 await playBuilder.NowPlayingAsync(new ContextModel(this.Context, contextUser), userSettings,
-                    embedType ?? contextUser.FmEmbedType);
+                    embedType ?? contextUser.FmSetting?.EmbedType ?? FmEmbedType.EmbedMini);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);

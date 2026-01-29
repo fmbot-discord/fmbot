@@ -8,7 +8,7 @@ public enum UserSetting
     Privacy = 2,
     [Option("Change your .fm", "Customize your .fm command")]
     FmMode = 3,
-    [Option("WhoKnows mode", "Set the default WhoKnows and top list response type")]
+    [Option("WhoKnows mode", "Set your default WhoKnows and top list response modes")]
     WkMode = 4,
     [Option("Out of sync", "Info on what to do when Spotify and Last.fm are out of sync")]
     OutOfSync = 6,

@@ -497,7 +497,21 @@ public static class ModalFactory
             ]
         };
 
-    // Streak Modals
+    public static ModalProperties CreateCustomColorModal(string customId) =>
+        new(customId, "Set custom accent color")
+        {
+            Components =
+            [
+                new LabelProperties("Hex color (e.g. #FF5733)",
+                    new TextInputProperties("hex_color", TextInputStyle.Short)
+                {
+                    Placeholder = "#FF5733",
+                    MinLength = 4,
+                    MaxLength = 7
+                })
+            ]
+        };
+
     public static ModalProperties CreateDeleteStreakModal(string customId) =>
         new(customId, "Enter Streak ID to delete")
         {

@@ -61,10 +61,10 @@ public enum FmFooterOption : long
     [Option("Global track rank", "Your Global WhoKnows rank for this track")]
     GlobalTrackRank = 1 << 21,
 
-    [Option("Artist discovery date", "Date you first listened to an artist", true)]
+    [Option("⭐ Artist discovery date", "Date you first listened to an artist", true)]
     FirstArtistListen = 1 << 22,
-    [Option("Album discovery date", "Date you first listened to an album", true)]
+    [Option("⭐ Album discovery date", "Date you first listened to an album", true)]
     FirstAlbumListen = 1 << 23,
-    [Option("Track discovery date", "Date you first listened to a track", true)]
+    [Option("⭐ Track discovery date", "Date you first listened to a track", true)]
     FirstTrackListen = 1 << 24
 }

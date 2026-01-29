@@ -9,6 +9,7 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
+using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
@@ -301,7 +302,7 @@ public class TrackCommands(
         {
             var currentSettings = new WhoKnowsSettings
             {
-                ResponseMode = contextUser.Mode ?? ResponseMode.Embed,
+                ResponseMode = contextUser.WhoKnowsMode.ToResponseMode(),
                 NewSearchValue = trackValues,
                 DisplayRoleFilter = false
             };
@@ -336,7 +337,7 @@ public class TrackCommands(
 
         var currentSettings = new WhoKnowsSettings
         {
-            ResponseMode = contextUser.Mode ?? ResponseMode.Embed,
+            ResponseMode = contextUser.WhoKnowsMode.ToResponseMode(),
             HidePrivateUsers = false,
             ShowBotters = false,
             AdminView = false,
@@ -383,7 +384,7 @@ public class TrackCommands(
 
         var currentSettings = new WhoKnowsSettings
         {
-            ResponseMode = contextUser.Mode ?? ResponseMode.Embed,
+            ResponseMode = contextUser.WhoKnowsMode.ToResponseMode(),
             HidePrivateUsers = false,
             NewSearchValue = trackValues
         };

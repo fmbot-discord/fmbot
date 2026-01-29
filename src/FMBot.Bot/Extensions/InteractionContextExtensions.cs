@@ -577,70 +577,19 @@ public static class InteractionContextExtensions
     }
 
 
+
+
     extension(IInteractionContext context)
     {
-        public async Task DisableActionRows(bool interactionEdit = false,
-            string specificButtonOnly = null)
+        public async Task DisableButtonsAndMenus(string specificButtonOnly = null)
         {
             var message = (context.Interaction as MessageComponentInteraction)?.Message;
-
             if (message == null)
-            {
                 return;
-            }
 
-            var newComponents = new List<IMessageComponentProperties>();
-            foreach (var component in message.Components)
-            {
-                if (component is ActionRow actionRow)
-                {
-                    var newRow = new ActionRowProperties();
-                    foreach (var rowComponent in actionRow.Components)
-                    {
-                        if (rowComponent is Button button)
-                        {
-                            var shouldDisable = specificButtonOnly == null || button.CustomId == specificButtonOnly;
-                            newRow.AddComponents(new ButtonProperties(button.CustomId, button.Label, button.Style)
-                            {
-                                Emoji = ToEmojiProperties(button.Emoji),
-                                Disabled = shouldDisable
-                            });
-                        }
-                        else if (rowComponent is LinkButton linkButton)
-                        {
-                            newRow.AddComponents(new LinkButtonProperties(linkButton.Url, linkButton.Label)
-                            {
-                                Emoji = ToEmojiProperties(linkButton.Emoji),
-                                Disabled = specificButtonOnly == null
-                            });
-                        }
-                    }
+            var newComponents = message.Components.WithDisabled(specificButtonOnly);
 
-                    if (newRow.Any())
-                    {
-                        newComponents.Add(newRow);
-                    }
-                }
-                else if (component is StringMenu stringMenu)
-                {
-                    // In NetCord, select menus are added directly as top-level components
-                    newComponents.Add(new StringMenuProperties(stringMenu.CustomId, stringMenu.Options.Select(o =>
-                        new StringMenuSelectOptionProperties(o.Label, o.Value)
-                        {
-                            Description = o.Description,
-                            Emoji = ToEmojiProperties(o.Emoji),
-                            Default = o.Default
-                        }))
-                    {
-                        Placeholder = stringMenu.Placeholder,
-                        MinValues = stringMenu.MinValues,
-                        MaxValues = stringMenu.MaxValues,
-                        Disabled = true
-                    });
-                }
-            }
-
-            await context.ModifyComponentsList(message, newComponents, interactionEdit);
+            await context.Interaction.ModifyResponseAsync(m => m.Components = newComponents);
         }
 
         public async Task DisableInteractionButtons(bool interactionEdit = false,
@@ -842,7 +791,7 @@ public static class InteractionContextExtensions
                 {
                     new(response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName, response.Stream)
                 }
-                : null;
+                : [];
 
             var isUserInstalledApp =
                 context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&

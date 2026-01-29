@@ -465,11 +465,39 @@ public class AlbumService
         return await connection.QueryFirstOrDefaultAsync<string>(sql, new { albumId });
     }
 
-    public async Task<Color> GetAlbumAccentColorAsync(string albumCoverUrl, int? albumId, string albumName, string artistName)
+    public async Task<Color> GetAlbumAccentColorAsync(string albumCoverUrl, int? albumId, string albumName, string artistName,
+        FmAccentColor? preference = null, string customColorHex = null, Color? roleColor = null)
     {
+        switch (preference)
+        {
+            case FmAccentColor.LastFmRed:
+                return DiscordConstants.LastFmColorRed;
+            case FmAccentColor.RoleColor when roleColor.HasValue:
+                return roleColor.Value;
+            case FmAccentColor.Custom when !string.IsNullOrEmpty(customColorHex)
+                && int.TryParse(customColorHex.TrimStart('#'), NumberStyles.HexNumber, null, out var customRgb):
+                return new Color(customRgb);
+            case FmAccentColor.CoverColor:
+            case FmAccentColor.AppleMusicBackgroundColor:
+            case null:
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(preference), preference, null);
+        }
+
         if (string.IsNullOrEmpty(albumName) || string.IsNullOrEmpty(artistName))
         {
             return DiscordConstants.LastFmColorRed;
+        }
+
+        if (preference == FmAccentColor.AppleMusicBackgroundColor && albumId.HasValue)
+        {
+            var bgColor = await GetAlbumColorAsync(albumId.Value);
+            if (!string.IsNullOrEmpty(bgColor) &&
+                int.TryParse(bgColor, NumberStyles.HexNumber, null, out var bgRgb))
+            {
+                return new Color(bgRgb);
+            }
         }
 
         var cachePath = ChartService.AlbumUrlToCacheFilePath(albumName, artistName);
@@ -493,7 +521,11 @@ public class AlbumService
             }
         }
 
-        if (!string.IsNullOrEmpty(albumCoverUrl))
+        if (string.IsNullOrEmpty(albumCoverUrl))
+        {
+            return DiscordConstants.LastFmColorRed;
+        }
+
         {
             try
             {
@@ -532,11 +564,10 @@ public class AlbumService
             }
         }
 
-        // Default
         return DiscordConstants.LastFmColorRed;
     }
 
-    public AlbumInfo CachedAlbumToAlbumInfo(Album album)
+    private static AlbumInfo CachedAlbumToAlbumInfo(Album album)
     {
         return new AlbumInfo
         {

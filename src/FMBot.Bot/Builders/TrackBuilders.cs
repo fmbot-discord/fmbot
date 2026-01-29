@@ -295,7 +295,7 @@ public class TrackBuilders
         {
             response.Components.WithButton(
                     "Preview",
-                    $"{InteractionConstants.TrackPreview}:{dbTrack.Id}",
+                    $"{InteractionConstants.TrackPreview}:{dbTrack.Id}:",
                     style: ButtonStyle.Secondary,
                     emote: EmojiProperties.Custom(DiscordConstants.PlayPreview));
         }
@@ -305,7 +305,7 @@ public class TrackBuilders
         {
             response.Components.WithButton(
                 "Lyrics",
-                $"{InteractionConstants.TrackLyrics}:{dbTrack.Id}",
+                $"{InteractionConstants.TrackLyrics}:{dbTrack.Id}:",
                 style: ButtonStyle.Secondary,
                 emote: EmojiProperties.Standard("🎤"));
         }
@@ -854,7 +854,7 @@ public class TrackBuilders
             response.Components = new ActionRowProperties()
                 .WithButton(
                     "Preview",
-                    $"{InteractionConstants.TrackPreview}:{spotifyTrack.Id}",
+                    $"{InteractionConstants.TrackPreview}:{spotifyTrack.Id}:",
                     style: ButtonStyle.Secondary,
                     emote: EmojiProperties.Custom(DiscordConstants.PlayPreview));
         }
@@ -862,8 +862,7 @@ public class TrackBuilders
         return response;
     }
 
-    public async Task<ResponseModel> TrackPreviewAsync(
-        ContextModel context,
+    public async Task<ResponseModel> TrackPreviewAsync(ContextModel context,
         string searchValue,
         string interactionToken)
     {

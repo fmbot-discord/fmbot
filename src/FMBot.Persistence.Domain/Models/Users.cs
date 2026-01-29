@@ -37,7 +37,7 @@ public class User
 
     public ResponseMode? Mode { get; set; }
 
-    // public WhoKnowsResponseMode? WhoKnowsMode { get; set; }
+    public WhoKnowsResponseMode? WhoKnowsMode { get; set; }
 
     public PrivacyLevel PrivacyLevel { get; set; }
 
@@ -57,6 +57,9 @@ public class User
     public NumberFormat? NumberFormat { get; set; }
 
     public UserDiscogs UserDiscogs { get; set; }
+
+    public UserFmSetting FmSetting { get; set; }
+
     public ICollection<UserDiscogsReleases> DiscogsReleases { get; set; }
 
     public ICollection<Friend> FriendedByUsers { get; set; }

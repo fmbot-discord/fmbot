@@ -54,6 +54,9 @@ public static class Constants
     public const int MaxFooterOptions = 4;
     public const int MaxFooterOptionsSupporter = 10;
 
+    public const int MaxButtons = 1;
+    public const int MaxButtonsSupporter = 5;
+
     public const int StreakSaveThreshold = 25;
 
     public const int NonSupporterMaxSavedPlays = 15000;

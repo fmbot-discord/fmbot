@@ -256,7 +256,7 @@ public class UserBuilder
         response.Embed.WithColor(DiscordConstants.LastFmColorRed);
         response.Embed.WithDescription(reply.ToString());
         response.Components = new ActionRowProperties()
-            .WithButton("Connect Last.fm account to .fmbot",  url: link);
+            .WithButton("Connect Last.fm account to .fmbot", url: link);
         return response;
     }
 
@@ -384,54 +384,197 @@ public class UserBuilder
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed,
+            ResponseType = ResponseType.ComponentsV2,
         };
+
+        var isSupporter = context.ContextUser.UserType != UserType.User;
+        var fmSetting = context.ContextUser.FmSetting;
+
+        var container = response.ComponentsContainer;
+        container.WithAccentColor(DiscordConstants.InformationColorBlue);
+
+        var description = new StringBuilder();
+        description.AppendLine("## Customizing your `fm`");
+
+        container.WithTextDisplay(description.ToString());
+
+        container.WithSeparator();
+        container.WithTextDisplay("**Embed type**");
 
         var fmType = new StringMenuProperties(InteractionConstants.FmCommand.FmSettingType)
             .WithPlaceholder("Select embed type")
             .WithMinValues(1)
             .WithMaxValues(1);
 
-        foreach (var option in ((FmEmbedType[])Enum.GetValues(typeof(FmEmbedType))).OrderBy(o =>
+        foreach (var option in Enum.GetValues<FmEmbedType>().OrderBy(o =>
                      o.GetAttribute<OptionOrderAttribute>().Order))
         {
             var name = option.GetAttribute<OptionAttribute>().Name;
-            var description = option.GetAttribute<OptionAttribute>().Description;
+            var optionDescription = option.GetAttribute<OptionAttribute>().Description;
             var value = Enum.GetName(option);
 
-            var active = option == context.ContextUser.FmEmbedType;
+            var active = option == fmSetting?.EmbedType;
 
             fmType.AddOption(new StringMenuSelectOptionProperties(name, value)
             {
-                Description = description,
+                Description = optionDescription,
                 Default = active
             });
         }
 
-        var maxOptions = context.ContextUser.UserType == UserType.User
-            ? Constants.MaxFooterOptions
-            : Constants.MaxFooterOptionsSupporter;
+        container.AddComponents(fmType);
+
+        container.WithSeparator();
+
+        if (fmSetting?.AccentColor == FmAccentColor.Custom &&
+            SupporterService.IsSupporter(context.ContextUser.UserType) &&
+            !string.IsNullOrWhiteSpace(fmSetting.CustomColor) &&
+            int.TryParse(fmSetting.CustomColor.TrimStart('#'), NumberStyles.HexNumber, null, out var customRgb))
+        {
+            container.AccentColor = new Color(customRgb);
+            container.WithTextDisplay($"**Embed color** — Currently `{fmSetting.CustomColor.FilterOutMentions()}`");
+        }
+        else
+        {
+            container.WithTextDisplay("**Embed color**");
+        }
+
+
+        var accentColorMenu = new StringMenuProperties(InteractionConstants.FmCommand.FmSettingAccentColor)
+            .WithPlaceholder("Select accent color")
+            .WithMinValues(1)
+            .WithMaxValues(1);
+
+        foreach (var option in Enum.GetValues<FmAccentColor>())
+        {
+            var name = option.GetAttribute<OptionAttribute>().Name;
+            var optionDescription = option.GetAttribute<OptionAttribute>().Description;
+            var value = Enum.GetName(option);
+            var active = fmSetting?.AccentColor == option;
+            accentColorMenu.AddOption(new StringMenuSelectOptionProperties(name, value)
+            {
+                Description = optionDescription,
+                Default = active
+            });
+        }
+
+        container.AddComponents(accentColorMenu);
+
+        container.WithSeparator();
+        container.WithTextDisplay("**Adjust small text type**");
+
+        var textTypeMenu = new StringMenuProperties(InteractionConstants.FmCommand.FmSettingTextType)
+            .WithPlaceholder("Select text size")
+            .WithMinValues(1)
+            .WithMaxValues(1);
+
+        foreach (var option in Enum.GetValues<FmTextType>())
+        {
+            var value = Enum.GetName(option);
+            var name = option switch
+            {
+                FmTextType.SmallText => "Small text",
+                FmTextType.NormalText => "Normal text",
+                _ => value
+            };
+
+            var active = fmSetting?.SmallTextType == option;
+
+            textTypeMenu.AddOption(new StringMenuSelectOptionProperties(name, value)
+            {
+                Default = active
+            });
+        }
+
+        container.AddComponents(textTypeMenu);
+
+        container.WithSeparator();
+
+        var maxButtons = isSupporter ? Constants.MaxButtonsSupporter : Constants.MaxButtons;
+        container.WithTextDisplay($"**Buttons** (up to {maxButtons})");
+
+        var buttonsMenu = new StringMenuProperties(InteractionConstants.FmCommand.FmSettingButtons)
+            .WithPlaceholder("Select buttons")
+            .WithMinValues(0)
+            .WithMaxValues(maxButtons);
+
+        foreach (var option in Enum.GetValues<FmButton>())
+        {
+            var name = option.GetAttribute<OptionAttribute>().Name;
+            var optionDescription = option.GetAttribute<OptionAttribute>().Description;
+            var value = Enum.GetName(option);
+
+            var active = fmSetting?.Buttons?.HasFlag(option) == true;
+
+            buttonsMenu.AddOption(new StringMenuSelectOptionProperties(name, value)
+            {
+                Description = optionDescription,
+                Default = active
+            });
+        }
+
+        container.AddComponents(buttonsMenu);
+
+        container.WithSeparator();
+
+        if (fmSetting?.PrivateButtonResponse != null)
+        {
+            container.WithTextDisplay("**Private button responses** — de-select to let .fmbot decide");
+        }
+        else
+        {
+            container.WithTextDisplay("**Private button responses**");
+        }
+
+        var privateButtonsMenu = new StringMenuProperties(InteractionConstants.FmCommand.FmSettingPrivateButtons)
+            .WithPlaceholder("Select button response visibility")
+            .WithMinValues(0)
+            .WithMaxValues(1);
+
+        var isPrivate = fmSetting?.PrivateButtonResponse == true;
+
+        privateButtonsMenu.AddOption(new StringMenuSelectOptionProperties("Yes - ephemeral", "true")
+        {
+            Description = "Button responses are only visible to you",
+            Default = fmSetting?.PrivateButtonResponse == true
+        });
+        privateButtonsMenu.AddOption(new StringMenuSelectOptionProperties("No - visible", "false")
+        {
+            Description = "Button responses are visible to everyone",
+            Default = fmSetting?.PrivateButtonResponse == false
+        });
+
+        container.AddComponents(privateButtonsMenu);
+
+        container.WithSeparator();
+
+        var maxFooterOptions = isSupporter
+            ? Constants.MaxFooterOptionsSupporter
+            : Constants.MaxFooterOptions;
+
+        container.WithTextDisplay($"**Footer options** (up to {maxFooterOptions})");
 
         var fmOptions = new StringMenuProperties(InteractionConstants.FmCommand.FmSettingFooter)
             .WithPlaceholder("Select footer options")
             .WithMinValues(0)
-            .WithMaxValues(maxOptions);
+            .WithMaxValues(maxFooterOptions);
 
         var fmSupporterOptions = new StringMenuProperties(InteractionConstants.FmCommand.FmSettingFooterSupporter)
             .WithPlaceholder("Select supporter-exclusive footer option")
+            .WithDisabled(!isSupporter)
             .WithMinValues(0)
             .WithMaxValues(1);
 
-        foreach (var option in ((FmFooterOption[])Enum.GetValues(typeof(FmFooterOption))))
+        foreach (var option in Enum.GetValues<FmFooterOption>())
         {
             var name = option.GetAttribute<OptionAttribute>().Name;
-            var description = option.GetAttribute<OptionAttribute>().Description;
+            var optionDescription = option.GetAttribute<OptionAttribute>().Description;
             var supporterOnly = option.GetAttribute<OptionAttribute>().SupporterOnly;
             var value = Enum.GetName(option);
 
-            var active = context.ContextUser.FmFooterOptions.HasFlag(option);
+            var active = fmSetting?.FooterOptions.HasFlag(option) == true;
 
-            if (fmOptions.Options.Count(c => c.Default == true) >= maxOptions)
+            if (fmOptions.Options.Count(c => c.Default) >= maxFooterOptions)
             {
                 active = false;
             }
@@ -440,7 +583,7 @@ public class UserBuilder
             {
                 fmOptions.AddOption(new StringMenuSelectOptionProperties(name, value)
                 {
-                    Description = description,
+                    Description = optionDescription,
                     Default = active
                 });
             }
@@ -448,57 +591,39 @@ public class UserBuilder
             {
                 fmSupporterOptions.AddOption(new StringMenuSelectOptionProperties(name, value)
                 {
-                    Description = description,
+                    Description = optionDescription,
                     Default = active
                 });
             }
         }
 
-        response.StringMenus.Add(fmType);
-        response.StringMenus.Add(fmOptions);
+        container.AddComponents(fmOptions);
+        container.AddComponents(fmSupporterOptions);
 
-        if (context.ContextUser.UserType != UserType.User)
-        {
-            response.StringMenus.Add(fmSupporterOptions);
-        }
-
-        response.Embed.WithAuthor("Configuring your 'fm' command");
-        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
-
-        var embedDescription = new StringBuilder();
-
-        embedDescription.AppendLine("Use the dropdowns below to configure how your `fm` command looks.");
-        embedDescription.AppendLine();
-
-        embedDescription.Append(
-            $"The first dropdown allows you to select a mode, while the second allows you to select up to {maxOptions} options that will be displayed in the footer. ");
-        if (context.ContextUser.UserType != UserType.User)
-        {
-            embedDescription.Append($"The third dropdown lets you select 1 supporter-exclusive option.");
-        }
-
-        embedDescription.AppendLine();
-
-        embedDescription.AppendLine();
-        embedDescription.Append(
-            $"Some options might not always show up on every track, for example when no source data is available. ");
-
-        if (context.ContextUser.UserType == UserType.User)
-        {
-            embedDescription.Append(
-                $"[.fmbot supporters]({Constants.GetSupporterDiscordLink}) can select up to {Constants.MaxFooterOptionsSupporter} options.");
-        }
 
         if (guild?.FmEmbedType != null)
         {
-            embedDescription.AppendLine();
-            embedDescription.AppendLine(
-                $"Note that servers can force a specific mode which will override your own mode. ");
-            embedDescription.AppendLine(
-                $"This server has the **{guild.FmEmbedType}** mode set for everyone, which means your own setting will not apply here.");
+            container.WithSeparator();
+            container.WithTextDisplay(
+                $"⚠ This server has the **{guild.FmEmbedType}** mode set for everyone, which means your embed type setting will not apply here.");
         }
 
-        response.Embed.WithDescription(embedDescription.ToString());
+        if (!isSupporter)
+        {
+            var getSupporter = new ComponentSectionProperties(new ButtonProperties(
+                InteractionConstants.SupporterLinks.GeneratePurchaseButtons(true, false,
+                    false, source: "fmmode"),
+                "Get .fmbot supporter", ButtonStyle.Primary))
+            {
+                Components =
+                [
+                    new TextDisplayProperties(
+                        "⭐ Pick more and exclusive buttons, more footer options, custom colors and personal emote reactions with .fmbot supporter")
+                ]
+            };
+            container.WithSeparator();
+            container.AddComponents(getSupporter);
+        }
 
         return response;
     }
@@ -507,37 +632,57 @@ public class UserBuilder
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed,
+            ResponseType = ResponseType.ComponentsV2,
         };
 
-        response.Embed.WithAuthor("Configuring your default WhoKnows and top list mode");
-        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+        var container = response.ComponentsContainer;
+        container.WithAccentColor(DiscordConstants.InformationColorBlue);
 
-        var fmType = new StringMenuProperties(InteractionConstants.ResponseModeSetting)
-            .WithPlaceholder("Select response mode")
+        container.WithTextDisplay("## Configuring your default response modes");
+
+        container.WithSeparator();
+        container.WithTextDisplay("**WhoKnows mode**");
+
+        var wkMenu = new StringMenuProperties(InteractionConstants.WhoKnowsModeSetting)
+            .WithPlaceholder("Select WhoKnows mode")
             .WithMinValues(1)
             .WithMaxValues(1);
 
-        foreach (var name in Enum.GetNames(typeof(ResponseMode)).OrderBy(o => o))
+        foreach (var name in Enum.GetNames<WhoKnowsResponseMode>().OrderBy(o => o))
         {
-            var picked = context.SlashCommand && context.ContextUser.Mode.HasValue &&
-                         Enum.GetName(context.ContextUser.Mode.Value) == name;
+            var picked = context.SlashCommand && context.ContextUser.WhoKnowsMode.HasValue &&
+                         Enum.GetName(context.ContextUser.WhoKnowsMode.Value) == name;
 
-            fmType.AddOption(new StringMenuSelectOptionProperties(name, name)
+            wkMenu.AddOption(new StringMenuSelectOptionProperties(name, name)
             {
                 Default = picked
             });
         }
 
-        response.StringMenus.Add(fmType);
+        container.AddComponents(wkMenu);
 
-        var description = new StringBuilder();
+        container.WithSeparator();
+        container.WithTextDisplay("**Top list mode**");
 
-        description.AppendLine("You can also override this when using a command:");
-        description.AppendLine("- `image` / `img`");
-        description.AppendLine("- `embed`");
+        var topListMenu = new StringMenuProperties(InteractionConstants.TopListModeSetting)
+            .WithPlaceholder("Select top list mode")
+            .WithMinValues(1)
+            .WithMaxValues(1);
 
-        response.Embed.WithDescription(description.ToString());
+        foreach (var name in Enum.GetNames<ResponseMode>().OrderBy(o => o))
+        {
+            var picked = context.SlashCommand && context.ContextUser.Mode.HasValue &&
+                         Enum.GetName(context.ContextUser.Mode.Value) == name;
+
+            topListMenu.AddOption(new StringMenuSelectOptionProperties(name, name)
+            {
+                Default = picked
+            });
+        }
+
+        container.AddComponents(topListMenu);
+        container.WithSeparator();
+        container.WithTextDisplay("You can also override this on any command by adding `image` / `img` or `embed`.");
 
         return response;
     }
@@ -546,20 +691,31 @@ public class UserBuilder
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed,
-            Components = new ActionRowProperties()
-                .WithButton("'.fm' mode", InteractionConstants.FmCommand.FmModeChange)
-                .WithButton("Response mode", InteractionConstants.ResponseModeChange)
+            ResponseType = ResponseType.ComponentsV2,
         };
 
-        var description = new StringBuilder();
+        var container = response.ComponentsContainer;
+        container.WithAccentColor(DiscordConstants.InformationColorBlue);
 
-        description.AppendLine("Pick which mode you want to modify:");
-        description.AppendLine();
-        description.AppendLine("- `fm` mode - Changes how your .fm command looks");
-        description.AppendLine("- Response mode - changes default response to `WhoKnows` and top list commands");
-
-        response.Embed.WithDescription(description.ToString());
+        container.WithTextDisplay("## Pick which mode you want to modify");
+        container.WithSeparator();
+        container.AddComponent(new ComponentSectionProperties(
+            new ButtonProperties(InteractionConstants.FmCommand.FmModeChange, "Customize", ButtonStyle.Primary))
+        {
+            Components =
+            [
+                new TextDisplayProperties("**`.fm` mode**\nChanges how your .fm command looks")
+            ]
+        });
+        container.WithSeparator();
+        container.AddComponent(new ComponentSectionProperties(
+            new ButtonProperties(InteractionConstants.ResponseModeChange, "Customize", ButtonStyle.Primary))
+        {
+            Components =
+            [
+                new TextDisplayProperties("**Response mode**\nChanges default response modes for `WhoKnows` and top list commands")
+            ]
+        });
 
         return response;
     }
@@ -1592,6 +1748,7 @@ public class UserBuilder
             {
                 menuOption = menuOption.WithDefault();
             }
+
             importSetting.AddOption(menuOption);
         }
 
@@ -1745,6 +1902,7 @@ public class UserBuilder
                 {
                     menuOption = menuOption.WithDescription(description.ToString());
                 }
+
                 altSelector.AddOption(menuOption);
 
                 amount++;
@@ -1787,7 +1945,7 @@ public class UserBuilder
         response.Embed.WithDescription("Use the link below to authorize .fmbot.\n\n" +
                                        "If a server has any linked roles available, you can claim them by clicking the server name and going to 'Linked roles'.");
         response.Components = new ActionRowProperties()
-            .WithButton("Authorize .fmbot",  url: this._botSettings.Discord.InstallUri)
+            .WithButton("Authorize .fmbot", url: this._botSettings.Discord.InstallUri)
             .WithButton("Refresh linked data", style: ButtonStyle.Secondary, customId: "update-linkedroles");
 
         return response;

@@ -22,7 +22,8 @@ public class AlbumInteractions(
     AlbumBuilders albumBuilders,
     SettingService settingService,
     AlbumService albumService,
-    InteractiveService interactivity)
+    InteractiveService interactivity,
+    FmSettingService fmSettingService)
     : ComponentInteractionModule<ComponentInteractionContext>
 {
     [ComponentInteraction(InteractionConstants.Album.Info)]
@@ -83,10 +84,30 @@ public class AlbumInteractions(
 
     [ComponentInteraction(InteractionConstants.Album.Cover)]
     [UsernameSetRequired]
-    public async Task AlbumCoverAsync(string album, string discordUser, string requesterDiscordUser, string type)
+    public async Task AlbumCoverAsync(string album, string discordUser, string requesterDiscordUser, string type, string fmFlag = null)
     {
-        await RespondAsync(InteractionCallback.DeferredModifyMessage);
-        await this.Context.DisableInteractionButtons();
+        var isFmContext = fmFlag == "fm";
+
+        bool ephemeral = false;
+        if (isFmContext)
+        {
+            var clickingUser = await userService.GetUserSettingsAsync(this.Context.User);
+            var fmSetting = await fmSettingService.GetOrCreateFmSetting(clickingUser.UserId);
+            ephemeral = fmSetting.PrivateButtonResponse != false; // null/true → private
+        }
+
+        if (ephemeral)
+        {
+            await RespondAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
+        }
+        else
+        {
+            await RespondAsync(InteractionCallback.DeferredModifyMessage);
+            if (this.Context.Interaction is ButtonInteraction buttonInteraction && isFmContext)
+            {
+                await this.Context.DisableButtonsAndMenus(buttonInteraction.Data.CustomId);
+            }
+        }
 
         var discordUserId = ulong.Parse(discordUser);
         var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
@@ -102,7 +123,20 @@ public class AlbumInteractions(
         {
             var response = await albumBuilders.CoverAsync(new ContextModel(this.Context, contextUser, discordContextUser), userSettings, $"{dbAlbum.ArtistName} | {dbAlbum.Name}", type == "motion");
 
-            await this.Context.UpdateInteractionEmbed(response, interactivity, false);
+            if (isFmContext && ephemeral)
+            {
+                response.Components = null;
+            }
+
+            if (ephemeral)
+            {
+                await this.Context.SendFollowUpResponse(interactivity, response, userService, ephemeral: true);
+            }
+            else
+            {
+                await this.Context.UpdateInteractionEmbed(response, interactivity, false);
+            }
+
             await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
@@ -154,10 +188,27 @@ public class AlbumInteractions(
 
     [ComponentInteraction(InteractionConstants.Album.Tracks)]
     [UsernameSetRequired]
-    public async Task AlbumTracksAsync(string album, string discordUser, string requesterDiscordUser)
+    public async Task AlbumTracksAsync(string album, string discordUser, string requesterDiscordUser, string fmFlag = null)
     {
-        await RespondAsync(InteractionCallback.DeferredModifyMessage);
-        await this.Context.DisableInteractionButtons();
+        var isFmContext = fmFlag == "fm";
+
+        bool ephemeral = false;
+        if (isFmContext)
+        {
+            var clickingUser = await userService.GetUserSettingsAsync(this.Context.User);
+            var fmSetting = await fmSettingService.GetOrCreateFmSetting(clickingUser.UserId);
+            ephemeral = fmSetting.PrivateButtonResponse != false; // null/true → private
+        }
+
+        if (ephemeral)
+        {
+            await RespondAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
+        }
+        else
+        {
+            await RespondAsync(InteractionCallback.DeferredModifyMessage);
+            await this.Context.DisableInteractionButtons();
+        }
 
         var discordUserId = ulong.Parse(discordUser);
         var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
@@ -174,7 +225,20 @@ public class AlbumInteractions(
             var response = await albumBuilders.AlbumTracksAsync(
                 new ContextModel(this.Context, contextUser, discordContextUser), userSettings, $"{dbAlbum.ArtistName} | {dbAlbum.Name}");
 
-            await this.Context.UpdateInteractionEmbed(response, interactivity, false);
+            if (isFmContext && ephemeral)
+            {
+                response.Components = null;
+            }
+
+            if (ephemeral)
+            {
+                await this.Context.SendFollowUpResponse(interactivity, response, userService, ephemeral: true);
+            }
+            else
+            {
+                await this.Context.UpdateInteractionEmbed(response, interactivity, false);
+            }
+
             await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)

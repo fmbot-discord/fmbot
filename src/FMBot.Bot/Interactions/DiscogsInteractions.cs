@@ -126,7 +126,7 @@ public class DiscogsInteractions(
     public async Task CollectionAsync(string discordUser, string requesterDiscordUser)
     {
         await RespondAsync(InteractionCallback.DeferredModifyMessage);
-        await this.Context.DisableActionRows(specificButtonOnly: $"{InteractionConstants.Discogs.Collection}:{discordUser}:{requesterDiscordUser}");
+        await this.Context.DisableButtonsAndMenus(specificButtonOnly: $"{InteractionConstants.Discogs.Collection}:{discordUser}:{requesterDiscordUser}");
 
         var discordUserId = ulong.Parse(discordUser);
         var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);

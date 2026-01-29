@@ -29,6 +29,7 @@ public class UserSlashCommands(
     SettingService settingService,
     OpenAiService openAiService,
     TimerService timerService,
+    FmSettingService fmSettingService,
     InteractiveService interactivity)
     : ApplicationCommandModule<ApplicationCommandContext>
 {
@@ -121,6 +122,8 @@ public class UserSlashCommands(
     {
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var guild = await guildService.GetGuildAsync(this.Context.Guild?.Id);
+
+        contextUser.FmSetting ??= await fmSettingService.GetOrCreateFmSetting(contextUser.UserId);
 
         var response = UserBuilder.FmMode(new ContextModel(this.Context, contextUser), guild);
 
