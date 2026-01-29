@@ -941,7 +941,7 @@ public class TrackBuilders
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed,
+            ResponseType = ResponseType.ComponentsV2,
         };
 
         var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue,
@@ -954,11 +954,15 @@ public class TrackBuilders
         }
 
         var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
+        var trackDescription = LastFmRepository.ResponseTrackToLinkedString(trackSearch.Track);
+
+        var container = response.ComponentsContainer;
+        container.WithAccentColor(UserService.GetAccentColor(context.ContextUser));
 
         if (trackSearch.Track.Loved)
         {
-            response.Embed.WithTitle($"❤️ Track already loved");
-            response.Embed.WithDescription(LastFmRepository.ResponseTrackToLinkedString(trackSearch.Track));
+            container.WithTextDisplay($"### ❤️ Track already loved");
+            container.WithTextDisplay(trackDescription);
         }
         else
         {
@@ -967,8 +971,8 @@ public class TrackBuilders
 
             if (trackLoved)
             {
-                response.Embed.WithTitle($"❤️ Loved track for {userTitle}");
-                response.Embed.WithDescription(LastFmRepository.ResponseTrackToLinkedString(trackSearch.Track));
+                container.WithTextDisplay($"### ❤️ Loved track for {userTitle}");
+                container.WithTextDisplay(trackDescription);
             }
             else
             {
@@ -988,7 +992,7 @@ public class TrackBuilders
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed,
+            ResponseType = ResponseType.ComponentsV2,
         };
 
         var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue,
@@ -1001,11 +1005,15 @@ public class TrackBuilders
         }
 
         var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
+        var trackDescription = LastFmRepository.ResponseTrackToLinkedString(trackSearch.Track);
+
+        var container = response.ComponentsContainer;
+        container.WithAccentColor(UserService.GetAccentColor(context.ContextUser));
 
         if (!trackSearch.Track.Loved)
         {
-            response.Embed.WithTitle($"💔 Track wasn't loved");
-            response.Embed.WithDescription(LastFmRepository.ResponseTrackToLinkedString(trackSearch.Track));
+            container.WithTextDisplay($"### 💔 Track wasn't loved");
+            container.WithTextDisplay(trackDescription);
         }
         else
         {
@@ -1014,8 +1022,8 @@ public class TrackBuilders
 
             if (trackLoved)
             {
-                response.Embed.WithTitle($"💔 Unloved track for {userTitle}");
-                response.Embed.WithDescription(LastFmRepository.ResponseTrackToLinkedString(trackSearch.Track));
+                container.WithTextDisplay($"### 💔 Unloved track for {userTitle}");
+                container.WithTextDisplay(trackDescription);
             }
             else
             {

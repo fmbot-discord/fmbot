@@ -346,18 +346,19 @@ public class SupporterService
                         $"*<:vinyl:1043644602969763861> Use Discogs for your vinyl collection? Link your account with `{prfx}discogs`*";
                     break;
                 }
+                case 1:
                 case 4:
                 {
                     if ((user.FmSetting?.FooterOptions ?? FmFooterOption.TotalScrobbles) == FmFooterOption.TotalScrobbles)
                     {
                         message =
-                            $"*⚙️ Customize your `{prfx}fm` with the custom footer options. Get started by using `/fmmode`*";
+                            $"*⚙️ Customize your `{prfx}fm` command with the new `/fmmode` command. Enable custom buttons, colors, footer options and more.*";
                         break;
                     }
 
                     SetGuildSupporterPromoCache(guildId);
                     message =
-                        $"*⚙️ Set up to 10 options in your `{prfx}fm` footer as an .fmbot supporter*";
+                        $"*⚙️ Set up to 10 footer options, 5 custom buttons and configure your own color in the `{prfx}fm` command as an .fmbot supporter*";
                     showUpgradeButton = true;
                     supporterSource = "updatepromo-fmfooter";
                     break;
@@ -496,7 +497,6 @@ public class SupporterService
                     break;
                 }
                 case 24:
-                case 25:
                 {
                     if (user.NumberFormat == null)
                     {
@@ -507,13 +507,19 @@ public class SupporterService
                     break;
                 }
                 case 26:
-                case 27:
                 {
                     if (user.TimeZone == null)
                     {
                         message =
                             $"*🕒 Set your timezone with the `/localization` slash command*";
                     }
+
+                    break;
+                }
+                case 28:
+                {
+                    message =
+                        $"*📚 Configure what type of top list and WhoKnows responses you get with `/responsemode`*";
 
                     break;
                 }
@@ -903,8 +909,10 @@ public class SupporterService
                                   $"OpenCollective ID: `{newSupporter.Id}`\n" +
                                   $"Subscription type: `{newSupporter.SubscriptionType}`\n\n");
 
-            await supporterAuditLogChannel.ExecuteAsync(new WebhookMessageProperties { Content = $"`.addsupporter \"discordUserId\" \"{newSupporter.Id}\"`", Embeds = [embed] });
-            await supporterUpdateChannel.ExecuteAsync(new WebhookMessageProperties { Content = $"`.addsupporter \"discordUserId\" \"{newSupporter.Id}\"`", Embeds = [embed] });
+            await supporterAuditLogChannel.ExecuteAsync(new WebhookMessageProperties
+                { Content = $"`.addsupporter \"discordUserId\" \"{newSupporter.Id}\"`", Embeds = [embed] });
+            await supporterUpdateChannel.ExecuteAsync(new WebhookMessageProperties
+                { Content = $"`.addsupporter \"discordUserId\" \"{newSupporter.Id}\"`", Embeds = [embed] });
 
             this._cache.Set(cacheKey, 1, TimeSpan.FromDays(1));
         }
@@ -1039,10 +1047,18 @@ public class SupporterService
                     embed.WithTitle("Monthly supporter expired");
                     embed.WithDescription(OpenCollectiveSupporterToEmbedDescription(existingSupporter));
 
-                    await supporterAuditLogChannel.ExecuteAsync(new WebhookMessageProperties { Content =
-                        $"`.removesupporter {existingSupporter.DiscordUserId}`", Embeds = [embed] });
-                    await supporterUpdateChannel.ExecuteAsync(new WebhookMessageProperties { Content =
-                        $"`.removesupporter {existingSupporter.DiscordUserId}`", Embeds = [embed] });
+                    await supporterAuditLogChannel.ExecuteAsync(new WebhookMessageProperties
+                    {
+                        Content =
+                            $"`.removesupporter {existingSupporter.DiscordUserId}`",
+                        Embeds = [embed]
+                    });
+                    await supporterUpdateChannel.ExecuteAsync(new WebhookMessageProperties
+                    {
+                        Content =
+                            $"`.removesupporter {existingSupporter.DiscordUserId}`",
+                        Embeds = [embed]
+                    });
 
                     this._cache.Set(cacheKey, 1, TimeSpan.FromDays(2));
                 }
@@ -1068,8 +1084,12 @@ public class SupporterService
                     embed.WithTitle("Yearly supporter expired");
                     embed.WithDescription(OpenCollectiveSupporterToEmbedDescription(existingSupporter));
 
-                    await supporterAuditLogChannel.ExecuteAsync(new WebhookMessageProperties { Content =
-                        $"`.removesupporter {existingSupporter.DiscordUserId}`", Embeds = [embed] });
+                    await supporterAuditLogChannel.ExecuteAsync(new WebhookMessageProperties
+                    {
+                        Content =
+                            $"`.removesupporter {existingSupporter.DiscordUserId}`",
+                        Embeds = [embed]
+                    });
                     await supporterUpdateChannel.ExecuteAsync(new WebhookMessageProperties { Embeds = [embed] });
 
                     this._cache.Set(cacheKey, 1, TimeSpan.FromDays(2));

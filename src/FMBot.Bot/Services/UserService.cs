@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
@@ -11,6 +12,7 @@ using Dapper;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Models.TemplateOptions;
+using FMBot.Bot.Resources;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Attributes;
@@ -21,6 +23,7 @@ using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using FMBot.Persistence.Repositories;
+using FMBot.Subscriptions.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
@@ -969,6 +972,20 @@ public class UserService
         }
 
         return user.GetDisplayName();
+    }
+
+    public static Color GetAccentColor(User user)
+    {
+        var fmSetting = user.FmSetting;
+        if (fmSetting?.AccentColor == FmAccentColor.Custom &&
+            SupporterService.IsSupporter(user.UserType) &&
+            !string.IsNullOrWhiteSpace(fmSetting.CustomColor) &&
+            int.TryParse(fmSetting.CustomColor.TrimStart('#'), NumberStyles.HexNumber, null, out var customRgb))
+        {
+            return new Color(customRgb);
+        }
+
+        return DiscordConstants.LastFmColorRed;
     }
 
     public async Task<UserType> GetRankAsync(NetCord.User discordUser)
