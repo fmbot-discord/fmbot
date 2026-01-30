@@ -23,7 +23,6 @@ using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using FMBot.Persistence.Repositories;
-using FMBot.Subscriptions.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
@@ -974,7 +973,7 @@ public class UserService
         return user.GetDisplayName();
     }
 
-    public static Color GetAccentColor(User user)
+    public static async Task<Color> GetAccentColor(User user, NetCord.Gateway.Guild guild)
     {
         var fmSetting = user.FmSetting;
         if (fmSetting?.AccentColor == FmAccentColor.Custom &&
@@ -985,7 +984,46 @@ public class UserService
             return new Color(customRgb);
         }
 
+        if (fmSetting?.AccentColor == FmAccentColor.RoleColor &&
+            SupporterService.IsSupporter(user.UserType) &&
+            guild != null)
+        {
+            guild.Users.TryGetValue(user.DiscordUserId, out var guildUser);
+            if (guildUser == null)
+            {
+                guildUser = await guild.GetUserAsync(user.DiscordUserId);
+            }
+
+            var roleColor = GetHighestRoleColor(guild, guildUser);
+            if (roleColor != null)
+            {
+                return roleColor.Value;
+            }
+        }
+
         return DiscordConstants.LastFmColorRed;
+    }
+
+    public static Color? GetHighestRoleColor(NetCord.Gateway.Guild guild, NetCord.GuildUser guildUser)
+    {
+        Color? result = null;
+        var highestPosition = -1;
+
+        foreach (var roleId in guildUser.RoleIds)
+        {
+            if (!guild.Roles.TryGetValue(roleId, out var role))
+            {
+                continue;
+            }
+
+            if (role.Color.RawValue != 0 && role.Position > highestPosition)
+            {
+                highestPosition = role.Position;
+                result = role.Color;
+            }
+        }
+
+        return result;
     }
 
     public async Task<UserType> GetRankAsync(NetCord.User discordUser)

@@ -257,7 +257,7 @@ public class AlbumBuilders
                 response.Embed.WithThumbnail(albumCoverUrl);
             }
 
-            var accentColor = await this._albumService.GetAlbumAccentColorAsync(
+            var accentColor = await this._albumService.GetAccentColorWithAlbum(context,
                 albumCoverUrl, databaseAlbum?.Id, albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
 
             response.Embed.WithColor(accentColor);
@@ -403,7 +403,7 @@ public class AlbumBuilders
                 albumCoverUrl = null;
             }
 
-            var accentColor = await this._albumService.GetAlbumAccentColorAsync(
+            var accentColor = await this._albumService.GetAccentColorWithAlbum(context,
                 albumCoverUrl, databaseAlbum?.Id, albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
 
             response.Embed.WithColor(accentColor);
@@ -582,7 +582,7 @@ public class AlbumBuilders
                 albumCoverUrl = null;
             }
 
-            var accentColor = await this._albumService.GetAlbumAccentColorAsync(
+            var accentColor = await this._albumService.GetAccentColorWithAlbum(context,
                 albumCoverUrl, databaseAlbum?.Id, albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
 
             response.Embed.WithColor(accentColor);
@@ -731,7 +731,7 @@ public class AlbumBuilders
                 albumCoverUrl = null;
             }
 
-            var accentColor = await this._albumService.GetAlbumAccentColorAsync(
+            var accentColor = await this._albumService.GetAccentColorWithAlbum(context,
                 albumCoverUrl, databaseAlbum?.Id, albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
 
             response.Embed.WithColor(accentColor);
@@ -1308,7 +1308,7 @@ public class AlbumBuilders
             response.Stream = gifStream;
         }
 
-        var accentColor = await this._albumService.GetAlbumAccentColorAsync(
+        var accentColor = await this._albumService.GetAccentColorWithAlbum(context,
             staticAlbumCoverUrl, databaseAlbum?.Id, albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
 
         response.Embed.WithColor(accentColor);

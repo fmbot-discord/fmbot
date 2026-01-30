@@ -776,7 +776,7 @@ public class TrackBuilders
                 albumCoverUrl = null;
             }
 
-            var accentColor = await this._albumService.GetAlbumAccentColorAsync(
+            var accentColor = await this._albumService.GetAccentColorWithAlbum(context,
                 albumCoverUrl, databaseAlbum?.Id, track.Track.AlbumName, track.Track.ArtistName);
 
             response.Embed.WithColor(accentColor);
@@ -957,7 +957,7 @@ public class TrackBuilders
         var trackDescription = LastFmRepository.ResponseTrackToLinkedString(trackSearch.Track);
 
         var container = response.ComponentsContainer;
-        container.WithAccentColor(UserService.GetAccentColor(context.ContextUser));
+        container.WithAccentColor(await UserService.GetAccentColor(context.ContextUser, context.DiscordGuild));
 
         if (trackSearch.Track.Loved)
         {
@@ -1008,7 +1008,7 @@ public class TrackBuilders
         var trackDescription = LastFmRepository.ResponseTrackToLinkedString(trackSearch.Track);
 
         var container = response.ComponentsContainer;
-        container.WithAccentColor(UserService.GetAccentColor(context.ContextUser));
+        container.WithAccentColor(await UserService.GetAccentColor(context.ContextUser, context.DiscordGuild));
 
         if (!trackSearch.Track.Loved)
         {

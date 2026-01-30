@@ -616,12 +616,13 @@ public class UserBuilder
             var getSupporter = new ComponentSectionProperties(new ButtonProperties(
                 InteractionConstants.SupporterLinks.GeneratePurchaseButtons(true, false,
                     false, source: "fmmode"),
-                "Get .fmbot supporter", ButtonStyle.Primary))
+                "Get supporter", ButtonStyle.Primary))
             {
                 Components =
                 [
                     new TextDisplayProperties(
-                        "⭐ Pick more and exclusive buttons, more footer options, custom colors and personal emote reactions with .fmbot supporter")
+                        "⭐ Unlock more customization with .fmbot supporter\n" +
+                        "-# Multiple buttons, extra footer options, custom colors and more")
                 ]
             };
             container.WithSeparator();

@@ -205,7 +205,7 @@ public class SupporterService
 
         thankYouMessage.AppendLine("⚙️ **More customization**");
         thankYouMessage.AppendLine($"- `.shortcuts` — Configure shortcuts to easily access your favorite commands");
-        thankYouMessage.AppendLine($"- `/fmmode` — Expand your `fm` footer with more and exclusive options");
+        thankYouMessage.AppendLine($"- `/fmmode` — Expand your `fm` footer with more and exclusive customization");
         thankYouMessage.AppendLine($"- `.userreactions` — Set your own emote reactions used globally");
         thankYouMessage.AppendLine(
             $"- `.addfriends` — Add up to {Constants.MaxFriendsSupporter} friends, up from {Constants.MaxFriends}");

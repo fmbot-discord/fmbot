@@ -348,15 +348,6 @@ public class PlayBuilder
                         .FilterOutMentions();
 
                 response.ResponseType = ResponseType.Text;
-
-                if (fmButtonComponents is { Count: > 0 })
-                {
-                    foreach (var button in fmButtonComponents)
-                    {
-                        response.Components.Add(button);
-                    }
-                }
-
                 break;
             case FmEmbedType.TextMini:
             case FmEmbedType.TextFull:
@@ -404,44 +395,17 @@ public class PlayBuilder
                 response.ResponseType = ResponseType.ComponentsV2;
 
                 string albumCoverUrl = null;
-                var accentColor = DiscordConstants.LastFmColorRed;
-                if (currentTrack.AlbumName != null && embedType != FmEmbedType.EmbedTiny)
+                int? dbAlbumId = null;
+                if (currentTrack.AlbumName != null)
                 {
                     var dbAlbum =
                         await this._albumService.GetAlbumFromDatabase(currentTrack.ArtistName, currentTrack.AlbumName);
+                    if (dbAlbum != null)
+                    {
+                        dbAlbumId = dbAlbum.Id;
+                    }
+
                     albumCoverUrl = dbAlbum != null ? dbAlbum.SpotifyImageUrl ?? dbAlbum.LastfmImageUrl : currentTrack.AlbumCoverUrl;
-
-                    var accentPreference = fmSetting?.AccentColor;
-                    string customColorHex = null;
-                    Color? roleColor = null;
-
-                    if (accentPreference != null && SupporterService.IsSupporter(context.ContextUser.UserType))
-                    {
-                        switch (accentPreference)
-                        {
-                            case FmAccentColor.Custom:
-                                customColorHex = fmSetting.CustomColor;
-                                break;
-                            case FmAccentColor.RoleColor when context.DiscordGuild != null:
-                            {
-                                var guildUser = await context.DiscordGuild.GetUserAsync(context.ContextUser.DiscordUserId);
-                                if (guildUser != null)
-                                {
-                                    roleColor = GetHighestRoleColor(context.DiscordGuild, guildUser);
-                                }
-
-                                break;
-                            }
-                        }
-                    }
-                    else if (accentPreference is FmAccentColor.RoleColor or FmAccentColor.Custom)
-                    {
-                        accentPreference = null;
-                    }
-
-                    accentColor = await this._albumService.GetAlbumAccentColorAsync(
-                        albumCoverUrl, dbAlbum?.Id, currentTrack.AlbumName, currentTrack.ArtistName,
-                        accentPreference, customColorHex, roleColor);
 
                     if (albumCoverUrl != null)
                     {
@@ -455,8 +419,18 @@ public class PlayBuilder
                     }
                 }
 
-                if (embedType != FmEmbedType.EmbedTiny)
+                if (embedType == FmEmbedType.EmbedTiny)
                 {
+                    var accentColor = await UserService.GetAccentColor(context.ContextUser, context.DiscordGuild);
+                    if (accentColor != DiscordConstants.LastFmColorRed)
+                    {
+                        response.ComponentsContainer.WithAccentColor(accentColor);
+                    }
+                }
+                else
+                {
+                    var accentColor = await this._albumService.GetAccentColorWithAlbum(context,
+                        albumCoverUrl, dbAlbumId, currentTrack.AlbumName, currentTrack.ArtistName);
                     response.ComponentsContainer.WithAccentColor(accentColor);
                 }
 
@@ -671,28 +645,6 @@ public class PlayBuilder
         }
 
         return false;
-    }
-
-    private static Color? GetHighestRoleColor(NetCord.Gateway.Guild guild, NetCord.GuildUser guildUser)
-    {
-        Color? result = null;
-        var highestPosition = -1;
-
-        foreach (var roleId in guildUser.RoleIds)
-        {
-            if (!guild.Roles.TryGetValue(roleId, out var role))
-            {
-                continue;
-            }
-
-            if (role.Color.RawValue != 0 && role.Position > highestPosition)
-            {
-                highestPosition = role.Position;
-                result = role.Color;
-            }
-        }
-
-        return result;
     }
 
     private static List<IActionRowComponentProperties> BuildNowPlayingButtons(
@@ -1487,7 +1439,7 @@ public class PlayBuilder
                 response.Embed.WithThumbnail(albumCoverUrl);
             }
 
-            var accentColor = await this._albumService.GetAlbumAccentColorAsync(
+            var accentColor = await this._albumService.GetAccentColorWithAlbum(context,
                 albumCoverUrl, databaseAlbum?.Id, mileStonePlay.Content.AlbumName, mileStonePlay.Content.ArtistName);
 
             response.Embed.WithColor(accentColor);

@@ -465,24 +465,21 @@ public class AlbumService
         return await connection.QueryFirstOrDefaultAsync<string>(sql, new { albumId });
     }
 
-    public async Task<Color> GetAlbumAccentColorAsync(string albumCoverUrl, int? albumId, string albumName, string artistName,
-        FmAccentColor? preference = null, string customColorHex = null, Color? roleColor = null)
+    public async Task<Color> GetAccentColorWithAlbum(ContextModel context, string albumCoverUrl, int? albumId, string albumName, string artistName)
     {
-        switch (preference)
+        switch (context.ContextUser?.FmSetting?.AccentColor)
         {
             case FmAccentColor.LastFmRed:
                 return DiscordConstants.LastFmColorRed;
-            case FmAccentColor.RoleColor when roleColor.HasValue:
-                return roleColor.Value;
-            case FmAccentColor.Custom when !string.IsNullOrEmpty(customColorHex)
-                && int.TryParse(customColorHex.TrimStart('#'), NumberStyles.HexNumber, null, out var customRgb):
-                return new Color(customRgb);
+            case FmAccentColor.RoleColor:
+            case FmAccentColor.Custom:
+                return await UserService.GetAccentColor(context.ContextUser, context.DiscordGuild);
             case FmAccentColor.CoverColor:
             case FmAccentColor.AppleMusicBackgroundColor:
             case null:
                 break;
             default:
-                throw new ArgumentOutOfRangeException(nameof(preference), preference, null);
+                throw new ArgumentOutOfRangeException();
         }
 
         if (string.IsNullOrEmpty(albumName) || string.IsNullOrEmpty(artistName))
@@ -490,7 +487,7 @@ public class AlbumService
             return DiscordConstants.LastFmColorRed;
         }
 
-        if (preference == FmAccentColor.AppleMusicBackgroundColor && albumId.HasValue)
+        if (context.ContextUser?.FmSetting?.AccentColor == FmAccentColor.AppleMusicBackgroundColor && albumId.HasValue)
         {
             var bgColor = await GetAlbumColorAsync(albumId.Value);
             if (!string.IsNullOrEmpty(bgColor) &&
