@@ -405,7 +405,14 @@ public class PlayBuilder
                         dbAlbumId = dbAlbum.Id;
                     }
 
-                    albumCoverUrl = dbAlbum != null ? dbAlbum.SpotifyImageUrl ?? dbAlbum.LastfmImageUrl : currentTrack.AlbumCoverUrl;
+                    if (context.ContextUser.LastfmPro == true)
+                    {
+                        albumCoverUrl = currentTrack.AlbumCoverUrl ?? dbAlbum?.SpotifyImageUrl ?? dbAlbum?.LastfmImageUrl;
+                    }
+                    else
+                    {
+                        albumCoverUrl = dbAlbum != null ? dbAlbum.SpotifyImageUrl ?? dbAlbum.LastfmImageUrl : currentTrack.AlbumCoverUrl;
+                    }
 
                     if (albumCoverUrl != null)
                     {
