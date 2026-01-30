@@ -1102,7 +1102,7 @@ public class UserService
     {
         var footer = new StringBuilder();
         var prefix = useSmallText ? "-# " : "";
-        const int maxLineLength = 45;
+        const int maxLineLength = 70;
         const string separator = " · ";
 
         var genresAdded = false;
