@@ -128,7 +128,7 @@ public class GenreCommands(
         }
         catch (Exception e)
         {
-            if (!string.IsNullOrEmpty(e.Message) && e.Message.Contains("The server responded with error 50013: Missing Permissions"))
+            if (!string.IsNullOrEmpty(e.Message) && e.Message.Contains("Response status code does not indicate success: 403"))
             {
                 await this.Context.HandleCommandException(e, userService, sendReply: false);
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Error while replying: The bot is missing permissions.\nMake sure it has permission to 'Embed links' and 'Attach Images'" });
@@ -216,7 +216,7 @@ public class GenreCommands(
         }
         catch (Exception e)
         {
-            if (!string.IsNullOrEmpty(e.Message) && e.Message.Contains("The server responded with error 50013: Missing Permissions"))
+            if (!string.IsNullOrEmpty(e.Message) && e.Message.Contains("Response status code does not indicate success: 403"))
             {
                 await this.Context.HandleCommandException(e, userService, sendReply: false);
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Error while replying: The bot is missing permissions.\nMake sure it has permission to 'Embed links' and 'Attach Images'" });

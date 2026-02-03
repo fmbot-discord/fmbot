@@ -240,7 +240,7 @@ public class AlbumCommands(
         catch (Exception e)
         {
             if (!string.IsNullOrEmpty(e.Message) &&
-                e.Message.Contains("The server responded with error 50013: Missing Permissions"))
+                e.Message.Contains("Response status code does not indicate success: 403"))
             {
                 await this.Context.HandleCommandException(e, userService, sendReply: false);
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
@@ -287,7 +287,7 @@ public class AlbumCommands(
         catch (Exception e)
         {
             if (!string.IsNullOrEmpty(e.Message) &&
-                e.Message.Contains("The server responded with error 50013: Missing Permissions"))
+                e.Message.Contains("Response status code does not indicate success: 403"))
             {
                 await this.Context.HandleCommandException(e, userService, sendReply: false);
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
