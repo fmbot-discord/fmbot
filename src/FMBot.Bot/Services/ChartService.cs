@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -376,32 +377,24 @@ public class ChartService
 
     public static string AlbumUrlToCacheFilePath(string albumName, string artistName, string extension = ".png")
     {
-        var encodedId =
-            EncodeToBase64(
-                $"{StringExtensions.TruncateLongString(albumName, 80)}--{StringExtensions.TruncateLongString(artistName, 40)}");
-        var localAlbumId = StringExtensions.TruncateLongString($"album_{encodedId}", 100);
-
-        var fileName = localAlbumId + extension;
+        var hash = HashString($"{albumName}--{artistName}");
+        var fileName = $"album_{hash}{extension}";
         var localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", fileName);
         return localPath;
     }
 
     public static string ArtistUrlToCacheFilePath(string artistName, string extension = ".png")
     {
-        var encodedId = EncodeToBase64(StringExtensions.TruncateLongString(artistName, 80));
-        var localArtistId = StringExtensions.TruncateLongString($"artist_{encodedId}", 100);
-
-        var fileName = localArtistId + extension;
+        var hash = HashString(artistName);
+        var fileName = $"artist_{hash}{extension}";
         var localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", fileName);
         return localPath;
     }
 
-    private static string EncodeToBase64(string input)
+    private static string HashString(string input)
     {
-        var bytes = Encoding.UTF8.GetBytes(input);
-        var value = Convert.ToBase64String(bytes);
-
-        return StringExtensions.ReplaceInvalidChars(value);
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(input));
+        return Convert.ToHexString(bytes, 0, 8).ToLowerInvariant();
     }
 
     public static async Task SaveImageToCache(SKBitmap chartImage, string localPath)
