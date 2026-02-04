@@ -389,7 +389,8 @@
     "Code": "CV",
     "Emoji": "🇨🇻",
     "Unicode": "U+1F1E8 U+1F1FB",
-    "Image": "https://cdn.jsdelivr.net/npm/country-flag-emoji-json@2.0.0/dist/images/CV.svg"
+    "Image": "https://cdn.jsdelivr.net/npm/country-flag-emoji-json@2.0.0/dist/images/CV.svg",
+    "Aliases": [ "Cabo Verde", "Republic of Cabo Verde" ]
   },
   {
     "Name": "Curaçao",
