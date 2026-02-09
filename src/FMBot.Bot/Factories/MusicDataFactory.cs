@@ -92,7 +92,7 @@ public class MusicDataFactory
                 if (spotifyArtist != null)
                 {
                     artistToAdd.SpotifyId = spotifyArtist.Id;
-                    artistToAdd.Popularity = spotifyArtist.Popularity;
+                    artistToAdd.Popularity = spotifyArtist.Popularity > 0 ? spotifyArtist.Popularity : null;
 
                     if (spotifyArtist.Images.Any())
                     {
@@ -241,7 +241,7 @@ public class MusicDataFactory
                     dbArtist.SpotifyImageUrl = newImage.Url;
 
                     dbArtist.SpotifyId = spotifyArtist.Id;
-                    dbArtist.Popularity = spotifyArtist.Popularity;
+                    dbArtist.Popularity = spotifyArtist.Popularity > 0 ? spotifyArtist.Popularity : dbArtist.Popularity;
 
                     if (artistInfo.ArtistUrl != null)
                     {
@@ -406,14 +406,14 @@ public class MusicDataFactory
             if (spotifyAlbum != null)
             {
                 albumToAdd.SpotifyId = spotifyAlbum.Id;
-                albumToAdd.Label = spotifyAlbum.Label;
-                albumToAdd.Popularity = spotifyAlbum.Popularity;
+                albumToAdd.Label = !string.IsNullOrEmpty(spotifyAlbum.Label) ? spotifyAlbum.Label : null;
+                albumToAdd.Popularity = spotifyAlbum.Popularity > 0 ? spotifyAlbum.Popularity : null;
                 albumToAdd.SpotifyImageUrl = spotifyAlbum.Images.MaxBy(o => o.Height)?.Url;
                 albumToAdd.ReleaseDate = spotifyAlbum.ReleaseDate;
                 albumToAdd.ReleaseDatePrecision = spotifyAlbum.ReleaseDatePrecision;
 
-                var spotifyUpc = spotifyAlbum.ExternalIds.FirstOrDefault(f => f.Key == "upc");
-                albumToAdd.Upc = spotifyUpc.Value;
+                var spotifyUpc = spotifyAlbum.ExternalIds?.FirstOrDefault(f => f.Key == "upc").Value;
+                albumToAdd.Upc = !string.IsNullOrEmpty(spotifyUpc) ? spotifyUpc : null;
                 albumToAdd.Type = spotifyAlbum.AlbumType;
             }
 
@@ -531,12 +531,12 @@ public class MusicDataFactory
                 }
 
                 dbAlbum.SpotifyId = spotifyAlbum.Id;
-                dbAlbum.Label = spotifyAlbum.Label;
-                dbAlbum.Popularity = spotifyAlbum.Popularity;
-                dbAlbum.SpotifyImageUrl = img?.Url;
-                dbAlbum.ReleaseDate = spotifyAlbum.ReleaseDate;
-                dbAlbum.ReleaseDatePrecision = spotifyAlbum.ReleaseDatePrecision;
-                dbAlbum.Type = spotifyAlbum.AlbumType;
+                dbAlbum.Label = !string.IsNullOrEmpty(spotifyAlbum.Label) ? spotifyAlbum.Label : dbAlbum.Label;
+                dbAlbum.Popularity = spotifyAlbum.Popularity > 0 ? spotifyAlbum.Popularity : dbAlbum.Popularity;
+                dbAlbum.SpotifyImageUrl = img?.Url ?? dbAlbum.SpotifyImageUrl;
+                dbAlbum.ReleaseDate = spotifyAlbum.ReleaseDate ?? dbAlbum.ReleaseDate;
+                dbAlbum.ReleaseDatePrecision = spotifyAlbum.ReleaseDatePrecision ?? dbAlbum.ReleaseDatePrecision;
+                dbAlbum.Type = spotifyAlbum.AlbumType ?? dbAlbum.Type;
 
                 if (img != null)
                 {
@@ -784,8 +784,8 @@ public class MusicDataFactory
                 if (spotifyTrack != null)
                 {
                     trackToAdd.SpotifyId = spotifyTrack.Id;
-                    trackToAdd.DurationMs = spotifyTrack.DurationMs;
-                    trackToAdd.Popularity = spotifyTrack.Popularity;
+                    trackToAdd.DurationMs = spotifyTrack.DurationMs > 0 ? spotifyTrack.DurationMs : trackToAdd.DurationMs;
+                    trackToAdd.Popularity = spotifyTrack.Popularity > 0 ? spotifyTrack.Popularity : null;
                     trackToAdd.SpotifyPreviewUrl = spotifyTrack.PreviewUrl;
 
                     var audioFeatures = await this._spotifyService.GetAudioFeaturesFromSpotify(spotifyTrack.Id);
@@ -917,9 +917,9 @@ public class MusicDataFactory
                 if (spotifyTrack != null)
                 {
                     dbTrack.SpotifyId = spotifyTrack.Id;
-                    dbTrack.DurationMs = spotifyTrack.DurationMs;
-                    dbTrack.Popularity = spotifyTrack.Popularity;
-                    dbTrack.SpotifyPreviewUrl = spotifyTrack.PreviewUrl;
+                    dbTrack.DurationMs = spotifyTrack.DurationMs > 0 ? spotifyTrack.DurationMs : dbTrack.DurationMs;
+                    dbTrack.Popularity = spotifyTrack.Popularity > 0 ? spotifyTrack.Popularity : dbTrack.Popularity;
+                    dbTrack.SpotifyPreviewUrl = spotifyTrack.PreviewUrl ?? dbTrack.SpotifyPreviewUrl;
 
                     var audioFeatures = await this._spotifyService.GetAudioFeaturesFromSpotify(spotifyTrack.Id);
 
