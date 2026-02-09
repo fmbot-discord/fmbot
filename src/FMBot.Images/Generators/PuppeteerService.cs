@@ -810,6 +810,37 @@ public class PuppeteerService : IDisposable
         }
     }
 
+    public async Task<SKBitmap> GetGraph(string chartDataJson, string chartOptionsJson, string title = null)
+    {
+        await this._initializationTask;
+
+        await using var page = await this._browser.NewPageAsync();
+
+        await page.SetViewportAsync(new ViewPortOptions
+        {
+            Width = 1200,
+            Height = 700
+        });
+
+        var localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Pages", "graph.html");
+        var content = await File.ReadAllTextAsync(localPath);
+
+        content = content.Replace("{{chart-data}}", chartDataJson);
+        content = content.Replace("{{chart-options}}", chartOptionsJson);
+        content = content.Replace("{{bg-color}}", "#282424");
+        content = content.Replace("{{text-color}}", "#dcddde");
+        content = content.Replace("{{grid-color}}", "rgba(220,221,222,0.1)");
+
+        await page.SetContentAsync(content);
+
+        await page.WaitForFunctionAsync("() => window.chartRendered === true",
+            new WaitForFunctionOptions { Timeout = 10000 });
+
+        var img = await page.ScreenshotDataAsync();
+        using var skImage = SKImage.FromEncodedData(img);
+        return SKBitmap.FromImage(skImage);
+    }
+
     public async Task<string> GetAppleToken()
     {
         if (!string.IsNullOrEmpty(cachedAppleMusicAuthToken))

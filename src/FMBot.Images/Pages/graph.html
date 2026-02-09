@@ -1,0 +1,82 @@
+<html>
+
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <style>
+        @font-face {
+            font-family: "worksans";
+            src: url("https://fm.bot/fonts/worksans-regular.otf") format("opentype");
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "worksans", sans-serif;
+            background-color: {{bg-color}};
+            color: {{text-color}};
+            width: 1200px;
+            height: 700px;
+            overflow: hidden;
+        }
+
+        .chart-container {
+            width: 1200px;
+            height: 700px;
+            padding: 20px 24px 16px 24px;
+        }
+
+        canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="chart-container">
+        <canvas id="chart"></canvas>
+    </div>
+
+    <script>
+        window.chartRendered = false;
+
+        var chartData = {{chart-data}};
+        var chartOptions = {{chart-options}};
+
+        chartOptions.animation = {
+            onComplete: function() {
+                window.chartRendered = true;
+            }
+        };
+
+        var ctx = document.getElementById('chart').getContext('2d');
+        var chart = new Chart(ctx, {
+            type: 'line',
+            data: chartData,
+            options: chartOptions,
+            plugins: [{
+                id: 'customBackground',
+                beforeDraw: function(chart) {
+                    var ctx = chart.canvas.getContext('2d');
+                    ctx.save();
+                    ctx.globalCompositeOperation = 'destination-over';
+                    ctx.fillStyle = '{{bg-color}}';
+                    ctx.fillRect(0, 0, chart.width, chart.height);
+                    ctx.restore();
+                }
+            }]
+        });
+
+        // Fallback in case animation doesn't fire
+        setTimeout(function() {
+            window.chartRendered = true;
+        }, 3000);
+    </script>
+</body>
+
+</html>

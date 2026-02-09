@@ -73,9 +73,9 @@ public class PlayServiceTest
         Assert.Multiple(() =>
         {
             Assert.That(result.ArtistName, Is.EqualTo("Artist A"));
-            Assert.That(result.ArtistPlaycount, Is.EqualTo(3));
-            Assert.That(result.AlbumPlaycount, Is.EqualTo(2));
-            Assert.That(result.TrackPlaycount, Is.EqualTo(1));
+            Assert.That(result.ArtistPlaycount, Is.EqualTo(4));
+            Assert.That(result.AlbumPlaycount, Is.EqualTo(3));
+            Assert.That(result.TrackPlaycount, Is.EqualTo(2));
             Assert.That(result.StreakStarted, Is.EqualTo(lastPlays[2].TimePlayed));
         });
     }

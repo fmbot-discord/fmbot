@@ -506,6 +506,51 @@ public static class PlayRepository
         await renameTrackImports.ExecuteNonQueryAsync();
     }
 
+    public static async Task<IList<(string ArtistName, int PlayCount)>> GetTopArtistNamesForPeriod(
+        int userId, NpgsqlConnection connection, DataSource dataSource, DateTime start, DateTime? end = null, int limit = 25)
+    {
+        var sql = GetUserPlaysSqlString("SELECT artist_name, COUNT(*) as play_count", dataSource, start, end);
+
+        // Remove the ORDER BY + LIMIT that GetUserPlaysSqlString adds for non-COUNT queries
+        // We need our own GROUP BY and ORDER BY
+        sql += " GROUP BY artist_name ORDER BY play_count DESC LIMIT @limit";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        var result = await connection.QueryAsync<(string ArtistName, int PlayCount)>(sql, new
+        {
+            userId,
+            limit,
+            start,
+            end
+        });
+
+        return result.ToList();
+    }
+
+    public static async Task<IList<(string ArtistName, DateTime IntervalDate, int PlayCount)>> GetArtistPlayCountsByInterval(
+        int userId, NpgsqlConnection connection, DataSource dataSource, DateTime start, DateTime? end,
+        string interval, string[] artistNames)
+    {
+        var sql = GetUserPlaysSqlString(
+            $"SELECT artist_name, date_trunc('{interval}', time_played) as interval_date, COUNT(*) as play_count",
+            dataSource, start, end);
+
+        sql += " AND artist_name IN @artistNames";
+        sql += $" GROUP BY artist_name, date_trunc('{interval}', time_played) ORDER BY artist_name, interval_date";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        var result = await connection.QueryAsync<(string ArtistName, DateTime IntervalDate, int PlayCount)>(sql, new
+        {
+            userId,
+            limit = 9999999,
+            start,
+            end,
+            artistNames
+        });
+
+        return result.ToList();
+    }
+
     public static async Task DeleteTrackImports(int userId, NpgsqlConnection connection, string artistName, string trackName)
     {
         if (string.IsNullOrEmpty(artistName) || string.IsNullOrEmpty(trackName))

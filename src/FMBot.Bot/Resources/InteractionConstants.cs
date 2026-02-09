@@ -263,6 +263,12 @@ public static class InteractionConstants
         public const string JumblePlayAgain = "jumble-playagain";
     }
 
+    public static class Graph
+    {
+        public const string ArtistSelectMenu = "graph-artist-select";
+        public const string TypeSelectMenu = "graph-type-select";
+    }
+
     public static class Help
     {
         public const string CategoryMenu = "help-category";
