@@ -369,7 +369,7 @@ public class TrackCommands(
     }
 
     [Command("friendwhoknowstrack", "fwt", "fwkt", "fwktr", "fwtrack")]
-    [Summary("Shows who of your friends listen to an track in .fmbot")]
+    [Summary("Shows who of your friends listen to a track in .fmbot")]
     [Examples("fwt", "fwkt The Beatles Yesterday", "friendwhoknowstrack",
         "friendwhoknowstrack Hothouse Flowers Don't Go", "friendwhoknowstrack Mall Grab | Sunflower")]
     [UsernameSetRequired]

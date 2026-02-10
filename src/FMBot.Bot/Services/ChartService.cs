@@ -847,7 +847,7 @@ public class ChartService
 
         if (chartSettings.RainbowSortingEnabled)
         {
-            embedDescription.AppendLine("- Secret rainbow option enabled! (Not perfect but hey, it somewhat exists)");
+            embedDescription.AppendLine("- Secret rainbow option enabled! (Not perfect, but hey, it somewhat exists)");
         }
 
         var rnd = new Random();

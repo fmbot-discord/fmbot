@@ -1418,7 +1418,7 @@ public class UserBuilder
             {
                 description.AppendLine();
                 description.Append(
-                    $"You've ran out of command uses for today, unfortunately the service we use for this is not free. ");
+                    $"You've run out of command uses for today, unfortunately the service we use for this is not free. ");
                 description.AppendLine(
                     $"[Become a supporter]({Constants.GetSupporterOverviewLink}) to raise your daily limit and to get access to better responses.");
 
@@ -1441,7 +1441,7 @@ public class UserBuilder
 
             if (!hasUsesLeft)
             {
-                description.AppendLine($"You've ran out of command uses for today.");
+                description.AppendLine($"You've run out of command uses for today.");
             }
         }
 
@@ -1488,13 +1488,13 @@ public class UserBuilder
             if (context.ContextUser.UserType == UserType.User)
             {
                 description.Append(
-                    $"You've ran out of command uses for today, unfortunately the service we use for this is not free. ");
+                    $"You've run out of command uses for today, unfortunately the service we use for this is not free. ");
                 description.AppendLine(
                     $"[Become a supporter]({Constants.GetSupporterDiscordLink}) to raise your daily limit and the possibility to use the command on others.");
             }
             else
             {
-                description.Append($"You've ran out of command uses for today. ");
+                description.Append($"You've run out of command uses for today. ");
             }
 
             response.Embed.WithDescription(description.ToString());
@@ -1802,7 +1802,7 @@ public class UserBuilder
         embedDescription.AppendLine($"**Imports until full Last.fm**");
         embedDescription.AppendLine(
             $"- Uses your {importSource} history up until the point you started scrobbling on Last.fm");
-        embedDescription.AppendLine($"- Best if you have scrobbles on Last.fm from sources other then {importSource}");
+        embedDescription.AppendLine($"- Best if you have scrobbles on Last.fm from sources other than {importSource}");
 
         var playsWithImportUntilFullLastFm =
             await this._playService.GetPlaysWithDataSource(userId, DataSource.ImportThenFullLastFm);
@@ -2236,7 +2236,7 @@ public class UserBuilder
             emptyState.AppendLine("- `gamble` > `milestone random`");
             emptyState.AppendLine("- `gm` > `fm oneline`");
             emptyState.AppendLine();
-            emptyState.AppendLine($"Make sure you don't include the `{prfx}` prefix  when creating shortcuts.");
+            emptyState.AppendLine($"Make sure you don't include the `{prfx}` prefix when creating shortcuts.");
             response.ComponentsContainer.AddComponent(new TextDisplayProperties(emptyState.ToString()));
         }
         else
@@ -2441,7 +2441,7 @@ public class UserBuilder
     {
         if (existingShortcuts.Count >= 10 && currentShortcutId == 0)
         {
-            response.Embed.WithDescription($"❌ You can't create more then 10 shortcuts");
+            response.Embed.WithDescription($"❌ You can't create more than 10 shortcuts");
             response.Embed.WithColor(DiscordConstants.WarningColorOrange);
             response.CommandResponse = CommandResponse.Cooldown;
             return (false, response);

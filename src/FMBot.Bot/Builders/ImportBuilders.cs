@@ -426,7 +426,7 @@ public class ImportBuilders
                 response.Embed.AddField("Imports successfully edited ✅",
                     $"`{oldArtistName}` to `{newArtistName}`");
                 response.Embed.AddField("Note about future imports",
-                    $"Usually when you imports duplicates will be filtered out. However, note that now that your imports are edited there might be duplicates when you import the same service again.");
+                    $"Usually when you import, duplicates will be filtered out. However, note that now that your imports are edited there might be duplicates when you import the same service again.");
                 response.Components = null;
             }
         }
@@ -537,7 +537,7 @@ public class ImportBuilders
                 response.Embed.AddField("Imports successfully edited ✅",
                     $"`{oldAlbumRef.Album}` by `{oldAlbumRef.Artist}` to `{newAlbumRef.Album}` by `{newAlbumRef.Artist}`");
                 response.Embed.AddField("Note about future imports",
-                    $"Usually when you imports duplicates will be filtered out. However, note that now that your imports are edited there might be duplicates when you import the same service again.");
+                    $"Usually when you import, duplicates will be filtered out. However, note that now that your imports are edited there might be duplicates when you import the same service again.");
                 response.Components = null;
             }
         }
@@ -647,7 +647,7 @@ public class ImportBuilders
                 response.Embed.AddField("Imports successfully edited ✅",
                     $"`{oldTrackRef.Track}` by `{oldTrackRef.Artist}` to `{newTrackRef.Track}` by `{newTrackRef.Artist}`");
                 response.Embed.AddField("Note about future imports",
-                    $"Usually when you imports duplicates will be filtered out. However, note that now that your imports are edited there might be duplicates when you import the same service again.");
+                    $"Usually when you import, duplicates will be filtered out. However, note that now that your imports are edited there might be duplicates when you import the same service again.");
                 response.Components = null;
             }
         }

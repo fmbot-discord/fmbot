@@ -164,7 +164,7 @@ public class GuildCommands(
         if (emoteArray.Count() > 3)
         {
             this._embed.WithColor(DiscordConstants.WarningColorOrange);
-            this._embed.WithDescription("Sorry, you can't set more then 3 emoji reacts. Please try again.");
+            this._embed.WithDescription("Sorry, you can't set more than 3 emoji reacts. Please try again.");
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Embeds = [this._embed] });
             await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
 
@@ -174,7 +174,7 @@ public class GuildCommands(
         if (!GuildService.ValidateReactions(emoteArray))
         {
             this._embed.WithColor(DiscordConstants.WarningColorOrange);
-            this._embed.WithDescription("Sorry, one or multiple of your reactions seems invalid. Please try again.\n" +
+            this._embed.WithDescription("Sorry, one or more of your reactions seem invalid. Please try again.\n" +
                                         "Please check if you have a space between every emoji.");
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Embeds = [this._embed] });
             await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);

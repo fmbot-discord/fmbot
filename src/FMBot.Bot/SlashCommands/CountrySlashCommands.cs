@@ -50,7 +50,7 @@ public class CountrySlashCommands(
         }
     }
 
-    [SlashCommand("countrychart", "Generates a map of the location from your top artists",
+    [SlashCommand("countrychart", "Generates a map of the locations of your top artists",
         Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild],
         IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]

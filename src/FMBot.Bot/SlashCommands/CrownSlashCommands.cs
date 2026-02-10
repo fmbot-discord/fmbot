@@ -28,7 +28,7 @@ public class CrownSlashCommands(
     [UsernameSetRequired]
     public async Task CrownAsync(
         [SlashCommandParameter(Name = "artist",
-            Description = "The artist your want to search for (defaults to currently playing)",
+            Description = "The artist you want to search for (defaults to currently playing)",
             AutocompleteProviderType = typeof(ArtistAutoComplete))]
         string name = null)
     {

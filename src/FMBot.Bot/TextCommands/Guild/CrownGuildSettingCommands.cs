@@ -102,7 +102,7 @@ public class CrownGuildSettingCommands(
         if (user == null)
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
-                { Content = "Please mention a user, enter a discord id or enter a Last.fm username to block from gaining crowns on your server." });
+                { Content = "Please mention a user, enter a Discord ID, or enter a Last.fm username to block from gaining crowns on your server." });
             await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
             return;
         }
@@ -201,7 +201,7 @@ public class CrownGuildSettingCommands(
         if (user == null)
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
-                { Content = "Please mention a user, enter a discord id or enter a Last.fm username to remove their crowns from." });
+                { Content = "Please mention a user, enter a Discord ID, or enter a Last.fm username to remove their crowns from." });
             await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
             return;
         }

@@ -192,7 +192,7 @@ public class SupporterService
         thankYouMessage.AppendLine("<:discoveries:1145740579284713512> **Go back in time**");
         thankYouMessage.AppendLine("- `.discoveries` — View your recently discovered artists");
         thankYouMessage.AppendLine("- `.gaps` — View music you returned to after a gap in listening");
-        thankYouMessage.AppendLine("- `.discoverydate` / `.dd` — View when you discovered an artist, album and track");
+        thankYouMessage.AppendLine("- `.discoverydate` / `.dd` — View when you discovered an artist, album, and track");
         thankYouMessage.AppendLine("- `.artist`, `.album`, `.track` — See discovery dates");
         thankYouMessage.AppendLine();
 
@@ -292,7 +292,7 @@ public class SupporterService
             if (hadImported)
             {
                 goodbyeEmbed.AddField($"{EmojiProperties.Custom(DiscordConstants.Imports).ToDiscordString("imports")} Importing service deactivated",
-                    "The import service is no longer active, so the bot will now only use your Last.fm stats without imported .fmbot data. Your imports are however saved and will be available again if you resubscribe in the future.");
+                    "The import service is no longer active, so the bot will now only use your Last.fm stats without imported .fmbot data. Your imports are, however, saved and will be available again if you resubscribe in the future.");
             }
 
             var buttons = new ActionRowProperties()
@@ -578,7 +578,7 @@ public class SupporterService
                 case 8:
                 {
                     message =
-                        $"*{EmojiProperties.Custom(DiscordConstants.Discoveries).ToDiscordString("discoveries")} View when you discovered an artist, album and track with `{prfx}discoverydate` / `{prfx}dd`*";
+                        $"*{EmojiProperties.Custom(DiscordConstants.Discoveries).ToDiscordString("discoveries")} View when you discovered an artist, album, and track with `{prfx}discoverydate` / `{prfx}dd`*";
 
                     break;
                 }

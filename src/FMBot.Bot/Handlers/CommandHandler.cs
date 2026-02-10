@@ -401,7 +401,7 @@ public class CommandHandler
                 {
                     var embed = new EmbedProperties();
                     embed.WithDescription(
-                        "To use .fmbot commands with server-wide statistics you need to create a memberlist cache first.\n\n" +
+                        "To use .fmbot commands with server-wide statistics, you need to create a memberlist cache first.\n\n" +
                         $"Please run `{prfx}refreshmembers` to create this.\n" +
                         $"Note that this can take some time on large servers.");
                     await context.Client.Rest.SendMessageAsync(context.Message.ChannelId, new MessageProperties
