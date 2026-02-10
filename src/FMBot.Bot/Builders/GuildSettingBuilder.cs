@@ -529,7 +529,7 @@ public class GuildSettingBuilder
         var response = new StringBuilder();
         response.AppendLine("You are not authorized to change this .fmbot setting.");
         response.AppendLine();
-        response.AppendLine("To change .fmbot settings, you have at least one of the following:");
+        response.AppendLine("To change .fmbot settings, you need at least one of the following:");
         response.AppendLine("- `Administrator` permission");
         response.AppendLine("- `Ban Members` permission");
         if (managersAllowed)

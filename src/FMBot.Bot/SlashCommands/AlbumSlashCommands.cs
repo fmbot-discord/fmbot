@@ -29,7 +29,7 @@ public class AlbumSlashCommands(
         IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task AlbumAsync(
-        [SlashCommandParameter(Name = "album", Description = "The album your want to search for (defaults to currently playing)",
+        [SlashCommandParameter(Name = "album", Description = "The album you want to search for (defaults to currently playing)",
             AutocompleteProviderType = typeof(AlbumAutoComplete))]
         string name = null)
     {
@@ -53,7 +53,7 @@ public class AlbumSlashCommands(
     [SlashCommand("wkalbum", "Shows what other users listen to an album in your server")]
     [UsernameSetRequired]
     public async Task WhoKnowsAlbumAsync(
-        [SlashCommandParameter(Name = "album", Description = "The album your want to search for (defaults to currently playing)",
+        [SlashCommandParameter(Name = "album", Description = "The album you want to search for (defaults to currently playing)",
             AutocompleteProviderType = typeof(AlbumAutoComplete))]
         string name = null,
         [SlashCommandParameter(Name = "mode", Description = "The type of response you want - change default with /responsemode")]
@@ -85,7 +85,7 @@ public class AlbumSlashCommands(
         IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task FriendsWhoKnowAlbumAsync(
-        [SlashCommandParameter(Name = "album", Description = "The album your want to search for (defaults to currently playing)",
+        [SlashCommandParameter(Name = "album", Description = "The album you want to search for (defaults to currently playing)",
             AutocompleteProviderType = typeof(AlbumAutoComplete))]
         string name = null,
         [SlashCommandParameter(Name = "mode", Description = "The type of response you want - change default with /responsemode")]
@@ -117,7 +117,7 @@ public class AlbumSlashCommands(
         IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task GlobalWhoKnowsAlbumAsync(
-        [SlashCommandParameter(Name = "album", Description = "The album your want to search for (defaults to currently playing)",
+        [SlashCommandParameter(Name = "album", Description = "The album you want to search for (defaults to currently playing)",
             AutocompleteProviderType = typeof(AlbumAutoComplete))]
         string name = null,
         [SlashCommandParameter(Name = "mode", Description = "The type of response you want - change default with /responsemode")]
@@ -156,7 +156,7 @@ public class AlbumSlashCommands(
         IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task AlbumCoverAsync(
-        [SlashCommandParameter(Name = "album", Description = "The album your want to search for (defaults to currently playing)",
+        [SlashCommandParameter(Name = "album", Description = "The album you want to search for (defaults to currently playing)",
             AutocompleteProviderType = typeof(AlbumAutoComplete))]
         string name = null)
     {
@@ -183,7 +183,7 @@ public class AlbumSlashCommands(
         IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task AlbumTracksAsync(
-        [SlashCommandParameter(Name = "album", Description = "The album your want to search for (defaults to currently playing)",
+        [SlashCommandParameter(Name = "album", Description = "The album you want to search for (defaults to currently playing)",
             AutocompleteProviderType = typeof(AlbumAutoComplete))]
         string name = null,
         [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
@@ -214,7 +214,7 @@ public class AlbumSlashCommands(
         IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task AlbumPlaysAsync(
-        [SlashCommandParameter(Name = "album", Description = "The album your want to search for (defaults to currently playing)",
+        [SlashCommandParameter(Name = "album", Description = "The album you want to search for (defaults to currently playing)",
             AutocompleteProviderType = typeof(AlbumAutoComplete))]
         string name = null,
         [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]

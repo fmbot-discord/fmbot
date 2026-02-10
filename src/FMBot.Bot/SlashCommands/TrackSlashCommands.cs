@@ -34,7 +34,7 @@ public class TrackSlashCommands(
     [UsernameSetRequired]
     public async Task TrackAsync(
         [SlashCommandParameter(Name = "track",
-            Description = "The track your want to search for (defaults to currently playing)",
+            Description = "The track you want to search for (defaults to currently playing)",
             AutocompleteProviderType = typeof(TrackAutoComplete))]
         string name = null)
     {
@@ -59,7 +59,7 @@ public class TrackSlashCommands(
     [UsernameSetRequired]
     public async Task WhoKnowsTrackAsync(
         [SlashCommandParameter(Name = "track",
-            Description = "The track your want to search for (defaults to currently playing)",
+            Description = "The track you want to search for (defaults to currently playing)",
             AutocompleteProviderType = typeof(TrackAutoComplete))]
         string name = null,
         [SlashCommandParameter(Name = "mode",
@@ -96,7 +96,7 @@ public class TrackSlashCommands(
     [UsernameSetRequired]
     public async Task FriendsWhoKnowAlbumAsync(
         [SlashCommandParameter(Name = "track",
-            Description = "The track your want to search for (defaults to currently playing)",
+            Description = "The track you want to search for (defaults to currently playing)",
             AutocompleteProviderType = typeof(TrackAutoComplete))]
         string name = null,
         [SlashCommandParameter(Name = "mode",
@@ -134,7 +134,7 @@ public class TrackSlashCommands(
     [UsernameSetRequired]
     public async Task GlobalWhoKnowsTrackAsync(
         [SlashCommandParameter(Name = "track",
-            Description = "The track your want to search for (defaults to currently playing)",
+            Description = "The track you want to search for (defaults to currently playing)",
             AutocompleteProviderType = typeof(TrackAutoComplete))]
         string name = null,
         [SlashCommandParameter(Name = "mode",
@@ -178,7 +178,7 @@ public class TrackSlashCommands(
     [UsernameSetRequired]
     public async Task TrackPlaysAsync(
         [SlashCommandParameter(Name = "track",
-            Description = "The track your want to search for (defaults to currently playing)",
+            Description = "The track you want to search for (defaults to currently playing)",
             AutocompleteProviderType = typeof(TrackAutoComplete))]
         string name = null,
         [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
@@ -211,7 +211,7 @@ public class TrackSlashCommands(
     [UsernameSetRequired]
     public async Task TrackDetailsAsync(
         [SlashCommandParameter(Name = "track",
-            Description = "The track your want to search for (defaults to currently playing)",
+            Description = "The track you want to search for (defaults to currently playing)",
             AutocompleteProviderType = typeof(TrackAutoComplete))]
         string name = null)
     {
@@ -232,14 +232,14 @@ public class TrackSlashCommands(
         }
     }
 
-    [SlashCommand("love", "Loves track you're currently listening to or searching for on Last.fm",
+    [SlashCommand("love", "Loves the track you're currently listening to or searching for on Last.fm",
         Contexts =
             [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild],
         IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UserSessionRequired]
     public async Task LoveTrackAsync(
         [SlashCommandParameter(Name = "track",
-            Description = "The track your want to love (defaults to currently playing)",
+            Description = "The track you want to love (defaults to currently playing)",
             AutocompleteProviderType = typeof(TrackAutoComplete))]
         string name = null,
         [SlashCommandParameter(Name = "private", Description = "Only show response to you")]
@@ -260,14 +260,14 @@ public class TrackSlashCommands(
         }
     }
 
-    [SlashCommand("unlove", "Removes track you're currently listening to or searching from your loved tracks",
+    [SlashCommand("unlove", "Removes the track you're currently listening to or searching for from your loved tracks",
         Contexts =
             [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild],
         IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UserSessionRequired]
     public async Task UnloveTrackAsync(
         [SlashCommandParameter(Name = "track",
-            Description = "The track your want to remove (defaults to currently playing)",
+            Description = "The track you want to remove (defaults to currently playing)",
             AutocompleteProviderType = typeof(TrackAutoComplete))]
         string name = null,
         [SlashCommandParameter(Name = "private", Description = "Only show response to you")]
@@ -398,7 +398,7 @@ public class TrackSlashCommands(
         IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UserSessionRequired]
     public async Task ScrobbleAsync(
-        [SlashCommandParameter(Name = "track", Description = "The track your want to scrobble",
+        [SlashCommandParameter(Name = "track", Description = "The track you want to scrobble",
             AutocompleteProviderType = typeof(TrackAutoComplete))]
         string name = null,
         [SlashCommandParameter(Name = "private", Description = "Only show response to you")]

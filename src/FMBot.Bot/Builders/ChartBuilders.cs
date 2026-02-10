@@ -342,7 +342,7 @@ public class ChartBuilders
             if (chartSettings.SkipWithoutImage)
             {
                 reply += "\n\n" +
-                         $"Note that {extraArtists} extra albums are required because you are skipping artists without an image.";
+                         $"Note that {extraArtists} extra artists are required because you are skipping artists without an image.";
             }
 
             response.Embed.Description = reply;

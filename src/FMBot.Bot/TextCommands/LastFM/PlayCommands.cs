@@ -278,7 +278,7 @@ public class PlayCommands(
     }
 
     [Command("recap", "rcp", "wrapped")]
-    [Summary("A recap to easily view multiple .fmbot commands into one")]
+    [Summary("A recap that combines multiple .fmbot commands into one view")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks, CommandCategory.Albums, CommandCategory.Artists)]
     public async Task RecapAsync([CommandParameter(Remainder = true)] string extraOptions = null)

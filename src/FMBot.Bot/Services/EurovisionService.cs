@@ -68,14 +68,14 @@ public class EurovisionService
         else if (!entry.HasScore && entry.ReachedFinals)
         {
             full.Append(
-                $"- Playing in the Grand final");
+                $"- Playing in the Grand Final");
             if (entry.HasDraw)
             {
                 full.Append(
                     $" - **{entry.Draw}{StringExtensions.GetAmountEnd(entry.Draw)} running position**");
             }
 
-            oneLine.Append($" - Grand finals");
+            oneLine.Append($" - Grand Final");
         }
         else if (entry.HasPosition)
         {

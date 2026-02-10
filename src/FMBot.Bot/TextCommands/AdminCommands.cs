@@ -108,7 +108,7 @@ public class AdminCommands(
 
         if (!ulong.TryParse(guildId, out var discordGuildId))
         {
-            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Enter a valid discord guild id" });
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Enter a valid Discord guild ID." });
             await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
             return;
         }
@@ -862,7 +862,7 @@ public class AdminCommands(
         {
             if (string.IsNullOrEmpty(user))
             {
-                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Enter an username to check\n" +
+                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Enter a username to check\n" +
                                  "Example: `.fmcheckbotted Kefkef123`" });
                 return;
             }
@@ -1065,7 +1065,7 @@ public class AdminCommands(
         {
             if (string.IsNullOrEmpty(user) || string.IsNullOrEmpty(reason))
             {
-                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Enter an username and reason to remove someone from gwk banlist\n" +
+                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Enter a username and reason to add someone to the gwk banlist\n" +
                                  "Example: `.addbotteduser \"Kefkef123\" \"8 days listening time in Last.week\"`" });
                 await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
                 return;

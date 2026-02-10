@@ -207,7 +207,7 @@ public class AlbumCommands(
     }
 
     [Command("globalwhoknowsalbum", "gwa", "gwka", "gwab", "gwkab", "globalwka", "globalwkalbum")]
-    [Summary("Shows what other users listen to the an album on .fmbot")]
+    [Summary("Shows what other users listen to an album on .fmbot")]
     [Examples("gwa", "globalwhoknowsalbum", "globalwhoknowsalbum the beatles abbey road",
         "globalwhoknowsalbum Metallica & Lou Reed | Lulu")]
     [UsernameSetRequired]

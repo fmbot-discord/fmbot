@@ -971,7 +971,7 @@ public class AlbumBuilders
             else
             {
                 response.Embed.WithDescription(
-                    $"Sorry, but neither Last.fm or Spotify know the tracks for {albumName}.");
+                    $"Sorry, but neither Last.fm nor Spotify know the tracks for {albumName}.");
                 response.CommandResponse = CommandResponse.NotFound;
                 return response;
             }

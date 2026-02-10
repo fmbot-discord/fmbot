@@ -1205,7 +1205,7 @@ public class UserService
 
         if (stats.UpdateError == true)
         {
-            description.AppendLine($"❌ A (Last.fm) error occurred while attempting to update `{user.UserNameLastFM}`:");
+            description.AppendLine($"❌ A Last.fm error occurred while attempting to update `{user.UserNameLastFM}`:");
             if (stats.FailedUpdates.HasFlag(UpdateType.Full))
             {
                 description.AppendLine($"- Could not fetch user info from Last.fm");

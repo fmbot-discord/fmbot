@@ -24,7 +24,7 @@ public static class GenericEmbedService
         var loginCommand = PublicProperties.SlashCommands.ContainsKey("login")
             ? $"</login:{PublicProperties.SlashCommands["login"]}>"
             : "`/login`";
-        embed.WithDescription($"Hi {name}, welcome to .fmbot. \n" +
+        embed.WithDescription($"Hi {name}, welcome to .fmbot.\n" +
                               $"To use this bot you first need to add your Last.fm account.\n\n" +
                               $"Use the buttons below to sign up or connect your existing Last.fm account.");
 
@@ -116,7 +116,7 @@ public static class GenericEmbedService
         {
             case ResponseStatus.Failure:
                 embed.WithDescription(
-                    "Can't retrieve data because Last.fm returned an error. Please try again later. \n" +
+                    "Can't retrieve data because Last.fm returned an error. Please try again later.\n" +
                     $"Please note that .fmbot isn't affiliated with Last.fm.");
                 break;
             case ResponseStatus.LoginRequired:
@@ -145,7 +145,7 @@ public static class GenericEmbedService
                 else if (message.Equals("Not found"))
                 {
                     embed.WithDescription(
-                        $"Last.fm did not return a result. Maybe there are no results or you're looking for a user that recently changed their username (in which case they should re-run /login).");
+                        $"Last.fm did not return a result. There may be no results, or you might be looking for a user who recently changed their username. In that case, they should re-run /login.");
                 }
                 else
                 {

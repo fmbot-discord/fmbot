@@ -385,7 +385,7 @@ public class UserSlashCommands(
         await this.Context.LogCommandUsedAsync(response, userService);
     }
 
-    [SlashCommand("featured", "Shows what is currently featured (and the bots avatar)", Contexts =
+    [SlashCommand("featured", "Shows what is currently featured (and the bot's avatar)", Contexts =
     [
         InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,
         InteractionContextType.Guild
