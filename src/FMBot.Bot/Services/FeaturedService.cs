@@ -493,41 +493,15 @@ public class FeaturedService
         }
 
         var filterDate = DateTime.UtcNow.AddDays(-lastUsedFilter);
+        // intentionally omit UserType.Owner?
+        var supporteresqueUserTypes = new[] { UserType.Admin, UserType.Contributor, UserType.Supporter };
         var users = db.Users
             .AsQueryable()
             .Where(w => w.Blocked != true &&
                         !lastFmUsersToFilter.Contains(w.UserNameLastFM.ToLower()) &&
-                        (!supportersOnly || w.UserType == UserType.Supporter) &&
+                        (!supportersOnly || supporteresqueUserTypes.Contains(w.UserType)) &&
                         w.LastUsed != null &&
                         w.LastUsed > filterDate).ToList();
-
-        // Great coding for staff that also has supporter
-        if (supportersOnly)
-        {
-            var rndl = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == 546055787835949077);
-            if (rndl != null)
-            {
-                users.Add(rndl);
-            }
-
-            var drasil = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == 278633844763262976);
-            if (drasil != null)
-            {
-                users.Add(drasil);
-            }
-
-            var aeth = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == 616906331537932300);
-            if (aeth != null)
-            {
-                users.Add(aeth);
-            }
-
-            var arap = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == 339561593320767498);
-            if (arap != null)
-            {
-                users.Add(arap);
-            }
-        }
 
         if (users.Count == 0)
         {
