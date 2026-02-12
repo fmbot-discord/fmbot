@@ -98,6 +98,28 @@ public class GuildCommands(
         await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "You can now kick this bot from your server in the next 30 minutes without losing the stored .fmbot data, like server settings and crown history.\n\nIf you still wish to remove all server data from the bot you can kick the bot after the time period is over." });
     }
 
+    [Command("language", "lang", "locale")]
+    [Summary("Sets the language for .fmbot responses in this server.")]
+    [GuildOnly]
+    [CommandCategories(CommandCategory.ServerSettings)]
+    [RequiresIndex]
+    public async Task SetLanguageAsync([CommandParameter(Remainder = true)] string unused = null)
+    {
+        try
+        {
+            var locale = await guildService.GetGuildLocaleAsync(this.Context.Guild.Id);
+            var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+            var response = await guildSettingBuilder.SetLanguage(new ContextModel(this.Context, prfx) { Locale = locale });
+
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
     [Command("servermode", "guildmode")]
     [Summary("Sets the forced .fm mode for the server.\n\n" +
              "To view current settings, use `{{prfx}}servermode info`")]

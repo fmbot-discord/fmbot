@@ -1,0 +1,46 @@
+{
+  "guild_settings": {
+    "title": ".fmbot serverkonfiguration - {guildName}",
+    "footer_personal": "Använd '{prefix}settings' för personliga .fmbot-inställningar",
+    "text_prefix": "Textkommandoprefix: ",
+    "prefix_default": "`{prefix}` (standard)",
+    "whoknows_settings": "WhoKnows-inställningar",
+    "users_blocked_from_wk": "**{count}** användare blockerade från WhoKnows och serverlistor.",
+    "activity_threshold_set": "Användare måste ha använt .fmbot inom de senaste **{days}** dagarna för att vara synliga.",
+    "no_activity_threshold": "Inget aktivitetskrav har ställts in för synlighet.",
+    "crown_settings": "Crown-inställningar",
+    "crowns_disabled": "Crown-funktionaliteten har inaktiverats på denna server.",
+    "crowns_description": "Användare får crowns när de är #1-lyssnaren för en artist. ",
+    "users_blocked_from_crowns": "**{count}** användare är blockerade från att få crowns.",
+    "crown_min_playcount": "Minsta antal spelningar för en crown är **{count}** eller högre",
+    "crown_min_default": " (standard)",
+    "crown_activity_set": "Användare måste ha använt .fmbot inom de senaste **{days}** dagarna för att få crowns.",
+    "no_crown_activity": "Inget aktivitetskrav har ställts in för att få crowns.",
+    "emote_reactions": "Emojireaktioner",
+    "no_reactions": "Inga automatiska reaktioner aktiverade för `fm` och `featured`.",
+    "reactions_label": "Automatiska `fm`- och `featured`-reaktioner:",
+    "disabled_commands": "Serveromfattande inaktiverade kommandon",
+    "disabled_commands_label": "Inaktiverade kommandon: ",
+    "missing_permissions": "Saknade serveromfattande behörigheter",
+    "select_setting": "Välj den inställning du vill ändra"
+  },
+  "language_setting": {
+    "title": "Ställ in serverspråk",
+    "description": "Välj språk för .fmbot-svar på denna server.",
+    "current": "Nuvarande språk: **{language}**",
+    "note": "Obs: Kommandonamn kommer alltid att vara på engelska.",
+    "placeholder": "Välj ett språk"
+  },
+  "common": {
+    "plays": "{count} spelningar",
+    "play": "{count} spelning",
+    "listeners": "{count} lyssnare",
+    "listener": "{count} lyssnare",
+    "artist": "artist",
+    "artists": "artister",
+    "album": "album",
+    "albums": "album",
+    "track": "låt",
+    "tracks": "låtar"
+  }
+}

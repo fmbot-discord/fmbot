@@ -1,0 +1,46 @@
+{
+  "guild_settings": {
+    "title": "Configuração do servidor .fmbot - {guildName}",
+    "footer_personal": "Use '{prefix}settings' para configurações pessoais do .fmbot",
+    "text_prefix": "Prefixo de comandos de texto: ",
+    "prefix_default": "`{prefix}` (padrão)",
+    "whoknows_settings": "Configurações do WhoKnows",
+    "users_blocked_from_wk": "**{count}** usuários bloqueados do WhoKnows e dos gráficos do servidor.",
+    "activity_threshold_set": "Usuários devem ter usado o .fmbot nos últimos **{days}** dias para serem visíveis.",
+    "no_activity_threshold": "Não há requisito de atividade definido para ser visível.",
+    "crown_settings": "Configurações de crowns",
+    "crowns_disabled": "A funcionalidade de crowns foi desativada neste servidor.",
+    "crowns_description": "Usuários ganham crowns quando são o #1 em reproduções de um artista. ",
+    "users_blocked_from_crowns": "**{count}** usuários estão bloqueados de ganhar crowns.",
+    "crown_min_playcount": "A quantidade mínima de reproduções para uma crown é **{count}** ou mais",
+    "crown_min_default": " (padrão)",
+    "crown_activity_set": "Usuários devem ter usado o .fmbot nos últimos **{days}** dias para ganhar crowns.",
+    "no_crown_activity": "Não há requisito de atividade definido para ganhar crowns.",
+    "emote_reactions": "Reações com emojis",
+    "no_reactions": "Nenhuma reação automática ativada para `fm` e `featured`.",
+    "reactions_label": "Reações automáticas de `fm` e `featured`:",
+    "disabled_commands": "Comandos desativados no servidor",
+    "disabled_commands_label": "Comandos desativados: ",
+    "missing_permissions": "Permissões ausentes no servidor",
+    "select_setting": "Selecione a configuração que deseja alterar"
+  },
+  "language_setting": {
+    "title": "Definir idioma do servidor",
+    "description": "Selecione o idioma para as respostas do .fmbot neste servidor.",
+    "current": "Idioma atual: **{language}**",
+    "note": "Nota: Os nomes dos comandos permanecerão sempre em inglês.",
+    "placeholder": "Selecione um idioma"
+  },
+  "common": {
+    "plays": "{count} reproduções",
+    "play": "{count} reprodução",
+    "listeners": "{count} ouvintes",
+    "listener": "{count} ouvinte",
+    "artist": "artista",
+    "artists": "artistas",
+    "album": "álbum",
+    "albums": "álbuns",
+    "track": "faixa",
+    "tracks": "faixas"
+  }
+}

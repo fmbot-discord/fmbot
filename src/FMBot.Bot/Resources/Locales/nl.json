@@ -1,0 +1,46 @@
+{
+  "guild_settings": {
+    "title": ".fmbot serverconfiguratie - {guildName}",
+    "footer_personal": "Gebruik '{prefix}settings' voor persoonlijke .fmbot-instellingen",
+    "text_prefix": "Prefix voor tekstcommando's: ",
+    "prefix_default": "`{prefix}` (standaard)",
+    "whoknows_settings": "WhoKnows-instellingen",
+    "users_blocked_from_wk": "**{count}** gebruikers geblokkeerd van WhoKnows en serverlijsten.",
+    "activity_threshold_set": "Gebruikers moeten .fmbot in de afgelopen **{days}** dagen hebben gebruikt om zichtbaar te zijn.",
+    "no_activity_threshold": "Er is geen activiteitsvereiste ingesteld voor zichtbaarheid.",
+    "crown_settings": "Crown-instellingen",
+    "crowns_disabled": "De crown-functionaliteit is uitgeschakeld op deze server.",
+    "crowns_description": "Gebruikers verdienen crowns wanneer ze de #1 luisteraar voor een artiest zijn. ",
+    "users_blocked_from_crowns": "**{count}** gebruikers zijn geblokkeerd van het verdienen van crowns.",
+    "crown_min_playcount": "Het minimale aantal keer afgespeeld voor een crown is **{count}** of hoger",
+    "crown_min_default": " (standaard)",
+    "crown_activity_set": "Gebruikers moeten .fmbot in de afgelopen **{days}** dagen hebben gebruikt om crowns te verdienen.",
+    "no_crown_activity": "Er is geen activiteitsvereiste ingesteld voor het verdienen van crowns.",
+    "emote_reactions": "Emoji-reacties",
+    "no_reactions": "Geen automatische reacties ingeschakeld voor `fm` en `featured`.",
+    "reactions_label": "Automatische `fm`- en `featured`-reacties:",
+    "disabled_commands": "Serverbreed uitgeschakelde commando's",
+    "disabled_commands_label": "Uitgeschakelde commando's: ",
+    "missing_permissions": "Ontbrekende serverbrede rechten",
+    "select_setting": "Selecteer de instelling die je wilt wijzigen"
+  },
+  "language_setting": {
+    "title": "Servertaal instellen",
+    "description": "Selecteer de taal voor .fmbot-antwoorden op deze server.",
+    "current": "Huidige taal: **{language}**",
+    "note": "Let op: Commandonamen blijven altijd in het Engels.",
+    "placeholder": "Selecteer een taal"
+  },
+  "common": {
+    "plays": "{count} keer afgespeeld",
+    "play": "{count} keer afgespeeld",
+    "listeners": "{count} luisteraars",
+    "listener": "{count} luisteraar",
+    "artist": "artiest",
+    "artists": "artiesten",
+    "album": "album",
+    "albums": "albums",
+    "track": "nummer",
+    "tracks": "nummers"
+  }
+}

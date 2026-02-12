@@ -1,0 +1,46 @@
+{
+  "guild_settings": {
+    "title": "Konfiguracja serwera .fmbot - {guildName}",
+    "footer_personal": "Użyj '{prefix}settings' dla osobistych ustawień .fmbot",
+    "text_prefix": "Prefiks komend tekstowych: ",
+    "prefix_default": "`{prefix}` (domyślny)",
+    "whoknows_settings": "Ustawienia WhoKnows",
+    "users_blocked_from_wk": "**{count}** użytkowników zablokowanych w WhoKnows i na listach serwera.",
+    "activity_threshold_set": "Użytkownicy muszą używać .fmbot w ciągu ostatnich **{days}** dni, aby być widoczni.",
+    "no_activity_threshold": "Nie ustawiono wymogu aktywności dla widoczności.",
+    "crown_settings": "Ustawienia crowns",
+    "crowns_disabled": "Funkcja crowns została wyłączona na tym serwerze.",
+    "crowns_description": "Użytkownicy zdobywają crowns, gdy są #1 słuchaczem danego artysty. ",
+    "users_blocked_from_crowns": "**{count}** użytkowników jest zablokowanych przed zdobywaniem crowns.",
+    "crown_min_playcount": "Minimalna liczba odtworzeń dla crown to **{count}** lub więcej",
+    "crown_min_default": " (domyślnie)",
+    "crown_activity_set": "Użytkownicy muszą używać .fmbot w ciągu ostatnich **{days}** dni, aby zdobywać crowns.",
+    "no_crown_activity": "Nie ustawiono wymogu aktywności dla zdobywania crowns.",
+    "emote_reactions": "Reakcje emoji",
+    "no_reactions": "Brak automatycznych reakcji dla `fm` i `featured`.",
+    "reactions_label": "Automatyczne reakcje `fm` i `featured`:",
+    "disabled_commands": "Wyłączone komendy na serwerze",
+    "disabled_commands_label": "Wyłączone komendy: ",
+    "missing_permissions": "Brakujące uprawnienia na serwerze",
+    "select_setting": "Wybierz ustawienie, które chcesz zmienić"
+  },
+  "language_setting": {
+    "title": "Ustaw język serwera",
+    "description": "Wybierz język odpowiedzi .fmbot na tym serwerze.",
+    "current": "Obecny język: **{language}**",
+    "note": "Uwaga: Nazwy komend zawsze pozostaną w języku angielskim.",
+    "placeholder": "Wybierz język"
+  },
+  "common": {
+    "plays": "{count} odtworzeń",
+    "play": "{count} odtworzenie",
+    "listeners": "{count} słuchaczy",
+    "listener": "{count} słuchacz",
+    "artist": "artysta",
+    "artists": "artyści",
+    "album": "album",
+    "albums": "albumy",
+    "track": "utwór",
+    "tracks": "utwory"
+  }
+}

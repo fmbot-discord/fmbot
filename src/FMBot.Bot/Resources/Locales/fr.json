@@ -1,0 +1,46 @@
+{
+  "guild_settings": {
+    "title": "Configuration du serveur .fmbot - {guildName}",
+    "footer_personal": "Utilisez '{prefix}settings' pour les paramètres personnels de .fmbot",
+    "text_prefix": "Préfixe des commandes texte : ",
+    "prefix_default": "`{prefix}` (par défaut)",
+    "whoknows_settings": "Paramètres WhoKnows",
+    "users_blocked_from_wk": "**{count}** utilisateurs bloqués de WhoKnows et des classements du serveur.",
+    "activity_threshold_set": "Les utilisateurs doivent avoir utilisé .fmbot dans les **{days}** derniers jours pour être visibles.",
+    "no_activity_threshold": "Aucune exigence d'activité n'est définie pour être visible.",
+    "crown_settings": "Paramètres des crowns",
+    "crowns_disabled": "La fonctionnalité des crowns a été désactivée sur ce serveur.",
+    "crowns_description": "Les utilisateurs obtiennent des crowns lorsqu'ils sont l'auditeur #1 d'un artiste. ",
+    "users_blocked_from_crowns": "**{count}** utilisateurs sont bloqués et ne peuvent pas obtenir de crowns.",
+    "crown_min_playcount": "Le nombre minimum d'écoutes pour une crown est de **{count}** ou plus",
+    "crown_min_default": " (par défaut)",
+    "crown_activity_set": "Les utilisateurs doivent avoir utilisé .fmbot dans les **{days}** derniers jours pour obtenir des crowns.",
+    "no_crown_activity": "Aucune exigence d'activité n'est définie pour obtenir des crowns.",
+    "emote_reactions": "Réactions emoji",
+    "no_reactions": "Aucune réaction automatique activée pour `fm` et `featured`.",
+    "reactions_label": "Réactions automatiques `fm` et `featured` :",
+    "disabled_commands": "Commandes désactivées sur le serveur",
+    "disabled_commands_label": "Commandes désactivées : ",
+    "missing_permissions": "Permissions manquantes sur le serveur",
+    "select_setting": "Sélectionnez le paramètre que vous souhaitez modifier"
+  },
+  "language_setting": {
+    "title": "Définir la langue du serveur",
+    "description": "Sélectionnez la langue pour les réponses de .fmbot sur ce serveur.",
+    "current": "Langue actuelle : **{language}**",
+    "note": "Note : Les noms des commandes resteront toujours en anglais.",
+    "placeholder": "Sélectionnez une langue"
+  },
+  "common": {
+    "plays": "{count} écoutes",
+    "play": "{count} écoute",
+    "listeners": "{count} auditeurs",
+    "listener": "{count} auditeur",
+    "artist": "artiste",
+    "artists": "artistes",
+    "album": "album",
+    "albums": "albums",
+    "track": "titre",
+    "tracks": "titres"
+  }
+}

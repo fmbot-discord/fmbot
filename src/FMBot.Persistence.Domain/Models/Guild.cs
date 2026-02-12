@@ -62,4 +62,6 @@ public class Guild
     public ICollection<GuildShortcut> Shortcuts { get; set; }
 
     public ulong? WhoKnowsWhitelistRoleId { get; set; }
+
+    public string PreferredLocale { get; set; }
 }

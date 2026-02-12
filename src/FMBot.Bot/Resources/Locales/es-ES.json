@@ -1,0 +1,46 @@
+{
+  "guild_settings": {
+    "title": "Configuración del servidor .fmbot - {guildName}",
+    "footer_personal": "Usa '{prefix}settings' para la configuración personal de .fmbot",
+    "text_prefix": "Prefijo de comandos de texto: ",
+    "prefix_default": "`{prefix}` (predeterminado)",
+    "whoknows_settings": "Configuración de WhoKnows",
+    "users_blocked_from_wk": "**{count}** usuarios bloqueados de WhoKnows y las listas del servidor.",
+    "activity_threshold_set": "Los usuarios deben haber usado .fmbot en los últimos **{days}** días para ser visibles.",
+    "no_activity_threshold": "No hay requisito de actividad establecido para ser visible.",
+    "crown_settings": "Configuración de crowns",
+    "crowns_disabled": "La funcionalidad de crowns ha sido desactivada en este servidor.",
+    "crowns_description": "Los usuarios ganan crowns cuando son el #1 en reproducciones de un artista. ",
+    "users_blocked_from_crowns": "**{count}** usuarios están bloqueados de ganar crowns.",
+    "crown_min_playcount": "El mínimo de reproducciones para una crown es **{count}** o más",
+    "crown_min_default": " (predeterminado)",
+    "crown_activity_set": "Los usuarios deben haber usado .fmbot en los últimos **{days}** días para ganar crowns.",
+    "no_crown_activity": "No hay requisito de actividad establecido para ganar crowns.",
+    "emote_reactions": "Reacciones con emojis",
+    "no_reactions": "No hay reacciones automáticas activadas para `fm` y `featured`.",
+    "reactions_label": "Reacciones automáticas de `fm` y `featured`:",
+    "disabled_commands": "Comandos desactivados en el servidor",
+    "disabled_commands_label": "Comandos desactivados: ",
+    "missing_permissions": "Permisos faltantes en el servidor",
+    "select_setting": "Selecciona la configuración que deseas cambiar"
+  },
+  "language_setting": {
+    "title": "Establecer idioma del servidor",
+    "description": "Selecciona el idioma para las respuestas de .fmbot en este servidor.",
+    "current": "Idioma actual: **{language}**",
+    "note": "Nota: Los nombres de los comandos siempre permanecerán en inglés.",
+    "placeholder": "Selecciona un idioma"
+  },
+  "common": {
+    "plays": "{count} reproducciones",
+    "play": "{count} reproducción",
+    "listeners": "{count} oyentes",
+    "listener": "{count} oyente",
+    "artist": "artista",
+    "artists": "artistas",
+    "album": "álbum",
+    "albums": "álbumes",
+    "track": "canción",
+    "tracks": "canciones"
+  }
+}

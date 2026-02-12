@@ -65,4 +65,6 @@ public class ContextModel
     public User ContextUser { get; set; }
 
     public NumberFormat NumberFormat { get; set; }
+
+    public string Locale { get; set; } = "en";
 }

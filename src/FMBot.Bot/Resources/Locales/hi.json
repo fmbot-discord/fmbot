@@ -1,0 +1,46 @@
+{
+  "guild_settings": {
+    "title": ".fmbot सर्वर कॉन्फ़िगरेशन - {guildName}",
+    "footer_personal": "व्यक्तिगत .fmbot सेटिंग्स के लिए '{prefix}settings' का उपयोग करें",
+    "text_prefix": "टेक्स्ट कमांड प्रीफ़िक्स: ",
+    "prefix_default": "`{prefix}` (डिफ़ॉल्ट)",
+    "whoknows_settings": "WhoKnows सेटिंग्स",
+    "users_blocked_from_wk": "**{count}** उपयोगकर्ता WhoKnows और सर्वर चार्ट से ब्लॉक किए गए हैं।",
+    "activity_threshold_set": "दिखाई देने के लिए उपयोगकर्ताओं को पिछले **{days}** दिनों में .fmbot का उपयोग किया होना चाहिए।",
+    "no_activity_threshold": "दिखाई देने के लिए कोई गतिविधि आवश्यकता निर्धारित नहीं है।",
+    "crown_settings": "Crown सेटिंग्स",
+    "crowns_disabled": "इस सर्वर पर crown कार्यक्षमता अक्षम कर दी गई है।",
+    "crowns_description": "जब कोई उपयोगकर्ता किसी कलाकार के #1 श्रोता होते हैं तो उन्हें crown मिलता है। ",
+    "users_blocked_from_crowns": "**{count}** उपयोगकर्ता crowns अर्जित करने से ब्लॉक हैं।",
+    "crown_min_playcount": "Crown के लिए न्यूनतम प्ले काउंट **{count}** या अधिक पर सेट है",
+    "crown_min_default": " (डिफ़ॉल्ट)",
+    "crown_activity_set": "Crowns अर्जित करने के लिए उपयोगकर्ताओं को पिछले **{days}** दिनों में .fmbot का उपयोग किया होना चाहिए।",
+    "no_crown_activity": "Crowns अर्जित करने के लिए कोई गतिविधि आवश्यकता निर्धारित नहीं है।",
+    "emote_reactions": "इमोजी रिएक्शन",
+    "no_reactions": "`fm` और `featured` के लिए कोई स्वचालित रिएक्शन सक्षम नहीं हैं।",
+    "reactions_label": "स्वचालित `fm` और `featured` रिएक्शन:",
+    "disabled_commands": "सर्वर-व्यापी अक्षम कमांड",
+    "disabled_commands_label": "अक्षम कमांड: ",
+    "missing_permissions": "सर्वर-व्यापी अनुपलब्ध अनुमतियाँ",
+    "select_setting": "वह सेटिंग चुनें जिसे आप बदलना चाहते हैं"
+  },
+  "language_setting": {
+    "title": "सर्वर भाषा सेट करें",
+    "description": "इस सर्वर में .fmbot प्रतिक्रियाओं के लिए भाषा चुनें।",
+    "current": "वर्तमान भाषा: **{language}**",
+    "note": "नोट: कमांड के नाम हमेशा अंग्रेज़ी में रहेंगे।",
+    "placeholder": "भाषा चुनें"
+  },
+  "common": {
+    "plays": "{count} बार सुना गया",
+    "play": "{count} बार सुना गया",
+    "listeners": "{count} श्रोता",
+    "listener": "{count} श्रोता",
+    "artist": "कलाकार",
+    "artists": "कलाकार",
+    "album": "एल्बम",
+    "albums": "एल्बम",
+    "track": "ट्रैक",
+    "tracks": "ट्रैक"
+  }
+}

@@ -717,6 +717,51 @@ public class GuildService
         }
     }
 
+    public async Task<Persistence.Domain.Models.Guild> SetGuildLocaleAsync(NetCord.Gateway.Guild discordGuild, string locale)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var existingGuild = await db.Guilds
+            .AsQueryable()
+            .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuild.Id);
+
+        if (existingGuild == null)
+        {
+            var newGuild = new Persistence.Domain.Models.Guild
+            {
+                DiscordGuildId = discordGuild.Id,
+                Name = discordGuild.Name,
+                PreferredLocale = locale
+            };
+
+            await db.Guilds.AddAsync(newGuild);
+
+            await db.SaveChangesAsync();
+
+            await RemoveGuildFromCache(discordGuild.Id);
+
+            return newGuild;
+        }
+        else
+        {
+            existingGuild.PreferredLocale = locale;
+            existingGuild.Name = discordGuild.Name;
+
+            db.Entry(existingGuild).State = EntityState.Modified;
+
+            await db.SaveChangesAsync();
+
+            await RemoveGuildFromCache(discordGuild.Id);
+
+            return existingGuild;
+        }
+    }
+
+    public async Task<string> GetGuildLocaleAsync(ulong discordGuildId)
+    {
+        var guild = await GetGuildAsync(discordGuildId);
+        return guild?.PreferredLocale ?? "en";
+    }
+
     public async Task SetGuildWhoKnowsWhitelistRoleAsync(NetCord.Gateway.Guild discordGuild, ulong? roleId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();

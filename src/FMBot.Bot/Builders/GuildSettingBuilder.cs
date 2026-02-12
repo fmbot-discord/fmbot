@@ -26,12 +26,46 @@ public class GuildSettingBuilder
     private readonly GuildService _guildService;
     private readonly BotSettings _botSettings;
     private readonly AdminService _adminService;
+    private readonly LocalizationService _localizationService;
 
-    public GuildSettingBuilder(GuildService guildService, IOptions<BotSettings> botSettings, AdminService adminService)
+    public GuildSettingBuilder(GuildService guildService, IOptions<BotSettings> botSettings, AdminService adminService,
+        LocalizationService localizationService)
     {
         this._guildService = guildService;
         this._adminService = adminService;
         this._botSettings = botSettings.Value;
+        this._localizationService = localizationService;
+    }
+
+    public static List<(string locale, string name)> GetSupportedLanguages()
+    {
+        return
+        [
+            ("en", "English"),
+            ("pt-BR", "Português (Brasil)"),
+            ("es-ES", "Español"),
+            ("hi", "हिन्दी"),
+            ("de", "Deutsch"),
+            ("pl", "Polski"),
+            ("nl", "Nederlands"),
+            ("fr", "Français"),
+            ("it", "Italiano"),
+            ("tr", "Türkçe"),
+            ("sv-SE", "Svenska")
+        ];
+    }
+
+    public static string GetLanguageDisplayName(string locale)
+    {
+        foreach (var (code, name) in GetSupportedLanguages())
+        {
+            if (string.Equals(code, locale, StringComparison.OrdinalIgnoreCase))
+            {
+                return name;
+            }
+        }
+
+        return "English";
     }
 
     public async Task<ResponseModel> GetGuildSettings(ContextModel context, Permissions guildPermissions)
@@ -41,23 +75,25 @@ public class GuildSettingBuilder
             ResponseType = ResponseType.Embed
         };
 
+        var t = this._localizationService.For(context.Locale);
+
         var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
         var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
 
-        response.Embed.WithTitle($".fmbot server configuration - {guild.Name}");
+        response.Embed.WithTitle(t.Get("guild_settings.title", ("guildName", guild.Name)));
         response.Embed.WithFooter($"{guild.DiscordGuildId}\n" +
-                                  $"Use '{context.Prefix}settings' for personal .fmbot settings");
+                                  t.Get("guild_settings.footer_personal", ("prefix", context.Prefix)));
 
         var settings = new StringBuilder();
 
-        settings.Append("Text command prefix: ");
+        settings.Append(t["guild_settings.text_prefix"]);
         if (guild.Prefix != null)
         {
             settings.Append($"`{guild.Prefix}`");
         }
         else
         {
-            settings.Append($"`{this._botSettings.Bot.Prefix}` (default)");
+            settings.Append(t.Get("guild_settings.prefix_default", ("prefix", this._botSettings.Bot.Prefix)));
         }
 
         settings.AppendLine();
@@ -65,83 +101,86 @@ public class GuildSettingBuilder
         var whoKnowsSettings = new StringBuilder();
 
         whoKnowsSettings.AppendLine(
-            $"**{guildUsers?.Count(c => c.Value.BlockedFromWhoKnows) ?? 0}** users blocked from WhoKnows and server charts.");
+            t.Get("guild_settings.users_blocked_from_wk",
+                ("count", (guildUsers?.Count(c => c.Value.BlockedFromWhoKnows) ?? 0).ToString())));
 
         if (guild.ActivityThresholdDays.HasValue)
         {
-            whoKnowsSettings.Append($"Users must have used .fmbot in the last **{guild.ActivityThresholdDays}** days to be visible.");
+            whoKnowsSettings.Append(t.Get("guild_settings.activity_threshold_set",
+                ("days", guild.ActivityThresholdDays.ToString())));
         }
         else
         {
-            whoKnowsSettings.AppendLine("There is no activity requirement set for being visible.");
+            whoKnowsSettings.AppendLine(t["guild_settings.no_activity_threshold"]);
         }
 
-        response.Embed.AddField("WhoKnows settings", whoKnowsSettings.ToString());
+        response.Embed.AddField(t["guild_settings.whoknows_settings"], whoKnowsSettings.ToString());
 
         var crownSettings = new StringBuilder();
         if (guild.CrownsDisabled == true)
         {
-            crownSettings.Append("Crown functionality has been disabled on this server.");
+            crownSettings.Append(t["guild_settings.crowns_disabled"]);
         }
         else
         {
-            crownSettings.AppendLine(
-                "Users earn crowns whenever they're the #1 user for an artist. ");
+            crownSettings.AppendLine(t["guild_settings.crowns_description"]);
 
             crownSettings.AppendLine(
-                $"**{guildUsers?.Count(c => c.Value.BlockedFromCrowns) ?? 0}** users are blocked from earning crowns.");
+                t.Get("guild_settings.users_blocked_from_crowns",
+                    ("count", (guildUsers?.Count(c => c.Value.BlockedFromCrowns) ?? 0).ToString())));
 
             crownSettings.AppendLine();
 
             crownSettings.Append(
-                $"The minimum playcount for a crown is set to **{guild.CrownsMinimumPlaycountThreshold ?? Constants.DefaultPlaysForCrown}** or higher");
+                t.Get("guild_settings.crown_min_playcount",
+                    ("count", (guild.CrownsMinimumPlaycountThreshold ?? Constants.DefaultPlaysForCrown).ToString())));
 
             if (guild.CrownsMinimumPlaycountThreshold == null)
             {
-                crownSettings.Append(
-                    " (default)");
+                crownSettings.Append(t["guild_settings.crown_min_default"]);
             }
 
             crownSettings.Append(". ");
 
             if (guild.CrownsActivityThresholdDays.HasValue)
             {
-                crownSettings.Append($"Users must have used .fmbot in the last **{guild.CrownsActivityThresholdDays}** days to earn crowns.");
+                crownSettings.Append(t.Get("guild_settings.crown_activity_set",
+                    ("days", guild.CrownsActivityThresholdDays.ToString())));
             }
             else
             {
-                crownSettings.Append("There is no activity requirement set for earning crowns.");
+                crownSettings.Append(t["guild_settings.no_crown_activity"]);
             }
         }
 
-        response.Embed.AddField("Crown settings", crownSettings.ToString());
+        response.Embed.AddField(t["guild_settings.crown_settings"], crownSettings.ToString());
 
         var emoteReactions = new StringBuilder();
         if (guild.EmoteReactions == null || !guild.EmoteReactions.Any())
         {
-            emoteReactions.AppendLine("No automatic reactions enabled for `fm` and `featured`.");
+            emoteReactions.AppendLine(t["guild_settings.no_reactions"]);
         }
         else
         {
-            emoteReactions.Append("Automatic `fm` and `featured` reactions:");
+            emoteReactions.Append(t["guild_settings.reactions_label"]);
             foreach (var reaction in guild.EmoteReactions)
             {
                 emoteReactions.Append($"{reaction} ");
             }
         }
 
-        response.Embed.AddField("Emote reactions", emoteReactions.ToString());
+        response.Embed.AddField(t["guild_settings.emote_reactions"], emoteReactions.ToString());
 
         if (guild.DisabledCommands != null && guild.DisabledCommands.Any())
         {
             var disabledCommands = new StringBuilder();
-            disabledCommands.Append($"Disabled commands: ");
+            disabledCommands.Append(t["guild_settings.disabled_commands_label"]);
             foreach (var disabledCommand in guild.DisabledCommands)
             {
                 disabledCommands.Append($"`{disabledCommand}` ");
             }
 
-            response.Embed.AddField("Server-wide disabled commands", disabledCommands.ToString());
+            response.Embed.AddField(t["guild_settings.disabled_commands"], disabledCommands.ToString());
         }
 
         response.Embed.WithDescription(settings.ToString());
@@ -174,11 +213,11 @@ public class GuildSettingBuilder
 
         if (serverPermission.Length > 0)
         {
-            response.Embed.AddField("Missing server-wide permissions", serverPermission.ToString());
+            response.Embed.AddField(t["guild_settings.missing_permissions"], serverPermission.ToString());
         }
 
         var guildSettings = new StringMenuProperties(InteractionConstants.GuildSetting)
-            .WithPlaceholder("Select setting you want to change")
+            .WithPlaceholder(t["guild_settings.select_setting"])
             .WithMaxValues(1);
 
         foreach (var setting in ((GuildSetting[])Enum.GetValues(typeof(GuildSetting))))
@@ -243,6 +282,49 @@ public class GuildSettingBuilder
         }
 
         response.Components = components;
+
+        return response;
+    }
+
+    public async Task<ResponseModel> SetLanguage(ContextModel context, NetCord.User lastModifier = null)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        var t = this._localizationService.For(context.Locale);
+
+        response.Embed.WithTitle(t["language_setting.title"]);
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+
+        var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
+        var currentLocale = guild?.PreferredLocale ?? "en";
+
+        var description = new StringBuilder();
+        description.AppendLine(t["language_setting.description"]);
+        description.AppendLine();
+        description.AppendLine(t.Get("language_setting.current", ("language", GetLanguageDisplayName(currentLocale))));
+        description.AppendLine();
+        description.AppendLine(t["language_setting.note"]);
+
+        response.Embed.WithDescription(description.ToString());
+
+        var languageMenu = new StringMenuProperties(InteractionConstants.GuildLanguageSetting)
+            .WithPlaceholder(t["language_setting.placeholder"])
+            .WithMaxValues(1);
+
+        foreach (var (locale, name) in GetSupportedLanguages())
+        {
+            languageMenu.AddOption(name, locale, isDefault: string.Equals(locale, currentLocale, StringComparison.OrdinalIgnoreCase));
+        }
+
+        response.StringMenus.Add(languageMenu);
+
+        if (lastModifier != null)
+        {
+            response.Embed.WithFooter($"Last modified by {lastModifier.Username}");
+        }
 
         return response;
     }

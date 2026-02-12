@@ -39,6 +39,26 @@ public class GuildSettingInteractions(
 {
     private readonly BotSettings _botSettings = botSettings.Value;
 
+    [ComponentInteraction(InteractionConstants.GuildLanguageSetting)]
+    [ServerStaffOnly]
+    public async Task SetGuildLanguage()
+    {
+        if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
+        {
+            await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
+            return;
+        }
+
+        var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
+        var selectedLocale = stringMenuInteraction.Data.SelectedValues[0];
+
+        await guildService.SetGuildLocaleAsync(this.Context.Guild, selectedLocale);
+
+        var contextModel = new ContextModel(this.Context) { Locale = selectedLocale };
+        var response = await guildSettingBuilder.SetLanguage(contextModel, this.Context.User);
+        await this.Context.UpdateInteractionEmbed(response);
+    }
+
     [ComponentInteraction(InteractionConstants.SetPrefix)]
     [ServerStaffOnly]
     public async Task SetPrefixButton()
@@ -443,6 +463,13 @@ public class GuildSettingInteractions(
                 case GuildSetting.DisabledGuildCommands:
                 {
                     response = await guildSettingBuilder.ToggleGuildCommand(new ContextModel(this.Context));
+                    await this.Context.SendResponse(interactivity, response, userService, ephemeral: false);
+                }
+                    break;
+                case GuildSetting.Language:
+                {
+                    var locale = await guildService.GetGuildLocaleAsync(this.Context.Guild.Id);
+                    response = await guildSettingBuilder.SetLanguage(new ContextModel(this.Context) { Locale = locale });
                     await this.Context.SendResponse(interactivity, response, userService, ephemeral: false);
                 }
                     break;

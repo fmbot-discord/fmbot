@@ -1,0 +1,46 @@
+{
+  "guild_settings": {
+    "title": ".fmbot server configuration - {guildName}",
+    "footer_personal": "Use '{prefix}settings' for personal .fmbot settings",
+    "text_prefix": "Text command prefix: ",
+    "prefix_default": "`{prefix}` (default)",
+    "whoknows_settings": "WhoKnows settings",
+    "users_blocked_from_wk": "**{count}** users blocked from WhoKnows and server charts.",
+    "activity_threshold_set": "Users must have used .fmbot in the last **{days}** days to be visible.",
+    "no_activity_threshold": "There is no activity requirement set for being visible.",
+    "crown_settings": "Crown settings",
+    "crowns_disabled": "Crown functionality has been disabled on this server.",
+    "crowns_description": "Users earn crowns whenever they're the #1 user for an artist. ",
+    "users_blocked_from_crowns": "**{count}** users are blocked from earning crowns.",
+    "crown_min_playcount": "The minimum playcount for a crown is set to **{count}** or higher",
+    "crown_min_default": " (default)",
+    "crown_activity_set": "Users must have used .fmbot in the last **{days}** days to earn crowns.",
+    "no_crown_activity": "There is no activity requirement set for earning crowns.",
+    "emote_reactions": "Emote reactions",
+    "no_reactions": "No automatic reactions enabled for `fm` and `featured`.",
+    "reactions_label": "Automatic `fm` and `featured` reactions:",
+    "disabled_commands": "Server-wide disabled commands",
+    "disabled_commands_label": "Disabled commands: ",
+    "missing_permissions": "Missing server-wide permissions",
+    "select_setting": "Select setting you want to change"
+  },
+  "language_setting": {
+    "title": "Set server language",
+    "description": "Select the language for .fmbot responses in this server.",
+    "current": "Current language: **{language}**",
+    "note": "Note: Command names will always remain in English.",
+    "placeholder": "Select a language"
+  },
+  "common": {
+    "plays": "{count} plays",
+    "play": "{count} play",
+    "listeners": "{count} listeners",
+    "listener": "{count} listener",
+    "artist": "artist",
+    "artists": "artists",
+    "album": "album",
+    "albums": "albums",
+    "track": "track",
+    "tracks": "tracks"
+  }
+}

@@ -295,6 +295,7 @@ public class Startup
             .AddSingleton<UpdateService, UpdateService>()
             .AddSingleton<UserService>()
             .AddSingleton<FmSettingService>()
+            .AddSingleton<LocalizationService>()
             .AddSingleton<YoutubeService>();
 
         // Guild-specific services

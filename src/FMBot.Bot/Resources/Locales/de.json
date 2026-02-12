@@ -1,0 +1,46 @@
+{
+  "guild_settings": {
+    "title": ".fmbot Serverkonfiguration - {guildName}",
+    "footer_personal": "Verwende '{prefix}settings' für persönliche .fmbot-Einstellungen",
+    "text_prefix": "Textbefehl-Präfix: ",
+    "prefix_default": "`{prefix}` (Standard)",
+    "whoknows_settings": "WhoKnows-Einstellungen",
+    "users_blocked_from_wk": "**{count}** Benutzer von WhoKnows und Server-Charts blockiert.",
+    "activity_threshold_set": "Benutzer müssen .fmbot in den letzten **{days}** Tagen verwendet haben, um sichtbar zu sein.",
+    "no_activity_threshold": "Es ist keine Aktivitätsanforderung für die Sichtbarkeit festgelegt.",
+    "crown_settings": "Crown-Einstellungen",
+    "crowns_disabled": "Die Crown-Funktionalität wurde auf diesem Server deaktiviert.",
+    "crowns_description": "Benutzer erhalten Crowns, wenn sie der #1-Hörer eines Künstlers sind. ",
+    "users_blocked_from_crowns": "**{count}** Benutzer sind vom Erhalten von Crowns blockiert.",
+    "crown_min_playcount": "Die Mindestanzahl an Wiedergaben für eine Crown ist **{count}** oder höher",
+    "crown_min_default": " (Standard)",
+    "crown_activity_set": "Benutzer müssen .fmbot in den letzten **{days}** Tagen verwendet haben, um Crowns zu erhalten.",
+    "no_crown_activity": "Es ist keine Aktivitätsanforderung für das Erhalten von Crowns festgelegt.",
+    "emote_reactions": "Emoji-Reaktionen",
+    "no_reactions": "Keine automatischen Reaktionen für `fm` und `featured` aktiviert.",
+    "reactions_label": "Automatische `fm`- und `featured`-Reaktionen:",
+    "disabled_commands": "Serverweit deaktivierte Befehle",
+    "disabled_commands_label": "Deaktivierte Befehle: ",
+    "missing_permissions": "Fehlende serverweite Berechtigungen",
+    "select_setting": "Wähle die Einstellung, die du ändern möchtest"
+  },
+  "language_setting": {
+    "title": "Serversprache festlegen",
+    "description": "Wähle die Sprache für .fmbot-Antworten auf diesem Server.",
+    "current": "Aktuelle Sprache: **{language}**",
+    "note": "Hinweis: Befehlsnamen bleiben immer auf Englisch.",
+    "placeholder": "Sprache auswählen"
+  },
+  "common": {
+    "plays": "{count} Wiedergaben",
+    "play": "{count} Wiedergabe",
+    "listeners": "{count} Hörer",
+    "listener": "{count} Hörer",
+    "artist": "Künstler",
+    "artists": "Künstler",
+    "album": "Album",
+    "albums": "Alben",
+    "track": "Titel",
+    "tracks": "Titel"
+  }
+}

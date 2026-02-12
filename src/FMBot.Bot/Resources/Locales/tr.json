@@ -1,0 +1,46 @@
+{
+  "guild_settings": {
+    "title": ".fmbot sunucu yapılandırması - {guildName}",
+    "footer_personal": "Kişisel .fmbot ayarları için '{prefix}settings' kullanın",
+    "text_prefix": "Metin komutu ön eki: ",
+    "prefix_default": "`{prefix}` (varsayılan)",
+    "whoknows_settings": "WhoKnows ayarları",
+    "users_blocked_from_wk": "**{count}** kullanıcı WhoKnows ve sunucu listelerinden engellendi.",
+    "activity_threshold_set": "Görünür olmak için kullanıcıların son **{days}** gün içinde .fmbot kullanmış olması gerekir.",
+    "no_activity_threshold": "Görünür olmak için herhangi bir aktivite gereksinimi belirlenmedi.",
+    "crown_settings": "Crown ayarları",
+    "crowns_disabled": "Crown işlevselliği bu sunucuda devre dışı bırakıldı.",
+    "crowns_description": "Kullanıcılar bir sanatçının #1 dinleyicisi olduklarında crown kazanır. ",
+    "users_blocked_from_crowns": "**{count}** kullanıcı crown kazanmaktan engellendi.",
+    "crown_min_playcount": "Bir crown için minimum dinleme sayısı **{count}** veya daha fazla olarak ayarlandı",
+    "crown_min_default": " (varsayılan)",
+    "crown_activity_set": "Crown kazanmak için kullanıcıların son **{days}** gün içinde .fmbot kullanmış olması gerekir.",
+    "no_crown_activity": "Crown kazanmak için herhangi bir aktivite gereksinimi belirlenmedi.",
+    "emote_reactions": "Emoji tepkileri",
+    "no_reactions": "`fm` ve `featured` için otomatik tepki etkinleştirilmedi.",
+    "reactions_label": "Otomatik `fm` ve `featured` tepkileri:",
+    "disabled_commands": "Sunucu genelinde devre dışı komutlar",
+    "disabled_commands_label": "Devre dışı komutlar: ",
+    "missing_permissions": "Eksik sunucu geneli izinler",
+    "select_setting": "Değiştirmek istediğiniz ayarı seçin"
+  },
+  "language_setting": {
+    "title": "Sunucu dilini ayarla",
+    "description": "Bu sunucudaki .fmbot yanıtları için dil seçin.",
+    "current": "Mevcut dil: **{language}**",
+    "note": "Not: Komut adları her zaman İngilizce kalacaktır.",
+    "placeholder": "Bir dil seçin"
+  },
+  "common": {
+    "plays": "{count} dinleme",
+    "play": "{count} dinleme",
+    "listeners": "{count} dinleyici",
+    "listener": "{count} dinleyici",
+    "artist": "sanatçı",
+    "artists": "sanatçılar",
+    "album": "albüm",
+    "albums": "albümler",
+    "track": "şarkı",
+    "tracks": "şarkılar"
+  }
+}

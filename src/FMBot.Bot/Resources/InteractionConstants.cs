@@ -19,6 +19,7 @@ public static class InteractionConstants
     }
 
     public const string GuildSetting = "guild-setting-picker";
+    public const string GuildLanguageSetting = "guild-language-setting";
     public const string UserSetting = "user-setting-picker";
 
     public const string FmPrivacySetting = "fm-gwk-privacy";

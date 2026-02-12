@@ -32,4 +32,7 @@ public enum GuildSetting
 
     [Option("Disabled server commands", "Toggle commands server-wide")]
     DisabledGuildCommands = 31,
+
+    [Option("Language", "Set the language for .fmbot responses")]
+    Language = 40,
 }

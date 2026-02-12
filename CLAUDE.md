@@ -169,3 +169,52 @@ Important directories:
 - `docker/` - Docker Compose configurations
 
 When working with commands, check both `SlashCommands/` and `TextCommands/` directories as the bot supports both interaction types.
+
+## Localization
+
+User-facing strings are translated via `LocalizationService` + JSON locale files managed through Weblate.
+
+### Key Files
+- **Locale files**: `src/FMBot.Bot/Resources/Locales/{locale}.json` — nested JSON (Weblate "Nested JSON" format)
+- **`LocalizationService`**: `src/FMBot.Bot/Services/LocalizationService.cs` — singleton, loads all locale JSONs at startup, flattens to dot-notation keys
+- **`LocaleAccessor`**: `src/FMBot.Bot/Services/LocaleAccessor.cs` — lightweight per-request accessor returned by `LocalizationService.For(locale)`
+
+### Supported Languages
+`en` (source), `pt-BR`, `es-ES`, `hi`, `de`, `pl`, `nl`, `fr`, `it`, `tr`, `sv-SE`
+
+### How to Use in Builders
+```csharp
+var t = this._localizationService.For(context.Locale);
+
+// Simple lookup (falls back to English, then returns key itself)
+var title = t["guild_settings.title"];
+
+// With named placeholders
+var text = t.Get("guild_settings.users_blocked_from_wk", ("count", blockedCount.ToString()));
+```
+
+### Adding New Translatable Strings
+1. Add the key + English value to `en.json` under the appropriate category
+2. Add the same key with an empty `""` value to all other locale files
+3. Use `t["category.key"]` or `t.Get("category.key", ...)` in the builder code
+4. Weblate will pick up new keys automatically on next sync
+
+### JSON Structure
+Locale files use **nested JSON** (categories as objects), which gets flattened to dot-notation at load time:
+```json
+{
+  "category_name": {
+    "key": "English text with {placeholder}"
+  }
+}
+```
+Accessed in code as `t["category_name.key"]`.
+
+### Do NOT Translate
+Command names, "WhoKnows", "Crown/crowns", "Scrobble/scrobbles", "Top" — these stay in English in all locales.
+
+### Guild Locale
+- Stored as `PreferredLocale` on the `Guild` entity (nullable text column, defaults to `"en"`)
+- Accessible via `GuildService.GetGuildLocaleAsync(discordGuildId)`
+- Set via `GuildService.SetGuildLocaleAsync(discordGuild, locale)`
+- Passed through `ContextModel.Locale` to builders

@@ -1,0 +1,46 @@
+{
+  "guild_settings": {
+    "title": "Configurazione del server .fmbot - {guildName}",
+    "footer_personal": "Usa '{prefix}settings' per le impostazioni personali di .fmbot",
+    "text_prefix": "Prefisso comandi di testo: ",
+    "prefix_default": "`{prefix}` (predefinito)",
+    "whoknows_settings": "Impostazioni WhoKnows",
+    "users_blocked_from_wk": "**{count}** utenti bloccati da WhoKnows e dalle classifiche del server.",
+    "activity_threshold_set": "Gli utenti devono aver usato .fmbot negli ultimi **{days}** giorni per essere visibili.",
+    "no_activity_threshold": "Non è impostato alcun requisito di attività per essere visibili.",
+    "crown_settings": "Impostazioni crown",
+    "crowns_disabled": "La funzionalità crown è stata disattivata su questo server.",
+    "crowns_description": "Gli utenti ottengono crowns quando sono l'ascoltatore #1 di un artista. ",
+    "users_blocked_from_crowns": "**{count}** utenti sono bloccati dall'ottenere crowns.",
+    "crown_min_playcount": "Il numero minimo di ascolti per una crown è **{count}** o superiore",
+    "crown_min_default": " (predefinito)",
+    "crown_activity_set": "Gli utenti devono aver usato .fmbot negli ultimi **{days}** giorni per ottenere crowns.",
+    "no_crown_activity": "Non è impostato alcun requisito di attività per ottenere crowns.",
+    "emote_reactions": "Reazioni emoji",
+    "no_reactions": "Nessuna reazione automatica attivata per `fm` e `featured`.",
+    "reactions_label": "Reazioni automatiche `fm` e `featured`:",
+    "disabled_commands": "Comandi disattivati nel server",
+    "disabled_commands_label": "Comandi disattivati: ",
+    "missing_permissions": "Permessi mancanti nel server",
+    "select_setting": "Seleziona l'impostazione che vuoi modificare"
+  },
+  "language_setting": {
+    "title": "Imposta la lingua del server",
+    "description": "Seleziona la lingua per le risposte di .fmbot in questo server.",
+    "current": "Lingua attuale: **{language}**",
+    "note": "Nota: I nomi dei comandi rimarranno sempre in inglese.",
+    "placeholder": "Seleziona una lingua"
+  },
+  "common": {
+    "plays": "{count} ascolti",
+    "play": "{count} ascolto",
+    "listeners": "{count} ascoltatori",
+    "listener": "{count} ascoltatore",
+    "artist": "artista",
+    "artists": "artisti",
+    "album": "album",
+    "albums": "album",
+    "track": "brano",
+    "tracks": "brani"
+  }
+}
