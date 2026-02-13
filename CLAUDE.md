@@ -211,7 +211,7 @@ Locale files use **nested JSON** (categories as objects), which gets flattened t
 Accessed in code as `t["category_name.key"]`.
 
 ### Do NOT Translate
-Command names, "WhoKnows", "Crown/crowns", "Scrobble/scrobbles", "Top" — these stay in English in all locales.
+Command names, "WhoKnows", "Crown/crowns", "Scrobble/scrobbles", "Supporter", "Top" — these stay in English in all locales.
 
 ### Guild Locale
 - Stored as `PreferredLocale` on the `Guild` entity (nullable text column, defaults to `"en"`)
