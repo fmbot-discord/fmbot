@@ -131,6 +131,7 @@ public class StaticInteractions(
                 this.Context.User.Id,
                 contextUser.UserNameLastFM,
                 priceId,
+                currency,
                 existingStripeSupporter?.StripeCustomerId);
 
             var components = new ActionRowProperties().WithButton("Complete purchase", url: link,
