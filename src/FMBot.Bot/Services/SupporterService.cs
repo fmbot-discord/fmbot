@@ -1803,7 +1803,7 @@ public class SupporterService
                     new MigrateDiscordForStripeSupporterRequest
                     {
                         StripeCustomerId = stripeSupporter.StripeCustomerId,
-                        StripeSubscriptionId = stripeSupporter.StripeSubscriptionId,
+                        StripeSubscriptionId = stripeSupporter.StripeSubscriptionId ?? "",
                         OldDiscordUserId = (long)oldDiscordUserId,
                         NewDiscordUserId = (long)newDiscordUserId,
                         OldLastFmUserName = oldUser.UserNameLastFM,
@@ -2151,6 +2151,22 @@ public class SupporterService
             Source = source,
             GiftReceiverDiscordUserId = (long)giftReceiverDiscordUserId,
             GiftReceiverLastFmUserName = giftReceiverLastFmUserName ?? ""
+        });
+
+        return url?.CheckoutLink;
+    }
+
+    public async Task<string> GetSupporterLifetimePromoCheckoutLink(ulong discordUserId, string lastFmUserName,
+        string priceId, string existingCustomerId = null)
+    {
+        var url = await this._supporterLinkService.GetCheckoutLinkAsync(new CreateLinkOptions
+        {
+            DiscordUserId = (long)discordUserId,
+            LastFmUserName = lastFmUserName,
+            Type = "lifetime-promo",
+            ExistingCustomerId = existingCustomerId ?? "",
+            PriceId = priceId,
+            Source = "lifetime-promo"
         });
 
         return url?.CheckoutLink;

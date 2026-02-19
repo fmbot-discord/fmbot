@@ -1688,7 +1688,7 @@ public class AdminCommands(
 
         if (string.IsNullOrWhiteSpace("type"))
         {
-            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Pick an embed type that you want to post. Currently available: `rules`, `gwkreporter`, `nsfwreporter` and `buysupporter`" });
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Pick an embed type that you want to post. Currently available: `rules`, `gwkreporter`, `nsfwreporter`, `buysupporter` and `buylifetime`" });
             return;
         }
 
@@ -1824,6 +1824,43 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties()
                 .AddEmbeds(this._embed)
                 .WithComponents([components]));
+        }
+
+        if (type == "buylifetime")
+        {
+            var containers = new List<ComponentContainerProperties>
+            {
+                new()
+                {
+                    AccentColor = DiscordConstants.InformationColorBlue,
+                    Components =
+                    [
+                        new TextDisplayProperties(
+                            "## ⭐ Lifetime .fmbot supporter\n" +
+                            "Get lifetime access to all .fmbot supporter perks with a single one-time payment. This offer expires <t:1772010000:R>."),
+                        new ComponentSeparatorProperties { Spacing = ComponentSeparatorSpacingSize.Large },
+                        new ComponentSectionProperties(new ButtonProperties(
+                            $"{InteractionConstants.SupporterLinks.GetLifetimePromoLink}:usd",
+                            "Get - $69.99", ButtonStyle.Primary))
+                        {
+                            Components = [new TextDisplayProperties("### 🇺🇸 Pay in USD")]
+                        },
+                        new ComponentSectionProperties(new ButtonProperties(
+                            $"{InteractionConstants.SupporterLinks.GetLifetimePromoLink}:eur",
+                            "Get - €59.99", ButtonStyle.Primary))
+                        {
+                            Components = [new TextDisplayProperties("### 🇪🇺 Pay in EUR")]
+                        },
+                    ]
+                }
+            };
+
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
+            {
+                Components = containers,
+                Flags = MessageFlags.IsComponentsV2,
+                AllowedMentions = AllowedMentionsProperties.None
+            });
         }
 
         if (type == "gwkreporter")

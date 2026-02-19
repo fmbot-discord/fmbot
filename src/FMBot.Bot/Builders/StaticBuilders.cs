@@ -162,6 +162,16 @@ public class StaticBuilders
                     response.Embed.AddField("Thank you for being a supporter",
                         "You have been gifted supporter status! Since this was a gift, you cannot manage this subscription directly.");
                 }
+                else if (string.IsNullOrWhiteSpace(stripeSupporter.StripeSubscriptionId))
+                {
+                    response.Embed.AddField("Thank you for being a lifetime supporter",
+                        "You have lifetime supporter! If you still have an active subscription running, you can cancel it with the link below.");
+
+                    var stripeManageLink = await this._supporterService.GetSupporterManageLink(stripeSupporter);
+
+                    response.Components.WithButton("Manage billing",
+                        url: stripeManageLink);
+                }
                 else
                 {
                     response.Embed.AddField("Thank you for being a supporter",
