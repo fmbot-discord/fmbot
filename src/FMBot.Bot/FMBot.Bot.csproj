@@ -25,7 +25,7 @@
         <PackageReference Include="Dapper" Version="2.1.66" />
         <PackageReference Include="Fergun.Interactive.NetCord" Version="0.1.1" />
         <PackageReference Include="Google.Apis" Version="1.73.0" />
-        <PackageReference Include="Google.Apis.YouTube.v3" Version="1.73.0.4029" />
+        <PackageReference Include="Google.Apis.YouTube.v3" Version="1.73.0.4053" />
         <PackageReference Include="Google.Protobuf" Version="3.33.5" />
         <PackageReference Include="Grpc.Net.Client" Version="2.76.0" />
         <PackageReference Include="Grpc.Net.ClientFactory" Version="2.76.0" />
@@ -69,8 +69,8 @@
         <PackageReference Include="SkiaSharp.HarfBuzz" Version="3.119.2" />
         <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="3.119.2" />
         <PackageReference Include="SkiaSharp.Views.Desktop.Common" Version="3.119.2" />
-        <PackageReference Include="SpotifyAPI.Web" Version="7.2.1" />
-        <PackageReference Include="SpotifyAPI.Web.Auth" Version="7.2.1" />
+        <PackageReference Include="SpotifyAPI.Web" Version="7.3.0" />
+        <PackageReference Include="SpotifyAPI.Web.Auth" Version="7.3.0" />
         <PackageReference Include="System.Drawing.Common" Version="10.0.3" />
         <PackageReference Include="System.Reactive" Version="6.1.0" />
         <PackageReference Include="System.Reactive.Linq" Version="6.1.0" />
