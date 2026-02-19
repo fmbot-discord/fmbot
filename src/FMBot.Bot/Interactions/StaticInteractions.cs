@@ -191,8 +191,17 @@ public class StaticInteractions(
                 }
                 else if (existingSupporter.SubscriptionType == SubscriptionType.Stripe)
                 {
-                    manageDescription.AppendLine(
-                        "To manage your subscription, go to the [Stripe customer portal](https://billing.stripe.com/p/login/3cs7ww1tR6ay6t28ww) and authenticate with the email you used during purchase.");
+                    var stripeSupporter = await supporterService.GetStripeSupporter(contextUser.DiscordUserId);
+                    if (stripeSupporter != null && string.IsNullOrWhiteSpace(stripeSupporter.StripeSubscriptionId))
+                    {
+                        manageDescription.AppendLine(
+                            "You have lifetime supporter! If you still have an active subscription running, you can cancel it through the [Stripe customer portal](https://billing.stripe.com/p/login/3cs7ww1tR6ay6t28ww).");
+                    }
+                    else
+                    {
+                        manageDescription.AppendLine(
+                            "To manage your subscription, go to the [Stripe customer portal](https://billing.stripe.com/p/login/3cs7ww1tR6ay6t28ww) and authenticate with the email you used during purchase.");
+                    }
                 }
                 else
                 {

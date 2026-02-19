@@ -1803,7 +1803,7 @@ public class SupporterService
                     new MigrateDiscordForStripeSupporterRequest
                     {
                         StripeCustomerId = stripeSupporter.StripeCustomerId,
-                        StripeSubscriptionId = stripeSupporter.StripeSubscriptionId,
+                        StripeSubscriptionId = stripeSupporter.StripeSubscriptionId ?? "",
                         OldDiscordUserId = (long)oldDiscordUserId,
                         NewDiscordUserId = (long)newDiscordUserId,
                         OldLastFmUserName = oldUser.UserNameLastFM,
