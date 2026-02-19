@@ -2157,13 +2157,13 @@ public class SupporterService
     }
 
     public async Task<string> GetSupporterLifetimePromoCheckoutLink(ulong discordUserId, string lastFmUserName,
-        string priceId, string existingCustomerId = null)
+        string priceId, string currency, string existingCustomerId = null)
     {
         var url = await this._supporterLinkService.GetCheckoutLinkAsync(new CreateLinkOptions
         {
             DiscordUserId = (long)discordUserId,
             LastFmUserName = lastFmUserName,
-            Type = "lifetime-promo",
+            Type = $"lifetime-promo-{currency}",
             ExistingCustomerId = existingCustomerId ?? "",
             PriceId = priceId,
             Source = "lifetime-promo"
