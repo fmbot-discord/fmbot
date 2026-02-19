@@ -112,6 +112,57 @@ public class StaticInteractions(
         await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
     }
 
+    [ComponentInteraction(InteractionConstants.SupporterLinks.GetLifetimePromoLink)]
+    [UserSessionRequired]
+    public async Task GetLifetimePromoLink(string currency)
+    {
+        try
+        {
+            await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
+
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+            var existingStripeSupporter = await supporterService.GetStripeSupporter(contextUser.DiscordUserId);
+
+            var priceId = currency.Equals("eur", StringComparison.OrdinalIgnoreCase)
+                ? InteractionConstants.SupporterLinks.LifetimePromoEurPriceId
+                : InteractionConstants.SupporterLinks.LifetimePromoUsdPriceId;
+
+            var link = await supporterService.GetSupporterLifetimePromoCheckoutLink(
+                this.Context.User.Id,
+                contextUser.UserNameLastFM,
+                priceId,
+                existingStripeSupporter?.StripeCustomerId);
+
+            var components = new ActionRowProperties().WithButton("Complete purchase", url: link,
+                emote: EmojiProperties.Standard("⭐"));
+
+            var embed = new EmbedProperties();
+            embed.WithColor(DiscordConstants.InformationColorBlue);
+            var description = new StringBuilder();
+            description.AppendLine("**Click the unique link below to purchase lifetime supporter!**");
+            description.AppendLine("-# One-time payment — lifetime access to all supporter perks");
+
+            if (SupporterService.IsSupporter(contextUser.UserType))
+            {
+                embed.AddField("⚠️ Note", "You currently already have access to supporter. Please cancel your subscription after your purchase.");
+            }
+
+            embed.WithDescription(description.ToString());
+
+            await this.Context.Interaction.ModifyResponseAsync(m =>
+            {
+                m.Embeds = [embed];
+                m.Components = [components];
+            });
+
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService, deferFirst: false);
+        }
+    }
+
     [ComponentInteraction($"{InteractionConstants.SupporterLinks.ManageOverview}")]
     [UserSessionRequired]
     public async Task GetManageOverview()

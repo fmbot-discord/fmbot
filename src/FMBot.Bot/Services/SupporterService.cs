@@ -2156,6 +2156,22 @@ public class SupporterService
         return url?.CheckoutLink;
     }
 
+    public async Task<string> GetSupporterLifetimePromoCheckoutLink(ulong discordUserId, string lastFmUserName,
+        string priceId, string existingCustomerId = null)
+    {
+        var url = await this._supporterLinkService.GetCheckoutLinkAsync(new CreateLinkOptions
+        {
+            DiscordUserId = (long)discordUserId,
+            LastFmUserName = lastFmUserName,
+            Type = "lifetime-promo",
+            ExistingCustomerId = existingCustomerId ?? "",
+            PriceId = priceId,
+            Source = "lifetime-promo"
+        });
+
+        return url?.CheckoutLink;
+    }
+
     public async Task<string> GetSupporterManageLink(StripeSupporter stripeSupporter)
     {
         var url = await this._supporterLinkService.GetManageLinkAsync(new GetManageLinkOptions
