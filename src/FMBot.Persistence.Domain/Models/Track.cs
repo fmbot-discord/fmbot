@@ -36,6 +36,7 @@ public class Track
     public float? Tempo { get; set; }
 
     public int? Popularity { get; set; }
+    public int? FmbotPopularity { get; set; }
     public int? DurationMs { get; set; }
 
     public string AppleMusicUrl { get; set; }

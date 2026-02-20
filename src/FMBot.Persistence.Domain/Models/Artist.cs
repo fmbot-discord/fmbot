@@ -19,6 +19,7 @@ public class Artist
     public int? AppleMusicId { get; set; }
 
     public int? Popularity { get; set; }
+    public int? FmbotPopularity { get; set; }
 
     public Guid? Mbid { get; set; }
     public DateTime? MusicBrainzDate { get; set; }

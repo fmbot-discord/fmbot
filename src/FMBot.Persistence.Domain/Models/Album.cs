@@ -28,6 +28,7 @@ public class Album
     public int? AppleMusicId { get; set; }
 
     public int? Popularity { get; set; }
+    public int? FmbotPopularity { get; set; }
     public string Label { get; set; }
 
     public string AppleMusicUrl { get; set; }

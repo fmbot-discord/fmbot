@@ -201,4 +201,35 @@ LIMIT 1;";
 
         return albums.ToList();
     }
+
+    public static async Task UpdateFmbotPopularity(NpgsqlConnection connection)
+    {
+        const string sql = @"
+            WITH album_listener_counts AS (
+                SELECT
+                    ua.artist_name,
+                    ua.name,
+                    COUNT(DISTINCT ua.user_id) AS listener_count
+                FROM user_albums ua
+                GROUP BY ua.artist_name, ua.name
+            ),
+            album_percentiles AS (
+                SELECT
+                    artist_name,
+                    name,
+                    (PERCENT_RANK() OVER (ORDER BY listener_count) * 100)::int AS popularity_score
+                FROM album_listener_counts
+            )
+            UPDATE albums a
+            SET fmbot_popularity = ap.popularity_score
+            FROM album_percentiles ap
+            WHERE a.artist_name = ap.artist_name
+              AND a.name = ap.name;";
+
+        Log.Information("UpdateFmbotPopularity: Starting album popularity update");
+
+        var rowsUpdated = await connection.ExecuteAsync(sql, commandTimeout: 300);
+
+        Log.Information("UpdateFmbotPopularity: Updated fmbot_popularity for {rowsUpdated} albums", rowsUpdated);
+    }
 }

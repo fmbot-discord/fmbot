@@ -1,0 +1,16 @@
+services:
+  timescale:
+    image: timescale/timescaledb-ha:pg18.1-ts2.25.0
+    container_name: fmbot-db
+    shm_size: 512mb  # Required for PostgreSQL shared memory (increase for large imports)
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    command: postgres -c timescaledb.max_tuples_decompressed_per_dml_transaction=0 -c max_locks_per_transaction=4096 -c timescaledb.telemetry_level=off
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=fmbot
+    ports:
+      - "5432:5432"

@@ -234,4 +234,32 @@ public class ArtistRepository
 
         return artists.ToList();
     }
+
+    public static async Task UpdateFmbotPopularity(NpgsqlConnection connection)
+    {
+        const string sql = @"
+            WITH artist_listener_counts AS (
+                SELECT
+                    ua.name,
+                    COUNT(DISTINCT ua.user_id) AS listener_count
+                FROM user_artists ua
+                GROUP BY ua.name
+            ),
+            artist_percentiles AS (
+                SELECT
+                    name,
+                    (PERCENT_RANK() OVER (ORDER BY listener_count) * 100)::int AS popularity_score
+                FROM artist_listener_counts
+            )
+            UPDATE artists a
+            SET fmbot_popularity = ap.popularity_score
+            FROM artist_percentiles ap
+            WHERE a.name = ap.name;";
+
+        Log.Information("UpdateFmbotPopularity: Starting artist popularity update");
+
+        var rowsUpdated = await connection.ExecuteAsync(sql, commandTimeout: 300);
+
+        Log.Information("UpdateFmbotPopularity: Updated fmbot_popularity for {rowsUpdated} artists", rowsUpdated);
+    }
 }

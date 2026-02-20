@@ -149,4 +149,35 @@ LIMIT 1;";
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         return await connection.QueryFirstOrDefaultAsync<Track>(sql, new { searchTerm });
     }
+
+    public static async Task UpdateFmbotPopularity(NpgsqlConnection connection)
+    {
+        const string sql = @"
+            WITH track_listener_counts AS (
+                SELECT
+                    ut.artist_name,
+                    ut.name,
+                    COUNT(DISTINCT ut.user_id) AS listener_count
+                FROM user_tracks ut
+                GROUP BY ut.artist_name, ut.name
+            ),
+            track_percentiles AS (
+                SELECT
+                    artist_name,
+                    name,
+                    (PERCENT_RANK() OVER (ORDER BY listener_count) * 100)::int AS popularity_score
+                FROM track_listener_counts
+            )
+            UPDATE tracks t
+            SET fmbot_popularity = tp.popularity_score
+            FROM track_percentiles tp
+            WHERE t.artist_name = tp.artist_name
+              AND t.name = tp.name;";
+
+        Log.Information("UpdateFmbotPopularity: Starting track popularity update");
+
+        var rowsUpdated = await connection.ExecuteAsync(sql, commandTimeout: 300);
+
+        Log.Information("UpdateFmbotPopularity: Updated fmbot_popularity for {rowsUpdated} tracks", rowsUpdated);
+    }
 }

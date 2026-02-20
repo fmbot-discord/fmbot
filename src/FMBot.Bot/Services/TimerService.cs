@@ -42,6 +42,7 @@ public class TimerService : IDisposable
     private readonly FeaturedService _featuredService;
     private readonly SupporterService _supporterService;
     private readonly IMemoryCache _cache;
+    private readonly FmbotPopularityService _fmbotPopularityService;
     private readonly DiscogsService _discogsService;
     private readonly WhoKnowsFilterService _whoKnowsFilterService;
     private readonly StatusHandler.StatusHandlerClient _statusHandler;
@@ -62,6 +63,7 @@ public class TimerService : IDisposable
         FeaturedService featuredService,
         IMemoryCache cache,
         SupporterService supporterService,
+        FmbotPopularityService fmbotPopularityService,
         DiscogsService discogsService,
         WhoKnowsFilterService whoKnowsFilterService,
         StatusHandler.StatusHandlerClient statusHandler,
@@ -77,6 +79,7 @@ public class TimerService : IDisposable
         this._featuredService = featuredService;
         this._cache = cache;
         this._supporterService = supporterService;
+        this._fmbotPopularityService = fmbotPopularityService;
         this._discogsService = discogsService;
         this._whoKnowsFilterService = whoKnowsFilterService;
         this._statusHandler = statusHandler;
@@ -146,6 +149,15 @@ public class TimerService : IDisposable
         {
             Log.Information($"RecurringJob: Adding {nameof(UpdateGlobalWhoKnowsFilters)}");
             RecurringJob.AddOrUpdate(nameof(UpdateGlobalWhoKnowsFilters), () => UpdateGlobalWhoKnowsFilters(), "0 10 * * *");
+
+            Log.Information($"RecurringJob: Adding {nameof(UpdateArtistFmbotPopularity)}");
+            RecurringJob.AddOrUpdate(nameof(UpdateArtistFmbotPopularity), () => UpdateArtistFmbotPopularity(), "0 10 * * *");
+
+            Log.Information($"RecurringJob: Adding {nameof(UpdateTrackFmbotPopularity)}");
+            RecurringJob.AddOrUpdate(nameof(UpdateTrackFmbotPopularity), () => UpdateTrackFmbotPopularity(), "0 10 * * *");
+
+            Log.Information($"RecurringJob: Adding {nameof(UpdateAlbumFmbotPopularity)}");
+            RecurringJob.AddOrUpdate(nameof(UpdateAlbumFmbotPopularity), () => UpdateAlbumFmbotPopularity(), "0 10 * * *");
         }
 
         var mainGuildConnected = this._client.Any(shard => shard.Cache.Guilds.ContainsKey(ConfigData.Data.Bot.BaseServerId));
@@ -645,6 +657,21 @@ public class TimerService : IDisposable
     {
         var filteredUsers = await this._whoKnowsFilterService.GetNewGlobalFilteredUsers();
         await this._whoKnowsFilterService.AddFilteredUsersToDatabase(filteredUsers);
+    }
+
+    public async Task UpdateArtistFmbotPopularity()
+    {
+        await this._fmbotPopularityService.UpdateArtistFmbotPopularity();
+    }
+
+    public async Task UpdateAlbumFmbotPopularity()
+    {
+        await this._fmbotPopularityService.UpdateAlbumFmbotPopularity();
+    }
+
+    public async Task UpdateTrackFmbotPopularity()
+    {
+        await this._fmbotPopularityService.UpdateTrackFmbotPopularity();
     }
 
     public void ClearUserCache()
