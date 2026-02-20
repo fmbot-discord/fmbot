@@ -1245,21 +1245,6 @@ public class AlbumBuilders
             return response;
         }
 
-        var image = await this._dataSourceFactory.GetAlbumImageAsStreamAsync(albumCoverUrl);
-        if (image == null)
-        {
-            response.Embed.WithDescription("Sorry, something went wrong while getting album cover for this album: \n" +
-                                           $"{albumSearch.Album.ArtistName} - {albumSearch.Album.AlbumName}\n" +
-                                           $"[View on last.fm]({albumSearch.Album.AlbumUrl})");
-            response.CommandResponse = CommandResponse.Error;
-            response.ResponseType = ResponseType.Embed;
-            return response;
-        }
-
-        var cacheStream = new MemoryStream();
-        await image.CopyToAsync(cacheStream);
-        image.Position = 0;
-
         var description = new StringBuilder();
         description.AppendLine(
             $"**[{albumSearch.Album.ArtistName}]({albumSearch.Album.ArtistUrl}) - [{albumSearch.Album.AlbumName}]({albumSearch.Album.AlbumUrl})**");
@@ -1273,47 +1258,76 @@ public class AlbumBuilders
             $"-# *Requested by {await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser)}*");
 
         response.Embed.WithDescription(description.ToString());
-
-        response.Stream = image;
-        var extension = gifResult ? "webp" : "png";
-        response.FileName =
-            $"cover-{StringExtensions.ReplaceInvalidChars($"{albumSearch.Album.ArtistName}_{albumSearch.Album.AlbumName}")}.{extension}";
         response.Spoiler = safeForChannel == CensorService.CensorResult.Nsfw;
         response.FileDescription = StringExtensions.TruncateLongString($"Album cover for {albumSearch.Album.AlbumName} by {albumSearch.Album.ArtistName}", 512);
 
-        if (!gifResult)
-        {
-            var cacheFilePath =
-                ChartService.AlbumUrlToCacheFilePath(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
-            await ChartService.OverwriteCache(cacheStream, cacheFilePath);
-        }
-        else
+        if (gifResult)
         {
             var cacheFilePath =
                 ChartService.AlbumUrlToCacheFilePath(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName,
                     ".webp");
-            Stream gifStream;
 
-            if (!File.Exists(cacheFilePath))
+            Stream gifStream;
+            if (File.Exists(cacheFilePath))
             {
-                var specificUrl = await this._appleMusicVideoService.GetVideoUrlFromM3U8(albumCoverUrl);
-                gifStream = await AppleMusicVideoService.ConvertM3U8ToWebPAsync(specificUrl);
-                await ChartService.OverwriteCache(gifStream, cacheFilePath, SKEncodedImageFormat.Webp);
+                var memoryStream = new MemoryStream();
+                await using (var fileStream = File.OpenRead(cacheFilePath))
+                {
+                    await fileStream.CopyToAsync(memoryStream);
+                }
+                memoryStream.Position = 0;
+                gifStream = memoryStream;
             }
             else
             {
-                gifStream = File.OpenRead(cacheFilePath);
+                var specificUrl = await this._appleMusicVideoService.GetVideoUrlFromM3U8(albumCoverUrl);
+                gifStream = await AppleMusicVideoService.ConvertM3U8ToWebPAsync(specificUrl);
+                try
+                {
+                    await ChartService.OverwriteCache(gifStream, cacheFilePath, SKEncodedImageFormat.Webp);
+                }
+                catch (IOException)
+                {
+                    // Cache write failed due to concurrent access, not critical
+                }
+                gifStream.Position = 0;
             }
 
             response.Stream = gifStream;
+            response.FileName =
+                $"cover-{StringExtensions.ReplaceInvalidChars($"{albumSearch.Album.ArtistName}_{albumSearch.Album.AlbumName}")}.webp";
+        }
+        else
+        {
+            var image = await this._dataSourceFactory.GetAlbumImageAsStreamAsync(albumCoverUrl);
+            if (image == null)
+            {
+                response.Embed.WithDescription("Sorry, something went wrong while getting album cover for this album: \n" +
+                                               $"{albumSearch.Album.ArtistName} - {albumSearch.Album.AlbumName}\n" +
+                                               $"[View on last.fm]({albumSearch.Album.AlbumUrl})");
+                response.CommandResponse = CommandResponse.Error;
+                response.ResponseType = ResponseType.Embed;
+                return response;
+            }
+
+            var cacheStream = new MemoryStream();
+            await image.CopyToAsync(cacheStream);
+            image.Position = 0;
+
+            response.Stream = image;
+            response.FileName =
+                $"cover-{StringExtensions.ReplaceInvalidChars($"{albumSearch.Album.ArtistName}_{albumSearch.Album.AlbumName}")}.png";
+
+            var cacheFilePath =
+                ChartService.AlbumUrlToCacheFilePath(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
+            await ChartService.OverwriteCache(cacheStream, cacheFilePath);
+            await cacheStream.DisposeAsync();
         }
 
         var accentColor = await this._albumService.GetAccentColorWithAlbum(context,
             staticAlbumCoverUrl, databaseAlbum?.Id, albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
 
         response.Embed.WithColor(accentColor);
-
-        await cacheStream.DisposeAsync();
 
         return response;
     }
