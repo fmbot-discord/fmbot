@@ -141,6 +141,28 @@ public class GuildService
         return result.ToDictionary(d => d.UserId, d => d);
     }
 
+    public async Task<int> GetGuildUserCount(ulong? discordGuildId = null)
+    {
+        if (discordGuildId == null)
+        {
+            return 0;
+        }
+
+        const string sql = "SELECT COUNT(*) " +
+                           "FROM public.guild_users AS gu " +
+                           "LEFT JOIN guilds AS g ON gu.guild_id = g.guild_id " +
+                           "WHERE g.discord_guild_id = @discordGuildId";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        return await connection.ExecuteScalarAsync<int>(sql, new
+        {
+            discordGuildId = Convert.ToInt64(discordGuildId)
+        });
+    }
+
     public async Task<List<Persistence.Domain.Models.Guild>> GetPremiumGuilds()
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -292,29 +314,6 @@ public class GuildService
 
         var guildUser = await guild.GetUserAsync(botUserId);
         return guildUser.GetPermissions(guild);
-    }
-
-    public static GuildUser GetUserFromGuild(Persistence.Domain.Models.Guild guild, int userId)
-    {
-        return guild.GuildUsers
-            .FirstOrDefault(f => f.UserId == userId);
-    }
-
-    public async Task StaleGuildLastIndexedAsync(NetCord.Gateway.Guild discordGuild)
-    {
-        await using var db = await this._contextFactory.CreateDbContextAsync();
-        var existingGuild = await db.Guilds
-            .AsQueryable()
-            .FirstAsync(f => f.DiscordGuildId == discordGuild.Id);
-
-        existingGuild.Name = discordGuild.Name;
-        existingGuild.LastIndexed = null;
-
-        db.Entry(existingGuild).State = EntityState.Modified;
-
-        await db.SaveChangesAsync();
-
-        await RemoveGuildFromCache(discordGuild.Id);
     }
 
     public async Task ChangeGuildAllowedRoles(NetCord.Gateway.Guild discordGuild, ulong[] allowedRoles)
