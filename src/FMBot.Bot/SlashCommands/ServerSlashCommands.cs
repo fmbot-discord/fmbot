@@ -39,6 +39,7 @@ public class ServerSlashCommands(
         await RespondAsync(InteractionCallback.DeferredMessage());
 
         var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
+        var guildUserCount = await guildService.GetGuildUserCount(this.Context.Guild.Id);
 
         var guildListSettings = new GuildRankingSettings
         {
@@ -49,10 +50,11 @@ public class ServerSlashCommands(
         };
 
         var timeSettings =
-            SettingService.GetTimePeriod(Enum.GetName(typeof(PlayTimePeriod), timePeriod), TimePeriod.AllTime);
+            SettingService.GetTimePeriod(Enum.GetName(timePeriod), TimePeriod.AllTime);
 
         if (timeSettings.UsePlays ||
-            timeSettings.TimePeriod is TimePeriod.AllTime or TimePeriod.Monthly or TimePeriod.Weekly)
+            timeSettings.TimePeriod is TimePeriod.AllTime or TimePeriod.Weekly ||
+            (timeSettings.TimePeriod is TimePeriod.Monthly && guildUserCount <= 10000))
         {
             guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
         }
@@ -79,6 +81,7 @@ public class ServerSlashCommands(
         await RespondAsync(InteractionCallback.DeferredMessage());
 
         var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
+        var guildUserCount = await guildService.GetGuildUserCount(this.Context.Guild.Id);
 
         var guildListSettings = new GuildRankingSettings
         {
@@ -90,10 +93,11 @@ public class ServerSlashCommands(
         };
 
         var timeSettings =
-            SettingService.GetTimePeriod(Enum.GetName(typeof(PlayTimePeriod), timePeriod), TimePeriod.AllTime);
+            SettingService.GetTimePeriod(Enum.GetName(timePeriod), TimePeriod.AllTime);
 
         if (timeSettings.UsePlays ||
-            timeSettings.TimePeriod is TimePeriod.AllTime or TimePeriod.Monthly or TimePeriod.Weekly)
+            timeSettings.TimePeriod is TimePeriod.AllTime or TimePeriod.Weekly ||
+            (timeSettings.TimePeriod is TimePeriod.Monthly && guildUserCount <= 10000))
         {
             guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
             guildListSettings.NewSearchValue = artist;
@@ -121,6 +125,7 @@ public class ServerSlashCommands(
         await RespondAsync(InteractionCallback.DeferredMessage());
 
         var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
+        var guildUserCount = await guildService.GetGuildUserCount(this.Context.Guild.Id);
 
         var guildListSettings = new GuildRankingSettings
         {
@@ -132,10 +137,11 @@ public class ServerSlashCommands(
         };
 
         var timeSettings =
-            SettingService.GetTimePeriod(Enum.GetName(typeof(PlayTimePeriod), timePeriod), TimePeriod.AllTime);
+            SettingService.GetTimePeriod(Enum.GetName(timePeriod), TimePeriod.AllTime);
 
         if (timeSettings.UsePlays ||
-            timeSettings.TimePeriod is TimePeriod.AllTime or TimePeriod.Monthly or TimePeriod.Weekly)
+            timeSettings.TimePeriod is TimePeriod.AllTime or TimePeriod.Weekly ||
+            (timeSettings.TimePeriod is TimePeriod.Monthly && guildUserCount <= 10000))
         {
             guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
             guildListSettings.NewSearchValue = artist;
@@ -160,6 +166,7 @@ public class ServerSlashCommands(
         await RespondAsync(InteractionCallback.DeferredMessage());
 
         var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
+        var guildUserCount = await guildService.GetGuildUserCount(this.Context.Guild.Id);
 
         var guildListSettings = new GuildRankingSettings
         {
@@ -170,10 +177,11 @@ public class ServerSlashCommands(
         };
 
         var timeSettings =
-            SettingService.GetTimePeriod(Enum.GetName(typeof(PlayTimePeriod), timePeriod), TimePeriod.AllTime);
+            SettingService.GetTimePeriod(Enum.GetName(timePeriod), TimePeriod.AllTime);
 
         if (timeSettings.UsePlays ||
-            timeSettings.TimePeriod is TimePeriod.AllTime or TimePeriod.Monthly or TimePeriod.Weekly)
+            timeSettings.TimePeriod is TimePeriod.AllTime or TimePeriod.Weekly ||
+            (timeSettings.TimePeriod is TimePeriod.Monthly && guildUserCount <= 10000))
         {
             guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
         }

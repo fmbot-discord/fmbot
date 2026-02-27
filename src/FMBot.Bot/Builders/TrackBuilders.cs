@@ -1148,7 +1148,7 @@ public class TrackBuilders
         };
 
         ICollection<GuildTrack> topGuildTracks;
-        IList<GuildTrack> previousTopGuildTracks = null;
+        List<GuildTrack> previousTopGuildTracks = null;
         if (guildListSettings.ChartTimePeriod == TimePeriod.AllTime)
         {
             topGuildTracks = await this._whoKnowsTrackService.GetTopAllTimeTracksForGuild(guild.GuildId,
@@ -1165,7 +1165,7 @@ public class TrackBuilders
                 guildListSettings.OrderType, guildListSettings.NewSearchValue);
         }
 
-        if (!topGuildTracks.Any())
+        if (topGuildTracks.Count == 0)
         {
             response.Embed.WithDescription(guildListSettings.NewSearchValue != null
                 ? $"Sorry, there are no registered top tracks for artist `{guildListSettings.NewSearchValue}` on this server in the time period you selected."

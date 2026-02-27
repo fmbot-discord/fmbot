@@ -531,6 +531,7 @@ public class ArtistCommands(
     {
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
         var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
+        var guildUserCount = await guildService.GetGuildUserCount(this.Context.Guild.Id);
 
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -548,7 +549,8 @@ public class ArtistCommands(
             SettingService.GetTimePeriod(extraOptions, guildListSettings.ChartTimePeriod, cachedOrAllTimeOnly: true);
 
         if (timeSettings.UsePlays ||
-            timeSettings.TimePeriod is TimePeriod.AllTime or TimePeriod.Monthly or TimePeriod.Weekly)
+            timeSettings.TimePeriod is TimePeriod.AllTime or TimePeriod.Weekly ||
+            (timeSettings.TimePeriod is TimePeriod.Monthly && guildUserCount <= 10000))
         {
             guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
         }

@@ -13,7 +13,9 @@
       "Bash(git log:*)",
       "Bash(wc:*)",
       "Bash(grep:*)",
-      "Bash(dotnet test:*)"
+      "Bash(dotnet test:*)",
+      "WebFetch(domain:ffmpeg.org)",
+      "WebFetch(domain:www.ffmpeg.org)"
     ]
   }
 }

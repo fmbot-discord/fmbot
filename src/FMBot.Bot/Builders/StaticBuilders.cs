@@ -284,21 +284,21 @@ public class StaticBuilders
         {
             response.Embed.AddField($"Quarter - {pricing.QuarterlyPriceString}",
                 $"-# {pricing.QuarterlySubText}", true);
-            actionRow.WithButton("Gift quarter", $"gift-supporter-purchase-quarterly-{recipient.DiscordUserId}");
+            actionRow.WithButton("Gift quarter", $"gift-supporter-purchase:quarterly:{recipient.DiscordUserId}");
         }
 
         if (!string.IsNullOrEmpty(pricing.YearlyPriceId))
         {
             response.Embed.AddField($"Yearly - {pricing.YearlyPriceString}",
                 $"-# {pricing.YearlySubText}", true);
-            actionRow.WithButton("Gift year", $"gift-supporter-purchase-yearly-{recipient.DiscordUserId}");
+            actionRow.WithButton("Gift year", $"gift-supporter-purchase:yearly:{recipient.DiscordUserId}");
         }
 
         if (!string.IsNullOrEmpty(pricing.TwoYearPriceId))
         {
             response.Embed.AddField($"Two years - {pricing.TwoYearPriceString}",
                 $"-# {pricing.TwoYearSubText}", true);
-            actionRow.WithButton("Gift two years", $"gift-supporter-purchase-twoyear-{recipient.DiscordUserId}");
+            actionRow.WithButton("Gift two years", $"gift-supporter-purchase:twoyear:{recipient.DiscordUserId}");
         }
 
         // if (!string.IsNullOrEmpty(pricing.LifetimePriceId))
