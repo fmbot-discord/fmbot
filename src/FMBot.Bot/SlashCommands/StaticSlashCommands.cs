@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using Fergun.Interactive;
 using FMBot.Bot.Builders;
@@ -29,7 +30,8 @@ public class StaticSlashCommands(
         ApplicationIntegrationType.UserInstall
     ])]
     public async Task OutOfSyncAsync(
-        [SlashCommandParameter(Name = "private", Description = "Show info privately?")] bool privateResponse = true)
+        [SlashCommandParameter(Name = "private", Description = "Show info privately?")]
+        bool privateResponse = true)
     {
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var response = StaticBuilders.OutOfSync(new ContextModel(this.Context, contextUser));
@@ -77,16 +79,24 @@ public class StaticSlashCommands(
         ApplicationIntegrationType.UserInstall
     ])]
     public async Task GiftSupporterAsync(
-        [SlashCommandParameter(Name = "user", Description = "The user you want to gift supporter")] NetCord.User user)
+        [SlashCommandParameter(Name = "user", Description = "The user you want to gift supporter")]
+        NetCord.User user)
     {
         await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
 
-        var recipientUser = await userService.GetUserAsync(user.Id);
-        var response = await staticBuilders.BuildGiftSupporterResponse(this.Context.User.Id, recipientUser,
-            Context.Interaction.UserLocale);
+        try
+        {
+            var recipientUser = await userService.GetUserAsync(user.Id);
+            var response = await staticBuilders.BuildGiftSupporterResponse(this.Context.User.Id, recipientUser,
+                Context.Interaction.UserLocale);
 
-        await Context.SendFollowUpResponse(this.Interactivity, response, userService, ephemeral: true);
-        await this.Context.LogCommandUsedAsync(response, userService);
+            await Context.SendFollowUpResponse(this.Interactivity, response, userService, ephemeral: true);
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
     }
 
     [UserCommand("Gift supporter", Contexts =
@@ -102,11 +112,18 @@ public class StaticSlashCommands(
     {
         await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
 
-        var recipientUser = await userService.GetUserAsync(targetUser.Id);
-        var response = await staticBuilders.BuildGiftSupporterResponse(this.Context.User.Id, recipientUser,
-            Context.Interaction.UserLocale);
+        try
+        {
+            var recipientUser = await userService.GetUserAsync(targetUser.Id);
+            var response = await staticBuilders.BuildGiftSupporterResponse(this.Context.User.Id, recipientUser,
+                Context.Interaction.UserLocale);
 
-        await Context.SendFollowUpResponse(this.Interactivity, response, userService, ephemeral: true);
-        await this.Context.LogCommandUsedAsync(response, userService);
+            await Context.SendFollowUpResponse(this.Interactivity, response, userService, ephemeral: true);
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
     }
 }
