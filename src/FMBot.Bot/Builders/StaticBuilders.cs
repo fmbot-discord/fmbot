@@ -27,14 +27,16 @@ public class StaticBuilders
     private readonly SupporterService _supporterService;
     private readonly UserService _userService;
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
+    private readonly FaqService _faqService;
 
 
     public StaticBuilders(SupporterService supporterService, UserService userService,
-        IDbContextFactory<FMBotDbContext> contextFactory)
+        IDbContextFactory<FMBotDbContext> contextFactory, FaqService faqService)
     {
         this._supporterService = supporterService;
         this._userService = userService;
         this._contextFactory = contextFactory;
+        this._faqService = faqService;
     }
 
     public static ResponseModel OutOfSync(
@@ -723,7 +725,8 @@ public class StaticBuilders
         description.AppendLine();
 
         description.AppendLine("**Commands**");
-        description.AppendLine("- View all commands on [our website](https://fm.bot/commands/)");
+        description.AppendLine("- View all commands on [our website](https://fm.bot/)");
+        description.AppendLine($"- See frequently asked questions with `{prefix}faq`");
         description.AppendLine("- Or use the dropdown below this message to pick a category");
 
         description.AppendLine();
@@ -785,5 +788,118 @@ public class StaticBuilders
     private static IEnumerable<Attribute> HelpGetAllAttributes(ICommandInfo<CommandContext> commandInfo)
     {
         return commandInfo.Attributes.Values.SelectMany(x => x);
+    }
+
+    public ResponseModel FaqOverview(bool newResponse = false)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.ComponentsV2,
+        };
+
+        var container = response.ComponentsContainer;
+        container.WithAccentColor(DiscordConstants.InformationColorBlue);
+        container.WithTextDisplay("## Frequently Asked Questions");
+        container.WithTextDisplay("Select a category to browse questions");
+
+        foreach (var category in this._faqService.GetCategories())
+        {
+            container.WithSeparator();
+            container.AddComponents(new ComponentSectionProperties(
+                new ButtonProperties(
+                    $"{InteractionConstants.Faq.Category}:{category.Id}:{newResponse}",
+                    category.GetEmojiProperties(),
+                    ButtonStyle.Secondary))
+            {
+                Components = [new TextDisplayProperties($"**{category.Name}**\n-# {category.Description}")]
+            });
+        }
+
+        return response;
+    }
+
+    public ResponseModel FaqCategoryResponse(string categoryId)
+    {
+        var category = this._faqService.GetCategory(categoryId);
+        if (category == null)
+        {
+            return new ResponseModel
+            {
+                ResponseType = ResponseType.Text,
+                Text = "Category not found.",
+                CommandResponse = CommandResponse.NotFound,
+            };
+        }
+
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.ComponentsV2,
+        };
+
+        var container = response.ComponentsContainer;
+        container.WithAccentColor(DiscordConstants.InformationColorBlue);
+        container.WithTextDisplay($"## {category.GetEmojiText()} {category.Name}");
+
+        foreach (var question in category.Questions)
+        {
+            container.WithSeparator();
+            container.AddComponents(new ComponentSectionProperties(
+                new ButtonProperties(
+                    $"{InteractionConstants.Faq.Question}:{category.Id}:{question.Id}",
+                    "View",
+                    ButtonStyle.Secondary))
+            {
+                Components = [new TextDisplayProperties($"**{question.Title}**")]
+            });
+        }
+
+        container.WithSeparator();
+        container.AddComponents(new ActionRowProperties()
+            .AddComponents(new ButtonProperties(
+                InteractionConstants.Faq.Overview,
+                "Back to categories",
+                ButtonStyle.Secondary)));
+
+        return response;
+    }
+
+    public ResponseModel FaqQuestionResponse(string categoryId, string questionId)
+    {
+        var category = this._faqService.GetCategory(categoryId);
+        var question = this._faqService.GetQuestion(categoryId, questionId);
+        if (category == null || question == null)
+        {
+            return new ResponseModel
+            {
+                ResponseType = ResponseType.Text,
+                Text = "Question not found.",
+                CommandResponse = CommandResponse.NotFound,
+            };
+        }
+
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.ComponentsV2,
+        };
+
+        var container = response.ComponentsContainer;
+        container.WithAccentColor(DiscordConstants.InformationColorBlue);
+        container.WithTextDisplay($"## {question.Title}");
+        container.WithTextDisplay(question.Answer);
+        container.WithSeparator();
+        container.AddComponents(new ActionRowProperties()
+            .AddComponents(new ButtonProperties(
+                $"{InteractionConstants.Faq.Category}:{category.Id}:{false}",
+                $"Back to {category.Name}",
+                ButtonStyle.Secondary)
+            {
+                Emoji = category.GetEmojiProperties()
+            })
+            .AddComponents(new ButtonProperties(
+                InteractionConstants.Faq.Overview,
+                "Back to categories",
+                ButtonStyle.Secondary)));
+
+        return response;
     }
 }

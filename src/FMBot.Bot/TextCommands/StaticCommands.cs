@@ -149,6 +149,17 @@ public class StaticCommands(
         await this.Context.LogCommandUsedAsync(response, userService);
     }
 
+    [Command("frequentlyasked", "faq", "frequentlyaskedquestions")]
+    [Summary("Frequently asked questions about .fmbot")]
+    [CommandCategories(CommandCategory.Other)]
+    public async Task FrequentlyAskedAsync([CommandParameter(Remainder = true)] string options = null)
+    {
+        var response = staticBuilders.FaqOverview();
+
+        await this.Context.SendResponse(this.Interactivity, response, userService);
+        await this.Context.LogCommandUsedAsync(response, userService);
+    }
+
     [Command("getsupporter", "support", "patreon", "opencollective", "donations", "supporter")]
     [Summary("Get the best .fmbot experience with Supporter")]
     [CommandCategories(CommandCategory.Other)]

@@ -99,6 +99,23 @@ public class StaticSlashCommands(
         }
     }
 
+    [SlashCommand("frequently-asked", "Frequently asked questions about .fmbot", Contexts =
+    [
+        InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,
+        InteractionContextType.Guild
+    ], IntegrationTypes =
+    [
+        ApplicationIntegrationType.GuildInstall,
+        ApplicationIntegrationType.UserInstall
+    ])]
+    public async Task FrequentlyAskedAsync()
+    {
+        var response = staticBuilders.FaqOverview();
+
+        await this.Context.SendResponse(this.Interactivity, response, userService, ephemeral: true);
+        await this.Context.LogCommandUsedAsync(response, userService);
+    }
+
     [UserCommand("Gift supporter", Contexts =
     [
         InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,

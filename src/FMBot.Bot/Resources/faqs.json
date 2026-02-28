@@ -1,0 +1,197 @@
+{
+  "categories": [
+    {
+      "id": "getting-started",
+      "name": "Getting started",
+      "emoji": "\ud83d\udc4b",
+      "description": "Signing up, adding the bot, permissions",
+      "questions": [
+        {
+          "id": "how-to-get-started",
+          "title": "How do I get started?",
+          "answer": "This bot uses your music history for various commands. For this we use a website called [Last.fm](https://last.fm). This site allows you to track your music history [from various platforms](https://www.last.fm/about/trackmymusic).\n\n**New to Last.fm?**\n1. Create a [Last.fm account](https://last.fm/join)\n2. Connect it to [your music platform](https://www.last.fm/about/trackmymusic) - Quick link [for Spotify here](https://www.last.fm/settings/applications)\n3. Use any .fmbot command, like `/fm` or `/whoknows`\n4. Press 'Connect Last.fm account' and follow the instructions\n5. Done! You can now use .fmbot.\n\nWhile we require a Last.fm account, the bot is not affiliated with Last.fm."
+        },
+        {
+          "id": "how-to-add",
+          "title": "How do I add .fmbot to my server?",
+          "answer": "You can add .fmbot to your server or to your account using [this invite link](https://discord.com/oauth2/authorize?client_id=356268235697553409)."
+        },
+        {
+          "id": "can-i-use-in-dms",
+          "title": "Can I use the bot in DMs or group chats?",
+          "answer": "Yes! Just add .fmbot as a user app onto your Discord account.\n\nThis way you'll be able to use slash commands from the bot in DMs, group chats and servers without .fmbot.\n\n[Click here to add the bot to your Discord account](https://discord.com/oauth2/authorize?client_id=356268235697553409&scope=applications.commands&integration_type=1)"
+        },
+        {
+          "id": "only-slash-commands",
+          "title": "I can only use slash commands",
+          "answer": "If you've added .fmbot to your server and you're only able to use slash commands and not text commands, then the bot doesn't have the correct permissions to respond.\n\nMake sure the bot has the following permissions:\n- Send messages\n- Embed links\n- Attach files\n- Add reactions\n- Use external emojis\n\nAlternatively, you can also give the bot admin so it will have access to all channels with all permissions."
+        },
+        {
+          "id": "bot-is-offline",
+          "title": "The bot is offline",
+          "answer": "It could be that it just happens to be updating. If it stays down, please join the [support server](https://discord.gg/fmbot) and check out the #downtime channel."
+        },
+        {
+          "id": "normal-vs-develop",
+          "title": "What's the difference between the normal and develop bot?",
+          "answer": "The develop bot is used to test new fixes and functionality before they go to the normal bot. This is usually announced in #beta-changelog on [our server](https://discord.gg/fmbot).\n\nNote that if either bot leaves your server all your server data and settings will be cleared.\n\nInvites for the develop bot are currently closed until further notice. You can use it on [our support server](https://discord.gg/fmbot) in #commands or on the unofficial [Last.fm server](https://discord.gg/lastfm)."
+        }
+      ]
+    },
+    {
+      "id": "connecting-apps",
+      "name": "Connecting music apps",
+      "emoji": "\ud83d\udd17",
+      "description": "Spotify, Apple Music, scrobbling",
+      "questions": [
+        {
+          "id": "track-apps",
+          "title": "How do I track Spotify / Apple Music / other apps?",
+          "answer": "Tracking (also called scrobbling) is done through the Last.fm website, and we aren't affiliated with them. That said, we can point you in the right direction.\n\n- **Spotify** — Last.fm has a native integration with Spotify that [you can enable here](https://www.last.fm/settings/applications)\n- **Apple Music** — the [Last.fm Discord server](https://discord.gg/lastfm) has a [pinned post](https://discord.com/channels/260438376270921729/579673026526969876/1301329998766149722) on this\n- **Other platforms** — see [Track my music](https://www.last.fm/about/trackmymusic) on the Last.fm website. This page is slightly dated but it has various links to info for other platforms\n\nOur help forums are only for issues with .fmbot, not with Last.fm. Please consult the [Last.fm server](https://discord.gg/lastfm) and [support forums](https://support.last.fm) for scrobbling/tracking issues."
+        },
+        {
+          "id": "wrong-songs",
+          "title": "Commands showing wrong songs / Spotify not working",
+          "answer": "We get what you're playing directly from your Last.fm profile, so please check there first to see what is showing on [your profile](https://www.last.fm/user/_).\n\nLast.fm sometimes has issues with their Spotify connection. For most people it helps to reconnect Spotify in their [Last.fm application settings](https://www.last.fm/settings/applications).\n\nLast.fm also has [an official guide](https://support.last.fm/t/spotify-has-stopped-scrobbling-what-can-i-do/3184) on how to fix this.\n\n.fmbot is **not** affiliated with Last.fm or Spotify, so we can't fix this for you."
+        },
+        {
+          "id": "playcounts-dont-match",
+          "title": "Playcounts don't match Last.fm",
+          "answer": "Because we rely heavily on caching your playcounts to keep our commands fast it can sometimes happen that you don't get updated properly.\n\nIn this case, try to use `.update full`. This completely re-builds the stored playcounts the bot has for you."
+        },
+        {
+          "id": "artist-same-name",
+          "title": "There's multiple artists with the same name",
+          "answer": "If there's multiple artists sharing the same name, they will share the same Last.fm artist. This is due to how Last.fm works and because Last.fm accepts scrobbles from any source.\n\nThe bot picks the Spotify image of the artist that has the highest popularity."
+        }
+      ]
+    },
+    {
+      "id": "importing",
+      "name": "Importing",
+      "emoji": "fmbot_importing:1131511469096312914",
+      "description": "Importing Spotify or Apple Music history",
+      "questions": [
+        {
+          "id": "how-to-import",
+          "title": "How do I import my Spotify or Apple Music history?",
+          "answer": "You can import your full Spotify or Apple Music listening history into .fmbot. This gives you the most accurate playcounts, listening time and insights.\n\nUse `/import spotify` or `/import applemusic` to get started.\n\nTo manage or modify your imports, use `/import manage` and `/import modify`.\n\nUsing and accessing your imports requires an active [supporter subscription](https://fm.bot/supporter)."
+        },
+        {
+          "id": "imports-to-lastfm",
+          "title": "Do imports get added to Last.fm?",
+          "answer": "No, imports are only visible in the bot. The bot takes your imports, combines them with your latest Last.fm stats and recalculates your playcounts every time you use a command."
+        },
+        {
+          "id": "keep-imports-after-cancel",
+          "title": "What happens if I cancel my supporter subscription?",
+          "answer": "Importing is a service that adjusts your Last.fm stats on the fly and adds your imported plays on top. If your supporter subscription expires, this service is no longer available and the bot will only use your Last.fm stats.\n\nYour imported plays are however saved and will be available again if you resubscribe in the future."
+        },
+        {
+          "id": "file-size-exceeds-limit",
+          "title": "What can I do if the file size exceeds 10 or 100MB?",
+          "answer": "Discord has a file size limit that can prevent you from uploading large import files directly.\n\nOur [support server](https://discord.gg/fmbot) is boosted and has a 100MB file size limit, so you can try importing there.\n\nFor Apple Music, you can also extract the `Apple Music Play Activity.csv` from the .zip file and split it into multiple smaller files using [MightyMerge](https://mightymerge.io/split-csv-files/). Then import each file separately, the bot will prevent any duplicate imports."
+        }
+      ]
+    },
+    {
+      "id": "supporter",
+      "name": "Supporter",
+      "emoji": "\u2b50",
+      "description": "Supporting the bot, managing subscriptions",
+      "questions": [
+        {
+          "id": "why-supporter",
+          "title": "Why a supporter program?",
+          "answer": "In order to help us pay for hosting, fund development and deal with other expenses we've added a way for people to donate. In return for your support you get some cool exclusive perks.\n\nWe're dedicated to making sure the bot remains free and independent. That's why most supporter features are simply features that are nice but would be difficult to roll out to everyone.\n\nBy getting supporter you help us to be able to spend more time working on new features and fixes, which in return improves the user experience for everyone."
+        },
+        {
+          "id": "manage-subscription",
+          "title": "Managing your subscription",
+          "answer": "There are three ways to manage a subscription made directly with us:\n- Through the `/getsupporter` command\n- Through the button in each receipt email\n- In the [Stripe customer portal](https://billing.stripe.com/p/login/3cs7ww1tR6ay6t28ww) where you can login with the email you used during purchase\n\nIf you purchased through Discord, go to your Discord settings and then 'Subscriptions'. Note that this is currently only available on Discord desktop and browser."
+        },
+        {
+          "id": "gift-supporter",
+          "title": "Gifting supporter",
+          "answer": "You can gift supporter to another .fmbot user using the `/giftsupporter` command. The recipient will receive all supporter benefits and your identity will not be revealed to them."
+        },
+        {
+          "id": "imported-plays-after-cancel",
+          "title": "Imported plays after cancellation",
+          "answer": "Importing in .fmbot is a service that adjusts your Last.fm stats on the fly and adds your imported plays on top. If your supporter subscription expires, this service is no longer available and the bot will only use your Last.fm stats.\n\nYour imported plays are however saved and will be available again if you resubscribe in the future."
+        },
+        {
+          "id": "lastfm-pro-vs-supporter",
+          "title": "Last.fm Pro vs .fmbot supporter",
+          "answer": ".fmbot is not affiliated with Last.fm. Being an .fmbot supporter does not give you Last.fm Pro, and having Last.fm Pro does not give you .fmbot supporter perks. They are completely separate services."
+        }
+      ]
+    },
+    {
+      "id": "global-whoknows",
+      "name": "Global WhoKnows",
+      "emoji": "\ud83c\udf10",
+      "description": "Visibility, filters, reporting",
+      "questions": [
+        {
+          "id": "not-visible",
+          "title": "Not visible in Global WhoKnows",
+          "answer": "We sometimes remove or filter users from Global WhoKnows for various reasons, like sleep scrobbling, manipulating scrobbles or other reasons.\n\nYou can use the `/privacy` command to check your status. Set your privacy to global and it will be visible, along with all info required.\n\nUsers get filtered automatically for 3 months from Global WhoKnows when:\n- They have over 6 days of listening time in 8 days\n- They have an average of over 650 scrobbles/day in an 8 day period\n\nIf someone gets filtered automatically 3 times in 3 separate months, they'll be marked as a repeat offender and any future filters will last for 6 months."
+        },
+        {
+          "id": "change-filter",
+          "title": "Can I have an exception to the automatic filter?",
+          "answer": "No. Before this automated system was created, Global WhoKnows was getting overwhelmed with sleep scrobblers and people who spammed short songs. We simply don't have the time and resources to manually moderate this.\n\nWe realize the system is not perfect for everyone, but it impacts less than 1% of users while making it more fair and fun for the other 99%.\n\nPlease note:\n- You're still visible if you use the commands yourself\n- You can disable the filter with nofilter/nf, for example `.gw bts nf`\n- It's a temporary removal (unless it happens again)\n- It's just a bunch of numbers on a list"
+        },
+        {
+          "id": "report-global-whoknows",
+          "title": "How do I report a user with fake scrobbles?",
+          "answer": "For Global WhoKnows, you can report a user on [our Discord server](https://discord.gg/fmbot) by using the 'Report user' button in the #rules-info channel.\n\nNote that we don't take reports for sleep or 24/7 scrobbling, those get filtered automatically with temporary bans.\n\nTo remove someone from WhoKnows in your own server, use the `.block` command."
+        }
+      ]
+    },
+    {
+      "id": "setup-tips",
+      "name": "Setup tips",
+      "emoji": "\ud83d\udd27",
+      "description": "Emote reactions, troubleshooting, other questions",
+      "questions": [
+        {
+          "id": "emote-reactions",
+          "title": "How do I set up automatic emote reactions?",
+          "answer": "Server staff can set server-wide reactions with the `.serverreactions` emote followed by the emotes.\n\nSupporters can also set up automatic emote reactions that appear on their commands regardless of server settings with `.userreactions`."
+        },
+        {
+          "id": "large-guild-tips",
+          "title": "What is the best way to set up .fmbot on a large server?",
+          "answer": "We recommend using the `.togglecommand` option in large servers.\n\nThis command allows you to allow or disable specific commands per channel, or to disable the bot completely while not confusing users since the bot will reply with a message telling that the bot is disabled in a channel.\n\nYou can also configure the size of `fm` commands so they take up less space."
+        },
+        {
+          "id": "how-featured-works",
+          "title": "How does featured / avatar changing work?",
+          "answer": "Anyone that is registered in .fmbot can get featured, on one condition: they must have used .fmbot in the last day.\n\nThe bot picks a random user and shows one of their top albums as the bot's profile picture. Want to be notified when you're featured? Join [our server](https://discord.gg/fmbot) and you'll get a ping.\n\nPossible featured modes:\n- Recent listens\n- Weekly / monthly / overall albums\n- Custom mode (used for events and special occasions)\n\nEvery first Sunday of each month is Supporter Sunday. On this day .fmbot picks featured from supporters only, as a thank you for supporting the bot.\n\nUse `.featured` to see who is currently featured, and `.featuredlog` to see your or someone else's featured history."
+        },
+        {
+          "id": "bot-scrobbling-broken",
+          "title": "Music bot scrobbling broken?",
+          "answer": "Use the following checklist:\n- Make sure you have it enabled (Use `.botscrobbling`)\n- Make sure the bot has a message announcing the 'Now Playing' song\n- .fmbot must be able to see the 'Now Playing' message and the voice channel\n- The track in the message must follow the '`artistname` - `trackname`' format\n- The track has to exist on Last.fm already\n\nStill broken? Check the internal bot logs with `.debugbotscrobbling`\nIf you still need help, post in [#help](https://discord.gg/fmbot) with screenshots of the 'Now playing' message together with the logs."
+        },
+        {
+          "id": "lastfm-issue",
+          "title": "I have an issue with Last.fm",
+          "answer": "We are not affiliated with Last.fm. This bot only uses their API to show you and your friends their statistics.\n\nIf you have issues with Last.fm, we'd suggest you check out their [support forums](https://support.last.fm) or their [Discord server](https://discord.gg/swrVDCBZ8H)."
+        },
+        {
+          "id": "question-not-listed",
+          "title": "Question not listed here",
+          "answer": "Join [our server here](https://discord.gg/fmbot) and ask in the #help channel.\n\nNote that .fmbot and Last.fm are two separate things. .fmbot is the Discord bot, Last.fm is the website.\n\nNeed help with Last.fm? Check out their [support forums](https://support.last.fm) or their [Discord server](https://discord.gg/swrVDCBZ8H)."
+        },
+        {
+          "id": "why-bot-exists",
+          "title": "Why does this bot exist?",
+          "answer": "This bot was made by [BitL](https://bsky.app/profile/bitldev.bsky.social) back in September 2017 and was inspired by [UB3R Bot](https://ub3r-b0t.com/). Back then the bot just had `.fm`, the charts, featuring and `.fmyoutube`.\n\nFrikandel joined in when he had the idea of `.friends`, but was too lazy to make his own bot. Together they moved the bot from text files to an actual database and made various other improvements.\n\nSince 2019 Frikandel has been the main maintainer and hoster of .fmbot, adding commands like `.whoknows` and other much-requested features. In March 2021 Frikandel took over all parts of the bot."
+        }
+      ]
+    }
+  ]
+}

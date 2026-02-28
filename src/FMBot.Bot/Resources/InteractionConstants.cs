@@ -267,6 +267,13 @@ public static class InteractionConstants
         public const string JumblePlayAgain = "jumble-playagain";
     }
 
+    public static class Faq
+    {
+        public const string Overview = "faq-overview";
+        public const string Category = "faq-category";
+        public const string Question = "faq-question";
+    }
+
     public static class Help
     {
         public const string CategoryMenu = "help-category";
