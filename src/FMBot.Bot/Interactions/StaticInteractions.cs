@@ -375,6 +375,64 @@ public class StaticInteractions(
         }
     }
 
+    [ComponentInteraction(InteractionConstants.Faq.Overview)]
+    public async Task FaqOverviewSelected()
+    {
+        try
+        {
+            var response = staticBuilders.FaqOverview();
+
+            await this.Context.UpdateInteractionEmbed(response, interactivity);
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService, deferFirst: true);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.Faq.Category)]
+    public async Task FaqCategorySelected(string categoryId, string newResponse)
+    {
+        try
+        {
+            var response = staticBuilders.FaqCategoryResponse(categoryId);
+
+            if (newResponse.Equals("true", StringComparison.OrdinalIgnoreCase))
+            {
+                await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                    .WithComponents(response.GetComponentsV2())
+                    .WithFlags(MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral)));
+            }
+            else
+            {
+                await this.Context.UpdateInteractionEmbed(response, interactivity);
+            }
+
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService, deferFirst: true);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.Faq.Question)]
+    public async Task FaqQuestionSelected(string categoryId, string questionId)
+    {
+        try
+        {
+            var response = staticBuilders.FaqQuestionResponse(categoryId, questionId);
+
+            await this.Context.UpdateInteractionEmbed(response, interactivity);
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService, deferFirst: true);
+        }
+    }
+
     [ComponentInteraction(InteractionConstants.Help.CategoryMenu)]
     public async Task HelpCategorySelected()
     {

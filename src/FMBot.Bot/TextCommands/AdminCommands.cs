@@ -1686,9 +1686,9 @@ public class AdminCommands(
             return;
         }
 
-        if (string.IsNullOrWhiteSpace("type"))
+        if (string.IsNullOrWhiteSpace(type))
         {
-            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Pick an embed type that you want to post. Currently available: `rules`, `gwkreporter`, `nsfwreporter`, `buysupporter` and `buylifetime`" });
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Pick an embed type that you want to post. Currently available: `rules`, `gwkreporter`, `nsfwreporter`, `buysupporter`, `buylifetime` and `faq`" });
             return;
         }
 
@@ -1914,6 +1914,15 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties()
                 .AddEmbeds(this._embed)
                 .WithComponents([components]));
+        }
+
+        if (type == "faq")
+        {
+            var response = staticBuilders.FaqOverview(newResponse: true);
+
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties()
+                .WithComponents(response.GetComponentsV2())
+                .WithFlags(MessageFlags.IsComponentsV2));
         }
     }
 

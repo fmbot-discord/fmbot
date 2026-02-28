@@ -120,6 +120,9 @@
         <None Update="Resources\countries.json">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
+        <None Update="Resources\faqs.json">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
         <None Update="Resources\timezones.json">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
