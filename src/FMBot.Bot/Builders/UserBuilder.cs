@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Fergun.Interactive;
+using Fergun.Interactive.Pagination;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
@@ -47,6 +48,7 @@ public class UserBuilder
     private readonly IndexService _indexService;
     private readonly ShortcutService _shortcutService;
     private readonly CensorService _censorService;
+    private readonly AlbumService _albumService;
 
     private readonly CommandService<CommandContext> _commands;
 
@@ -67,7 +69,8 @@ public class UserBuilder
         IndexService indexService,
         ShortcutService shortcutService,
         CommandService<CommandContext> commands,
-        CensorService censorService)
+        CensorService censorService,
+        AlbumService albumService)
     {
         this._userService = userService;
         this._guildService = guildService;
@@ -86,6 +89,7 @@ public class UserBuilder
         this._shortcutService = shortcutService;
         this._commands = commands;
         this._censorService = censorService;
+        this._albumService = albumService;
         this._botSettings = botSettings.Value;
     }
 
@@ -132,7 +136,7 @@ public class UserBuilder
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed
+            ResponseType = ResponseType.ComponentsV2
         };
 
         var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild?.Id);
@@ -145,16 +149,21 @@ public class UserBuilder
             return response;
         }
 
-        if (this._timer.CurrentFeatured.FullSizeImage == null)
-        {
-            response.Embed.WithThumbnail(this._timer.CurrentFeatured.ImageUrl);
-        }
-        else
-        {
-            response.Embed.WithImage(this._timer.CurrentFeatured.FullSizeImage);
-        }
+        var featured = this._timer.CurrentFeatured;
+        var container = WebhookService.BuildFeaturedContainer(featured);
 
-        response.Embed.AddField("Featured:", this._timer.CurrentFeatured.Description);
+        var databaseAlbum = featured.AlbumName != null
+            ? await this._albumService.GetAlbumFromDatabase(featured.ArtistName, featured.AlbumName)
+            : null;
+
+        var accentColor = await this._albumService.GetAccentColorWithAlbum(context,
+            featured.ImageUrl, databaseAlbum?.Id, featured.AlbumName, featured.ArtistName,
+            allowCustomColors: false);
+
+        if (accentColor != DiscordConstants.LastFmColorRed)
+        {
+            container.WithAccentColor(accentColor);
+        }
 
         if (context.DiscordGuild != null && guildUsers.Any() && this._timer.CurrentFeatured.UserId.HasValue &&
             this._timer.CurrentFeatured.UserId.Value != 0)
@@ -167,11 +176,16 @@ public class UserBuilder
 
                 var dateValue = ((DateTimeOffset)this._timer.CurrentFeatured.DateTime.AddHours(1)).ToUnixTimeSeconds();
 
-                response.Embed.AddField("🥳 Congratulations!",
-                    guildUser.DiscordUserId == context.DiscordUser.Id
-                        ? $"Oh hey, it's you! You'll be featured until <t:{dateValue}:t>."
-                        : $"This user is in this server as **{guildUser.UserName}**.");
+                container.WithSeparator();
+                container.WithTextDisplay(guildUser.DiscordUserId == context.DiscordUser.Id
+                    ? $"🥳 Congratulations, it's you! You'll be featured until <t:{dateValue}:t>."
+                    : $"🥳 Congratulations! This user is in this server as **{StringExtensions.Sanitize(guildUser.UserName)}**.");
             }
+        }
+        else
+        {
+            container.WithSeparator();
+            container.WithTextDisplay($"-# View your featured history with '{context.Prefix}featuredlog'");
         }
 
         response.ReferencedMusic = new ReferencedMusic
@@ -183,19 +197,20 @@ public class UserBuilder
 
         if (this._timer.CurrentFeatured.SupporterDay && context.ContextUser.UserType == UserType.User)
         {
-            response.Components = new ActionRowProperties().WithButton(Constants.GetSupporterButton,
+            container.WithActionRow(new ActionRowProperties().WithButton(Constants.GetSupporterButton,
                 style: ButtonStyle.Secondary,
                 customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(
-                    source: "featured-onsupportersunday"));
+                    source: "featured-onsupportersunday")));
         }
 
-        response.Embed.WithFooter($"View your featured history with '{context.Prefix}featuredlog'");
 
         if (PublicProperties.IssuesAtLastFm)
         {
-            response.Embed.AddField("Note:",
-                "⚠️ [Last.fm](https://twitter.com/lastfmstatus) is currently experiencing issues");
+            container.WithSeparator();
+            container.WithTextDisplay("⚠️ **Note:** [Last.fm](https://twitter.com/lastfmstatus) is currently experiencing issues");
         }
+
+        response.ComponentsContainer = container;
 
         return response;
     }
@@ -769,8 +784,11 @@ public class UserBuilder
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed
+            ResponseType = ResponseType.Paginator
         };
+
+        var accentColor = await this._albumService.GetAccentColorWithAlbum(context,
+            null, null, null, null, allowCustomColors: false);
 
         List<FeaturedLog> featuredHistory;
 
@@ -779,36 +797,27 @@ public class UserBuilder
 
         var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild?.Id);
 
+        string title;
+
         switch (view)
         {
             case FeaturedView.Global:
-            {
-                response.Embed.WithTitle($"🌐 Global featured history");
-
+                title = "🌐 Global featured history";
                 featuredHistory = await this._featuredService.GetGlobalFeaturedHistory();
                 break;
-            }
             case FeaturedView.Server:
-            {
-                response.Embed.WithTitle($"{context.DiscordGuild.Name}'s server featured history");
-
+                title = $"{StringExtensions.Sanitize(context.DiscordGuild.Name)}'s server featured history";
                 featuredHistory = await this._featuredService.GetFeaturedHistoryForGuild(guildUsers);
                 break;
-            }
             case FeaturedView.Friends:
-            {
                 featuredHistory = await this._featuredService.GetFeaturedHistoryForFriends(context.ContextUser.UserId);
-                response.Embed.WithTitle(
-                    $"{userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}'s friends featured history");
+                title = $"{userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}'s friends featured history";
                 break;
-            }
             case FeaturedView.User:
-            {
                 featuredHistory =
                     await this._featuredService.GetFeaturedHistoryForUser(userSettings.UserId,
                         userSettings.UserNameLastFm);
-                response.Embed.WithTitle(
-                    $"{userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}'s featured history");
+                title = $"{userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}'s featured history";
 
                 var self = userSettings.DifferentUser ? "They" : "You";
 
@@ -820,21 +829,18 @@ public class UserBuilder
                 }
 
                 break;
-            }
             default:
                 throw new ArgumentOutOfRangeException(nameof(view), view, null);
         }
 
-        var description = new StringBuilder();
         var nextSupporterSunday = FeaturedService.GetDaysUntilNextSupporterSunday();
-        var pages = new List<PageBuilder>();
 
         if (featuredHistory.Any())
         {
             if (SupporterService.IsSupporter(context.ContextUser.UserType))
             {
                 footer.AppendLine(
-                    $"As a thank you for supporting, you have better odds every first Sunday of the month.");
+                    "As a thank you for supporting, you have better odds every first Sunday of the month.");
             }
             else
             {
@@ -846,113 +852,6 @@ public class UserBuilder
         var featuredPages = featuredHistory
             .Chunk(5)
             .ToList();
-
-        var pageCounter = 1;
-
-        if (!featuredHistory.Any())
-        {
-            switch (view)
-            {
-                case FeaturedView.Global:
-                    description.AppendLine(
-                        "Sorry, nobody has been featured yet.. that is quite strange now that I'm thinking about it 🤨🤨");
-                    break;
-                case FeaturedView.Server:
-                    description.AppendLine("Sorry, nobody in this server has been featured yet..");
-                    break;
-                case FeaturedView.Friends:
-                    description.AppendLine("Sorry, none of your friends have been featured yet..");
-                    break;
-                case FeaturedView.User:
-                {
-                    if (!userSettings.DifferentUser)
-                    {
-                        description.AppendLine("Sorry, you haven't been featured yet... <:404:882220605783560222>");
-                        description.AppendLine();
-                        description.AppendLine($"But don't give up hope just yet!");
-                        description.AppendLine(
-                            $"Every hour there is a 1 in {odds.Format(context.NumberFormat)} chance that you might be picked.");
-
-                        if (context.DiscordGuild?.Id != this._botSettings.Bot.BaseServerId)
-                        {
-                            description.AppendLine();
-                            description.AppendLine(
-                                $"Join [our server](https://discord.gg/6y3jJjtDqK) to get pinged if you get featured.");
-                        }
-
-                        if (SupporterService.IsSupporter(context.ContextUser.UserType))
-                        {
-                            description.AppendLine();
-                            description.AppendLine(
-                                $"Also, as a thank you for being a supporter you have a higher chance of becoming featured every first Sunday of the month on Supporter Sunday. The next one is in {nextSupporterSunday} {StringExtensions.GetDaysString(nextSupporterSunday)}.");
-                        }
-                        else
-                        {
-                            description.AppendLine();
-                            description.AppendLine(
-                                $"Become an [.fmbot supporter]({Constants.GetSupporterDiscordLink}) and get a higher chance every Supporter Sunday. The next Supporter Sunday is in {nextSupporterSunday} {StringExtensions.GetDaysString(nextSupporterSunday)} (first Sunday of each month).");
-                            response.Components = new ActionRowProperties().WithButton(Constants.GetSupporterButton,
-                                style: ButtonStyle.Secondary,
-                                customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(
-                                    source: "featured-supportersunday"));
-                        }
-                    }
-                    else
-                    {
-                        description.AppendLine("Hmm, they haven't been featured yet... <:404:882220605783560222>");
-                        description.AppendLine();
-                        description.AppendLine($"But don't let them give up hope just yet!");
-                        description.AppendLine(
-                            $"Every hour there is a 1 in {odds.Format(context.NumberFormat)} chance that they might be picked.");
-                    }
-
-                    break;
-                }
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(view), view, null);
-            }
-
-            var page = new PageBuilder()
-                .WithDescription(description.ToString())
-                .WithTitle(response.Embed.Title)
-                .WithFooter(footer.ToString());
-
-            pages.Add(page);
-        }
-        else
-        {
-            foreach (var featuredPage in featuredPages)
-            {
-                foreach (var featured in featuredPage)
-                {
-                    FullGuildUser guildUser = null;
-                    if (view != FeaturedView.User && featured.UserId.HasValue)
-                    {
-                        guildUsers.TryGetValue(featured.UserId.Value, out guildUser);
-                    }
-
-                    description.AppendLine(
-                        this._featuredService.GetStringForFeatured(featured, view != FeaturedView.User, guildUser));
-                    description.AppendLine();
-                }
-
-                var pageFooter = new StringBuilder();
-                pageFooter.Append($"Page {pageCounter}/{featuredPages.Count.Format(context.NumberFormat)}");
-                pageFooter.Append($" - {featuredHistory.Count.Format(context.NumberFormat)} total");
-
-                var page = new PageBuilder()
-                    .WithDescription(description.ToString())
-                    .WithTitle(response.Embed.Title)
-                    .WithFooter(pageFooter + "\n" + footer);
-
-                pages.Add(page);
-
-                pageCounter++;
-                description = new StringBuilder();
-            }
-
-            response.Embed.WithFooter(footer.ToString());
-        }
 
         var viewType = new StringMenuProperties(InteractionConstants.FeaturedLog)
             .WithPlaceholder("Select featured view")
@@ -977,9 +876,148 @@ public class UserBuilder
             });
         }
 
-        response.ComponentPaginator = StringService.BuildComponentPaginatorWithSelectMenu(pages, viewType);
-        response.ResponseType = ResponseType.Paginator;
+        var paginator = new ComponentPaginatorBuilder()
+            .WithPageFactory(GeneratePage)
+            .WithPageCount(Math.Max(1, featuredPages.Count))
+            .WithActionOnTimeout(ActionOnStop.DisableInput);
+
+        response.ComponentPaginator = paginator;
         return response;
+
+        IPage GeneratePage(IComponentPaginator p)
+        {
+            var container = new ComponentContainerProperties();
+
+            if (accentColor != DiscordConstants.LastFmColorRed)
+            {
+                container.WithAccentColor(accentColor);
+            }
+
+            container.WithTextDisplay($"### {title}");
+
+            if (!featuredHistory.Any())
+            {
+                var description = new StringBuilder();
+
+                switch (view)
+                {
+                    case FeaturedView.Global:
+                        description.AppendLine(
+                            "Sorry, nobody has been featured yet.. that is quite strange now that I'm thinking about it 🤨🤨");
+                        break;
+                    case FeaturedView.Server:
+                        description.AppendLine("Sorry, nobody in this server has been featured yet..");
+                        break;
+                    case FeaturedView.Friends:
+                        description.AppendLine("Sorry, none of your friends have been featured yet..");
+                        break;
+                    case FeaturedView.User:
+                    {
+                        if (!userSettings.DifferentUser)
+                        {
+                            description.AppendLine("Sorry, you haven't been featured yet... <:404:882220605783560222>");
+                            description.AppendLine();
+                            description.AppendLine("But don't give up hope just yet!");
+                            description.AppendLine(
+                                $"Every hour there is a 1 in {odds.Format(context.NumberFormat)} chance that you might be picked.");
+
+                            if (context.DiscordGuild?.Id != this._botSettings.Bot.BaseServerId)
+                            {
+                                description.AppendLine();
+                                description.AppendLine(
+                                    "Join [our server](https://discord.gg/6y3jJjtDqK) to get pinged if you get featured.");
+                            }
+
+                            if (SupporterService.IsSupporter(context.ContextUser.UserType))
+                            {
+                                description.AppendLine();
+                                description.AppendLine(
+                                    $"Also, as a thank you for being a supporter you have a higher chance of becoming featured every first Sunday of the month on Supporter Sunday. The next one is in {nextSupporterSunday} {StringExtensions.GetDaysString(nextSupporterSunday)}.");
+                            }
+                            else
+                            {
+                                description.AppendLine();
+                                description.AppendLine(
+                                    $"Become an [.fmbot supporter]({Constants.GetSupporterDiscordLink}) and get a higher chance every Supporter Sunday. The next Supporter Sunday is in {nextSupporterSunday} {StringExtensions.GetDaysString(nextSupporterSunday)} (first Sunday of each month).");
+
+                                container.WithActionRow(new ActionRowProperties().WithButton(Constants.GetSupporterButton,
+                                    style: ButtonStyle.Secondary,
+                                    customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(
+                                        source: "featured-supportersunday")));
+                            }
+                        }
+                        else
+                        {
+                            description.AppendLine("Hmm, they haven't been featured yet... <:404:882220605783560222>");
+                            description.AppendLine();
+                            description.AppendLine("But don't let them give up hope just yet!");
+                            description.AppendLine(
+                                $"Every hour there is a 1 in {odds.Format(context.NumberFormat)} chance that they might be picked.");
+                        }
+
+                        break;
+                    }
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(view), view, null);
+                }
+
+                container.WithSeparator();
+                container.WithTextDisplay(description.ToString().TrimEnd());
+
+                if (footer.Length > 0)
+                {
+                    container.WithSeparator();
+                    container.WithTextDisplay($"-# {footer.ToString().TrimEnd()}");
+                }
+            }
+            else
+            {
+                var currentPage = featuredPages.ElementAtOrDefault(p.CurrentPageIndex);
+
+                if (currentPage != null)
+                {
+                    foreach (var featured in currentPage)
+                    {
+                        FullGuildUser guildUser = null;
+                        if (view != FeaturedView.User && featured.UserId.HasValue)
+                        {
+                            guildUsers.TryGetValue(featured.UserId.Value, out guildUser);
+                        }
+
+                        container.WithSeparator();
+                        container.WithTextDisplay(
+                            this._featuredService.GetStringForFeatured(featured, view != FeaturedView.User, guildUser));
+                    }
+                }
+
+                container.WithSeparator();
+
+                var pageFooter = new StringBuilder();
+                pageFooter.Append($"-# Page {p.CurrentPageIndex + 1}/{featuredPages.Count.Format(context.NumberFormat)}");
+                pageFooter.Append($" - {featuredHistory.Count.Format(context.NumberFormat)} total");
+
+                if (footer.Length > 0)
+                {
+                    pageFooter.AppendLine();
+                    pageFooter.Append($"-# {footer.ToString().TrimEnd()}");
+                }
+
+                container.WithTextDisplay(pageFooter.ToString());
+            }
+
+            container.AddComponents(viewType);
+
+            if (featuredPages.Count > 1)
+            {
+                container.WithActionRow(StringService.GetPaginationActionRow(p));
+            }
+
+            return new PageBuilder()
+                .WithAllowedMentions(AllowedMentionsProperties.None)
+                .WithMessageFlags(MessageFlags.IsComponentsV2)
+                .WithComponents([container])
+                .Build();
+        }
     }
 
     public async Task<ResponseModel> ProfileAsync(ContextModel context, UserSettingsModel userSettings)

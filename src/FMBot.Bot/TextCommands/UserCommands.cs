@@ -286,7 +286,15 @@ public class UserCommands(
             var response = await userBuilder.FeaturedAsync(new ContextModel(this.Context, prfx, contextUser));
 
             RestMessage message;
-            if (response.ResponseType == ResponseType.Embed)
+            if (response.ResponseType == ResponseType.ComponentsV2)
+            {
+                message = await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
+                    new MessageProperties()
+                        .WithComponents(response.GetComponentsV2())
+                        .WithFlags(MessageFlags.IsComponentsV2)
+                        .WithAllowedMentions(AllowedMentionsProperties.None));
+            }
+            else if (response.ResponseType == ResponseType.Embed)
             {
                 message = await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Embeds = [response.Embed] });
             }
