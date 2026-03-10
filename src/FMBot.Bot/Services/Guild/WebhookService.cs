@@ -6,7 +6,6 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Resources;
-using FMBot.Bot.Services;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -31,16 +30,14 @@ public class WebhookService
     private readonly GuildService _guildService;
     private readonly OpenAiService _openAiService;
     private readonly HttpClient _httpClient;
-    private readonly AlbumService _albumService;
 
     public WebhookService(IDbContextFactory<FMBotDbContext> contextFactory, IOptions<BotSettings> botSettings, GuildService guildService,
-        OpenAiService openAiService, HttpClient httpClient, AlbumService albumService)
+        OpenAiService openAiService, HttpClient httpClient)
     {
         this._contextFactory = contextFactory;
         this._guildService = guildService;
         this._openAiService = openAiService;
         this._httpClient = httpClient;
-        this._albumService = albumService;
         this._botSettings = botSettings.Value;
         this._avatarImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", "bot", "default-avatar.png");
     }
@@ -150,15 +147,12 @@ public class WebhookService
         }
     }
 
-    public async Task SendFeaturedWebhooks(FeaturedLog featured)
+    public async Task SendFeaturedWebhooks(FeaturedLog featured, Color? accentColor)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var webhooks = await db.Webhooks
             .AsQueryable()
             .ToListAsync();
-
-        var accentColor = await this._albumService.GetAlbumAccentColor(
-            featured.ImageUrl, featured.AlbumName, featured.ArtistName);
 
         var tasks = new List<Task>();
         foreach (var webhook in webhooks)
@@ -218,10 +212,8 @@ public class WebhookService
             .WithAllowedMentions(AllowedMentionsProperties.None));
     }
 
-    public async Task PostFeatured(FeaturedLog featuredLog, ShardedGatewayClient client)
+    public async Task PostFeatured(FeaturedLog featuredLog, ShardedGatewayClient client, Color? accentColor)
     {
-        var accentColor = await this._albumService.GetAlbumAccentColor(
-            featuredLog.ImageUrl, featuredLog.AlbumName, featuredLog.ArtistName);
         var container = BuildFeaturedContainer(featuredLog, accentColor);
 
         if (this._botSettings.Bot.BaseServerId != 0 && this._botSettings.Bot.FeaturedChannelId != 0)

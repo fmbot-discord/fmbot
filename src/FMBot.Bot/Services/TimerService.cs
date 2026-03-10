@@ -20,6 +20,7 @@ using FMBot.Persistence.Domain.Models;
 using Google.Protobuf.WellKnownTypes;
 using Hangfire;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using NetCord;
 using NetCord.Gateway;
@@ -49,6 +50,7 @@ public class TimerService : IDisposable
     private readonly EurovisionService _eurovisionService;
     private readonly UpdateQueueHandler _updateQueueHandler;
     private readonly ShortcutService _shortcutService;
+    private readonly IServiceProvider _serviceProvider;
 
     public FeaturedLog CurrentFeatured;
 
@@ -67,8 +69,9 @@ public class TimerService : IDisposable
         StatusHandler.StatusHandlerClient statusHandler,
         HttpClient httpClient,
         BotListService botListService,
-        EurovisionService eurovisionService, ShortcutService shortcutService)
+        EurovisionService eurovisionService, ShortcutService shortcutService, IServiceProvider serviceProvider)
     {
+        this._serviceProvider = serviceProvider;
         this._client = client;
         this._userService = userService;
         this._indexService = indexService;
@@ -514,7 +517,11 @@ public class TimerService : IDisposable
         {
             Log.Information("Featured: Posting new featured to webhooks");
 
-            await this._webhookService.PostFeatured(newFeatured, this._client);
+            var albumService = this._serviceProvider.GetRequiredService<AlbumService>();
+            var accentColor = await albumService.GetAlbumAccentColor(
+                newFeatured.ImageUrl, newFeatured.AlbumName, newFeatured.ArtistName);
+
+            await this._webhookService.PostFeatured(newFeatured, this._client, accentColor);
             await this._featuredService.SetFeatured(newFeatured);
 
             if (newFeatured.FeaturedMode == FeaturedMode.RecentPlays)
@@ -522,7 +529,7 @@ public class TimerService : IDisposable
                 await this._featuredService.ScrobbleTrack(this._client.GetCurrentUser()!.Id, newFeatured);
             }
 
-            _ = this._webhookService.SendFeaturedWebhooks(newFeatured);
+            _ = this._webhookService.SendFeaturedWebhooks(newFeatured, accentColor);
         }
 
         Log.Information($"{nameof(CheckForNewFeatured)}: Setting new featured in bot");
