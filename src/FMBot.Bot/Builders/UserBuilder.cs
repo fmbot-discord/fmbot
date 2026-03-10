@@ -152,12 +152,8 @@ public class UserBuilder
         var featured = this._timer.CurrentFeatured;
         var container = WebhookService.BuildFeaturedContainer(featured);
 
-        var databaseAlbum = featured.AlbumName != null
-            ? await this._albumService.GetAlbumFromDatabase(featured.ArtistName, featured.AlbumName)
-            : null;
-
         var accentColor = await this._albumService.GetAccentColorWithAlbum(context,
-            featured.ImageUrl, databaseAlbum?.Id, featured.AlbumName, featured.ArtistName,
+            featured.ImageUrl, null, featured.AlbumName, featured.ArtistName,
             allowCustomColors: false);
 
         if (accentColor != DiscordConstants.LastFmColorRed)
@@ -787,9 +783,6 @@ public class UserBuilder
             ResponseType = ResponseType.Paginator
         };
 
-        var accentColor = await this._albumService.GetAccentColorWithAlbum(context,
-            null, null, null, null, allowCustomColors: false);
-
         List<FeaturedLog> featuredHistory;
 
         var odds = await this._featuredService.GetFeaturedOddsAsync();
@@ -824,8 +817,8 @@ public class UserBuilder
                 if (featuredHistory.Count >= 1)
                 {
                     footer.AppendLine(featuredHistory.Count == 1
-                        ? $"{self} have only been featured once. Every hour, that is a chance of 1 in {odds}!"
-                        : $"{self} have been featured {featuredHistory.Count} times");
+                        ? $"-# {self} have only been featured once. Every hour, that is a chance of 1 in {odds}!"
+                        : $"-# {self} have been featured {featuredHistory.Count} times");
                 }
 
                 break;
@@ -840,12 +833,12 @@ public class UserBuilder
             if (SupporterService.IsSupporter(context.ContextUser.UserType))
             {
                 footer.AppendLine(
-                    "As a thank you for supporting, you have better odds every first Sunday of the month.");
+                    "-# As a thank you for supporting, you have better odds every first Sunday of the month.");
             }
             else
             {
                 footer.AppendLine(
-                    $"Every first Sunday of the month is Supporter Sunday (in {nextSupporterSunday} {StringExtensions.GetDaysString(nextSupporterSunday)}). Check '{context.Prefix}getsupporter' for info.");
+                    $"-# Every first Sunday of the month is Supporter Sunday (in {nextSupporterSunday} {StringExtensions.GetDaysString(nextSupporterSunday)}). Check '{context.Prefix}getsupporter' for info.");
             }
         }
 
@@ -887,11 +880,6 @@ public class UserBuilder
         IPage GeneratePage(IComponentPaginator p)
         {
             var container = new ComponentContainerProperties();
-
-            if (accentColor != DiscordConstants.LastFmColorRed)
-            {
-                container.WithAccentColor(accentColor);
-            }
 
             container.WithTextDisplay($"### {title}");
 
@@ -967,7 +955,7 @@ public class UserBuilder
                 if (footer.Length > 0)
                 {
                     container.WithSeparator();
-                    container.WithTextDisplay($"-# {footer.ToString().TrimEnd()}");
+                    container.WithTextDisplay($"{footer.ToString().TrimEnd()}");
                 }
             }
             else
@@ -999,7 +987,7 @@ public class UserBuilder
                 if (footer.Length > 0)
                 {
                     pageFooter.AppendLine();
-                    pageFooter.Append($"-# {footer.ToString().TrimEnd()}");
+                    pageFooter.Append(footer.ToString().TrimEnd());
                 }
 
                 container.WithTextDisplay(pageFooter.ToString());

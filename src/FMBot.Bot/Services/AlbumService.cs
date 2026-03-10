@@ -510,7 +510,7 @@ public class AlbumService
                 processedUrl = processedUrl.Replace("/i/u/", "/i/u/300x300/");
             }
 
-            var imageStream = await this._dataSourceFactory.GetAlbumImageAsStreamAsync(processedUrl);
+            await using var imageStream = await this._dataSourceFactory.GetAlbumImageAsStreamAsync(processedUrl);
             if (imageStream != null)
             {
                 var cacheStream = new MemoryStream();
