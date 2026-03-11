@@ -76,7 +76,7 @@ public class UserGuildSettingCommands(
 
         if (user == null)
         {
-            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Please mention a user, enter a discord id or enter a Last.fm username to block on your server." });
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Please mention a user, enter a Discord ID, or enter a Last.fm username to block on your server." });
             await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
             return;
         }
@@ -160,7 +160,7 @@ public class UserGuildSettingCommands(
 
         if (user == null)
         {
-            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Please mention a user, enter a discord id or enter a Last.fm username to unblock on your server." });
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Please mention a user, enter a Discord ID, or enter a Last.fm username to unblock on your server." });
             await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
             return;
         }

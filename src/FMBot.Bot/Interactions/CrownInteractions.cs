@@ -28,6 +28,9 @@ public class CrownInteractions(
     [UsernameSetRequired]
     public async Task CrownButtonAsync(string artistId, string stolen)
     {
+        await RespondAsync(InteractionCallback.DeferredModifyMessage);
+        await this.Context.DisableInteractionButtons();
+
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var artist = await artistsService.GetArtistForId(int.Parse(artistId));
         var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
@@ -38,14 +41,13 @@ public class CrownInteractions(
 
             if (stolen.Equals("true", StringComparison.OrdinalIgnoreCase))
             {
-                _ = this.Context.DisableInteractionButtons();
                 response.Components = null;
-                await this.Context.SendResponse(interactivity, response, userService);
+                await this.Context.SendFollowUpResponse(interactivity, response, userService);
                 await this.Context.LogCommandUsedAsync(response, userService);
             }
             else
             {
-                await this.Context.UpdateInteractionEmbed(response);
+                await this.Context.UpdateInteractionEmbed(response, defer: false);
                 await this.Context.LogCommandUsedAsync(response, userService);
             }
 

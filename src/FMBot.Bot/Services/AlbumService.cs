@@ -276,7 +276,7 @@ public class AlbumService
         }
 
         response.Embed.WithDescription($"Album could not be found, please check your search values and try again.\n\n" +
-                                       $"You can also enter the exact value with the | separator. Example: `artist name | album name`");
+                                       $"You can also enter the exact value with the | separator. Example: `artist name | album name`.");
         response.Embed.WithFooter($"Search value: '{searchValue}'");
         response.CommandResponse = CommandResponse.NotFound;
         response.ResponseType = ResponseType.Embed;
@@ -465,9 +465,89 @@ public class AlbumService
         return await connection.QueryFirstOrDefaultAsync<string>(sql, new { albumId });
     }
 
-    public async Task<Color> GetAccentColorWithAlbum(ContextModel context, string albumCoverUrl, int? albumId, string albumName, string artistName)
+    public async Task<Color> GetAlbumAccentColor(string albumCoverUrl, string albumName, string artistName)
     {
-        switch (context.ContextUser?.FmSetting?.AccentColor)
+        if (string.IsNullOrEmpty(albumName) || string.IsNullOrEmpty(artistName))
+        {
+            return DiscordConstants.LastFmColorRed;
+        }
+
+        var album = await GetAlbumFromDatabase(artistName, albumName);
+
+        var cachePath = ChartService.AlbumUrlToCacheFilePath(albumName, artistName);
+        if (File.Exists(cachePath))
+        {
+            using var bitmap = SKBitmap.Decode(cachePath);
+            if (bitmap != null)
+            {
+                var avgColor = bitmap.GetAverageRgbColor();
+                return new Color(avgColor.R, avgColor.G, avgColor.B);
+            }
+        }
+
+        if (album != null)
+        {
+            var colorHex = await GetAlbumColorAsync(album.Id);
+            if (!string.IsNullOrEmpty(colorHex) &&
+                int.TryParse(colorHex, NumberStyles.HexNumber, null, out var rgb))
+            {
+                return new Color(rgb);
+            }
+        }
+
+        if (string.IsNullOrEmpty(albumCoverUrl))
+        {
+            return DiscordConstants.LastFmColorRed;
+        }
+
+        try
+        {
+            var processedUrl = albumCoverUrl;
+            if (processedUrl.Contains("lastfm.freetls.fastly.net") &&
+                !processedUrl.Contains("/300x300/"))
+            {
+                processedUrl = processedUrl.Replace("/770x0/", "/");
+                processedUrl = processedUrl.Replace("/i/u/", "/i/u/300x300/");
+            }
+
+            await using var imageStream = await this._dataSourceFactory.GetAlbumImageAsStreamAsync(processedUrl);
+            if (imageStream != null)
+            {
+                var cacheStream = new MemoryStream();
+                await imageStream.CopyToAsync(cacheStream);
+                imageStream.Position = 0;
+
+                using var bitmap = SKBitmap.Decode(imageStream);
+                if (bitmap != null)
+                {
+                    cacheStream.Position = 0;
+                    await ChartService.OverwriteCache(cacheStream, cachePath);
+                    await cacheStream.DisposeAsync();
+
+                    var avgColor = bitmap.GetAverageRgbColor();
+                    return new Color(avgColor.R, avgColor.G, avgColor.B);
+                }
+
+                await cacheStream.DisposeAsync();
+            }
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error while downloading album cover for accent color");
+        }
+
+        return DiscordConstants.LastFmColorRed;
+    }
+
+    public async Task<Color> GetAccentColorWithAlbum(ContextModel context, string albumCoverUrl, int? albumId, string albumName, string artistName, bool allowCustomColors = true)
+    {
+        var accentColor = context.ContextUser?.FmSetting?.AccentColor;
+        if (!allowCustomColors && accentColor is FmAccentColor.Custom or FmAccentColor.LastFmRed)
+        {
+            accentColor = FmAccentColor.CoverColor;
+        }
+
+        switch (accentColor)
         {
             case FmAccentColor.LastFmRed:
                 return DiscordConstants.LastFmColorRed;
@@ -482,12 +562,7 @@ public class AlbumService
                 throw new ArgumentOutOfRangeException();
         }
 
-        if (string.IsNullOrEmpty(albumName) || string.IsNullOrEmpty(artistName))
-        {
-            return DiscordConstants.LastFmColorRed;
-        }
-
-        if (context.ContextUser?.FmSetting?.AccentColor == FmAccentColor.AppleMusicBackgroundColor && albumId.HasValue)
+        if (accentColor == FmAccentColor.AppleMusicBackgroundColor && albumId.HasValue)
         {
             var bgColor = await GetAlbumColorAsync(albumId.Value);
             if (!string.IsNullOrEmpty(bgColor) &&
@@ -497,71 +572,7 @@ public class AlbumService
             }
         }
 
-        var cachePath = ChartService.AlbumUrlToCacheFilePath(albumName, artistName);
-        if (File.Exists(cachePath))
-        {
-            using var bitmap = SKBitmap.Decode(cachePath);
-            if (bitmap != null)
-            {
-                var avgColor = bitmap.GetAverageRgbColor();
-                return new Color(avgColor.R, avgColor.G, avgColor.B);
-            }
-        }
-
-        if (albumId.HasValue)
-        {
-            var colorHex = await GetAlbumColorAsync(albumId.Value);
-            if (!string.IsNullOrEmpty(colorHex) &&
-                int.TryParse(colorHex, NumberStyles.HexNumber, null, out var rgb))
-            {
-                return new Color(rgb);
-            }
-        }
-
-        if (string.IsNullOrEmpty(albumCoverUrl))
-        {
-            return DiscordConstants.LastFmColorRed;
-        }
-
-        {
-            try
-            {
-                var processedUrl = albumCoverUrl;
-                if (processedUrl.Contains("lastfm.freetls.fastly.net") &&
-                    !processedUrl.Contains("/300x300/"))
-                {
-                    processedUrl = processedUrl.Replace("/770x0/", "/");
-                    processedUrl = processedUrl.Replace("/i/u/", "/i/u/300x300/");
-                }
-
-                var imageStream = await this._dataSourceFactory.GetAlbumImageAsStreamAsync(processedUrl);
-                if (imageStream != null)
-                {
-                    var cacheStream = new MemoryStream();
-                    await imageStream.CopyToAsync(cacheStream);
-                    imageStream.Position = 0;
-
-                    using var bitmap = SKBitmap.Decode(imageStream);
-                    if (bitmap != null)
-                    {
-                        cacheStream.Position = 0;
-                        await ChartService.OverwriteCache(cacheStream, cachePath);
-                        await cacheStream.DisposeAsync();
-
-                        var avgColor = bitmap.GetAverageRgbColor();
-                        return new Color(avgColor.R, avgColor.G, avgColor.B);
-                    }
-
-                    await cacheStream.DisposeAsync();
-                }
-            }
-            catch (Exception e)
-            {
-                Log.Error(e, "Error while downloading album cover for accent color");
-            }
-        }
-
-        return DiscordConstants.LastFmColorRed;
+        return await GetAlbumAccentColor(albumCoverUrl, albumName, artistName);
     }
 
     private static AlbumInfo CachedAlbumToAlbumInfo(Album album)

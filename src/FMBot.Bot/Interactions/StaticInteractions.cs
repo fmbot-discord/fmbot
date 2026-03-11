@@ -112,6 +112,58 @@ public class StaticInteractions(
         await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
     }
 
+    [ComponentInteraction(InteractionConstants.SupporterLinks.GetLifetimePromoLink)]
+    [UserSessionRequired]
+    public async Task GetLifetimePromoLink(string currency)
+    {
+        try
+        {
+            await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
+
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+            var existingStripeSupporter = await supporterService.GetStripeSupporter(contextUser.DiscordUserId);
+
+            var priceId = currency.Equals("eur", StringComparison.OrdinalIgnoreCase)
+                ? InteractionConstants.SupporterLinks.LifetimePromoEurPriceId
+                : InteractionConstants.SupporterLinks.LifetimePromoUsdPriceId;
+
+            var link = await supporterService.GetSupporterLifetimePromoCheckoutLink(
+                this.Context.User.Id,
+                contextUser.UserNameLastFM,
+                priceId,
+                currency,
+                existingStripeSupporter?.StripeCustomerId);
+
+            var components = new ActionRowProperties().WithButton("Complete purchase", url: link,
+                emote: EmojiProperties.Standard("⭐"));
+
+            var embed = new EmbedProperties();
+            embed.WithColor(DiscordConstants.InformationColorBlue);
+            var description = new StringBuilder();
+            description.AppendLine("**Click the unique link below to purchase lifetime supporter!**");
+            description.AppendLine("-# One-time payment — lifetime access to all supporter perks");
+
+            if (SupporterService.IsSupporter(contextUser.UserType))
+            {
+                embed.AddField("⚠️ Note", "You currently already have access to supporter. Please cancel your subscription after your purchase.");
+            }
+
+            embed.WithDescription(description.ToString());
+
+            await this.Context.Interaction.ModifyResponseAsync(m =>
+            {
+                m.Embeds = [embed];
+                m.Components = [components];
+            });
+
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService, deferFirst: false);
+        }
+    }
+
     [ComponentInteraction($"{InteractionConstants.SupporterLinks.ManageOverview}")]
     [UserSessionRequired]
     public async Task GetManageOverview()
@@ -140,8 +192,17 @@ public class StaticInteractions(
                 }
                 else if (existingSupporter.SubscriptionType == SubscriptionType.Stripe)
                 {
-                    manageDescription.AppendLine(
-                        "To manage your subscription, go to the [Stripe customer portal](https://billing.stripe.com/p/login/3cs7ww1tR6ay6t28ww) and authenticate with the email you used during purchase.");
+                    var stripeSupporter = await supporterService.GetStripeSupporter(contextUser.DiscordUserId);
+                    if (stripeSupporter != null && string.IsNullOrWhiteSpace(stripeSupporter.StripeSubscriptionId))
+                    {
+                        manageDescription.AppendLine(
+                            "You have lifetime supporter! If you still have an active subscription running, you can cancel it through the [Stripe customer portal](https://billing.stripe.com/p/login/3cs7ww1tR6ay6t28ww).");
+                    }
+                    else
+                    {
+                        manageDescription.AppendLine(
+                            "To manage your subscription, go to the [Stripe customer portal](https://billing.stripe.com/p/login/3cs7ww1tR6ay6t28ww) and authenticate with the email you used during purchase.");
+                    }
                 }
                 else
                 {
@@ -311,6 +372,64 @@ public class StaticInteractions(
         catch (Exception ex)
         {
             await this.Context.HandleCommandException(ex, userService);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.Faq.Overview)]
+    public async Task FaqOverviewSelected()
+    {
+        try
+        {
+            var response = staticBuilders.FaqOverview();
+
+            await this.Context.UpdateInteractionEmbed(response, interactivity);
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService, deferFirst: true);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.Faq.Category)]
+    public async Task FaqCategorySelected(string categoryId, string newResponse)
+    {
+        try
+        {
+            var response = staticBuilders.FaqCategoryResponse(categoryId);
+
+            if (newResponse.Equals("true", StringComparison.OrdinalIgnoreCase))
+            {
+                await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                    .WithComponents(response.GetComponentsV2())
+                    .WithFlags(MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral)));
+            }
+            else
+            {
+                await this.Context.UpdateInteractionEmbed(response, interactivity);
+            }
+
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService, deferFirst: true);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.Faq.Question)]
+    public async Task FaqQuestionSelected(string categoryId, string questionId)
+    {
+        try
+        {
+            var response = staticBuilders.FaqQuestionResponse(categoryId, questionId);
+
+            await this.Context.UpdateInteractionEmbed(response, interactivity);
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService, deferFirst: true);
         }
     }
 

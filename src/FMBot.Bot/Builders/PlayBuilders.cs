@@ -1097,13 +1097,13 @@ public class PlayBuilder
                 if ((streak.StreakEnded - streak.StreakStarted).TotalHours <= 20)
                 {
                     pageString.Append($"<t:{((DateTimeOffset)streak.StreakStarted).ToUnixTimeSeconds()}:f>");
-                    pageString.Append($" til ");
+                    pageString.Append($" until ");
                     pageString.Append($"<t:{((DateTimeOffset)streak.StreakEnded).ToUnixTimeSeconds()}:t>");
                 }
                 else
                 {
                     pageString.Append($"<t:{((DateTimeOffset)streak.StreakStarted).ToUnixTimeSeconds()}:f>");
-                    pageString.Append($" til ");
+                    pageString.Append($" until ");
                     pageString.Append($"<t:{((DateTimeOffset)streak.StreakEnded).ToUnixTimeSeconds()}:f>");
                 }
 
@@ -1832,7 +1832,7 @@ public class PlayBuilder
         if (context.ContextUser.UserType == UserType.User)
         {
             response.Embed.WithDescription(
-                $"To see the biggest gaps between when you listened to certain artists we need to store your lifetime Last.fm history. Your lifetime history and more are only available for supporters.");
+                $"To see the biggest gaps between when you listened to certain artists, we need to store your lifetime Last.fm history. Your lifetime history and more are only available for supporters.");
 
             response.Components = new ActionRowProperties()
                 .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
@@ -1846,7 +1846,7 @@ public class PlayBuilder
         if (userSettings.UserType == UserType.User)
         {
             response.Embed.WithDescription(
-                $"Sorry, artist gaps uses somebody's lifetime listening history. You can only use this command on other supporters.");
+                $"Sorry, the gaps command uses somebody's lifetime listening history. You can only use this command on other supporters.");
 
             response.Components = new ActionRowProperties()
                 .WithButton(".fmbot supporter", style: ButtonStyle.Secondary,

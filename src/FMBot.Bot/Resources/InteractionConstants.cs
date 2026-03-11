@@ -183,6 +183,10 @@ public static class InteractionConstants
         public const string GetPurchaseLink = "supporter-purchase-link";
         public const string GetManageLink = "supporter-manage-link";
         public const string ManageOverview = "supporter-manage-overview";
+
+        public const string GetLifetimePromoLink = "supporter-lifetime-promo-link";
+        public const string LifetimePromoUsdPriceId = "price_1T2d3vDmwlsh3IxTSEU4o9ym";
+        public const string LifetimePromoEurPriceId = "price_1T2d3WDmwlsh3IxTjoK8SlVG";
     }
 
     public const string BotScrobblingEnable = "user-setting-botscrobbling-enable";
@@ -261,6 +265,13 @@ public static class InteractionConstants
         public const string JumbleGiveUp = "jumble-giveup";
         public const string JumbleReshuffle = "jumble-reshuffle";
         public const string JumblePlayAgain = "jumble-playagain";
+    }
+
+    public static class Faq
+    {
+        public const string Overview = "faq-overview";
+        public const string Category = "faq-category";
+        public const string Question = "faq-question";
     }
 
     public static class Graph

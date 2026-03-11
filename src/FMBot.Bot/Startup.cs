@@ -273,6 +273,7 @@ public class Startup
             .AddSingleton<CensorService>()
             .AddSingleton<ChartService>()
             .AddSingleton<CountryService>()
+            .AddSingleton<FaqService>()
             .AddSingleton<CrownService>()
             .AddSingleton<DiscogsService>()
             .AddSingleton<EurovisionService>()

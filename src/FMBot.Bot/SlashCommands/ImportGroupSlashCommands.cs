@@ -170,7 +170,7 @@ public class ImportGroupSlashCommands(
                 embed.WithColor(DiscordConstants.WarningColorOrange);
                 await UpdateSpotifyImportEmbed(message.Id, this.Context.Interaction, embed, description,
                     $"❌ Invalid Spotify import file (contains no plays). Make sure you select the right files, for example `my_spotify_data.zip` or `Streaming_History_Audio_x.json`.\n\n" +
-                    $"If your `.zip` contains files like `Userdata.json` or `Identity.json` its the wrong package. We can only process files that are from the ['Extended Streaming History'](https://www.spotify.com/us/account/privacy/) package. ",
+                    $"If your `.zip` contains files like `Userdata.json` or `Identity.json` it's the wrong package. We can only process files that are from the ['Extended Streaming History'](https://www.spotify.com/us/account/privacy/) package. ",
                     true);
                 await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
                 return;
@@ -355,7 +355,7 @@ public class ImportGroupSlashCommands(
                 embed.WithColor(DiscordConstants.WarningColorOrange);
                 await UpdateAppleMusicImportEmbed(message.Id, this.Context.Interaction, embed, description,
                     $"❌ We couldn't read the `.csv` file that was provided.\n\n" +
-                    $"We can only read a `Apple Music Play Activity.csv` file. Other files do not contain the data required for importing.\n\n" +
+                    $"We can only read an `Apple Music Play Activity.csv` file. Other files do not contain the data required for importing.\n\n" +
                     $"Still having issues? You can also open a help thread on [our server](https://discord.gg/fmbot).",
                     true);
                 await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);

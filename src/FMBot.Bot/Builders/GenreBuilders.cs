@@ -259,6 +259,17 @@ public class GenreBuilders
         var genres = await this._genreService.GetTopGenresForTopArtists(artists.Content.TopArtists);
         var previousTopGenres = await this._genreService.GetTopGenresForTopArtists(previousTopArtists);
 
+        if (genres == null || genres.Count == 0)
+        {
+            response.Embed.WithDescription(
+                "Sorry, no genre data could be found for your top artists in the selected time period.\n\n" +
+                "Genre data is sourced from Spotify and may not be available for all artists.");
+            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+            response.CommandResponse = CommandResponse.NotFound;
+            response.ResponseType = ResponseType.Embed;
+            return response;
+        }
+
         if (mode == ResponseMode.Image && genres.Any())
         {
             var totalPlays = await this._dataSourceFactory.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm,

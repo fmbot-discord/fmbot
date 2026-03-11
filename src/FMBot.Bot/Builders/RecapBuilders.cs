@@ -558,7 +558,7 @@ public class RecapBuilders
                 else
                 {
                     response.Embed.WithDescription(
-                        $"To accurately calculate listening time we need to store your full Last.fm history. Your lifetime history and more are only available for supporters.");
+                        $"To accurately calculate listening time, we need to store your full Last.fm history. Your lifetime history and more are only available for supporters.");
                     response.Embed.WithColor(DiscordConstants.InformationColorBlue);
                     response.Components.WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
                         customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "recap-listeningtime"));

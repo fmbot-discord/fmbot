@@ -205,7 +205,7 @@ public class DiscogsBuilder
             else
             {
                 response.Embed.WithDescription(
-                    "The user you're trying to look up has not setup their Discogs account yet.");
+                    "The user you're trying to look up has not set up their Discogs account yet.");
             }
 
             response.CommandResponse = CommandResponse.UsernameNotSet;
@@ -358,7 +358,7 @@ public class DiscogsBuilder
             else
             {
                 response.Embed.WithDescription(
-                    "The user you're trying to look up has not setup their Discogs account yet.");
+                    "The user you're trying to look up has not set up their Discogs account yet.");
             }
 
             response.CommandResponse = CommandResponse.UsernameNotSet;

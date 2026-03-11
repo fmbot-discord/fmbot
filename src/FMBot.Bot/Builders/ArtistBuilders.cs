@@ -1208,7 +1208,7 @@ public class ArtistBuilders
         if (context.ContextUser.UserType == UserType.User)
         {
             response.Embed.WithDescription(
-                $"To see what music you've recently discovered we need to store your lifetime Last.fm history. Your lifetime history and more are only available for supporters.");
+                $"To see what music you've recently discovered, we need to store your lifetime Last.fm history. Your lifetime history and more are only available for supporters.");
 
             response.Components = new ActionRowProperties()
                 .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
@@ -1222,7 +1222,7 @@ public class ArtistBuilders
         if (userSettings.UserType == UserType.User)
         {
             response.Embed.WithDescription(
-                $"Sorry, discovery commands uses somebody's lifetime listening history. You can only use this command on other supporters.");
+                $"Sorry, the discovery command uses somebody's lifetime listening history. You can only use this command on other supporters.");
 
             response.Components = new ActionRowProperties()
                 .WithButton(".fmbot supporter", style: ButtonStyle.Secondary,

@@ -40,7 +40,7 @@ public class PlaySlashCommands(
     [UsernameSetRequired]
     public async Task DateDiscoveredAsync(
         [SlashCommandParameter(Name = "track",
-            Description = "The track your want to search for (defaults to currently playing)",
+            Description = "The track you want to search for (defaults to currently playing)",
             AutocompleteProviderType = typeof(TrackAutoComplete))]
         string name = null,
         [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
@@ -194,7 +194,7 @@ public class PlaySlashCommands(
         }
     }
 
-    [SlashCommand("streak", "You or someone else's streak for an artist, album and track",
+    [SlashCommand("streak", "Your or someone else's streak for an artist, album, and track",
         Contexts =
             [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild],
         IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
@@ -292,7 +292,7 @@ public class PlaySlashCommands(
         }
     }
 
-    [SlashCommand("pace", "Shows estimated date you reach a scrobble goal based on average scrobbles per day",
+    [SlashCommand("pace", "Shows the estimated date you'll reach a scrobble goal based on average scrobbles per day",
         Contexts =
             [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild],
         IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]

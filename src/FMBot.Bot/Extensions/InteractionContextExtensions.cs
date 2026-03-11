@@ -329,6 +329,12 @@ public static class InteractionContextExtensions
                             .WithFlags(flags)
                             .WithComponents(response.GetMessageComponents())));
                     interactionResponseId = imageWithEmbed?.Interaction.ResponseMessageId;
+
+                    if (response.Stream != null)
+                    {
+                        await response.Stream.DisposeAsync();
+                    }
+
                     break;
                 case ResponseType.Paginator:
                     var paginator = await interactiveService.SendPaginatorAsync(

@@ -85,7 +85,7 @@ public class DiscogsCommands(
     }
 
     [Command("collection", "coll", "vinyl", "discogscollection")]
-    [Summary("You or someone else their Discogs collection")]
+    [Summary("Shows your or someone else's Discogs collection")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.ThirdParty)]
     public async Task CollectionAsync([CommandParameter(Remainder = true)] string searchValues = null)

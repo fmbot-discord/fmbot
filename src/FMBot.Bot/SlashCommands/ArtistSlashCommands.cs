@@ -34,7 +34,7 @@ public class ArtistSlashCommands(
         IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task ArtistAsync(
-        [SlashCommandParameter(Name = "artist", Description = "The artist your want to search for (defaults to currently playing)",
+        [SlashCommandParameter(Name = "artist", Description = "The artist you want to search for (defaults to currently playing)",
             AutocompleteProviderType = typeof(ArtistAutoComplete))]
         string name = null,
         [SlashCommandParameter(Name = "redirects", Description = "Toggle Last.fm artist name redirects (defaults to enabled)")]
@@ -63,7 +63,7 @@ public class ArtistSlashCommands(
         IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task ArtistOverviewAsync(
-        [SlashCommandParameter(Name = "artist", Description = "The artist your want to search for (defaults to currently playing)",
+        [SlashCommandParameter(Name = "artist", Description = "The artist you want to search for (defaults to currently playing)",
             AutocompleteProviderType = typeof(ArtistAutoComplete))]
         string name = null,
         [SlashCommandParameter(Name = "redirects", Description = "Toggle Last.fm artist name redirects (defaults to enabled)")]
@@ -94,7 +94,7 @@ public class ArtistSlashCommands(
         IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task ArtistPlaysAsync(
-        [SlashCommandParameter(Name = "artist", Description = "The artist your want to search for (defaults to currently playing)",
+        [SlashCommandParameter(Name = "artist", Description = "The artist you want to search for (defaults to currently playing)",
             AutocompleteProviderType = typeof(ArtistAutoComplete))]
         string name = null,
         [SlashCommandParameter(Name = "redirects", Description = "Toggle Last.fm artist name redirects (defaults to enabled)")]
@@ -125,10 +125,10 @@ public class ArtistSlashCommands(
         IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task ArtistTracksAsync(
-        [SlashCommandParameter(Name = "artist", Description = "The artist your want to search for (defaults to currently playing)",
+        [SlashCommandParameter(Name = "artist", Description = "The artist you want to search for (defaults to currently playing)",
             AutocompleteProviderType = typeof(ArtistAutoComplete))]
         string name = null,
-        [SlashCommandParameter(Name = "time-period", Description = "Time period to base show tracks for")]
+        [SlashCommandParameter(Name = "time-period", Description = "Time period to show tracks for")]
         PlayTimePeriod timePeriod = PlayTimePeriod.AllTime,
         [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
         string user = null,
@@ -152,7 +152,7 @@ public class ArtistSlashCommands(
         IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task ArtistAlbumsAsync(
-        [SlashCommandParameter(Name = "artist", Description = "The artist your want to search for (defaults to currently playing)",
+        [SlashCommandParameter(Name = "artist", Description = "The artist you want to search for (defaults to currently playing)",
             AutocompleteProviderType = typeof(ArtistAutoComplete))]
         string name = null,
         [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
@@ -170,12 +170,12 @@ public class ArtistSlashCommands(
         await this.Context.LogCommandUsedAsync(response, userService);
     }
 
-    [SlashCommand("artistpace", "Shows estimated date you reach a certain amount of plays on an artist",
+    [SlashCommand("artistpace", "Shows the estimated date you'll reach a certain amount of plays on an artist",
         Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild],
         IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task ArtistPaceAsync(
-        [SlashCommandParameter(Name = "artist", Description = "The artist your want to search for (defaults to currently playing)",
+        [SlashCommandParameter(Name = "artist", Description = "The artist you want to search for (defaults to currently playing)",
             AutocompleteProviderType = typeof(ArtistAutoComplete))]
         string name = null,
         [SlashCommandParameter(Name = "amount", Description = "Goal play amount")]
@@ -220,7 +220,7 @@ public class ArtistSlashCommands(
     [RequiresIndex]
     [GuildOnly]
     public async Task WhoKnowsAsync(
-        [SlashCommandParameter(Name = "artist", Description = "The artist your want to search for (defaults to currently playing)",
+        [SlashCommandParameter(Name = "artist", Description = "The artist you want to search for (defaults to currently playing)",
             AutocompleteProviderType = typeof(ArtistAutoComplete))]
         string name = null,
         [SlashCommandParameter(Name = "mode", Description = "The type of response you want - change default with /responsemode")]
@@ -256,7 +256,7 @@ public class ArtistSlashCommands(
     [UsernameSetRequired]
     [RequiresIndex]
     public async Task FriendsWhoKnowAsync(
-        [SlashCommandParameter(Name = "artist", Description = "The artist your want to search for (defaults to currently playing)",
+        [SlashCommandParameter(Name = "artist", Description = "The artist you want to search for (defaults to currently playing)",
             AutocompleteProviderType = typeof(ArtistAutoComplete))]
         string name = null,
         [SlashCommandParameter(Name = "mode", Description = "The type of response you want - change default with /responsemode")]
@@ -292,7 +292,7 @@ public class ArtistSlashCommands(
     [UsernameSetRequired]
     [RequiresIndex]
     public async Task GlobalWhoKnowsAsync(
-        [SlashCommandParameter(Name = "artist", Description = "The artist your want to search for (defaults to currently playing)",
+        [SlashCommandParameter(Name = "artist", Description = "The artist you want to search for (defaults to currently playing)",
             AutocompleteProviderType = typeof(ArtistAutoComplete))]
         string name = null,
         [SlashCommandParameter(Name = "mode", Description = "The type of response you want - change default with /responsemode")]
@@ -380,7 +380,7 @@ public class ArtistSlashCommands(
         await TasteAsync(user.Id.ToString());
     }
 
-    [SlashCommand("taste", "Compares your top artist, genres and countries to those from another user.",
+    [SlashCommand("taste", "Compares your top artists, genres, and countries to those of another user.",
         Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild],
         IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
@@ -445,7 +445,7 @@ public class ArtistSlashCommands(
         }
     }
 
-    [SlashCommand("iceberg", "Shows your iceberg, based on artists popularity.",
+    [SlashCommand("iceberg", "Shows your iceberg, based on artist popularity.",
         Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild],
         IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]

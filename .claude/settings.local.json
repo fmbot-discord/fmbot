@@ -14,6 +14,8 @@
       "Bash(wc:*)",
       "Bash(grep:*)",
       "Bash(dotnet test:*)",
+      "WebFetch(domain:ffmpeg.org)",
+      "WebFetch(domain:www.ffmpeg.org)"
       "Bash(dotnet list:*)",
       "Bash(findstr:*)"
     ]

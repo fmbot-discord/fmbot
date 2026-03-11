@@ -108,7 +108,7 @@ public class AdminCommands(
 
         if (!ulong.TryParse(guildId, out var discordGuildId))
         {
-            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Enter a valid discord guild id" });
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Enter a valid Discord guild ID." });
             await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
             return;
         }
@@ -862,7 +862,7 @@ public class AdminCommands(
         {
             if (string.IsNullOrEmpty(user))
             {
-                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Enter an username to check\n" +
+                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Enter a username to check\n" +
                                  "Example: `.fmcheckbotted Kefkef123`" });
                 return;
             }
@@ -1065,7 +1065,7 @@ public class AdminCommands(
         {
             if (string.IsNullOrEmpty(user) || string.IsNullOrEmpty(reason))
             {
-                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Enter an username and reason to remove someone from gwk banlist\n" +
+                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Enter a username and reason to add someone to the gwk banlist\n" +
                                  "Example: `.addbotteduser \"Kefkef123\" \"8 days listening time in Last.week\"`" });
                 await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
                 return;
@@ -1686,9 +1686,9 @@ public class AdminCommands(
             return;
         }
 
-        if (string.IsNullOrWhiteSpace("type"))
+        if (string.IsNullOrWhiteSpace(type))
         {
-            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Pick an embed type that you want to post. Currently available: `rules`, `gwkreporter`, `nsfwreporter` and `buysupporter`" });
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Pick an embed type that you want to post. Currently available: `rules`, `gwkreporter`, `nsfwreporter`, `buysupporter`, `buylifetime` and `faq`" });
             return;
         }
 
@@ -1826,6 +1826,43 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                 .WithComponents([components]));
         }
 
+        if (type == "buylifetime")
+        {
+            var containers = new List<ComponentContainerProperties>
+            {
+                new()
+                {
+                    AccentColor = DiscordConstants.InformationColorBlue,
+                    Components =
+                    [
+                        new TextDisplayProperties(
+                            "## ⭐ Lifetime .fmbot supporter\n" +
+                            "Get lifetime access to all .fmbot supporter perks with a single one-time payment. This offer expires <t:1772010000:R>."),
+                        new ComponentSeparatorProperties { Spacing = ComponentSeparatorSpacingSize.Large },
+                        new ComponentSectionProperties(new ButtonProperties(
+                            $"{InteractionConstants.SupporterLinks.GetLifetimePromoLink}:usd",
+                            "Get - $69.99", ButtonStyle.Primary))
+                        {
+                            Components = [new TextDisplayProperties("### 🇺🇸 Pay in USD")]
+                        },
+                        new ComponentSectionProperties(new ButtonProperties(
+                            $"{InteractionConstants.SupporterLinks.GetLifetimePromoLink}:eur",
+                            "Get - €59.99", ButtonStyle.Primary))
+                        {
+                            Components = [new TextDisplayProperties("### 🇪🇺 Pay in EUR")]
+                        },
+                    ]
+                }
+            };
+
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
+            {
+                Components = containers,
+                Flags = MessageFlags.IsComponentsV2,
+                AllowedMentions = AllowedMentionsProperties.None
+            });
+        }
+
         if (type == "gwkreporter")
         {
             this._embed.WithTitle("GlobalWhoKnows report form");
@@ -1877,6 +1914,15 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties()
                 .AddEmbeds(this._embed)
                 .WithComponents([components]));
+        }
+
+        if (type == "faq")
+        {
+            var response = staticBuilders.FaqOverview(newResponse: true);
+
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties()
+                .WithComponents(response.GetComponentsV2())
+                .WithFlags(MessageFlags.IsComponentsV2));
         }
     }
 

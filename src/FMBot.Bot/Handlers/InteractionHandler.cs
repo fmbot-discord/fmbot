@@ -406,7 +406,7 @@ public class InteractionHandler
             {
                 var embed = new EmbedProperties();
                 embed.WithDescription(
-                    "To use .fmbot commands with server-wide statistics you need to create a memberlist cache first.\n\n" +
+                    "To use .fmbot commands with server-wide statistics, you need to create a memberlist cache first.\n\n" +
                     $"Please run `/refreshmembers` to create this.\n" +
                     $"Note that this can take some time on large servers.");
                 await interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties
@@ -421,7 +421,7 @@ public class InteractionHandler
             {
                 var embed = new EmbedProperties();
                 embed.WithDescription("Server member cache is out of date, it was last updated over 180 days ago.\n" +
-                                      $"Please run `/refreshmembers` to update the cached memberlist");
+                                      $"Please run `/refreshmembers` to update the cached memberlist.");
                 await interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties
                 {
                     Embeds = [embed]

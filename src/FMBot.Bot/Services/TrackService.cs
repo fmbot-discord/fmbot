@@ -168,7 +168,7 @@ public class TrackService
 
                 if (!trackInfo.Success || trackInfo.Content == null)
                 {
-                    response.Embed.ErrorResponse(trackInfo.Error, trackInfo.Message, null, discordUser, "album");
+                    response.Embed.ErrorResponse(trackInfo.Error, trackInfo.Message, null, discordUser, "track");
                     response.CommandResponse = CommandResponse.LastFmError;
                     response.ResponseType = ResponseType.Embed;
                     return new TrackSearch(null, response);
@@ -296,7 +296,7 @@ public class TrackService
         }
 
         response.Embed.WithDescription($"Track could not be found, please check your search values and try again.\n\n" +
-                                       $"You can also enter the exact value with the | separator. Example: `artist name | track name`");
+                                       $"You can also enter the exact value with the | separator. Example: `artist name | track name`.");
         response.Embed.WithFooter($"Search value: '{searchValue}'");
         response.CommandResponse = CommandResponse.NotFound;
         response.ResponseType = ResponseType.Embed;

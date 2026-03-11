@@ -111,7 +111,7 @@ public class ChartSlashCommands(
         string size = "3x3",
         [SlashCommandParameter(Name = "titles", Description = "Title display setting")]
         TitleSetting titleSetting = TitleSetting.Titles,
-        [SlashCommandParameter(Name = "skip", Description = "Skip albums without an image")]
+        [SlashCommandParameter(Name = "skip", Description = "Skip artists without an image")]
         bool skip = false,
         [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
         string user = null,

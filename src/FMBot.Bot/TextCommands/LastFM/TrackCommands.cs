@@ -369,7 +369,7 @@ public class TrackCommands(
     }
 
     [Command("friendwhoknowstrack", "fwt", "fwkt", "fwktr", "fwtrack")]
-    [Summary("Shows who of your friends listen to an track in .fmbot")]
+    [Summary("Shows who of your friends listen to a track in .fmbot")]
     [Examples("fwt", "fwkt The Beatles Yesterday", "friendwhoknowstrack",
         "friendwhoknowstrack Hothouse Flowers Don't Go", "friendwhoknowstrack Mall Grab | Sunflower")]
     [UsernameSetRequired]
@@ -428,6 +428,7 @@ public class TrackCommands(
 
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
         var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
+        var guildUserCount = await guildService.GetGuildUserCount(this.Context.Guild.Id);
 
         var guildListSettings = new GuildRankingSettings
         {
@@ -443,7 +444,8 @@ public class TrackCommands(
             guildListSettings.ChartTimePeriod, cachedOrAllTimeOnly: true);
 
         if (timeSettings.UsePlays ||
-            timeSettings.TimePeriod is TimePeriod.AllTime or TimePeriod.Monthly or TimePeriod.Weekly)
+            timeSettings.TimePeriod is TimePeriod.AllTime or TimePeriod.Weekly ||
+            (timeSettings.TimePeriod is TimePeriod.Monthly && guildUserCount <= 10000))
         {
             guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
         }

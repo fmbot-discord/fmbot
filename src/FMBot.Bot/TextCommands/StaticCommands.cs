@@ -120,7 +120,7 @@ public class StaticCommands(
         this._embed.WithColor(DiscordConstants.InformationColorBlue);
 
         embedDescription.AppendLine(".fmbot is a source-available Discord bot.");
-        embedDescription.AppendLine("The bot is written in C#, uses .NET 9 and Discord.Net.");
+        embedDescription.AppendLine("The bot is written in C#, uses .NET 10 and NetCord.");
 
         this._embed.WithDescription(embedDescription.ToString());
 
@@ -144,6 +144,17 @@ public class StaticCommands(
         var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
 
         var response = StaticBuilders.OutOfSync(new ContextModel(this.Context, prfx, userSettings));
+
+        await this.Context.SendResponse(this.Interactivity, response, userService);
+        await this.Context.LogCommandUsedAsync(response, userService);
+    }
+
+    [Command("frequentlyasked", "faq", "frequentlyaskedquestions")]
+    [Summary("Frequently asked questions about .fmbot")]
+    [CommandCategories(CommandCategory.Other)]
+    public async Task FrequentlyAskedAsync([CommandParameter(Remainder = true)] string options = null)
+    {
+        var response = staticBuilders.FaqOverview();
 
         await this.Context.SendResponse(this.Interactivity, response, userService);
         await this.Context.LogCommandUsedAsync(response, userService);
@@ -595,7 +606,7 @@ public class StaticCommands(
                 reply.AppendLine("*You got scared and threw it back into the water.*");
                 break;
             case 2:
-                reply.AppendLine("*It looks sad, so you let the fish go so it can mind it's own business.*");
+                reply.AppendLine("*It looks sad, so you let the fish go so it can mind its own business.*");
                 break;
             case 3:
                 reply.AppendLine(

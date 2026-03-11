@@ -228,7 +228,7 @@ public class CrownBuilders
         {
             if (crownViewType == CrownViewType.Stolen)
             {
-                response.Embed.WithDescription($"You or the user you're searching don't have any crowns that got stolen yet.");
+                response.Embed.WithDescription($"You or the user you're searching for don't have any crowns that got stolen yet.");
             }
             else
             {
