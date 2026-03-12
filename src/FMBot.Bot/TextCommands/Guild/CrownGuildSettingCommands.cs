@@ -313,7 +313,7 @@ public class CrownGuildSettingCommands(
         await this.Context.LogCommandUsedAsync(response, userService);
     }
 
-    [Command("killcrown", "kcw", "kcrown", "killcw")]
+    [Command("killcrown", "kcw", "kcrown", "killcw", "removecrown")]
     [Summary("Removes all crowns from a specific artist for your server.")]
     [GuildOnly]
     [RequiresIndex]

@@ -605,7 +605,7 @@ public class WhoKnowsService
 
             if (!string.IsNullOrWhiteSpace(footerText))
             {
-                footerBuilder.Append($"\n{footerText}");
+                footerBuilder.Append($"\n{footerText.TrimEnd()}");
             }
 
             if (crownModel?.CrownResult != null)
