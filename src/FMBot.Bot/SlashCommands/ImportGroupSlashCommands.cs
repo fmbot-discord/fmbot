@@ -587,7 +587,7 @@ public class ImportGroupSlashCommands(
         }
         else if (this.Context.Channel != null)
         {
-            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+            _ = this.Context.Channel?.TriggerTypingAsync()!;
         }
 
         try

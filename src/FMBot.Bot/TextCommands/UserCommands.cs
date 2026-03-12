@@ -43,7 +43,7 @@ public class UserCommands(
     [CommandCategories(CommandCategory.UserSettings)]
     public async Task UserSettingsAsync([CommandParameter(Remainder = true)] string searchValues = null)
     {
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -68,7 +68,7 @@ public class UserCommands(
     [SupporterEnhanced("Get more insights and an overview of all your years")]
     public async Task StatsAsync([CommandParameter(Remainder = true)] string userOptions = null)
     {
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         var contextUser = await userService.GetFullUserAsync(this.Context.User.Id);
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);

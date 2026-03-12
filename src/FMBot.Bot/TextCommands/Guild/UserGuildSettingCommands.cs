@@ -72,7 +72,7 @@ public class UserGuildSettingCommands(
             return;
         }
 
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         if (user == null)
         {
@@ -156,7 +156,7 @@ public class UserGuildSettingCommands(
             return;
         }
 
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         if (user == null)
         {
@@ -220,7 +220,7 @@ public class UserGuildSettingCommands(
             return;
         }
 
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         var response = await guildSettingBuilder.BlockedUsersAsync(new ContextModel(this.Context, prfx), searchValue: searchValue);
 

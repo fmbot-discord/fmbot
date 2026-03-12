@@ -48,7 +48,7 @@ public class AlbumCommands(
     {
         try
         {
-            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+            _ = this.Context.Channel?.TriggerTypingAsync()!;
 
             var contextUser = await userService.GetUserWithDiscogs(this.Context.User.Id);
             var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -80,7 +80,7 @@ public class AlbumCommands(
     [CommandCategories(CommandCategory.Albums)]
     public async Task AlbumPlaysAsync([CommandParameter(Remainder = true)] string albumValues = null)
     {
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await settingService.GetUser(albumValues, contextUser, this.Context);
@@ -103,7 +103,7 @@ public class AlbumCommands(
     [CommandCategories(CommandCategory.Albums, CommandCategory.Charts)]
     public async Task AlbumCoverAsync([CommandParameter(Remainder = true)] string albumValues = null)
     {
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -136,7 +136,7 @@ public class AlbumCommands(
     [CommandCategories(CommandCategory.Albums)]
     public async Task TopAlbumsAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
@@ -177,7 +177,7 @@ public class AlbumCommands(
     [CommandCategories(CommandCategory.Albums, CommandCategory.WhoKnows)]
     public async Task WhoKnowsAlbumAsync([CommandParameter(Remainder = true)] string albumValues = null)
     {
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
@@ -215,7 +215,7 @@ public class AlbumCommands(
     public async Task GlobalWhoKnowsAlbumAsync([CommandParameter(Remainder = true)] string albumValues = null)
     {
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
         var currentSettings = new WhoKnowsSettings
@@ -262,7 +262,7 @@ public class AlbumCommands(
     [CommandCategories(CommandCategory.Albums, CommandCategory.WhoKnows, CommandCategory.Friends)]
     public async Task FriendWhoKnowsAlbumAsync([CommandParameter(Remainder = true)] string albumValues = null)
     {
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
         var contextUser = await userService.GetUserWithFriendsAsync(this.Context.User);
@@ -313,7 +313,7 @@ public class AlbumCommands(
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         try
         {
@@ -343,7 +343,7 @@ public class AlbumCommands(
     [CommandCategories(CommandCategory.Albums)]
     public async Task GuildAlbumsAsync([CommandParameter(Remainder = true)] string guildAlbumsOptions = null)
     {
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
         var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
@@ -399,7 +399,7 @@ public class AlbumCommands(
         "To see which albums you've re-discovered we need to store your lifetime Last.fm history. Your lifetime history and more are only available for supporters")]
     public async Task AlbumGapsAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);

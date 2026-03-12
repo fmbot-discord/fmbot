@@ -46,7 +46,7 @@ public class GameCommands(
             if (options != null && (options.Contains("stats", StringComparison.OrdinalIgnoreCase) ||
                                     options.Contains("statistics", StringComparison.OrdinalIgnoreCase)))
             {
-                _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+                _ = this.Context.Channel?.TriggerTypingAsync()!;
 
                 var userSettings = await settingService.GetUser(options, contextUser, this.Context);
 
@@ -125,7 +125,7 @@ public class GameCommands(
     [SupporterEnhanced("Supporters can play unlimited Pixel Jumble games without a daily limit")]
     public async Task PixelAsync([CommandParameter(Remainder = true)] string options = null)
     {
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -136,7 +136,7 @@ public class GameCommands(
             if (options != null && (options.Contains("stats", StringComparison.OrdinalIgnoreCase) ||
                                     options.Contains("statistics", StringComparison.OrdinalIgnoreCase)))
             {
-                _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+                _ = this.Context.Channel?.TriggerTypingAsync()!;
 
                 var userSettings = await settingService.GetUser(options, contextUser, this.Context);
 

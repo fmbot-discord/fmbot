@@ -76,7 +76,7 @@ public class ChartCommands(
 
         try
         {
-            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+            _ = this.Context.Channel?.TriggerTypingAsync()!;
 
             var chartSettings = new ChartSettings(this.Context.User)
             {
@@ -140,7 +140,7 @@ public class ChartCommands(
 
         try
         {
-            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+            _ = this.Context.Channel?.TriggerTypingAsync()!;
 
             var chartSettings = new ChartSettings(this.Context.User) { ArtistChart = true };
 

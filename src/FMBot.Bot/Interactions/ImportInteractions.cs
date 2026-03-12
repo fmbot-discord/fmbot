@@ -135,7 +135,7 @@ public class ImportInteractions(
         {
             var artistName = this.Context.GetModalValue("artist_name");
 
-            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+            _ = this.Context.Channel?.TriggerTypingAsync()!;
             await RespondAsync(InteractionCallback.DeferredModifyMessage);
             var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
@@ -161,7 +161,7 @@ public class ImportInteractions(
             var artistName = this.Context.GetModalValue("artist_name");
             var albumName = this.Context.GetModalValue("album_name");
 
-            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+            _ = this.Context.Channel?.TriggerTypingAsync()!;
             await RespondAsync(InteractionCallback.DeferredModifyMessage);
             var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
@@ -190,7 +190,7 @@ public class ImportInteractions(
             var artistName = this.Context.GetModalValue("artist_name");
             var trackName = this.Context.GetModalValue("track_name");
 
-            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+            _ = this.Context.Channel?.TriggerTypingAsync()!;
             await RespondAsync(InteractionCallback.DeferredModifyMessage);
             var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 

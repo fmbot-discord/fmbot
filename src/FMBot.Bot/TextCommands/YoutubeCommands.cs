@@ -36,7 +36,7 @@ public class YoutubeCommands(
             var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
             var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
-            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+            _ = this.Context.Channel?.TriggerTypingAsync()!;
 
             if (this.Context.Message.ReferencedMessage != null && string.IsNullOrWhiteSpace(searchValue))
             {

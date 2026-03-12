@@ -57,7 +57,7 @@ public class TrackCommands(
     {
         try
         {
-            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+            _ = this.Context.Channel?.TriggerTypingAsync()!;
 
             var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
             var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -87,7 +87,7 @@ public class TrackCommands(
     [CommandCategories(CommandCategory.Tracks)]
     public async Task TrackPlaysAsync([CommandParameter(Remainder = true)] string trackValues = null)
     {
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await settingService.GetUser(trackValues, contextUser, this.Context);
@@ -110,7 +110,7 @@ public class TrackCommands(
     [CommandCategories(CommandCategory.Tracks)]
     public async Task TrackDetailsAsync([CommandParameter(Remainder = true)] string trackValues = null)
     {
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -129,7 +129,7 @@ public class TrackCommands(
     [CommandCategories(CommandCategory.Tracks)]
     public async Task LoveAsync([CommandParameter(Remainder = true)] string trackValues = null)
     {
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -148,7 +148,7 @@ public class TrackCommands(
     [CommandCategories(CommandCategory.Tracks)]
     public async Task UnLoveAsync([CommandParameter(Remainder = true)] string trackValues = null)
     {
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -168,7 +168,7 @@ public class TrackCommands(
     [CommandCategories(CommandCategory.Tracks)]
     public async Task LovedAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -199,7 +199,7 @@ public class TrackCommands(
         var contextUser = await userService.GetUserWithDiscogs(this.Context.User.Id);
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         var response = await trackBuilders.ScrobbleAsync(new ContextModel(this.Context, prfx, contextUser),
             trackValues);
@@ -218,7 +218,7 @@ public class TrackCommands(
     [CommandCategories(CommandCategory.Tracks)]
     public async Task TopTracksAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
@@ -252,7 +252,7 @@ public class TrackCommands(
     [CommandCategories(CommandCategory.Tracks)]
     public async Task ReceiptAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
@@ -293,7 +293,7 @@ public class TrackCommands(
     [CommandCategories(CommandCategory.Tracks, CommandCategory.WhoKnows)]
     public async Task WhoKnowsTrackAsync([CommandParameter(Remainder = true)] string trackValues = null)
     {
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -330,7 +330,7 @@ public class TrackCommands(
     [CommandCategories(CommandCategory.Tracks, CommandCategory.WhoKnows)]
     public async Task GlobalWhoKnowsTrackAsync([CommandParameter(Remainder = true)] string trackValues = null)
     {
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
@@ -377,7 +377,7 @@ public class TrackCommands(
     [CommandCategories(CommandCategory.Tracks, CommandCategory.WhoKnows, CommandCategory.Friends)]
     public async Task FriendWhoKnowsTrackAsync([CommandParameter(Remainder = true)] string trackValues = null)
     {
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
         var contextUser = await userService.GetUserWithFriendsAsync(this.Context.User);
@@ -424,7 +424,7 @@ public class TrackCommands(
     [CommandCategories(CommandCategory.Tracks)]
     public async Task GuildTracksAsync([CommandParameter(Remainder = true)] string guildTracksOptions = null)
     {
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
         var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
@@ -521,7 +521,7 @@ public class TrackCommands(
         "To see which tracks you've re-discovered we need to store your lifetime Last.fm history. Your lifetime history and more are only available for supporters")]
     public async Task TrackGapsAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
@@ -571,7 +571,7 @@ public class TrackCommands(
     {
         try
         {
-            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+            _ = this.Context.Channel?.TriggerTypingAsync()!;
 
             var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
             var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);

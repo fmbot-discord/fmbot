@@ -52,7 +52,7 @@ public static class ComponentExtensions
                 Placeholder = menu.Placeholder,
                 MinValues = menu.MinValues,
                 MaxValues = menu.MaxValues,
-                Disabled = specificButtonOnly == null || menu.Disabled
+                Disabled = specificButtonOnly == null || menu.Disabled == true
             },
 
             TextDisplay text => new TextDisplayProperties(text.Content),
@@ -106,7 +106,7 @@ public static class ComponentExtensions
                 Emoji = ToEmojiProperties(btn.Emoji),
                 Disabled = false
             },
-            ComponentSectionThumbnail thumb => new ComponentSectionThumbnailProperties(
+            Thumbnail thumb => new ComponentSectionThumbnailProperties(
                 new ComponentMediaProperties(thumb.Media.Url)),
             _ => throw new NotSupportedException($"Unknown accessory: {accessory.GetType().Name}")
         };
