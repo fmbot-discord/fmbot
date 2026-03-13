@@ -43,6 +43,41 @@ public class ChartBuilders
         this._musicDataFactory = musicDataFactory;
     }
 
+    private static ResponseModel BuildChartValidationError(
+        ContextModel context,
+        string message,
+        string chartType,
+        ChartSettings chartSettings,
+        string userNameLastFm)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.ComponentsV2,
+            CommandResponse = CommandResponse.WrongInput
+        };
+
+        if (context.SelectMenu == null)
+        {
+            var editCustomId = InteractionConstants.Chart.BuildEditCustomId(
+                context.DiscordUser.Id, chartType, chartSettings, userNameLastFm);
+
+            response.ComponentsContainer.AddComponent(
+                new ComponentSectionProperties(
+                    new ButtonProperties(editCustomId, "Edit", ButtonStyle.Secondary))
+                {
+                    Components = [new TextDisplayProperties(message)]
+                });
+        }
+        else
+        {
+            response.ComponentsContainer.AddComponent(new TextDisplayProperties(message));
+        }
+
+        response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
+
+        return response;
+    }
+
     public async Task<ResponseModel> AlbumChartAsync(
         ContextModel context,
         UserSettingsModel userSettings,
@@ -55,12 +90,9 @@ public class ChartBuilders
 
         if (chartSettings.ImagesNeeded > 100)
         {
-            response.Embed.Description = $"You can't create a chart with more than 100 images (10x10).\n" +
-                                         $"Please try a smaller size.";
-            response.ResponseType = ResponseType.Embed;
-            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
-            response.CommandResponse = CommandResponse.WrongInput;
-            return response;
+            return BuildChartValidationError(context,
+                "You can't create a chart with more than 100 images (10x10).\nPlease try a smaller size.",
+                InteractionConstants.Chart.AlbumType, chartSettings, userSettings.UserNameLastFm);
         }
 
         var extraAlbums = 0;
@@ -136,11 +168,8 @@ public class ChartBuilders
                     $"Note that {extraAlbums} extra albums are required because you are skipping albums without an image.");
             }
 
-            response.Embed.Description = reply.ToString();
-            response.ResponseType = ResponseType.Embed;
-            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
-            response.CommandResponse = CommandResponse.WrongInput;
-            return response;
+            return BuildChartValidationError(context, reply.ToString(),
+                InteractionConstants.Chart.AlbumType, chartSettings, userSettings.UserNameLastFm);
         }
 
         if ((chartSettings.ReleaseYearFilter.HasValue || chartSettings.ReleaseDecadeFilter.HasValue) &&
@@ -162,13 +191,10 @@ public class ChartBuilders
 
             if (albums.Content.TopAlbums.Count < chartSettings.ImagesNeeded)
             {
-                response.Embed.Description =
+                return BuildChartValidationError(context,
                     $"Sorry, you haven't listened to enough albums released in {chartSettings.ReleaseYearFilter} ({albums.Content.TopAlbums.Count} of required {chartSettings.ImagesNeeded}) to generate a chart.\n" +
-                    $"Please try a smaller chart, a different year or a bigger time period ({Constants.CompactTimePeriodList})";
-                response.ResponseType = ResponseType.Embed;
-                response.Embed.WithColor(DiscordConstants.WarningColorOrange);
-                response.CommandResponse = CommandResponse.WrongInput;
-                return response;
+                    $"Please try a smaller chart, a different year or a bigger time period ({Constants.CompactTimePeriodList})",
+                    InteractionConstants.Chart.AlbumType, chartSettings, userSettings.UserNameLastFm);
             }
         }
         else if (chartSettings.ReleaseDecadeFilter.HasValue)
@@ -178,13 +204,10 @@ public class ChartBuilders
 
             if (albums.Content.TopAlbums.Count < chartSettings.ImagesNeeded)
             {
-                response.Embed.Description =
+                return BuildChartValidationError(context,
                     $"Sorry, you haven't listened to enough albums released in the {chartSettings.ReleaseDecadeFilter}s ({albums.Content.TopAlbums.Count} of required {chartSettings.ImagesNeeded}) to generate a chart.\n" +
-                    $"Please try a smaller chart, a different year or a bigger time period ({Constants.CompactTimePeriodList})";
-                response.ResponseType = ResponseType.Embed;
-                response.Embed.WithColor(DiscordConstants.WarningColorOrange);
-                response.CommandResponse = CommandResponse.WrongInput;
-                return response;
+                    $"Please try a smaller chart, a different year or a bigger time period ({Constants.CompactTimePeriodList})",
+                    InteractionConstants.Chart.AlbumType, chartSettings, userSettings.UserNameLastFm);
             }
         }
 
@@ -194,13 +217,10 @@ public class ChartBuilders
 
             if (albums.Content.TopAlbums.Count < chartSettings.ImagesNeeded)
             {
-                response.Embed.Description =
+                return BuildChartValidationError(context,
                     $"Sorry, not enough non-single albums ({albums.Content.TopAlbums.Count} of required {chartSettings.ImagesNeeded}) to generate a chart.\n" +
-                    $"Please try a smaller chart or a bigger time period ({Constants.CompactTimePeriodList})";
-                response.ResponseType = ResponseType.Embed;
-                response.Embed.WithColor(DiscordConstants.WarningColorOrange);
-                response.CommandResponse = CommandResponse.WrongInput;
-                return response;
+                    $"Please try a smaller chart or a bigger time period ({Constants.CompactTimePeriodList})",
+                    InteractionConstants.Chart.AlbumType, chartSettings, userSettings.UserNameLastFm);
             }
         }
 
@@ -340,12 +360,9 @@ public class ChartBuilders
 
         if (chartSettings.ImagesNeeded > 100)
         {
-            response.Embed.Description = $"You can't create a chart with more than 100 images (10x10).\n" +
-                                         $"Please try a smaller size.";
-            response.ResponseType = ResponseType.Embed;
-            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
-            response.CommandResponse = CommandResponse.WrongInput;
-            return response;
+            return BuildChartValidationError(context,
+                "You can't create a chart with more than 100 images (10x10).\nPlease try a smaller size.",
+                InteractionConstants.Chart.ArtistType, chartSettings, userSettings.UserNameLastFm);
         }
 
         var extraArtists = 0;
@@ -373,11 +390,8 @@ public class ChartBuilders
                          $"Note that {extraArtists} extra artists are required because you are skipping artists without an image.";
             }
 
-            response.Embed.Description = reply;
-            response.ResponseType = ResponseType.Embed;
-            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
-            response.CommandResponse = CommandResponse.WrongInput;
-            return response;
+            return BuildChartValidationError(context, reply,
+                InteractionConstants.Chart.ArtistType, chartSettings, userSettings.UserNameLastFm);
         }
 
         var topArtists = artists.Content.TopArtists;
