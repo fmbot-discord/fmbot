@@ -1432,7 +1432,7 @@ public class AlbumBuilders
 
             if (topListSettings.FilterSingles)
             {
-                title += " filter singles";
+                title += " (excluding singles)";
             }
 
             using var image = await this._puppeteerService.GetTopList(userTitle, title, "albums", timeSettings.Description,
@@ -1533,7 +1533,7 @@ public class AlbumBuilders
             if (topListSettings.FilterSingles)
             {
                 footer.AppendLine();
-                footer.Append("Filter singles");
+                footer.Append("Filtering out singles");
             }
 
             if (rnd == 1 && !topListSettings.Billboard && context.SelectMenu == null)

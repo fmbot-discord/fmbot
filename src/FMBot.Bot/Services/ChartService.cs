@@ -302,27 +302,23 @@ public class ChartService
             var offsetTop = 0;
             var heightRow = 0;
 
-            for (var i = 0; i < Math.Min(chart.ImagesNeeded, chart.ChartImages.Count); i++)
-            {
-                IOrderedEnumerable<ChartImage> imageList;
-                if (chart.RainbowSortingEnabled)
-                {
-                    imageList = chart.ChartImages
-                        .OrderBy(o => o.PrimaryColor.Value.GetHue())
-                        .ThenBy(o =>
-                            (o.PrimaryColor.Value.R * 3 +
-                             o.PrimaryColor.Value.G * 2 +
-                             o.PrimaryColor.Value.B * 1));
-                }
-                else
-                {
-                    imageList = chart.ChartImages.OrderBy(o => o.Index);
-                }
+            var filteredImages = chart.ChartImages
+                .Where(w => !chart.SkipNsfw || !w.Nsfw)
+                .Where(w => !chart.SkipWithoutImage || w.ValidImage);
 
-                var chartImage = imageList
-                    .Where(w => !chart.SkipNsfw || !w.Nsfw)
-                    .Where(w => !chart.SkipWithoutImage || w.ValidImage)
-                    .ElementAtOrDefault(i);
+            List<ChartImage> sortedImages;
+            if (chart.RainbowSortingEnabled)
+            {
+                sortedImages = RainbowSort(filteredImages);
+            }
+            else
+            {
+                sortedImages = filteredImages.OrderBy(o => o.Index).ToList();
+            }
+
+            for (var i = 0; i < Math.Min(chart.ImagesNeeded, sortedImages.Count); i++)
+            {
+                var chartImage = sortedImages.ElementAtOrDefault(i);
 
                 if (chartImage == null)
                 {
@@ -491,10 +487,53 @@ public class ChartService
         Color? primaryColor = null;
         if (chart.RainbowSortingEnabled)
         {
-            primaryColor = chartImage.GetAverageRgbColor();
+            primaryColor = chartImage.GetDominantColor();
         }
 
         chart.ChartImages.Add(new ChartImage(chartImage, index, validImage, primaryColor, nsfw, censored));
+    }
+
+    private static List<ChartImage> RainbowSort(IEnumerable<ChartImage> images)
+    {
+        const float saturationThreshold = 0.15f;
+
+        var chromatic = new List<(ChartImage Image, float Hue, float Lightness)>();
+        var achromatic = new List<(ChartImage Image, float Lightness)>();
+
+        foreach (var img in images)
+        {
+            if (!img.PrimaryColor.HasValue)
+            {
+                achromatic.Add((img, 0));
+                continue;
+            }
+
+            var color = img.PrimaryColor.Value;
+            var hue = color.GetHue();
+            var saturation = color.GetSaturation();
+            var lightness = color.GetBrightness();
+
+            if (saturation < saturationThreshold)
+            {
+                achromatic.Add((img, lightness));
+            }
+            else
+            {
+                chromatic.Add((img, hue, lightness));
+            }
+        }
+
+        var sorted = chromatic
+            .OrderBy(o => o.Hue)
+            .ThenBy(o => o.Lightness)
+            .Select(o => o.Image)
+            .ToList();
+
+        sorted.AddRange(achromatic
+            .OrderBy(o => o.Lightness)
+            .Select(o => o.Image));
+
+        return sorted;
     }
 
     private void AddTitleToChartImage(SKBitmap chartImage, bool largerImages, string topName = null,
@@ -844,7 +883,7 @@ public class ChartService
 
         if (chartSettings.FilterSingles)
         {
-            embedDescription.AppendLine("- Filter singles");
+            embedDescription.AppendLine("- Filtering out singles");
         }
 
         if (chartSettings.SkipWithoutImage)
