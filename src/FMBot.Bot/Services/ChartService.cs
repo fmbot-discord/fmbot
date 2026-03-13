@@ -628,6 +628,14 @@ public class ChartService
             chartSettings.CustomOptionsEnabled = true;
         }
 
+        var hideSinglesOptions = new[] { "ns", "nosingles", "hidesingles", "filtersingles" };
+        if (SettingService.Contains(optionsAsString, hideSinglesOptions))
+        {
+            cleanedOptions = SettingService.ContainsAndRemove(cleanedOptions, hideSinglesOptions);
+            chartSettings.FilterSingles = true;
+            chartSettings.CustomOptionsEnabled = true;
+        }
+
         chartSettings.Width = DefaultChartSize;
         chartSettings.Height = DefaultChartSize;
 
@@ -802,9 +810,19 @@ public class ChartService
             chartSettings.Height = dimensions[1];
             changed = true;
         }
+        else
+        {
+            if (chartSettings.Width == 0)
+            {
+                chartSettings.Width = 3;
+            }
+            if (chartSettings.Height == 0)
+            {
+                chartSettings.Height = 3;
+            }
+        }
 
         return (chartSettings, changed);
-        ;
     }
 
     public static string AddSettingsToDescription(ChartSettings chartSettings, StringBuilder embedDescription,
@@ -822,6 +840,11 @@ public class ChartService
         {
             embedDescription.AppendLine(
                 $"- Filtering to albums released in the {chartSettings.ReleaseDecadeFilter.Value}s");
+        }
+
+        if (chartSettings.FilterSingles)
+        {
+            embedDescription.AppendLine("- Filter singles");
         }
 
         if (chartSettings.SkipWithoutImage)

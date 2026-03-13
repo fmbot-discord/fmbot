@@ -25,7 +25,7 @@ public class ChartInteractions(
     public async Task EditChartButtonAsync(
         string creatorId, string chartType, string size, string timePeriodStr,
         int titleSetting, int skip, int sfw, int rainbow,
-        string yearFilter, string decadeFilter, string artistFilterId, string targetLfm)
+        string yearFilter, string decadeFilter, string artistFilterId, string filterSingles, string targetLfm)
     {
         try
         {
@@ -40,6 +40,7 @@ public class ChartInteractions(
 
             var yearFilterValue = int.TryParse(yearFilter, out var yf) && yf > 0 ? yf : (int?)null;
             var decadeFilterValue = int.TryParse(decadeFilter, out var df) && df > 0 ? df : (int?)null;
+            var filterSinglesValue = int.TryParse(filterSingles, out var fs) && fs == 1;
 
             var chartSettings = new ChartSettings(this.Context.User);
             chartSettings = ChartService.GetDimensions(chartSettings, size).newChartSettings;
@@ -52,7 +53,7 @@ public class ChartInteractions(
                 var modal = ModalFactory.CreateAlbumChartSettingsModal(
                     modalCustomId, chartSettings.Width, chartSettings.Height, timePeriodStr,
                     titleSetting, skip == 1, sfw == 1, rainbow == 1,
-                    yearFilterValue, decadeFilterValue);
+                    yearFilterValue, decadeFilterValue, filterSinglesValue);
                 await RespondAsync(InteractionCallback.Modal(modal));
             }
             else
@@ -105,6 +106,7 @@ public class ChartInteractions(
             var hasSkip = checkedOptions.Contains("skip");
             var hasSfw = checkedOptions.Contains("sfw");
             var hasRainbow = checkedOptions.Contains("rainbow");
+            var hasHideSingles = checkedOptions.Contains("hidesingles");
 
             var titleSetting = hasTitles ? TitleSetting.Titles : TitleSetting.TitlesDisabled;
             var skip = hasSkip || hasRainbow;
@@ -149,12 +151,13 @@ public class ChartInteractions(
                 SkipWithoutImage = skip,
                 SkipNsfw = hasSfw,
                 RainbowSortingEnabled = hasRainbow,
+                FilterSingles = hasHideSingles,
                 TimeSettings = timeSettings,
                 TimespanString = timeSettings.Description,
                 TimespanUrlString = timeSettings.UrlParameter,
                 ReleaseYearFilter = releaseYear,
                 ReleaseDecadeFilter = releaseDecade,
-                CustomOptionsEnabled = titleSetting != TitleSetting.Titles || skip || hasSfw || hasRainbow
+                CustomOptionsEnabled = titleSetting != TitleSetting.Titles || skip || hasSfw || hasRainbow || hasHideSingles
             };
 
             chartSettings = ChartService.GetDimensions(chartSettings, sizeStr).newChartSettings;

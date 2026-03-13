@@ -129,6 +129,7 @@ public class AlbumCommands(
     [Options(Constants.CompactTimePeriodList,
         "Albums released in year: `r:2023`, `released:2023`",
         "Albums released in decade: `d:80s`, `decade:1990`",
+        "Hide singles: `ns`, `nosingles`",
         Constants.UserMentionExample, Constants.BillboardExample, Constants.EmbedSizeExample)]
     [Examples("tab", "topalbums", "tab a lfm:fm-bot", "topalbums weekly @user", "tab bb xl")]
     [UsernameSetRequired]
@@ -147,7 +148,7 @@ public class AlbumCommands(
             userSettings.RegisteredLastFm ??= await indexService.AddUserRegisteredLfmDate(userSettings.UserId);
 
             var timeSettings = SettingService.GetTimePeriod(topListSettings.NewSearchValue,
-                topListSettings.ReleaseYearFilter.HasValue || topListSettings.ReleaseDecadeFilter.HasValue
+                topListSettings.ReleaseYearFilter.HasValue || topListSettings.ReleaseDecadeFilter.HasValue || topListSettings.FilterSingles
                     ? TimePeriod.AllTime
                     : TimePeriod.Weekly,
                 registeredLastFm: userSettings.RegisteredLastFm,

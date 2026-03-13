@@ -277,7 +277,7 @@ public static class InteractionConstants
                    $":{(chartSettings.SkipNsfw ? 1 : 0)}" +
                    $":{(chartSettings.RainbowSortingEnabled ? 1 : 0)}" +
                    $":{chartSettings.ReleaseYearFilter ?? 0}:{chartSettings.ReleaseDecadeFilter ?? 0}" +
-                   $":{chartSettings.FilteredArtist?.Id ?? 0}:{userNameLastFm}";
+                   $":{chartSettings.FilteredArtist?.Id ?? 0}:{(chartSettings.FilterSingles ? 1 : 0)}:{userNameLastFm}";
         }
     }
 

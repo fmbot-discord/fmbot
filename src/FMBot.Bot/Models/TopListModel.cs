@@ -20,13 +20,14 @@ public class TopListSettings
         }
     }
 
-    public TopListSettings(EmbedSize embedSize, bool billboard, bool discogs = false, int? year = null, int? decade = null)
+    public TopListSettings(EmbedSize embedSize, bool billboard, bool discogs = false, int? year = null, int? decade = null, bool filterSingles = false)
     {
         this.EmbedSize = embedSize;
         this.Billboard = billboard;
         this.Discogs = discogs;
         this.ReleaseYearFilter = year;
         this.ReleaseDecadeFilter = decade;
+        this.FilterSingles = filterSingles;
         ListAmount = 400;
         if (embedSize == EmbedSize.Large)
         {
@@ -41,6 +42,7 @@ public class TopListSettings
     public string NewSearchValue { get; set; }
     public int? ReleaseYearFilter { get; set; }
     public int? ReleaseDecadeFilter { get; set; }
+    public bool FilterSingles { get; set; }
 
     public TopListType Type { get; set; }
 }

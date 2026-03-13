@@ -380,19 +380,39 @@ public class AlbumService
         return albums;
     }
 
+    public async Task<Response<TopAlbumList>> FilterAlbumsThatAreSingles(Response<TopAlbumList> albums)
+    {
+        await EnrichTopAlbums(albums.Content.TopAlbums);
+
+        albums.Content.TopAlbums = albums.Content.TopAlbums
+            .Where(w => !string.Equals(w.AlbumType, "single", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        DataSourceFactory.AddAlbumTopList(albums, null);
+
+        return albums;
+    }
+
     private async Task EnrichTopAlbums(IReadOnlyCollection<TopAlbum> list)
     {
+        var albumsToEnrich = list.Where(w => w.ReleaseDate == null || w.AlbumType == null).ToList();
+        if (albumsToEnrich.Count == 0)
+        {
+            return;
+        }
+
         var minTimestamp = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Utc));
         var request = new AlbumReleaseDateRequest
         {
             Albums =
             {
-                list.Select(s => new AlbumWithDate
+                albumsToEnrich.Select(s => new AlbumWithDate
                 {
                     ArtistName = s.ArtistName,
                     AlbumName = s.AlbumName,
                     ReleaseDate = minTimestamp,
-                    ReleaseDatePrecision = s.ReleaseDatePrecision ?? ""
+                    ReleaseDatePrecision = s.ReleaseDatePrecision ?? "",
+                    AlbumType = s.AlbumType ?? ""
                 })
             }
         };
@@ -400,11 +420,11 @@ public class AlbumService
         var albums = await this._albumEnrichment.AddAlbumReleaseDatesAsync(request);
 
         var albumGroups = albums.Albums
-            .Where(a => a.ReleaseDate != minTimestamp)
+            .Where(a => a.ReleaseDate != minTimestamp || !string.IsNullOrEmpty(a.AlbumType))
             .GroupBy(a => (a.AlbumName.ToLower(), a.ArtistName.ToLower()))
             .ToDictionary(g => g.Key, g => g.ToList());
 
-        foreach (var topAlbum in list.Where(w => w.ReleaseDate == null))
+        foreach (var topAlbum in albumsToEnrich)
         {
             var key = (topAlbum.AlbumName.ToLower(), topAlbum.ArtistName.ToLower());
 
@@ -413,8 +433,9 @@ public class AlbumService
                 var album = matchedAlbums.FirstOrDefault();
                 if (album != null)
                 {
-                    topAlbum.ReleaseDate = album.ReleaseDate.ToDateTime();
-                    topAlbum.ReleaseDatePrecision = album.ReleaseDatePrecision;
+                    topAlbum.ReleaseDate ??= album.ReleaseDate.ToDateTime();
+                    topAlbum.ReleaseDatePrecision ??= album.ReleaseDatePrecision;
+                    topAlbum.AlbumType ??= !string.IsNullOrEmpty(album.AlbumType) ? album.AlbumType : null;
                 }
             }
         }

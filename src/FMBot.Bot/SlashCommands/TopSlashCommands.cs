@@ -97,6 +97,8 @@ public class TopSlashCommands(
         ResponseMode? mode = null,
         [SlashCommandParameter(Name = "size", Description = "Amount of albums to show")]
         EmbedSize? embedSize = null,
+        [SlashCommandParameter(Name = "hide-singles", Description = "Hide singles from results")]
+        bool hideSingles = false,
         [SlashCommandParameter(Name = "private", Description = "Only show response to you")]
         bool privateResponse = false)
     {
@@ -109,12 +111,13 @@ public class TopSlashCommands(
         mode ??= contextUser.Mode ?? ResponseMode.Embed;
 
         var timeSettings = SettingService.GetTimePeriod(timePeriod,
-            !string.IsNullOrWhiteSpace(year) || !string.IsNullOrWhiteSpace(decade)
+            !string.IsNullOrWhiteSpace(year) || !string.IsNullOrWhiteSpace(decade) || hideSingles
                 ? TimePeriod.AllTime
                 : TimePeriod.Weekly, timeZone: userSettings.TimeZone);
 
         var topListSettings = new TopListSettings(embedSize ?? EmbedSize.Default, billboard,
-            year: year != null ? int.Parse(year) : null, decade: decade != null ? int.Parse(decade) : null);
+            year: year != null ? int.Parse(year) : null, decade: decade != null ? int.Parse(decade) : null,
+            filterSingles: hideSingles);
 
         var response = await albumBuilders.TopAlbumsAsync(new ContextModel(this.Context, contextUser),
             topListSettings, timeSettings, userSettings, mode.Value);

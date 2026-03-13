@@ -550,7 +550,7 @@ public static class ModalFactory
     public static ModalProperties CreateAlbumChartSettingsModal(
         string customId, int width, int height, string timePeriod,
         int titleSetting, bool skip, bool sfw, bool rainbow,
-        int? yearFilter, int? decadeFilter) =>
+        int? yearFilter, int? decadeFilter, bool filterSingles = false) =>
         new(customId, "Edit chart settings")
         {
             Components =
@@ -569,6 +569,7 @@ public static class ModalFactory
                     new CheckboxGroupOptionProperties("Skip albums without image", "skip") { Default = skip },
                     new CheckboxGroupOptionProperties("SFW only", "sfw") { Default = sfw },
                     new CheckboxGroupOptionProperties("Rainbow sort", "rainbow") { Default = rainbow },
+                    new CheckboxGroupOptionProperties("Hide singles", "hidesingles") { Default = filterSingles },
                 }),
                 new LabelProperties("Release filter (e.g. 2024 or 1990s)",
                     new TextInputProperties("release_filter", TextInputStyle.Short)

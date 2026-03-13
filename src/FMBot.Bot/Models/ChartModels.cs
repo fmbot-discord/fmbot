@@ -81,6 +81,7 @@ public class ChartSettings
 
     public int? ReleaseYearFilter { get; set; }
     public int? ReleaseDecadeFilter { get; set; }
+    public bool FilterSingles { get; set; }
 
     public bool ContainsNsfw { get; set; }
     public int? CensoredItems { get; set; }

@@ -93,7 +93,8 @@ public class ChartBuilders
         {
             var imagesToGet = chartSettings.ReleaseYearFilter.HasValue ||
                               chartSettings.ReleaseDecadeFilter.HasValue ||
-                              chartSettings.FilteredArtist != null
+                              chartSettings.FilteredArtist != null ||
+                              chartSettings.FilterSingles
                 ? 1000
                 : 250;
             albums = await this._dataSourceFactory.GetTopAlbumsAsync(userSettings.UserNameLastFm,
@@ -180,6 +181,22 @@ public class ChartBuilders
                 response.Embed.Description =
                     $"Sorry, you haven't listened to enough albums released in the {chartSettings.ReleaseDecadeFilter}s ({albums.Content.TopAlbums.Count} of required {chartSettings.ImagesNeeded}) to generate a chart.\n" +
                     $"Please try a smaller chart, a different year or a bigger time period ({Constants.CompactTimePeriodList})";
+                response.ResponseType = ResponseType.Embed;
+                response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+                response.CommandResponse = CommandResponse.WrongInput;
+                return response;
+            }
+        }
+
+        if (chartSettings.FilterSingles)
+        {
+            albums = await this._albumService.FilterAlbumsThatAreSingles(albums);
+
+            if (albums.Content.TopAlbums.Count < chartSettings.ImagesNeeded)
+            {
+                response.Embed.Description =
+                    $"Sorry, not enough non-single albums ({albums.Content.TopAlbums.Count} of required {chartSettings.ImagesNeeded}) to generate a chart.\n" +
+                    $"Please try a smaller chart or a bigger time period ({Constants.CompactTimePeriodList})";
                 response.ResponseType = ResponseType.Embed;
                 response.Embed.WithColor(DiscordConstants.WarningColorOrange);
                 response.CommandResponse = CommandResponse.WrongInput;

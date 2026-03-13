@@ -51,6 +51,8 @@ public class ChartSlashCommands(
         bool sfwOnly = false,
         [SlashCommandParameter(Name = "rainbow", Description = "Experimental rainbow setting")]
         bool rainbow = false,
+        [SlashCommandParameter(Name = "hide-singles", Description = "Hide singles from chart")]
+        bool hideSingles = false,
         [SlashCommandParameter(Name = "private", Description = "Only show response to you")]
         bool privateResponse = false)
     {
@@ -78,12 +80,13 @@ public class ChartSlashCommands(
             SkipWithoutImage = skip || rainbow,
             SkipNsfw = sfwOnly,
             RainbowSortingEnabled = rainbow,
+            FilterSingles = hideSingles,
             TimeSettings = timeSettings,
             TimespanString = timeSettings.Description,
             TimespanUrlString = timeSettings.UrlParameter,
             ReleaseYearFilter = !string.IsNullOrWhiteSpace(year) ? int.Parse(year) : null,
             ReleaseDecadeFilter = !string.IsNullOrWhiteSpace(decade) ? int.Parse(decade) : null,
-            CustomOptionsEnabled = titleSetting != TitleSetting.Titles || skip || sfwOnly || rainbow
+            CustomOptionsEnabled = titleSetting != TitleSetting.Titles || skip || sfwOnly || rainbow || hideSingles
         };
 
         chartSettings = ChartService.GetDimensions(chartSettings, size).newChartSettings;
