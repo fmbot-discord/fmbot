@@ -197,6 +197,33 @@ public static class InteractionContextExtensions
                 .FirstOrDefault(t => string.Equals(t.CustomId, customId, StringComparison.OrdinalIgnoreCase))
                 ?.Value;
         }
+
+        public string GetModalMenuValue(string customId)
+        {
+            if (context.Interaction is not ModalInteraction modal)
+                return null;
+
+            return modal.Data.Components
+                .OfType<Label>()
+                .Select(l => l.Component)
+                .OfType<StringMenu>()
+                .FirstOrDefault(m => string.Equals(m.CustomId, customId, StringComparison.OrdinalIgnoreCase))
+                ?.SelectedValues
+                ?.FirstOrDefault();
+        }
+
+        public IReadOnlyList<string> GetModalCheckboxValues(string customId)
+        {
+            if (context.Interaction is not ModalInteraction modal)
+                return [];
+
+            return modal.Data.Components
+                .OfType<Label>()
+                .Select(l => l.Component)
+                .OfType<CheckboxGroup>()
+                .FirstOrDefault(c => string.Equals(c.CustomId, customId, StringComparison.OrdinalIgnoreCase))
+                ?.CheckedValues ?? [];
+        }
     }
 
     public static async Task HandleCommandException(this IInteractionContext context, Exception exception,
@@ -589,7 +616,8 @@ public static class InteractionContextExtensions
     {
         public async Task DisableButtonsAndMenus(string specificButtonOnly = null)
         {
-            var message = (context.Interaction as MessageComponentInteraction)?.Message;
+            var message = (context.Interaction as MessageComponentInteraction)?.Message
+                          ?? (context.Interaction as ModalInteraction)?.Message;
             if (message == null)
                 return;
 

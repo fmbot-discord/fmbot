@@ -65,6 +65,14 @@ public static class ComponentExtensions
 
             ComponentSection section => ToSectionProperties(section, specificButtonOnly),
 
+            MediaGallery gallery => new MediaGalleryProperties(
+                gallery.Items.Select(item => new MediaGalleryItemProperties(
+                    new ComponentMediaProperties(item.Media.Url))
+                {
+                    Description = item.Description,
+                    Spoiler = item.Spoiler
+                })),
+
             _ => throw new NotSupportedException($"Unknown container component: {component.GetType().Name}")
         };
     }

@@ -264,15 +264,26 @@ public class ChartBuilders
             response.ComponentsContainer.AddComponent(new TextDisplayProperties(embedDescription.ToString()));
         }
 
-        if (!userSettings.DifferentUser)
+        var footerText = !userSettings.DifferentUser
+            ? $"-# {userSettings.UserNameLastFm} has {context.ContextUser.TotalPlaycount.Format(context.NumberFormat)} scrobbles"
+            : $"-# Chart requested by {await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser)}";
+
+        if (context.SelectMenu == null)
         {
-            response.ComponentsContainer.AddComponent(new TextDisplayProperties(
-                $"-# {userSettings.UserNameLastFm} has {context.ContextUser.TotalPlaycount.Format(context.NumberFormat)} scrobbles"));
+            var editCustomId = InteractionConstants.Chart.BuildEditCustomId(
+                               context.DiscordUser.Id, InteractionConstants.Chart.AlbumType,
+                               chartSettings, userSettings.UserNameLastFm);
+
+            response.ComponentsContainer.AddComponent(
+                new ComponentSectionProperties(
+                    new ButtonProperties(editCustomId, "Edit", ButtonStyle.Secondary))
+                {
+                    Components = [new TextDisplayProperties(footerText)]
+                });
         }
         else
         {
-            response.ComponentsContainer.AddComponent(new TextDisplayProperties(
-                $"-# Chart requested by {await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser)}"));
+            response.ComponentsContainer.AddComponent(new TextDisplayProperties(footerText));
         }
 
         var encoded = chart.Encode(SKEncodedImageFormat.Png, 100);
@@ -406,12 +417,6 @@ public class ChartBuilders
         var supporter =
             await this._supporterService.GetRandomSupporter(context.DiscordGuild, context.ContextUser.UserType);
         ChartService.AddSettingsToDescription(chartSettings, embedDescription, supporter, context.Prefix);
-        if (supporter != null)
-        {
-            response.Components = new ActionRowProperties().WithButton(Constants.GetSupporterButton,
-                style: ButtonStyle.Secondary,
-                customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "chart-broughtby"));
-        }
 
         var nsfwAllowed = context.DiscordGuild == null || ((TextGuildChannel)context.DiscordChannel).Nsfw;
         using var chart = await this._chartService.GenerateChartAsync(chartSettings);
@@ -450,7 +455,23 @@ public class ChartBuilders
             response.ComponentsContainer.AddComponent(new TextDisplayProperties(embedDescription.ToString()));
         }
 
-        response.ComponentsContainer.AddComponent(new TextDisplayProperties(footer.ToString()));
+        if (context.SelectMenu == null)
+        {
+            var editCustomId = InteractionConstants.Chart.BuildEditCustomId(
+                               context.DiscordUser.Id, InteractionConstants.Chart.ArtistType,
+                               chartSettings, userSettings.UserNameLastFm);
+
+            response.ComponentsContainer.AddComponent(
+                new ComponentSectionProperties(
+                    new ButtonProperties(editCustomId, "Edit", ButtonStyle.Secondary))
+                {
+                    Components = [new TextDisplayProperties(footer.ToString())]
+                });
+        }
+        else
+        {
+            response.ComponentsContainer.AddComponent(new TextDisplayProperties(footer.ToString()));
+        }
 
         var encoded = chart.Encode(SKEncodedImageFormat.Png, 100);
         response.Stream = encoded.AsStream(true);
@@ -463,6 +484,15 @@ public class ChartBuilders
             response.Spoiler = chartSettings.ContainsNsfw;
             response.ResponseType = ResponseType.Embed;
             response.StringMenus.Add(context.SelectMenu);
+        }
+
+        if (supporter != null)
+        {
+            var actionRow = new ActionRowProperties();
+            actionRow.WithButton(Constants.GetSupporterButton,
+                customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "chart-broughtby"),
+                style: ButtonStyle.Secondary);
+            response.ComponentsV2.AddComponent(actionRow);
         }
 
         return response;

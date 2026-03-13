@@ -1,3 +1,5 @@
+using FMBot.Bot.Models;
+
 namespace FMBot.Bot.Resources;
 
 public static class InteractionConstants
@@ -257,6 +259,27 @@ public static class InteractionConstants
     public const string GapView = "listeninggaps-view";
     public const string RecapAlltime = "user-recapalltime";
     public const string RecapPicker = "user-recap";
+
+    public static class Chart
+    {
+        public const string EditButton = "chart-edit";
+        public const string EditModal = "chart-edit-modal";
+        public const string AlbumType = "a";
+        public const string ArtistType = "r";
+
+        public static string BuildEditCustomId(
+            ulong userId, string chartType, ChartSettings chartSettings, string userNameLastFm)
+        {
+            return $"{EditButton}:{userId}:{chartType}" +
+                   $":{chartSettings.Width}x{chartSettings.Height}:{chartSettings.TimeSettings.Description.ToLower()}" +
+                   $":{(int)chartSettings.TitleSetting}" +
+                   $":{(chartSettings.SkipWithoutImage ? 1 : 0)}" +
+                   $":{(chartSettings.SkipNsfw ? 1 : 0)}" +
+                   $":{(chartSettings.RainbowSortingEnabled ? 1 : 0)}" +
+                   $":{chartSettings.ReleaseYearFilter ?? 0}:{chartSettings.ReleaseDecadeFilter ?? 0}" +
+                   $":{chartSettings.FilteredArtist?.Id ?? 0}:{userNameLastFm}";
+        }
+    }
 
     public static class Game
     {
