@@ -1460,11 +1460,6 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                 column: "user_id");
 
             migrationBuilder.CreateIndex(
-                name: "ix_user_plays_user_id",
-                table: "user_plays",
-                column: "user_id");
-
-            migrationBuilder.CreateIndex(
                 name: "ix_user_shortcuts_user_id",
                 table: "user_shortcuts",
                 column: "user_id");
@@ -1490,14 +1485,32 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                 column: "discord_user_id");
 
             migrationBuilder.CreateIndex(
-                name: "ix_users_user_id",
-                table: "users",
-                column: "user_id");
-
-            migrationBuilder.CreateIndex(
                 name: "ix_webhooks_guild_id",
                 table: "webhooks",
                 column: "guild_id");
+
+            // Manual indexes not managed by EF Core
+
+            // Case-insensitive name lookups
+            migrationBuilder.Sql("CREATE INDEX IF NOT EXISTS ix_user_user_name_last_fm ON public.users (UPPER(user_name_last_fm));");
+            migrationBuilder.Sql("CREATE INDEX IF NOT EXISTS ix_artist_artist_name ON public.artists (UPPER(name::text));");
+            migrationBuilder.Sql("CREATE INDEX IF NOT EXISTS ix_albums_name ON public.albums (UPPER(name::text));");
+            migrationBuilder.Sql("CREATE INDEX IF NOT EXISTS ix_tracks_name ON public.tracks (UPPER(name::text));");
+            migrationBuilder.Sql("CREATE INDEX IF NOT EXISTS ix_user_crowns_artist_name_upper ON public.user_crowns (UPPER(artist_name::text));");
+            migrationBuilder.Sql("CREATE INDEX IF NOT EXISTS ix_featured_logs_artist_name_upper ON public.featured_logs (UPPER(artist_name::text));");
+
+            // Jumble session indexes
+            migrationBuilder.Sql("CREATE INDEX IF NOT EXISTS ix_jumble_session_answers_discord_user_id ON public.jumble_session_answers (discord_user_id);");
+            migrationBuilder.Sql("CREATE INDEX IF NOT EXISTS idx_discord_channel_date_started ON public.jumble_sessions (discord_channel_id, date_started DESC);");
+            migrationBuilder.Sql("CREATE INDEX IF NOT EXISTS idx_user_id_date_started ON public.jumble_sessions (starter_user_id, date_started DESC);");
+
+            // Interaction lookup indexes
+            migrationBuilder.Sql("CREATE INDEX IF NOT EXISTS ix_user_interactions_discord_id ON public.user_interactions (discord_id);");
+            migrationBuilder.Sql("CREATE INDEX IF NOT EXISTS ix_user_interactions_discord_response_id ON public.user_interactions (discord_response_id);");
+
+            // Full-text search (GIN indexes)
+            migrationBuilder.Sql("CREATE INDEX IF NOT EXISTS albums_search_fts_gin_idx ON public.albums USING gin (to_tsvector('english', COALESCE(name, '') || ' ' || COALESCE(artist_name, '')));");
+            migrationBuilder.Sql("CREATE INDEX IF NOT EXISTS tracks_search_fts_gin_idx ON public.tracks USING gin (to_tsvector('english', COALESCE(name, '') || ' ' || COALESCE(artist_name, '') || ' ' || COALESCE(album_name, '')));");
         }
 
         /// <inheritdoc />
