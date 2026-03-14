@@ -224,7 +224,7 @@ public class AdminCommands(
     {
         if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
         {
-            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+            _ = this.Context.Channel?.TriggerTypingAsync()!;
 
             if (!ulong.TryParse(reason, out var id))
             {
@@ -252,7 +252,7 @@ public class AdminCommands(
     {
         if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
         {
-            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+            _ = this.Context.Channel?.TriggerTypingAsync()!;
 
             if (!ulong.TryParse(guildId, out var id))
             {
@@ -472,7 +472,7 @@ public class AdminCommands(
     {
         if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
-            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+            _ = this.Context.Channel?.TriggerTypingAsync()!;
 
             if (client == null)
             {
@@ -513,7 +513,7 @@ public class AdminCommands(
     {
         if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
         {
-            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+            _ = this.Context.Channel?.TriggerTypingAsync()!;
 
             var oldUsers = await indexService.GetUnusedUsers();
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content =
@@ -543,7 +543,7 @@ public class AdminCommands(
             return;
         }
 
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
         var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
@@ -575,7 +575,7 @@ public class AdminCommands(
             return;
         }
 
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
         var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
@@ -867,7 +867,7 @@ public class AdminCommands(
                 return;
             }
 
-            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+            _ = this.Context.Channel?.TriggerTypingAsync()!;
 
             var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
             var targetedUser = await settingService.GetUser(user, contextUser, this.Context);
@@ -1195,7 +1195,7 @@ public class AdminCommands(
                 return;
             }
 
-            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+            _ = this.Context.Channel?.TriggerTypingAsync()!;
             var userSettings = await userService.GetUserWithDiscogs(discordUserId);
 
             if (userSettings == null)
@@ -1287,7 +1287,7 @@ public class AdminCommands(
                 return;
             }
 
-            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+            _ = this.Context.Channel?.TriggerTypingAsync()!;
 
             var userSettings = await userService.GetUserWithDiscogs(discordUserId);
 
@@ -1540,7 +1540,7 @@ public class AdminCommands(
         {
             try
             {
-                _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+                _ = this.Context.Channel?.TriggerTypingAsync()!;
 
                 await featuredService.CustomFeatured(timer.CurrentFeatured, desc, url);
 
@@ -1587,7 +1587,7 @@ public class AdminCommands(
         {
             try
             {
-                _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+                _ = this.Context.Channel?.TriggerTypingAsync()!;
 
                 await webhookService.ChangeToNewAvatar(client, url);
 
@@ -1993,7 +1993,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
         {
             try
             {
-                _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+                _ = this.Context.Channel?.TriggerTypingAsync()!;
 
                 var feature = timer.CurrentFeatured;
 
@@ -2116,7 +2116,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
         {
             try
             {
-                _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+                _ = this.Context.Channel?.TriggerTypingAsync()!;
                 var activeSupporters = await supporterService.GetAllVisibleSupporters();
                 var guildMembers = new List<GuildUser>();
                 await foreach (var user in this.Context.Guild.GetUsersAsync())
@@ -2662,7 +2662,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
     {
         try
         {
-            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+            _ = this.Context.Channel?.TriggerTypingAsync()!;
 
             var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
@@ -3164,7 +3164,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
         {
             if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
             {
-                _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+                _ = this.Context.Channel?.TriggerTypingAsync()!;
 
                 var response = new ResponseModel
                 {

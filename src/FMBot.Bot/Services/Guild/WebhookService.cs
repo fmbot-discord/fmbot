@@ -31,7 +31,8 @@ public class WebhookService
     private readonly OpenAiService _openAiService;
     private readonly HttpClient _httpClient;
 
-    public WebhookService(IDbContextFactory<FMBotDbContext> contextFactory, IOptions<BotSettings> botSettings, GuildService guildService, OpenAiService openAiService, HttpClient httpClient)
+    public WebhookService(IDbContextFactory<FMBotDbContext> contextFactory, IOptions<BotSettings> botSettings, GuildService guildService,
+        OpenAiService openAiService, HttpClient httpClient)
     {
         this._contextFactory = contextFactory;
         this._guildService = guildService;
@@ -146,12 +147,8 @@ public class WebhookService
         }
     }
 
-    public async Task SendFeaturedWebhooks(FeaturedLog featured)
+    public async Task SendFeaturedWebhooks(FeaturedLog featured, Color? accentColor)
     {
-        var embed = new EmbedProperties();
-        embed.WithThumbnail(featured.ImageUrl);
-        embed.AddField("Featured:", featured.Description);
-
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var webhooks = await db.Webhooks
             .AsQueryable()
@@ -160,7 +157,7 @@ public class WebhookService
         var tasks = new List<Task>();
         foreach (var webhook in webhooks)
         {
-            tasks.Add(SendWebhookEmbed(webhook, embed, featured.UserId));
+            tasks.Add(SendWebhookMessage(webhook, featured, accentColor));
         }
 
         Log.Information("SendFeaturedWebhooks: Sending {webhookCount} featured webhooks", webhooks.Count);
@@ -169,15 +166,25 @@ public class WebhookService
 
     public async Task SendFeaturedPreview(FeaturedLog featured, string webhook)
     {
-        var embed = new EmbedProperties();
-        embed.WithImage(featured.ImageUrl);
-        embed.AddField("Featured:", featured.Description);
+        var container = new ComponentContainerProperties();
+
+        if (featured.ImageUrl != null)
+        {
+            container.WithTextDisplay($"**Featured:**\n{featured.Description}");
+            container.AddComponent(new MediaGalleryProperties
+            {
+                new MediaGalleryItemProperties(new ComponentMediaProperties(featured.ImageUrl))
+            });
+        }
+        else
+        {
+            container.WithTextDisplay($"**Featured:**\n{featured.Description}");
+        }
 
         var dateValue = ((DateTimeOffset)featured.DateTime).ToUnixTimeSeconds();
-        embed.AddField("Time", $"<t:{dateValue}:F>");
-        embed.AddField("Resetting", $"`.resetfeatured {featured.FeaturedLogId}`");
-
-        embed.WithFooter(featured.ImageUrl);
+        container.WithSeparator();
+        container.WithTextDisplay($"**Time:** <t:{dateValue}:F>");
+        container.WithTextDisplay($"**Resetting:** `.resetfeatured {featured.FeaturedLogId}`");
 
         if (featured.UserId.HasValue)
         {
@@ -190,32 +197,24 @@ public class WebhookService
 
             if (possiblyOffensive)
             {
-                embed.AddField("⚠️ Warning",
-                    "Possibly offensive username detected");
-                embed.WithColor(DiscordConstants.WarningColorOrange);
+                container.WithAccentColor(DiscordConstants.WarningColorOrange);
+                container.WithTextDisplay("⚠️ **Warning:** Possibly offensive username detected");
             }
         }
 
+        container.WithSeparator();
+        container.WithTextDisplay($"-# {featured.ImageUrl}");
+
         var webhookClient = CreateWebhookClientFromUrl(webhook);
-        await webhookClient.ExecuteAsync(new WebhookMessageProperties
-        {
-            Embeds = [embed]
-        });
+        await webhookClient.ExecuteAsync(new WebhookMessageProperties()
+            .WithComponents([container])
+            .WithFlags(MessageFlags.IsComponentsV2)
+            .WithAllowedMentions(AllowedMentionsProperties.None));
     }
 
-    public async Task PostFeatured(FeaturedLog featuredLog, ShardedGatewayClient client)
+    public async Task PostFeatured(FeaturedLog featuredLog, ShardedGatewayClient client, Color? accentColor)
     {
-        var builder = new EmbedProperties();
-        if (featuredLog.FullSizeImage == null)
-        {
-            builder.WithThumbnail(featuredLog.ImageUrl);
-        }
-        else
-        {
-            builder.WithImage(featuredLog.FullSizeImage);
-        }
-
-        builder.AddField("Featured:", featuredLog.Description);
+        var container = BuildFeaturedContainer(featuredLog, accentColor);
 
         if (this._botSettings.Bot.BaseServerId != 0 && this._botSettings.Bot.FeaturedChannelId != 0)
         {
@@ -241,11 +240,13 @@ public class WebhookService
 
                         if (guildUser != null)
                         {
-                            var localFeaturedMsg = await channel.SendMessageAsync(new MessageProperties
-                            {
-                                Content = $"🥳 Congratulations <@{guildUser.User.DiscordUserId}>! You've just been picked as the featured user for the next hour.",
-                                Embeds = [builder]
-                            });
+                            container.WithSeparator();
+                            container.WithTextDisplay(
+                                $"🥳 Congratulations <@{guildUser.User.DiscordUserId}>! You've just been picked as the featured user for the next hour.");
+
+                            var localFeaturedMsg = await channel.SendMessageAsync(new MessageProperties()
+                                .WithComponents([container])
+                                .WithFlags(MessageFlags.IsComponentsV2));
 
                             if (localFeaturedMsg != null)
                             {
@@ -257,7 +258,10 @@ public class WebhookService
                     }
                 }
 
-                var message = await channel.SendMessageAsync(new MessageProperties().AddEmbeds(builder));
+                var message = await channel.SendMessageAsync(new MessageProperties()
+                    .WithComponents([container])
+                    .WithFlags(MessageFlags.IsComponentsV2)
+                    .WithAllowedMentions(AllowedMentionsProperties.None));
 
                 if (message != null)
                 {
@@ -278,13 +282,46 @@ public class WebhookService
         }
     }
 
-    private async Task SendWebhookEmbed(Webhook webhook, EmbedProperties embed, int? featuredUserId)
+    public static ComponentContainerProperties BuildFeaturedContainer(FeaturedLog featured, Color? accentColor = null)
+    {
+        var container = new ComponentContainerProperties();
+
+        if (accentColor.HasValue && accentColor.Value != DiscordConstants.LastFmColorRed)
+        {
+            container.WithAccentColor(accentColor.Value);
+        }
+
+        if (featured.FullSizeImage != null)
+        {
+            container.WithTextDisplay($"**Featured:**\n{featured.Description}");
+            container.AddComponent(new MediaGalleryProperties
+            {
+                new MediaGalleryItemProperties(new ComponentMediaProperties(featured.FullSizeImage))
+            });
+        }
+        else if (featured.ImageUrl != null)
+        {
+            container.WithSection([
+                new TextDisplayProperties($"**Featured:**\n{featured.Description}")
+            ], featured.ImageUrl);
+        }
+        else
+        {
+            container.WithTextDisplay($"**Featured:**\n{featured.Description}");
+        }
+
+        return container;
+    }
+
+    private async Task SendWebhookMessage(Webhook webhook, FeaturedLog featured, Color? accentColor)
     {
         var webhookClient = new WebhookClient(webhook.DiscordWebhookId, webhook.Token);
 
         try
         {
-            if (featuredUserId.HasValue)
+            var container = BuildFeaturedContainer(featured, accentColor);
+
+            if (featured.UserId.HasValue)
             {
                 await using var db = await this._contextFactory.CreateDbContextAsync();
                 var guild = await db.Guilds
@@ -294,20 +331,21 @@ public class WebhookService
 
                 if (guild?.GuildUsers != null && guild.GuildUsers.Any())
                 {
-                    var guildUser = guild.GuildUsers.FirstOrDefault(f => f.UserId == featuredUserId);
+                    var guildUser = guild.GuildUsers.FirstOrDefault(f => f.UserId == featured.UserId);
 
                     if (guildUser != null)
                     {
-                        embed.WithFooter(
-                            $"🥳 Congratulations! This user is in your server under the name {guildUser.UserName}.");
+                        container.WithSeparator();
+                        container.WithTextDisplay(
+                            $"-# 🥳 Congratulations! This user is in your server under the name {StringExtensions.Sanitize(guildUser.UserName)}.");
                     }
                 }
             }
 
-            await webhookClient.ExecuteAsync(new WebhookMessageProperties
-            {
-                Embeds = [embed]
-            }, threadId: webhook.DiscordThreadId);
+            await webhookClient.ExecuteAsync(new WebhookMessageProperties()
+                .WithComponents(new IMessageComponentProperties[] { container })
+                .WithFlags(MessageFlags.IsComponentsV2)
+                .WithAllowedMentions(AllowedMentionsProperties.None), threadId: webhook.DiscordThreadId);
         }
         catch (Exception e)
         {
@@ -398,6 +436,7 @@ public class WebhookService
                 data.SaveTo(outputStream);
             }
         }
+
         return outputStream.ToArray();
     }
 }

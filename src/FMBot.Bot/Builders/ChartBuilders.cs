@@ -43,6 +43,41 @@ public class ChartBuilders
         this._musicDataFactory = musicDataFactory;
     }
 
+    private static ResponseModel BuildChartValidationError(
+        ContextModel context,
+        string message,
+        string chartType,
+        ChartSettings chartSettings,
+        string userNameLastFm)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.ComponentsV2,
+            CommandResponse = CommandResponse.WrongInput
+        };
+
+        if (context.SelectMenu == null)
+        {
+            var editCustomId = InteractionConstants.Chart.BuildEditCustomId(
+                context.DiscordUser.Id, chartType, chartSettings, userNameLastFm);
+
+            response.ComponentsContainer.AddComponent(
+                new ComponentSectionProperties(
+                    new ButtonProperties(editCustomId, "Edit", ButtonStyle.Secondary))
+                {
+                    Components = [new TextDisplayProperties(message)]
+                });
+        }
+        else
+        {
+            response.ComponentsContainer.AddComponent(new TextDisplayProperties(message));
+        }
+
+        response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
+
+        return response;
+    }
+
     public async Task<ResponseModel> AlbumChartAsync(
         ContextModel context,
         UserSettingsModel userSettings,
@@ -55,12 +90,9 @@ public class ChartBuilders
 
         if (chartSettings.ImagesNeeded > 100)
         {
-            response.Embed.Description = $"You can't create a chart with more than 100 images (10x10).\n" +
-                                         $"Please try a smaller size.";
-            response.ResponseType = ResponseType.Embed;
-            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
-            response.CommandResponse = CommandResponse.WrongInput;
-            return response;
+            return BuildChartValidationError(context,
+                "You can't create a chart with more than 100 images (10x10).\nPlease try a smaller size.",
+                InteractionConstants.Chart.AlbumType, chartSettings, userSettings.UserNameLastFm);
         }
 
         var extraAlbums = 0;
@@ -93,7 +125,8 @@ public class ChartBuilders
         {
             var imagesToGet = chartSettings.ReleaseYearFilter.HasValue ||
                               chartSettings.ReleaseDecadeFilter.HasValue ||
-                              chartSettings.FilteredArtist != null
+                              chartSettings.FilteredArtist != null ||
+                              chartSettings.FilterSingles
                 ? 1000
                 : 250;
             albums = await this._dataSourceFactory.GetTopAlbumsAsync(userSettings.UserNameLastFm,
@@ -135,11 +168,8 @@ public class ChartBuilders
                     $"Note that {extraAlbums} extra albums are required because you are skipping albums without an image.");
             }
 
-            response.Embed.Description = reply.ToString();
-            response.ResponseType = ResponseType.Embed;
-            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
-            response.CommandResponse = CommandResponse.WrongInput;
-            return response;
+            return BuildChartValidationError(context, reply.ToString(),
+                InteractionConstants.Chart.AlbumType, chartSettings, userSettings.UserNameLastFm);
         }
 
         if ((chartSettings.ReleaseYearFilter.HasValue || chartSettings.ReleaseDecadeFilter.HasValue) &&
@@ -161,13 +191,10 @@ public class ChartBuilders
 
             if (albums.Content.TopAlbums.Count < chartSettings.ImagesNeeded)
             {
-                response.Embed.Description =
+                return BuildChartValidationError(context,
                     $"Sorry, you haven't listened to enough albums released in {chartSettings.ReleaseYearFilter} ({albums.Content.TopAlbums.Count} of required {chartSettings.ImagesNeeded}) to generate a chart.\n" +
-                    $"Please try a smaller chart, a different year or a bigger time period ({Constants.CompactTimePeriodList})";
-                response.ResponseType = ResponseType.Embed;
-                response.Embed.WithColor(DiscordConstants.WarningColorOrange);
-                response.CommandResponse = CommandResponse.WrongInput;
-                return response;
+                    $"Please try a smaller chart, a different year or a bigger time period ({Constants.CompactTimePeriodList})",
+                    InteractionConstants.Chart.AlbumType, chartSettings, userSettings.UserNameLastFm);
             }
         }
         else if (chartSettings.ReleaseDecadeFilter.HasValue)
@@ -177,13 +204,23 @@ public class ChartBuilders
 
             if (albums.Content.TopAlbums.Count < chartSettings.ImagesNeeded)
             {
-                response.Embed.Description =
+                return BuildChartValidationError(context,
                     $"Sorry, you haven't listened to enough albums released in the {chartSettings.ReleaseDecadeFilter}s ({albums.Content.TopAlbums.Count} of required {chartSettings.ImagesNeeded}) to generate a chart.\n" +
-                    $"Please try a smaller chart, a different year or a bigger time period ({Constants.CompactTimePeriodList})";
-                response.ResponseType = ResponseType.Embed;
-                response.Embed.WithColor(DiscordConstants.WarningColorOrange);
-                response.CommandResponse = CommandResponse.WrongInput;
-                return response;
+                    $"Please try a smaller chart, a different year or a bigger time period ({Constants.CompactTimePeriodList})",
+                    InteractionConstants.Chart.AlbumType, chartSettings, userSettings.UserNameLastFm);
+            }
+        }
+
+        if (chartSettings.FilterSingles)
+        {
+            albums = await this._albumService.FilterAlbumsThatAreSingles(albums);
+
+            if (albums.Content.TopAlbums.Count < chartSettings.ImagesNeeded)
+            {
+                return BuildChartValidationError(context,
+                    $"Sorry, not enough non-single albums ({albums.Content.TopAlbums.Count} of required {chartSettings.ImagesNeeded}) to generate a chart.\n" +
+                    $"Please try a smaller chart or a bigger time period ({Constants.CompactTimePeriodList})",
+                    InteractionConstants.Chart.AlbumType, chartSettings, userSettings.UserNameLastFm);
             }
         }
 
@@ -264,15 +301,26 @@ public class ChartBuilders
             response.ComponentsContainer.AddComponent(new TextDisplayProperties(embedDescription.ToString()));
         }
 
-        if (!userSettings.DifferentUser)
+        var footerText = !userSettings.DifferentUser
+            ? $"-# {userSettings.UserNameLastFm} has {context.ContextUser.TotalPlaycount.Format(context.NumberFormat)} scrobbles"
+            : $"-# Chart requested by {await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser)}";
+
+        if (context.SelectMenu == null)
         {
-            response.ComponentsContainer.AddComponent(new TextDisplayProperties(
-                $"-# {userSettings.UserNameLastFm} has {context.ContextUser.TotalPlaycount.Format(context.NumberFormat)} scrobbles"));
+            var editCustomId = InteractionConstants.Chart.BuildEditCustomId(
+                               context.DiscordUser.Id, InteractionConstants.Chart.AlbumType,
+                               chartSettings, userSettings.UserNameLastFm);
+
+            response.ComponentsContainer.AddComponent(
+                new ComponentSectionProperties(
+                    new ButtonProperties(editCustomId, "Edit", ButtonStyle.Secondary))
+                {
+                    Components = [new TextDisplayProperties(footerText)]
+                });
         }
         else
         {
-            response.ComponentsContainer.AddComponent(new TextDisplayProperties(
-                $"-# Chart requested by {await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser)}"));
+            response.ComponentsContainer.AddComponent(new TextDisplayProperties(footerText));
         }
 
         var encoded = chart.Encode(SKEncodedImageFormat.Png, 100);
@@ -312,12 +360,9 @@ public class ChartBuilders
 
         if (chartSettings.ImagesNeeded > 100)
         {
-            response.Embed.Description = $"You can't create a chart with more than 100 images (10x10).\n" +
-                                         $"Please try a smaller size.";
-            response.ResponseType = ResponseType.Embed;
-            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
-            response.CommandResponse = CommandResponse.WrongInput;
-            return response;
+            return BuildChartValidationError(context,
+                "You can't create a chart with more than 100 images (10x10).\nPlease try a smaller size.",
+                InteractionConstants.Chart.ArtistType, chartSettings, userSettings.UserNameLastFm);
         }
 
         var extraArtists = 0;
@@ -345,11 +390,8 @@ public class ChartBuilders
                          $"Note that {extraArtists} extra artists are required because you are skipping artists without an image.";
             }
 
-            response.Embed.Description = reply;
-            response.ResponseType = ResponseType.Embed;
-            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
-            response.CommandResponse = CommandResponse.WrongInput;
-            return response;
+            return BuildChartValidationError(context, reply,
+                InteractionConstants.Chart.ArtistType, chartSettings, userSettings.UserNameLastFm);
         }
 
         var topArtists = artists.Content.TopArtists;
@@ -406,12 +448,6 @@ public class ChartBuilders
         var supporter =
             await this._supporterService.GetRandomSupporter(context.DiscordGuild, context.ContextUser.UserType);
         ChartService.AddSettingsToDescription(chartSettings, embedDescription, supporter, context.Prefix);
-        if (supporter != null)
-        {
-            response.Components = new ActionRowProperties().WithButton(Constants.GetSupporterButton,
-                style: ButtonStyle.Secondary,
-                customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "chart-broughtby"));
-        }
 
         var nsfwAllowed = context.DiscordGuild == null || ((TextGuildChannel)context.DiscordChannel).Nsfw;
         using var chart = await this._chartService.GenerateChartAsync(chartSettings);
@@ -450,7 +486,23 @@ public class ChartBuilders
             response.ComponentsContainer.AddComponent(new TextDisplayProperties(embedDescription.ToString()));
         }
 
-        response.ComponentsContainer.AddComponent(new TextDisplayProperties(footer.ToString()));
+        if (context.SelectMenu == null)
+        {
+            var editCustomId = InteractionConstants.Chart.BuildEditCustomId(
+                               context.DiscordUser.Id, InteractionConstants.Chart.ArtistType,
+                               chartSettings, userSettings.UserNameLastFm);
+
+            response.ComponentsContainer.AddComponent(
+                new ComponentSectionProperties(
+                    new ButtonProperties(editCustomId, "Edit", ButtonStyle.Secondary))
+                {
+                    Components = [new TextDisplayProperties(footer.ToString())]
+                });
+        }
+        else
+        {
+            response.ComponentsContainer.AddComponent(new TextDisplayProperties(footer.ToString()));
+        }
 
         var encoded = chart.Encode(SKEncodedImageFormat.Png, 100);
         response.Stream = encoded.AsStream(true);
@@ -463,6 +515,15 @@ public class ChartBuilders
             response.Spoiler = chartSettings.ContainsNsfw;
             response.ResponseType = ResponseType.Embed;
             response.StringMenus.Add(context.SelectMenu);
+        }
+
+        if (supporter != null)
+        {
+            var actionRow = new ActionRowProperties();
+            actionRow.WithButton(Constants.GetSupporterButton,
+                customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "chart-broughtby"),
+                style: ButtonStyle.Secondary);
+            response.ComponentsV2.AddComponent(actionRow);
         }
 
         return response;

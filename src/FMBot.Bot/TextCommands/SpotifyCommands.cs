@@ -41,7 +41,7 @@ public class SpotifyCommands(
 
         try
         {
-            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+            _ = this.Context.Channel?.TriggerTypingAsync()!;
 
             if (searchValue != null && searchValue.StartsWith("play ", StringComparison.OrdinalIgnoreCase))
             {
@@ -148,7 +148,7 @@ public class SpotifyCommands(
 
         try
         {
-            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+            _ = this.Context.Channel?.TriggerTypingAsync()!;
 
             if (this.Context.Message.ReferencedMessage != null && string.IsNullOrWhiteSpace(searchValue))
             {
@@ -238,7 +238,7 @@ public class SpotifyCommands(
 
         try
         {
-            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+            _ = this.Context.Channel?.TriggerTypingAsync()!;
 
             if (this.Context.Message.ReferencedMessage != null && string.IsNullOrWhiteSpace(searchValue))
             {

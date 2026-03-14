@@ -44,6 +44,7 @@ message AlbumWithDate {
   string albumName = 2;
   google.protobuf.Timestamp releaseDate = 3;
   string releaseDatePrecision = 4;
+  string albumType = 5;
 }
 
 message AlbumReleaseDateReply {

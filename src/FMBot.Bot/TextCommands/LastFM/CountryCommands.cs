@@ -36,7 +36,7 @@ public class CountryCommands(
     [CommandCategories(CommandCategory.Genres)]
     public async Task TopCountriesAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
@@ -65,7 +65,7 @@ public class CountryCommands(
     [Summary("Generates a map of the location from your top artists.")]
     public async Task CountryChartAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
@@ -100,7 +100,7 @@ public class CountryCommands(
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         try
         {

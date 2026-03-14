@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-FMBot is a production-grade Discord bot that integrates with Last.fm to provide music statistics and social features. Built with .NET 9.0, it serves millions of users across thousands of Discord servers with sophisticated architecture supporting sharding, extensive external API integrations, and advanced features like image generation and AI-powered content.
+FMBot is a production-grade Discord bot that integrates with Last.fm to provide music statistics and social features. Built with .NET 10.0, it serves millions of users across thousands of Discord servers with sophisticated architecture supporting sharding, extensive external API integrations, and advanced features like image generation and AI-powered content.
 
 ## Development Commands
 
@@ -54,7 +54,6 @@ dotnet ef database update --project ./src/FMBot.Persistence.EntityFrameWork --st
 - **FMBot.Images** - Image generation using Puppeteer and SkiaSharp
 - **FMBot.AppleMusic** - Apple Music API integration
 - **FMBot.Discogs** - Discogs API integration for record collections
-- **FMBot.Youtube** - YouTube integration for video content
 - **FMBot.Tests** - NUnit test suite
 
 ### Key Entry Points
@@ -116,8 +115,8 @@ Primary services: Last.fm (core), Spotify (features), Apple Music (metadata), Yo
 - Multiple environment support (local, dev, prod)
 
 ### Code Conventions
-- **C# 9.0+ features** with nullable reference types enabled
-- **NetCord** framework for Discord API interactions (migrated from Discord.Net)
+- **C# 13+ features** with nullable reference types enabled
+- **NetCord** framework for Discord API interactions (migrated from Discord.Net). When unsure about NetCord APIs or types, you can look up documentation, search online, or read the local source code at `C:\projects\NetCord`
 - **Async/await** patterns throughout
 - **Structured logging** with Serilog
 - **Extension methods** for common operations

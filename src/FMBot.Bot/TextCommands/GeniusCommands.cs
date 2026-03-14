@@ -36,7 +36,7 @@ public class GeniusCommands(
     [CommandCategories(CommandCategory.ThirdParty)]
     public async Task GeniusAsync([CommandParameter(Remainder = true)] string searchValue = null)
     {
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);

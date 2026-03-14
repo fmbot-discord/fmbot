@@ -53,6 +53,75 @@ public static class BitmapExtensions
         return Color.FromArgb(avgA, avgR, avgG, avgB);
     }
 
+    public static Color GetDominantColor(this SKBitmap skBitmap)
+    {
+        const int maxSampleSize = 64;
+
+        SKBitmap sampled;
+        bool needsDispose;
+        if (skBitmap.Width > maxSampleSize || skBitmap.Height > maxSampleSize)
+        {
+            var scale = Math.Min((float)maxSampleSize / skBitmap.Width, (float)maxSampleSize / skBitmap.Height);
+            var newWidth = Math.Max(1, (int)(skBitmap.Width * scale));
+            var newHeight = Math.Max(1, (int)(skBitmap.Height * scale));
+            sampled = skBitmap.Resize(new SKImageInfo(newWidth, newHeight), SKFilterQuality.Low);
+            needsDispose = true;
+        }
+        else
+        {
+            sampled = skBitmap;
+            needsDispose = false;
+        }
+
+        try
+        {
+            double weightedR = 0, weightedG = 0, weightedB = 0;
+            double totalWeight = 0;
+
+            for (var x = 0; x < sampled.Width; x++)
+            {
+                for (var y = 0; y < sampled.Height; y++)
+                {
+                    var pixel = sampled.GetPixel(x, y);
+                    if (pixel.Alpha < 10) continue;
+
+                    var r = pixel.Red / 255.0;
+                    var g = pixel.Green / 255.0;
+                    var b = pixel.Blue / 255.0;
+
+                    var max = Math.Max(r, Math.Max(g, b));
+                    var min = Math.Min(r, Math.Min(g, b));
+                    var chroma = max - min;
+
+                    var weight = 0.1 + chroma * chroma;
+
+                    weightedR += pixel.Red * weight;
+                    weightedG += pixel.Green * weight;
+                    weightedB += pixel.Blue * weight;
+                    totalWeight += weight;
+                }
+            }
+
+            if (totalWeight < 0.001)
+            {
+                return Color.Transparent;
+            }
+
+            return Color.FromArgb(
+                255,
+                (int)Math.Clamp(weightedR / totalWeight, 0, 255),
+                (int)Math.Clamp(weightedG / totalWeight, 0, 255),
+                (int)Math.Clamp(weightedB / totalWeight, 0, 255));
+        }
+        finally
+        {
+            if (needsDispose)
+            {
+                sampled.Dispose();
+            }
+        }
+    }
+
     private static int PerceivedBrightness(Color c)
     {
         return (int) Math.Sqrt(

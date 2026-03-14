@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using FMBot.Bot.Models;
 using FMBot.Bot.Models.Modals;
 using NetCord;
@@ -508,6 +511,99 @@ public static class ModalFactory
                     Placeholder = "#FF5733",
                     MinLength = 4,
                     MaxLength = 7
+                })
+            ]
+        };
+
+    private static StringMenuProperties GetTimePeriodMenu(string customId, string currentTimePeriod)
+    {
+        var now = DateTime.UtcNow;
+        var currentMonthName = now.ToString("MMMM");
+        var previousMonthName = now.AddMonths(-1).ToString("MMMM");
+        var currentYear = now.Year.ToString();
+        var previousYear = (now.Year - 1).ToString();
+
+        var options = new List<StringMenuSelectOptionProperties>
+        {
+            new("Weekly", "weekly") { Default = currentTimePeriod == "weekly" },
+            new("Monthly", "monthly") { Default = currentTimePeriod == "monthly" },
+            new("Quarterly", "quarterly") { Default = currentTimePeriod == "quarterly" },
+            new("Half-yearly", "half-yearly") { Default = currentTimePeriod == "half-yearly" },
+            new("Yearly", "yearly") { Default = currentTimePeriod == "yearly" },
+            new("All time", "overall") { Default = currentTimePeriod == "overall" },
+            new(currentMonthName, currentMonthName.ToLower()) { Default = currentTimePeriod.Equals(currentMonthName, StringComparison.OrdinalIgnoreCase) },
+            new(previousMonthName, previousMonthName.ToLower()) { Default = currentTimePeriod.Equals(previousMonthName, StringComparison.OrdinalIgnoreCase) },
+            new(currentYear, currentYear) { Default = currentTimePeriod == currentYear },
+            new(previousYear, previousYear) { Default = currentTimePeriod == previousYear },
+        };
+
+        if (options.All(o => !o.Default) && !string.IsNullOrWhiteSpace(currentTimePeriod))
+        {
+            options.Add(new StringMenuSelectOptionProperties(currentTimePeriod, currentTimePeriod) { Default = true });
+        }
+
+        var menu = new StringMenuProperties(customId);
+        menu.AddOptions(options);
+        return menu;
+    }
+
+    public static ModalProperties CreateAlbumChartSettingsModal(
+        string customId, int width, int height, string timePeriod,
+        int titleSetting, bool skip, bool sfw, bool rainbow,
+        int? yearFilter, int? decadeFilter, bool filterSingles = false) =>
+        new(customId, "Edit chart settings")
+        {
+            Components =
+            [
+                new LabelProperties("Size (e.g. 3x3)", new TextInputProperties("size", TextInputStyle.Short)
+                {
+                    Value = $"{width}x{height}",
+                    Placeholder = "3x3",
+                    MinLength = 3,
+                    MaxLength = 5
+                }),
+                new LabelProperties("Time period", GetTimePeriodMenu("time_period", timePeriod)),
+                new LabelProperties("Options", new CheckboxGroupProperties("options")
+                {
+                    new CheckboxGroupOptionProperties("Show titles", "titles") { Default = titleSetting == 1 },
+                    new CheckboxGroupOptionProperties("Skip albums without image", "skip") { Default = skip },
+                    new CheckboxGroupOptionProperties("SFW only", "sfw") { Default = sfw },
+                    new CheckboxGroupOptionProperties("Rainbow sort", "rainbow") { Default = rainbow },
+                    new CheckboxGroupOptionProperties("Hide singles", "hidesingles") { Default = filterSingles },
+                }),
+                new LabelProperties("Release filter (e.g. 2024 or 1990s)",
+                    new TextInputProperties("release_filter", TextInputStyle.Short)
+                    {
+                        Placeholder = "2024 or 1990s",
+                        Required = false,
+                        Value = decadeFilter is > 0 ? $"{decadeFilter}s"
+                            : yearFilter is > 0 ? yearFilter.ToString()
+                            : null,
+                        MaxLength = 5
+                    })
+            ]
+        };
+
+    public static ModalProperties CreateArtistChartSettingsModal(
+        string customId, int width, int height, string timePeriod,
+        int titleSetting, bool skip, bool rainbow) =>
+        new(customId, "Edit chart settings")
+        {
+            Components =
+            [
+                new LabelProperties("Size (e.g. 3x3)", new TextInputProperties("size", TextInputStyle.Short)
+                {
+                    Value = $"{width}x{height}",
+                    Placeholder = "3x3",
+                    MinLength = 3,
+                    MaxLength = 5
+                }),
+                new LabelProperties("Time period", GetTimePeriodMenu("time_period", timePeriod)),
+                new LabelProperties("Options", new CheckboxGroupProperties("options")
+                {
+                    new CheckboxGroupOptionProperties("Show titles", "titles") { Default = titleSetting == 1 },
+                    new CheckboxGroupOptionProperties("Skip artists without image", "skip") { Default = skip },
+                    new CheckboxGroupOptionProperties("Rainbow sort", "rainbow") { Default = rainbow },
                 })
             ]
         };

@@ -41,7 +41,7 @@ public class GuildCommands(
     [CommandCategories(CommandCategory.ServerSettings)]
     public async Task GuildSettingsAsync([CommandParameter(Remainder = true)] string searchValues = null)
     {
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -67,7 +67,7 @@ public class GuildCommands(
     [CommandCategories(CommandCategory.ServerSettings)]
     public async Task MemberOverviewAsync([CommandParameter(Remainder = true)] string searchValues = null)
     {
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -106,7 +106,7 @@ public class GuildCommands(
     [CommandCategories(CommandCategory.ServerSettings)]
     public async Task SetServerModeAsync([CommandParameter(Remainder = true)] string unused = null)
     {
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
         var response = await guildSettingBuilder.GuildMode(new ContextModel(this.Context, prfx));
@@ -322,7 +322,7 @@ public class GuildCommands(
             return;
         }
 
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         var guild = await guildService.GetFullGuildAsync(this.Context.Guild.Id);
 

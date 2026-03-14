@@ -491,6 +491,13 @@ public class SettingService
             topListSettings.Type = TopListType.TimeListened;
         }
 
+        var noSingles = new[] { "ns", "nosingles", "hidesingles", "filtersingles" };
+        if (Contains(extraOptions, noSingles))
+        {
+            topListSettings.NewSearchValue = ContainsAndRemove(topListSettings.NewSearchValue, noSingles);
+            topListSettings.FilterSingles = true;
+        }
+
         foreach (var option in extraOptions.Split(" "))
         {
             if (option.StartsWith("r:", StringComparison.OrdinalIgnoreCase) ||

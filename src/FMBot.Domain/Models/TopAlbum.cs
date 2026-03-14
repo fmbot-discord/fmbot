@@ -32,6 +32,7 @@ public class TopAlbum
 
     public DateTime? ReleaseDate { get; set; }
     public string ReleaseDatePrecision { get; set; }
+    public string AlbumType { get; set; }
 
     public Guid? Mbid { get; set; }
 }

@@ -1362,7 +1362,7 @@ public class AlbumBuilders
         response.EmbedAuthor.WithName($"Top {timeSettings.Description.ToLower()} albums for {userTitle}");
         response.EmbedAuthor.WithUrl(userUrl);
 
-        var amount = topListSettings.ReleaseYearFilter.HasValue ? 1000 : topListSettings.ListAmount;
+        var amount = topListSettings.ReleaseYearFilter.HasValue || topListSettings.ReleaseDecadeFilter.HasValue || topListSettings.FilterSingles ? 1000 : topListSettings.ListAmount;
         var albums =
             await this._dataSourceFactory.GetTopAlbumsAsync(userSettings.UserNameLastFm, timeSettings, amount,
                 useCache: true);
@@ -1405,6 +1405,11 @@ public class AlbumBuilders
                 topListSettings.ReleaseDecadeFilter.Value);
         }
 
+        if (topListSettings.FilterSingles)
+        {
+            albums = await this._albumService.FilterAlbumsThatAreSingles(albums);
+        }
+
         if (mode == ResponseMode.Image)
         {
             var totalPlays = await this._dataSourceFactory.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm,
@@ -1423,6 +1428,11 @@ public class AlbumBuilders
             else if (topListSettings.ReleaseDecadeFilter.HasValue)
             {
                 title = $"Top Albums from the {topListSettings.ReleaseDecadeFilter}s";
+            }
+
+            if (topListSettings.FilterSingles)
+            {
+                title += " (excluding singles)";
             }
 
             using var image = await this._puppeteerService.GetTopList(userTitle, title, "albums", timeSettings.Description,
@@ -1518,6 +1528,12 @@ public class AlbumBuilders
             {
                 footer.AppendLine();
                 footer.Append($"Filtering to albums released in the {topListSettings.ReleaseDecadeFilter.Value}s");
+            }
+
+            if (topListSettings.FilterSingles)
+            {
+                footer.AppendLine();
+                footer.Append("Filtering out singles");
             }
 
             if (rnd == 1 && !topListSettings.Billboard && context.SelectMenu == null)

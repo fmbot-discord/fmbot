@@ -45,7 +45,7 @@ public class FriendsCommands(
     [SupporterEnhanced($"Supporters can add up to 18 friends (up from 12)")]
     public async Task FriendsAsync([CommandParameter(Remainder = true)]string unused = null)
     {
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id) ?? this._botSettings.Bot.Prefix;
@@ -106,7 +106,7 @@ public class FriendsCommands(
             return;
         }
 
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id) ?? this._botSettings.Bot.Prefix;

@@ -43,7 +43,7 @@ public class UserCommands(
     [CommandCategories(CommandCategory.UserSettings)]
     public async Task UserSettingsAsync([CommandParameter(Remainder = true)] string searchValues = null)
     {
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -68,7 +68,7 @@ public class UserCommands(
     [SupporterEnhanced("Get more insights and an overview of all your years")]
     public async Task StatsAsync([CommandParameter(Remainder = true)] string userOptions = null)
     {
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         var contextUser = await userService.GetFullUserAsync(this.Context.User.Id);
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -286,7 +286,15 @@ public class UserCommands(
             var response = await userBuilder.FeaturedAsync(new ContextModel(this.Context, prfx, contextUser));
 
             RestMessage message;
-            if (response.ResponseType == ResponseType.Embed)
+            if (response.ResponseType == ResponseType.ComponentsV2)
+            {
+                message = await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
+                    new MessageProperties()
+                        .WithComponents(response.GetComponentsV2())
+                        .WithFlags(MessageFlags.IsComponentsV2)
+                        .WithAllowedMentions(AllowedMentionsProperties.None));
+            }
+            else if (response.ResponseType == ResponseType.Embed)
             {
                 message = await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Embeds = [response.Embed] });
             }

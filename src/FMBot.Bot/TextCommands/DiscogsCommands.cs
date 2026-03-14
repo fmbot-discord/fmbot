@@ -90,7 +90,7 @@ public class DiscogsCommands(
     [CommandCategories(CommandCategory.ThirdParty)]
     public async Task CollectionAsync([CommandParameter(Remainder = true)] string searchValues = null)
     {
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await settingService.GetUser(searchValues, contextUser, this.Context);
@@ -117,7 +117,7 @@ public class DiscogsCommands(
     //[Alias("wh", "whohasvinyl")]
     public async Task WhoHasAsync([CommandParameter(Remainder = true)] string searchValues = null)
     {
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await settingService.GetUser(searchValues, contextUser, this.Context);

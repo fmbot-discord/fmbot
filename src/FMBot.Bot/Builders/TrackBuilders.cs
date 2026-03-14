@@ -1461,9 +1461,6 @@ public class TrackBuilders
 
         var userUrl =
             $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library/tracks?{timeSettings.UrlParameter}";
-        response.EmbedAuthor.WithName($"Top {timeSettings.Description} tracks for {userTitle}");
-        response.EmbedAuthor.WithUrl(userUrl);
-        response.Embed.WithAuthor(response.EmbedAuthor);
 
         var topTracks = await this._dataSourceFactory.GetTopTracksAsync(userSettings.UserNameLastFm, timeSettings, 20);
 
@@ -1493,6 +1490,15 @@ public class TrackBuilders
         var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
         response.Stream = encoded.AsStream(true);
         response.FileName = "receipt.png";
+
+        var embedTitle = $"[Top {timeSettings.Description} tracks]({userUrl}) for {userSettings.DisplayName}";
+
+        var mediaGallery =
+            new MediaGalleryItemProperties(new ComponentMediaProperties($"attachment://{response.FileName}"));
+
+        response.ComponentsContainer.AddComponent(new TextDisplayProperties($"**{embedTitle}**"));
+        response.ComponentsContainer.AddComponent(new MediaGalleryProperties { mediaGallery });
+        response.ResponseType = ResponseType.ComponentsV2;
 
         return response;
     }

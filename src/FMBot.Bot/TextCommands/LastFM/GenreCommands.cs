@@ -42,7 +42,7 @@ public class GenreCommands(
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         try
         {
@@ -73,7 +73,7 @@ public class GenreCommands(
     [GuildOnly]
     public async Task GenreInfoAsync([CommandParameter(Remainder = true)] string genreOptions = null)
     {
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
@@ -104,7 +104,7 @@ public class GenreCommands(
     [CommandCategories(CommandCategory.Genres, CommandCategory.WhoKnows)]
     public async Task WhoKnowsGenreAsync([CommandParameter(Remainder = true)] string genreValues = null)
     {
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
@@ -153,7 +153,7 @@ public class GenreCommands(
         var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
         var guildUserCount = await guildService.GetGuildUserCount(this.Context.Guild.Id);
 
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         var guildListSettings = new GuildRankingSettings
         {
@@ -194,7 +194,7 @@ public class GenreCommands(
     [CommandCategories(CommandCategory.Artists, CommandCategory.WhoKnows, CommandCategory.Friends)]
     public async Task FriendWhoKnowsAsync([CommandParameter(Remainder = true)] string genreValues = null)
     {
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
         var contextUser = await userService.GetUserWithFriendsAsync(this.Context.User);

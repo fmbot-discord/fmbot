@@ -52,7 +52,7 @@ public static class ComponentExtensions
                 Placeholder = menu.Placeholder,
                 MinValues = menu.MinValues,
                 MaxValues = menu.MaxValues,
-                Disabled = specificButtonOnly == null || menu.Disabled
+                Disabled = specificButtonOnly == null || menu.Disabled == true
             },
 
             TextDisplay text => new TextDisplayProperties(text.Content),
@@ -64,6 +64,14 @@ public static class ComponentExtensions
             },
 
             ComponentSection section => ToSectionProperties(section, specificButtonOnly),
+
+            MediaGallery gallery => new MediaGalleryProperties(
+                gallery.Items.Select(item => new MediaGalleryItemProperties(
+                    new ComponentMediaProperties(item.Media.Url))
+                {
+                    Description = item.Description,
+                    Spoiler = item.Spoiler
+                })),
 
             _ => throw new NotSupportedException($"Unknown container component: {component.GetType().Name}")
         };
@@ -106,7 +114,7 @@ public static class ComponentExtensions
                 Emoji = ToEmojiProperties(btn.Emoji),
                 Disabled = false
             },
-            ComponentSectionThumbnail thumb => new ComponentSectionThumbnailProperties(
+            Thumbnail thumb => new ComponentSectionThumbnailProperties(
                 new ComponentMediaProperties(thumb.Media.Url)),
             _ => throw new NotSupportedException($"Unknown accessory: {accessory.GetType().Name}")
         };

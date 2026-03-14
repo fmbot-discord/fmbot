@@ -67,7 +67,7 @@ public class CrownCommands(
     [CommandCategories(CommandCategory.Crowns)]
     public async Task CrownAsync([CommandParameter(Remainder = true)] string artistValues = null)
     {
-        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -97,7 +97,7 @@ public class CrownCommands(
     {
         try
         {
-            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
+            _ = this.Context.Channel?.TriggerTypingAsync()!;
 
             var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
             var guild = await guildService.GetGuildForWhoKnows(this.Context.Guild?.Id);

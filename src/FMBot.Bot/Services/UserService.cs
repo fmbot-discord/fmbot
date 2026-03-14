@@ -1016,10 +1016,10 @@ public class UserService
                 continue;
             }
 
-            if (role.Color.RawValue != 0 && role.Position > highestPosition)
+            if (role.Colors.PrimaryColor.RawValue != 0 && role.RawPosition > highestPosition)
             {
-                highestPosition = role.Position;
-                result = role.Color;
+                highestPosition = role.RawPosition;
+                result = role.Colors.PrimaryColor;
             }
         }
 
