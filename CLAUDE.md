@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+See also `../CLAUDE.md` for workspace-level context covering both repos, the full database schema, and how the bot and web backend connect.
+
 ## Project Overview
 
 FMBot is a production-grade Discord bot that integrates with Last.fm to provide music statistics and social features. Built with .NET 10.0, it serves millions of users across thousands of Discord servers with sophisticated architecture supporting sharding, extensive external API integrations, and advanced features like image generation and AI-powered content.

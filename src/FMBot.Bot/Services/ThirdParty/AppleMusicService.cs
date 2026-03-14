@@ -4,6 +4,9 @@ using System.Threading.Tasks;
 using FMBot.AppleMusic;
 using FMBot.AppleMusic.Models;
 using FMBot.Domain;
+using FMBot.Persistence.Domain.Models;
+using FMBot.Persistence.EntityFrameWork;
+using Microsoft.EntityFrameworkCore;
 
 namespace FMBot.Bot.Services.ThirdParty;
 
@@ -11,11 +14,14 @@ public class AppleMusicService
 {
     private readonly AppleMusicApi _appleMusicApi;
     private readonly AppleMusicAltApi _appleMusicAltApi;
+    private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
 
-    public AppleMusicService(AppleMusicApi appleMusicApi, AppleMusicAltApi appleMusicAltApi)
+    public AppleMusicService(AppleMusicApi appleMusicApi, AppleMusicAltApi appleMusicAltApi,
+        IDbContextFactory<FMBotDbContext> contextFactory)
     {
         this._appleMusicApi = appleMusicApi;
         this._appleMusicAltApi = appleMusicAltApi;
+        this._contextFactory = contextFactory;
     }
 
     public async Task<AmData<AmArtistAttributes>> GetAppleMusicArtist(string artist)
@@ -74,5 +80,47 @@ public class AppleMusicService
         Statistics.AppleMusicApiCalls.Inc();
 
         return results?.FirstOrDefault();
+    }
+
+    public async Task<Track> GetTrackForAppleMusicId(int appleMusicId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        return await db.Tracks.FirstOrDefaultAsync(f => f.AppleMusicId == appleMusicId);
+    }
+
+    public async Task<Album> GetAlbumForAppleMusicId(int appleMusicId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        return await db.Albums.FirstOrDefaultAsync(f => f.AppleMusicId == appleMusicId);
+    }
+
+    public async Task<Artist> GetArtistForAppleMusicId(int appleMusicId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        return await db.Artists.FirstOrDefaultAsync(f => f.AppleMusicId == appleMusicId);
+    }
+
+    public async Task<AmData<AmSongAttributes>> GetAppleMusicSongById(string songId)
+    {
+        var result = await this._appleMusicApi.GetSongAsync(songId);
+        Statistics.AppleMusicApiCalls.Inc();
+
+        return result?.Data?.FirstOrDefault();
+    }
+
+    public async Task<AmData<AmAlbumAttributes>> GetAppleMusicAlbumById(string albumId)
+    {
+        var result = await this._appleMusicApi.GetAlbumAsync(albumId);
+        Statistics.AppleMusicApiCalls.Inc();
+
+        return result?.Data?.FirstOrDefault();
+    }
+
+    public async Task<AmData<AmArtistAttributes>> GetAppleMusicArtistById(string artistId)
+    {
+        var result = await this._appleMusicApi.GetArtistAsync(artistId);
+        Statistics.AppleMusicApiCalls.Inc();
+
+        return result?.Data?.FirstOrDefault();
     }
 }

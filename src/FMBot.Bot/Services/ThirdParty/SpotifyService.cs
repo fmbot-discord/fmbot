@@ -149,6 +149,14 @@ public class SpotifyService
         return await spotify.Albums.Get(spotifyId);
     }
 
+    public async Task<FullArtist> GetArtistById(string spotifyId)
+    {
+        var spotify = GetSpotifyWebApi();
+
+        Statistics.SpotifyApiCalls.Inc();
+        return await spotify.Artists.Get(spotifyId);
+    }
+
     public async Task<TrackAudioFeatures> GetAudioFeaturesFromSpotify(string spotifyId)
     {
         //Create the auth object

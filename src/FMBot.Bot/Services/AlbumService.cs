@@ -6,11 +6,11 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Dapper;
-
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Factories;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
+using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
@@ -39,6 +39,8 @@ public class AlbumService
     private readonly IMemoryCache _cache;
     private readonly BotSettings _botSettings;
     private readonly IDataSourceFactory _dataSourceFactory;
+    private readonly SpotifyService _spotifyService;
+    private readonly AppleMusicService _appleMusicService;
     private readonly TimerService _timer;
     private readonly WhoKnowsAlbumService _whoKnowsAlbumService;
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
@@ -50,6 +52,8 @@ public class AlbumService
     public AlbumService(IMemoryCache cache,
         IOptions<BotSettings> botSettings,
         IDataSourceFactory dataSourceFactory,
+        SpotifyService spotifyService,
+        AppleMusicService appleMusicService,
         TimerService timer,
         WhoKnowsAlbumService whoKnowsAlbumService,
         IDbContextFactory<FMBotDbContext> contextFactory,
@@ -60,6 +64,8 @@ public class AlbumService
     {
         this._cache = cache;
         this._dataSourceFactory = dataSourceFactory;
+        this._spotifyService = spotifyService;
+        this._appleMusicService = appleMusicService;
         this._timer = timer;
         this._whoKnowsAlbumService = whoKnowsAlbumService;
         this._contextFactory = contextFactory;
@@ -112,6 +118,12 @@ public class AlbumService
                     rndPlaycount = album.UserPlaycount;
                     searchValue = $"{album.ArtistName} | {album.AlbumName}";
                 }
+            }
+
+            var resolvedAlbumFromLink = await ResolveAlbumFromLink(searchValue);
+            if (resolvedAlbumFromLink != null)
+            {
+                searchValue = resolvedAlbumFromLink;
             }
 
             if (searchValue.Contains(" | "))
@@ -446,6 +458,70 @@ public class AlbumService
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
         return await db.Albums.FindAsync(albumId);
+    }
+
+    public async Task<Album> GetAlbumForSpotifyId(string spotifyId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        return await db.Albums.FirstOrDefaultAsync(f => f.SpotifyId == spotifyId);
+    }
+
+    private async Task<string> ResolveAlbumFromLink(string input)
+    {
+        try
+        {
+            var linkResult = MusicLinkExtensions.TryParseMusicLink(input);
+            if (linkResult == null)
+            {
+                return null;
+            }
+
+            switch (linkResult.Type)
+            {
+                case MusicLinkExtensions.MusicLinkType.SpotifyAlbum:
+                {
+                    var dbAlbum = await GetAlbumForSpotifyId(linkResult.Id);
+                    if (dbAlbum != null)
+                    {
+                        return $"{dbAlbum.ArtistName} | {dbAlbum.Name}";
+                    }
+
+                    var spotifyAlbum = await this._spotifyService.GetAlbumById(linkResult.Id);
+                    if (spotifyAlbum != null)
+                    {
+                        return $"{spotifyAlbum.Artists.First().Name} | {spotifyAlbum.Name}";
+                    }
+
+                    break;
+                }
+                case MusicLinkExtensions.MusicLinkType.AppleMusicAlbum:
+                {
+                    if (int.TryParse(linkResult.Id, out var appleMusicId))
+                    {
+                        var dbAlbum = await this._appleMusicService.GetAlbumForAppleMusicId(appleMusicId);
+                        if (dbAlbum != null)
+                        {
+                            return $"{dbAlbum.ArtistName} | {dbAlbum.Name}";
+                        }
+                    }
+
+                    var appleMusicAlbum = await this._appleMusicService.GetAppleMusicAlbumById(linkResult.Id);
+                    if (appleMusicAlbum?.Attributes != null)
+                    {
+                        return $"{appleMusicAlbum.Attributes.ArtistName} | {appleMusicAlbum.Attributes.Name}";
+                    }
+
+                    break;
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            Log.Warning(e, "Failed to resolve album from link: {input}", input);
+        }
+
+        return null;
     }
 
     public async Task<Album> GetAlbumFromDatabase(string artistName, string albumName, bool redirectsEnabled = true)

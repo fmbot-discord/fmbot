@@ -39,6 +39,7 @@ public class TrackService
 {
     private readonly IDataSourceFactory _dataSourceFactory;
     private readonly SpotifyService _spotifyService;
+    private readonly AppleMusicService _appleMusicService;
     private readonly HttpClient _client;
     private readonly BotSettings _botSettings;
     private readonly IMemoryCache _cache;
@@ -54,6 +55,7 @@ public class TrackService
         IDataSourceFactory dataSourceFactory,
         IOptions<BotSettings> botSettings,
         SpotifyService spotifyService,
+        AppleMusicService appleMusicService,
         IMemoryCache memoryCache,
         IDbContextFactory<FMBotDbContext> contextFactory,
         TimerService timer,
@@ -65,6 +67,7 @@ public class TrackService
     {
         this._dataSourceFactory = dataSourceFactory;
         this._spotifyService = spotifyService;
+        this._appleMusicService = appleMusicService;
         this._cache = memoryCache;
         this._client = httpClient;
         this._botSettings = botSettings.Value;
@@ -127,6 +130,12 @@ public class TrackService
                     rndPlaycount = track.UserPlaycount;
                     searchValue = $"{track.ArtistName} | {track.TrackName}";
                 }
+            }
+
+            var resolvedTrackFromLink = await ResolveTrackFromLink(searchValue);
+            if (resolvedTrackFromLink != null)
+            {
+                searchValue = resolvedTrackFromLink;
             }
 
             if (searchValue.Contains(" | "))
@@ -818,6 +827,63 @@ public class TrackService
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
         return await db.Tracks.FirstOrDefaultAsync(f => f.SpotifyId == spotifyId);
+    }
+
+    private async Task<string> ResolveTrackFromLink(string input)
+    {
+        try
+        {
+            var linkResult = MusicLinkExtensions.TryParseMusicLink(input);
+            if (linkResult == null)
+            {
+                return null;
+            }
+
+            switch (linkResult.Type)
+            {
+                case MusicLinkExtensions.MusicLinkType.SpotifyTrack:
+                {
+                    var dbTrack = await GetTrackForSpotifyId(linkResult.Id);
+                    if (dbTrack != null)
+                    {
+                        return $"{dbTrack.ArtistName} | {dbTrack.Name}";
+                    }
+
+                    var spotifyTrack = await this._spotifyService.GetTrackById(linkResult.Id);
+                    if (spotifyTrack != null)
+                    {
+                        return $"{spotifyTrack.Artists.First().Name} | {spotifyTrack.Name}";
+                    }
+
+                    break;
+                }
+                case MusicLinkExtensions.MusicLinkType.AppleMusicSong:
+                {
+                    if (int.TryParse(linkResult.Id, out var appleMusicId))
+                    {
+                        var dbTrack = await this._appleMusicService.GetTrackForAppleMusicId(appleMusicId);
+                        if (dbTrack != null)
+                        {
+                            return $"{dbTrack.ArtistName} | {dbTrack.Name}";
+                        }
+                    }
+
+                    var appleMusicSong = await this._appleMusicService.GetAppleMusicSongById(linkResult.Id);
+                    if (appleMusicSong?.Attributes != null)
+                    {
+                        return $"{appleMusicSong.Attributes.ArtistName} | {appleMusicSong.Attributes.Name}";
+                    }
+
+                    break;
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            Log.Warning(e, "Failed to resolve track from link: {input}", input);
+        }
+
+        return null;
     }
 
     public async Task<Track> GetTrackFromDatabase(string artistName, string trackName)

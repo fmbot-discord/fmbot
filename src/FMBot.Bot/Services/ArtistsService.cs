@@ -10,6 +10,7 @@ using Dapper;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
+using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
@@ -39,6 +40,8 @@ public class ArtistsService
     private readonly BotSettings _botSettings;
     private readonly ArtistRepository _artistRepository;
     private readonly IDataSourceFactory _dataSourceFactory;
+    private readonly SpotifyService _spotifyService;
+    private readonly AppleMusicService _appleMusicService;
     private readonly WhoKnowsArtistService _whoKnowsArtistService;
     private readonly TimerService _timer;
     private readonly UpdateService _updateService;
@@ -51,6 +54,8 @@ public class ArtistsService
         IOptions<BotSettings> botSettings,
         ArtistRepository artistRepository,
         IDataSourceFactory dataSourceFactory,
+        SpotifyService spotifyService,
+        AppleMusicService appleMusicService,
         WhoKnowsArtistService whoKnowsArtistService,
         TimerService timer,
         UpdateService updateService,
@@ -62,6 +67,8 @@ public class ArtistsService
         this._cache = cache;
         this._artistRepository = artistRepository;
         this._dataSourceFactory = dataSourceFactory;
+        this._spotifyService = spotifyService;
+        this._appleMusicService = appleMusicService;
         this._whoKnowsArtistService = whoKnowsArtistService;
         this._timer = timer;
         this._updateService = updateService;
@@ -115,6 +122,12 @@ public class ArtistsService
                     rndPlaycount = artist.UserPlaycount;
                     artistValues = artist.ArtistName;
                 }
+            }
+
+            var resolvedArtistFromLink = await ResolveArtistFromLink(artistValues);
+            if (resolvedArtistFromLink != null)
+            {
+                artistValues = resolvedArtistFromLink;
             }
 
             Response<ArtistInfo> artistCall;
@@ -535,6 +548,70 @@ public class ArtistsService
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
         return await db.Artists.FindAsync(artistId);
+    }
+
+    public async Task<Artist> GetArtistForSpotifyId(string spotifyId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        return await db.Artists.FirstOrDefaultAsync(f => f.SpotifyId == spotifyId);
+    }
+
+    private async Task<string> ResolveArtistFromLink(string input)
+    {
+        try
+        {
+            var linkResult = MusicLinkExtensions.TryParseMusicLink(input);
+            if (linkResult == null)
+            {
+                return null;
+            }
+
+            switch (linkResult.Type)
+            {
+                case MusicLinkExtensions.MusicLinkType.SpotifyArtist:
+                {
+                    var dbArtist = await GetArtistForSpotifyId(linkResult.Id);
+                    if (dbArtist != null)
+                    {
+                        return dbArtist.Name;
+                    }
+
+                    var spotifyArtist = await this._spotifyService.GetArtistById(linkResult.Id);
+                    if (spotifyArtist != null)
+                    {
+                        return spotifyArtist.Name;
+                    }
+
+                    break;
+                }
+                case MusicLinkExtensions.MusicLinkType.AppleMusicArtist:
+                {
+                    if (int.TryParse(linkResult.Id, out var appleMusicId))
+                    {
+                        var dbArtist = await this._appleMusicService.GetArtistForAppleMusicId(appleMusicId);
+                        if (dbArtist != null)
+                        {
+                            return dbArtist.Name;
+                        }
+                    }
+
+                    var appleMusicArtist = await this._appleMusicService.GetAppleMusicArtistById(linkResult.Id);
+                    if (appleMusicArtist?.Attributes != null)
+                    {
+                        return appleMusicArtist.Attributes.Name;
+                    }
+
+                    break;
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            Log.Warning(e, "Failed to resolve artist from link: {input}", input);
+        }
+
+        return null;
     }
 
     public async Task<Artist> GetArtistFromDatabase(string artistName, bool redirectsEnabled = true)

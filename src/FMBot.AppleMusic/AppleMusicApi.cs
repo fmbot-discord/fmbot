@@ -43,6 +43,20 @@ public class AppleMusicApi
         return JsonSerializer.Deserialize<AmArtist>(requestBody, GetJsonSerializerOptions());
     }
 
+    public async Task<AmAlbum> GetAlbumAsync(string albumId)
+    {
+        var response = await this._client.GetAsync($"albums/{albumId}");
+        var requestBody = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            Log.Error("AppleMusicApi: Bad HTTP status code in GetAlbumAsync - {statusCode} - {requestBody}", response.StatusCode, requestBody);
+            return null;
+        }
+
+        return JsonSerializer.Deserialize<AmAlbum>(requestBody, GetJsonSerializerOptions());
+    }
+
     public async Task<AmSong> GetSongAsync(string songId)
     {
         var response = await this._client.GetAsync($"songs/{songId}");
