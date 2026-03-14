@@ -78,7 +78,15 @@ namespace FMBot.Persistence.EntityFrameWork
             {
                 optionsBuilder.UseNpgsql(this._configuration["Database:ConnectionString"]);
 
-                // Uncomment below connection string when creating migrations, and also comment out the above iconfiguration stuff
+                /* How to create migrations:
+                1. Uncomment the hardcoded connection string below
+                2. Comment out anything that uses the _configuration
+                3. Run 'dotnet ef migrations add MyMigrationName --project src/fmbot.persistence.entityframework'
+                4. Review your migration
+                5. Run 'dotnet tool run dotnet-ef database update --project src/fmbot.persistence.entityframework'
+                6. Before committing or running, revert the changes in this file
+                */
+
                 // optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Username=postgres;Password=password;Database=fmbot-local;Command Timeout=60;Timeout=60;Persist Security Info=True");
 
                 optionsBuilder.UseSnakeCaseNamingConvention();

@@ -31,10 +31,6 @@ public class User
 
     public bool? MusicBotTrackingDisabled { get; set; }
 
-    public FmEmbedType FmEmbedType { get; set; }
-
-    public FmFooterOption FmFooterOptions { get; set; }
-
     public ResponseMode? Mode { get; set; }
 
     public WhoKnowsResponseMode? WhoKnowsMode { get; set; }
@@ -54,6 +50,7 @@ public class User
     public string[] EmoteReactions { get; set; }
 
     public string TimeZone { get; set; }
+
     public NumberFormat? NumberFormat { get; set; }
 
     public UserDiscogs UserDiscogs { get; set; }
