@@ -12,6 +12,7 @@ service StatusHandler {
   rpc SendHeartbeat (InstanceHeartbeat) returns (InstanceOverviewReply);
   rpc SendInitialHeartbeatWithConfig (InitialHeartbeatConfig) returns (InstanceOverviewReply);
   rpc GetOverview (google.protobuf.Empty) returns (InstanceOverviewReply);
+  rpc GetStats (google.protobuf.Empty) returns (StatsReply);
 }
 
 message InstanceHeartbeat {
@@ -42,4 +43,9 @@ message InitialHeartbeatConfig {
   string instanceName = 1;
   google.protobuf.Timestamp startupTimestamp = 2;
   string discordToken = 3;
+}
+
+message StatsReply {
+  int32 registeredGuilds = 1;
+  int32 registeredUsers = 2;
 }
