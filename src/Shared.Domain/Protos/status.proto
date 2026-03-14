@@ -46,6 +46,6 @@ message InitialHeartbeatConfig {
 }
 
 message StatsReply {
-  int32 registeredGuilds = 1;
+  int32 connectedGuilds = 1;
   int32 registeredUsers = 2;
 }
