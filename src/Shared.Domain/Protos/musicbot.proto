@@ -28,6 +28,7 @@ message MusicBotScrobbleRequest {
   string albumName = 6;
   string musicBotName = 7;
   int64 discordGuildId = 8;
+  bool cleanTrackName = 9;
 }
 
 message MusicBotScrobbleReply {
