@@ -1563,51 +1563,49 @@ public class TrackBuilders
         {
             return await ScrobbleDiscogsAsync(context, response, searchValue, userTitle);
         }
+
+        var track = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue,
+            context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
+            userId: context.ContextUser.UserId, interactionId: context.InteractionId,
+            referencedMessage: context.ReferencedMessage);
+        if (track.Track == null)
+        {
+            return track.Response;
+        }
+
+        if (searchValue.Contains(" | ") && searchValue.Split(" | ").ElementAtOrDefault(2) != null)
+        {
+            track.Track.AlbumName = searchValue.Split(" | ").ElementAt(2);
+        }
+
+        var trackScrobbled = await this._dataSourceFactory.ScrobbleAsync(context.ContextUser.SessionKeyLastFm,
+            track.Track.ArtistName, track.Track.TrackName, track.Track.AlbumName);
+
+        if (trackScrobbled.Success && trackScrobbled.Content.Accepted)
+        {
+            Statistics.LastfmScrobbles.Inc();
+            response.Embed.WithTitle($"Scrobbled track for {userTitle}");
+            response.Embed.WithDescription(LastFmRepository.ResponseTrackToLinkedString(track.Track));
+        }
+        else if (trackScrobbled.Success && trackScrobbled.Content.Ignored)
+        {
+            response.Embed.WithTitle($"Last.fm ignored scrobble for {userTitle}");
+            var description = new StringBuilder();
+
+            if (!string.IsNullOrWhiteSpace(trackScrobbled.Content.IgnoreMessage))
+            {
+                description.AppendLine($"Reason: {trackScrobbled.Content.IgnoreMessage}");
+            }
+
+            description.AppendLine(LastFmRepository.ResponseTrackToLinkedString(track.Track));
+            response.Embed.WithDescription(description.ToString());
+            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+        }
         else
         {
-            var track = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue,
-                context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
-                userId: context.ContextUser.UserId, interactionId: context.InteractionId,
-                referencedMessage: context.ReferencedMessage);
-            if (track.Track == null)
-            {
-                return track.Response;
-            }
-
-            if (searchValue.Contains(" | ") && searchValue.Split(" | ").ElementAtOrDefault(2) != null)
-            {
-                track.Track.AlbumName = searchValue.Split(" | ").ElementAt(2);
-            }
-
-            var trackScrobbled = await this._dataSourceFactory.ScrobbleAsync(context.ContextUser.SessionKeyLastFm,
-                track.Track.ArtistName, track.Track.TrackName, track.Track.AlbumName);
-
-            if (trackScrobbled.Success && trackScrobbled.Content.Accepted)
-            {
-                Statistics.LastfmScrobbles.Inc();
-                response.Embed.WithTitle($"Scrobbled track for {userTitle}");
-                response.Embed.WithDescription(LastFmRepository.ResponseTrackToLinkedString(track.Track));
-            }
-            else if (trackScrobbled.Success && trackScrobbled.Content.Ignored)
-            {
-                response.Embed.WithTitle($"Last.fm ignored scrobble for {userTitle}");
-                var description = new StringBuilder();
-
-                if (!string.IsNullOrWhiteSpace(trackScrobbled.Content.IgnoreMessage))
-                {
-                    description.AppendLine($"Reason: {trackScrobbled.Content.IgnoreMessage}");
-                }
-
-                description.AppendLine(LastFmRepository.ResponseTrackToLinkedString(track.Track));
-                response.Embed.WithDescription(description.ToString());
-                response.Embed.WithColor(DiscordConstants.WarningColorOrange);
-            }
-            else
-            {
-                response.Embed.WithDescription("Something went wrong while scrobbling track :(.");
-                response.Embed.WithColor(DiscordConstants.WarningColorOrange);
-                response.CommandResponse = CommandResponse.Error;
-            }
+            response.Embed.WithDescription("Something went wrong while scrobbling track.");
+            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+            response.CommandResponse = CommandResponse.Error;
         }
 
         return response;
@@ -2044,7 +2042,7 @@ public class TrackBuilders
 
         var commandExecutedCount = await this._userService.GetCommandExecutedAmount(context.ContextUser.UserId,
             "scrobble", DateTime.UtcNow.AddMinutes(-30));
-        var maxCount = SupporterService.IsSupporter(context.ContextUser.UserType) ? 25 : 12;
+        var maxCount = SupporterService.IsSupporter(context.ContextUser.UserType) ? 50 : 25;
 
         if (commandExecutedCount > maxCount)
         {

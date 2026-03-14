@@ -319,7 +319,7 @@ public static class PlayRepository
     }
 
     public static async Task<bool> HasPlayNearTimestamp(int userId, NpgsqlConnection connection,
-        DateTime timestamp, int secondsRange = 30)
+        DateTime timestamp, int secondsRange = 60)
     {
         var start = timestamp.AddSeconds(-secondsRange);
         var end = timestamp.AddSeconds(secondsRange);
