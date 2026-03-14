@@ -80,9 +80,9 @@ public class MusicBotService
             {
                 Log.Information(
                     "BotScrobbling({botName}): Skipped scrobble for {listenerCount} users in {guildName} / {guildId} because no found track for {trackDescription}",
-                    musicBot.Name, usersInChannel.Count, context.Guild.Name, context.Guild.Id, msg.Embeds.First().Description);
+                    musicBot.Name, usersInChannel.Count, context.Guild.Name, context.Guild.Id, trackDescription);
                 this.BotScrobblingLogs.Add(new BotScrobblingLog(context.Guild.Id, DateTime.UtcNow,
-                    $"Skipped {musicBot.Name} scrobble because no found track for `{msg.Embeds.First().Description}`"));
+                    $"Skipped {musicBot.Name} scrobble because no found track for `{trackDescription}`"));
                 return;
             }
 
