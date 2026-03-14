@@ -1003,6 +1003,25 @@ public class PlayService
         return recentTracks;
     }
 
+    public async Task<bool> HasPlayNearTimestamp(int userId, DateTime timestamp, int secondsRange = 30)
+    {
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        return await PlayRepository.HasPlayNearTimestamp(userId, connection, timestamp, secondsRange);
+    }
+
+    public async Task<List<RecentTrack>> GetCachedPlaysForUser(int userId, int limit = 120)
+    {
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        var importUser = await UserRepository.GetImportUserForUserId(userId, connection);
+        var plays = await PlayRepository.GetUserPlays(userId, connection, importUser?.DataSource ?? DataSource.LastFm, limit);
+
+        return plays.Select(UserPlayToRecentTrack).ToList();
+    }
+
     private static RecentTrack UserPlayToRecentTrack(UserPlay userPlay)
     {
         return new RecentTrack

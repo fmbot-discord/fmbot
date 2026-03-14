@@ -263,4 +263,77 @@ public class TrackInteractions(
             await this.Context.HandleCommandException(e, userService);
         }
     }
+
+    [ComponentInteraction(InteractionConstants.ScrobbleFromUser)]
+    [UsernameSetRequired]
+    [UserSessionRequired]
+    public async Task ScrobbleFromUserViewAsync(string targetUserId)
+    {
+        await RespondAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
+
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+
+        try
+        {
+            var response = await trackBuilders.ScrobbleFromUserPaginatorAsync(
+                new ContextModel(this.Context, contextUser), int.Parse(targetUserId));
+
+            await this.Context.SendFollowUpResponse(interactivity, response, userService, ephemeral: true);
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.ScrobbleTrack)]
+    [UsernameSetRequired]
+    [UserSessionRequired]
+    public async Task ScrobbleFromListAsync(string targetUserId, string cacheId)
+    {
+        await RespondAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
+
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+
+        var trackRef = trackService.GetScrobbleReference(cacheId);
+        if (trackRef == null)
+        {
+            var response = new ResponseModel
+            {
+                ResponseType = ResponseType.ComponentsV2,
+            };
+            response.ComponentsContainer.WithTextDisplay("This scrobble button has expired. Please run the command again.");
+            await this.Context.SendFollowUpResponse(interactivity, response, userService, ephemeral: true);
+            return;
+        }
+
+        try
+        {
+            var context = new ContextModel(this.Context, contextUser);
+            var response = await trackBuilders.ScrobbleFromReferenceAsync(context, trackRef);
+
+            await this.Context.SendFollowUpResponse(interactivity, response, userService, ephemeral: true);
+            await this.Context.LogCommandUsedAsync(response, userService);
+
+            var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
+            if (message != null)
+            {
+                var paginatorResponse = await trackBuilders.ScrobbleFromUserPaginatorAsync(
+                    context, int.Parse(targetUserId));
+
+                if (paginatorResponse.ComponentPaginator != null)
+                {
+                    _ = interactivity.SendPaginatorAsync(
+                        paginatorResponse.ComponentPaginator.Build(),
+                        message,
+                        TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
 }

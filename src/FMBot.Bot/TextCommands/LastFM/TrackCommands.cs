@@ -189,9 +189,12 @@ public class TrackCommands(
     }
 
     [Command("scrobble", "sb")]
-    [Summary("Scrobbles a track on Last.fm.")]
-    [Examples("scrobble", "sb the less i know the better", "scrobble Loona Heart Attack",
-        "scrobble Mac DeMarco | Chamber of Reflection")]
+    [Summary("Scrobbles a track on Last.fm. You can search for a track, enter the exact name with separators, scrobble from a Discogs link, or scrobble along with another user.")]
+    [Examples("scrobble", "sb the less i know the better",
+        "scrobble Mac DeMarco | Chamber of Reflection",
+        "scrobble Mac DeMarco | Chamber of Reflection | Salad Days",
+        "sb @user", "scrobble lfm:username",
+        "scrobble https://www.discogs.com/release/...")]
     [UserSessionRequired]
     [CommandCategories(CommandCategory.Tracks)]
     public async Task ScrobbleAsync([CommandParameter(Remainder = true)] string trackValues = null)
@@ -201,11 +204,24 @@ public class TrackCommands(
 
         _ = this.Context.Channel?.TriggerTypingAsync()!;
 
-        var response = await trackBuilders.ScrobbleAsync(new ContextModel(this.Context, prfx, contextUser),
-            trackValues);
+        var userSettings = await settingService.GetUser(trackValues, contextUser, this.Context);
 
-        await this.Context.SendResponse(this.Interactivity, response, userService);
-        await this.Context.LogCommandUsedAsync(response, userService);
+        if (userSettings.DifferentUser && string.IsNullOrWhiteSpace(userSettings.NewSearchValue))
+        {
+            var response = await trackBuilders.ScrobbleFromUserAsync(
+                new ContextModel(this.Context, prfx, contextUser), userSettings);
+
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        else
+        {
+            var response = await trackBuilders.ScrobbleAsync(new ContextModel(this.Context, prfx, contextUser),
+                trackValues);
+
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
     }
 
     [Command("toptracks", "tt", "tl", "tracklist", "tracks", "trackslist", "ttracks")]

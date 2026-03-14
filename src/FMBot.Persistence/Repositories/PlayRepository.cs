@@ -318,6 +318,18 @@ public static class PlayRepository
         })).ToList();
     }
 
+    public static async Task<bool> HasPlayNearTimestamp(int userId, NpgsqlConnection connection,
+        DateTime timestamp, int secondsRange = 30)
+    {
+        var start = timestamp.AddSeconds(-secondsRange);
+        var end = timestamp.AddSeconds(secondsRange);
+
+        const string sql = "SELECT EXISTS(SELECT 1 FROM public.user_plays WHERE user_id = @userId " +
+                           "AND time_played >= @start AND time_played <= @end)";
+
+        return await connection.QueryFirstOrDefaultAsync<bool>(sql, new { userId, start, end });
+    }
+
     public static async Task SetDefaultSourceForPlays(int userId, NpgsqlConnection connection)
     {
         const string sql =

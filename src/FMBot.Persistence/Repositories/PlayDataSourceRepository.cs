@@ -154,7 +154,6 @@ public class PlayDataSourceRepository : IPlayDataSourceRepository
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
-
         return await AlbumRepository.GetAlbumPlayCountForUser(connection, artistName, albumName, user.UserId);
     }
 

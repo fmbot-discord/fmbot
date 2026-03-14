@@ -401,6 +401,8 @@ public class TrackSlashCommands(
         [SlashCommandParameter(Name = "track", Description = "The track you want to scrobble",
             AutocompleteProviderType = typeof(TrackAutoComplete))]
         string name = null,
+        [SlashCommandParameter(Name = "user", Description = "View a user's recent tracks to scrobble from")]
+        string user = null,
         [SlashCommandParameter(Name = "private", Description = "Only show response to you")]
         bool privateResponse = false)
     {
@@ -408,10 +410,22 @@ public class TrackSlashCommands(
 
         try
         {
-            var response = await trackBuilders.ScrobbleAsync(new ContextModel(this.Context, contextUser), name);
+            if (user != null)
+            {
+                var response = await trackBuilders.ScrobbleFromUserAsync(
+                    new ContextModel(this.Context, contextUser),
+                    await settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true));
 
-            await this.Context.SendResponse(this.Interactivity, response, userService, privateResponse);
-            await this.Context.LogCommandUsedAsync(response, userService);
+                await this.Context.SendResponse(this.Interactivity, response, userService, privateResponse);
+                await this.Context.LogCommandUsedAsync(response, userService);
+            }
+            else
+            {
+                var response = await trackBuilders.ScrobbleAsync(new ContextModel(this.Context, contextUser), name);
+
+                await this.Context.SendResponse(this.Interactivity, response, userService, privateResponse);
+                await this.Context.LogCommandUsedAsync(response, userService);
+            }
         }
         catch (Exception e)
         {

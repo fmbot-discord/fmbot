@@ -99,6 +99,9 @@ public static class InteractionConstants
     public const string FmTrackLove = "fm-track-love";
     public const string FmTrackUnlove = "fm-track-unlove";
 
+    public const string ScrobbleTrack = "sb-s";
+    public const string ScrobbleFromUser = "sb-u";
+
     public static class ManageAlts
     {
         public const string ManageAltsButton = "managealts";

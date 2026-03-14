@@ -80,6 +80,36 @@ public class TrackService
         this._userService = userService;
     }
 
+    public string StoreScrobbleReference(string artistName, string trackName, string albumName, DateTime? timePlayed)
+    {
+        var id = CommandContextExtensions.GenerateRandomCode();
+        this._cache.Set($"sbref-{id}", new ReferencedMusic
+        {
+            Artist = artistName,
+            Track = trackName,
+            Album = albumName,
+            TimePlayed = timePlayed
+        }, TimeSpan.FromHours(6));
+        return id;
+    }
+
+    public ReferencedMusic GetScrobbleReference(string id)
+    {
+        return this._cache.Get<ReferencedMusic>($"sbref-{id}");
+    }
+
+    public void MarkTrackAsScrobbled(int userId, string artistName, string trackName, DateTime? timePlayed)
+    {
+        var key = $"sb-done-{userId}-{artistName}-{trackName}-{timePlayed?.Ticks}";
+        this._cache.Set(key, true, TimeSpan.FromHours(6));
+    }
+
+    public bool IsTrackScrobbled(int userId, string artistName, string trackName, DateTime? timePlayed)
+    {
+        var key = $"sb-done-{userId}-{artistName}-{trackName}-{timePlayed?.Ticks}";
+        return this._cache.TryGetValue(key, out _);
+    }
+
     public async Task<TrackSearch> SearchTrack(ResponseModel response, NetCord.User discordUser, string trackValues,
         string lastFmUserName, string sessionKey = null, string otherUserUsername = null, bool useCachedTracks = false,
         int? userId = null, ulong? interactionId = null, RestMessage referencedMessage = null)
