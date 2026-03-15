@@ -20,11 +20,11 @@ public static class ObservableExtensions
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex, "Error occured in subscription OnNext");
+                    Log.Error(ex, "Error occurred in subscription OnNext");
                 }
             }, ex =>
             {
-                Log.Error(ex, "Error occured in subscription OnNext");
+                Log.Error(ex, "Error occurred in subscription OnNext");
             });
     }
 }

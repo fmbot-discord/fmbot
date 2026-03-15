@@ -145,7 +145,7 @@ public class WhoKnowsFilterService
                 var consecutiveViolations = 1;
                 var lastViolationDate = allViolations[0].Created;
 
-                // Check if at least 3 violations occured with at least 4 weeks between each violation
+                // Check if at least 3 violations occurred with at least 4 weeks between each violation
                 for (var i = 1; i < allViolations.Count; i++)
                 {
                     var currentViolation = allViolations[i];

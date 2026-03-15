@@ -152,7 +152,7 @@ public class PlaySlashCommands(
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Channel.Id, new MessageProperties
                 {
                     Content =
-                        "Could not add automatic emoji reactions to `/fm`. Make sure the emojis still exist, the bot is the same server as where the emojis come from and the bot has permission to `Add Reactions`."
+                        "Could not add automatic emoji reactions to `/fm`. Make sure the emojis still exist, the bot is in the same server as where the emojis come from and the bot has permission to `Add Reactions`."
                 });
             }
         }

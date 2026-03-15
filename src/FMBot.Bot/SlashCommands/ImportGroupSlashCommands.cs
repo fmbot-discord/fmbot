@@ -281,7 +281,7 @@ public class ImportGroupSlashCommands(
         catch (Exception e)
         {
             await UpdateSpotifyImportEmbed(message.Id, this.Context.Interaction, embed, description,
-                $"- ❌ Sorry, an internal error occured. Please try again later, or open a help thread on [our server](https://discord.gg/fmbot).",
+                $"- ❌ Sorry, an internal error occurred. Please try again later, or open a help thread on [our server](https://discord.gg/fmbot).",
                 true);
             await this.Context.HandleCommandException(e, userService, sendReply: false);
         }
@@ -474,7 +474,7 @@ public class ImportGroupSlashCommands(
         catch (Exception e)
         {
             await UpdateAppleMusicImportEmbed(message.Id, this.Context.Interaction, embed, description,
-                $"- ❌ Sorry, an internal error occured. Please try again later, or open a help thread on [our server](https://discord.gg/fmbot).",
+                $"- ❌ Sorry, an internal error occurred. Please try again later, or open a help thread on [our server](https://discord.gg/fmbot).",
                 true);
             await this.Context.HandleCommandException(e, userService, sendReply: false);
         }

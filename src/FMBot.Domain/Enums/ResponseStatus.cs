@@ -35,7 +35,7 @@ public enum ResponseStatus
     BadResource = 7,
 
     /// <summary>
-    /// An unknown failure occured when creating the response (8)
+    /// An unknown failure occurred when creating the response (8)
     /// </summary>
     Failure = 8,
 
@@ -104,7 +104,7 @@ public enum ResponseStatus
     RateLimited = 29,
 
     /// <summary>
-    /// The server encountered a temporary error and could not complete your request.Please try again in 30 seconds.
+    /// The server encountered a temporary error and could not complete your request. Please try again in 30 seconds.
     /// </summary>
     TemporaryError = 30
 }
