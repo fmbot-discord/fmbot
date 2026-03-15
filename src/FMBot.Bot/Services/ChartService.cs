@@ -487,7 +487,7 @@ public class ChartService
         Color? primaryColor = null;
         if (chart.RainbowSortingEnabled)
         {
-            primaryColor = chartImage.GetDominantColor();
+            primaryColor = chartImage.GetAccentColor();
         }
 
         chart.ChartImages.Add(new ChartImage(chartImage, index, validImage, primaryColor, nsfw, censored));

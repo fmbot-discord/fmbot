@@ -577,8 +577,8 @@ public class AlbumService
             using var bitmap = SKBitmap.Decode(cachePath);
             if (bitmap != null)
             {
-                var avgColor = bitmap.GetAverageRgbColor();
-                return new Color(avgColor.R, avgColor.G, avgColor.B);
+                var accentColor = bitmap.GetAccentColor();
+                return new Color(accentColor.R, accentColor.G, accentColor.B);
             }
         }
 
@@ -621,8 +621,8 @@ public class AlbumService
                     await ChartService.OverwriteCache(cacheStream, cachePath);
                     await cacheStream.DisposeAsync();
 
-                    var avgColor = bitmap.GetAverageRgbColor();
-                    return new Color(avgColor.R, avgColor.G, avgColor.B);
+                    var accentColor = bitmap.GetAccentColor();
+                    return new Color(accentColor.R, accentColor.G, accentColor.B);
                 }
 
                 await cacheStream.DisposeAsync();
