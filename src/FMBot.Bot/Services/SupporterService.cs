@@ -803,24 +803,46 @@ public class SupporterService
             supporter.Name);
         if (supporter.DiscordUserId.HasValue)
         {
-            var user = await db.Users
-                .AsQueryable()
-                .FirstOrDefaultAsync(f => f.DiscordUserId == supporter.DiscordUserId);
+            var otherActiveSupporter = await db.Supporters
+                .FirstOrDefaultAsync(w =>
+                    w.DiscordUserId == supporter.DiscordUserId.Value &&
+                    w.SupporterId != supporter.SupporterId &&
+                    w.Expired != true);
 
-            if (user != null)
+            var activeStripeSupporter = await db.StripeSupporters
+                .FirstOrDefaultAsync(w =>
+                    (w.PurchaserDiscordUserId == supporter.DiscordUserId.Value ||
+                     w.GiftReceiverDiscordUserId == supporter.DiscordUserId.Value) &&
+                    !w.EntitlementDeleted &&
+                    (!w.DateEnding.HasValue || w.DateEnding > DateTime.UtcNow));
+
+            if (otherActiveSupporter != null || activeStripeSupporter != null)
             {
-                user.UserType = UserType.User;
+                Log.Information(
+                    "Expiring OpenCollective supporter without removing supporter status - has other active subscription - {discordUserId}",
+                    supporter.DiscordUserId);
+            }
+            else
+            {
+                var user = await db.Users
+                    .AsQueryable()
+                    .FirstOrDefaultAsync(f => f.DiscordUserId == supporter.DiscordUserId);
 
-                if (user.DataSource != DataSource.LastFm)
+                if (user != null)
                 {
-                    user.DataSource = DataSource.LastFm;
-                    _ = this._indexService.RecalculateTopLists(user);
+                    user.UserType = UserType.User;
+
+                    if (user.DataSource != DataSource.LastFm)
+                    {
+                        user.DataSource = DataSource.LastFm;
+                        _ = this._indexService.RecalculateTopLists(user);
+                    }
+
+                    db.Update(user);
+
+                    Log.Information("Removed supporter status from Discord account {discordUserId} - {lastFmUsername}",
+                        user.DiscordUserId, user.UserNameLastFM);
                 }
-
-                db.Update(user);
-
-                Log.Information("Removed supporter status from Discord account {discordUserId} - {lastFmUsername}",
-                    user.DiscordUserId, user.UserNameLastFM);
             }
         }
 
@@ -1520,6 +1542,28 @@ public class SupporterService
             return true;
         }
 
+        var activeStripeSupporter = await db.StripeSupporters
+            .FirstOrDefaultAsync(w =>
+                (w.PurchaserDiscordUserId == existingSupporter.DiscordUserId.Value ||
+                 w.GiftReceiverDiscordUserId == existingSupporter.DiscordUserId.Value) &&
+                !w.EntitlementDeleted &&
+                (!w.DateEnding.HasValue || w.DateEnding > DateTime.UtcNow));
+
+        if (activeStripeSupporter != null)
+        {
+            Log.Information("Not removing Discord supporter because active Stripe purchase - {discordUserId}",
+                discordSupporter.DiscordUserId);
+
+            var notCancellingEmbed = new EmbedProperties().WithDescription(
+                $"Prevented removal of Discord supporter who also has active Stripe purchase (source: {activeStripeSupporter.PurchaseSource})\n" +
+                $"{discordSupporter.DiscordUserId} - <@{discordSupporter.DiscordUserId}>");
+            await supporterAuditLogChannel.ExecuteAsync(new WebhookMessageProperties { Embeds = [notCancellingEmbed] });
+
+            await ExpireSupporter(discordSupporter.DiscordUserId, existingSupporter, false);
+
+            return true;
+        }
+
         return false;
     }
 
@@ -1669,28 +1713,49 @@ public class SupporterService
 
             if (otherSupporterSubscription == null && existingSupporter != null)
             {
-                Log.Information("Removing Stripe supporter {discordUserId}", discordUserId);
+                var otherActiveStripeSupporter = await db.StripeSupporters
+                    .FirstOrDefaultAsync(w =>
+                        w.Id != existingStripeSupporter.Id &&
+                        (w.PurchaserDiscordUserId == discordUserId ||
+                         w.GiftReceiverDiscordUserId == discordUserId) &&
+                        !w.EntitlementDeleted &&
+                        (!w.DateEnding.HasValue || w.DateEnding > DateTime.UtcNow));
 
-                var fmbotUser = await
-                    db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
-
-                var hadImported = fmbotUser != null && fmbotUser.DataSource != DataSource.LastFm;
-
-                await ExpireSupporter(discordUserId, existingSupporter);
-                await ModifyGuildRole(discordUserId, false);
-                await RunFullUpdate(discordUserId);
-
-                var user = await this._client.Rest.GetUserAsync(discordUserId);
-                if (user != null)
+                if (otherActiveStripeSupporter != null)
                 {
-                    await SendSupporterGoodbyeMessage(user, hadImported);
+                    Log.Information("Not removing Stripe supporter because another active Stripe purchase exists - {discordUserId}",
+                        discordUserId);
+
+                    var notCancellingEmbed = new EmbedProperties().WithDescription(
+                        $"Prevented removal of Stripe supporter who also has another active Stripe purchase (source: {otherActiveStripeSupporter.PurchaseSource})\n" +
+                        $"{discordUserId} - <@{discordUserId}>");
+                    await supporterAuditLogChannel.ExecuteAsync(new WebhookMessageProperties { Embeds = [notCancellingEmbed] });
                 }
+                else
+                {
+                    Log.Information("Removing Stripe supporter {discordUserId}", discordUserId);
 
-                var embed = new EmbedProperties().WithDescription(
-                    $"Removed Stripe supporter {discordUserId} - <@{discordUserId}>");
-                await supporterAuditLogChannel.ExecuteAsync(new WebhookMessageProperties { Embeds = [embed] });
+                    var fmbotUser = await
+                        db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
 
-                Log.Information("Removed Stripe supporter {discordUserId}", discordUserId);
+                    var hadImported = fmbotUser != null && fmbotUser.DataSource != DataSource.LastFm;
+
+                    await ExpireSupporter(discordUserId, existingSupporter);
+                    await ModifyGuildRole(discordUserId, false);
+                    await RunFullUpdate(discordUserId);
+
+                    var user = await this._client.Rest.GetUserAsync(discordUserId);
+                    if (user != null)
+                    {
+                        await SendSupporterGoodbyeMessage(user, hadImported);
+                    }
+
+                    var embed = new EmbedProperties().WithDescription(
+                        $"Removed Stripe supporter {discordUserId} - <@{discordUserId}>");
+                    await supporterAuditLogChannel.ExecuteAsync(new WebhookMessageProperties { Embeds = [embed] });
+
+                    Log.Information("Removed Stripe supporter {discordUserId}", discordUserId);
+                }
             }
             else if (otherSupporterSubscription != null)
             {
