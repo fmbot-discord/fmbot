@@ -2176,7 +2176,7 @@ public class ArtistBuilders
             OwnName = ownName,
             OtherName = otherName,
             Url = url,
-            TimePeriod = timeSettings.TimePeriod,
+            TimeDescription = timeSettings.Description,
             OwnTopArtists = ownTopArtists,
             OtherTopArtists = otherTopArtists,
         };
@@ -2259,7 +2259,7 @@ public class ArtistBuilders
         var sanitizedOtherName = StringExtensions.Sanitize(raw.OtherName);
 
         var artistTaste = artistsService.GetTableTaste(raw.OwnTopArtists, raw.OtherTopArtists, amount,
-            raw.TimePeriod, raw.OwnUsername, raw.OtherUsername, "Artist");
+            raw.TimeDescription, raw.OwnUsername, raw.OtherUsername, "Artist");
         pages.Add(new TastePageData
         {
             Label = "Artists",
@@ -2271,7 +2271,7 @@ public class ArtistBuilders
         if (raw.OwnTopGenres != null && raw.OtherTopGenres != null)
         {
             var genreTaste = artistsService.GetTableTaste(raw.OwnTopGenres, raw.OtherTopGenres, amount,
-                raw.TimePeriod, raw.OwnUsername, raw.OtherUsername, "Genre");
+                raw.TimeDescription, raw.OwnUsername, raw.OtherUsername, "Genre");
             pages.Add(new TastePageData
             {
                 Label = "Genres",
@@ -2284,7 +2284,7 @@ public class ArtistBuilders
         if (raw.OwnTopCountries != null && raw.OtherTopCountries != null)
         {
             var countryTaste = artistsService.GetTableTaste(raw.OwnTopCountries, raw.OtherTopCountries, amount,
-                raw.TimePeriod, raw.OwnUsername, raw.OtherUsername, "Country");
+                raw.TimeDescription, raw.OwnUsername, raw.OtherUsername, "Country");
             pages.Add(new TastePageData
             {
                 Label = "Countries",
@@ -2297,7 +2297,7 @@ public class ArtistBuilders
         if (raw.OwnDiscogsArtists != null && raw.OtherDiscogsArtists != null)
         {
             var discogsTaste = artistsService.GetTableTaste(raw.OwnDiscogsArtists, raw.OtherDiscogsArtists, amount,
-                raw.TimePeriod, raw.DiscogsOwnUsername, raw.DiscogsOtherUsername, "Artist");
+                raw.TimeDescription, raw.DiscogsOwnUsername, raw.DiscogsOtherUsername, "Artist");
             pages.Add(new TastePageData
             {
                 Label = "Discogs",
@@ -2329,7 +2329,6 @@ public class ArtistBuilders
 
         container.WithTextDisplay($"### [{page.Title}]({page.Url})");
         container.WithTextDisplay(page.Content);
-        container.WithSeparator();
 
         var tabRow = new ActionRowProperties();
         for (var i = 0; i < pages.Count; i++)
@@ -2432,7 +2431,7 @@ public class ArtistBuilders
             OwnName = ownName,
             OtherName = otherName,
             Url = url,
-            TimePeriod = timePeriod,
+            TimeDescription = timeSettings.Description,
             OwnTopArtists = ownArtists.Content.TopArtists.Select(s => new TasteItem(s.ArtistName, s.UserPlaycount)).ToList(),
             OtherTopArtists = otherArtists.Content.TopArtists.Select(s => new TasteItem(s.ArtistName, s.UserPlaycount)).ToList(),
         };

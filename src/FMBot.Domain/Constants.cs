@@ -18,7 +18,7 @@ public static class Constants
 
     public const string DocsUrl = "https://fm.bot/";
 
-    public const string CompactTimePeriodList = "weekly/monthly/quarterly/half/yearly/alltime";
+    public const string CompactTimePeriodList = "weekly/monthly/quarterly/half/yearly/two-year/alltime";
 
     public const string UserMentionExample = "`@usermention` / `lfm:fm-bot` / `356268235697553409`";
 

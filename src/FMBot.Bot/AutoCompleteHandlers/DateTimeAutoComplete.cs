@@ -59,6 +59,7 @@ public class DateTimeAutoComplete : IAutocompleteProvider<AutocompleteInteractio
                     DateTime.UtcNow.ToString("yyyy", CultureInfo.InvariantCulture),
                     "Quarterly",
                     "Half-yearly",
+                    "Two-yearly",
                     DateTime.UtcNow.ToString("MMM", CultureInfo.InvariantCulture) + " " + DateTime.UtcNow.AddYears(-1).ToString("yyyy", CultureInfo.InvariantCulture)
                 });
         }

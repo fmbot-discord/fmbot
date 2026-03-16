@@ -403,7 +403,7 @@ public class ArtistSlashCommands(
 
         try
         {
-            var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.AllTime, timeZone: userSettings.TimeZone);
+            var timeSettings = SettingService.GetTimePeriod(timePeriod ?? "two-year", timeZone: userSettings.TimeZone);
 
             var response = await artistBuilders.TasteAsync(new ContextModel(this.Context, contextUser),
                 new TasteSettings { TasteType = tasteType, EmbedSize = embedSize ?? EmbedSize.Default }, timeSettings, userSettings);

@@ -347,8 +347,7 @@ public class ArtistCommands(
                 firstOptionIsLfmUsername: true);
 
         var timeSettings = SettingService.GetTimePeriod(
-            otherUser.NewSearchValue,
-            TimePeriod.AllTime,
+            string.IsNullOrWhiteSpace(otherUser.NewSearchValue) ? "two-year" : otherUser.NewSearchValue,
             timeZone: userSettings.TimeZone);
 
         var tasteSettings = new TasteSettings

@@ -133,6 +133,7 @@ public class SettingService
         var quarterly = new[] { "quarterly", "quarter", "q", "3m", "90d" };
         var halfYearly = new[] { "half-yearly", "halfyearly", "half", "h", "6m", "180d" };
         var yearly = new[] { "yearly", "year", "y", "12m", "365d", "1y" };
+        var twoYear = new[] { "two-year", "twoyear", "two-yearly", "twoyearly", "2y", "2year", "24m", "730d" };
         var allTime = new[] { "overall", "alltime", "all-time", "all", "a", "o", "at" };
 
         if (Contains(options, weekly))
@@ -189,6 +190,18 @@ public class SettingService
             settingsModel.UrlParameter = "date_preset=LAST_365_DAYS";
             settingsModel.ApiParameter = "12month";
             settingsModel.PlayDays = 365;
+        }
+        else if (Contains(options, twoYear) && !cachedOrAllTimeOnly)
+        {
+            settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, twoYear);
+            var dateString = localTime.AddDays(-729).ToString("yyyy-M-dd");
+            settingsModel.Description = "Two-year";
+            settingsModel.AltDescription = "last two years";
+            settingsModel.UrlParameter = $"from={dateString}";
+            settingsModel.UsePlays = true;
+            settingsModel.UseCustomTimePeriod = true;
+            settingsModel.PlayDays = 730;
+            settingsModel.StartDateTime = localMidnightInUtc.AddDays(-729);
         }
         else if (Contains(options, allTime))
         {

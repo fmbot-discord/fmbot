@@ -302,7 +302,7 @@ public class ArtistsService
 
     // Top artists for 2 users
     public TasteModels GetEmbedTaste(ICollection<TasteItem> leftUserArtists,
-        ICollection<TasteItem> rightUserArtists, int amount, TimePeriod timePeriod)
+        ICollection<TasteItem> rightUserArtists, int amount, string timeDescription)
     {
         var matchedArtists = ArtistsToShow(leftUserArtists, rightUserArtists);
 
@@ -346,7 +346,7 @@ public class ArtistsService
             right += $"\n";
         }
 
-        var description = Description(leftUserArtists, timePeriod, matchedArtists);
+        var description = Description(leftUserArtists, timeDescription, matchedArtists);
 
         return new TasteModels
         {
@@ -414,7 +414,7 @@ public class ArtistsService
     // Top artists for 2 users
     public (string result, int matches) GetTableTaste(IReadOnlyCollection<TasteItem> leftUserArtists,
         IReadOnlyCollection<TasteItem> rightUserArtists,
-        int amount, TimePeriod timePeriod, string mainUser, string userToCompare, string type)
+        int amount, string timeDescription, string mainUser, string userToCompare, string type)
     {
         var artistsToShow = ArtistsToShow(leftUserArtists, rightUserArtists);
 
@@ -439,7 +439,7 @@ public class ArtistsService
         }).ToList();
 
         var description = new StringBuilder();
-        description.AppendLine($"{Description(leftUserArtists, timePeriod, artistsToShow)}");
+        description.AppendLine($"{Description(leftUserArtists, timeDescription, artistsToShow)}");
 
         var filterAmount = 0;
         for (var i = 0; i < 100; i++)
@@ -475,7 +475,7 @@ public class ArtistsService
         return (description.ToString(), artistsToShow.Count);
     }
 
-    private static string Description(IEnumerable<TasteItem> mainUserArtists, TimePeriod chartTimePeriod,
+    private static string Description(IEnumerable<TasteItem> mainUserArtists, string timeDescription,
         IReadOnlyCollection<TasteItem> matchedArtists)
     {
         decimal percentage;
@@ -490,7 +490,7 @@ public class ArtistsService
         }
 
         var description =
-            $"**{matchedArtists.Count()}** ({percentage:0.0}%)  out of top **{mainUserArtists.Count()}** {chartTimePeriod.ToString().ToLower()} match";
+            $"**{matchedArtists.Count()}** ({percentage:0.0}%) out of top **{mainUserArtists.Count()}** {timeDescription.ToLower()} match";
 
         return description;
     }

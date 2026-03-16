@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using FMBot.Domain.Enums;
-using FMBot.Domain.Models;
 using NetCord;
 
 namespace FMBot.Bot.Models;
@@ -73,7 +72,7 @@ public class TasteRawData
     public string OwnName { get; set; }
     public string OtherName { get; set; }
     public string Url { get; set; }
-    public TimePeriod TimePeriod { get; set; }
+    public string TimeDescription { get; set; }
 
     public List<TasteItem> OwnTopArtists { get; set; }
     public List<TasteItem> OtherTopArtists { get; set; }
