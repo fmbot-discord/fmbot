@@ -927,11 +927,6 @@ public class UserBuilder
                                 description.AppendLine();
                                 description.AppendLine(
                                     $"Become an [.fmbot supporter]({Constants.GetSupporterDiscordLink}) and get a higher chance every Supporter Sunday. The next Supporter Sunday is in {nextSupporterSunday} {StringExtensions.GetDaysString(nextSupporterSunday)} (first Sunday of each month).");
-
-                                container.WithActionRow(new ActionRowProperties().WithButton(Constants.GetSupporterButton,
-                                    style: ButtonStyle.Secondary,
-                                    customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(
-                                        source: "featured-supportersunday")));
                             }
                         }
                         else
@@ -956,6 +951,15 @@ public class UserBuilder
                 {
                     container.WithSeparator();
                     container.WithTextDisplay($"{footer.ToString().TrimEnd()}");
+                }
+
+                if (view == FeaturedView.User && !userSettings.DifferentUser &&
+                    !SupporterService.IsSupporter(context.ContextUser.UserType))
+                {
+                    container.WithActionRow(new ActionRowProperties().WithButton(Constants.GetSupporterButton,
+                        style: ButtonStyle.Secondary,
+                        customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(
+                            source: "featured-supportersunday")));
                 }
             }
             else
