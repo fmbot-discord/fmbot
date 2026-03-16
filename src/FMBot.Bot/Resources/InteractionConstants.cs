@@ -121,6 +121,11 @@ public static class InteractionConstants
         public const string CreateModal = "shortcut-createmodal";
     }
 
+    public static class Taste
+    {
+        public const string Tab = "taste-tab";
+    }
+
     public static class Artist
     {
         public const string Info = "artist-info";

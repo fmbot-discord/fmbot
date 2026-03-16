@@ -1,5 +1,6 @@
-
+using System.Collections.Generic;
 using FMBot.Domain.Enums;
+using FMBot.Domain.Models;
 using NetCord;
 
 namespace FMBot.Bot.Models;
@@ -48,4 +49,41 @@ public enum TasteType
     Table = 2
 }
 
-public sealed record Item(string Name, EmojiProperties Emote);
+public class TasteCacheModel
+{
+    public List<TastePageData> Pages { get; set; } = [];
+    public Color AccentColor { get; set; }
+    public int Amount { get; set; }
+
+    public TasteRawData RawData { get; set; }
+}
+
+public class TastePageData
+{
+    public string Label { get; set; }
+    public string Title { get; set; }
+    public string Content { get; set; }
+    public string Url { get; set; }
+}
+
+public class TasteRawData
+{
+    public string OwnUsername { get; set; }
+    public string OtherUsername { get; set; }
+    public string OwnName { get; set; }
+    public string OtherName { get; set; }
+    public string Url { get; set; }
+    public TimePeriod TimePeriod { get; set; }
+
+    public List<TasteItem> OwnTopArtists { get; set; }
+    public List<TasteItem> OtherTopArtists { get; set; }
+    public List<TasteItem> OwnTopGenres { get; set; }
+    public List<TasteItem> OtherTopGenres { get; set; }
+    public List<TasteItem> OwnTopCountries { get; set; }
+    public List<TasteItem> OtherTopCountries { get; set; }
+    public List<TasteItem> OwnDiscogsArtists { get; set; }
+    public List<TasteItem> OtherDiscogsArtists { get; set; }
+    public string DiscogsOwnUsername { get; set; }
+    public string DiscogsOtherUsername { get; set; }
+    public string DiscogsUrl { get; set; }
+}

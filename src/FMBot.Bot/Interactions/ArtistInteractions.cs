@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Fergun.Interactive;
@@ -9,9 +8,8 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
-using FMBot.Domain.Enums;
-using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
+using Microsoft.Extensions.Caching.Memory;
 using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ComponentInteractions;
@@ -24,7 +22,8 @@ public class ArtistInteractions(
     SettingService settingService,
     ArtistsService artistsService,
     InteractiveService interactivity,
-    FmSettingService fmSettingService)
+    FmSettingService fmSettingService,
+    IMemoryCache cache)
     : ComponentInteractionModule<ComponentInteractionContext>
 {
     [ComponentInteraction(InteractionConstants.Artist.Info)]
@@ -208,6 +207,53 @@ public class ArtistInteractions(
 
             await this.Context.UpdateInteractionEmbed(response, defer: false);
             await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.Taste.Tab)]
+    public async Task TasteTabAsync(string cacheKey, string pageIndexStr,
+        string ownDiscordIdStr, string otherDiscordIdStr, string timePeriodStr, string amountStr)
+    {
+        try
+        {
+            if (!int.TryParse(pageIndexStr, out var pageIndex) ||
+                !ulong.TryParse(ownDiscordIdStr, out var ownDiscordId) ||
+                !ulong.TryParse(otherDiscordIdStr, out var otherDiscordId) ||
+                !int.TryParse(timePeriodStr, out var timePeriodInt) ||
+                !int.TryParse(amountStr, out var amount))
+            {
+                return;
+            }
+
+            if (cache.TryGetValue($"taste-{cacheKey}", out TasteCacheModel cacheModel))
+            {
+                artistBuilders.SwitchTasteAmount(cacheModel, amount);
+
+                var response = new ResponseModel
+                {
+                    ResponseType = ResponseType.ComponentsV2
+                };
+
+                ArtistBuilders.BuildTastePage(response, cacheModel, pageIndex, cacheKey,
+                    ownDiscordId, otherDiscordId, timePeriodInt, amount);
+
+                await this.Context.UpdateInteractionEmbed(response);
+                return;
+            }
+
+            await RespondAsync(InteractionCallback.DeferredModifyMessage);
+            await this.Context.DisableButtonsAndMenus();
+
+            var rebuildResponse = await artistBuilders.RebuildTasteAsync(
+                ownDiscordId, otherDiscordId,
+                (TimePeriod)timePeriodInt, amount,
+                pageIndex, this.Context.Guild);
+
+            await this.Context.UpdateInteractionEmbed(rebuildResponse, defer: false);
         }
         catch (Exception e)
         {

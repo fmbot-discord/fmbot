@@ -26,6 +26,7 @@ using FMBot.Domain.Models;
 using FMBot.Images.Generators;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
+using Microsoft.Extensions.Caching.Memory;
 using NetCord;
 using NetCord.Gateway;
 using DiscordGuild = NetCord.Gateway.Guild;
@@ -59,6 +60,7 @@ public class ArtistBuilders
     private readonly FeaturedService _featuredService;
     private readonly MusicDataFactory _musicDataFactory;
     private readonly ShardedGatewayClient _client;
+    private readonly IMemoryCache _cache;
 
 
     public ArtistBuilders(ArtistsService artistsService,
@@ -80,7 +82,9 @@ public class ArtistBuilders
         DiscogsService discogsService,
         CensorService censorService,
         FeaturedService featuredService,
-        MusicDataFactory musicDataFactory, ShardedGatewayClient client)
+        MusicDataFactory musicDataFactory,
+        ShardedGatewayClient client,
+        IMemoryCache cache)
     {
         this._artistsService = artistsService;
         this._dataSourceFactory = dataSourceFactory;
@@ -103,6 +107,7 @@ public class ArtistBuilders
         this._featuredService = featuredService;
         this._musicDataFactory = musicDataFactory;
         this._client = client;
+        this._cache = cache;
     }
 
     public async Task<ResponseModel> ArtistInfoAsync(ContextModel context,
@@ -2056,7 +2061,7 @@ public class ArtistBuilders
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Paginator,
+            ResponseType = ResponseType.ComponentsV2,
         };
 
         var ownLastFmUsername = context.ContextUser.UserNameLastFM;
@@ -2138,7 +2143,6 @@ public class ArtistBuilders
             return response;
         }
 
-
         var amount = tasteSettings.EmbedSize switch
         {
             EmbedSize.Default => 14,
@@ -2146,7 +2150,6 @@ public class ArtistBuilders
             EmbedSize.Large => 28,
             _ => 14
         };
-        var pages = new List<PageBuilder>();
 
         var url = LastfmUrlExtensions.GetUserUrl(lastfmToCompare, $"/library/artists?{timeSettings.UrlParameter}");
 
@@ -2163,128 +2166,31 @@ public class ArtistBuilders
         var otherTopArtists =
             otherArtists.Content.TopArtists.Select(s => new TasteItem(s.ArtistName, s.UserPlaycount)).ToList();
 
-        var ownTopGenres = await this._genreService.GetTopGenresForTopArtists(ownArtists.Content.TopArtists);
-        var otherTopGenres = await this._genreService.GetTopGenresForTopArtists(otherArtists.Content.TopArtists);
-
-        var ownTopCountries =
-            await this._countryService.GetTopCountriesForTopArtists(ownArtists.Content.TopArtists, true);
-        var otherTopCountries =
-            await this._countryService.GetTopCountriesForTopArtists(otherArtists.Content.TopArtists, true);
-
         var ownWithDiscogs = await this._userService.GetUserWithDiscogs(context.ContextUser.DiscordUserId);
         var otherWithDiscogs = await this._userService.GetUserWithDiscogs(userSettings.DiscordUserId);
-        var willCreateDiscogsPage = ownWithDiscogs.UserDiscogs != null && otherWithDiscogs.UserDiscogs != null;
 
-        var artistPage = new PageBuilder();
-        artistPage.WithTitle(
-            $"Top artist comparison - {StringExtensions.Sanitize(ownName)} vs {StringExtensions.Sanitize(otherName)}");
-        artistPage.WithUrl(url);
-
-        if (tasteSettings.TasteType == TasteType.FullEmbed)
+        var rawData = new TasteRawData
         {
-            var taste = this._artistsService.GetEmbedTaste(ownTopArtists, otherTopArtists, amount,
-                timeSettings.TimePeriod);
+            OwnUsername = ownLastFmUsername,
+            OtherUsername = lastfmToCompare,
+            OwnName = ownName,
+            OtherName = otherName,
+            Url = url,
+            TimePeriod = timeSettings.TimePeriod,
+            OwnTopArtists = ownTopArtists,
+            OtherTopArtists = otherTopArtists,
+        };
 
-            artistPage.WithDescription(taste.Description);
-            artistPage.AddField("Artist", taste.LeftDescription, true);
-            artistPage.AddField("Plays", taste.RightDescription, true);
-        }
-        else
+        await EnrichTasteRawDataAsync(rawData, ownArtists.Content.TopArtists, otherArtists.Content.TopArtists,
+            ownWithDiscogs, otherWithDiscogs);
+
+        var cacheModel = new TasteCacheModel
         {
-            var taste = this._artistsService.GetTableTaste(ownTopArtists, otherTopArtists, amount,
-                timeSettings.TimePeriod, ownLastFmUsername, lastfmToCompare, "Artist");
-
-            artistPage.WithDescription(taste.result);
-            artistPage.WithColor(DiscordConstants.LastFmColorRed);
-            artistPage.WithFooter("➡️ Genres");
-        }
-
-        pages.Add(artistPage);
-
-        if (ownTopGenres.Any() && otherTopGenres.Any())
-        {
-            var genrePage = new PageBuilder();
-            genrePage.WithTitle(
-                $"Top genre comparison - {StringExtensions.Sanitize(ownName)} vs {StringExtensions.Sanitize(otherName)}");
-            genrePage.WithUrl(url);
-
-            var ownTopGenresTaste =
-                ownTopGenres.Select(s => new TasteItem(s.GenreName, s.UserPlaycount.Value)).ToList();
-            var otherTopGenresTaste =
-                otherTopGenres.Select(s => new TasteItem(s.GenreName, s.UserPlaycount.Value)).ToList();
-
-            var taste = this._artistsService.GetTableTaste(ownTopGenresTaste, otherTopGenresTaste, amount,
-                timeSettings.TimePeriod, ownLastFmUsername, lastfmToCompare, "Genre");
-
-            genrePage.WithDescription(taste.result);
-            genrePage.WithColor(DiscordConstants.LastFmColorRed);
-            genrePage.WithFooter("⬅️ Artists\n" +
-                                 "➡️ Countries");
-
-            pages.Add(genrePage);
-        }
-
-        if (ownTopCountries.Any() && otherTopCountries.Any())
-        {
-            var countryPage = new PageBuilder();
-            countryPage.WithTitle(
-                $"Top country comparison - {StringExtensions.Sanitize(ownName)} vs {StringExtensions.Sanitize(otherName)}");
-            countryPage.WithUrl(url);
-
-            var ownTopCountriesTaste =
-                ownTopCountries.Select(s => new TasteItem(s.CountryName, s.UserPlaycount.Value)).ToList();
-            var otherTopCountriesTaste =
-                otherTopCountries.Select(s => new TasteItem(s.CountryName, s.UserPlaycount.Value)).ToList();
-
-            var taste = this._artistsService.GetTableTaste(ownTopCountriesTaste, otherTopCountriesTaste, amount,
-                timeSettings.TimePeriod, ownLastFmUsername, lastfmToCompare, "Country");
-
-            countryPage.WithDescription(taste.result);
-
-            if (willCreateDiscogsPage)
-            {
-                countryPage.WithFooter("⬅️ Genres\n" +
-                                       "➡️ Discogs");
-            }
-            else
-            {
-                countryPage.WithFooter("⬅️ Genres");
-            }
-
-            countryPage.WithColor(DiscordConstants.LastFmColorRed);
-            pages.Add(countryPage);
-        }
-
-        if (willCreateDiscogsPage)
-        {
-            var discogsPage = new PageBuilder();
-            discogsPage.WithTitle(
-                $"Top Discogs comparison - {StringExtensions.Sanitize(ownName)} vs {StringExtensions.Sanitize(otherName)}");
-            discogsPage.WithUrl($"{Constants.DiscogsUserUrl}{otherWithDiscogs.UserDiscogs.Username}/collection");
-
-            var ownReleases = await this._discogsService.GetUserCollection(ownWithDiscogs.UserId);
-            var otherReleases = await this._discogsService.GetUserCollection(otherWithDiscogs.UserId);
-
-            var ownTopArtistsTaste = ownReleases.GroupBy(s => s.Release.Artist)
-                .Select(g => new TasteItem(g.Key, g.Count())).ToList();
-            var otherTopArtistsTaste = otherReleases.GroupBy(s => s.Release.Artist)
-                .Select(g => new TasteItem(g.Key, g.Count())).ToList();
-
-            var taste = this._artistsService.GetTableTaste(
-                ownTopArtistsTaste,
-                otherTopArtistsTaste,
-                amount,
-                timeSettings.TimePeriod,
-                ownWithDiscogs.UserDiscogs.Username,
-                otherWithDiscogs.UserDiscogs.Username,
-                "Artist");
-
-            discogsPage.WithDescription(taste.result);
-            discogsPage.WithFooter($"⬅️ Countries");
-            discogsPage.WithColor(DiscordConstants.LastFmColorRed);
-
-            pages.Add(discogsPage);
-        }
+            AccentColor = await UserService.GetAccentColor(context.ContextUser, context.DiscordGuild),
+            Amount = amount,
+            RawData = rawData,
+            Pages = BuildTastePages(this._artistsService, rawData, amount)
+        };
 
         if (timeSettings.TimePeriod == TimePeriod.AllTime)
         {
@@ -2292,7 +2198,261 @@ public class ArtistBuilders
                 this._smallIndexRepository.UpdateUserArtists(context.ContextUser, ownArtists.Content.TopArtists));
         }
 
-        response.ComponentPaginator = StringService.BuildSimpleComponentPaginator(pages);
+        var cacheKey = Guid.NewGuid().ToString("N")[..8];
+        this._cache.Set($"taste-{cacheKey}", cacheModel, TimeSpan.FromMinutes(10));
+
+        BuildTastePage(response, cacheModel, 0, cacheKey,
+            context.ContextUser.DiscordUserId, userSettings.DiscordUserId,
+            (int)timeSettings.TimePeriod, amount);
+        return response;
+    }
+
+    private async Task EnrichTasteRawDataAsync(
+        TasteRawData rawData,
+        List<TopArtist> ownTopArtistsFull,
+        List<TopArtist> otherTopArtistsFull,
+        Persistence.Domain.Models.User ownUserWithDiscogs,
+        Persistence.Domain.Models.User otherUserWithDiscogs)
+    {
+        var ownGenresTask = this._genreService.GetTopGenresForTopArtists(ownTopArtistsFull);
+        var otherGenresTask = this._genreService.GetTopGenresForTopArtists(otherTopArtistsFull);
+        var ownCountriesTask = this._countryService.GetTopCountriesForTopArtists(ownTopArtistsFull, true);
+        var otherCountriesTask = this._countryService.GetTopCountriesForTopArtists(otherTopArtistsFull, true);
+
+        await Task.WhenAll(ownGenresTask, otherGenresTask, ownCountriesTask, otherCountriesTask);
+
+        var ownTopGenres = await ownGenresTask;
+        var otherTopGenres = await otherGenresTask;
+        if (ownTopGenres.Any() && otherTopGenres.Any())
+        {
+            rawData.OwnTopGenres = ownTopGenres.Select(s => new TasteItem(s.GenreName, s.UserPlaycount.Value)).ToList();
+            rawData.OtherTopGenres = otherTopGenres.Select(s => new TasteItem(s.GenreName, s.UserPlaycount.Value)).ToList();
+        }
+
+        var ownTopCountries = await ownCountriesTask;
+        var otherTopCountries = await otherCountriesTask;
+        if (ownTopCountries.Any() && otherTopCountries.Any())
+        {
+            rawData.OwnTopCountries = ownTopCountries.Select(s => new TasteItem(s.CountryName, s.UserPlaycount.Value)).ToList();
+            rawData.OtherTopCountries = otherTopCountries.Select(s => new TasteItem(s.CountryName, s.UserPlaycount.Value)).ToList();
+        }
+
+        if (ownUserWithDiscogs?.UserDiscogs != null && otherUserWithDiscogs?.UserDiscogs != null)
+        {
+            var ownReleases = await this._discogsService.GetUserCollection(ownUserWithDiscogs.UserId);
+            var otherReleases = await this._discogsService.GetUserCollection(otherUserWithDiscogs.UserId);
+
+            rawData.OwnDiscogsArtists = ownReleases.GroupBy(s => s.Release.Artist)
+                .Select(g => new TasteItem(g.Key, g.Count())).ToList();
+            rawData.OtherDiscogsArtists = otherReleases.GroupBy(s => s.Release.Artist)
+                .Select(g => new TasteItem(g.Key, g.Count())).ToList();
+            rawData.DiscogsOwnUsername = ownUserWithDiscogs.UserDiscogs.Username;
+            rawData.DiscogsOtherUsername = otherUserWithDiscogs.UserDiscogs.Username;
+            rawData.DiscogsUrl = $"{Constants.DiscogsUserUrl}{rawData.DiscogsOtherUsername}/collection";
+        }
+    }
+
+    private static List<TastePageData> BuildTastePages(ArtistsService artistsService, TasteRawData raw, int amount)
+    {
+        var pages = new List<TastePageData>();
+        var sanitizedOwnName = StringExtensions.Sanitize(raw.OwnName);
+        var sanitizedOtherName = StringExtensions.Sanitize(raw.OtherName);
+
+        var artistTaste = artistsService.GetTableTaste(raw.OwnTopArtists, raw.OtherTopArtists, amount,
+            raw.TimePeriod, raw.OwnUsername, raw.OtherUsername, "Artist");
+        pages.Add(new TastePageData
+        {
+            Label = "Artists",
+            Title = $"Top artist comparison — {sanitizedOwnName} vs {sanitizedOtherName}",
+            Content = artistTaste.result,
+            Url = raw.Url
+        });
+
+        if (raw.OwnTopGenres != null && raw.OtherTopGenres != null)
+        {
+            var genreTaste = artistsService.GetTableTaste(raw.OwnTopGenres, raw.OtherTopGenres, amount,
+                raw.TimePeriod, raw.OwnUsername, raw.OtherUsername, "Genre");
+            pages.Add(new TastePageData
+            {
+                Label = "Genres",
+                Title = $"Top genre comparison — {sanitizedOwnName} vs {sanitizedOtherName}",
+                Content = genreTaste.result,
+                Url = raw.Url
+            });
+        }
+
+        if (raw.OwnTopCountries != null && raw.OtherTopCountries != null)
+        {
+            var countryTaste = artistsService.GetTableTaste(raw.OwnTopCountries, raw.OtherTopCountries, amount,
+                raw.TimePeriod, raw.OwnUsername, raw.OtherUsername, "Country");
+            pages.Add(new TastePageData
+            {
+                Label = "Countries",
+                Title = $"Top country comparison — {sanitizedOwnName} vs {sanitizedOtherName}",
+                Content = countryTaste.result,
+                Url = raw.Url
+            });
+        }
+
+        if (raw.OwnDiscogsArtists != null && raw.OtherDiscogsArtists != null)
+        {
+            var discogsTaste = artistsService.GetTableTaste(raw.OwnDiscogsArtists, raw.OtherDiscogsArtists, amount,
+                raw.TimePeriod, raw.DiscogsOwnUsername, raw.DiscogsOtherUsername, "Artist");
+            pages.Add(new TastePageData
+            {
+                Label = "Discogs",
+                Title = $"Top Discogs comparison — {sanitizedOwnName} vs {sanitizedOtherName}",
+                Content = discogsTaste.result,
+                Url = raw.DiscogsUrl
+            });
+        }
+
+        return pages;
+    }
+
+    public static void BuildTastePage(ResponseModel response, TasteCacheModel cacheModel, int pageIndex,
+        string cacheKey, ulong ownDiscordId, ulong otherDiscordId, int timePeriod, int amount)
+    {
+        var pages = cacheModel.Pages;
+        if (pageIndex >= pages.Count)
+        {
+            pageIndex = 0;
+        }
+
+        var page = pages[pageIndex];
+        var container = response.ComponentsContainer;
+
+        if (cacheModel.AccentColor != DiscordConstants.LastFmColorRed)
+        {
+            container.WithAccentColor(cacheModel.AccentColor);
+        }
+
+        container.WithTextDisplay($"### [{page.Title}]({page.Url})");
+        container.WithTextDisplay(page.Content);
+        container.WithSeparator();
+
+        var tabRow = new ActionRowProperties();
+        for (var i = 0; i < pages.Count; i++)
+        {
+            var isActive = i == pageIndex;
+            var tabPage = pages[i];
+            tabRow.WithButton(
+                tabPage.Label,
+                customId: $"{InteractionConstants.Taste.Tab}:{cacheKey}:{i}:{ownDiscordId}:{otherDiscordId}:{timePeriod}:{amount}",
+                style: isActive ? ButtonStyle.Primary : ButtonStyle.Secondary,
+                disabled: isActive);
+        }
+
+        var toggledAmount = amount == 28 ? 14 : 28;
+        tabRow.WithButton(
+            null,
+            customId: $"{InteractionConstants.Taste.Tab}:{cacheKey}:{pageIndex}:{ownDiscordId}:{otherDiscordId}:{timePeriod}:{toggledAmount}",
+            style: ButtonStyle.Secondary,
+            emote: amount == 28 ? EmojiProperties.Standard("➖") : EmojiProperties.Standard("➕"));
+
+        container.WithActionRow(tabRow);
+    }
+
+    public void SwitchTasteAmount(TasteCacheModel cacheModel, int newAmount)
+    {
+        if (cacheModel.Amount == newAmount)
+        {
+            return;
+        }
+
+        cacheModel.Pages = BuildTastePages(this._artistsService, cacheModel.RawData, newAmount);
+        cacheModel.Amount = newAmount;
+    }
+
+    public async Task<ResponseModel> RebuildTasteAsync(
+        ulong ownDiscordId,
+        ulong otherDiscordId,
+        TimePeriod timePeriod,
+        int amount,
+        int pageIndex,
+        DiscordGuild guild)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.ComponentsV2,
+        };
+
+        var ownUser = await this._userService.GetUserWithDiscogs(ownDiscordId);
+        var otherUser = await this._userService.GetUserWithDiscogs(otherDiscordId);
+
+        if (ownUser == null || otherUser == null ||
+            string.IsNullOrEmpty(ownUser.UserNameLastFM) || string.IsNullOrEmpty(otherUser.UserNameLastFM))
+        {
+            return response;
+        }
+
+        var timeSettings = SettingService.GetTimePeriod(Enum.GetName(timePeriod), timePeriod);
+
+        var ownArtistsTask = this._dataSourceFactory.GetTopArtistsAsync(ownUser.UserNameLastFM, timeSettings, 1000);
+        var otherArtistsTask = this._dataSourceFactory.GetTopArtistsAsync(otherUser.UserNameLastFM, timeSettings, 1000);
+
+        var ownArtists = await ownArtistsTask;
+        var otherArtists = await otherArtistsTask;
+
+        if (!ownArtists.Success || ownArtists.Content?.TopArtists == null ||
+            !otherArtists.Success || otherArtists.Content?.TopArtists == null)
+        {
+            return response;
+        }
+
+        string ownName;
+        string otherName;
+
+        if (guild?.Users.TryGetValue(ownDiscordId, out var discordGuildUser) == true)
+        {
+            ownName = discordGuildUser.GetDisplayName();
+        }
+        else
+        {
+            var discordUser = await this._client.Rest.GetUserAsync(ownDiscordId);
+            ownName = discordUser.GetDisplayName();
+        }
+
+        if (guild?.Users.TryGetValue(otherDiscordId, out var otherDiscordGuildUser) == true)
+        {
+            otherName = otherDiscordGuildUser.GetDisplayName();
+        }
+        else
+        {
+            var discordUser = await this._client.Rest.GetUserAsync(otherDiscordId);
+            otherName = discordUser.GetDisplayName();
+        }
+
+        var url = LastfmUrlExtensions.GetUserUrl(otherUser.UserNameLastFM, $"/library/artists?{timeSettings.UrlParameter}");
+
+        var rawData = new TasteRawData
+        {
+            OwnUsername = ownUser.UserNameLastFM,
+            OtherUsername = otherUser.UserNameLastFM,
+            OwnName = ownName,
+            OtherName = otherName,
+            Url = url,
+            TimePeriod = timePeriod,
+            OwnTopArtists = ownArtists.Content.TopArtists.Select(s => new TasteItem(s.ArtistName, s.UserPlaycount)).ToList(),
+            OtherTopArtists = otherArtists.Content.TopArtists.Select(s => new TasteItem(s.ArtistName, s.UserPlaycount)).ToList(),
+        };
+
+        await EnrichTasteRawDataAsync(rawData, ownArtists.Content.TopArtists, otherArtists.Content.TopArtists,
+            ownUser, otherUser);
+
+        var cacheModel = new TasteCacheModel
+        {
+            AccentColor = await UserService.GetAccentColor(ownUser, guild),
+            Amount = amount,
+            RawData = rawData,
+            Pages = BuildTastePages(this._artistsService, rawData, amount)
+        };
+
+        var cacheKey = Guid.NewGuid().ToString("N")[..8];
+        this._cache.Set($"taste-{cacheKey}", cacheModel, TimeSpan.FromMinutes(10));
+
+        BuildTastePage(response, cacheModel, pageIndex, cacheKey, ownDiscordId, otherDiscordId,
+            (int)timePeriod, amount);
         return response;
     }
 
