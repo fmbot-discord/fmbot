@@ -189,6 +189,7 @@ public class ClientLogHandler
             Log.Information(
                 "LeftGuild: {guildId}", args.GuildId);
 
+            ComponentInteractionTracker.RemoveGuild(args.GuildId);
             _ = this._channelToggledCommandService.RemoveToggledCommandsForGuild(args.GuildId);
             _ = this._disabledChannelService.RemoveDisabledChannelsForGuild(args.GuildId);
             _ = this._guildService.RemoveGuildAsync(args.GuildId);

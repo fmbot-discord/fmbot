@@ -6,6 +6,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using Fergun.Interactive;
+using Fergun.Interactive.Pagination;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Configurations;
@@ -658,6 +659,64 @@ public class StaticCommands(
 
         await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
         await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
+    }
+
+    [Command("recentinteractions", "ri", "debuginteractions")]
+    [Summary("Shows recent button and menu interactions in this server.")]
+    [ExcludeFromHelp]
+    [GuildOnly]
+    public async Task RecentInteractionsAsync()
+    {
+        var entries = ComponentInteractionTracker.GetRecentForGuild(this.Context.Guild.Id);
+        var entryPages = entries.Chunk(20).ToList();
+
+        var paginator = new ComponentPaginatorBuilder()
+            .WithPageFactory(GeneratePage)
+            .WithPageCount(Math.Max(entryPages.Count, 1))
+            .WithActionOnTimeout(ActionOnStop.DisableInput);
+
+        _ = this.Interactivity.SendPaginatorAsync(
+            paginator.Build(),
+            this.Context.Channel,
+            TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
+
+        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
+
+        IPage GeneratePage(IComponentPaginator p)
+        {
+            var container = new ComponentContainerProperties();
+            container.WithAccentColor(DiscordConstants.InformationColorBlue);
+
+            container.WithTextDisplay($"### Recent interactions for {this.Context.Guild.Name}");
+
+            var page = entryPages.ElementAtOrDefault(p.CurrentPageIndex);
+            if (page == null)
+            {
+                container.WithTextDisplay("No recent interactions tracked for this server.");
+            }
+            else
+            {
+                var description = new StringBuilder();
+                foreach (var entry in page)
+                {
+                    var unixTs = entry.Timestamp.ToUnixTimeSeconds();
+                    var type = entry.InteractionKind == ComponentInteractionKind.Button ? "btn" : "menu";
+                    description.AppendLine($"<t:{unixTs}:R> <@{entry.UserId}> `{type}:{entry.CustomId.Split(':')[0]}` <#{entry.ChannelId}>");
+                }
+
+                container.WithTextDisplay(description.ToString());
+                container.WithSeparator();
+                container.WithTextDisplay($"-# {p.CurrentPageIndex + 1}/{entryPages.Count}");
+            }
+
+            container.WithActionRow(StringService.GetPaginationActionRow(p));
+
+            return new PageBuilder()
+                .WithAllowedMentions(AllowedMentionsProperties.None)
+                .WithMessageFlags(MessageFlags.IsComponentsV2)
+                .WithComponents([container])
+                .Build();
+        }
     }
 
     [Command("fullhelp")]
