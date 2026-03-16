@@ -1,12 +1,17 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using FMBot.Discogs.Apis;
 using FMBot.Discogs.Models;
+using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
+using FMBot.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using Npgsql;
 using Serilog;
 using User = FMBot.Persistence.Domain.Models.User;
 
@@ -16,11 +21,13 @@ public class DiscogsService
 {
     private readonly DiscogsApi _discogsApi;
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
+    private readonly BotSettings _botSettings;
 
-    public DiscogsService(IDbContextFactory<FMBotDbContext> contextFactory, DiscogsApi discogsApi)
+    public DiscogsService(IDbContextFactory<FMBotDbContext> contextFactory, DiscogsApi discogsApi, IOptions<BotSettings> botSettings)
     {
         this._contextFactory = contextFactory;
         this._discogsApi = discogsApi;
+        this._botSettings = botSettings.Value;
     }
 
     public async Task<DiscogsAuthInitialization> GetDiscogsAuthLink()
@@ -137,6 +144,38 @@ public class DiscogsService
             }
 
             await db.UserDiscogsReleases.AddAsync(userDiscogsRelease);
+        }
+
+        var artistNames = existingReleases
+            .Select(r => r.Artist)
+            .Concat(existingReleases.Where(r => r.FeaturingArtist != null).Select(r => r.FeaturingArtist))
+            .Where(name => name != null)
+            .Distinct()
+            .ToList();
+
+        var albumPairs = existingReleases
+            .Where(r => r.Artist != null && r.Title != null)
+            .Select(r => (r.Artist, r.Title))
+            .Distinct()
+            .ToList();
+
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        var artistLookup = await ArtistRepository.GetArtistIdsForNames(artistNames, connection);
+        var albumLookup = await AlbumRepository.GetAlbumIdsForNames(albumPairs, connection);
+
+        foreach (var release in existingReleases)
+        {
+            release.ArtistId = release.Artist != null && artistLookup.TryGetValue(release.Artist, out var artistId)
+                ? artistId
+                : null;
+            release.FeaturingArtistId = release.FeaturingArtist != null && artistLookup.TryGetValue(release.FeaturingArtist, out var featArtistId)
+                ? featArtistId
+                : null;
+            release.AlbumId = release.Artist != null && release.Title != null
+                ? albumLookup.GetValueOrDefault((release.Artist.ToLower(), release.Title.ToLower()))
+                : null;
         }
 
         await db.Database.ExecuteSqlAsync($"DELETE FROM user_discogs_releases WHERE user_id = {user.UserId}");
@@ -288,6 +327,11 @@ public class DiscogsService
             releaseId);
     }
 
+    private static readonly Regex DiscogsDisambiguationRegex = new(@"\s\(\d+\)$", RegexOptions.Compiled);
+
+    private static string StripDiscogsDisambiguation(string name) =>
+        name != null ? DiscogsDisambiguationRegex.Replace(name, "") : null;
+
     private static void PopulateRelease(DiscogsRelease target, BasicInformation info)
     {
         target.MasterId = info.MasterId == 0 ? null : info.MasterId;
@@ -297,11 +341,11 @@ public class DiscogsService
         target.Label = info.Labels?.FirstOrDefault()?.Name;
         target.SecondLabel = info.Labels?.Count > 1 ? info.Labels[1].Name : null;
         target.Year = info.Year;
-        target.Artist = info.Artists.First().Name;
+        target.Artist = StripDiscogsDisambiguation(info.Artists.First().Name);
         target.Title = info.Title;
         target.ArtistDiscogsId = info.Artists.First().Id;
         target.FeaturingArtistJoin = info.Artists.First().Join;
-        target.FeaturingArtist = info.Artists.Count > 1 ? info.Artists[1].Name : null;
+        target.FeaturingArtist = info.Artists.Count > 1 ? StripDiscogsDisambiguation(info.Artists[1].Name) : null;
         target.FeaturingArtistDiscogsId = info.Artists.Count > 1 ? info.Artists[1].Id : null;
         target.FormatDescriptions = info.Formats?.FirstOrDefault()?.Descriptions?.Select(s => new DiscogsFormatDescriptions
         {

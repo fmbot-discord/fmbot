@@ -181,6 +181,31 @@ LIMIT 1;";
         public string ReleaseDatePrecision { get; set; }
     }
 
+    public static async Task<Dictionary<(string ArtistName, string AlbumName), int?>> GetAlbumIdsForNames(
+        List<(string ArtistName, string AlbumName)> albums, NpgsqlConnection connection)
+    {
+        const string query = @"
+        SELECT a.name, a.artist_name, a.id
+        FROM public.albums a
+        WHERE (UPPER(a.name), UPPER(a.artist_name)) IN (
+            SELECT UPPER(CAST(unnest(@albumNames) AS CITEXT)),
+                   UPPER(CAST(unnest(@artistNames) AS CITEXT))
+        )";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        var results = await connection.QueryAsync<(string Name, string ArtistName, int Id)>(query, new
+        {
+            albumNames = albums.Select(a => a.AlbumName).ToArray(),
+            artistNames = albums.Select(a => a.ArtistName).ToArray()
+        });
+
+        return results
+            .GroupBy(r => (r.ArtistName.ToLower(), r.Name.ToLower()))
+            .ToDictionary(
+                g => g.Key,
+                g => (int?)g.First().Id);
+    }
+
     public static async Task<List<AlbumPopularity>> GetAlbumsPopularity(List<TopAlbum> topAlbums,
         NpgsqlConnection connection)
     {

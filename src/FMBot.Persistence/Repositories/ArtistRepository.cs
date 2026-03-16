@@ -234,4 +234,24 @@ public class ArtistRepository
 
         return artists.ToList();
     }
+
+    public static async Task<Dictionary<string, int?>> GetArtistIdsForNames(List<string> artistNames,
+        NpgsqlConnection connection)
+    {
+        const string query = @"
+        WITH artist_list(name) AS (
+            SELECT DISTINCT UPPER(unnest(@artistNames)::citext)
+        )
+        SELECT DISTINCT ON (UPPER(a.name)) a.name, a.id
+        FROM public.artists a
+        JOIN artist_list l ON UPPER(a.name) = l.name";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        var results = await connection.QueryAsync<(string Name, int Id)>(query, new
+        {
+            artistNames = artistNames.ToArray()
+        });
+
+        return results.ToDictionary(r => r.Name, r => (int?)r.Id, StringComparer.OrdinalIgnoreCase);
+    }
 }
