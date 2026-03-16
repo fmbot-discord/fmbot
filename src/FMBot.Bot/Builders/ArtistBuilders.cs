@@ -2327,7 +2327,9 @@ public class ArtistBuilders
             container.WithAccentColor(cacheModel.AccentColor);
         }
 
-        container.WithTextDisplay($"### [{page.Title}]({page.Url})");
+        container.WithTextDisplay(page.Title.ContainsEmoji()
+            ? $"### {page.Title}"
+            : $"### [{page.Title}]({page.Url})");
         container.WithTextDisplay(page.Content);
 
         var tabRow = new ActionRowProperties();
@@ -2347,7 +2349,7 @@ public class ArtistBuilders
             null,
             customId: $"{InteractionConstants.Taste.Tab}:{cacheKey}:{pageIndex}:{ownDiscordId}:{otherDiscordId}:{timePeriod}:{toggledAmount}",
             style: ButtonStyle.Secondary,
-            emote: amount == 28 ? EmojiProperties.Standard("➖") : EmojiProperties.Standard("➕"));
+            emote: amount == 28 ? EmojiProperties.Custom(1483232860755460117) : EmojiProperties.Custom(1483232894318149692));
 
         container.WithActionRow(tabRow);
     }
