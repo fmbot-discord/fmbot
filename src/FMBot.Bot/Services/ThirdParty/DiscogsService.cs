@@ -112,41 +112,8 @@ public class DiscogsService
             var existingRelease = existingReleases.FirstOrDefault(f => f.DiscogsId == release.Id);
             if (existingRelease == null)
             {
-                var newRelease = new DiscogsRelease
-                {
-                    DiscogsId = release.Id,
-                    MasterId = release.BasicInformation.MasterId == 0 ? null : release.BasicInformation.MasterId,
-                    CoverUrl = release.BasicInformation.CoverImage,
-                    Format = release.BasicInformation.Formats?.FirstOrDefault()?.Name,
-                    FormatText = release.BasicInformation.Formats?.FirstOrDefault()?.Text,
-                    Label = release.BasicInformation.Labels?.FirstOrDefault()?.Name,
-                    SecondLabel = release.BasicInformation.Labels?.Count > 1
-                        ? release.BasicInformation.Labels[1].Name
-                        : null,
-                    Year = release.BasicInformation.Year,
-                    FormatDescriptions = release.BasicInformation.Formats.FirstOrDefault()?.Descriptions?.Select(s => new DiscogsFormatDescriptions
-                    {
-                        Description = s
-                    }).ToList(),
-                    Artist = release.BasicInformation.Artists.First().Name,
-                    Title = release.BasicInformation.Title,
-                    ArtistDiscogsId = release.BasicInformation.Artists.First().Id,
-                    FeaturingArtistJoin = release.BasicInformation.Artists.First().Join,
-                    FeaturingArtist = release.BasicInformation.Artists.Count > 1
-                        ? release.BasicInformation.Artists[1].Name
-                        : null,
-                    FeaturingArtistDiscogsId = release.BasicInformation.Artists.Count > 1
-                        ? release.BasicInformation.Artists[1].Id
-                        : null,
-                    Genres = release.BasicInformation.Genres?.Select(s => new DiscogsGenre
-                    {
-                        Description = s
-                    }).ToList(),
-                    Styles = release.BasicInformation.Styles?.Select(s => new DiscogsStyle
-                    {
-                        Description = s
-                    }).ToList()
-                };
+                var newRelease = new DiscogsRelease { DiscogsId = release.Id };
+                PopulateRelease(newRelease, release.BasicInformation);
 
                 await db.DiscogsReleases.AddAsync(newRelease);
 
@@ -156,6 +123,16 @@ public class DiscogsService
             }
             else
             {
+                PopulateRelease(existingRelease, release.BasicInformation);
+
+                await db.Database.ExecuteSqlAsync($"""
+                    DELETE FROM discogs_format_descriptions WHERE release_id = {existingRelease.DiscogsId};
+                    DELETE FROM discogs_genre WHERE release_id = {existingRelease.DiscogsId};
+                    DELETE FROM discogs_style WHERE release_id = {existingRelease.DiscogsId}
+                    """);
+
+                db.DiscogsReleases.Update(existingRelease);
+
                 userDiscogsRelease.ReleaseId = existingRelease.DiscogsId;
             }
 
@@ -236,8 +213,15 @@ public class DiscogsService
     {
         foreach (var user in usersToUpdate)
         {
-            Log.Information("Discogs: Automatically updating {userId}", user.UserId);
-            await UpdateUserDiscogs(user);
+            try
+            {
+                Log.Information("Discogs: Automatically updating {userId}", user.UserId);
+                await UpdateUserDiscogs(user);
+            }
+            catch (Exception e)
+            {
+                Log.Error(e, "Discogs: Error while automatically updating {userId}", user.UserId);
+            }
 
             await Task.Delay(5000);
         }
@@ -252,6 +236,7 @@ public class DiscogsService
             .Include(i => i.UserDiscogs)
             .Where(w => w.UserDiscogs != null &&
                         w.UserDiscogs.ReleasesLastUpdated < updateCutoff)
+            .OrderBy(o => o.UserDiscogs.ReleasesLastUpdated)
             .Take(500)
             .ToListAsync();
     }
@@ -301,5 +286,34 @@ public class DiscogsService
         return await this._discogsApi.GetRelease(
             new DiscogsAuth(user.UserDiscogs.AccessToken, user.UserDiscogs.AccessTokenSecret),
             releaseId);
+    }
+
+    private static void PopulateRelease(DiscogsRelease target, BasicInformation info)
+    {
+        target.MasterId = info.MasterId == 0 ? null : info.MasterId;
+        target.CoverUrl = info.CoverImage;
+        target.Format = info.Formats?.FirstOrDefault()?.Name;
+        target.FormatText = info.Formats?.FirstOrDefault()?.Text;
+        target.Label = info.Labels?.FirstOrDefault()?.Name;
+        target.SecondLabel = info.Labels?.Count > 1 ? info.Labels[1].Name : null;
+        target.Year = info.Year;
+        target.Artist = info.Artists.First().Name;
+        target.Title = info.Title;
+        target.ArtistDiscogsId = info.Artists.First().Id;
+        target.FeaturingArtistJoin = info.Artists.First().Join;
+        target.FeaturingArtist = info.Artists.Count > 1 ? info.Artists[1].Name : null;
+        target.FeaturingArtistDiscogsId = info.Artists.Count > 1 ? info.Artists[1].Id : null;
+        target.FormatDescriptions = info.Formats?.FirstOrDefault()?.Descriptions?.Select(s => new DiscogsFormatDescriptions
+        {
+            Description = s
+        }).ToList();
+        target.Genres = info.Genres?.Select(s => new DiscogsGenre
+        {
+            Description = s
+        }).ToList();
+        target.Styles = info.Styles?.Select(s => new DiscogsStyle
+        {
+            Description = s
+        }).ToList();
     }
 }

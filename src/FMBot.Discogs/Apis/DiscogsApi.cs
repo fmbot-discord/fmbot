@@ -4,7 +4,7 @@ using System.Web;
 using FMBot.Discogs.Models;
 using FMBot.Domain;
 using Microsoft.Extensions.Configuration;
-using RestSharp.Serializers.Json;
+using Serilog;
 
 namespace FMBot.Discogs.Apis;
 
@@ -51,6 +51,7 @@ public class DiscogsApi
             return new DiscogsAuthInitialization(loginUrl, oauthToken, oauthTokenSecret);
         }
 
+        Log.Error("Discogs: Failed to get auth link - Status: {statusCode} | Content: {content}", response.StatusCode, response.Content);
         return null;
     }
 
@@ -82,6 +83,7 @@ public class DiscogsApi
             return new DiscogsAuth(oauthToken, oauthTokenSecret);
         }
 
+        Log.Error("Discogs: Failed to store auth - Status: {statusCode} | Content: {content}", response.StatusCode, response.Content);
         return null;
     }
 
@@ -126,18 +128,33 @@ public class DiscogsApi
         var response = await client.ExecuteAsync<DiscogsUserReleases>(request);
         Statistics.DiscogsApiCalls.Inc();
 
-        if (response.IsSuccessStatusCode &&
-            response.Data != null &&
+        if (!response.IsSuccessStatusCode)
+        {
+            Log.Error("Discogs: Failed to get releases for {discogsUser} - Status: {statusCode} | Content: {content}",
+                discogsUser, response.StatusCode, response.Content);
+            return response.Data;
+        }
+
+        if (response.Data != null &&
             response.Data.Releases.Count == 100 &&
             pages > 1)
         {
             for (var i = 2; i <= pages; i++)
             {
+                await Task.Delay(1000);
+
                 request.Parameters.RemoveParameter("page");
                 request.AddParameter("page", i);
 
                 var pageResponse = await client.ExecuteAsync<DiscogsUserReleases>(request);
                 Statistics.DiscogsApiCalls.Inc();
+
+                if (!pageResponse.IsSuccessStatusCode)
+                {
+                    Log.Warning("Discogs: Failed to get page {page} for {discogsUser} - Status: {statusCode} | Content: {content}",
+                        i, discogsUser, pageResponse.StatusCode, pageResponse.Content);
+                    break;
+                }
 
                 if (pageResponse.Data?.Releases != null && pageResponse.Data.Releases.Any())
                 {
@@ -166,6 +183,11 @@ public class DiscogsApi
         var response = await client.ExecuteAsync<DiscogsCollectionValue>(request);
         Statistics.DiscogsApiCalls.Inc();
 
+        if (!response.IsSuccessStatusCode)
+        {
+            Log.Error("Discogs: Failed to get collection value for {discogsUser} - Status: {statusCode} | Content: {content}", discogsUser, response.StatusCode, response.Content);
+        }
+
         return response.Data;
     }
 
@@ -179,6 +201,7 @@ public class DiscogsApi
 
         if (!response.IsSuccessStatusCode)
         {
+            Log.Error("Discogs: Failed to get release {releaseId} - Status: {statusCode} | Content: {content}", releaseId, response.StatusCode, response.Content);
             return null;
         }
 
