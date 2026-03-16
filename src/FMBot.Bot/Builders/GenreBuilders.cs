@@ -419,6 +419,10 @@ public class GenreBuilders
             if (artist.SpotifyImageUrl != null && safeForChannel == CensorService.CensorResult.Safe)
             {
                 response.Embed.WithThumbnail(artist.SpotifyImageUrl);
+
+                var accentColor = await this._artistsService.GetArtistAccentColorAsync(
+                    artist.SpotifyImageUrl, artist.Id, artist.Name);
+                response.Embed.WithColor(accentColor);
             }
 
             response.ReferencedMusic = new ReferencedMusic { Artist = artist.Name };
@@ -506,6 +510,10 @@ public class GenreBuilders
                 if (artist.SpotifyImageUrl != null && safeForChannel == CensorService.CensorResult.Safe)
                 {
                     response.Embed.WithThumbnail(artist.SpotifyImageUrl);
+
+                    var accentColor = await this._artistsService.GetArtistAccentColorAsync(
+                        artist.SpotifyImageUrl, artist.Id, artist.Name);
+                    response.Embed.WithColor(accentColor);
                 }
 
                 response.ReferencedMusic = new ReferencedMusic { Artist = artist.Name };

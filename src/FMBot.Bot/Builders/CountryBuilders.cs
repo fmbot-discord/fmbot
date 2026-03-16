@@ -124,6 +124,10 @@ public class CountryBuilders
                 if (artist.SpotifyImageUrl != null)
                 {
                     response.Embed.WithThumbnail(artist.SpotifyImageUrl);
+
+                    var accentColor = await this._artistsService.GetArtistAccentColorAsync(
+                        artist.SpotifyImageUrl, artist.Id, artist.Name);
+                    response.Embed.WithColor(accentColor);
                 }
 
                 response.ReferencedMusic = new ReferencedMusic { Artist = artist.Name };
@@ -178,6 +182,10 @@ public class CountryBuilders
                     if (artist.SpotifyImageUrl != null)
                     {
                         response.Embed.WithThumbnail(artist.SpotifyImageUrl);
+
+                        var accentColor = await this._artistsService.GetArtistAccentColorAsync(
+                            artist.SpotifyImageUrl, artist.Id, artist.Name);
+                        response.Embed.WithColor(accentColor);
                     }
 
                     foundCountry = this._countryService.GetValidCountry(artist.CountryCode);
