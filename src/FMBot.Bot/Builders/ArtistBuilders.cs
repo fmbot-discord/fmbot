@@ -2203,7 +2203,7 @@ public class ArtistBuilders
 
         BuildTastePage(response, cacheModel, 0, cacheKey,
             context.ContextUser.DiscordUserId, userSettings.DiscordUserId,
-            (int)timeSettings.TimePeriod, amount);
+            timeSettings.Description, amount);
         return response;
     }
 
@@ -2311,7 +2311,7 @@ public class ArtistBuilders
     }
 
     public static void BuildTastePage(ResponseModel response, TasteCacheModel cacheModel, int pageIndex,
-        string cacheKey, ulong ownDiscordId, ulong otherDiscordId, int timePeriod, int amount)
+        string cacheKey, ulong ownDiscordId, ulong otherDiscordId, string timePeriodKey, int amount)
     {
         var pages = cacheModel.Pages;
         if (pageIndex >= pages.Count)
@@ -2339,7 +2339,7 @@ public class ArtistBuilders
             var tabPage = pages[i];
             tabRow.WithButton(
                 tabPage.Label,
-                customId: $"{InteractionConstants.Taste.Tab}:{cacheKey}:{i}:{ownDiscordId}:{otherDiscordId}:{timePeriod}:{amount}",
+                customId: $"{InteractionConstants.Taste.Tab}:{cacheKey}:{i}:{ownDiscordId}:{otherDiscordId}:{timePeriodKey}:{amount}",
                 style: isActive ? ButtonStyle.Primary : ButtonStyle.Secondary,
                 disabled: isActive);
         }
@@ -2347,7 +2347,7 @@ public class ArtistBuilders
         var toggledAmount = amount == 28 ? 14 : 28;
         tabRow.WithButton(
             null,
-            customId: $"{InteractionConstants.Taste.Tab}:{cacheKey}:{pageIndex}:{ownDiscordId}:{otherDiscordId}:{timePeriod}:{toggledAmount}",
+            customId: $"{InteractionConstants.Taste.Tab}:{cacheKey}:{pageIndex}:{ownDiscordId}:{otherDiscordId}:{timePeriodKey}:{toggledAmount}",
             style: ButtonStyle.Secondary,
             emote: amount == 28 ? EmojiProperties.Custom(1483232860755460117) : EmojiProperties.Custom(1483232894318149692));
 
@@ -2368,7 +2368,7 @@ public class ArtistBuilders
     public async Task<ResponseModel> RebuildTasteAsync(
         ulong ownDiscordId,
         ulong otherDiscordId,
-        TimePeriod timePeriod,
+        string timePeriodKey,
         int amount,
         int pageIndex,
         DiscordGuild guild)
@@ -2387,7 +2387,7 @@ public class ArtistBuilders
             return response;
         }
 
-        var timeSettings = SettingService.GetTimePeriod(Enum.GetName(timePeriod), timePeriod);
+        var timeSettings = SettingService.GetTimePeriod(timePeriodKey);
 
         var ownArtistsTask = this._dataSourceFactory.GetTopArtistsAsync(ownUser.UserNameLastFM, timeSettings, 1000);
         var otherArtistsTask = this._dataSourceFactory.GetTopArtistsAsync(otherUser.UserNameLastFM, timeSettings, 1000);
@@ -2453,7 +2453,7 @@ public class ArtistBuilders
         this._cache.Set($"taste-{cacheKey}", cacheModel, TimeSpan.FromMinutes(10));
 
         BuildTastePage(response, cacheModel, pageIndex, cacheKey, ownDiscordId, otherDiscordId,
-            (int)timePeriod, amount);
+            timePeriodKey, amount);
         return response;
     }
 

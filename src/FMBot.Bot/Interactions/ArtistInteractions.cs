@@ -223,7 +223,6 @@ public class ArtistInteractions(
             if (!int.TryParse(pageIndexStr, out var pageIndex) ||
                 !ulong.TryParse(ownDiscordIdStr, out var ownDiscordId) ||
                 !ulong.TryParse(otherDiscordIdStr, out var otherDiscordId) ||
-                !int.TryParse(timePeriodStr, out var timePeriodInt) ||
                 !int.TryParse(amountStr, out var amount))
             {
                 return;
@@ -239,7 +238,7 @@ public class ArtistInteractions(
                 };
 
                 ArtistBuilders.BuildTastePage(response, cacheModel, pageIndex, cacheKey,
-                    ownDiscordId, otherDiscordId, timePeriodInt, amount);
+                    ownDiscordId, otherDiscordId, timePeriodStr, amount);
 
                 await this.Context.UpdateInteractionEmbed(response);
                 return;
@@ -250,7 +249,7 @@ public class ArtistInteractions(
 
             var rebuildResponse = await artistBuilders.RebuildTasteAsync(
                 ownDiscordId, otherDiscordId,
-                (TimePeriod)timePeriodInt, amount,
+                timePeriodStr, amount,
                 pageIndex, this.Context.Guild);
 
             await this.Context.UpdateInteractionEmbed(rebuildResponse, defer: false);
