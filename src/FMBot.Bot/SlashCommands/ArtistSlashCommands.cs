@@ -389,8 +389,6 @@ public class ArtistSlashCommands(
         string user,
         [SlashCommandParameter(Name = "time-period", Description = "Time period", AutocompleteProviderType = typeof(DateTimeAutoComplete))]
         string timePeriod = null,
-        [SlashCommandParameter(Name = "type", Description = "Taste view type")]
-        TasteType tasteType = TasteType.Table,
         [SlashCommandParameter(Name = "private", Description = "Only show response to you")]
         bool privateResponse = false,
         [SlashCommandParameter(Name = "size", Description = "Amount of comparisons to show")]
@@ -406,7 +404,7 @@ public class ArtistSlashCommands(
             var timeSettings = SettingService.GetTimePeriod(timePeriod ?? "two-year", timeZone: userSettings.TimeZone);
 
             var response = await artistBuilders.TasteAsync(new ContextModel(this.Context, contextUser),
-                new TasteSettings { TasteType = tasteType, EmbedSize = embedSize ?? EmbedSize.Default }, timeSettings, userSettings);
+                embedSize ?? EmbedSize.Default, timeSettings, userSettings);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response, userService, privateResponse);
             await this.Context.LogCommandUsedAsync(response, userService);

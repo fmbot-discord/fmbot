@@ -330,9 +330,9 @@ public class ArtistCommands(
 
     [Command("taste", "t")]
     [Summary("Compares your top artists, genres and countries to those from another user.")]
-    [Options(Constants.CompactTimePeriodList, Constants.UserMentionOrLfmUserNameExample, "Mode: `table` or `embed`",
+    [Options(Constants.CompactTimePeriodList, Constants.UserMentionOrLfmUserNameExample,
         Constants.EmbedSizeExample)]
-    [Examples("t frikandel_", "t @user", "taste bitldev", "taste @user monthly embed")]
+    [Examples("t frikandel_", "t @user", "taste bitldev", "taste @user monthly")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Artists)]
     public async Task TasteAsync([CommandParameter(Remainder = true)] string extraOptions = null)
@@ -350,17 +350,12 @@ public class ArtistCommands(
             string.IsNullOrWhiteSpace(otherUser.NewSearchValue) ? "two-year" : otherUser.NewSearchValue,
             timeZone: userSettings.TimeZone);
 
-        var tasteSettings = new TasteSettings
-        {
-            EmbedSize = EmbedSize.Default
-        };
-
-        tasteSettings = artistsService.SetTasteSettings(tasteSettings, timeSettings.NewSearchValue);
+        var embedSize = artistsService.SetTasteEmbedSize(timeSettings.NewSearchValue);
 
         try
         {
             var response = await artistBuilders.TasteAsync(new ContextModel(this.Context, prfx, userSettings),
-                tasteSettings, timeSettings, otherUser);
+                embedSize, timeSettings, otherUser);
 
             await this.Context.SendResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);

@@ -2055,7 +2055,7 @@ public class ArtistBuilders
 
     public async Task<ResponseModel> TasteAsync(
         ContextModel context,
-        TasteSettings tasteSettings,
+        EmbedSize embedSize,
         TimeSettingsModel timeSettings,
         UserSettingsModel userSettings)
     {
@@ -2143,7 +2143,7 @@ public class ArtistBuilders
             return response;
         }
 
-        var amount = tasteSettings.EmbedSize switch
+        var amount = embedSize switch
         {
             EmbedSize.Default => 14,
             EmbedSize.Small => 7,

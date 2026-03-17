@@ -511,36 +511,24 @@ public class ArtistsService
         return artistsToShow;
     }
 
-    public TasteSettings SetTasteSettings(TasteSettings currentTasteSettings, string extraOptions)
+    public EmbedSize SetTasteEmbedSize(string extraOptions)
     {
-        var tasteSettings = currentTasteSettings;
-
         if (extraOptions == null)
         {
-            return tasteSettings;
-        }
-
-        if (extraOptions.Contains("t") || extraOptions.Contains("table"))
-        {
-            tasteSettings.TasteType = TasteType.Table;
-        }
-
-        if (extraOptions.Contains("e") || extraOptions.Contains("embed") || extraOptions.Contains("embedfull") ||
-            extraOptions.Contains("fullembed"))
-        {
-            tasteSettings.TasteType = TasteType.FullEmbed;
+            return EmbedSize.Default;
         }
 
         if (extraOptions.Contains("xl") || extraOptions.Contains("xxl") || extraOptions.Contains("extralarge"))
         {
-            tasteSettings.EmbedSize = EmbedSize.Large;
-        }
-        else if (extraOptions.Contains("xs") || extraOptions.Contains("xxs") || extraOptions.Contains("extrasmall"))
-        {
-            tasteSettings.EmbedSize = EmbedSize.Small;
+            return EmbedSize.Large;
         }
 
-        return tasteSettings;
+        if (extraOptions.Contains("xs") || extraOptions.Contains("xxs") || extraOptions.Contains("extrasmall"))
+        {
+            return EmbedSize.Small;
+        }
+
+        return EmbedSize.Default;
     }
 
     public async Task<Artist> GetArtistForId(int artistId)

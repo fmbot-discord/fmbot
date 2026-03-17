@@ -1,15 +1,7 @@
 using System.Collections.Generic;
-using FMBot.Domain.Enums;
 using NetCord;
 
 namespace FMBot.Bot.Models;
-
-public class TasteSettings
-{
-    public TasteType TasteType { get; set; }
-
-    public EmbedSize EmbedSize { get; set; } = EmbedSize.Default;
-}
 
 public class TasteModels
 {
@@ -40,12 +32,6 @@ public class TasteItem
     public string Name { get; set; }
 
     public long Playcount { get; set; }
-}
-
-public enum TasteType
-{
-    FullEmbed = 1,
-    Table = 2
 }
 
 public class TasteCacheModel
