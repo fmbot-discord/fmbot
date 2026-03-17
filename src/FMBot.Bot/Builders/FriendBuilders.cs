@@ -183,7 +183,7 @@ public class FriendBuilders
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed,
+            ResponseType = ResponseType.ComponentsV2,
         };
 
         var addedFriendsList = new List<string>();
@@ -244,69 +244,89 @@ public class FriendBuilders
             }
         }
 
+        var sectionCount = 0;
+
+        if (addedFriendsList.Count > 0)
+        {
+            var section = new StringBuilder();
+            section.AppendLine(
+                $"Successfully added {addedFriendsList.Count} {StringExtensions.GetFriendsString(addedFriendsList.Count)}:");
+            foreach (var addedFriend in addedFriendsList)
+            {
+                section.AppendLine($"- *[{addedFriend}]({LastfmUrlExtensions.GetUserUrl(addedFriend)})*");
+            }
+
+            response.ComponentsContainer.AddComponent(new TextDisplayProperties(section.ToString().TrimEnd()));
+            sectionCount++;
+        }
+
+        if (friendNotFoundList.Count > 0)
+        {
+            if (sectionCount > 0)
+            {
+                response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
+            }
+
+            var section = new StringBuilder();
+            section.AppendLine(
+                $"Could not add {friendNotFoundList.Count} {StringExtensions.GetFriendsString(friendNotFoundList.Count)}. Ensure they are registered in .fmbot and their Last.fm is not set to private.");
+            foreach (var notFoundFriend in friendNotFoundList)
+            {
+                section.AppendLine($"- *[{notFoundFriend}]({LastfmUrlExtensions.GetUserUrl(notFoundFriend)})*");
+            }
+
+            response.ComponentsContainer.AddComponent(new TextDisplayProperties(section.ToString().TrimEnd()));
+            sectionCount++;
+        }
+
+        if (duplicateFriendsList.Count > 0)
+        {
+            if (sectionCount > 0)
+            {
+                response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
+            }
+
+            var section = new StringBuilder();
+            section.AppendLine(
+                $"Could not add {duplicateFriendsList.Count} {StringExtensions.GetFriendsString(duplicateFriendsList.Count)} because you already have them added:");
+            foreach (var dupeFriend in duplicateFriendsList)
+            {
+                section.AppendLine($"- *[{dupeFriend}]({LastfmUrlExtensions.GetUserUrl(dupeFriend)})*");
+            }
+
+            response.ComponentsContainer.AddComponent(new TextDisplayProperties(section.ToString().TrimEnd()));
+            sectionCount++;
+        }
 
         if (friendLimitReached)
         {
-            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+            if (sectionCount > 0)
+            {
+                response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
+            }
+
+            response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
             if (context.ContextUser.UserType == UserType.User)
             {
-                response.Embed.AddField("Friend limit reached",
-                    $"Sorry, but you can't have more than {Constants.MaxFriends} friends. \n\n" +
-                    $".fmbot supporters can add up to {Constants.MaxFriendsSupporter} friends.");
+                response.ComponentsContainer.AddComponent(new TextDisplayProperties(
+                    $"**Friend limit reached** — You can't have more than {Constants.MaxFriends} friends. Supporters can add up to {Constants.MaxFriendsSupporter}."));
                 response.Components = new ActionRowProperties().WithButton(Constants.GetSupporterButton,
                     style: ButtonStyle.Primary,
                     customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "friends-limit"));
             }
             else
             {
-                response.Embed.AddField("Friend limit reached",
-                    $"Sorry, but you can't have more than {Constants.MaxFriendsSupporter} friends.");
+                response.ComponentsContainer.AddComponent(new TextDisplayProperties(
+                    $"**Friend limit reached** — You can't have more than {Constants.MaxFriendsSupporter} friends."));
             }
         }
-
-        var reply = "";
-        if (addedFriendsList.Count > 0)
-        {
-            reply +=
-                $"Successfully added {addedFriendsList.Count} {StringExtensions.GetFriendsString(addedFriendsList.Count)}:\n";
-            foreach (var addedFriend in addedFriendsList)
-            {
-                reply += $"- *[{addedFriend}]({LastfmUrlExtensions.GetUserUrl(addedFriend)})*\n";
-            }
-
-            reply += "\n";
-        }
-
-        if (friendNotFoundList.Count > 0)
-        {
-            reply +=
-                $"Could not add {friendNotFoundList.Count} {StringExtensions.GetFriendsString(friendNotFoundList.Count)}. Please ensure you spelled their name correctly, that they are registered in .fmbot and that their Last.fm recent tracks are not set to private.\n";
-            foreach (var notFoundFriend in friendNotFoundList)
-            {
-                reply += $"- *[{notFoundFriend}]({LastfmUrlExtensions.GetUserUrl(notFoundFriend)})*\n";
-            }
-
-            reply += "\n";
-        }
-
-        if (duplicateFriendsList.Count > 0)
-        {
-            reply +=
-                $"Could not add {duplicateFriendsList.Count} {StringExtensions.GetFriendsString(duplicateFriendsList.Count)} because you already have them added:\n";
-            foreach (var dupeFriend in duplicateFriendsList)
-            {
-                reply += $"- *[{dupeFriend}]({LastfmUrlExtensions.GetUserUrl(dupeFriend)})*\n";
-            }
-        }
-
-        response.Embed.WithDescription(reply);
 
         if (context.ContextUser.UserType != UserType.User && !friendLimitReached &&
             existingFriends.Count >= Constants.MaxFriendsSupporter - 5)
         {
             var userType = context.ContextUser.UserType.ToString().ToLower();
-            response.Embed.WithFooter(
-                $"Thank you for being an .fmbot {userType}! You can now add up to {Constants.MaxFriendsSupporter} friends.");
+            response.ComponentsContainer.AddComponent(new TextDisplayProperties(
+                $"-# Thank you for being an .fmbot {userType}! You can add up to {Constants.MaxFriendsSupporter} friends."));
         }
 
         return response;
@@ -317,7 +337,7 @@ public class FriendBuilders
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed,
+            ResponseType = ResponseType.ComponentsV2,
         };
 
         var removedFriendsList = new List<string>();
@@ -351,44 +371,52 @@ public class FriendBuilders
             }
         }
 
-        var reply = "";
+        var sectionCount = 0;
+
         if (removedFriendsList.Count > 0)
         {
-            reply += $"Successfully removed {removedFriendsList.Count} friend(s):\n";
+            var section = new StringBuilder();
+            section.AppendLine($"Successfully removed {removedFriendsList.Count} friend(s):");
             foreach (var removedFriend in removedFriendsList)
             {
-                reply += $"- *[{removedFriend}]({LastfmUrlExtensions.GetUserUrl(removedFriend)})*\n";
+                section.AppendLine($"- *[{removedFriend}]({LastfmUrlExtensions.GetUserUrl(removedFriend)})*");
             }
 
-            reply += "\n";
+            response.ComponentsContainer.AddComponent(new TextDisplayProperties(section.ToString().TrimEnd()));
+            sectionCount++;
         }
 
         if (failedRemoveFriends.Count > 0)
         {
-            reply += $"Could not remove {failedRemoveFriends.Count} friend(s).\n";
-            foreach (var failedRemovedFriend in failedRemoveFriends)
+            if (sectionCount > 0)
             {
-                reply += $"- *[{failedRemovedFriend}]({LastfmUrlExtensions.GetUserUrl(failedRemovedFriend)})*\n";
+                response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
             }
 
-            reply += "\n";
+            var section = new StringBuilder();
+            section.AppendLine($"Could not remove {failedRemoveFriends.Count} friend(s):");
+            foreach (var failedRemovedFriend in failedRemoveFriends)
+            {
+                section.AppendLine($"- *[{failedRemovedFriend}]({LastfmUrlExtensions.GetUserUrl(failedRemovedFriend)})*");
+            }
+
+            response.ComponentsContainer.AddComponent(new TextDisplayProperties(section.ToString().TrimEnd()));
+            sectionCount++;
         }
 
         if (removedFriendsList.Count == 0 && failedRemoveFriends.Count == 0)
         {
             if (contextCommand)
             {
-                reply +=
-                    $"Could not find the user you want to remove from your friends in your friend list.";
+                response.ComponentsContainer.AddComponent(new TextDisplayProperties(
+                    "Could not find that user in your friend list."));
             }
             else
             {
-                reply +=
-                    $"Could not find any friends to remove. Please enter their Last.fm username, mention them or use their Discord id.";
+                response.ComponentsContainer.AddComponent(new TextDisplayProperties(
+                    "Could not find any friends to remove. Please enter their Last.fm username, mention them or use their Discord id."));
             }
         }
-
-        response.Embed.WithDescription(reply);
 
         return response;
     }

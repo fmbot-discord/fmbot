@@ -2084,7 +2084,7 @@ public class ArtistBuilders
             {
                 response.ComponentsContainer.AddComponent(
                     new TextDisplayProperties(
-                        $"Please mention or enter a username to compare your taste with.\n" +
+                        $"Please mention someone, enter a Last.fm username or reply to someone to compare your taste with.\n" +
                         $"-# Example: `{context.Prefix}taste @user` or `{context.Prefix}taste lastfmname`"));
                 response.CommandResponse = CommandResponse.WrongInput;
             }

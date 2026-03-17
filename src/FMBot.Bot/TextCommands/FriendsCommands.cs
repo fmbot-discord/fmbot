@@ -95,6 +95,25 @@ public class FriendsCommands(
     [SupporterEnhanced($"Supporters can add up to 18 friends (up from 12)")]
     public async Task AddFriends([CommandParameter(Remainder = true)] string friendsInput = null)
     {
+        if (string.IsNullOrWhiteSpace(friendsInput) && this.Context.Message.ReferencedMessage != null)
+        {
+            var referencedMessage = this.Context.Message.ReferencedMessage;
+            var referencedUserId = await userService.GetReferencedUserId(referencedMessage.Id);
+
+            if (referencedUserId.HasValue)
+            {
+                var referencedUser = await userService.GetUserForIdAsync(referencedUserId.Value);
+                if (referencedUser != null)
+                {
+                    friendsInput = referencedUser.DiscordUserId.ToString();
+                }
+            }
+            else if (!referencedMessage.Author.IsBot)
+            {
+                friendsInput = referencedMessage.Author.Id.ToString();
+            }
+        }
+
         var enteredFriends = string.IsNullOrWhiteSpace(friendsInput)
             ? []
             : friendsInput.Split(' ', StringSplitOptions.RemoveEmptyEntries);
@@ -132,6 +151,25 @@ public class FriendsCommands(
     [CommandCategories(CommandCategory.Friends)]
     public async Task RemoveFriends([CommandParameter(Remainder = true)] string friendsInput = null)
     {
+        if (string.IsNullOrWhiteSpace(friendsInput) && this.Context.Message.ReferencedMessage != null)
+        {
+            var referencedMessage = this.Context.Message.ReferencedMessage;
+            var referencedUserId = await userService.GetReferencedUserId(referencedMessage.Id);
+
+            if (referencedUserId.HasValue)
+            {
+                var referencedUser = await userService.GetUserForIdAsync(referencedUserId.Value);
+                if (referencedUser != null)
+                {
+                    friendsInput = referencedUser.DiscordUserId.ToString();
+                }
+            }
+            else if (!referencedMessage.Author.IsBot)
+            {
+                friendsInput = referencedMessage.Author.Id.ToString();
+            }
+        }
+
         var enteredFriends = string.IsNullOrWhiteSpace(friendsInput)
             ? []
             : friendsInput.Split(' ', StringSplitOptions.RemoveEmptyEntries);
