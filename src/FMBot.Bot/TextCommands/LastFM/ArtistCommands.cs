@@ -342,6 +342,25 @@ public class ArtistCommands(
         var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
+        if (string.IsNullOrWhiteSpace(extraOptions) && this.Context.Message.ReferencedMessage != null)
+        {
+            var referencedMessage = this.Context.Message.ReferencedMessage;
+            var referencedUserId = await userService.GetReferencedUserId(referencedMessage.Id);
+
+            if (referencedUserId.HasValue)
+            {
+                var referencedUser = await userService.GetUserForIdAsync(referencedUserId.Value);
+                if (referencedUser != null)
+                {
+                    extraOptions = $"<@{referencedUser.DiscordUserId}>";
+                }
+            }
+            else if (!referencedMessage.Author.IsBot)
+            {
+                extraOptions = $"<@{referencedMessage.Author.Id}>";
+            }
+        }
+
         var otherUser =
             await settingService.GetUser(extraOptions, userSettings, this.Context,
                 firstOptionIsLfmUsername: true);

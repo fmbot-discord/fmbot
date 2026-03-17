@@ -2074,39 +2074,32 @@ public class ArtistBuilders
 
         if (lastfmToCompare == null)
         {
-            if (context.SlashCommand)
+            if (userSettings.DifferentUser)
             {
-                response.Embed.WithDescription(
-                    $"User you want to compare with isn't registered in .fmbot <:lastfm404:882220605783560222>");
+                response.ComponentsContainer.AddComponent(
+                    new TextDisplayProperties("That user doesn't use .fmbot."));
                 response.CommandResponse = CommandResponse.NotFound;
             }
             else
             {
-                response.Embed.WithDescription(
-                    $"Please enter a Last.fm username or mention someone to compare yourself to.\n" +
-                    $"Examples:\n" +
-                    $"- `{context.Prefix}taste fm-bot`\n" +
-                    $"- `{context.Prefix}taste @.fmbot`\n" +
-                    $"Please note that the other user must also have an .fmbot account.");
+                response.ComponentsContainer.AddComponent(
+                    new TextDisplayProperties(
+                        $"Please mention or enter a username to compare your taste with.\n" +
+                        $"-# Example: `{context.Prefix}taste @user` or `{context.Prefix}taste lastfmname`"));
                 response.CommandResponse = CommandResponse.WrongInput;
             }
 
-            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
-            response.ResponseType = ResponseType.Embed;
+            response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
             return response;
         }
 
         if (lastfmToCompare.ToLower() == ownLastFmUsername)
         {
-            response.Embed.WithDescription(
-                $"You can't compare your own taste with yourself. For viewing your top artists, use `{context.Prefix}topartists`.\n\n" +
-                $"Please enter a Last.fm username or mention someone to compare yourself to.\n" +
-                $"Examples:\n" +
-                $"- `{context.Prefix}taste fm-bot`\n" +
-                $"- `{context.Prefix}taste @.fmbot`");
-            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+            response.ComponentsContainer.AddComponent(
+                new TextDisplayProperties(
+                    $"You can't compare taste with yourself. Use `{context.Prefix}topartists` to view your own top artists."));
+            response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
             response.CommandResponse = CommandResponse.WrongInput;
-            response.ResponseType = ResponseType.Embed;
             return response;
         }
 

@@ -861,6 +861,21 @@ public class UserService
         return null;
     }
 
+    public async Task<int?> GetReferencedUserId(ulong lookupId)
+    {
+        const string sql =
+            "SELECT user_id FROM public.user_interactions WHERE discord_id = @lookupId OR discord_response_id = @lookupId LIMIT 1";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        return await connection.QueryFirstOrDefaultAsync<int?>(sql, new
+        {
+            lookupId = (decimal)lookupId
+        });
+    }
+
     public async Task<UserInteraction> GetMessageIdToDelete(ulong lookupId)
     {
         const string sql =
