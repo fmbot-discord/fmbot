@@ -5,28 +5,28 @@ using System.Linq;
 
 namespace FMBot.Bot.Services;
 
-public enum ComponentInteractionKind
-{
-    Button,
-    SelectMenu
-}
-
 public static class ComponentInteractionTracker
 {
     private const int MaxEntriesPerGuild = 200;
+    private const string PaginatorPrefix = "component_paginator";
 
     private static readonly ConcurrentDictionary<ulong, LinkedList<InteractionEntry>> GuildInteractions = new();
 
     public record InteractionEntry(
         ulong UserId,
         string CustomId,
-        ComponentInteractionKind InteractionKind,
         ulong ChannelId,
         DateTimeOffset Timestamp);
 
-    public static void Track(ulong? guildId, ulong userId, string customId, ComponentInteractionKind interactionKind, ulong channelId)
+    public static void Track(ulong? guildId, ulong userId, string customId, ulong channelId)
     {
         if (!guildId.HasValue)
+        {
+            return;
+        }
+
+        var baseId = customId.Split(':')[0];
+        if (!baseId.StartsWith(PaginatorPrefix))
         {
             return;
         }
@@ -35,7 +35,7 @@ public static class ComponentInteractionTracker
 
         lock (list)
         {
-            list.AddFirst(new InteractionEntry(userId, customId, interactionKind, channelId, DateTimeOffset.UtcNow));
+            list.AddFirst(new InteractionEntry(userId, customId, channelId, DateTimeOffset.UtcNow));
 
             if (list.Count > MaxEntriesPerGuild)
             {

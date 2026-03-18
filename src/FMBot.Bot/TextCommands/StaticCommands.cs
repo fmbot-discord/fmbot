@@ -661,11 +661,11 @@ public class StaticCommands(
         await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
     }
 
-    [Command("recentinteractions", "ri", "debuginteractions")]
-    [Summary("Shows recent button and menu interactions in this server.")]
+    [Command("recentpagination", "ri", "debugpagination", "recentinteractions", "debuginteractions")]
+    [Summary("Shows recent pagination actions in this server.")]
     [ExcludeFromHelp]
     [GuildOnly]
-    public async Task RecentInteractionsAsync()
+    public async Task RecentPaginationAsync()
     {
         var entries = ComponentInteractionTracker.GetRecentForGuild(this.Context.Guild.Id);
         var entryPages = entries.Chunk(20).ToList();
@@ -687,12 +687,12 @@ public class StaticCommands(
             var container = new ComponentContainerProperties();
             container.WithAccentColor(DiscordConstants.InformationColorBlue);
 
-            container.WithTextDisplay($"### Recent interactions for {this.Context.Guild.Name}");
+            container.WithTextDisplay($"### Recent pagination actions for {this.Context.Guild.Name}");
 
             var page = entryPages.ElementAtOrDefault(p.CurrentPageIndex);
             if (page == null)
             {
-                container.WithTextDisplay("No recent interactions tracked for this server.");
+                container.WithTextDisplay("No recent pagination actions tracked for this server.");
             }
             else
             {
@@ -700,8 +700,8 @@ public class StaticCommands(
                 foreach (var entry in page)
                 {
                     var unixTs = entry.Timestamp.ToUnixTimeSeconds();
-                    var type = entry.InteractionKind == ComponentInteractionKind.Button ? "btn" : "menu";
-                    description.AppendLine($"<t:{unixTs}:R> <@{entry.UserId}> `{type}:{entry.CustomId.Split(':')[0]}` <#{entry.ChannelId}>");
+                    var action = entry.CustomId.Split(':')[0].Replace("component_paginator_", "");
+                    description.AppendLine($"<t:{unixTs}:R> <@{entry.UserId}> `{action}` <#{entry.ChannelId}>");
                 }
 
                 container.WithTextDisplay(description.ToString());

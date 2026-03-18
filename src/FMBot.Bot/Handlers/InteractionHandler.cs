@@ -235,13 +235,6 @@ public class InteractionHandler
             }
         }
 
-        ComponentInteractionTracker.Track(
-            component.GuildId,
-            context.User.Id,
-            customId,
-            ComponentInteractionKind.SelectMenu,
-            component.Channel.Id);
-
         await this._componentCommands.ExecuteAsync(context, this._provider);
 
         Statistics.SelectMenusExecuted.Inc();
@@ -281,7 +274,6 @@ public class InteractionHandler
             component.GuildId,
             context.User.Id,
             customId,
-            ComponentInteractionKind.Button,
             component.Channel.Id);
 
         await _componentCommands.ExecuteAsync(context, this._provider);
