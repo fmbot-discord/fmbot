@@ -41,7 +41,7 @@ public class OpenAiService
         this._botSettings = botSettings.Value;
     }
 
-    private async Task<OpenAiResponse> SendRequest(string prompt, string model = "gpt-5-mini",
+    private async Task<OpenAiResponse> SendRequest(string prompt, string model = "gpt-5.4-mini",
         string userMessage = null)
     {
         var request = new HttpRequestMessage(HttpMethod.Post, "https://api.openai.com/v1/responses");
@@ -76,7 +76,7 @@ public class OpenAiService
             },
             Reasoning = new ReasoningConfig
             {
-                Effort = "minimal",
+                Effort = "none",
                 Summary = "auto"
             }
         };
