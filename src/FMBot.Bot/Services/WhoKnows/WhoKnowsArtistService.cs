@@ -317,7 +317,7 @@ public class WhoKnowsArtistService
 
         var sql = "SELECT * " +
                   "FROM ( " +
-                  "SELECT ua.user_id, name, playcount, user_artist_id, " +
+                  "SELECT ua.user_id, name, playcount, " +
                   "ROW_NUMBER() OVER (PARTITION BY ua.user_id ORDER BY playcount DESC) as pos " +
                   "FROM public.user_artists AS ua  " +
                   "INNER JOIN guild_users AS gu ON gu.user_id = ua.user_id  " +
@@ -407,7 +407,7 @@ public class WhoKnowsArtistService
             results.TryAdd(result.UserId, result);
         });
 
-        var ownQuarterlyArtists = ownAllTime
+        var ownQuarterlyArtists = ownQuarterly
             .GroupBy(g => g.Name)
             .ToDictionary(d => d.First().Name, d => d.First().Position);
         var ownQuarterArtistsConcurrent = new ConcurrentDictionary<string, int>(ownQuarterlyArtists);
