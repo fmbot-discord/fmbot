@@ -187,7 +187,10 @@ public class IdResolutionService(IdResolution.IdResolutionClient client, IOption
             await connection.OpenAsync();
 
             const string sql = "SELECT * FROM public.user_plays " +
-                               "WHERE user_id = @userId AND artist_id IS NULL " +
+                               "WHERE user_id = @userId AND (" +
+                               "(artist_id IS NULL AND artist_name IS NOT NULL) OR " +
+                               "(album_id IS NULL AND album_name IS NOT NULL) OR " +
+                               "(track_id IS NULL AND track_name IS NOT NULL)) " +
                                "ORDER BY time_played DESC";
 
             DefaultTypeMap.MatchNamesWithUnderscores = true;
