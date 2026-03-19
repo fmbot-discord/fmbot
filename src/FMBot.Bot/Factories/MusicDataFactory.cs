@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using FMBot.AppleMusic;
 using FMBot.AppleMusic.Models;
@@ -9,6 +8,7 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
+using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -35,12 +35,13 @@ public class MusicDataFactory
     private readonly AppleMusicService _appleMusicService;
     private readonly AppleMusicVideoService _appleMusicVideoService;
     private readonly TrackEnrichment.TrackEnrichmentClient _trackEnrichment;
+    private readonly IDataSourceFactory _dataSourceFactory;
 
     public MusicDataFactory(IOptions<BotSettings> botSettings, SpotifyService spotifyService,
         ArtistEnrichment.ArtistEnrichmentClient artistEnrichment, IDbContextFactory<FMBotDbContext> contextFactory,
         MusicBrainzService musicBrainzService, AppleMusicService appleMusicService,
         AlbumEnrichment.AlbumEnrichmentClient albumEnrichment, AppleMusicVideoService appleMusicVideoService,
-        TrackEnrichment.TrackEnrichmentClient trackEnrichment)
+        TrackEnrichment.TrackEnrichmentClient trackEnrichment, IDataSourceFactory dataSourceFactory)
     {
         this._spotifyService = spotifyService;
         this._artistEnrichment = artistEnrichment;
@@ -50,6 +51,7 @@ public class MusicDataFactory
         this._albumEnrichment = albumEnrichment;
         this._appleMusicVideoService = appleMusicVideoService;
         this._trackEnrichment = trackEnrichment;
+        this._dataSourceFactory = dataSourceFactory;
         this._botSettings = botSettings.Value;
     }
 
@@ -1063,5 +1065,128 @@ public class MusicDataFactory
             Log.Error(e, $"{nameof(MusicDataFactory)}: Something went wrong while retrieving track info");
             return null;
         }
+    }
+
+    public async Task EnrichMissingMetadata()
+    {
+        const int batchSize = 500;
+
+        Log.Information("EnrichMissingMetadata: Starting batch");
+
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        var artists = await db.Artists
+            .Where(a => a.SpotifyImageDate == null)
+            .OrderBy(a => EF.Functions.Random())
+            .Take(batchSize)
+            .ToListAsync();
+
+        var albums = await db.Albums
+            .Where(a => a.SpotifyImageDate == null)
+            .OrderBy(a => EF.Functions.Random())
+            .Take(batchSize)
+            .ToListAsync();
+
+        var tracks = await db.Tracks
+            .Where(t => t.SpotifyLastUpdated == null)
+            .OrderBy(t => EF.Functions.Random())
+            .Take(batchSize)
+            .ToListAsync();
+
+        Log.Information("EnrichMissingMetadata: Found {artists} artists, {albums} albums, {tracks} tracks",
+            artists.Count, albums.Count, tracks.Count);
+
+        var artistTask = EnrichArtists(artists);
+        var albumTask = EnrichAlbums(albums);
+        var trackTask = EnrichTracks(tracks);
+
+        await Task.WhenAll(artistTask, albumTask, trackTask);
+
+        Log.Information("EnrichMissingMetadata: Batch complete - Artists: {a}, Albums: {al}, Tracks: {t}",
+            artistTask.Result, albumTask.Result, trackTask.Result);
+    }
+
+    private async Task<int> EnrichArtists(List<Artist> artists)
+    {
+        var enriched = 0;
+        foreach (var artist in artists)
+        {
+            try
+            {
+                if (artist != null)
+                {
+                    var artistCall = await this._dataSourceFactory.GetArtistInfoAsync(artist.Name, null);
+                    if (artistCall.Success && artistCall.Content != null)
+                    {
+                        await GetOrStoreArtistAsync(artistCall.Content);
+                        enriched++;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warning(e, "EnrichMissingMetadata: Failed to enrich artist {id}", artist);
+            }
+
+            await Task.Delay(TimeSpan.FromSeconds(3));
+        }
+
+        return enriched;
+    }
+
+    private async Task<int> EnrichAlbums(List<Album> albums)
+    {
+        var enriched = 0;
+        foreach (var album in albums)
+        {
+            try
+            {
+                if (album != null)
+                {
+                    var albumCall = await this._dataSourceFactory.GetAlbumInfoAsync(album.ArtistName, album.Name);
+                    if (albumCall.Success && albumCall.Content != null)
+                    {
+                        await GetOrStoreAlbumAsync(albumCall.Content);
+                        enriched++;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warning(e, "EnrichMissingMetadata: Failed to enrich album {id}", album);
+            }
+
+            await Task.Delay(TimeSpan.FromSeconds(3));
+        }
+
+        return enriched;
+    }
+
+    private async Task<int> EnrichTracks(List<Track> tracks)
+    {
+        var enriched = 0;
+        foreach (var track in tracks)
+        {
+            try
+            {
+                if (track != null)
+                {
+                    var trackCall = await this._dataSourceFactory.GetTrackInfoAsync(track.Name, track.ArtistName);
+                    if (trackCall.Success && trackCall.Content != null)
+                    {
+                        await GetOrStoreTrackAsync(trackCall.Content);
+                        enriched++;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warning(e, "EnrichMissingMetadata: Failed to enrich track {id}", track);
+            }
+
+            await Task.Delay(TimeSpan.FromSeconds(3));
+        }
+
+        return enriched;
     }
 }
