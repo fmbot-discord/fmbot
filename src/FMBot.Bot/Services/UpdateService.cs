@@ -209,7 +209,8 @@ public class UpdateService
         try
         {
             var playUpdate =
-                await PlayRepository.InsertLatestPlays(recentTracks.Content.RecentTracks, user.UserId, connection);
+                await PlayRepository.InsertLatestPlays(recentTracks.Content.RecentTracks, user.UserId, connection,
+                    this._idResolutionService.ResolvePlayIds);
 
             recentTracks.Content.NewRecentTracksAmount = playUpdate.NewPlays.Count;
             recentTracks.Content.RemovedRecentTracksAmount = playUpdate.RemovedPlays.Count;
@@ -314,8 +315,6 @@ public class UpdateService
                         })
                         .ToList()
                 );
-
-            await this._idResolutionService.ResolvePlayIds(playUpdate.NewPlays);
 
             await UpdateArtistsForUser(user, playUpdate.NewPlays, connection, userArtists);
             await UpdateAlbumsForUser(user, playUpdate.NewPlays, connection, userAlbums);

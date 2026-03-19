@@ -17,7 +17,7 @@ public static class PlayRepository
     public record PlayUpdate(List<UserPlay> NewPlays, List<UserPlay> RemovedPlays);
 
     public static async Task<PlayUpdate> InsertLatestPlays(IEnumerable<RecentTrack> recentTracks, int userId,
-        NpgsqlConnection connection)
+        NpgsqlConnection connection, Func<IReadOnlyList<UserPlay>, Task> resolveIds = null)
     {
         var lastPlays = recentTracks
             .Where(w => !w.NowPlaying &&
@@ -76,6 +76,11 @@ public static class PlayRepository
 
         if (addedPlays.Any())
         {
+            if (resolveIds != null)
+            {
+                await resolveIds(addedPlays);
+            }
+
             Log.Information("Inserting {addedPlaysCount} new time series plays for user {userId}", addedPlays.Count,
                 userId);
             await InsertTimeSeriesPlays(addedPlays, connection);
