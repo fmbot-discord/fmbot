@@ -29,7 +29,8 @@ public class TrackRepository
             .MapText("name", x => x.Name)
             .MapText("artist_name", x => x.ArtistName)
             .MapInteger("user_id", x => x.UserId)
-            .MapInteger("playcount", x => x.Playcount);
+            .MapInteger("playcount", x => x.Playcount)
+            .MapInteger("track_id", x => x.TrackId);
 
         await using var deleteCurrentTracks = new NpgsqlCommand($"DELETE FROM public.user_tracks WHERE user_id = {userId};", connection);
         await deleteCurrentTracks.ExecuteNonQueryAsync();

@@ -110,7 +110,15 @@ public class MusicDataFactory
                     }
 
                     await db.Artists.AddAsync(artistToAdd);
-                    await db.SaveChangesAsync();
+
+                    try
+                    {
+                        await db.SaveChangesAsync();
+                    }
+                    catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+                    {
+                        return await ArtistRepository.GetArtistForName(artistInfo.ArtistName, connection, true, true, true);
+                    }
 
                     if (spotifyArtist.Images.Any())
                     {
@@ -128,7 +136,15 @@ public class MusicDataFactory
                 else
                 {
                     await db.Artists.AddAsync(artistToAdd);
-                    await db.SaveChangesAsync();
+
+                    try
+                    {
+                        await db.SaveChangesAsync();
+                    }
+                    catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+                    {
+                        return await ArtistRepository.GetArtistForName(artistInfo.ArtistName, connection, true, true, true);
+                    }
                 }
 
                 if (musicBrainzUpdated.Updated && artistToAdd.ArtistLinks != null &&
@@ -204,6 +220,17 @@ public class MusicDataFactory
                 await using var db = await this._contextFactory.CreateDbContextAsync();
 
                 dbArtist.LastFmDescription = artistInfo.Description;
+                dbArtist.LastfmDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+                db.Entry(dbArtist).State = EntityState.Modified;
+
+                await db.SaveChangesAsync();
+            }
+
+            if (dbArtist.LastFmUrl == null && artistInfo.ArtistUrl != null)
+            {
+                await using var db = await this._contextFactory.CreateDbContextAsync();
+
+                dbArtist.LastFmUrl = artistInfo.ArtistUrl;
                 dbArtist.LastfmDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
                 db.Entry(dbArtist).State = EntityState.Modified;
 
@@ -448,7 +475,15 @@ public class MusicDataFactory
             albumToAdd.AppleMusicDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
 
             await db.Albums.AddAsync(albumToAdd);
-            await db.SaveChangesAsync();
+
+            try
+            {
+                await db.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+            {
+                return await AlbumRepository.GetAlbumForName(albumInfo.ArtistName, albumInfo.AlbumName, connection);
+            }
 
             if (spotifyAlbum != null)
             {
@@ -486,6 +521,13 @@ public class MusicDataFactory
         if (albumInfo.Description != null && dbAlbum.LastFmDescription != albumInfo.Description)
         {
             dbAlbum.LastFmDescription = albumInfo.Description;
+            dbAlbum.LastfmDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+            db.Entry(dbAlbum).State = EntityState.Modified;
+        }
+
+        if (dbAlbum.LastFmUrl == null && albumInfo.AlbumUrl != null)
+        {
+            dbAlbum.LastFmUrl = albumInfo.AlbumUrl;
             dbAlbum.LastfmDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
             db.Entry(dbAlbum).State = EntityState.Modified;
         }
@@ -602,16 +644,11 @@ public class MusicDataFactory
         int albumId, NpgsqlConnection connection)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
-        var dbTracks = new List<Track>();
         foreach (var track in simpleTracks.OrderBy(o => o.TrackNumber))
         {
             var dbTrack = await TrackRepository.GetTrackForName(albumInfo.ArtistName, track.Name, connection);
 
-            if (dbTrack != null)
-            {
-                dbTracks.Add(dbTrack);
-            }
-            else
+            if (dbTrack == null)
             {
                 var trackToAdd = new Track
                 {
@@ -625,12 +662,18 @@ public class MusicDataFactory
                 };
 
                 await db.Tracks.AddAsync(trackToAdd);
-
-                dbTracks.Add(trackToAdd);
             }
         }
 
-        await db.SaveChangesAsync();
+        try
+        {
+            await db.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+        {
+            Log.Warning("GetOrStoreAlbumTracks: Unique violation for album {albumName} by {artistName}, skipping batch insert",
+                albumInfo.AlbumName, albumInfo.ArtistName);
+        }
     }
 
     private async Task AddOrUpdateAlbumImage(FMBotDbContext db, int albumId, ImageSource imageSource,
@@ -830,7 +873,15 @@ public class MusicDataFactory
                 trackToAdd.AppleMusicDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
 
                 await db.Tracks.AddAsync(trackToAdd);
-                await db.SaveChangesAsync();
+
+                try
+                {
+                    await db.SaveChangesAsync();
+                }
+                catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+                {
+                    return await TrackRepository.GetTrackForName(trackInfo.ArtistName, trackInfo.TrackName, connection, getSyncedLyrics);
+                }
 
                 if (lyrics.Result && lyrics.SyncedLyrics != null && lyrics.SyncedLyrics.Count != 0)
                 {

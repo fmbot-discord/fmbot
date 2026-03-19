@@ -296,7 +296,8 @@ public class Startup
             .AddSingleton<UpdateService, UpdateService>()
             .AddSingleton<UserService>()
             .AddSingleton<FmSettingService>()
-            .AddSingleton<YoutubeService>();
+            .AddSingleton<YoutubeService>()
+            .AddSingleton<IdResolutionService>();
 
         // Guild-specific services
         services
@@ -424,6 +425,7 @@ public class Startup
         services.AddConfiguredGrpcClient<TrackEnrichment.TrackEnrichmentClient>(this.Configuration);
         services.AddConfiguredGrpcClient<SupporterLinkService.SupporterLinkServiceClient>(this.Configuration);
         services.AddConfiguredGrpcClient<EurovisionEnrichment.EurovisionEnrichmentClient>(this.Configuration);
+        services.AddConfiguredGrpcClient<IdResolution.IdResolutionClient>(this.Configuration);
     }
 
 

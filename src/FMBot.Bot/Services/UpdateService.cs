@@ -36,6 +36,7 @@ public class UpdateService
     private readonly SmallIndexRepository _smallIndexRepository;
     private readonly AliasService _aliasService;
     private readonly UserService _userService;
+    private readonly IdResolutionService _idResolutionService;
 
     public UpdateService(IUserUpdateQueue userUpdateQueue,
         IDbContextFactory<FMBotDbContext> contextFactory,
@@ -44,7 +45,8 @@ public class UpdateService
         IDataSourceFactory dataSourceFactory,
         SmallIndexRepository smallIndexRepository,
         AliasService aliasService,
-        UserService userService)
+        UserService userService,
+        IdResolutionService idResolutionService)
     {
         this._userUpdateQueue = userUpdateQueue;
         this._userUpdateQueue.UsersToUpdate.SubscribeAsync(OnNextAsync);
@@ -55,6 +57,7 @@ public class UpdateService
         this._aliasService = aliasService;
         this._userService = userService;
         this._botSettings = botSettings.Value;
+        this._idResolutionService = idResolutionService;
     }
 
     private async Task OnNextAsync(UpdateUserQueueItem user)
@@ -312,6 +315,8 @@ public class UpdateService
                         .ToList()
                 );
 
+            await this._idResolutionService.ResolvePlayIds(playUpdate.NewPlays);
+
             await UpdateArtistsForUser(user, playUpdate.NewPlays, connection, userArtists);
             await UpdateAlbumsForUser(user, playUpdate.NewPlays, connection, userAlbums);
             await UpdateTracksForUser(user, playUpdate.NewPlays, connection, userTracks);
@@ -426,13 +431,14 @@ SELECT 3 AS Type, user_track_id AS Id, artist_name, name, playcount FROM public.
             else
             {
                 await using var addUserArtist =
-                    new NpgsqlCommand("INSERT INTO public.user_artists(user_id, name, playcount)" +
-                                      "VALUES(@userId, @artistName, @artistPlaycount); ",
+                    new NpgsqlCommand("INSERT INTO public.user_artists(user_id, name, playcount, artist_id)" +
+                                      "VALUES(@userId, @artistName, @artistPlaycount, @artistId); ",
                         connection);
 
                 addUserArtist.Parameters.AddWithValue("userId", user.UserId);
                 addUserArtist.Parameters.AddWithValue("artistName", artistName);
                 addUserArtist.Parameters.AddWithValue("artistPlaycount", artist.Count());
+                addUserArtist.Parameters.Add(new NpgsqlParameter<int?>("artistId", artist.First().ArtistId));
 
                 Log.Debug($"Added artist {artistName} for {user.UserNameLastFM}");
 
@@ -490,8 +496,8 @@ SELECT 3 AS Type, user_track_id AS Id, artist_name, name, playcount FROM public.
             else
             {
                 await using var addUserAlbum =
-                    new NpgsqlCommand("INSERT INTO public.user_albums(user_id, name, artist_name, playcount)" +
-                                      "VALUES(@userId, @albumName, @artistName, @albumPlaycount); ",
+                    new NpgsqlCommand("INSERT INTO public.user_albums(user_id, name, artist_name, playcount, album_id)" +
+                                      "VALUES(@userId, @albumName, @artistName, @albumPlaycount, @albumId); ",
                         connection);
 
                 var capitalizedAlbumName = album.First().AlbumName;
@@ -500,6 +506,7 @@ SELECT 3 AS Type, user_track_id AS Id, artist_name, name, playcount FROM public.
                 addUserAlbum.Parameters.AddWithValue("albumName", capitalizedAlbumName);
                 addUserAlbum.Parameters.AddWithValue("artistName", artistName);
                 addUserAlbum.Parameters.AddWithValue("albumPlaycount", album.Count());
+                addUserAlbum.Parameters.Add(new NpgsqlParameter<int?>("albumId", album.First().AlbumId));
 
                 Log.Debug($"Added album {album.Key.ArtistName} - {capitalizedAlbumName} for {user.UserNameLastFM}");
 
@@ -555,8 +562,8 @@ SELECT 3 AS Type, user_track_id AS Id, artist_name, name, playcount FROM public.
             else
             {
                 await using var addUserTrack =
-                    new NpgsqlCommand("INSERT INTO public.user_tracks(user_id, name, artist_name, playcount)" +
-                                      "VALUES(@userId, @trackName, @artistName, @trackPlaycount); ",
+                    new NpgsqlCommand("INSERT INTO public.user_tracks(user_id, name, artist_name, playcount, track_id)" +
+                                      "VALUES(@userId, @trackName, @artistName, @trackPlaycount, @trackId); ",
                         connection);
 
                 var capitalizedTrackName = track.First().TrackName;
@@ -565,6 +572,7 @@ SELECT 3 AS Type, user_track_id AS Id, artist_name, name, playcount FROM public.
                 addUserTrack.Parameters.AddWithValue("trackName", capitalizedTrackName);
                 addUserTrack.Parameters.AddWithValue("artistName", artistName);
                 addUserTrack.Parameters.AddWithValue("trackPlaycount", track.Count());
+                addUserTrack.Parameters.Add(new NpgsqlParameter<int?>("trackId", track.First().TrackId));
 
                 Log.Debug($"Added track {track.Key.ArtistName} - {capitalizedTrackName} for {user.UserNameLastFM}");
 

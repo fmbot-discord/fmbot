@@ -208,7 +208,10 @@ public static class PlayRepository
             .MapTimeStampTz("time_played", x => DateTime.SpecifyKind(x.TimePlayed, DateTimeKind.Utc))
             .MapInteger("user_id", x => x.UserId)
             .MapBigInt("ms_played", x => x.MsPlayed)
-            .MapInteger("play_source", x => (int?)x.PlaySource);
+            .MapInteger("play_source", x => (int?)x.PlaySource)
+            .MapInteger("artist_id", x => x.ArtistId)
+            .MapInteger("album_id", x => x.AlbumId)
+            .MapInteger("track_id", x => x.TrackId);
 
         return await copyHelper.SaveAllAsync(connection, plays);
     }

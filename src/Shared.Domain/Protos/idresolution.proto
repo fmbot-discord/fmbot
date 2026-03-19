@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+option csharp_namespace = "Web.InternalApi";
+
+package idresolution;
+
+service IdResolution {
+  rpc ResolveArtistIds (ResolveArtistIdsRequest) returns (ResolveArtistIdsReply);
+  rpc ResolveAlbumIds (ResolveAlbumIdsRequest) returns (ResolveAlbumIdsReply);
+  rpc ResolveTrackIds (ResolveTrackIdsRequest) returns (ResolveTrackIdsReply);
+  rpc ResolvePlayIds (ResolvePlayIdsRequest) returns (ResolvePlayIdsReply);
+}
+
+message ResolveArtistIdsRequest {repeated string artistNames = 1;}
+message ArtistIdMapping {string artistName = 1; int32 artistId = 2;}
+message ResolveArtistIdsReply {repeated ArtistIdMapping mappings = 1;}
+
+message ResolveAlbumIdsRequest {repeated AlbumKey albums = 1;}
+message AlbumKey {string artistName = 1; string albumName = 2;}
+message AlbumIdMapping {string artistName = 1; string albumName = 2; int32 albumId = 3;}
+message ResolveAlbumIdsReply {repeated AlbumIdMapping mappings = 1;}
+
+message ResolveTrackIdsRequest {repeated TrackKey tracks = 1;}
+message TrackKey {string artistName = 1; string trackName = 2; string albumName = 3;}
+message TrackIdMapping {string artistName = 1; string trackName = 2; int32 trackId = 3;}
+message ResolveTrackIdsReply {repeated TrackIdMapping mappings = 1;}
+
+message ResolvePlayIdsRequest {repeated PlayToResolve plays = 1;}
+message PlayToResolve {int32 index = 1; string artistName = 2; string albumName = 3; string trackName = 4;}
+message ResolvedPlay {int32 index = 1; int32 artistId = 2; int32 albumId = 3; int32 trackId = 4;}
+message ResolvePlayIdsReply {repeated ResolvedPlay plays = 1;}
