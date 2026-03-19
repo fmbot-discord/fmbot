@@ -36,6 +36,7 @@ public class UpdateService
     private readonly SmallIndexRepository _smallIndexRepository;
     private readonly AliasService _aliasService;
     private readonly UserService _userService;
+    private readonly IdResolutionService _idResolutionService;
 
     public UpdateService(IUserUpdateQueue userUpdateQueue,
         IDbContextFactory<FMBotDbContext> contextFactory,
@@ -44,7 +45,8 @@ public class UpdateService
         IDataSourceFactory dataSourceFactory,
         SmallIndexRepository smallIndexRepository,
         AliasService aliasService,
-        UserService userService)
+        UserService userService,
+        IdResolutionService idResolutionService)
     {
         this._userUpdateQueue = userUpdateQueue;
         this._userUpdateQueue.UsersToUpdate.SubscribeAsync(OnNextAsync);
@@ -55,6 +57,7 @@ public class UpdateService
         this._aliasService = aliasService;
         this._userService = userService;
         this._botSettings = botSettings.Value;
+        this._idResolutionService = idResolutionService;
     }
 
     private async Task OnNextAsync(UpdateUserQueueItem user)
@@ -206,7 +209,8 @@ public class UpdateService
         try
         {
             var playUpdate =
-                await PlayRepository.InsertLatestPlays(recentTracks.Content.RecentTracks, user.UserId, connection);
+                await PlayRepository.InsertLatestPlays(recentTracks.Content.RecentTracks, user.UserId, connection,
+                    this._idResolutionService.ResolvePlayIds);
 
             recentTracks.Content.NewRecentTracksAmount = playUpdate.NewPlays.Count;
             recentTracks.Content.RemovedRecentTracksAmount = playUpdate.RemovedPlays.Count;
@@ -346,6 +350,7 @@ public class UpdateService
             Statistics.UpdatedUsers.WithLabels("user_init").Inc();
 
             _ = SmallIndex(user);
+            _ = BackfillPlayIds(user);
         }
 
         _ = SmallIndex(user);
@@ -353,6 +358,19 @@ public class UpdateService
         await connection.CloseAsync();
 
         return recentTracks;
+    }
+
+    private async Task BackfillPlayIds(User user)
+    {
+        var cacheKey = $"backfill-play-ids-{user.UserId}";
+        if (this._cache.TryGetValue(cacheKey, out _))
+        {
+            return;
+        }
+
+        this._cache.Set(cacheKey, true);
+
+        await this._idResolutionService.BackfillUserPlayIds(user.UserId);
     }
 
     private async Task SmallIndex(User user)
@@ -417,8 +435,13 @@ SELECT 3 AS Type, user_track_id AS Id, artist_name, name, playcount FROM public.
 
             if (existingUserArtist != null)
             {
+                var resolvedArtistId = artist.First().ArtistId;
+                var setArtistId = resolvedArtistId.HasValue
+                    ? $", artist_id = COALESCE(artist_id, {resolvedArtistId.Value})"
+                    : "";
+
                 updateExistingArtists.Append(
-                    $"UPDATE public.user_artists SET playcount = {existingUserArtist.Playcount + artist.Count()} " +
+                    $"UPDATE public.user_artists SET playcount = {existingUserArtist.Playcount + artist.Count()}{setArtistId} " +
                     $"WHERE user_artist_id = {existingUserArtist.UserArtistId}; ");
 
                 Log.Debug($"Updated artist {artistName} for {user.UserNameLastFM}");
@@ -426,13 +449,14 @@ SELECT 3 AS Type, user_track_id AS Id, artist_name, name, playcount FROM public.
             else
             {
                 await using var addUserArtist =
-                    new NpgsqlCommand("INSERT INTO public.user_artists(user_id, name, playcount)" +
-                                      "VALUES(@userId, @artistName, @artistPlaycount); ",
+                    new NpgsqlCommand("INSERT INTO public.user_artists(user_id, name, playcount, artist_id)" +
+                                      "VALUES(@userId, @artistName, @artistPlaycount, @artistId); ",
                         connection);
 
                 addUserArtist.Parameters.AddWithValue("userId", user.UserId);
                 addUserArtist.Parameters.AddWithValue("artistName", artistName);
                 addUserArtist.Parameters.AddWithValue("artistPlaycount", artist.Count());
+                addUserArtist.Parameters.Add(new NpgsqlParameter<int?>("artistId", artist.First().ArtistId));
 
                 Log.Debug($"Added artist {artistName} for {user.UserNameLastFM}");
 
@@ -481,8 +505,13 @@ SELECT 3 AS Type, user_track_id AS Id, artist_name, name, playcount FROM public.
 
             if (existingUserAlbum != null)
             {
+                var resolvedAlbumId = album.First().AlbumId;
+                var setAlbumId = resolvedAlbumId.HasValue
+                    ? $", album_id = COALESCE(album_id, {resolvedAlbumId.Value})"
+                    : "";
+
                 updateExistingAlbums.Append(
-                    $"UPDATE public.user_albums SET playcount = {existingUserAlbum.Playcount + album.Count()} " +
+                    $"UPDATE public.user_albums SET playcount = {existingUserAlbum.Playcount + album.Count()}{setAlbumId} " +
                     $"WHERE user_album_id = {existingUserAlbum.UserAlbumId}; ");
 
                 Log.Debug($"Updated album {album.Key.AlbumName} for {user.UserNameLastFM} (+{album.Count()} plays)");
@@ -490,8 +519,8 @@ SELECT 3 AS Type, user_track_id AS Id, artist_name, name, playcount FROM public.
             else
             {
                 await using var addUserAlbum =
-                    new NpgsqlCommand("INSERT INTO public.user_albums(user_id, name, artist_name, playcount)" +
-                                      "VALUES(@userId, @albumName, @artistName, @albumPlaycount); ",
+                    new NpgsqlCommand("INSERT INTO public.user_albums(user_id, name, artist_name, playcount, album_id)" +
+                                      "VALUES(@userId, @albumName, @artistName, @albumPlaycount, @albumId); ",
                         connection);
 
                 var capitalizedAlbumName = album.First().AlbumName;
@@ -500,6 +529,7 @@ SELECT 3 AS Type, user_track_id AS Id, artist_name, name, playcount FROM public.
                 addUserAlbum.Parameters.AddWithValue("albumName", capitalizedAlbumName);
                 addUserAlbum.Parameters.AddWithValue("artistName", artistName);
                 addUserAlbum.Parameters.AddWithValue("albumPlaycount", album.Count());
+                addUserAlbum.Parameters.Add(new NpgsqlParameter<int?>("albumId", album.First().AlbumId));
 
                 Log.Debug($"Added album {album.Key.ArtistName} - {capitalizedAlbumName} for {user.UserNameLastFM}");
 
@@ -546,8 +576,13 @@ SELECT 3 AS Type, user_track_id AS Id, artist_name, name, playcount FROM public.
 
             if (existingUserTrack != null)
             {
+                var resolvedTrackId = track.First().TrackId;
+                var setTrackId = resolvedTrackId.HasValue
+                    ? $", track_id = COALESCE(track_id, {resolvedTrackId.Value})"
+                    : "";
+
                 updateExistingTracks.Append(
-                    $"UPDATE public.user_tracks SET playcount = {existingUserTrack.Playcount + track.Count()} " +
+                    $"UPDATE public.user_tracks SET playcount = {existingUserTrack.Playcount + track.Count()}{setTrackId} " +
                     $"WHERE user_track_id = {existingUserTrack.UserTrackId}; ");
 
                 Log.Debug($"Updated track {track.Key.TrackName} for {user.UserNameLastFM} (+{track.Count()} plays)");
@@ -555,8 +590,8 @@ SELECT 3 AS Type, user_track_id AS Id, artist_name, name, playcount FROM public.
             else
             {
                 await using var addUserTrack =
-                    new NpgsqlCommand("INSERT INTO public.user_tracks(user_id, name, artist_name, playcount)" +
-                                      "VALUES(@userId, @trackName, @artistName, @trackPlaycount); ",
+                    new NpgsqlCommand("INSERT INTO public.user_tracks(user_id, name, artist_name, playcount, track_id)" +
+                                      "VALUES(@userId, @trackName, @artistName, @trackPlaycount, @trackId); ",
                         connection);
 
                 var capitalizedTrackName = track.First().TrackName;
@@ -565,6 +600,7 @@ SELECT 3 AS Type, user_track_id AS Id, artist_name, name, playcount FROM public.
                 addUserTrack.Parameters.AddWithValue("trackName", capitalizedTrackName);
                 addUserTrack.Parameters.AddWithValue("artistName", artistName);
                 addUserTrack.Parameters.AddWithValue("trackPlaycount", track.Count());
+                addUserTrack.Parameters.Add(new NpgsqlParameter<int?>("trackId", track.First().TrackId));
 
                 Log.Debug($"Added track {track.Key.ArtistName} - {capitalizedTrackName} for {user.UserNameLastFM}");
 

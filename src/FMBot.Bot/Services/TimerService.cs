@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
+using FMBot.Bot.Factories;
 using FMBot.Bot.Handlers;
 using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.ThirdParty;
@@ -202,6 +203,9 @@ public class TimerService : IDisposable
 
         Log.Information($"RecurringJob: Adding {nameof(UpdateDiscogsUsers)}");
         RecurringJob.AddOrUpdate(nameof(UpdateDiscogsUsers), () => UpdateDiscogsUsers(), "0 12 * * *");
+
+        Log.Information($"RecurringJob: Adding {nameof(EnrichMissingMetadata)}");
+        RecurringJob.AddOrUpdate(nameof(EnrichMissingMetadata), () => EnrichMissingMetadata(), "*/20 * * * *");
     }
 
     public async Task UpdateStatus()
@@ -710,6 +714,22 @@ public class TimerService : IDisposable
         PublicProperties.UsedCommandsReferencedMusic = new ConcurrentDictionary<ulong, ReferencedMusic>();
 
         Log.Information("Cleared internal logs");
+    }
+
+    public async Task EnrichMissingMetadata()
+    {
+        Log.Information($"Running {nameof(EnrichMissingMetadata)}");
+
+        try
+        {
+            var musicDataFactory = this._serviceProvider.GetRequiredService<MusicDataFactory>();
+            await musicDataFactory.EnrichMissingMetadata();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, nameof(EnrichMissingMetadata));
+            throw;
+        }
     }
 
     public async Task UpdateBotLists()

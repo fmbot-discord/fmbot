@@ -30,7 +30,8 @@ public class AlbumRepository
             .MapText("name", x => x.Name)
             .MapText("artist_name", x => x.ArtistName)
             .MapInteger("user_id", x => x.UserId)
-            .MapInteger("playcount", x => x.Playcount);
+            .MapInteger("playcount", x => x.Playcount)
+            .MapInteger("album_id", x => x.AlbumId);
 
         await using var deleteCurrentAlbums =
             new NpgsqlCommand($"DELETE FROM public.user_albums WHERE user_id = {userId};", connection);

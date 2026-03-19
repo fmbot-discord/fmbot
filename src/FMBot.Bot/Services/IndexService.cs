@@ -31,12 +31,14 @@ public class IndexService
     private readonly IMemoryCache _cache;
     private readonly BotSettings _botSettings;
     private readonly IDataSourceFactory _dataSourceFactory;
+    private readonly IdResolutionService _idResolutionService;
 
     public IndexService(IUserIndexQueue userIndexQueue,
         IDbContextFactory<FMBotDbContext> contextFactory,
         IMemoryCache cache,
         IOptions<BotSettings> botSettings,
-        IDataSourceFactory dataSourceFactory)
+        IDataSourceFactory dataSourceFactory,
+        IdResolutionService idResolutionService)
     {
         this._userIndexQueue = userIndexQueue;
         this._userIndexQueue.UsersToIndex.SubscribeAsync(OnNextAsync);
@@ -44,6 +46,7 @@ public class IndexService
         this._cache = cache;
         this._dataSourceFactory = dataSourceFactory;
         this._botSettings = botSettings.Value;
+        this._idResolutionService = idResolutionService;
     }
 
     private async Task OnNextAsync(IndexUserQueueItem user)
@@ -145,6 +148,8 @@ public class IndexService
 
             if (plays.Any())
             {
+                await this._idResolutionService.ResolvePlayIds(plays);
+
                 await PlayRepository.ReplaceAllPlays(plays, user.UserId, connection);
 
                 stats.PlayCount = plays.Count;
@@ -167,6 +172,7 @@ public class IndexService
             }
             else
             {
+                await this._idResolutionService.ResolveArtistIds(artists);
                 await ArtistRepository.AddOrReplaceUserArtistsInDatabase(artists, user.UserId, connection);
                 stats.ArtistCount = artists.Count;
             }
@@ -186,6 +192,7 @@ public class IndexService
             }
             else
             {
+                await this._idResolutionService.ResolveAlbumIds(albums);
                 await AlbumRepository.AddOrReplaceUserAlbumsInDatabase(albums, user.UserId, connection);
 
                 stats.AlbumCount = albums.Count;
@@ -206,6 +213,7 @@ public class IndexService
             }
             else
             {
+                await this._idResolutionService.ResolveTrackIds(tracks);
                 await TrackRepository.AddOrReplaceUserTracksInDatabase(tracks, user.UserId, connection);
 
                 stats.TrackCount = tracks.Count;

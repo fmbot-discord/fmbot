@@ -29,26 +29,16 @@ using Timestamp = Google.Protobuf.WellKnownTypes.Timestamp;
 
 namespace FMBot.Bot.Services;
 
-public class ImportService
+public class ImportService(
+    HttpClient httpClient,
+    IOptions<BotSettings> botSettings,
+    TimeEnrichment.TimeEnrichmentClient timeEnrichment,
+    ArtistEnrichment.ArtistEnrichmentClient artistEnrichment,
+    IMemoryCache cache,
+    IdResolutionService idResolutionService)
 {
-    private readonly HttpClient _httpClient;
-    private readonly TimeService _timeService;
-    private readonly BotSettings _botSettings;
-    private readonly TimeEnrichment.TimeEnrichmentClient _timeEnrichment;
-    private readonly ArtistEnrichment.ArtistEnrichmentClient _artistEnrichment;
-    private readonly IMemoryCache _cache;
+    private readonly BotSettings _botSettings = botSettings.Value;
 
-
-    public ImportService(HttpClient httpClient, TimeService timeService, IOptions<BotSettings> botSettings,
-        TimeEnrichment.TimeEnrichmentClient timeEnrichment, ArtistEnrichment.ArtistEnrichmentClient artistEnrichment, IMemoryCache cache)
-    {
-        this._httpClient = httpClient;
-        this._timeService = timeService;
-        this._timeEnrichment = timeEnrichment;
-        this._artistEnrichment = artistEnrichment;
-        this._cache = cache;
-        this._botSettings = botSettings.Value;
-    }
 
     public async Task<(ImportStatus status, List<AppleMusicCsvImportModel> result)> HandleAppleMusicFiles(User user,
         Attachment attachment)
@@ -65,7 +55,7 @@ public class ImportService
             user.UserId, user.DiscordUserId, attachment.FileName);
         if (attachment.FileName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
         {
-            await using var stream = await this._httpClient.GetStreamAsync(attachment.Url);
+            await using var stream = await httpClient.GetStreamAsync(attachment.Url);
             using var zip = new ZipArchive(stream, ZipArchiveMode.Read);
 
             if (!zip.Entries.Any(a =>
@@ -105,7 +95,7 @@ public class ImportService
 
         if (attachment.FileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
         {
-            await using var stream = await this._httpClient.GetStreamAsync(attachment.Url);
+            await using var stream = await httpClient.GetStreamAsync(attachment.Url);
             using var innerCsvStreamReader = new StreamReader(stream);
 
             try
@@ -184,7 +174,7 @@ public class ImportService
             Plays = { repeatedField }
         };
 
-        var playsWithArtist = await this._artistEnrichment.AddArtistToPlaysAsync(appleMusicImports);
+        var playsWithArtist = await artistEnrichment.AddArtistToPlaysAsync(appleMusicImports);
 
         Log.Information(
             "Importing: {userId} / {discordUserId} - AppleMusicImportToUserPlays - Total {totalPlays} - Artist found {artistFound} - Artist not found {artistNotFound}",
@@ -244,7 +234,7 @@ public class ImportService
             foreach (var attachment in attachments.Where(w => w?.Url != null && w.FileName.Contains(".json", StringComparison.OrdinalIgnoreCase))
                          .GroupBy(g => g.FileName))
             {
-                await using var stream = await this._httpClient.GetStreamAsync(attachment.First().Url);
+                await using var stream = await httpClient.GetStreamAsync(attachment.First().Url);
 
                 try
                 {
@@ -263,7 +253,7 @@ public class ImportService
             foreach (var attachment in attachments.Where(w => w?.Url != null && w.FileName.Contains(".zip", StringComparison.OrdinalIgnoreCase))
                          .GroupBy(g => g.FileName))
             {
-                await using var stream = await this._httpClient.GetStreamAsync(attachment.First().Url);
+                await using var stream = await httpClient.GetStreamAsync(attachment.First().Url);
 
                 using var zip = new ZipArchive(stream, ZipArchiveMode.Read);
 
@@ -276,7 +266,7 @@ public class ImportService
                 {
                     try
                     {
-                        await using var zipStream = entry.Open();
+                        await using var zipStream = await entry.OpenAsync();
                         var result = await JsonSerializer.DeserializeAsync<List<SpotifyEndSongImportModel>>(zipStream);
 
                         spotifyPlays.AddRange(result);
@@ -322,7 +312,7 @@ public class ImportService
             ImportedEndSongs = { repeatedField }
         };
 
-        var filterInvalidPlays = await this._timeEnrichment.FilterInvalidSpotifyImportsAsync(spotifyImports);
+        var filterInvalidPlays = await timeEnrichment.FilterInvalidSpotifyImportsAsync(spotifyImports);
 
         Log.Information(
             "Importing: {userId} / {discordUserId} - SpotifyImportToUserPlays found {validPlays} valid plays and {invalidPlays} invalid plays",
@@ -393,13 +383,16 @@ public class ImportService
     {
         if (plays != null && plays.Any())
         {
+            var playList = plays as IReadOnlyList<UserPlay> ?? plays.ToList();
+            await idResolutionService.ResolvePlayIds(playList);
+
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
-            var inserted = await PlayRepository.InsertTimeSeriesPlays(plays, connection);
+            var inserted = await PlayRepository.InsertTimeSeriesPlays(playList, connection);
             Log.Information(
                 "Importing: {userId} / {discordUserId} - Inserted {insertCount} plays (Should be {importCount})",
-                user.UserId, user.DiscordUserId, inserted, plays.Count);
+                user.UserId, user.DiscordUserId, inserted, playList.Count);
         }
         else
         {
@@ -465,14 +458,14 @@ public class ImportService
     {
         var id = CommandContextExtensions.GenerateRandomCode();
 
-        this._cache.Set($"impref-{id}", importEdit, TimeSpan.FromDays(2));
+        cache.Set($"impref-{id}", importEdit, TimeSpan.FromDays(2));
 
         return id;
     }
 
     public ReferencedMusic GetImportRef(string id)
     {
-        return this._cache.Get<ReferencedMusic>($"impref-{id}");
+        return cache.Get<ReferencedMusic>($"impref-{id}");
     }
 
     public async Task RenameArtistImports(User user, string oldArtistName, string newArtistName)

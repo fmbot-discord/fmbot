@@ -29,7 +29,8 @@ public class ArtistRepository
         var copyHelper = new PostgreSQLCopyHelper<UserArtist>("public", "user_artists")
             .MapText("name", x => x.Name)
             .MapInteger("user_id", x => x.UserId)
-            .MapInteger("playcount", x => x.Playcount);
+            .MapInteger("playcount", x => x.Playcount)
+            .MapInteger("artist_id", x => x.ArtistId);
 
         await using var deleteCurrentArtists =
             new NpgsqlCommand($"DELETE FROM public.user_artists WHERE user_id = {userId};", connection);

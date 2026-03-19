@@ -516,6 +516,11 @@ public class UserBuilder
             var buttonAttr = option.GetAttribute<FmButtonAttribute>();
             var active = fmSetting?.Buttons?.HasFlag(option) == true;
 
+            if (buttonsMenu.Options.Count(c => c.Default) >= maxButtons)
+            {
+                active = false;
+            }
+
             buttonsMenu.AddOption(new StringMenuSelectOptionProperties(name, value)
             {
                 Description = optionDescription,
