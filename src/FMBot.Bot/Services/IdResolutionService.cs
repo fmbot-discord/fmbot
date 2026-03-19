@@ -1,15 +1,21 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
+using Dapper;
+using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
+using Microsoft.Extensions.Options;
+using Npgsql;
 using Serilog;
 using Web.InternalApi;
 
 namespace FMBot.Bot.Services;
 
-public class IdResolutionService(IdResolution.IdResolutionClient client)
+public class IdResolutionService(IdResolution.IdResolutionClient client, IOptions<BotSettings> botSettings)
 {
+    private readonly BotSettings _botSettings = botSettings.Value;
     public async Task ResolvePlayIds(IReadOnlyList<UserPlay> plays)
     {
         if (plays == null || plays.Count == 0)
@@ -170,6 +176,75 @@ public class IdResolutionService(IdResolution.IdResolutionClient client)
         catch (Exception e)
         {
             Log.Warning(e, "IdResolution: Failed to resolve track IDs, continuing without IDs");
+        }
+    }
+
+    public async Task BackfillUserPlayIds(int userId)
+    {
+        try
+        {
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+            await connection.OpenAsync();
+
+            const string sql = "SELECT * FROM public.user_plays " +
+                               "WHERE user_id = @userId AND artist_id IS NULL " +
+                               "ORDER BY time_played DESC";
+
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+            var playsToBackfill = (await connection.QueryAsync<UserPlay>(sql, new { userId })).AsList();
+
+            if (playsToBackfill.Count == 0)
+            {
+                return;
+            }
+
+            await ResolvePlayIds(playsToBackfill);
+
+            const int batchSize = 500;
+            var updated = 0;
+
+            for (var i = 0; i < playsToBackfill.Count; i += batchSize)
+            {
+                var batch = playsToBackfill.Skip(i).Take(batchSize)
+                    .Where(p => p.ArtistId.HasValue || p.AlbumId.HasValue || p.TrackId.HasValue)
+                    .ToList();
+
+                if (batch.Count == 0)
+                {
+                    continue;
+                }
+
+                var sb = new StringBuilder();
+                foreach (var play in batch)
+                {
+                    var setClauses = new List<string>();
+                    if (play.ArtistId.HasValue)
+                    {
+                        setClauses.Add($"artist_id = {play.ArtistId.Value}");
+                    }
+                    if (play.AlbumId.HasValue)
+                    {
+                        setClauses.Add($"album_id = {play.AlbumId.Value}");
+                    }
+                    if (play.TrackId.HasValue)
+                    {
+                        setClauses.Add($"track_id = {play.TrackId.Value}");
+                    }
+
+                    sb.Append($"UPDATE public.user_plays SET {string.Join(", ", setClauses)} " +
+                              $"WHERE user_play_id = {play.UserPlayId}; ");
+                }
+
+                await connection.ExecuteAsync(sb.ToString());
+                updated += batch.Count;
+            }
+
+            Log.Information("BackfillPlayIds: Updated {updatedCount}/{totalCount} plays for user {userId}",
+                updated, playsToBackfill.Count, userId);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "BackfillPlayIds: Error backfilling play IDs for user {userId}", userId);
         }
     }
 }

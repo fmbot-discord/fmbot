@@ -350,6 +350,7 @@ public class UpdateService
             Statistics.UpdatedUsers.WithLabels("user_init").Inc();
 
             _ = SmallIndex(user);
+            _ = BackfillPlayIds(user);
         }
 
         _ = SmallIndex(user);
@@ -357,6 +358,19 @@ public class UpdateService
         await connection.CloseAsync();
 
         return recentTracks;
+    }
+
+    private async Task BackfillPlayIds(User user)
+    {
+        var cacheKey = $"backfill-play-ids-{user.UserId}";
+        if (this._cache.TryGetValue(cacheKey, out _))
+        {
+            return;
+        }
+
+        this._cache.Set(cacheKey, true);
+
+        await this._idResolutionService.BackfillUserPlayIds(user.UserId);
     }
 
     private async Task SmallIndex(User user)
@@ -421,8 +435,13 @@ SELECT 3 AS Type, user_track_id AS Id, artist_name, name, playcount FROM public.
 
             if (existingUserArtist != null)
             {
+                var resolvedArtistId = artist.First().ArtistId;
+                var setArtistId = resolvedArtistId.HasValue
+                    ? $", artist_id = COALESCE(artist_id, {resolvedArtistId.Value})"
+                    : "";
+
                 updateExistingArtists.Append(
-                    $"UPDATE public.user_artists SET playcount = {existingUserArtist.Playcount + artist.Count()} " +
+                    $"UPDATE public.user_artists SET playcount = {existingUserArtist.Playcount + artist.Count()}{setArtistId} " +
                     $"WHERE user_artist_id = {existingUserArtist.UserArtistId}; ");
 
                 Log.Debug($"Updated artist {artistName} for {user.UserNameLastFM}");
@@ -486,8 +505,13 @@ SELECT 3 AS Type, user_track_id AS Id, artist_name, name, playcount FROM public.
 
             if (existingUserAlbum != null)
             {
+                var resolvedAlbumId = album.First().AlbumId;
+                var setAlbumId = resolvedAlbumId.HasValue
+                    ? $", album_id = COALESCE(album_id, {resolvedAlbumId.Value})"
+                    : "";
+
                 updateExistingAlbums.Append(
-                    $"UPDATE public.user_albums SET playcount = {existingUserAlbum.Playcount + album.Count()} " +
+                    $"UPDATE public.user_albums SET playcount = {existingUserAlbum.Playcount + album.Count()}{setAlbumId} " +
                     $"WHERE user_album_id = {existingUserAlbum.UserAlbumId}; ");
 
                 Log.Debug($"Updated album {album.Key.AlbumName} for {user.UserNameLastFM} (+{album.Count()} plays)");
@@ -552,8 +576,13 @@ SELECT 3 AS Type, user_track_id AS Id, artist_name, name, playcount FROM public.
 
             if (existingUserTrack != null)
             {
+                var resolvedTrackId = track.First().TrackId;
+                var setTrackId = resolvedTrackId.HasValue
+                    ? $", track_id = COALESCE(track_id, {resolvedTrackId.Value})"
+                    : "";
+
                 updateExistingTracks.Append(
-                    $"UPDATE public.user_tracks SET playcount = {existingUserTrack.Playcount + track.Count()} " +
+                    $"UPDATE public.user_tracks SET playcount = {existingUserTrack.Playcount + track.Count()}{setTrackId} " +
                     $"WHERE user_track_id = {existingUserTrack.UserTrackId}; ");
 
                 Log.Debug($"Updated track {track.Key.TrackName} for {user.UserNameLastFM} (+{track.Count()} plays)");
