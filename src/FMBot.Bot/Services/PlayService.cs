@@ -786,7 +786,7 @@ public class PlayService
                            "INNER JOIN users AS u ON up.user_id = u.user_id " +
                            "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
                            "WHERE gu.guild_id = @guildId AND " +
-                           "UPPER(up.artist_name) = UPPER(CAST(@artistName AS CITEXT)) AND " +
+                           "up.artist_name = @artistName AND " +
                            "up.time_played >= @minDate";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;

@@ -43,8 +43,8 @@ public class AlbumRepository
     public static async Task<Album> GetAlbumForName(string artistName, string albumName, NpgsqlConnection connection)
     {
         const string getAlbumQuery = "SELECT * FROM public.albums " +
-                                     "WHERE UPPER(artist_name) = UPPER(CAST(@artistName AS CITEXT)) AND " +
-                                     "UPPER(name) = UPPER(CAST(@albumName AS CITEXT))";
+                                     "WHERE artist_name = @artistName AND " +
+                                     "name = @albumName";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         return await connection.QueryFirstOrDefaultAsync<Album>(getAlbumQuery, new
@@ -70,8 +70,8 @@ public class AlbumRepository
         const string sql = "SELECT ua.playcount " +
                            "FROM user_albums AS ua " +
                            "WHERE ua.user_id = @userId AND " +
-                           "UPPER(ua.name) = UPPER(CAST(@albumName AS CITEXT)) AND " +
-                           "UPPER(ua.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
+                           "ua.name = @albumName AND " +
+                           "ua.artist_name = @artistName " +
                            "ORDER BY playcount DESC";
 
         return await connection.QueryFirstOrDefaultAsync<int>(sql, new
@@ -133,9 +133,8 @@ LIMIT 1;";
             release_date_precision,
             mbid
         FROM public.albums
-        WHERE (UPPER(name), UPPER(artist_name)) IN (
-            SELECT UPPER(CAST(unnest(@albumNames) AS CITEXT)),
-                   UPPER(CAST(unnest(@artistNames) AS CITEXT))
+        WHERE (name, artist_name) IN (
+            SELECT unnest(@albumNames), unnest(@artistNames)
         ) AND release_date != '0000'";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
@@ -188,9 +187,8 @@ LIMIT 1;";
         const string query = @"
         SELECT a.name, a.artist_name, a.id
         FROM public.albums a
-        WHERE (UPPER(a.name), UPPER(a.artist_name)) IN (
-            SELECT UPPER(CAST(unnest(@albumNames) AS CITEXT)),
-                   UPPER(CAST(unnest(@artistNames) AS CITEXT))
+        WHERE (a.name, a.artist_name) IN (
+            SELECT unnest(@albumNames), unnest(@artistNames)
         )";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
@@ -213,9 +211,8 @@ LIMIT 1;";
         const string getAlbumsQuery = @"
         SELECT a.name, a.artist_name, a.popularity
         FROM public.albums a
-        WHERE (UPPER(a.artist_name), UPPER(a.name)) IN (
-            SELECT UPPER(CAST(unnest(@artistNames) AS CITEXT)),
-                   UPPER(CAST(unnest(@albumNames) AS CITEXT))
+        WHERE (a.artist_name, a.name) IN (
+            SELECT unnest(@artistNames), unnest(@albumNames)
         ) AND a.popularity IS NOT NULL";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;

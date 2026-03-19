@@ -32,7 +32,7 @@ public class WhoKnowsAlbumService
                            "SELECT ub.user_id, " +
                            "ub.playcount " +
                            "FROM user_albums AS ub " +
-                           "WHERE UPPER(ub.name) = UPPER(CAST(@albumName AS CITEXT)) AND UPPER(ub.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
+                           "WHERE ub.name = @albumName AND ub.artist_name = @artistName " +
                            "AND ub.user_id = ANY(SELECT user_id FROM guild_users WHERE guild_id = @guildId) " +
                            "ORDER BY ub.playcount DESC;" +
                            "COMMIT; ";
@@ -97,7 +97,7 @@ public class WhoKnowsAlbumService
                            "u.last_used " +
                            "FROM user_albums AS ub " +
                            "FULL OUTER JOIN users AS u ON ub.user_id = u.user_id " +
-                           "WHERE UPPER(ub.name) = UPPER(CAST(@albumName AS CITEXT)) AND UPPER(ub.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
+                           "WHERE ub.name = @albumName AND ub.artist_name = @artistName " +
                            "ORDER BY UPPER(u.user_name_last_fm) DESC, ub.playcount DESC) ub " +
                            "ORDER BY last_used DESC ";
 
@@ -154,7 +154,7 @@ public class WhoKnowsAlbumService
                            "INNER JOIN friends AS fr ON fr.friend_user_id = ub.user_id " +
                            "LEFT JOIN guild_users AS gu ON gu.user_id = u.user_id AND gu.guild_id = @guildId " +
                            "WHERE fr.user_id = @userId AND " +
-                           "UPPER(ub.name) = UPPER(CAST(@albumName AS CITEXT)) AND UPPER(ub.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
+                           "ub.name = @albumName AND ub.artist_name = @artistName " +
                            "ORDER BY ub.playcount DESC ";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
@@ -222,7 +222,7 @@ public class WhoKnowsAlbumService
 
         if (!string.IsNullOrWhiteSpace(artistName))
         {
-            sql += "AND UPPER(ub.artist_name) = UPPER(CAST(@artistName AS CITEXT)) ";
+            sql += "AND ub.artist_name = @artistName ";
         }
 
         sql += "GROUP BY ub.name, ub.artist_name ";
