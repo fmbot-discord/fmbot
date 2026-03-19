@@ -264,7 +264,7 @@ public class CrownService
         const string sql = "SELECT * FROM public.user_crowns AS uc " +
                            "WHERE uc.guild_id = @guildId AND " +
                            "uc.active = true AND " +
-                           "uc.artist_name = @artistName " +
+                           "UPPER(uc.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
                            "ORDER BY current_playcount desc";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
@@ -282,7 +282,7 @@ public class CrownService
                            "FROM public.user_crowns AS uc  " +
                            "INNER JOIN guild_users AS gu ON gu.user_id = uc.user_id AND gu.guild_id = @guildId " +
                            "WHERE uc.guild_id = @guildId AND uc.active = true AND  " +
-                           "uc.artist_name = @artistName " +
+                           "UPPER(uc.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
                            "ORDER BY current_playcount DESC ";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
@@ -446,7 +446,7 @@ public class CrownService
     {
         const string sql = "SELECT * FROM public.user_crowns AS uc " +
                            "WHERE uc.guild_id = @guildId AND " +
-                           "uc.artist_name = @artistName " +
+                           "UPPER(uc.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
                            "ORDER BY current_playcount DESC";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;

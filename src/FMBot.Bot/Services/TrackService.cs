@@ -675,7 +675,7 @@ public class TrackService
     public async Task<List<UserTrack>> GetArtistUserTracks(int userId, string artistName)
     {
         const string sql = "SELECT user_track_id, user_id, name, artist_name, playcount" +
-                           " FROM public.user_tracks where user_id = @userId AND artist_name = @artistName;";
+                           " FROM public.user_tracks where user_id = @userId AND UPPER(artist_name) = UPPER(CAST(@artistName AS CITEXT));";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);

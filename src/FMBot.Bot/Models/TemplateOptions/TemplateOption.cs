@@ -320,7 +320,7 @@ public static class TemplateOptions
             VariableType = VariableType.Text,
             FooterOrder = 20,
             SqlQuery = "SELECT ua.playcount FROM user_artists AS ua WHERE ua.user_id = @userId AND " +
-                       "ua.name = @artistName",
+                       "UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT))",
             ResultProcessor = async (context, reader) =>
             {
                 var playcount = await reader.IsDBNullAsync(0) ? 0 : await reader.GetFieldValueAsync<int>(0);
@@ -375,7 +375,7 @@ public static class TemplateOptions
             VariableType = VariableType.Text,
             FooterOrder = 30,
             SqlQuery = "SELECT ua.playcount FROM user_albums AS ua WHERE ua.user_id = @userId AND " +
-                       "ua.name = @albumName AND ua.artist_name = @artistName",
+                       "UPPER(ua.name) = UPPER(CAST(@albumName AS CITEXT)) AND UPPER(ua.artist_name) = UPPER(CAST(@artistName AS CITEXT))",
             ResultProcessor = async (context, reader) =>
             {
                 var playcount = await reader.IsDBNullAsync(0) ? 0 : await reader.GetFieldValueAsync<int>(0);
@@ -433,7 +433,7 @@ public static class TemplateOptions
             VariableType = VariableType.Text,
             FooterOrder = 40,
             SqlQuery = "SELECT ut.playcount FROM user_tracks AS ut WHERE ut.user_id = @userId AND " +
-                       "ut.name = @trackName AND ut.artist_name = @artistName",
+                       "UPPER(ut.name) = UPPER(CAST(@trackName AS CITEXT)) AND UPPER(ut.artist_name) = UPPER(CAST(@artistName AS CITEXT))",
             ResultProcessor = async (context, reader) =>
             {
                 var playcount = await reader.IsDBNullAsync(0) ? 0 : await reader.GetFieldValueAsync<int>(0);
@@ -524,7 +524,7 @@ public static class TemplateOptions
             SqlQuery = @"
                     SELECT country_code
                     FROM public.artists
-                    WHERE name = @artistName",
+                    WHERE UPPER(name) = UPPER(CAST(@artistName AS CITEXT))",
             ResultProcessor = async (context, reader) =>
             {
                 if (!await reader.IsDBNullAsync(0))
@@ -557,7 +557,7 @@ public static class TemplateOptions
             SqlQuery = @"
                     SELECT start_date, end_date
                     FROM public.artists
-                    WHERE name = @artistName",
+                    WHERE UPPER(name) = UPPER(CAST(@artistName AS CITEXT))",
             ResultProcessor = async (context, reader) =>
             {
                 if (!await reader.IsDBNullAsync(0))
@@ -624,7 +624,7 @@ public static class TemplateOptions
                     SELECT ag.name
                     FROM public.artists a
                     JOIN public.artist_genres ag ON a.id = ag.artist_id
-                    WHERE a.name = @artistName
+                    WHERE UPPER(a.name) = UPPER(CAST(@artistName AS CITEXT))
                     ORDER BY ag.id
                     LIMIT 6",
             ResultProcessor = async (context, reader) =>
@@ -800,7 +800,7 @@ public static class TemplateOptions
                     INNER JOIN guild_users AS gu ON gu.user_id = uc.user_id AND gu.guild_id = @guildId
                     WHERE uc.guild_id = @guildId
                       AND uc.active = true
-                      AND uc.artist_name = @artistName
+                      AND UPPER(uc.artist_name) = UPPER(CAST(@artistName AS CITEXT))
                     ORDER BY uc.current_playcount DESC
                     LIMIT 1",
             ResultProcessor = async (context, reader) =>
@@ -1024,7 +1024,7 @@ public static class TemplateOptions
                                 ua.playcount
                             FROM user_artists AS ua
                             JOIN users AS u ON ua.user_id = u.user_id
-                            WHERE ua.name = @artistName
+                            WHERE UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT))
                               AND NOT UPPER(u.user_name_last_fm) = ANY(SELECT UPPER(user_name_last_fm) FROM botted_users WHERE ban_active = true)
                               AND NOT UPPER(u.user_name_last_fm) = ANY(SELECT UPPER(user_name_last_fm) FROM global_filtered_users WHERE created >= NOW() - INTERVAL '3 months')
                             ORDER BY UPPER(u.user_name_last_fm), ua.playcount DESC
@@ -1068,8 +1068,8 @@ public static class TemplateOptions
                                 ub.playcount
                             FROM user_albums AS ub
                             JOIN users AS u ON ub.user_id = u.user_id
-                            WHERE ub.name = @albumName
-                              AND ub.artist_name = @artistName
+                            WHERE UPPER(ub.name) = UPPER(CAST(@albumName AS CITEXT))
+                              AND UPPER(ub.artist_name) = UPPER(CAST(@artistName AS CITEXT))
                               AND NOT UPPER(u.user_name_last_fm) = ANY(SELECT UPPER(user_name_last_fm) FROM botted_users WHERE ban_active = true)
                               AND NOT UPPER(u.user_name_last_fm) = ANY(SELECT UPPER(user_name_last_fm) FROM global_filtered_users WHERE created >= NOW() - INTERVAL '3 months')
                             ORDER BY UPPER(u.user_name_last_fm), ub.playcount DESC
@@ -1114,8 +1114,8 @@ public static class TemplateOptions
                                 ut.playcount
                             FROM user_tracks AS ut
                             JOIN users AS u ON ut.user_id = u.user_id
-                            WHERE ut.name = @trackName
-                              AND ut.artist_name = @artistName
+                            WHERE UPPER(ut.name) = UPPER(CAST(@trackName AS CITEXT))
+                              AND UPPER(ut.artist_name) = UPPER(CAST(@artistName AS CITEXT))
                               AND NOT UPPER(u.user_name_last_fm) = ANY(SELECT UPPER(user_name_last_fm) FROM botted_users WHERE ban_active = true)
                               AND NOT UPPER(u.user_name_last_fm) = ANY(SELECT UPPER(user_name_last_fm) FROM global_filtered_users WHERE created >= NOW() - INTERVAL '3 months')
                             ORDER BY UPPER(u.user_name_last_fm), ut.playcount DESC

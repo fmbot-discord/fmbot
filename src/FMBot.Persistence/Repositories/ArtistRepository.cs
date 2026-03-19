@@ -43,7 +43,7 @@ public class ArtistRepository
         bool includeGenres = false, bool includeLinks = false, bool includeImages = false)
     {
         const string getArtistQuery = "SELECT * FROM public.artists " +
-                                      "WHERE name = @artistName";
+                                      "WHERE UPPER(name) = UPPER(CAST(@artistName AS CITEXT))";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         var artist = await connection.QueryFirstOrDefaultAsync<Artist>(getArtistQuery, new
@@ -204,7 +204,7 @@ public class ArtistRepository
     {
         const string sql = "SELECT ua.playcount " +
                            "FROM user_artists AS ua " +
-                           "WHERE ua.user_id = @userId AND ua.name = @artistName " +
+                           "WHERE ua.user_id = @userId AND UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT)) " +
                            "ORDER BY playcount DESC";
 
         return await connection.QueryFirstOrDefaultAsync<int>(sql, new
@@ -241,11 +241,11 @@ public class ArtistRepository
     {
         const string query = @"
         WITH artist_list(name) AS (
-            SELECT DISTINCT unnest(@artistNames)::citext
+            SELECT DISTINCT UPPER(unnest(@artistNames)::citext)
         )
-        SELECT DISTINCT ON (a.name) a.name, a.id
+        SELECT DISTINCT ON (UPPER(a.name)) a.name, a.id
         FROM public.artists a
-        JOIN artist_list l ON a.name = l.name";
+        JOIN artist_list l ON UPPER(a.name) = l.name";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         var results = await connection.QueryAsync<(string Name, int Id)>(query, new

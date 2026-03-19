@@ -33,7 +33,7 @@ public class WhoKnowsTrackService
                            "ut.playcount " +
                            "FROM user_tracks AS ut " +
                            "INNER JOIN guild_users AS gu ON gu.user_id = ut.user_id " +
-                           "WHERE gu.guild_id = @guildId AND ut.name = @trackName AND ut.artist_name = @artistName " +
+                           "WHERE gu.guild_id = @guildId AND UPPER(ut.name) = UPPER(CAST(@trackName AS CITEXT)) AND UPPER(ut.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
                            "ORDER BY ut.playcount DESC; " +
                            "COMMIT; ";
 
@@ -97,7 +97,7 @@ public class WhoKnowsTrackService
                            "u.last_used " +
                            "FROM user_tracks AS ut " +
                            "FULL OUTER JOIN users AS u ON ut.user_id = u.user_id " +
-                           "WHERE ut.name = @trackName AND ut.artist_name = @artistName " +
+                           "WHERE UPPER(ut.name) = UPPER(CAST(@trackName AS CITEXT)) AND UPPER(ut.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
                            "ORDER BY UPPER(u.user_name_last_fm) DESC, ut.playcount DESC) ut " +
                            "ORDER BY last_used DESC";
 
@@ -154,7 +154,7 @@ public class WhoKnowsTrackService
                            "INNER JOIN friends AS fr ON fr.friend_user_id = ut.user_id " +
                            "LEFT JOIN guild_users AS gu ON gu.user_id = ut.user_id AND gu.guild_id = @guildId " +
                            "WHERE fr.user_id = @userId AND " +
-                           "ut.name = @trackName AND ut.artist_name = @artistName " +
+                           "UPPER(ut.name) = UPPER(CAST(@trackName AS CITEXT)) AND UPPER(ut.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
                            "ORDER BY ut.playcount DESC ";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
@@ -225,7 +225,7 @@ public class WhoKnowsTrackService
 
         if (!string.IsNullOrWhiteSpace(artistName))
         {
-            sql += "AND ut.artist_name = @artistName ";
+            sql += "AND UPPER(ut.artist_name) = UPPER(CAST(@artistName AS CITEXT)) ";
             dbArgs.Add("artistName", artistName);
         }
 

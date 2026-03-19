@@ -42,7 +42,7 @@ public class WhoKnowsArtistService
                            "SELECT ua.user_id, " +
                            "ua.playcount " +
                            "FROM user_artists AS ua " +
-                           "WHERE ua.name = @artistName " +
+                           "WHERE UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT)) " +
                            "AND ua.user_id = ANY(SELECT user_id FROM guild_users WHERE guild_id = @guildId) " +
                            "ORDER BY ua.playcount DESC; " +
                            "COMMIT; ";
@@ -106,7 +106,7 @@ public class WhoKnowsArtistService
                            "u.last_used " +
                            "FROM user_artists AS ua " +
                            "FULL OUTER JOIN users AS u ON ua.user_id = u.user_id " +
-                           "WHERE ua.name = @artistName " +
+                           "WHERE UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT)) " +
                            "ORDER BY UPPER(u.user_name_last_fm) DESC, ua.playcount DESC) ua " +
                            "ORDER BY last_used DESC";
 
@@ -162,7 +162,7 @@ public class WhoKnowsArtistService
                            "FULL OUTER JOIN users AS u ON ua.user_id = u.user_id " +
                            "INNER JOIN friends AS fr ON fr.friend_user_id = ua.user_id " +
                            "LEFT JOIN guild_users AS gu ON gu.user_id = u.user_id AND gu.guild_id = @guildId " +
-                           "WHERE fr.user_id = @userId AND ua.name = @artistName " +
+                           "WHERE fr.user_id = @userId AND UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT)) " +
                            "ORDER BY UPPER(u.user_name_last_fm) DESC, ua.playcount DESC) ua " +
                            "ORDER BY playcount DESC";
 

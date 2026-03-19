@@ -42,8 +42,8 @@ public class TrackRepository
         bool includeSyncedLyrics = false)
     {
         const string getTrackQuery = "SELECT * FROM public.tracks " +
-                                     "WHERE artist_name = @artistName AND " +
-                                     "name = @trackName";
+                                     "WHERE UPPER(artist_name) = UPPER(CAST(@artistName AS CITEXT)) AND " +
+                                     "UPPER(name) = UPPER(CAST(@trackName AS CITEXT))";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         var track = await connection.QueryFirstOrDefaultAsync<Track>(getTrackQuery, new
@@ -89,8 +89,8 @@ public class TrackRepository
         const string sql = "SELECT ut.playcount " +
                            "FROM user_tracks AS ut " +
                            "WHERE ut.user_id = @userId AND " +
-                           "ut.name = @trackName AND " +
-                           "ut.artist_name = @artistName " +
+                           "UPPER(ut.name) = UPPER(CAST(@trackName AS CITEXT)) AND " +
+                           "UPPER(ut.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
                            "ORDER BY playcount DESC";
 
         return await connection.QueryFirstOrDefaultAsync<int>(sql, new
