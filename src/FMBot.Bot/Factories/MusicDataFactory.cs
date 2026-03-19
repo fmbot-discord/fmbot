@@ -1069,8 +1069,6 @@ public class MusicDataFactory
 
     public async Task EnrichMissingMetadata()
     {
-        const int batchSize = 500;
-
         Log.Information("EnrichMissingMetadata: Starting batch");
 
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -1078,19 +1076,19 @@ public class MusicDataFactory
         var artists = await db.Artists
             .Where(a => a.SpotifyImageDate == null)
             .OrderBy(a => EF.Functions.Random())
-            .Take(batchSize)
+            .Take(200)
             .ToListAsync();
 
         var albums = await db.Albums
             .Where(a => a.SpotifyImageDate == null)
             .OrderBy(a => EF.Functions.Random())
-            .Take(batchSize)
+            .Take(300)
             .ToListAsync();
 
         var tracks = await db.Tracks
             .Where(t => t.SpotifyLastUpdated == null)
             .OrderBy(t => EF.Functions.Random())
-            .Take(batchSize)
+            .Take(400)
             .ToListAsync();
 
         Log.Information("EnrichMissingMetadata: Found {artists} artists, {albums} albums, {tracks} tracks",
@@ -1128,7 +1126,7 @@ public class MusicDataFactory
                 Log.Warning(e, "EnrichMissingMetadata: Failed to enrich artist {id}", artist);
             }
 
-            await Task.Delay(TimeSpan.FromSeconds(3));
+            await Task.Delay(TimeSpan.FromSeconds(6));
         }
 
         return enriched;
@@ -1156,7 +1154,7 @@ public class MusicDataFactory
                 Log.Warning(e, "EnrichMissingMetadata: Failed to enrich album {id}", album);
             }
 
-            await Task.Delay(TimeSpan.FromSeconds(3));
+            await Task.Delay(TimeSpan.FromSeconds(4));
         }
 
         return enriched;

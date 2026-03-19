@@ -205,10 +205,7 @@ public class TimerService : IDisposable
         RecurringJob.AddOrUpdate(nameof(UpdateDiscogsUsers), () => UpdateDiscogsUsers(), "0 12 * * *");
 
         Log.Information($"RecurringJob: Adding {nameof(EnrichMissingMetadata)}");
-        RecurringJob.AddOrUpdate(nameof(EnrichMissingMetadata), () => EnrichMissingMetadata(), "*/10 * * * *");
-
-        Log.Information($"RecurringJob: Adding {nameof(EnrichMissingMetadata)}");
-        RecurringJob.AddOrUpdate(nameof(EnrichMissingMetadata), () => EnrichMissingMetadata(), "*/10 * * * *");
+        RecurringJob.AddOrUpdate(nameof(EnrichMissingMetadata), () => EnrichMissingMetadata(), "*/20 * * * *");
     }
 
     public async Task UpdateStatus()
