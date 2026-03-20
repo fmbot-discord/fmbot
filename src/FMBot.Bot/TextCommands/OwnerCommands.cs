@@ -370,6 +370,44 @@ public class OwnerCommands(
         await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
     }
 
+    [Command("senddm", "dm")]
+    [Summary("Sends a DM to a user")]
+    public async Task SendDmAsync(string userId, [CommandParameter(Remainder = true)] string message)
+    {
+        if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+        {
+            return;
+        }
+
+        if (!ulong.TryParse(userId, out var discordUserId))
+        {
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
+                new MessageProperties { Content = "Invalid Discord user ID." });
+            return;
+        }
+
+        try
+        {
+            var embed = new EmbedProperties()
+                .WithColor(DiscordConstants.InformationColorBlue)
+                .WithDescription(message);
+            embed.WithAuthor(".fmbot staff message");
+
+            var user = await client.Rest.GetUserAsync(discordUserId);
+            var dmChannel = await user.GetDMChannelAsync();
+            await dmChannel.SendMessageAsync(new MessageProperties { Embeds = [embed] });
+
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
+                new MessageProperties { Content = $"✅ DM sent to {discordUserId}" });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
+                new MessageProperties { Content = $"❌ Failed to send DM: {e.Message}" });
+        }
+    }
+
     private string GetCacheStatistics()
     {
         var sb = new StringBuilder();
