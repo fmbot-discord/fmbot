@@ -43,8 +43,8 @@ public class AlbumRepository
     public static async Task<Album> GetAlbumForName(string artistName, string albumName, NpgsqlConnection connection)
     {
         const string getAlbumQuery = "SELECT * FROM public.albums " +
-                                     "WHERE UPPER(artist_name) = UPPER(CAST(@artistName AS CITEXT)) AND " +
-                                     "UPPER(name) = UPPER(CAST(@albumName AS CITEXT))";
+                                     "WHERE artist_name = CAST(@artistName AS CITEXT) AND " +
+                                     "name = CAST(@albumName AS CITEXT)";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         return await connection.QueryFirstOrDefaultAsync<Album>(getAlbumQuery, new

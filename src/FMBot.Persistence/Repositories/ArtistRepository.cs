@@ -43,7 +43,7 @@ public class ArtistRepository
         bool includeGenres = false, bool includeLinks = false, bool includeImages = false)
     {
         const string getArtistQuery = "SELECT * FROM public.artists " +
-                                      "WHERE UPPER(name) = UPPER(CAST(@artistName AS CITEXT))";
+                                      "WHERE name = CAST(@artistName AS CITEXT)";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         var artist = await connection.QueryFirstOrDefaultAsync<Artist>(getArtistQuery, new

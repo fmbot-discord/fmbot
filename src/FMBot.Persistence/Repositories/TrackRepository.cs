@@ -42,8 +42,8 @@ public class TrackRepository
         bool includeSyncedLyrics = false)
     {
         const string getTrackQuery = "SELECT * FROM public.tracks " +
-                                     "WHERE UPPER(artist_name) = UPPER(CAST(@artistName AS CITEXT)) AND " +
-                                     "UPPER(name) = UPPER(CAST(@trackName AS CITEXT))";
+                                     "WHERE artist_name = CAST(@artistName AS CITEXT) AND " +
+                                     "name = CAST(@trackName AS CITEXT)";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         var track = await connection.QueryFirstOrDefaultAsync<Track>(getTrackQuery, new
