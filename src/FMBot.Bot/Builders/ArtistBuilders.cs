@@ -958,42 +958,30 @@ public class ArtistBuilders
         }
         else
         {
-            var plays = await this._playService.GetGuildUsersPlays(guild.GuildId,
-                guildListSettings.AmountOfDaysWithBillboard);
-
-            topGuildArtists =
-                PlayService.GetGuildTopArtists(plays, guildListSettings.StartDateTime, guildListSettings.OrderType);
-            previousTopGuildArtists = PlayService.GetGuildTopArtists(plays, guildListSettings.BillboardStartDateTime,
-                guildListSettings.OrderType);
+            topGuildArtists = await this._playService.GetGuildTopArtistsPlays(guild.GuildId,
+                guildListSettings.StartDateTime, guildListSettings.OrderType, guildListSettings.EndDateTime);
+            previousTopGuildArtists = (await this._playService.GetGuildTopArtistsPlays(guild.GuildId,
+                guildListSettings.BillboardStartDateTime, guildListSettings.OrderType, guildListSettings.BillboardEndDateTime)).ToList();
         }
 
         var title = $"Top {guildListSettings.TimeDescription.ToLower()} artists in {context.DiscordGuild.Name}";
 
-        var footer = new StringBuilder();
-        footer.AppendLine(guildListSettings.OrderType == OrderType.Listeners
-            ? " - Ordered by listeners"
-            : " - Ordered by plays");
+        var footerLabel = guildListSettings.OrderType == OrderType.Listeners
+            ? "Listener count"
+            : "Play count";
 
-        var rnd = new Random();
-        var randomHintNumber = rnd.Next(0, 5);
-        switch (randomHintNumber)
+        string footerHint = new Random().Next(0, 5) switch
         {
-            case 1:
-                footer.AppendLine($"View specific track listeners with '{context.Prefix}whoknows'");
-                break;
-            case 2:
-                footer.AppendLine($"Available time periods: alltime, monthly, weekly and daily");
-                break;
-            case 3:
-                footer.AppendLine($"Available sorting options: plays and listeners");
-                break;
-        }
+            1 => $"View specific artist listeners with '{context.Prefix}whoknows'",
+            2 => "Available time periods: alltime, monthly, weekly, current and last month",
+            3 => "Available sorting options: plays and listeners",
+            _ => null
+        };
 
         var artistPages = topGuildArtists.Chunk(12).ToList();
 
         var counter = 1;
-        var pageCounter = 1;
-        var pages = new List<PageBuilder>();
+        var pageDescriptions = new List<string>();
         foreach (var page in artistPages)
         {
             var pageString = new StringBuilder();
@@ -1022,22 +1010,52 @@ public class ArtistBuilders
                 counter++;
             }
 
-            var pageFooter = new StringBuilder();
-            pageFooter.Append($"Page {pageCounter}/{artistPages.Count}");
-            pageFooter.Append(footer);
-
-            pages.Add(new PageBuilder()
-                .WithTitle(title)
-                .WithDescription(pageString.ToString())
-                .WithColor(DiscordConstants.LastFmColorRed)
-                .WithAuthor(response.EmbedAuthor)
-                .WithFooter(pageFooter.ToString()));
-            pageCounter++;
+            pageDescriptions.Add(pageString.ToString());
         }
 
-        response.ComponentPaginator = StringService.BuildComponentPaginator(pages);
+        var paginator = new ComponentPaginatorBuilder()
+            .WithPageFactory(GeneratePage)
+            .WithPageCount(Math.Max(1, pageDescriptions.Count))
+            .WithActionOnTimeout(ActionOnStop.DisableInput);
+
+        response.ComponentPaginator = paginator;
         response.ResponseType = ResponseType.Paginator;
         return response;
+
+        IPage GeneratePage(IComponentPaginator p)
+        {
+            var container = new ComponentContainerProperties();
+
+            container.WithTextDisplay($"### {title}");
+            container.WithSeparator();
+
+            var currentPage = pageDescriptions.ElementAtOrDefault(p.CurrentPageIndex);
+            if (currentPage != null)
+            {
+                container.WithTextDisplay(currentPage.TrimEnd());
+            }
+
+            container.WithSeparator();
+
+            var pageFooter = $"-# {footerLabel} - Page {p.CurrentPageIndex + 1}/{pageDescriptions.Count}";
+            if (footerHint != null)
+            {
+                pageFooter += $"\n-# {footerHint}";
+            }
+
+            container.WithTextDisplay(pageFooter);
+
+            if (pageDescriptions.Count > 1)
+            {
+                container.WithActionRow(StringService.GetPaginationActionRow(p));
+            }
+
+            return new PageBuilder()
+                .WithAllowedMentions(AllowedMentionsProperties.None)
+                .WithMessageFlags(MessageFlags.IsComponentsV2)
+                .WithComponents([container])
+                .Build();
+        }
     }
 
     public async Task<ResponseModel> TopArtistsAsync(

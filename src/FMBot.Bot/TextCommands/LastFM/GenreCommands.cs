@@ -142,8 +142,8 @@ public class GenreCommands(
 
     [Command("servergenres", "sg", "sgenres", "serverg", "servergenre")]
     [Summary("Top genres for your server")]
-    [Options("Time periods: `weekly`, `monthly` and `alltime`", "Order options: `plays` and `listeners`")]
-    [Examples("sg", "sg a p", "servergenres", "servergenres alltime", "servergenres listeners weekly")]
+    [Options("Time periods: `weekly`, `monthly`, `alltime` and last two months", "Order options: `plays` and `listeners`")]
+    [Examples("sg", "sg a p", "servergenres", "servergenres alltime", "servergenres listeners weekly", "servergenres march")]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Genres)]
@@ -151,7 +151,6 @@ public class GenreCommands(
     {
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
         var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
-        var guildUserCount = await guildService.GetGuildUserCount(this.Context.Guild.Id);
 
         _ = this.Context.Channel?.TriggerTypingAsync()!;
 
@@ -165,14 +164,9 @@ public class GenreCommands(
         };
 
         guildListSettings = SettingService.SetGuildRankingSettings(guildListSettings, extraOptions);
-        var timeSettings = SettingService.GetTimePeriod(extraOptions, guildListSettings.ChartTimePeriod, cachedOrAllTimeOnly: true);
+        var timeSettings = SettingService.GetTimePeriod(extraOptions, guildListSettings.ChartTimePeriod, cachedOnly: true);
 
-        if (timeSettings.UsePlays ||
-            timeSettings.TimePeriod is TimePeriod.AllTime or TimePeriod.Weekly ||
-            (timeSettings.TimePeriod is TimePeriod.Monthly && guildUserCount <= 10000))
-        {
-            guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
-        }
+        guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
 
         try
         {

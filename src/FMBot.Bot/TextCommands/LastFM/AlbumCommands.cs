@@ -335,10 +335,10 @@ public class AlbumCommands(
 
     [Command("serveralbums", "sab", "stab", "servertopalbums", "serveralbum")]
     [Summary("Top albums for your server, optionally for a specific artist.")]
-    [Options("Time periods: `weekly`, `monthly` and `alltime`", "Order options: `plays` and `listeners`",
+    [Options("Time periods: `weekly`, `monthly`, `alltime` and last two months", "Order options: `plays` and `listeners`",
         "Artist name")]
     [Examples("sab", "sab a p", "serveralbums", "serveralbums alltime", "serveralbums listeners weekly",
-        "serveralbums the beatles monthly")]
+        "serveralbums the beatles monthly", "serveralbums march")]
     [RequiresIndex]
     [GuildOnly]
     [CommandCategories(CommandCategory.Albums)]
@@ -348,7 +348,6 @@ public class AlbumCommands(
 
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
         var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
-        var guildUserCount = await guildService.GetGuildUserCount(this.Context.Guild.Id);
 
         var guildListSettings = new GuildRankingSettings
         {
@@ -363,14 +362,9 @@ public class AlbumCommands(
         {
             guildListSettings = SettingService.SetGuildRankingSettings(guildListSettings, guildAlbumsOptions);
             var timeSettings = SettingService.GetTimePeriod(guildListSettings.NewSearchValue,
-                guildListSettings.ChartTimePeriod, cachedOrAllTimeOnly: true);
+                guildListSettings.ChartTimePeriod, cachedOnly: true);
 
-            if (timeSettings.UsePlays ||
-                timeSettings.TimePeriod is TimePeriod.AllTime or TimePeriod.Weekly ||
-                (timeSettings.TimePeriod is TimePeriod.Monthly && guildUserCount <= 10000))
-            {
-                guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
-            }
+            guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
 
             var response =
                 await albumBuilders.GuildAlbumsAsync(new ContextModel(this.Context, prfx), guild,

@@ -66,7 +66,7 @@ public static class CommandContextExtensions
 
             if (sendReply)
             {
-                if (exception?.Message != null && exception.Message.Contains("error 50013"))
+                if (exception?.Message != null && exception.Message.Contains("Missing Permissions"))
                 {
                     await context.Client.Rest.SendMessageAsync(context.Message.ChannelId, new MessageProperties
                     {

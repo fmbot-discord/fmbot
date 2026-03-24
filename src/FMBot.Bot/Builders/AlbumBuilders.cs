@@ -828,13 +828,10 @@ public class AlbumBuilders
         }
         else
         {
-            var plays = await this._playService.GetGuildUsersPlays(guild.GuildId,
-                guildListSettings.AmountOfDaysWithBillboard);
-
-            topGuildAlbums = PlayService.GetGuildTopAlbums(plays, guildListSettings.StartDateTime,
-                guildListSettings.OrderType, guildListSettings.NewSearchValue);
-            previousTopGuildAlbums = PlayService.GetGuildTopAlbums(plays, guildListSettings.BillboardStartDateTime,
-                guildListSettings.OrderType, guildListSettings.NewSearchValue);
+            topGuildAlbums = await this._playService.GetGuildTopAlbumsPlays(guild.GuildId,
+                guildListSettings.StartDateTime, guildListSettings.OrderType, guildListSettings.NewSearchValue, guildListSettings.EndDateTime);
+            previousTopGuildAlbums = (await this._playService.GetGuildTopAlbumsPlays(guild.GuildId,
+                guildListSettings.BillboardStartDateTime, guildListSettings.OrderType, guildListSettings.NewSearchValue, guildListSettings.BillboardEndDateTime)).ToList();
         }
 
         if (!topGuildAlbums.Any())
@@ -851,30 +848,22 @@ public class AlbumBuilders
             ? $"Top {guildListSettings.TimeDescription.ToLower()} albums in {context.DiscordGuild.Name}"
             : $"Top {guildListSettings.TimeDescription.ToLower()} '{guildListSettings.NewSearchValue}' albums in {context.DiscordGuild.Name}";
 
-        var footer = new StringBuilder();
-        footer.AppendLine(guildListSettings.OrderType == OrderType.Listeners
-            ? " - Ordered by listeners"
-            : " - Ordered by plays");
+        var footerLabel = guildListSettings.OrderType == OrderType.Listeners
+            ? "Listener count"
+            : "Play count";
 
-        var randomHintNumber = new Random().Next(0, 5);
-        switch (randomHintNumber)
+        string footerHint = new Random().Next(0, 5) switch
         {
-            case 1:
-                footer.AppendLine($"View specific track listeners with '{context.Prefix}whoknowsalbum'");
-                break;
-            case 2:
-                footer.AppendLine($"Available time periods: alltime, monthly, weekly and daily");
-                break;
-            case 3:
-                footer.AppendLine($"Available sorting options: plays and listeners");
-                break;
-        }
+            1 => $"View specific album listeners with '{context.Prefix}whoknowsalbum'",
+            2 => "Available time periods: alltime, monthly, weekly, current and last month",
+            3 => "Available sorting options: plays and listeners",
+            _ => null
+        };
 
         var albumPages = topGuildAlbums.Chunk(12).ToList();
 
         var counter = 1;
-        var pageCounter = 1;
-        var pages = new List<PageBuilder>();
+        var pageDescriptions = new List<string>();
         foreach (var page in albumPages)
         {
             var pageString = new StringBuilder();
@@ -906,21 +895,52 @@ public class AlbumBuilders
                 counter++;
             }
 
-            var pageFooter = new StringBuilder();
-            pageFooter.Append($"Page {pageCounter}/{albumPages.Count}");
-            pageFooter.Append(footer);
-
-            pages.Add(new PageBuilder()
-                .WithTitle(title)
-                .WithDescription(pageString.ToString())
-                .WithAuthor(response.EmbedAuthor)
-                .WithFooter(pageFooter.ToString()));
-            pageCounter++;
+            pageDescriptions.Add(pageString.ToString());
         }
 
-        response.ComponentPaginator = StringService.BuildComponentPaginator(pages);
+        var paginator = new ComponentPaginatorBuilder()
+            .WithPageFactory(GeneratePage)
+            .WithPageCount(Math.Max(1, pageDescriptions.Count))
+            .WithActionOnTimeout(ActionOnStop.DisableInput);
+
+        response.ComponentPaginator = paginator;
         response.ResponseType = ResponseType.Paginator;
         return response;
+
+        IPage GeneratePage(IComponentPaginator p)
+        {
+            var container = new ComponentContainerProperties();
+
+            container.WithTextDisplay($"### {title}");
+            container.WithSeparator();
+
+            var currentPage = pageDescriptions.ElementAtOrDefault(p.CurrentPageIndex);
+            if (currentPage != null)
+            {
+                container.WithTextDisplay(currentPage.TrimEnd());
+            }
+
+            container.WithSeparator();
+
+            var pageFooter = $"-# {footerLabel} - Page {p.CurrentPageIndex + 1}/{pageDescriptions.Count}";
+            if (footerHint != null)
+            {
+                pageFooter += $"\n-# {footerHint}";
+            }
+
+            container.WithTextDisplay(pageFooter);
+
+            if (pageDescriptions.Count > 1)
+            {
+                container.WithActionRow(StringService.GetPaginationActionRow(p));
+            }
+
+            return new PageBuilder()
+                .WithAllowedMentions(AllowedMentionsProperties.None)
+                .WithMessageFlags(MessageFlags.IsComponentsV2)
+                .WithComponents([container])
+                .Build();
+        }
     }
 
     public async Task<ResponseModel> AlbumTracksAsync(

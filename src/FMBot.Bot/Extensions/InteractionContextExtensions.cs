@@ -256,7 +256,7 @@ public static class InteractionContextExtensions
             }
 
             if (exception?.Message != null &&
-                exception.Message.Contains("50013: Missing Permissions", StringComparison.OrdinalIgnoreCase))
+                exception.Message.Contains("Missing Permissions", StringComparison.OrdinalIgnoreCase))
             {
                 if (context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType
                         .UserInstall) &&

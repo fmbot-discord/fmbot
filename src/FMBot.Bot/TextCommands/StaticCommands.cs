@@ -97,12 +97,16 @@ public class StaticCommands(
 
         this._embed.WithDescription(embedDescription.ToString());
 
-        var components = new ActionRowProperties()
-            .WithButton(
+        var components = new ActionRowProperties
+        {
+            new LinkButtonProperties(
                 $"https://discord.com/oauth2/authorize?client_id={selfId}&scope=bot%20applications.commands&permissions={Constants.InviteLinkPermissions}",
-                "Add to server")
-            .WithButton($"https://discord.com/oauth2/authorize?client_id={selfId}&scope=applications.commands&integration_type=1",
-                "Add to user");
+                "Add to server"),
+            new LinkButtonProperties(
+                $"https://discord.com/oauth2/authorize?client_id={selfId}&scope=applications.commands&integration_type=1",
+                "Add to user")
+        };
+
 
         await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
         {
@@ -458,6 +462,7 @@ public class StaticCommands(
                 {
                     extraValues = extraValues.Replace(prefix, "");
                 }
+
                 selectedCommand = extraValues.Trim();
             }
 
@@ -504,7 +509,8 @@ public class StaticCommands(
     {
         if (guildService.CheckIfDM(this.Context))
         {
-            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Command is not supported in DMs." });
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
+                new MessageProperties { Content = "Command is not supported in DMs." });
             await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotSupportedInDm }, userService);
             return;
         }
@@ -531,7 +537,8 @@ public class StaticCommands(
                 if (secondsLeft <= 20)
                 {
                     var secondString = secondsLeft == 1 ? "second" : "seconds";
-                    await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = $"Please wait {secondsLeft} {secondString} before starting another countdown." });
+                    await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
+                        new MessageProperties { Content = $"Please wait {secondsLeft} {secondString} before starting another countdown." });
                     await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Cooldown }, userService);
                 }
 
@@ -546,7 +553,8 @@ public class StaticCommands(
             StackCooldownTimer.Add(DateTimeOffset.Now);
         }
 
-        await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = $"Countdown for `{countdown}` seconds starting!" });
+        await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
+            new MessageProperties { Content = $"Countdown for `{countdown}` seconds starting!" });
         await Task.Delay(4000);
 
         for (var i = countdown; i > 0; i--)
@@ -894,6 +902,7 @@ public class StaticCommands(
         {
             return nameAttr.Aliases[0];
         }
+
         return commandInfo.ToString() ?? "unknown";
     }
 
