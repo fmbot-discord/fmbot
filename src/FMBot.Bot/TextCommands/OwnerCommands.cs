@@ -370,7 +370,7 @@ public class OwnerCommands(
         await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
     }
 
-    [Command("senddm", "dm")]
+    [Command("sendstaffdm")]
     [Summary("Sends a DM to a user")]
     public async Task SendDmAsync(string userId, [CommandParameter(Remainder = true)] string message)
     {
