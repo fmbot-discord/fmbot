@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -27,24 +28,18 @@ using SkiaSharp;
 
 namespace FMBot.Bot.Services;
 
-public class GameService
+public class GameService(
+    IMemoryCache cache,
+    IDbContextFactory<FMBotDbContext> contextFactory,
+    IOptions<BotSettings> botSettings,
+    HttpClient client)
 {
-    private readonly IMemoryCache _cache;
-    private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
-    private readonly BotSettings _botSettings;
-    private readonly HttpClient _client;
+    private readonly BotSettings _botSettings = botSettings.Value;
+
+    private static readonly ConcurrentDictionary<ulong, byte> StartingGames = new();
 
     public const int JumbleSecondsToGuess = 25;
     public const int PixelationSecondsToGuess = 40;
-
-    public GameService(IMemoryCache cache, IDbContextFactory<FMBotDbContext> contextFactory,
-        IOptions<BotSettings> botSettings, HttpClient client)
-    {
-        this._cache = cache;
-        this._contextFactory = contextFactory;
-        this._client = client;
-        this._botSettings = botSettings.Value;
-    }
 
     private static float ComputePlaycountPercentile(long playcount, long maxPlaycount)
     {
@@ -367,14 +362,14 @@ public class GameService
             jumbleSession.BlurLevel = 0.125f;
         }
 
-        await using var db = await this._contextFactory.CreateDbContextAsync();
+        await using var db = await contextFactory.CreateDbContextAsync();
         await db.JumbleSessions.AddAsync(jumbleSession);
 
         await db.SaveChangesAsync();
 
         var cacheTime = TimeSpan.FromMinutes(1);
-        this._cache.Set(CacheKeyForJumbleSession(context.DiscordChannel.Id), cancellationToken, cacheTime);
-        this._cache.Set(CacheKeyForJumbleSessionCancellationToken(context.DiscordChannel.Id), cancellationToken,
+        cache.Set(CacheKeyForJumbleSession(context.DiscordChannel.Id), cancellationToken, cacheTime);
+        cache.Set(CacheKeyForJumbleSessionCancellationToken(context.DiscordChannel.Id), cancellationToken,
             cacheTime);
 
         return jumbleSession;
@@ -385,10 +380,6 @@ public class GameService
         return $"jumble-session-active-{channelId}";
     }
 
-    public static string CacheKeyForJumbleStarting(ulong channelId)
-    {
-        return $"jumble-session-starting-{channelId}";
-    }
 
     private static string CacheKeyForJumbleSessionCancellationToken(ulong channelId)
     {
@@ -402,7 +393,7 @@ public class GameService
 
     public async Task<JumbleSession> GetJumbleSessionForSessionId(int jumbleSessionId)
     {
-        await using var db = await this._contextFactory.CreateDbContextAsync();
+        await using var db = await contextFactory.CreateDbContextAsync();
         return await db.JumbleSessions
             .OrderByDescending(o => o.DateStarted)
             .Include(i => i.Hints)
@@ -412,7 +403,7 @@ public class GameService
 
     public async Task<JumbleSession> GetJumbleSessionForChannelId(ulong discordChannelId)
     {
-        await using var db = await this._contextFactory.CreateDbContextAsync();
+        await using var db = await contextFactory.CreateDbContextAsync();
         return await db.JumbleSessions
             .OrderByDescending(o => o.DateStarted)
             .Include(i => i.Hints)
@@ -420,14 +411,14 @@ public class GameService
             .FirstOrDefaultAsync(f => f.DiscordChannelId == discordChannelId);
     }
 
-    public void GameStartInProgress(ulong discordChannelId)
+    public static bool TryClaimGameStart(ulong discordChannelId)
     {
-        this._cache.Set(CacheKeyForJumbleStarting(discordChannelId), true, TimeSpan.FromSeconds(3));
+        return StartingGames.TryAdd(discordChannelId, 0);
     }
 
-    public bool GameStartingAlready(ulong discordChannelId)
+    public static void ClearGameStartClaim(ulong discordChannelId)
     {
-        return this._cache.TryGetValue(CacheKeyForJumbleStarting(discordChannelId), out _);
+        StartingGames.TryRemove(discordChannelId, out _);
     }
 
     public async Task<List<JumbleSession>> GetRecentJumbles(int userId, JumbleType jumbleType)
@@ -508,7 +499,7 @@ public class GameService
 
     public async Task CancelToken(ulong channelId)
     {
-        if (!this._cache.TryGetValue(CacheKeyForJumbleSessionCancellationToken(channelId),
+        if (!cache.TryGetValue(CacheKeyForJumbleSessionCancellationToken(channelId),
                 out CancellationTokenSource token))
         {
             return;
@@ -577,7 +568,7 @@ public class GameService
 
     public async Task JumbleStoreShowedHints(JumbleSession game, List<JumbleSessionHint> hints)
     {
-        await using var db = await this._contextFactory.CreateDbContextAsync();
+        await using var db = await contextFactory.CreateDbContextAsync();
 
         game.Hints = hints;
 
@@ -587,7 +578,7 @@ public class GameService
 
     public async Task JumbleStoreBlurLevel(JumbleSession game, float blurLevel)
     {
-        await using var db = await this._contextFactory.CreateDbContextAsync();
+        await using var db = await contextFactory.CreateDbContextAsync();
 
         game.BlurLevel = blurLevel;
 
@@ -597,7 +588,7 @@ public class GameService
 
     public async Task JumbleReshuffleArtist(JumbleSession game)
     {
-        await using var db = await this._contextFactory.CreateDbContextAsync();
+        await using var db = await contextFactory.CreateDbContextAsync();
 
         game.JumbledArtist = JumbleWords(game.CorrectAnswer).ToUpper();
 
@@ -614,7 +605,7 @@ public class GameService
 
     public async Task JumbleEndSession(JumbleSession game)
     {
-        await using var db = await this._contextFactory.CreateDbContextAsync();
+        await using var db = await contextFactory.CreateDbContextAsync();
 
         game.DateEnded = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
 
@@ -624,7 +615,7 @@ public class GameService
 
     public async Task JumbleAddResponseId(int gameSessionId, ulong responseId)
     {
-        await using var db = await this._contextFactory.CreateDbContextAsync();
+        await using var db = await contextFactory.CreateDbContextAsync();
 
         var game = await GetJumbleSessionForSessionId(gameSessionId);
 
@@ -636,7 +627,7 @@ public class GameService
 
     public async Task JumbleAddAnswer(JumbleSession game, ulong discordUserId, bool correct)
     {
-        await using var db = await this._contextFactory.CreateDbContextAsync();
+        await using var db = await contextFactory.CreateDbContextAsync();
 
         var answer = new JumbleSessionAnswer
         {
@@ -956,21 +947,21 @@ public class GameService
         }
         else
         {
-            var bytes = await this._client.GetByteArrayAsync(url);
+            var bytes = await client.GetByteArrayAsync(url);
             await using var stream = new MemoryStream(bytes);
             coverImage = SKBitmap.Decode(stream);
 
             await ChartService.SaveImageToCache(coverImage, localPath);
         }
 
-        this._cache.Set(CacheKeyForJumbleSessionImage(sessionId), coverImage, TimeSpan.FromMinutes(2));
+        cache.Set(CacheKeyForJumbleSessionImage(sessionId), coverImage, TimeSpan.FromMinutes(2));
 
         return coverImage;
     }
 
     public async Task<SKBitmap> GetImageFromCache(int sessionId)
     {
-        if (this._cache.TryGetValue(CacheKeyForJumbleSessionImage(sessionId), out SKBitmap image))
+        if (cache.TryGetValue(CacheKeyForJumbleSessionImage(sessionId), out SKBitmap image))
         {
             return image;
         }
@@ -1029,7 +1020,7 @@ public class GameService
     public async Task<JumbleUserStats> GetJumbleUserStats(int userId, ulong discordUserId, JumbleType jumbleType,
         DateTime? startDateTime, DateTime? endDateTime)
     {
-        await using var db = await this._contextFactory.CreateDbContextAsync();
+        await using var db = await contextFactory.CreateDbContextAsync();
 
         var jumbleSessions = await (
                 db.JumbleSessions
@@ -1091,7 +1082,7 @@ public class GameService
 
     public async Task<JumbleGuildStats> GetJumbleGuildStats(ulong discordGuildId, JumbleType jumbleType)
     {
-        await using var db = await this._contextFactory.CreateDbContextAsync();
+        await using var db = await contextFactory.CreateDbContextAsync();
 
         var jumbleSessions = await db.JumbleSessions
             .Where(w => w.DiscordGuildId == discordGuildId && w.JumbleType == jumbleType)
