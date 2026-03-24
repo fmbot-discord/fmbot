@@ -828,13 +828,10 @@ public class AlbumBuilders
         }
         else
         {
-            var plays = await this._playService.GetGuildUsersPlays(guild.GuildId,
-                guildListSettings.AmountOfDaysWithBillboard);
-
-            topGuildAlbums = PlayService.GetGuildTopAlbums(plays, guildListSettings.StartDateTime,
-                guildListSettings.OrderType, guildListSettings.NewSearchValue);
-            previousTopGuildAlbums = PlayService.GetGuildTopAlbums(plays, guildListSettings.BillboardStartDateTime,
-                guildListSettings.OrderType, guildListSettings.NewSearchValue);
+            topGuildAlbums = await this._playService.GetGuildTopAlbumsPlays(guild.GuildId,
+                guildListSettings.StartDateTime, guildListSettings.OrderType, guildListSettings.NewSearchValue, guildListSettings.EndDateTime);
+            previousTopGuildAlbums = (await this._playService.GetGuildTopAlbumsPlays(guild.GuildId,
+                guildListSettings.BillboardStartDateTime, guildListSettings.OrderType, guildListSettings.NewSearchValue, guildListSettings.BillboardEndDateTime)).ToList();
         }
 
         if (!topGuildAlbums.Any())
@@ -851,22 +848,25 @@ public class AlbumBuilders
             ? $"Top {guildListSettings.TimeDescription.ToLower()} albums in {context.DiscordGuild.Name}"
             : $"Top {guildListSettings.TimeDescription.ToLower()} '{guildListSettings.NewSearchValue}' albums in {context.DiscordGuild.Name}";
 
-        var footer = new StringBuilder();
-        footer.AppendLine(guildListSettings.OrderType == OrderType.Listeners
-            ? " - Ordered by listeners"
-            : " - Ordered by plays");
+        var footerLabel = guildListSettings.OrderType == OrderType.Listeners
+            ? "Listener count"
+            : "Play count";
 
+        var footer = new StringBuilder();
         var randomHintNumber = new Random().Next(0, 5);
         switch (randomHintNumber)
         {
             case 1:
-                footer.AppendLine($"View specific track listeners with '{context.Prefix}whoknowsalbum'");
+                footer.AppendLine();
+                footer.Append($"View specific album listeners with '{context.Prefix}whoknowsalbum'");
                 break;
             case 2:
-                footer.AppendLine($"Available time periods: alltime, monthly, weekly and daily");
+                footer.AppendLine();
+                footer.Append("Available time periods: alltime, monthly, weekly, current and last month");
                 break;
             case 3:
-                footer.AppendLine($"Available sorting options: plays and listeners");
+                footer.AppendLine();
+                footer.Append("Available sorting options: plays and listeners");
                 break;
         }
 
@@ -907,7 +907,7 @@ public class AlbumBuilders
             }
 
             var pageFooter = new StringBuilder();
-            pageFooter.Append($"Page {pageCounter}/{albumPages.Count}");
+            pageFooter.Append($"{footerLabel} - Page {pageCounter}/{albumPages.Count}");
             pageFooter.Append(footer);
 
             pages.Add(new PageBuilder()

@@ -75,52 +75,47 @@ public class GenreBuilders
             ResponseType = ResponseType.Paginator
         };
 
-        ICollection<GuildArtist> topGuildArtists;
+        IList<GuildGenre> topGuildGenres;
         IList<GuildGenre> previousTopGuildGenres = null;
 
         if (guildListSettings.ChartTimePeriod == TimePeriod.AllTime)
         {
-            topGuildArtists =
+            var topGuildArtists =
                 await this._whoKnowsArtistService.GetTopAllTimeArtistsForGuildWithListeners(guild.GuildId,
                     guildListSettings.OrderType);
+            topGuildGenres =
+                await this._genreService.GetTopGenresForGuildArtists(topGuildArtists, guildListSettings.OrderType);
         }
         else
         {
-            var plays = await this._playService.GetGuildUsersPlays(guild.GuildId,
-                guildListSettings.AmountOfDaysWithBillboard);
-
-            topGuildArtists = PlayService.GetGuildTopArtists(plays, guildListSettings.StartDateTime,
-                guildListSettings.OrderType, 8000, true);
-            var previousTopGuildArtists = PlayService.GetGuildTopArtists(plays,
-                guildListSettings.BillboardStartDateTime, guildListSettings.OrderType, 8000, true);
-
-            previousTopGuildGenres =
-                await this._genreService.GetTopGenresForGuildArtists(previousTopGuildArtists,
-                    guildListSettings.OrderType);
+            topGuildGenres = await this._playService.GetGuildTopGenresPlays(guild.GuildId,
+                guildListSettings.StartDateTime, guildListSettings.OrderType, guildListSettings.EndDateTime);
+            previousTopGuildGenres = await this._playService.GetGuildTopGenresPlays(guild.GuildId,
+                guildListSettings.BillboardStartDateTime, guildListSettings.OrderType, guildListSettings.BillboardEndDateTime);
         }
-
-        var topGuildGenres =
-            await this._genreService.GetTopGenresForGuildArtists(topGuildArtists, guildListSettings.OrderType);
 
         var title = $"Top {guildListSettings.TimeDescription.ToLower()} genres in {context.DiscordGuild.Name}";
 
-        var footer = new StringBuilder();
-        footer.AppendLine(guildListSettings.OrderType == OrderType.Listeners
-            ? " - Ordered by listeners"
-            : " - Ordered by plays");
+        var footerLabel = guildListSettings.OrderType == OrderType.Listeners
+            ? "Listener count"
+            : "Play count";
 
+        var footer = new StringBuilder();
         var rnd = new Random();
         var randomHintNumber = rnd.Next(0, 5);
         switch (randomHintNumber)
         {
             case 1:
-                footer.AppendLine($"View specific genre listeners with '{context.Prefix}whoknowsgenre'");
+                footer.AppendLine();
+                footer.Append($"View specific genre listeners with '{context.Prefix}whoknowsgenre'");
                 break;
             case 2:
-                footer.AppendLine($"Available time periods: alltime, monthly, weekly and daily");
+                footer.AppendLine();
+                footer.Append("Available time periods: alltime, monthly, weekly, current and last month");
                 break;
             case 3:
-                footer.AppendLine($"Available sorting options: plays and listeners");
+                footer.AppendLine();
+                footer.Append("Available sorting options: plays and listeners");
                 break;
         }
 
@@ -157,12 +152,11 @@ public class GenreBuilders
             }
 
             var pageFooter = new StringBuilder();
-            pageFooter.Append($"Page {pageCounter}/{genrePages.Count}");
+            pageFooter.Append($"{footerLabel} - Page {pageCounter}/{genrePages.Count}");
             pageFooter.Append(footer);
 
             pages.Add(new PageBuilder()
                 .WithTitle(title)
-                .WithColor(DiscordConstants.LastFmColorRed)
                 .WithDescription(pageString.ToString())
                 .WithFooter(pageFooter.ToString()));
             pageCounter++;

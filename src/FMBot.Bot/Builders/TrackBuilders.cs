@@ -1158,9 +1158,9 @@ public class TrackBuilders
         else
         {
             topGuildTracks = await this._playService.GetGuildTopTracksPlays(guild.GuildId,
-                guildListSettings.StartDateTime, guildListSettings.OrderType, guildListSettings.NewSearchValue);
+                guildListSettings.StartDateTime, guildListSettings.OrderType, guildListSettings.NewSearchValue, guildListSettings.EndDateTime);
             previousTopGuildTracks = (await this._playService.GetGuildTopTracksPlays(guild.GuildId,
-                guildListSettings.BillboardStartDateTime, guildListSettings.OrderType, guildListSettings.NewSearchValue)).ToList();
+                guildListSettings.BillboardStartDateTime, guildListSettings.OrderType, guildListSettings.NewSearchValue, guildListSettings.BillboardEndDateTime)).ToList();
         }
 
         if (topGuildTracks.Count == 0)
@@ -1177,23 +1177,26 @@ public class TrackBuilders
             ? $"Top {guildListSettings.TimeDescription.ToLower()} tracks in {context.DiscordGuild.Name}"
             : $"Top {guildListSettings.TimeDescription.ToLower()} '{guildListSettings.NewSearchValue}' tracks in {context.DiscordGuild.Name}";
 
-        var footer = new StringBuilder();
-        footer.AppendLine(guildListSettings.OrderType == OrderType.Listeners
-            ? " - Ordered by listeners"
-            : " - Ordered by plays");
+        var footerLabel = guildListSettings.OrderType == OrderType.Listeners
+            ? "Listener count"
+            : "Play count";
 
+        var footer = new StringBuilder();
         var rnd = new Random();
         var randomHintNumber = rnd.Next(0, 5);
         switch (randomHintNumber)
         {
             case 1:
-                footer.AppendLine($"View specific track listeners with '{context.Prefix}whoknowstrack'");
+                footer.AppendLine();
+                footer.Append($"View specific track listeners with '{context.Prefix}whoknowstrack'");
                 break;
             case 2:
-                footer.AppendLine($"Available time periods: alltime, monthly, weekly and daily");
+                footer.AppendLine();
+                footer.Append("Available time periods: alltime, monthly, weekly, current and last month");
                 break;
             case 3:
-                footer.AppendLine($"Available sorting options: plays and listeners");
+                footer.AppendLine();
+                footer.Append("Available sorting options: plays and listeners");
                 break;
         }
 
@@ -1234,7 +1237,7 @@ public class TrackBuilders
             }
 
             var pageFooter = new StringBuilder();
-            pageFooter.Append($"Page {pageCounter}/{trackPages.Count}");
+            pageFooter.Append($"{footerLabel} - Page {pageCounter}/{trackPages.Count}");
             pageFooter.Append(footer);
 
             pages.Add(new PageBuilder()

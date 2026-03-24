@@ -127,7 +127,7 @@ public class ArtistCommands(
 
         var redirectsEnabled = SettingService.RedirectsEnabled(userSettings.NewSearchValue);
         var timeSettings = SettingService.GetTimePeriod(redirectsEnabled.NewSearchValue, TimePeriod.AllTime,
-            cachedOrAllTimeOnly: true, dailyTimePeriods: false);
+            cachedOnly: true, dailyTimePeriods: false);
 
         var response = await artistBuilders.ArtistTracksAsync(new ContextModel(this.Context, prfx, contextUser),
             timeSettings,
@@ -212,7 +212,7 @@ public class ArtistCommands(
 
             var redirectsEnabled = SettingService.RedirectsEnabled(userSettings.NewSearchValue);
             var timeSettings = SettingService.GetTimePeriod(redirectsEnabled.NewSearchValue, TimePeriod.Monthly,
-                cachedOrAllTimeOnly: true, timeZone: userSettings.TimeZone);
+                cachedOnly: true, timeZone: userSettings.TimeZone);
 
             if (timeSettings.TimePeriod == TimePeriod.AllTime)
             {
@@ -544,7 +544,6 @@ public class ArtistCommands(
     {
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
         var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
-        var guildUserCount = await guildService.GetGuildUserCount(this.Context.Guild.Id);
 
         _ = this.Context.Channel?.TriggerTypingAsync()!;
 
@@ -559,14 +558,9 @@ public class ArtistCommands(
 
         guildListSettings = SettingService.SetGuildRankingSettings(guildListSettings, extraOptions);
         var timeSettings =
-            SettingService.GetTimePeriod(extraOptions, guildListSettings.ChartTimePeriod, cachedOrAllTimeOnly: true);
+            SettingService.GetTimePeriod(extraOptions, guildListSettings.ChartTimePeriod, cachedOnly: true);
 
-        if (timeSettings.UsePlays ||
-            timeSettings.TimePeriod is TimePeriod.AllTime or TimePeriod.Weekly ||
-            (timeSettings.TimePeriod is TimePeriod.Monthly && guildUserCount <= 10000))
-        {
-            guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
-        }
+        guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
 
         try
         {

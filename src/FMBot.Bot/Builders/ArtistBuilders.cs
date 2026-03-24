@@ -958,34 +958,34 @@ public class ArtistBuilders
         }
         else
         {
-            var plays = await this._playService.GetGuildUsersPlays(guild.GuildId,
-                guildListSettings.AmountOfDaysWithBillboard);
-
-            topGuildArtists =
-                PlayService.GetGuildTopArtists(plays, guildListSettings.StartDateTime, guildListSettings.OrderType);
-            previousTopGuildArtists = PlayService.GetGuildTopArtists(plays, guildListSettings.BillboardStartDateTime,
-                guildListSettings.OrderType);
+            topGuildArtists = await this._playService.GetGuildTopArtistsPlays(guild.GuildId,
+                guildListSettings.StartDateTime, guildListSettings.OrderType, guildListSettings.EndDateTime);
+            previousTopGuildArtists = (await this._playService.GetGuildTopArtistsPlays(guild.GuildId,
+                guildListSettings.BillboardStartDateTime, guildListSettings.OrderType, guildListSettings.BillboardEndDateTime)).ToList();
         }
 
         var title = $"Top {guildListSettings.TimeDescription.ToLower()} artists in {context.DiscordGuild.Name}";
 
-        var footer = new StringBuilder();
-        footer.AppendLine(guildListSettings.OrderType == OrderType.Listeners
-            ? " - Ordered by listeners"
-            : " - Ordered by plays");
+        var footerLabel = guildListSettings.OrderType == OrderType.Listeners
+            ? "Listener count"
+            : "Play count";
 
+        var footer = new StringBuilder();
         var rnd = new Random();
         var randomHintNumber = rnd.Next(0, 5);
         switch (randomHintNumber)
         {
             case 1:
-                footer.AppendLine($"View specific track listeners with '{context.Prefix}whoknows'");
+                footer.AppendLine();
+                footer.Append($"View specific artist listeners with '{context.Prefix}whoknows'");
                 break;
             case 2:
-                footer.AppendLine($"Available time periods: alltime, monthly, weekly and daily");
+                footer.AppendLine();
+                footer.Append("Available time periods: alltime, monthly, weekly, current and last month");
                 break;
             case 3:
-                footer.AppendLine($"Available sorting options: plays and listeners");
+                footer.AppendLine();
+                footer.Append("Available sorting options: plays and listeners");
                 break;
         }
 
@@ -1023,13 +1023,12 @@ public class ArtistBuilders
             }
 
             var pageFooter = new StringBuilder();
-            pageFooter.Append($"Page {pageCounter}/{artistPages.Count}");
+            pageFooter.Append($"{footerLabel} - Page {pageCounter}/{artistPages.Count}");
             pageFooter.Append(footer);
 
             pages.Add(new PageBuilder()
                 .WithTitle(title)
                 .WithDescription(pageString.ToString())
-                .WithColor(DiscordConstants.LastFmColorRed)
                 .WithAuthor(response.EmbedAuthor)
                 .WithFooter(pageFooter.ToString()));
             pageCounter++;

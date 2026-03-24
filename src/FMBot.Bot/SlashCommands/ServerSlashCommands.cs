@@ -31,15 +31,15 @@ public class ServerSlashCommands(
     [UsernameSetRequired]
     [RequiresIndex]
     public async Task GuildArtistsAsync(
-        [SlashCommandParameter(Name = "time-period", Description = "Time period")]
-        PlayTimePeriod timePeriod = PlayTimePeriod.Weekly,
+        [SlashCommandParameter(Name = "time-period", Description = "Time period",
+            AutocompleteProviderType = typeof(RecentTimePeriodAutoComplete))]
+        string timePeriod = null,
         [SlashCommandParameter(Name = "order", Description = "Order for chart (defaults to listeners)")]
         OrderType orderType = OrderType.Listeners)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
 
         var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
-        var guildUserCount = await guildService.GetGuildUserCount(this.Context.Guild.Id);
 
         var guildListSettings = new GuildRankingSettings
         {
@@ -49,15 +49,9 @@ public class ServerSlashCommands(
             AmountOfDays = 7,
         };
 
-        var timeSettings =
-            SettingService.GetTimePeriod(Enum.GetName(timePeriod), TimePeriod.AllTime);
+        var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.Weekly, cachedOnly: true);
 
-        if (timeSettings.UsePlays ||
-            timeSettings.TimePeriod is TimePeriod.AllTime or TimePeriod.Weekly ||
-            (timeSettings.TimePeriod is TimePeriod.Monthly && guildUserCount <= 10000))
-        {
-            guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
-        }
+        guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
 
         var response = await artistBuilders.GuildArtistsAsync(new ContextModel(this.Context), guild, guildListSettings);
 
@@ -70,8 +64,9 @@ public class ServerSlashCommands(
     [UsernameSetRequired]
     [RequiresIndex]
     public async Task GuildAlbumsAsync(
-        [SlashCommandParameter(Name = "time-period", Description = "Time period")]
-        PlayTimePeriod timePeriod = PlayTimePeriod.Weekly,
+        [SlashCommandParameter(Name = "time-period", Description = "Time period",
+            AutocompleteProviderType = typeof(RecentTimePeriodAutoComplete))]
+        string timePeriod = null,
         [SlashCommandParameter(Name = "order", Description = "Order for chart (defaults to listeners)")]
         OrderType orderType = OrderType.Listeners,
         [SlashCommandParameter(Name = "artist", Description = "The artist you want to filter on",
@@ -81,7 +76,6 @@ public class ServerSlashCommands(
         await RespondAsync(InteractionCallback.DeferredMessage());
 
         var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
-        var guildUserCount = await guildService.GetGuildUserCount(this.Context.Guild.Id);
 
         var guildListSettings = new GuildRankingSettings
         {
@@ -92,16 +86,10 @@ public class ServerSlashCommands(
             NewSearchValue = artist
         };
 
-        var timeSettings =
-            SettingService.GetTimePeriod(Enum.GetName(timePeriod), TimePeriod.AllTime);
+        var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.Weekly, cachedOnly: true);
 
-        if (timeSettings.UsePlays ||
-            timeSettings.TimePeriod is TimePeriod.AllTime or TimePeriod.Weekly ||
-            (timeSettings.TimePeriod is TimePeriod.Monthly && guildUserCount <= 10000))
-        {
-            guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
-            guildListSettings.NewSearchValue = artist;
-        }
+        guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
+        guildListSettings.NewSearchValue = artist;
 
         var response = await albumBuilders.GuildAlbumsAsync(new ContextModel(this.Context), guild, guildListSettings);
 
@@ -114,8 +102,9 @@ public class ServerSlashCommands(
     [UsernameSetRequired]
     [RequiresIndex]
     public async Task GuildTracksAsync(
-        [SlashCommandParameter(Name = "time-period", Description = "Time period")]
-        PlayTimePeriod timePeriod = PlayTimePeriod.Weekly,
+        [SlashCommandParameter(Name = "time-period", Description = "Time period",
+            AutocompleteProviderType = typeof(RecentTimePeriodAutoComplete))]
+        string timePeriod = null,
         [SlashCommandParameter(Name = "order", Description = "Order for chart (defaults to listeners)")]
         OrderType orderType = OrderType.Listeners,
         [SlashCommandParameter(Name = "artist", Description = "The artist you want to filter on",
@@ -125,7 +114,6 @@ public class ServerSlashCommands(
         await RespondAsync(InteractionCallback.DeferredMessage());
 
         var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
-        var guildUserCount = await guildService.GetGuildUserCount(this.Context.Guild.Id);
 
         var guildListSettings = new GuildRankingSettings
         {
@@ -136,16 +124,10 @@ public class ServerSlashCommands(
             NewSearchValue = artist
         };
 
-        var timeSettings =
-            SettingService.GetTimePeriod(Enum.GetName(timePeriod), TimePeriod.AllTime);
+        var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.Weekly, cachedOnly: true);
 
-        if (timeSettings.UsePlays ||
-            timeSettings.TimePeriod is TimePeriod.AllTime or TimePeriod.Weekly ||
-            (timeSettings.TimePeriod is TimePeriod.Monthly && guildUserCount <= 10000))
-        {
-            guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
-            guildListSettings.NewSearchValue = artist;
-        }
+        guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
+        guildListSettings.NewSearchValue = artist;
 
         var response = await trackBuilders.GuildTracksAsync(new ContextModel(this.Context), guild, guildListSettings);
 
@@ -158,15 +140,15 @@ public class ServerSlashCommands(
     [UsernameSetRequired]
     [RequiresIndex]
     public async Task GuildGenresAsync(
-        [SlashCommandParameter(Name = "time-period", Description = "Time period")]
-        PlayTimePeriod timePeriod = PlayTimePeriod.Weekly,
+        [SlashCommandParameter(Name = "time-period", Description = "Time period",
+            AutocompleteProviderType = typeof(RecentTimePeriodAutoComplete))]
+        string timePeriod = null,
         [SlashCommandParameter(Name = "order", Description = "Order for chart (defaults to listeners)")]
         OrderType orderType = OrderType.Listeners)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
 
         var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
-        var guildUserCount = await guildService.GetGuildUserCount(this.Context.Guild.Id);
 
         var guildListSettings = new GuildRankingSettings
         {
@@ -176,15 +158,9 @@ public class ServerSlashCommands(
             AmountOfDays = 7,
         };
 
-        var timeSettings =
-            SettingService.GetTimePeriod(Enum.GetName(timePeriod), TimePeriod.AllTime);
+        var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.Weekly, cachedOnly: true);
 
-        if (timeSettings.UsePlays ||
-            timeSettings.TimePeriod is TimePeriod.AllTime or TimePeriod.Weekly ||
-            (timeSettings.TimePeriod is TimePeriod.Monthly && guildUserCount <= 10000))
-        {
-            guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
-        }
+        guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
 
         var response = await genreBuilders.GetGuildGenres(new ContextModel(this.Context), guild, guildListSettings);
 

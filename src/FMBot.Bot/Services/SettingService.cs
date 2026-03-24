@@ -32,7 +32,7 @@ public class SettingService
     public static TimeSettingsModel GetTimePeriod(string options,
         TimePeriod defaultTimePeriod = TimePeriod.Weekly,
         DateTime? registeredLastFm = null,
-        bool cachedOrAllTimeOnly = false,
+        bool cachedOnly = false,
         bool dailyTimePeriods = true,
         string timeZone = null)
     {
@@ -53,7 +53,7 @@ public class SettingService
         var year = GetYear(options, false, 1970);
         var month = GetMonth(options);
 
-        if ((year != null || month != null) && !cachedOrAllTimeOnly)
+        if (year != null || month != null)
         {
             var startUnspecified = new DateTime(
                 year.GetValueOrDefault(DateTime.UtcNow.Year),
@@ -117,6 +117,23 @@ public class SettingService
 
             settingsModel.UseCustomTimePeriod = true;
 
+            if (cachedOnly)
+            {
+                var twoMonthsAgo = DateTime.UtcNow.AddMonths(-2);
+                if (settingsModel.StartDateTime.HasValue && settingsModel.StartDateTime.Value < twoMonthsAgo)
+                {
+                    settingsModel.TimePeriod = TimePeriod.Monthly;
+                    settingsModel.Description = "Monthly";
+                    settingsModel.AltDescription = "last month";
+                    settingsModel.PlayDays = 30;
+                    settingsModel.StartDateTime = DateTime.UtcNow.AddDays(-30);
+                    settingsModel.EndDateTime = DateTime.UtcNow;
+                    settingsModel.TimeFrom = ((DateTimeOffset)settingsModel.StartDateTime).ToUnixTimeSeconds();
+                    settingsModel.UsePlays = false;
+                    settingsModel.UseCustomTimePeriod = false;
+                }
+            }
+
             return settingsModel;
         }
 
@@ -158,7 +175,7 @@ public class SettingService
             settingsModel.ApiParameter = "1month";
             settingsModel.PlayDays = 30;
         }
-        else if (Contains(options, quarterly) && !cachedOrAllTimeOnly)
+        else if (Contains(options, quarterly) && !cachedOnly)
         {
             settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, quarterly);
             settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Quarter;
@@ -169,7 +186,7 @@ public class SettingService
             settingsModel.ApiParameter = "3month";
             settingsModel.PlayDays = 90;
         }
-        else if (Contains(options, halfYearly) && !cachedOrAllTimeOnly)
+        else if (Contains(options, halfYearly) && !cachedOnly)
         {
             settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, halfYearly);
             settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Half;
@@ -180,7 +197,7 @@ public class SettingService
             settingsModel.ApiParameter = "6month";
             settingsModel.PlayDays = 180;
         }
-        else if (Contains(options, yearly) && !cachedOrAllTimeOnly)
+        else if (Contains(options, yearly) && !cachedOnly)
         {
             settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, yearly);
             settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Year;
@@ -191,7 +208,7 @@ public class SettingService
             settingsModel.ApiParameter = "12month";
             settingsModel.PlayDays = 365;
         }
-        else if (Contains(options, twoYear) && !cachedOrAllTimeOnly)
+        else if (Contains(options, twoYear) && !cachedOnly)
         {
             settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, twoYear);
             var dateString = localTime.AddDays(-729).ToString("yyyy-M-dd");
@@ -412,6 +429,22 @@ public class SettingService
         else if (settingsModel.StartDateTime.HasValue)
         {
             settingsModel.TimeFrom = ((DateTimeOffset)settingsModel.StartDateTime).ToUnixTimeSeconds();
+        }
+
+        if (cachedOnly && settingsModel.TimePeriod != TimePeriod.AllTime)
+        {
+            var twoMonthsAgo = DateTime.UtcNow.AddMonths(-2);
+            if (settingsModel.StartDateTime.HasValue && settingsModel.StartDateTime.Value < twoMonthsAgo)
+            {
+                settingsModel.TimePeriod = TimePeriod.Monthly;
+                settingsModel.Description = "Monthly";
+                settingsModel.AltDescription = "last month";
+                settingsModel.PlayDays = 30;
+                settingsModel.StartDateTime = DateTime.UtcNow.AddDays(-30);
+                settingsModel.TimeFrom = ((DateTimeOffset)settingsModel.StartDateTime).ToUnixTimeSeconds();
+                settingsModel.UsePlays = false;
+                settingsModel.UseCustomTimePeriod = false;
+            }
         }
 
         return settingsModel;
@@ -1302,8 +1335,8 @@ public class SettingService
     {
         guildRankingSettings.ChartTimePeriod = timeSettings.TimePeriod;
         guildRankingSettings.TimeDescription = timeSettings.Description;
-        guildRankingSettings.EndDateTime = timeSettings.EndDateTime.GetValueOrDefault();
-        guildRankingSettings.BillboardEndDateTime = timeSettings.BillboardEndDateTime.GetValueOrDefault();
+        guildRankingSettings.EndDateTime = timeSettings.EndDateTime;
+        guildRankingSettings.BillboardEndDateTime = timeSettings.BillboardEndDateTime;
         guildRankingSettings.BillboardTimeDescription = timeSettings.BillboardTimeDescription;
         guildRankingSettings.AmountOfDays = timeSettings.PlayDays.GetValueOrDefault();
         guildRankingSettings.AmountOfDaysWithBillboard = timeSettings.PlayDaysWithBillboard.GetValueOrDefault();
