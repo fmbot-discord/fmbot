@@ -1386,7 +1386,7 @@ public class LastFmRepository : ILastfmRepository
         return new Response<bool>
         {
             Success = nowPlayingCall.Success,
-            Content = nowPlayingCall.Content.Nowplaying.IgnoredMessage.Code == 0
+            Content = nowPlayingCall.Success && nowPlayingCall.Content?.Nowplaying?.IgnoredMessage?.Code == 0
         };
     }
 
