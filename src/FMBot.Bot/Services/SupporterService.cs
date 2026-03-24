@@ -106,9 +106,9 @@ public class SupporterService
         return null;
     }
 
-    public static bool IsSupporter(UserType userType)
+    public static bool IsSupporter(UserType? userType)
     {
-        return userType != UserType.User;
+        return userType != null && userType != UserType.User;
     }
 
     public bool ShowSupporterPromotionalMessage(UserType userType, ulong? guildId)

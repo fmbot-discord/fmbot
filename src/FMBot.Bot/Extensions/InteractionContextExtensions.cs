@@ -843,6 +843,10 @@ public static class InteractionContextExtensions
                     m.Embeds = response.ResponseType == ResponseType.ComponentsV2 ? [] : [response.Embed];
                     m.Attachments = attachments;
                     m.AllowedMentions = AllowedMentionsProperties.None;
+                    if (response.ResponseType == ResponseType.ComponentsV2)
+                    {
+                        m.Flags = MessageFlags.IsComponentsV2;
+                    }
                 });
             }
             else
@@ -853,6 +857,10 @@ public static class InteractionContextExtensions
                     m.Embeds = response.ResponseType == ResponseType.ComponentsV2 ? [] : [response.Embed];
                     m.Attachments = attachments;
                     m.AllowedMentions = AllowedMentionsProperties.None;
+                    if (response.ResponseType == ResponseType.ComponentsV2)
+                    {
+                        m.Flags = MessageFlags.IsComponentsV2;
+                    }
                 });
             }
         }
