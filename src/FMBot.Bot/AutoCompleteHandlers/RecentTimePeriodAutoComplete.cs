@@ -22,13 +22,13 @@ public class RecentTimePeriodAutoComplete : IAutocompleteProvider<AutocompleteIn
         };
 
         var now = DateTime.UtcNow;
-        var twoMonthsAgo = now.AddMonths(-2);
+        var currentMonth = new DateTime(now.Year, now.Month, 1);
+        var previousMonth = currentMonth.AddMonths(-1);
 
-        for (var date = new DateTime(now.Year, now.Month, 1); date >= new DateTime(twoMonthsAgo.Year, twoMonthsAgo.Month, 1); date = date.AddMonths(-1))
-        {
-            var monthName = date.ToString("MMMM", CultureInfo.InvariantCulture);
-            options.Add(date.Year != now.Year ? $"{monthName} {date.Year}" : monthName);
-        }
+        options.Add(currentMonth.ToString("MMMM", CultureInfo.InvariantCulture));
+        options.Add(previousMonth.Year != now.Year
+            ? $"{previousMonth.ToString("MMMM", CultureInfo.InvariantCulture)} {previousMonth.Year}"
+            : previousMonth.ToString("MMMM", CultureInfo.InvariantCulture));
 
         return options;
     }
