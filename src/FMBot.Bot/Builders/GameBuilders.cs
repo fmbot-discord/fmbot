@@ -814,7 +814,7 @@ public class GameBuilders
         catch (Exception e)
         {
             Log.Error(e, "Error in JumbleProcessAnswer: {exception}", e.Message);
-            if (e.Message.Contains("error 50001", StringComparison.OrdinalIgnoreCase))
+            if (e.Message.Contains("Missing Permissions", StringComparison.OrdinalIgnoreCase))
             {
                 await commandContext.Client.Rest.SendMessageAsync(commandContext.Message.ChannelId, new MessageProperties
                 {

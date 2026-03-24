@@ -424,7 +424,7 @@ public class GameService(
     public async Task<List<JumbleSession>> GetRecentJumbles(int userId, JumbleType jumbleType)
     {
         const string sql = "SELECT correct_answer, date_started, album_name, artist_name FROM public.jumble_sessions " +
-                           "WHERE starter_user_id = @userId AND jumble_type = @jumbleType LIMIT 200 ";
+                           "WHERE starter_user_id = @userId AND jumble_type = @jumbleType ORDER BY date_started DESC LIMIT 200 ";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
