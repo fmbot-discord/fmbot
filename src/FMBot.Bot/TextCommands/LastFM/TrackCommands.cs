@@ -431,10 +431,10 @@ public class TrackCommands(
 
     [Command("servertracks", "st", "stt", "servertoptracks", "servertrack", "billboard", "bb")]
     [Summary("Top tracks for your server, optionally for an artist")]
-    [Options("Time periods: `weekly`, `monthly` and `alltime`", "Order options: `plays` and `listeners`",
+    [Options("Time periods: `weekly`, `monthly`, `alltime` and last two months", "Order options: `plays` and `listeners`",
         "Artist name")]
     [Examples("st", "st a p", "servertracks", "servertracks alltime", "servertracks listeners weekly",
-        "servertracks the beatles listeners", "servertracks the beatles alltime")]
+        "servertracks the beatles listeners", "servertracks march")]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Tracks)]

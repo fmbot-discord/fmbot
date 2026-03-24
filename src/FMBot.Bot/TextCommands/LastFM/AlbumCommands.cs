@@ -335,10 +335,10 @@ public class AlbumCommands(
 
     [Command("serveralbums", "sab", "stab", "servertopalbums", "serveralbum")]
     [Summary("Top albums for your server, optionally for a specific artist.")]
-    [Options("Time periods: `weekly`, `monthly` and `alltime`", "Order options: `plays` and `listeners`",
+    [Options("Time periods: `weekly`, `monthly`, `alltime` and last two months", "Order options: `plays` and `listeners`",
         "Artist name")]
     [Examples("sab", "sab a p", "serveralbums", "serveralbums alltime", "serveralbums listeners weekly",
-        "serveralbums the beatles monthly")]
+        "serveralbums the beatles monthly", "serveralbums march")]
     [RequiresIndex]
     [GuildOnly]
     [CommandCategories(CommandCategory.Albums)]

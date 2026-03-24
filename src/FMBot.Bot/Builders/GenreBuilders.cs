@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Fergun.Interactive;
+using Fergun.Interactive.Pagination;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Factories;
 using FMBot.Bot.Models;
@@ -122,8 +123,7 @@ public class GenreBuilders
         var genrePages = topGuildGenres.Chunk(12).ToList();
 
         var counter = 1;
-        var pageCounter = 1;
-        var pages = new List<PageBuilder>();
+        var pageDescriptions = new List<string>();
         foreach (var page in genrePages)
         {
             var pageString = new StringBuilder();
@@ -151,20 +151,53 @@ public class GenreBuilders
                 counter++;
             }
 
-            var pageFooter = new StringBuilder();
-            pageFooter.Append($"{footerLabel} - Page {pageCounter}/{genrePages.Count}");
-            pageFooter.Append(footer);
-
-            pages.Add(new PageBuilder()
-                .WithTitle(title)
-                .WithDescription(pageString.ToString())
-                .WithFooter(pageFooter.ToString()));
-            pageCounter++;
+            pageDescriptions.Add(pageString.ToString());
         }
 
-        response.ComponentPaginator = StringService.BuildComponentPaginator(pages);
+        var paginator = new ComponentPaginatorBuilder()
+            .WithPageFactory(GeneratePage)
+            .WithPageCount(Math.Max(1, pageDescriptions.Count))
+            .WithActionOnTimeout(ActionOnStop.DisableInput);
+
+        response.ComponentPaginator = paginator;
 
         return response;
+
+        IPage GeneratePage(IComponentPaginator p)
+        {
+            var container = new ComponentContainerProperties();
+
+            container.WithTextDisplay($"### {title}");
+            container.WithSeparator();
+
+            var currentPage = pageDescriptions.ElementAtOrDefault(p.CurrentPageIndex);
+            if (currentPage != null)
+            {
+                container.WithTextDisplay(currentPage.TrimEnd());
+            }
+
+            container.WithSeparator();
+
+            var pageFooter = new StringBuilder();
+            pageFooter.Append($"-# {footerLabel} - Page {p.CurrentPageIndex + 1}/{pageDescriptions.Count}");
+            if (footer.Length > 0)
+            {
+                pageFooter.Append(footer.Replace("\n", "\n-# "));
+            }
+
+            container.WithTextDisplay(pageFooter.ToString());
+
+            if (pageDescriptions.Count > 1)
+            {
+                container.WithActionRow(StringService.GetPaginationActionRow(p));
+            }
+
+            return new PageBuilder()
+                .WithAllowedMentions(AllowedMentionsProperties.None)
+                .WithMessageFlags(MessageFlags.IsComponentsV2)
+                .WithComponents([container])
+                .Build();
+        }
     }
 
     public async Task<ResponseModel> TopGenresAsync(ContextModel context,

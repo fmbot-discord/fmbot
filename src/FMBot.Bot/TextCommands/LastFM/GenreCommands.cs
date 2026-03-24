@@ -142,8 +142,8 @@ public class GenreCommands(
 
     [Command("servergenres", "sg", "sgenres", "serverg", "servergenre")]
     [Summary("Top genres for your server")]
-    [Options("Time periods: `weekly`, `monthly` and `alltime`", "Order options: `plays` and `listeners`")]
-    [Examples("sg", "sg a p", "servergenres", "servergenres alltime", "servergenres listeners weekly")]
+    [Options("Time periods: `weekly`, `monthly`, `alltime` and last two months", "Order options: `plays` and `listeners`")]
+    [Examples("sg", "sg a p", "servergenres", "servergenres alltime", "servergenres listeners weekly", "servergenres march")]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Genres)]

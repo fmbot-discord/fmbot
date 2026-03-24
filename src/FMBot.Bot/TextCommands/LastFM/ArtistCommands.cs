@@ -535,8 +535,8 @@ public class ArtistCommands(
 
     [Command("serverartists", "sa", "sta", "servertopartists", "serverartist")]
     [Summary("Top artists for your server")]
-    [Options("Time periods: `weekly`, `monthly` and `alltime`", "Order options: `plays` and `listeners`")]
-    [Examples("sa", "sa a p", "serverartists", "serverartists alltime", "serverartists listeners weekly")]
+    [Options("Time periods: `weekly`, `monthly`, `alltime` and last two months", "Order options: `plays` and `listeners`")]
+    [Examples("sa", "sa a p", "serverartists", "serverartists alltime", "serverartists listeners weekly", "serverartists march")]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Artists)]
