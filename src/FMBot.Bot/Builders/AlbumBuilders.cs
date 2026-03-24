@@ -852,23 +852,13 @@ public class AlbumBuilders
             ? "Listener count"
             : "Play count";
 
-        var footer = new StringBuilder();
-        var randomHintNumber = new Random().Next(0, 5);
-        switch (randomHintNumber)
+        string footerHint = new Random().Next(0, 5) switch
         {
-            case 1:
-                footer.AppendLine();
-                footer.Append($"View specific album listeners with '{context.Prefix}whoknowsalbum'");
-                break;
-            case 2:
-                footer.AppendLine();
-                footer.Append("Available time periods: alltime, monthly, weekly, current and last month");
-                break;
-            case 3:
-                footer.AppendLine();
-                footer.Append("Available sorting options: plays and listeners");
-                break;
-        }
+            1 => $"View specific album listeners with '{context.Prefix}whoknowsalbum'",
+            2 => "Available time periods: alltime, monthly, weekly, current and last month",
+            3 => "Available sorting options: plays and listeners",
+            _ => null
+        };
 
         var albumPages = topGuildAlbums.Chunk(12).ToList();
 
@@ -932,14 +922,13 @@ public class AlbumBuilders
 
             container.WithSeparator();
 
-            var pageFooter = new StringBuilder();
-            pageFooter.Append($"-# {footerLabel} - Page {p.CurrentPageIndex + 1}/{pageDescriptions.Count}");
-            if (footer.Length > 0)
+            var pageFooter = $"-# {footerLabel} - Page {p.CurrentPageIndex + 1}/{pageDescriptions.Count}";
+            if (footerHint != null)
             {
-                pageFooter.Append(footer.Replace("\n", "\n-# "));
+                pageFooter += $"\n-# {footerHint}";
             }
 
-            container.WithTextDisplay(pageFooter.ToString());
+            container.WithTextDisplay(pageFooter);
 
             if (pageDescriptions.Count > 1)
             {
