@@ -92,7 +92,7 @@ public class UpdateService
         DateTime timeUnauthorizedFilter)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
-        var lastUsed = DateTime.UtcNow.AddMonths(-2);
+        var lastUsed = DateTime.UtcNow.AddMonths(-3);
         return await db.Users
             .AsQueryable()
             .Where(f => f.LastIndexed != null &&
@@ -371,6 +371,9 @@ public class UpdateService
         this._cache.Set(cacheKey, true);
 
         await this._idResolutionService.BackfillUserPlayIds(user.UserId);
+        await this._idResolutionService.BackfillUserArtistIds(user.UserId);
+        await this._idResolutionService.BackfillUserAlbumIds(user.UserId);
+        await this._idResolutionService.BackfillUserTrackIds(user.UserId);
     }
 
     private async Task SmallIndex(User user)

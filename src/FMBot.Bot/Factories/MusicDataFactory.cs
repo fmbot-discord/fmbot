@@ -1076,19 +1076,19 @@ public class MusicDataFactory
         var artists = await db.Artists
             .Where(a => a.SpotifyImageDate == null)
             .OrderBy(a => EF.Functions.Random())
-            .Take(200)
+            .Take(150)
             .ToListAsync();
 
         var albums = await db.Albums
             .Where(a => a.SpotifyImageDate == null)
             .OrderBy(a => EF.Functions.Random())
-            .Take(300)
+            .Take(250)
             .ToListAsync();
 
         var tracks = await db.Tracks
             .Where(t => t.SpotifyLastUpdated == null)
             .OrderBy(t => EF.Functions.Random())
-            .Take(400)
+            .Take(350)
             .ToListAsync();
 
         Log.Information("EnrichMissingMetadata: Found {artists} artists, {albums} albums, {tracks} tracks",
