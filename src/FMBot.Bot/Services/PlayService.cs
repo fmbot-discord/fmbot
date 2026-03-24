@@ -884,6 +884,64 @@ public class PlayService
         return userPlays;
     }
 
+    public async Task<List<GuildTrack>> GetGuildTopTracksPlays(int guildId, DateTime startDateTime,
+        OrderType orderType, string searchValue, int limit = 120)
+    {
+        var cacheKey = $"guild-top-tracks-{guildId}-{startDateTime:yyyyMMddHH}-{orderType}-{searchValue}";
+
+        if (this._cache.TryGetValue(cacheKey, out List<GuildTrack> cachedTracks))
+        {
+            return cachedTracks;
+        }
+
+        var artistFilter = !string.IsNullOrWhiteSpace(searchValue)
+            ? "AND UPPER(up.artist_name) = UPPER(CAST(@searchValue AS CITEXT)) "
+            : "";
+
+        var orderColumn = orderType == OrderType.Listeners ? "ListenerCount" : "TotalPlaycount";
+        var thenByColumn = orderType == OrderType.Listeners ? "TotalPlaycount" : "ListenerCount";
+
+        var sql = "SELECT t.name AS TrackName, " +
+                  "t.artist_name AS ArtistName, " +
+                  "agg.TotalPlaycount, " +
+                  "agg.ListenerCount " +
+                  "FROM ( " +
+                  "    SELECT up.track_id, " +
+                  "           COUNT(*)::int AS TotalPlaycount, " +
+                  "           COUNT(DISTINCT up.user_id)::int AS ListenerCount " +
+                  "    FROM user_plays up " +
+                  "    INNER JOIN guild_users gu ON gu.user_id = up.user_id " +
+                  "    WHERE gu.guild_id = @guildId " +
+                  "      AND gu.bot != true " +
+                  "      AND up.time_played > @startDateTime " +
+                  "      AND up.track_id IS NOT NULL " +
+                  $"      {artistFilter}" +
+                  "      AND NOT up.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
+                  "      AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL) " +
+                  "    GROUP BY up.track_id " +
+                  $"    ORDER BY {orderColumn} DESC, {thenByColumn} DESC " +
+                  "    LIMIT @limit " +
+                  ") agg " +
+                  "INNER JOIN tracks t ON t.id = agg.track_id " +
+                  $"ORDER BY agg.{orderColumn} DESC, agg.{thenByColumn} DESC";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        var tracks = (await connection.QueryAsync<GuildTrack>(sql, new
+        {
+            guildId,
+            startDateTime,
+            searchValue,
+            limit
+        })).ToList();
+
+        this._cache.Set(cacheKey, tracks, TimeSpan.FromMinutes(10));
+
+        return tracks;
+    }
+
     public async Task<List<UserPlay>> GetGuildUsersPlaysForTimeLeaderBoard(int guildId)
     {
         const string sql =

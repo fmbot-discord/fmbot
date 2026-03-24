@@ -1157,13 +1157,10 @@ public class TrackBuilders
         }
         else
         {
-            var plays = await this._playService.GetGuildUsersPlays(guild.GuildId,
-                guildListSettings.AmountOfDaysWithBillboard);
-
-            topGuildTracks = PlayService.GetGuildTopTracks(plays, guildListSettings.StartDateTime,
-                guildListSettings.OrderType, guildListSettings.NewSearchValue);
-            previousTopGuildTracks = PlayService.GetGuildTopTracks(plays, guildListSettings.BillboardStartDateTime,
-                guildListSettings.OrderType, guildListSettings.NewSearchValue);
+            topGuildTracks = await this._playService.GetGuildTopTracksPlays(guild.GuildId,
+                guildListSettings.StartDateTime, guildListSettings.OrderType, guildListSettings.NewSearchValue);
+            previousTopGuildTracks = (await this._playService.GetGuildTopTracksPlays(guild.GuildId,
+                guildListSettings.BillboardStartDateTime, guildListSettings.OrderType, guildListSettings.NewSearchValue)).ToList();
         }
 
         if (topGuildTracks.Count == 0)
