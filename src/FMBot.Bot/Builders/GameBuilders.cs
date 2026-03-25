@@ -814,12 +814,13 @@ public class GameBuilders
         catch (Exception e)
         {
             Log.Error(e, "Error in JumbleProcessAnswer: {exception}", e.Message);
-            if (e.Message.Contains("Missing Permissions", StringComparison.OrdinalIgnoreCase))
+            if (e.Message.Contains("Missing Permissions", StringComparison.OrdinalIgnoreCase) ||
+                e.Message.Contains("Missing Access", StringComparison.OrdinalIgnoreCase))
             {
                 await commandContext.Client.Rest.SendMessageAsync(commandContext.Message.ChannelId, new MessageProperties
                 {
                     Content = "❌ Error: I can't properly process your jumble answers, because this server hasn't given me the necessary permissions.\n" +
-                              "Please ensure .fmbot has access to the **Add Reactions** permission."
+                              "Please ensure .fmbot has access to the **Add Reactions** and **Read Message History** permissions."
                 });
             }
         }
