@@ -144,7 +144,15 @@ public class TimerService : IDisposable
             Log.Warning($"No {nameof(this._botSettings.LastFm.UserUpdateFrequencyInHours)} set in config, not queuing user update job");
         }
 
-        if (this._client.GetCurrentUser()!.Id == Constants.BotBetaId &&
+        var currentUser = this._client.GetCurrentUser();
+        if (currentUser == null)
+        {
+            Log.Warning("Current user not available yet, scheduling master jobs check for later");
+            BackgroundJob.Schedule(() => MakeSureMasterJobsAreQueued(), TimeSpan.FromMinutes(2));
+            return;
+        }
+
+        if (currentUser.Id == Constants.BotBetaId &&
             (ConfigData.Data.Shards == null ||
              ConfigData.Data.Shards.MainInstance == true))
         {
@@ -153,7 +161,7 @@ public class TimerService : IDisposable
         }
 
         var mainGuildConnected = this._client.Any(shard => shard.Cache.Guilds.ContainsKey(ConfigData.Data.Bot.BaseServerId));
-        if (this._client.GetCurrentUser()!.Id == Constants.BotProductionId && mainGuildConnected)
+        if (currentUser.Id == Constants.BotProductionId && mainGuildConnected)
         {
             QueueMasterJobs();
         }
@@ -166,8 +174,15 @@ public class TimerService : IDisposable
 
     public void MakeSureMasterJobsAreQueued()
     {
+        var currentUser = this._client.GetCurrentUser();
+        if (currentUser == null)
+        {
+            Log.Warning("Current user still not available, skipping master jobs check");
+            return;
+        }
+
         var mainGuildConnected = this._client.Any(shard => shard.Cache.Guilds.ContainsKey(ConfigData.Data.Bot.BaseServerId));
-        if (this._client.GetCurrentUser()!.Id == Constants.BotProductionId && mainGuildConnected)
+        if (currentUser.Id == Constants.BotProductionId && mainGuildConnected)
         {
             QueueMasterJobs();
         }
