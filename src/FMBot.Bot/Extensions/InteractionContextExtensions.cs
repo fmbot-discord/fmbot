@@ -471,7 +471,7 @@ public static class InteractionContextExtensions
                         var componentImage = await context.Interaction.SendFollowupMessageAsync(
                             new InteractionMessageProperties()
                                 .AddAttachments(new AttachmentProperties(
-                                    response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName,
+                                    response.FileName,
                                     response.Stream).WithDescription(response.FileDescription))
                                 .WithComponents(response.GetComponentsV2())
                                 .WithFlags(followUpComponentsV2Flags)
@@ -820,10 +820,11 @@ public static class InteractionContextExtensions
                 ? response.GetComponentsV2() ?? []
                 : response.GetMessageComponents() ?? [];
 
+            var spoilerPrefix = response.Spoiler && response.ResponseType != ResponseType.ComponentsV2;
             var attachments = response.Stream != null
                 ? new List<AttachmentProperties>
                 {
-                    new(response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName, response.Stream)
+                    new(spoilerPrefix ? $"SPOILER_{response.FileName}" : response.FileName, response.Stream)
                 }
                 : [];
 

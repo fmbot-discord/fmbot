@@ -259,7 +259,7 @@ public static class CommandContextExtensions
                         var componentImage = await context.Client.Rest.SendMessageAsync(context.Message.ChannelId,
                             new MessageProperties()
                                 .AddAttachments(new AttachmentProperties(
-                                    response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName,
+                                    response.FileName,
                                     response.Stream).WithDescription(response.FileDescription))
                                 .WithComponents(response.GetComponentsV2())
                                 .WithFlags(MessageFlags.IsComponentsV2)
