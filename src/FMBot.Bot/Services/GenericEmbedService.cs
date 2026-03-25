@@ -239,6 +239,7 @@ public static class GenericEmbedService
         if (recentScrobbles.Content?.RecentTracks == null || !recentScrobbles.Success)
         {
             errorResponse.Embed.ErrorResponse(recentScrobbles.Error, recentScrobbles.Message, null);
+            errorResponse.ComponentsContainer.WithTextDisplay(errorResponse.Embed.Description ?? "Something went wrong while trying to get recent scrobbles.");
             errorResponse.CommandResponse = CommandResponse.LastFmError;
             return errorResponse;
         }
@@ -246,6 +247,7 @@ public static class GenericEmbedService
         if (!recentScrobbles.Content.RecentTracks.Any())
         {
             errorResponse.Embed.NoScrobblesFoundErrorResponse(lastFmUserName);
+            errorResponse.ComponentsContainer.WithTextDisplay(errorResponse.Embed.Description ?? "No scrobbles found.");
             errorResponse.CommandResponse = CommandResponse.NoScrobbles;
             errorResponse.Components = NoScrobblesFoundComponents();
             return errorResponse;

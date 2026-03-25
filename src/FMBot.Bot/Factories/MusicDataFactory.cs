@@ -555,7 +555,7 @@ public class MusicDataFactory
                 this._spotifyService.GetAlbumFromSpotify(albumInfo.AlbumName, albumInfo.ArtistName.ToLower());
         }
 
-        if (dbAlbum.AppleMusicDate == null || dbAlbum.AppleMusicDate < DateTime.UtcNow.AddDays(-30))
+        if (dbAlbum.AppleMusicDate == null || dbAlbum.AppleMusicDate < DateTime.UtcNow.AddDays(-60))
         {
             updateAppleMusic =
                 this._appleMusicService.GetAppleMusicAlbum(albumInfo.ArtistName, albumInfo.AlbumName, true);

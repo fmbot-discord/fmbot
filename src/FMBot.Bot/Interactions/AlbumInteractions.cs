@@ -125,7 +125,9 @@ public class AlbumInteractions(
 
             if (isFmContext && ephemeral)
             {
-                response.Components = null;
+                response.ComponentsContainer.Components = response.ComponentsContainer.Components
+                    .Where(c => c is not ActionRowProperties)
+                    .ToList();
             }
 
             if (ephemeral)
@@ -227,7 +229,9 @@ public class AlbumInteractions(
 
             if (isFmContext && ephemeral)
             {
-                response.Components = null;
+                response.ComponentsContainer.Components = response.ComponentsContainer.Components
+                    .Where(c => c is not ActionRowProperties)
+                    .ToList();
             }
 
             if (ephemeral)
