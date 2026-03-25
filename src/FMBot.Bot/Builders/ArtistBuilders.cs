@@ -808,7 +808,7 @@ public class ArtistBuilders
         {
             footer.AppendLine();
             footer.Append(
-                $"{userSettings.UserNameLastFm} has {artistSearch.Artist.UserPlaycount.Format(context.NumberFormat)} total scrobbles on this artist");
+                $"{userSettings.UserNameLastFm} has {artistSearch.Artist.UserPlaycount.Format(context.NumberFormat)} total artist plays");
             footer.AppendLine();
             footer.Append($"Requested by {userTitle}");
         }
@@ -816,7 +816,7 @@ public class ArtistBuilders
         {
             footer.AppendLine();
             footer.Append(
-                $"{userTitle} has {artistSearch.Artist.UserPlaycount.Format(context.NumberFormat)} total scrobbles on this artist");
+                $"{userTitle} has {artistSearch.Artist.UserPlaycount.Format(context.NumberFormat)} total artist plays");
         }
 
         if (maybeMissingResults)
@@ -984,14 +984,14 @@ public class ArtistBuilders
         if (userSettings.DifferentUser)
         {
             footer.Append(
-                $"{userSettings.UserNameLastFm} has {artistSearch.Artist.UserPlaycount.Format(context.NumberFormat)} total scrobbles on this artist");
+                $"{userSettings.UserNameLastFm} has {artistSearch.Artist.UserPlaycount.Format(context.NumberFormat)} total artist plays");
             footer.AppendLine();
             footer.Append($"Requested by {userTitle}");
         }
         else
         {
             footer.Append(
-                $"{userTitle} has {artistSearch.Artist.UserPlaycount.Format(context.NumberFormat)} total scrobbles on this artist");
+                $"{userTitle} has {artistSearch.Artist.UserPlaycount.Format(context.NumberFormat)} total artist plays");
         }
 
         var footerText = footer.ToString().TrimEnd();
