@@ -555,7 +555,7 @@ public class MusicDataFactory
                 this._spotifyService.GetAlbumFromSpotify(albumInfo.AlbumName, albumInfo.ArtistName.ToLower());
         }
 
-        if (dbAlbum.AppleMusicDate == null || dbAlbum.AppleMusicDate < DateTime.UtcNow.AddDays(-30))
+        if (dbAlbum.AppleMusicDate == null || dbAlbum.AppleMusicDate < DateTime.UtcNow.AddDays(-60))
         {
             updateAppleMusic =
                 this._appleMusicService.GetAppleMusicAlbum(albumInfo.ArtistName, albumInfo.AlbumName, true);
@@ -938,7 +938,7 @@ public class MusicDataFactory
             Task<AmData<AmSongAttributes>> updateAppleMusic = null;
             AsyncUnaryCall<LyricsReply> updateLyrics = null;
 
-            if (dbTrack.SpotifyLastUpdated == null || dbTrack.SpotifyLastUpdated < DateTime.UtcNow.AddDays(-120))
+            if (dbTrack.SpotifyLastUpdated == null || dbTrack.SpotifyLastUpdated < DateTime.UtcNow.AddDays(-180))
             {
                 updateSpotify =
                     this._spotifyService.GetTrackFromSpotify(trackInfo.TrackName, trackInfo.ArtistName.ToLower());

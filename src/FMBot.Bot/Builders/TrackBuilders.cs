@@ -26,6 +26,7 @@ using NetCord;
 using NetCord.Rest;
 using Serilog;
 using SkiaSharp;
+using Web.InternalApi;
 
 namespace FMBot.Bot.Builders;
 
@@ -106,7 +107,7 @@ public class TrackBuilders
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed,
+            ResponseType = ResponseType.ComponentsV2,
         };
 
         var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue,
@@ -115,186 +116,352 @@ public class TrackBuilders
             referencedMessage: context.ReferencedMessage);
         if (trackSearch.Track == null)
         {
+            trackSearch.Response.ResponseType = ResponseType.ComponentsV2;
+            trackSearch.Response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
             return trackSearch.Response;
         }
 
-        var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
+        var dbTrackTask = this._musicDataFactory.GetOrStoreTrackAsync(trackSearch.Track);
+        var userTitleTask = this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
+        var featuredHistoryTask = this._featuredService.GetTrackFeaturedHistory(trackSearch.Track.ArtistName,
+            trackSearch.Track.TrackName);
 
-        response.EmbedAuthor.WithName(
-            $"Track: {trackSearch.Track.ArtistName} - {trackSearch.Track.TrackName} for {userTitle}");
-
-        if (trackSearch.Track.TrackUrl != null)
+        Task<Album> databaseAlbumTask = null;
+        if (trackSearch.Track.AlbumName != null)
         {
-            response.EmbedAuthor.WithUrl(trackSearch.Track.TrackUrl);
+            databaseAlbumTask = this._albumService.GetAlbumFromDatabase(
+                trackSearch.Track.ArtistName, trackSearch.Track.AlbumName);
         }
 
-        response.Embed.WithAuthor(response.EmbedAuthor);
+        Task<DateTime?> firstPlayTask = null;
+        if (context.ContextUser.UserType != UserType.User && trackSearch.Track.UserPlaycount > 0)
+        {
+            firstPlayTask = this._playService.GetTrackFirstPlayDate(context.ContextUser.UserId,
+                trackSearch.Track.ArtistName, trackSearch.Track.TrackName);
+        }
 
-        var dbTrack = await this._musicDataFactory.GetOrStoreTrackAsync(trackSearch.Track);
-        var stats = new StringBuilder();
-        var info = new StringBuilder();
-        var footer = new StringBuilder();
-
-        stats.AppendLine($"`{trackSearch.Track.TotalListeners.Format(context.NumberFormat)}` listeners");
-        stats.AppendLine(
-            $"`{trackSearch.Track.TotalPlaycount.Format(context.NumberFormat)}` global {StringExtensions.GetPlaysString(trackSearch.Track.TotalPlaycount)}");
-        stats.AppendLine(
-            $"`{trackSearch.Track.UserPlaycount.Format(context.NumberFormat)}` {StringExtensions.GetPlaysString(trackSearch.Track.UserPlaycount)} by you");
-
+        Task<(int week, int month)> recentPlaycountsTask = null;
         if (trackSearch.Track.UserPlaycount.HasValue)
         {
+            recentPlaycountsTask = this._playService.GetRecentTrackPlaycounts(context.ContextUser.UserId,
+                trackSearch.Track.TrackName, trackSearch.Track.ArtistName);
+
             _ = this._updateService.CorrectUserTrackPlaycount(context.ContextUser.UserId,
                 trackSearch.Track.ArtistName,
                 trackSearch.Track.TrackName, trackSearch.Track.UserPlaycount.Value);
         }
 
-        var duration = dbTrack?.DurationMs ?? trackSearch.Track.Duration;
-        if (duration is > 0)
+        Task<Guild> guildTask = null;
+        Task<IDictionary<int, FullGuildUser>> guildUsersTask = null;
+        if (context.DiscordGuild != null)
         {
-            var trackLength = TimeSpan.FromMilliseconds(duration.GetValueOrDefault());
-            var formattedTrackLength =
-                $"{(trackLength.Hours == 0 ? "" : $"{trackLength.Hours}:")}{trackLength.Minutes}:{trackLength.Seconds:D2}";
+            guildTask = this._guildService.GetGuildForWhoKnows(context.DiscordGuild.Id);
+            guildUsersTask = this._guildService.GetGuildUsers(context.DiscordGuild.Id);
+        }
 
-            info.AppendLine($"`{formattedTrackLength}` duration");
+        var dbTrack = await dbTrackTask;
+        var userTitle = await userTitleTask;
+        var featuredHistory = await featuredHistoryTask;
+        var databaseAlbum = databaseAlbumTask != null ? await databaseAlbumTask : null;
 
-            if (trackSearch.Track.UserPlaycount > 1)
+        Task<EurovisionEntry> eurovisionTask = null;
+        if (dbTrack?.SpotifyId != null)
+        {
+            eurovisionTask = this._eurovisionService.GetEurovisionEntryForSpotifyId(dbTrack.SpotifyId);
+        }
+
+        Task<TimeSpan> listeningTimeTask = null;
+        var duration = dbTrack?.DurationMs ?? trackSearch.Track.Duration;
+        if (duration is > 0 && trackSearch.Track.UserPlaycount > 1)
+        {
+            listeningTimeTask = this._timeService.GetPlayTimeForTrackWithPlaycount(trackSearch.Track.ArtistName,
+                trackSearch.Track.TrackName, trackSearch.Track.UserPlaycount.GetValueOrDefault());
+        }
+
+        Guild guild = null;
+        IDictionary<int, FullGuildUser> guildUsers = null;
+        Task<IList<WhoKnowsObjectWithUser>> indexedUsersTask = null;
+        if (context.DiscordGuild != null)
+        {
+            guild = await guildTask;
+            guildUsers = await guildUsersTask;
+
+            if (guild?.LastIndexed != null)
             {
-                var listeningTime =
-                    await this._timeService.GetPlayTimeForTrackWithPlaycount(trackSearch.Track.ArtistName,
-                        trackSearch.Track.TrackName,
-                        trackSearch.Track.UserPlaycount.GetValueOrDefault());
-
-                stats.AppendLine($"`{StringExtensions.GetLongListeningTimeString(listeningTime)}` spent listening");
+                indexedUsersTask = this._whoKnowsTrackService.GetIndexedUsersForTrack(context.DiscordGuild,
+                    guildUsers, guild.GuildId, trackSearch.Track.ArtistName, trackSearch.Track.TrackName);
             }
         }
 
-        var audioFeatures = new StringBuilder();
+        string albumCoverUrl = null;
+        var showThumbnail = false;
+        if (databaseAlbum != null)
+        {
+            albumCoverUrl = databaseAlbum.SpotifyImageUrl ?? databaseAlbum.LastfmImageUrl;
+
+            if (albumCoverUrl != null)
+            {
+                var safeForChannelTask = this._censorService.IsSafeForChannel(context.DiscordGuild,
+                    context.DiscordChannel,
+                    trackSearch.Track.AlbumName, trackSearch.Track.ArtistName, trackSearch.Track.AlbumUrl);
+                var accentColorTask = this._albumService.GetAccentColorWithAlbum(context,
+                    albumCoverUrl, databaseAlbum.Id, trackSearch.Track.AlbumName, trackSearch.Track.ArtistName);
+
+                if (await safeForChannelTask == CensorService.CensorResult.Safe)
+                {
+                    showThumbnail = true;
+                }
+
+                response.ComponentsContainer.WithAccentColor(await accentColorTask);
+            }
+        }
+
+        var headerSection = new StringBuilder();
+        headerSection.AppendLine(trackSearch.Track.TrackUrl != null
+            ? $"## [{trackSearch.Track.TrackName}]({trackSearch.Track.TrackUrl})"
+            : $"## {trackSearch.Track.TrackName}");
+        headerSection.AppendLine(trackSearch.Track.ArtistUrl != null
+            ? $"Track by **[{trackSearch.Track.ArtistName}]({trackSearch.Track.ArtistUrl})**"
+            : $"Track by **{trackSearch.Track.ArtistName}**");
+
+        if (trackSearch.Track.AlbumName != null)
+        {
+            var albumType = databaseAlbum?.Type switch
+            {
+                "single" => "On single",
+                "compilation" => "On compilation",
+                _ => "On album"
+            };
+
+            var albumUrl = LastfmUrlExtensions.GetAlbumUrl(trackSearch.Track.ArtistName, trackSearch.Track.AlbumName);
+            headerSection.Append(albumUrl != null
+                ? $"-# {albumType} [{trackSearch.Track.AlbumName}]({albumUrl})"
+                : $"-# {albumType} {trackSearch.Track.AlbumName}");
+        }
+
+        if (showThumbnail)
+        {
+            response.ComponentsContainer.WithSection([
+                new TextDisplayProperties(headerSection.ToString().TrimEnd())
+            ], albumCoverUrl);
+        }
+        else
+        {
+            response.ComponentsContainer.AddComponent(new TextDisplayProperties(headerSection.ToString().TrimEnd()));
+        }
+
+        if (trackSearch.Track.UserPlaycount.HasValue)
+        {
+            var userStats = new StringBuilder();
+
+            var playsLine =
+                $"**{trackSearch.Track.UserPlaycount.Format(context.NumberFormat)}** {StringExtensions.GetPlaysString(trackSearch.Track.UserPlaycount)} by **{userTitle}**";
+
+            if (recentPlaycountsTask != null)
+            {
+                var recentPlaycounts = await recentPlaycountsTask;
+                if (recentPlaycounts.month > 0)
+                {
+                    playsLine += $" — **{recentPlaycounts.month.Format(context.NumberFormat)}** last month";
+                }
+            }
+
+            userStats.AppendLine(playsLine);
+
+            if (listeningTimeTask != null)
+            {
+                var listeningTime = await listeningTimeTask;
+                userStats.Append($"**{StringExtensions.GetLongListeningTimeString(listeningTime)}** listened");
+
+                if (context.ContextUser.TotalPlaycount.HasValue && trackSearch.Track.UserPlaycount is >= 30)
+                {
+                    userStats.Append(
+                        $" — **{((decimal)trackSearch.Track.UserPlaycount.Value / context.ContextUser.TotalPlaycount.Value).FormatPercentage(context.NumberFormat)}** of all your plays");
+                }
+
+                userStats.AppendLine();
+            }
+            else if (context.ContextUser.TotalPlaycount.HasValue && trackSearch.Track.UserPlaycount is >= 30)
+            {
+                userStats.AppendLine(
+                    $"**{((decimal)trackSearch.Track.UserPlaycount.Value / context.ContextUser.TotalPlaycount.Value).FormatPercentage(context.NumberFormat)}** of all your plays");
+            }
+
+            if (firstPlayTask != null)
+            {
+                var firstPlay = await firstPlayTask;
+                if (firstPlay != null)
+                {
+                    var firstListenValue = ((DateTimeOffset)firstPlay).ToUnixTimeSeconds();
+                    userStats.AppendLine($"Discovered <t:{firstListenValue}:D>");
+                }
+            }
+            else
+            {
+                var randomHintNumber = new Random().Next(0, Constants.SupporterPromoChance);
+                if (randomHintNumber == 1 &&
+                    this._supporterService.ShowSupporterPromotionalMessage(context.ContextUser.UserType,
+                        context.DiscordGuild?.Id))
+                {
+                    this._supporterService.SetGuildSupporterPromoCache(context.DiscordGuild?.Id);
+                    userStats.AppendLine(
+                        $"*[Supporters]({Constants.GetSupporterOverviewLink}) can see track discovery dates.*");
+                }
+            }
+
+            response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
+            response.ComponentsContainer.AddComponent(new TextDisplayProperties(userStats.ToString().TrimEnd()));
+        }
+
+        var statsSection = new StringBuilder();
+
+        if (context.DiscordGuild != null)
+        {
+            if (indexedUsersTask != null)
+            {
+                var usersWithTrack = await indexedUsersTask;
+                var (_, filteredUsersWithTrack) =
+                    WhoKnowsService.FilterWhoKnowsObjects(usersWithTrack, guildUsers, guild, context.ContextUser.UserId);
+
+                if (filteredUsersWithTrack.Count != 0)
+                {
+                    var serverListeners = filteredUsersWithTrack.Count;
+                    var serverPlaycount = filteredUsersWithTrack.Sum(a => a.Playcount);
+
+                    statsSection.AppendLine(
+                        $"**{serverPlaycount.Format(context.NumberFormat)}** {StringExtensions.GetPlaysString(serverPlaycount)} in this server by **{serverListeners.Format(context.NumberFormat)}** {StringExtensions.GetListenersString(serverListeners)}");
+                }
+            }
+
+            var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingTrack(context.ContextUser.UserId,
+                guildUsers, guild, trackSearch.Track.ArtistName, trackSearch.Track.TrackName);
+
+            if (guildAlsoPlaying != null)
+            {
+                statsSection.AppendLine(guildAlsoPlaying);
+            }
+        }
+
+        statsSection.AppendLine(
+            $"**{trackSearch.Track.TotalPlaycount.Format(context.NumberFormat)}** Last.fm {StringExtensions.GetPlaysString(trackSearch.Track.TotalPlaycount)} by **{trackSearch.Track.TotalListeners.Format(context.NumberFormat)}** {StringExtensions.GetListenersString(trackSearch.Track.TotalListeners)}");
+
+        var metaLine = new StringBuilder();
+        if (dbTrack?.Popularity is > 0)
+        {
+            metaLine.Append($"**{dbTrack.Popularity}** popularity");
+        }
+
+        if (featuredHistory.Any())
+        {
+            if (metaLine.Length > 0) metaLine.Append(" — ");
+            metaLine.Append($"Featured **{featuredHistory.Count}** {StringExtensions.GetTimesString(featuredHistory.Count)}");
+        }
+
+        if (metaLine.Length > 0)
+        {
+            statsSection.AppendLine(metaLine.ToString());
+        }
+
+        if (trackSearch.IsRandom)
+        {
+            statsSection.AppendLine(
+                $"Track #{trackSearch.RandomTrackPosition} ({trackSearch.RandomTrackPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(trackSearch.RandomTrackPlaycount)})");
+        }
+
+        response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
+        response.ComponentsContainer.AddComponent(new TextDisplayProperties(statsSection.ToString().TrimEnd()));
+
+        var infoSection = new StringBuilder();
+
+        var trackDuration = dbTrack?.DurationMs ?? trackSearch.Track.Duration;
+        if (trackDuration is > 0)
+        {
+            infoSection.AppendLine($"`{StringExtensions.GetTrackLength(trackDuration.GetValueOrDefault())}` duration");
+        }
 
         if (dbTrack != null && !string.IsNullOrEmpty(dbTrack.SpotifyId))
         {
             var pitch = StringExtensions.KeyIntToPitchString(dbTrack.Key.GetValueOrDefault());
 
-            info.AppendLine($"`{pitch}` key");
-
             if (dbTrack.Tempo.HasValue)
             {
-                var bpm = $"{dbTrack.Tempo.Value:0.0}";
-                info.AppendLine($"`{bpm}` bpm");
+                infoSection.AppendLine($"`{pitch}` key — `{dbTrack.Tempo.Value:0.0}` bpm");
+            }
+            else
+            {
+                infoSection.AppendLine($"`{pitch}` key");
             }
 
             if (dbTrack.Danceability.HasValue && dbTrack.Energy.HasValue &&
-                dbTrack.Instrumentalness.HasValue &&
-                dbTrack.Acousticness.HasValue && dbTrack.Speechiness.HasValue &&
-                dbTrack.Liveness.HasValue && dbTrack.Valence.HasValue)
+                dbTrack.Instrumentalness.HasValue && dbTrack.Acousticness.HasValue &&
+                dbTrack.Speechiness.HasValue && dbTrack.Liveness.HasValue && dbTrack.Valence.HasValue)
             {
-                var danceability = ((decimal)(dbTrack.Danceability / 1)).ToString("0%");
-                var energetic = ((decimal)(dbTrack.Energy / 1)).ToString("0%");
-                var instrumental = ((decimal)(dbTrack.Instrumentalness / 1)).ToString("0%");
-                var acoustic = ((decimal)(dbTrack.Acousticness / 1)).ToString("0%");
-                var speechful = ((decimal)(dbTrack.Speechiness / 1)).ToString("0%");
-                var liveness = ((decimal)(dbTrack.Liveness / 1)).ToString("0%");
-                var valence = ((decimal)(dbTrack.Valence / 1)).ToString("0%");
+                var danceability = ((decimal)dbTrack.Danceability).ToString("0%");
+                var energetic = ((decimal)dbTrack.Energy).ToString("0%");
+                var acoustic = ((decimal)dbTrack.Acousticness).ToString("0%");
+                var instrumental = ((decimal)dbTrack.Instrumentalness).ToString("0%");
+                var speechful = ((decimal)dbTrack.Speechiness).ToString("0%");
+                var liveness = ((decimal)dbTrack.Liveness).ToString("0%");
+                var valence = ((decimal)dbTrack.Valence).ToString("0%");
 
-                audioFeatures.AppendLine($"`{danceability}` danceable");
-                audioFeatures.AppendLine($"`{energetic}` energetic");
-                audioFeatures.AppendLine($"`{acoustic}` acoustic");
-                audioFeatures.AppendLine($"`{instrumental}` instrumental");
-                audioFeatures.AppendLine($"`{speechful}` speechful");
-                audioFeatures.AppendLine($"`{liveness}` liveness");
-                audioFeatures.AppendLine($"`{valence}` happy");
+                infoSection.AppendLine($"`{danceability}` danceable — `{energetic}` energetic");
+                infoSection.AppendLine($"`{acoustic}` acoustic — `{instrumental}` instrumental");
+                infoSection.AppendLine($"`{speechful}` speechful — `{liveness}` liveness");
+                infoSection.Append($"`{valence}` happy");
             }
         }
 
-        if (context.ContextUser.UserType != UserType.User && trackSearch.Track.UserPlaycount > 0)
+        if (infoSection.Length > 0)
         {
-            var firstPlay =
-                await this._playService.GetTrackFirstPlayDate(context.ContextUser.UserId,
-                    trackSearch.Track.ArtistName, trackSearch.Track.TrackName);
-            if (firstPlay != null)
-            {
-                var firstListenValue = ((DateTimeOffset)firstPlay).ToUnixTimeSeconds();
-
-                response.Embed.WithDescription($"Discovered on: <t:{firstListenValue}:D>");
-            }
-        }
-        else
-        {
-            var randomHintNumber = new Random().Next(0, Constants.SupporterPromoChance);
-            if (randomHintNumber == 1 &&
-                this._supporterService.ShowSupporterPromotionalMessage(context.ContextUser.UserType,
-                    context.DiscordGuild?.Id))
-            {
-                this._supporterService.SetGuildSupporterPromoCache(context.DiscordGuild?.Id);
-                response.Embed.WithDescription(
-                    $"*[Supporters]({Constants.GetSupporterDiscordLink}) can see track discovery dates.*");
-            }
+            response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
+            response.ComponentsContainer.AddComponent(new TextDisplayProperties(infoSection.ToString().TrimEnd()));
         }
 
-        if (trackSearch.IsRandom)
+        EurovisionEntry eurovisionEntry = null;
+        if (eurovisionTask != null)
         {
-            footer.AppendLine(
-                $"Track #{trackSearch.RandomTrackPosition} ({trackSearch.RandomTrackPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(trackSearch.RandomTrackPlaycount)})");
-        }
-
-        var featuredHistory =
-            await this._featuredService.GetTrackFeaturedHistory(trackSearch.Track.ArtistName,
-                trackSearch.Track.TrackName);
-        if (featuredHistory.Any())
-        {
-            footer.AppendLine(
-                $"Featured {featuredHistory.Count} {StringExtensions.GetTimesString(featuredHistory.Count)}");
-        }
-
-        if (context.ContextUser.TotalPlaycount.HasValue && trackSearch.Track.UserPlaycount is >= 10)
-        {
-            footer.AppendLine(
-                $"{((decimal)trackSearch.Track.UserPlaycount.Value / context.ContextUser.TotalPlaycount.Value).FormatPercentage(context.NumberFormat)} of all your plays are on this track");
-        }
-
-        if (footer.Length > 0)
-        {
-            response.Embed.WithFooter(footer.ToString());
-        }
-
-        if (audioFeatures.Length > 0)
-        {
-            response.Embed.AddField("Audio features", audioFeatures.ToString(), true);
-        }
-
-        response.Embed.AddField("Stats", stats.ToString(), true);
-
-        if (info.Length > 0)
-        {
-            response.Embed.AddField("Info", info.ToString(), true);
-        }
-
-        response.Components = new ActionRowProperties();
-
-        if (dbTrack?.SpotifyId != null)
-        {
-            var eurovisionEntry =
-                await this._eurovisionService.GetEurovisionEntryForSpotifyId(dbTrack.SpotifyId);
+            eurovisionEntry = await eurovisionTask;
 
             if (eurovisionEntry != null)
             {
                 var eurovisionDescription = this._eurovisionService.GetEurovisionDescription(eurovisionEntry);
-                response.Embed.AddField($"Eurovision <:eurovision:1084971471610323035> ", eurovisionDescription.full);
-                if (eurovisionEntry.VideoLink != null)
-                {
-                    response.Components.WithButton(
-                        emote: EmojiProperties.Custom(DiscordConstants.YouTube), url: eurovisionEntry.VideoLink);
-                }
+                response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
+                response.ComponentsContainer.AddComponent(
+                    new TextDisplayProperties($"<:eurovision:1084971471610323035> Eurovision\n{eurovisionDescription.full}"));
             }
         }
 
         if (!string.IsNullOrWhiteSpace(trackSearch.Track.Description))
         {
-            response.Embed.AddField("Summary", trackSearch.Track.Description);
+            response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
+            response.ComponentsContainer.AddComponent(new TextDisplayProperties(trackSearch.Track.Description));
+        }
+
+        var actionRow = new ActionRowProperties();
+
+        if (!string.IsNullOrEmpty(dbTrack?.SpotifyId))
+        {
+            actionRow.WithButton(
+                emote: EmojiProperties.Custom(DiscordConstants.Spotify),
+                url: $"https://open.spotify.com/track/{dbTrack.SpotifyId}");
+        }
+
+        if (!string.IsNullOrEmpty(dbTrack?.AppleMusicUrl))
+        {
+            actionRow.WithButton(
+                emote: EmojiProperties.Custom(DiscordConstants.AppleMusic),
+                url: dbTrack.AppleMusicUrl);
+        }
+
+        if (eurovisionEntry?.VideoLink != null)
+        {
+            actionRow.WithButton(
+                emote: EmojiProperties.Custom(DiscordConstants.YouTube), url: eurovisionEntry.VideoLink);
         }
 
         if (!string.IsNullOrEmpty(dbTrack?.SpotifyPreviewUrl) || !string.IsNullOrEmpty(dbTrack?.AppleMusicPreviewUrl))
         {
-            response.Components.WithButton(
+            actionRow.WithButton(
                 "Preview",
                 $"{InteractionConstants.TrackPreview}:{dbTrack.Id}:",
                 style: ButtonStyle.Secondary,
@@ -304,19 +471,17 @@ public class TrackBuilders
         if (SupporterService.IsSupporter(context.ContextUser.UserType) &&
             !string.IsNullOrWhiteSpace(dbTrack?.PlainLyrics))
         {
-            response.Components.WithButton(
+            actionRow.WithButton(
                 "Lyrics",
                 $"{InteractionConstants.TrackLyrics}:{dbTrack.Id}:",
                 style: ButtonStyle.Secondary,
                 emote: EmojiProperties.Standard("🎤"));
         }
 
-        //if (track.Tags != null && track.Tags.Any())
-        //{
-        //    var tags = LastFmRepository.TagsToLinkedString(track.Tags);
-
-        //    response.Embed.AddField("Tags", tags);
-        //}
+        if (actionRow.Components.Any())
+        {
+            response.ComponentsContainer.WithActionRow(actionRow);
+        }
 
         return response;
     }
@@ -1752,21 +1917,16 @@ public class TrackBuilders
             return trackSearch.Response;
         }
 
-        response.EmbedAuthor.WithName(
-            $"Lyrics for {trackSearch.Track.ArtistName} - {trackSearch.Track.TrackName}");
-
-        if (trackSearch.Track.TrackUrl != null)
-        {
-            response.EmbedAuthor.WithUrl(trackSearch.Track.TrackUrl);
-        }
-
-        response.Embed.WithAuthor(response.EmbedAuthor);
+        var title = $"### Lyrics for [{StringExtensions.Sanitize(trackSearch.Track.ArtistName)} - {StringExtensions.Sanitize(trackSearch.Track.TrackName)}]({trackSearch.Track.TrackUrl})";
 
         var track = await this._musicDataFactory.GetOrStoreTrackAsync(trackSearch.Track, true);
 
         if (track == null || track.PlainLyrics == null)
         {
-            response.Embed.WithDescription("Sorry, we don't have the lyrics for this track.");
+            response.ResponseType = ResponseType.ComponentsV2;
+            response.ComponentsContainer.WithTextDisplay(title);
+            response.ComponentsContainer.WithSeparator();
+            response.ComponentsContainer.WithTextDisplay("Sorry, we don't have the lyrics for this track.");
             response.CommandResponse = CommandResponse.NotFound;
             return response;
         }
@@ -1776,16 +1936,19 @@ public class TrackBuilders
         const int linesPerPage = 20;
 
         var syncedLyricIndex = 0;
+        var hasSyncedLyrics = track.SyncedLyrics != null && track.SyncedLyrics.Any();
 
         for (var i = 0; i < allLines.Count; i += linesPerPage)
         {
-            var pageLines = allLines.Skip(i).Take(linesPerPage);
-            var pageContent = string.Join("\n", pageLines);
+            var pageLines = allLines.Skip(i).Take(linesPerPage).ToList();
 
             TimeSpan? start = null;
             TimeSpan? end = null;
+            var segments = new List<string>();
+            var currentSegment = new StringBuilder();
+            TimeSpan? previousTimestamp = null;
 
-            if (track.SyncedLyrics != null && track.SyncedLyrics.Any())
+            if (hasSyncedLyrics)
             {
                 var firstLine = track.SyncedLyrics.ElementAtOrDefault(syncedLyricIndex);
                 if (firstLine != null)
@@ -1797,82 +1960,146 @@ public class TrackBuilders
                 {
                     if (line == "")
                     {
+                        currentSegment.AppendLine();
                         continue;
                     }
 
                     var syncedLine = track.SyncedLyrics.ElementAtOrDefault(syncedLyricIndex);
                     if (syncedLine == null)
                     {
-                        break;
+                        currentSegment.AppendLine(line);
+                        continue;
                     }
 
                     var closeness = GameService.GetLevenshteinDistance(syncedLine.Text, line);
+                    TimeSpan currentTimestamp;
                     if (closeness > 2)
                     {
                         syncedLyricIndex++;
                         syncedLine = track.SyncedLyrics.ElementAtOrDefault(syncedLyricIndex);
                         if (syncedLine == null)
                         {
-                            break;
+                            currentSegment.AppendLine(line);
+                            continue;
                         }
 
-                        end = syncedLine.Timestamp;
+                        currentTimestamp = syncedLine.Timestamp;
+                        end = currentTimestamp;
                     }
                     else
                     {
-                        end = syncedLine.Timestamp;
+                        currentTimestamp = syncedLine.Timestamp;
+                        end = currentTimestamp;
                         syncedLyricIndex++;
                     }
+
+                    if (previousTimestamp.HasValue &&
+                        (currentTimestamp - previousTimestamp.Value).TotalSeconds > 30)
+                    {
+                        segments.Add(currentSegment.ToString().TrimEnd());
+                        currentSegment.Clear();
+                    }
+
+                    currentSegment.AppendLine(line);
+                    previousTimestamp = currentTimestamp;
+                }
+            }
+            else
+            {
+                foreach (var line in pageLines)
+                {
+                    currentSegment.AppendLine(line);
                 }
             }
 
-            lyricsPages.Add(new LyricPage(pageContent, start, end));
-        }
-
-        var pages = new List<PageBuilder>();
-        for (var i = 0; i < lyricsPages.Count; i++)
-        {
-            var footer = new StringBuilder();
-
-            footer.Append($"Page {i + 1}/{lyricsPages.Count}");
-            var lyricPage = lyricsPages[i];
-
-            if (lyricPage.Start.HasValue && lyricPage.End.HasValue)
+            if (currentSegment.Length > 0)
             {
-                footer.Append(
-                    $" — {StringExtensions.GetTrackLength(lyricPage.Start.Value)} until {StringExtensions.GetTrackLength(lyricPage.End.Value.Add(TimeSpan.FromSeconds(3)))}");
-            }
-            else if (track.DurationMs.HasValue)
-            {
-                footer.Append($" — {StringExtensions.GetTrackLength(track.DurationMs.Value)}");
+                segments.Add(currentSegment.ToString().TrimEnd());
             }
 
-            var page = new PageBuilder()
-                .WithDescription(lyricPage.Text)
-                .WithAuthor(response.EmbedAuthor)
-                .WithFooter(footer.ToString());
-
-            page.WithColor(response.Embed.Color);
-
-            pages.Add(page);
+            lyricsPages.Add(new LyricPage(segments, start, end));
         }
 
-        if (pages.Count == 1)
+        if (lyricsPages.Count == 1)
         {
-            response.ResponseType = ResponseType.Embed;
-            response.SinglePageToEmbedResponseWithButton(pages.First());
+            response.ResponseType = ResponseType.ComponentsV2;
+            response.ComponentsContainer.WithTextDisplay(title);
+            response.ComponentsContainer.WithSeparator();
+            AddLyricSegments(response.ComponentsContainer, lyricsPages[0].Segments);
         }
         else
         {
             response.ResponseType = ResponseType.Paginator;
-            response.ComponentPaginator = StringService.BuildSimpleComponentPaginator(pages);
+
+            var paginator = new ComponentPaginatorBuilder()
+                .WithPageFactory(GeneratePage)
+                .WithPageCount(lyricsPages.Count)
+                .WithActionOnTimeout(ActionOnStop.DisableInput);
+
+            response.ComponentPaginator = paginator;
+
+            IPage GeneratePage(IComponentPaginator p)
+            {
+                var container = new ComponentContainerProperties();
+                var lyricPage = lyricsPages[p.CurrentPageIndex];
+
+                container.WithTextDisplay(title);
+                container.WithSeparator();
+                AddLyricSegments(container, lyricPage.Segments);
+                container.WithSeparator();
+
+                var timeLabel = "";
+                if (lyricPage.Start.HasValue && lyricPage.End.HasValue)
+                {
+                    timeLabel =
+                        $"{StringExtensions.GetTrackLength(lyricPage.Start.Value)} until {StringExtensions.GetTrackLength(lyricPage.End.Value.Add(TimeSpan.FromSeconds(3)))}";
+                }
+                else if (track.DurationMs.HasValue)
+                {
+                    timeLabel = StringExtensions.GetTrackLength(track.DurationMs.Value);
+                }
+
+                var navRow = new ActionRowProperties()
+                    .AddPreviousButton(p, style: ButtonStyle.Secondary,
+                        emote: EmojiProperties.Custom(DiscordConstants.PagesPrevious));
+
+                if (!string.IsNullOrEmpty(timeLabel))
+                {
+                    navRow.WithButton(label: timeLabel, customId: "lyrics-time", style: ButtonStyle.Secondary,
+                        disabled: true);
+                }
+
+                navRow.AddNextButton(p, style: ButtonStyle.Secondary,
+                    emote: EmojiProperties.Custom(DiscordConstants.PagesNext));
+
+                container.WithActionRow(navRow);
+
+                return new PageBuilder()
+                    .WithAllowedMentions(AllowedMentionsProperties.None)
+                    .WithMessageFlags(MessageFlags.IsComponentsV2)
+                    .WithComponents([container])
+                    .Build();
+            }
         }
 
         response.CommandResponse = CommandResponse.Ok;
         return response;
+
+        static void AddLyricSegments(ComponentContainerProperties container, List<string> segments)
+        {
+            for (var i = 0; i < segments.Count; i++)
+            {
+                if (i > 0)
+                {
+                    container.WithSeparator();
+                }
+
+                container.WithTextDisplay(segments[i]);
+            }
+        }
     }
 
-    private record LyricPage(string Text, TimeSpan? Start, TimeSpan? End);
+    private record LyricPage(List<string> Segments, TimeSpan? Start, TimeSpan? End);
 
     public static ResponseModel LyricsSupporterRequired(ContextModel context)
     {

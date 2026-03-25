@@ -148,8 +148,9 @@ public class ArtistsService
 
             if (!artistCall.Success && artistCall.Error == ResponseStatus.MissingParameters)
             {
-                response.Embed.WithDescription(
-                    $"Artist `{artistValues}` could not be found, please check your search values and try again.");
+                var desc = $"Artist `{artistValues}` could not be found, please check your search values and try again.";
+                response.Embed.WithDescription(desc);
+                response.ComponentsContainer.WithTextDisplay(desc);
                 response.CommandResponse = CommandResponse.NotFound;
                 response.ResponseType = ResponseType.Embed;
                 return new ArtistSearch(null, response);
@@ -158,6 +159,7 @@ public class ArtistsService
             if (!artistCall.Success || artistCall.Content == null)
             {
                 response.Embed.ErrorResponse(artistCall.Error, artistCall.Message, null, discordUser, "artist");
+                response.ComponentsContainer.WithTextDisplay(response.Embed.Description ?? "Something went wrong while trying to get artist info.");
                 response.CommandResponse = CommandResponse.LastFmError;
                 response.ResponseType = ResponseType.Embed;
                 return new ArtistSearch(null, response);
@@ -213,8 +215,9 @@ public class ArtistsService
 
             if (artistCall.Content == null || !artistCall.Success)
             {
-                response.Embed.WithDescription(
-                    $"Last.fm did not return a result for **{lastPlayedTrack.ArtistName}**.");
+                var desc = $"Last.fm did not return a result for **{lastPlayedTrack.ArtistName}**.";
+                response.Embed.WithDescription(desc);
+                response.ComponentsContainer.WithTextDisplay(desc);
                 response.CommandResponse = CommandResponse.NotFound;
                 response.ResponseType = ResponseType.Embed;
                 return new ArtistSearch(null, response);

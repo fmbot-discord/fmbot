@@ -156,8 +156,9 @@ public class AlbumService
 
                 if (!albumInfo.Success && albumInfo.Error == ResponseStatus.MissingParameters)
                 {
-                    response.Embed.WithDescription(
-                        $"Album `{searchAlbumName}` by `{searchArtistName}` could not be found, please check your search values and try again.");
+                    var desc = $"Album `{searchAlbumName}` by `{searchArtistName}` could not be found, please check your search values and try again.";
+                    response.Embed.WithDescription(desc);
+                    response.ComponentsContainer.WithTextDisplay(desc);
                     response.CommandResponse = CommandResponse.NotFound;
                     response.ResponseType = ResponseType.Embed;
                     return new AlbumSearch(null, response);
@@ -166,6 +167,7 @@ public class AlbumService
                 if (!albumInfo.Success || albumInfo.Content == null)
                 {
                     response.Embed.ErrorResponse(albumInfo.Error, albumInfo.Message, null, discordUser, "album");
+                    response.ComponentsContainer.WithTextDisplay(response.Embed.Description ?? "Something went wrong while trying to get album info.");
                     response.CommandResponse = CommandResponse.LastFmError;
                     response.ResponseType = ResponseType.Embed;
                     return new AlbumSearch(null, response);
@@ -204,9 +206,10 @@ public class AlbumService
 
             if (string.IsNullOrWhiteSpace(lastPlayedTrack.AlbumName))
             {
-                response.Embed.WithDescription(
-                    $"The track you're scrobbling (**{lastPlayedTrack.TrackName}** by **{lastPlayedTrack.ArtistName}**) does not have an album associated with it according to Last.fm.\n" +
-                    $"Please note that .fmbot is not associated with Last.fm.");
+                var desc = $"The track you're scrobbling (**{lastPlayedTrack.TrackName}** by **{lastPlayedTrack.ArtistName}**) does not have an album associated with it according to Last.fm.\n" +
+                    $"Please note that .fmbot is not associated with Last.fm.";
+                response.Embed.WithDescription(desc);
+                response.ComponentsContainer.WithTextDisplay(desc);
 
                 response.CommandResponse = CommandResponse.NotFound;
                 response.ResponseType = ResponseType.Embed;
@@ -234,10 +237,11 @@ public class AlbumService
 
             if (albumInfo?.Content == null || !albumInfo.Success)
             {
-                response.Embed.WithDescription(
-                    $"Last.fm did not return a result for **{lastPlayedTrack.AlbumName}** by **{lastPlayedTrack.ArtistName}**.\n" +
+                var desc = $"Last.fm did not return a result for **{lastPlayedTrack.AlbumName}** by **{lastPlayedTrack.ArtistName}**.\n" +
                     $"This usually happens on recently released albums or on albums by smaller artists. Please try again later.\n\n" +
-                    $"Please note that .fmbot is not associated with Last.fm.");
+                    $"Please note that .fmbot is not associated with Last.fm.";
+                response.Embed.WithDescription(desc);
+                response.ComponentsContainer.WithTextDisplay(desc);
 
                 response.CommandResponse = CommandResponse.NotFound;
                 response.ResponseType = ResponseType.Embed;
@@ -279,6 +283,7 @@ public class AlbumService
             if (albumInfo?.Content == null || !albumInfo.Success)
             {
                 response.Embed.ErrorResponse(albumInfo.Error, albumInfo.Message, null, discordUser, "album");
+                response.ComponentsContainer.WithTextDisplay(response.Embed.Description ?? "Something went wrong while trying to get album info.");
                 response.CommandResponse = CommandResponse.LastFmError;
                 response.ResponseType = ResponseType.Embed;
                 return new AlbumSearch(null, response);
@@ -287,9 +292,11 @@ public class AlbumService
             return new AlbumSearch(albumInfo.Content, response);
         }
 
-        response.Embed.WithDescription($"Album could not be found, please check your search values and try again.\n\n" +
-                                       $"You can also enter the exact value with the | separator. Example: `artist name | album name`.");
+        var notFoundDesc = $"Album could not be found, please check your search values and try again.\n\nYou can also enter the exact value with the | separator. Example: `artist name | album name`.";
+        response.Embed.WithDescription(notFoundDesc);
         response.Embed.WithFooter($"Search value: '{searchValue}'");
+        response.ComponentsContainer.WithTextDisplay(notFoundDesc);
+        response.ComponentsContainer.WithTextDisplay($"-# Search value: '{searchValue}'");
         response.CommandResponse = CommandResponse.NotFound;
         response.ResponseType = ResponseType.Embed;
         return new AlbumSearch(null, response);

@@ -31,7 +31,7 @@ public class AlbumInteractions(
     public async Task AlbumAsync(string album, string discordUser, string requesterDiscordUser)
     {
         await RespondAsync(InteractionCallback.DeferredModifyMessage);
-        await this.Context.DisableInteractionButtons();
+        await this.Context.DisableButtonsAndMenus();
 
         var discordUserId = ulong.Parse(discordUser);
         var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
@@ -125,7 +125,9 @@ public class AlbumInteractions(
 
             if (isFmContext && ephemeral)
             {
-                response.Components = null;
+                response.ComponentsContainer.Components = response.ComponentsContainer.Components
+                    .Where(c => c is not ActionRowProperties)
+                    .ToList();
             }
 
             if (ephemeral)
@@ -161,7 +163,7 @@ public class AlbumInteractions(
         }
 
         await RespondAsync(InteractionCallback.DeferredModifyMessage);
-        await this.Context.DisableInteractionButtons();
+        await this.Context.DisableButtonsAndMenus();
 
         var contextUser = await userService.GetUserWithDiscogs(requesterDiscordUserId);
         var discordContextUser = await this.Context.GetUserAsync(requesterDiscordUserId);
@@ -207,7 +209,7 @@ public class AlbumInteractions(
         else
         {
             await RespondAsync(InteractionCallback.DeferredModifyMessage);
-            await this.Context.DisableInteractionButtons();
+            await this.Context.DisableButtonsAndMenus();
         }
 
         var discordUserId = ulong.Parse(discordUser);
@@ -227,7 +229,9 @@ public class AlbumInteractions(
 
             if (isFmContext && ephemeral)
             {
-                response.Components = null;
+                response.ComponentsContainer.Components = response.ComponentsContainer.Components
+                    .Where(c => c is not ActionRowProperties)
+                    .ToList();
             }
 
             if (ephemeral)
