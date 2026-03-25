@@ -938,7 +938,7 @@ public class MusicDataFactory
             Task<AmData<AmSongAttributes>> updateAppleMusic = null;
             AsyncUnaryCall<LyricsReply> updateLyrics = null;
 
-            if (dbTrack.SpotifyLastUpdated == null || dbTrack.SpotifyLastUpdated < DateTime.UtcNow.AddDays(-120))
+            if (dbTrack.SpotifyLastUpdated == null || dbTrack.SpotifyLastUpdated < DateTime.UtcNow.AddDays(-180))
             {
                 updateSpotify =
                     this._spotifyService.GetTrackFromSpotify(trackInfo.TrackName, trackInfo.ArtistName.ToLower());

@@ -31,7 +31,7 @@ public class ArtistInteractions(
     public async Task ArtistInfoAsync(string artistId, string discordUser, string requesterDiscordUser)
     {
         await RespondAsync(InteractionCallback.DeferredModifyMessage);
-        await this.Context.DisableInteractionButtons();
+        await this.Context.DisableButtonsAndMenus();
 
         var discordUserId = ulong.Parse(discordUser);
         var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
@@ -60,7 +60,7 @@ public class ArtistInteractions(
     public async Task ArtistOverviewAsync(string artistId, string discordUser, string requesterDiscordUser)
     {
         await RespondAsync(InteractionCallback.DeferredModifyMessage);
-        await this.Context.DisableInteractionButtons();
+        await this.Context.DisableButtonsAndMenus();
 
         var discordUserId = ulong.Parse(discordUser);
         var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
@@ -126,7 +126,9 @@ public class ArtistInteractions(
 
         if (isFmContext && ephemeral)
         {
-            response.Components = null;
+            response.ComponentsContainer.Components = response.ComponentsContainer.Components
+                .Where(c => c is not ActionRowProperties)
+                .ToList();
         }
 
         if (ephemeral)
@@ -145,7 +147,7 @@ public class ArtistInteractions(
     public async Task ArtistAlbumsAsync(string artistId, string discordUser, string requesterDiscordUser)
     {
         await RespondAsync(InteractionCallback.DeferredModifyMessage);
-        await this.Context.DisableInteractionButtons();
+        await this.Context.DisableButtonsAndMenus();
 
         var discordUserId = ulong.Parse(discordUser);
         var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
@@ -195,7 +197,7 @@ public class ArtistInteractions(
     public async Task WhoKnowsAsync(string artistId)
     {
         await RespondAsync(InteractionCallback.DeferredModifyMessage);
-        await this.Context.DisableInteractionButtons();
+        await this.Context.DisableButtonsAndMenus();
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var artist = await artistsService.GetArtistForId(int.Parse(artistId));

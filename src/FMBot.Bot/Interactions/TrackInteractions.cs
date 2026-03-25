@@ -9,6 +9,7 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain.Models;
+using FMBot.Persistence.Domain.Models;
 using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ComponentInteractions;
@@ -54,6 +55,8 @@ public class TrackInteractions(
     public async Task TrackPreviewAsync(string trackId, string fmFlag = null)
     {
         var isFmContext = fmFlag == "fm";
+        var parsedTrackId = int.Parse(trackId);
+        Track dbTrack = null;
 
         var ephemeral = false;
         if (isFmContext)
@@ -70,36 +73,38 @@ public class TrackInteractions(
         else
         {
             await RespondAsync(InteractionCallback.DeferredModifyMessage);
-            if (this.Context.Interaction is ButtonInteraction buttonInteraction && isFmContext)
+            if (this.Context.Interaction is ButtonInteraction buttonInteraction)
             {
-                await this.Context.DisableButtonsAndMenus(buttonInteraction.Data.CustomId);
+                var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
+                var isComponentsV2 = message?.Components.Any(c => c is ComponentContainer) == true;
+
+                if (isFmContext || isComponentsV2)
+                {
+                    await this.Context.DisableButtonsAndMenus(buttonInteraction.Data.CustomId);
+                }
+                else
+                {
+                    dbTrack = await trackService.GetTrackForId(parsedTrackId);
+                    var useSpotify = !string.IsNullOrEmpty(dbTrack.SpotifyPreviewUrl);
+
+                    var linkButton = useSpotify
+                        ? new LinkButtonProperties(
+                            "https://open.spotify.com/track/" + dbTrack.SpotifyId,
+                            "Open on Spotify",
+                            EmojiProperties.Custom(DiscordConstants.Spotify))
+                        : new LinkButtonProperties(
+                            dbTrack.AppleMusicUrl,
+                            "Open on Apple Music",
+                            EmojiProperties.Custom(DiscordConstants.AppleMusic));
+
+                    await this.Context.AddLinkButton(linkButton);
+                }
             }
         }
 
-        var parsedTrackId = int.Parse(trackId);
-        var dbTrack = await trackService.GetTrackForId(parsedTrackId);
+        dbTrack ??= await trackService.GetTrackForId(parsedTrackId);
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
-
-        if (!ephemeral)
-        {
-            var useSpotify = !string.IsNullOrEmpty(dbTrack.SpotifyPreviewUrl);
-
-            var linkButton = useSpotify
-                ? new LinkButtonProperties(
-                    "https://open.spotify.com/track/" + dbTrack.SpotifyId,
-                    "Open on Spotify",
-                    EmojiProperties.Custom(DiscordConstants.Spotify))
-                : new LinkButtonProperties(
-                    dbTrack.AppleMusicUrl,
-                    "Open on Apple Music",
-                    EmojiProperties.Custom(DiscordConstants.AppleMusic));
-
-            if (!isFmContext)
-            {
-                await this.Context.AddLinkButton(linkButton);
-            }
-        }
 
         try
         {
@@ -149,9 +154,15 @@ public class TrackInteractions(
         else
         {
             await RespondAsync(InteractionCallback.DeferredModifyMessage);
-            if (this.Context.Interaction is ButtonInteraction buttonInteraction && isFmContext)
+            if (this.Context.Interaction is ButtonInteraction buttonInteraction)
             {
-                await this.Context.DisableButtonsAndMenus(buttonInteraction.Data.CustomId);
+                var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
+                var isComponentsV2 = message?.Components.Any(c => c is ComponentContainer) == true;
+
+                if (isFmContext || isComponentsV2)
+                {
+                    await this.Context.DisableButtonsAndMenus(buttonInteraction.Data.CustomId);
+                }
             }
         }
 
