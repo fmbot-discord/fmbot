@@ -478,7 +478,10 @@ public class TrackBuilders
                 emote: EmojiProperties.Standard("🎤"));
         }
 
-        response.ComponentsContainer.WithActionRow(actionRow);
+        if (actionRow.Components.Any())
+        {
+            response.ComponentsContainer.WithActionRow(actionRow);
+        }
 
         return response;
     }

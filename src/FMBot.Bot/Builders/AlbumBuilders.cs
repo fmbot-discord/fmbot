@@ -1190,15 +1190,13 @@ public class AlbumBuilders
 
                 if (pageDescriptions.Count > 1)
                 {
-                    container.WithActionRow(StringService.GetPaginationActionRow(p));
+                    var actionRow = new ActionRowProperties()
+                        .WithButton("Album", albumInfoId, style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("💽"))
+                        .WithButton("Cover", albumCoverId, style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("🖼️"))
+                        .AddPreviousButton(p, style: ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.PagesPrevious))
+                        .AddNextButton(p, style: ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.PagesNext));
+                    container.WithActionRow(actionRow);
                 }
-
-                var crossNavRow = new ActionRowProperties()
-                    .WithButton("Album", albumInfoId,
-                        style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("💽"))
-                    .WithButton("Cover", albumCoverId,
-                        style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("🖼️"));
-                container.WithActionRow(crossNavRow);
 
                 return new PageBuilder()
                     .WithAllowedMentions(AllowedMentionsProperties.None)
