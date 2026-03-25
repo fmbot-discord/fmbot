@@ -114,10 +114,12 @@ public class TrackBuilders
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
             userId: context.ContextUser.UserId, interactionId: context.InteractionId,
             referencedMessage: context.ReferencedMessage);
+
         if (trackSearch.Track == null)
         {
             trackSearch.Response.ResponseType = ResponseType.ComponentsV2;
             trackSearch.Response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
+            trackSearch.Response.ComponentsContainer.WithTextDisplay(trackSearch.Response.Embed.Description);
             return trackSearch.Response;
         }
 
@@ -159,10 +161,15 @@ public class TrackBuilders
             guildUsersTask = this._guildService.GetGuildUsers(context.DiscordGuild.Id);
         }
 
+
         var dbTrack = await dbTrackTask;
+
         var userTitle = await userTitleTask;
+
         var featuredHistory = await featuredHistoryTask;
+
         var databaseAlbum = databaseAlbumTask != null ? await databaseAlbumTask : null;
+
 
         Task<EurovisionEntry> eurovisionTask = null;
         if (dbTrack?.SpotifyId != null)
@@ -185,6 +192,7 @@ public class TrackBuilders
         {
             guild = await guildTask;
             guildUsers = await guildUsersTask;
+
 
             if (guild?.LastIndexed != null)
             {
@@ -215,6 +223,7 @@ public class TrackBuilders
                 response.ComponentsContainer.WithAccentColor(await accentColorTask);
             }
         }
+
 
         var headerSection = new StringBuilder();
         headerSection.AppendLine(trackSearch.Track.TrackUrl != null
@@ -259,8 +268,7 @@ public class TrackBuilders
 
             if (recentPlaycountsTask != null)
             {
-                var recentPlaycounts = await recentPlaycountsTask;
-                if (recentPlaycounts.month > 0)
+                var recentPlaycounts = await recentPlaycountsTask;                if (recentPlaycounts.month > 0)
                 {
                     playsLine += $" — **{recentPlaycounts.month.Format(context.NumberFormat)}** last month";
                 }
@@ -270,8 +278,7 @@ public class TrackBuilders
 
             if (listeningTimeTask != null)
             {
-                var listeningTime = await listeningTimeTask;
-                userStats.Append($"**{StringExtensions.GetLongListeningTimeString(listeningTime)}** listened");
+                var listeningTime = await listeningTimeTask;                userStats.Append($"**{StringExtensions.GetLongListeningTimeString(listeningTime)}** listened");
 
                 if (context.ContextUser.TotalPlaycount.HasValue && trackSearch.Track.UserPlaycount is >= 30)
                 {
@@ -289,8 +296,7 @@ public class TrackBuilders
 
             if (firstPlayTask != null)
             {
-                var firstPlay = await firstPlayTask;
-                if (firstPlay != null)
+                var firstPlay = await firstPlayTask;                if (firstPlay != null)
                 {
                     var firstListenValue = ((DateTimeOffset)firstPlay).ToUnixTimeSeconds();
                     userStats.AppendLine($"Discovered <t:{firstListenValue}:D>");
@@ -319,8 +325,7 @@ public class TrackBuilders
         {
             if (indexedUsersTask != null)
             {
-                var usersWithTrack = await indexedUsersTask;
-                var (_, filteredUsersWithTrack) =
+                var usersWithTrack = await indexedUsersTask;                var (_, filteredUsersWithTrack) =
                     WhoKnowsService.FilterWhoKnowsObjects(usersWithTrack, guildUsers, guild, context.ContextUser.UserId);
 
                 if (filteredUsersWithTrack.Count != 0)
@@ -421,7 +426,6 @@ public class TrackBuilders
         if (eurovisionTask != null)
         {
             eurovisionEntry = await eurovisionTask;
-
             if (eurovisionEntry != null)
             {
                 var eurovisionDescription = this._eurovisionService.GetEurovisionDescription(eurovisionEntry);

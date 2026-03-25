@@ -129,6 +129,7 @@ public class ArtistBuilders
         {
             artistSearch.Response.ResponseType = ResponseType.ComponentsV2;
             artistSearch.Response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
+            artistSearch.Response.ComponentsContainer.WithTextDisplay(artistSearch.Response.Embed.Description);
             return artistSearch.Response;
         }
 
@@ -265,23 +266,16 @@ public class ArtistBuilders
             }
         }
 
-        if (showThumbnail)
-        {
-            response.ComponentsContainer.WithSection([
-                new TextDisplayProperties(headerSection.ToString().TrimEnd())
-            ], fullArtist.SpotifyImageUrl);
-        }
-        else
-        {
-            response.ComponentsContainer.AddComponent(new TextDisplayProperties(headerSection.ToString().TrimEnd()));
-        }
+        var hasMusicBrainzInfo = !string.IsNullOrWhiteSpace(fullArtist.Disambiguation) ||
+            fullArtist.Location != null || fullArtist.Type != null || fullArtist.StartDate.HasValue;
 
+        StringBuilder userStats = null;
         if (artistSearch.Artist.UserPlaycount.HasValue)
         {
             var correctPlaycountTask = this._updateService.CorrectUserArtistPlaycount(context.ContextUser.UserId,
                 artistSearch.Artist.ArtistName, artistSearch.Artist.UserPlaycount.Value);
 
-            var userStats = new StringBuilder();
+            userStats = new StringBuilder();
             var playsLine =
                 $"**{artistSearch.Artist.UserPlaycount.Format(context.NumberFormat)}** {StringExtensions.GetPlaysString(artistSearch.Artist.UserPlaycount)} by **{userTitle}**";
 
@@ -325,7 +319,27 @@ public class ArtistBuilders
             }
 
             await correctPlaycountTask;
+        }
 
+        if (!hasMusicBrainzInfo && showThumbnail && userStats != null)
+        {
+            headerSection.AppendLine();
+            headerSection.Append(userStats.ToString().TrimEnd());
+        }
+
+        if (showThumbnail)
+        {
+            response.ComponentsContainer.WithSection([
+                new TextDisplayProperties(headerSection.ToString().TrimEnd())
+            ], fullArtist.SpotifyImageUrl);
+        }
+        else
+        {
+            response.ComponentsContainer.AddComponent(new TextDisplayProperties(headerSection.ToString().TrimEnd()));
+        }
+
+        if (userStats != null && (hasMusicBrainzInfo || !showThumbnail))
+        {
             response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
             response.ComponentsContainer.AddComponent(new TextDisplayProperties(userStats.ToString().TrimEnd()));
         }
@@ -494,6 +508,7 @@ public class ArtistBuilders
         {
             artistSearch.Response.ResponseType = ResponseType.ComponentsV2;
             artistSearch.Response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
+            artistSearch.Response.ComponentsContainer.WithTextDisplay(artistSearch.Response.Embed.Description);
             return artistSearch.Response;
         }
 
@@ -726,6 +741,7 @@ public class ArtistBuilders
         {
             artistSearch.Response.ResponseType = ResponseType.ComponentsV2;
             artistSearch.Response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
+            artistSearch.Response.ComponentsContainer.WithTextDisplay(artistSearch.Response.Embed.Description);
             return artistSearch.Response;
         }
 
@@ -930,6 +946,7 @@ public class ArtistBuilders
         {
             artistSearch.Response.ResponseType = ResponseType.ComponentsV2;
             artistSearch.Response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
+            artistSearch.Response.ComponentsContainer.WithTextDisplay(artistSearch.Response.Embed.Description);
             return artistSearch.Response;
         }
 
