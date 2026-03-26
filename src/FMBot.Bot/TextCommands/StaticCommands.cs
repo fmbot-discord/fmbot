@@ -776,7 +776,7 @@ public class StaticCommands(
         await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
     }
 
-    [Command("settinghelp", "serverhelp", "serversettings", "settings")]
+    [Command("settinghelp", "serverhelp")]
     [Summary("Displays a list of all server settings.")]
     [CommandCategories(CommandCategory.Other)]
     public async Task ServerHelpAsync()
