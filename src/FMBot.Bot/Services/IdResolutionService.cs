@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Dapper;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Npgsql;
 using Serilog;
@@ -13,9 +14,10 @@ using Web.InternalApi;
 
 namespace FMBot.Bot.Services;
 
-public class IdResolutionService(IdResolution.IdResolutionClient client, IOptions<BotSettings> botSettings)
+public class IdResolutionService(IdResolution.IdResolutionClient client, IOptions<BotSettings> botSettings, IMemoryCache cache)
 {
     private readonly BotSettings _botSettings = botSettings.Value;
+
     public async Task ResolvePlayIds(IReadOnlyList<UserPlay> plays)
     {
         if (plays == null || plays.Count == 0)
@@ -225,10 +227,12 @@ public class IdResolutionService(IdResolution.IdResolutionClient client, IOption
                     {
                         setClauses.Add($"artist_id = {play.ArtistId.Value}");
                     }
+
                     if (play.AlbumId.HasValue)
                     {
                         setClauses.Add($"album_id = {play.AlbumId.Value}");
                     }
+
                     if (play.TrackId.HasValue)
                     {
                         setClauses.Add($"track_id = {play.TrackId.Value}");
@@ -411,5 +415,49 @@ public class IdResolutionService(IdResolution.IdResolutionClient client, IOption
         {
             Log.Error(e, "BackfillTrackIds: Error backfilling track IDs for user {userId}", userId);
         }
+    }
+
+    public async Task BackfillInactiveUserIds(int batchSize = 5000)
+    {
+        const string cacheKey = "backfill-inactive-user-ids-last-user-id";
+
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        var cutoff = DateTime.UtcNow.AddMonths(-3);
+        var lastProcessedUserId = cache.TryGetValue(cacheKey, out int lastId) ? lastId : 0;
+
+        const string sql = "SELECT user_id FROM public.users " +
+                           "WHERE last_indexed IS NOT NULL " +
+                           "AND (last_used IS NULL OR last_used <= @cutoff) " +
+                           "AND user_id > @lastProcessedUserId " +
+                           "ORDER BY user_id " +
+                           "LIMIT @batchSize";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        var userIds = (await connection.QueryAsync<int>(sql, new { cutoff, lastProcessedUserId, batchSize })).AsList();
+
+        if (userIds.Count == 0)
+        {
+            Log.Information("BackfillInactiveUserIds: No more inactive users to process, resetting cursor");
+            cache.Remove(cacheKey);
+            return;
+        }
+
+        Log.Information("BackfillInactiveUserIds: Processing batch of {count} inactive users starting from user_id {startId}",
+            userIds.Count, userIds[0]);
+
+        foreach (var userId in userIds)
+        {
+            await BackfillUserPlayIds(userId);
+            await BackfillUserArtistIds(userId);
+            await BackfillUserAlbumIds(userId);
+            await BackfillUserTrackIds(userId);
+        }
+
+        cache.Set(cacheKey, userIds[^1], TimeSpan.FromDays(7));
+
+        Log.Information("BackfillInactiveUserIds: Completed batch of {count} inactive users, last user_id: {lastId}",
+            userIds.Count, userIds[^1]);
     }
 }
