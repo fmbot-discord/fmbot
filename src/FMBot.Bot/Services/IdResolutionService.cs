@@ -417,7 +417,7 @@ public class IdResolutionService(IdResolution.IdResolutionClient client, IOption
         }
     }
 
-    public async Task BackfillInactiveUserIds(int batchSize = 5000)
+    public async Task BackfillInactiveUserIds(int batchSize = 1000)
     {
         const string cacheKey = "backfill-inactive-user-ids-last-user-id";
 
@@ -449,7 +449,14 @@ public class IdResolutionService(IdResolution.IdResolutionClient client, IOption
 
         foreach (var userId in userIds)
         {
-            await BackfillUserPlayIds(userId);
+            var userCacheKey = $"backfill-play-ids-{userId}";
+            if (cache.TryGetValue(userCacheKey, out _))
+            {
+                continue;
+            }
+
+            cache.Set(userCacheKey, true);
+
             await BackfillUserArtistIds(userId);
             await BackfillUserAlbumIds(userId);
             await BackfillUserTrackIds(userId);
