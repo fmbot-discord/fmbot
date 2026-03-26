@@ -369,6 +369,12 @@ public class ArtistCommands(
             string.IsNullOrWhiteSpace(otherUser.NewSearchValue) ? "two-year" : otherUser.NewSearchValue,
             timeZone: userSettings.TimeZone);
 
+        if (timeSettings.DefaultPicked)
+        {
+            timeSettings = SettingService.GetTimePeriod("two-year " + otherUser.NewSearchValue,
+                timeZone: userSettings.TimeZone);
+        }
+
         var embedSize = artistsService.SetTasteEmbedSize(timeSettings.NewSearchValue);
 
         try
