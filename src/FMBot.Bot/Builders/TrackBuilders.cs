@@ -114,10 +114,12 @@ public class TrackBuilders
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
             userId: context.ContextUser.UserId, interactionId: context.InteractionId,
             referencedMessage: context.ReferencedMessage);
+
         if (trackSearch.Track == null)
         {
             trackSearch.Response.ResponseType = ResponseType.ComponentsV2;
             trackSearch.Response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
+            trackSearch.Response.ComponentsContainer.WithTextDisplay(trackSearch.Response.Embed.Description);
             return trackSearch.Response;
         }
 
@@ -185,6 +187,7 @@ public class TrackBuilders
         {
             guild = await guildTask;
             guildUsers = await guildUsersTask;
+
 
             if (guild?.LastIndexed != null)
             {
@@ -421,7 +424,6 @@ public class TrackBuilders
         if (eurovisionTask != null)
         {
             eurovisionEntry = await eurovisionTask;
-
             if (eurovisionEntry != null)
             {
                 var eurovisionDescription = this._eurovisionService.GetEurovisionDescription(eurovisionEntry);
@@ -1325,7 +1327,8 @@ public class TrackBuilders
             topGuildTracks = await this._playService.GetGuildTopTracksPlays(guild.GuildId,
                 guildListSettings.StartDateTime, guildListSettings.OrderType, guildListSettings.NewSearchValue, guildListSettings.EndDateTime);
             previousTopGuildTracks = (await this._playService.GetGuildTopTracksPlays(guild.GuildId,
-                guildListSettings.BillboardStartDateTime, guildListSettings.OrderType, guildListSettings.NewSearchValue, guildListSettings.BillboardEndDateTime)).ToList();
+                guildListSettings.BillboardStartDateTime, guildListSettings.OrderType, guildListSettings.NewSearchValue,
+                guildListSettings.BillboardEndDateTime)).ToList();
         }
 
         if (topGuildTracks.Count == 0)
@@ -1917,7 +1920,8 @@ public class TrackBuilders
             return trackSearch.Response;
         }
 
-        var title = $"### Lyrics for [{StringExtensions.Sanitize(trackSearch.Track.ArtistName)} - {StringExtensions.Sanitize(trackSearch.Track.TrackName)}]({trackSearch.Track.TrackUrl})";
+        var title =
+            $"### Lyrics for [{StringExtensions.Sanitize(trackSearch.Track.ArtistName)} - {StringExtensions.Sanitize(trackSearch.Track.TrackName)}]({trackSearch.Track.TrackUrl})";
 
         var track = await this._musicDataFactory.GetOrStoreTrackAsync(trackSearch.Track, true);
 
@@ -2140,8 +2144,10 @@ public class TrackBuilders
             "View recent scrobbles", ButtonStyle.Primary);
 
         var section = new ComponentSectionProperties(button,
-            [new TextDisplayProperties(
-                $"Listening along with **{displayName}** and not scrobbling yourself? View their recent scrobbles and add them to your own history.")]);
+        [
+            new TextDisplayProperties(
+                $"Listening along with **{displayName}** and not scrobbling yourself? View their recent scrobbles and add them to your own history.")
+        ]);
 
         response.ComponentsContainer.AddComponent(section);
 
@@ -2177,7 +2183,8 @@ public class TrackBuilders
         if (recentTracks.Count == 0)
         {
             response.ResponseType = ResponseType.ComponentsV2;
-            response.ComponentsContainer.WithTextDisplay($"No cached plays found for {targetDisplayName}. They might need to run a command first to index their plays.");
+            response.ComponentsContainer.WithTextDisplay(
+                $"No cached plays found for {targetDisplayName}. They might need to run a command first to index their plays.");
             response.CommandResponse = CommandResponse.NoScrobbles;
             return response;
         }
@@ -2251,8 +2258,10 @@ public class TrackBuilders
                 }
 
                 var section = new ComponentSectionProperties(button,
-                    [new TextDisplayProperties(
-                        StringService.TrackToLinkedStringWithTimestamp(track, context.ContextUser.RymEnabled))]);
+                [
+                    new TextDisplayProperties(
+                        StringService.TrackToLinkedStringWithTimestamp(track, context.ContextUser.RymEnabled))
+                ]);
 
                 container.AddComponent(section);
             }

@@ -450,7 +450,7 @@ public class StaticCommands(
     public async Task HelpAsync([CommandParameter(Remainder = true)] string extraValues = null)
     {
         var prefix = prefixService.GetPrefix(this.Context.Guild?.Id);
-        var allCommands = service.GetCommands().SelectMany(kvp => kvp.Value).ToList();
+        var allCommands = service.GetCommands().SelectMany(kvp => kvp.Value).Distinct().ToList();
         var userName = GetUserDisplayName(this.Context.Message.Author as GuildUser, this.Context.User);
 
         try
@@ -737,14 +737,14 @@ public class StaticCommands(
         this._embed.WithDescription("**See a list of all available commands below.**\n" +
                                     $"Use `{prfx}serverhelp` to view all your configurable server settings.");
 
-        var allCommands = service.GetCommands().SelectMany(kvp => kvp.Value)
+        var allCommands = service.GetCommands().SelectMany(kvp => kvp.Value).Distinct()
             .Where(w => !GetAllAttributes(w).OfType<ExcludeFromHelp>().Any() &&
-                        !GetAllAttributes(w).OfType<ServerStaffOnly>().Any())
+                        !GetAllAttributes(w).OfType<CommandCategoriesAttribute>().SelectMany(s => s.Categories)
+                            .Contains(CommandCategory.ServerSettings))
             .ToList();
 
-        // Group commands by their module name attribute
         var commandsByModule = allCommands
-            .GroupBy(c => GetAllAttributes(c).OfType<ModuleNameAttribute>().FirstOrDefault()?.ModuleName ?? "Other")
+            .GroupBy(c => GetAllAttributes(c).OfType<CommandCategoriesAttribute>().FirstOrDefault()?.Categories.FirstOrDefault().ToString() ?? "Other")
             .OrderByDescending(g => g.Count());
 
         foreach (var moduleGroup in commandsByModule)
@@ -776,7 +776,7 @@ public class StaticCommands(
         await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
     }
 
-    [Command("settinghelp", "serverhelp", "serversettings", "settings")]
+    [Command("settinghelp", "serverhelp")]
     [Summary("Displays a list of all server settings.")]
     [CommandCategories(CommandCategory.Other)]
     public async Task ServerHelpAsync()
@@ -787,14 +787,21 @@ public class StaticCommands(
         this._embed.WithDescription("**See all server settings below.**\n" +
                                     "These commands require either the `Admin` or the `Ban Members` permission.");
 
-        var allCommands = service.GetCommands().SelectMany(kvp => kvp.Value)
+        var allCommands = service.GetCommands().SelectMany(kvp => kvp.Value).Distinct()
             .Where(w => !GetAllAttributes(w).OfType<ExcludeFromHelp>().Any() &&
-                        GetAllAttributes(w).OfType<ServerStaffOnly>().Any())
+                        GetAllAttributes(w).OfType<CommandCategoriesAttribute>().SelectMany(s => s.Categories)
+                            .Contains(CommandCategory.ServerSettings))
             .ToList();
 
-        // Group commands by their module name attribute
         var commandsByModule = allCommands
-            .GroupBy(c => GetAllAttributes(c).OfType<ModuleNameAttribute>().FirstOrDefault()?.ModuleName ?? "Server Settings")
+            .GroupBy(c =>
+            {
+                var categories = GetAllAttributes(c).OfType<CommandCategoriesAttribute>()
+                    .SelectMany(s => s.Categories)
+                    .Where(cat => cat != CommandCategory.ServerSettings)
+                    .ToList();
+                return categories.Count > 0 ? categories.First().ToString() : "Server Settings";
+            })
             .OrderByDescending(g => g.Count());
 
         foreach (var moduleGroup in commandsByModule)
@@ -833,13 +840,12 @@ public class StaticCommands(
         this._embed.WithDescription("**See all .fmbot staff commands below.**\n" +
                                     "These commands require .fmbot admin or owner.");
 
-        var allCommands = service.GetCommands().SelectMany(kvp => kvp.Value)
+        var allCommands = service.GetCommands().SelectMany(kvp => kvp.Value).Distinct()
             .Where(w => GetAllAttributes(w).OfType<ExcludeFromHelp>().Any())
             .ToList();
 
-        // Group commands by their module name attribute
         var commandsByModule = allCommands
-            .GroupBy(c => GetAllAttributes(c).OfType<ModuleNameAttribute>().FirstOrDefault()?.ModuleName ?? "Staff")
+            .GroupBy(c => GetAllAttributes(c).OfType<CommandCategoriesAttribute>().FirstOrDefault()?.Categories.FirstOrDefault().ToString() ?? "Staff")
             .OrderByDescending(g => g.Count());
 
         foreach (var moduleGroup in commandsByModule)

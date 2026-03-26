@@ -63,6 +63,7 @@ public class CountryCommands(
 
     [Command("countrychart", "cc", "worldmap", "artistmap")]
     [Summary("Generates a map of the location from your top artists.")]
+    [UsernameSetRequired]
     public async Task CountryChartAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         _ = this.Context.Channel?.TriggerTypingAsync()!;

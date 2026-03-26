@@ -110,6 +110,7 @@ public class AlbumBuilders
         {
             albumSearch.Response.ResponseType = ResponseType.ComponentsV2;
             albumSearch.Response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
+            albumSearch.Response.ComponentsContainer.WithTextDisplay(albumSearch.Response.Embed.Description);
             return albumSearch.Response;
         }
 
@@ -1004,6 +1005,7 @@ public class AlbumBuilders
         {
             albumSearch.Response.ResponseType = ResponseType.ComponentsV2;
             albumSearch.Response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
+            albumSearch.Response.ComponentsContainer.WithTextDisplay(albumSearch.Response.Embed.Description);
             return albumSearch.Response;
         }
 
@@ -1070,7 +1072,7 @@ public class AlbumBuilders
         footer.AppendLine();
         footer.Append(spotifySource ? "Album source: Spotify | " : "Album source: Last.fm | ");
         footer.Append(
-            $"{userSettings.DisplayName} has {albumSearch.Album.UserPlaycount} total scrobbles on this album");
+            $"{userSettings.DisplayName} has {albumSearch.Album.UserPlaycount} total album plays");
 
         var i = 0;
         var tracksDisplayed = 0;
@@ -1280,6 +1282,7 @@ public class AlbumBuilders
         {
             albumSearch.Response.ResponseType = ResponseType.ComponentsV2;
             albumSearch.Response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
+            albumSearch.Response.ComponentsContainer.WithTextDisplay(albumSearch.Response.Embed.Description);
             return albumSearch.Response;
         }
 

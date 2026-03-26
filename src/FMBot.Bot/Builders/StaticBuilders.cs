@@ -632,14 +632,9 @@ public class StaticBuilders
                 var commands = new StringBuilder();
                 commands.AppendLine("**Commands:** \n");
 
-                var usedCommands = new HashSet<string>();
                 foreach (var command in categoryCommands)
                 {
-                    var cmdName = HelpGetCommandName(command);
-                    if (usedCommands.Add(cmdName))
-                    {
-                        commands.AppendLine(HelpCommandInfoToHelpString(prefix, command));
-                    }
+                    commands.AppendLine(HelpCommandInfoToHelpString(prefix, command));
                 }
 
                 if (selectedCategory == CommandCategory.Importing)
@@ -661,25 +656,17 @@ public class StaticBuilders
                 Placeholder = "Select a command for details"
             };
 
-            var addedCommands = new HashSet<string>();
-            foreach (var command in categoryCommands)
+            foreach (var command in categoryCommands.Take(25))
             {
                 var cmdName = HelpGetCommandName(command);
-                if (addedCommands.Add(cmdName))
+                commandMenu.Add(new StringMenuSelectOptionProperties(cmdName, cmdName)
                 {
-                    commandMenu.Add(new StringMenuSelectOptionProperties(cmdName, cmdName)
-                    {
-                        Default = cmdName.Equals(selectedCommand, StringComparison.OrdinalIgnoreCase)
-                    });
-                }
-                if (addedCommands.Count >= 25)
-                {
-                    break;
-                }
+                    Default = cmdName.Equals(selectedCommand, StringComparison.OrdinalIgnoreCase)
+                });
             }
 
             response.StringMenus.Add(categoryMenu);
-            if (addedCommands.Count > 0)
+            if (categoryCommands.Count > 0)
             {
                 response.StringMenus.Add(commandMenu);
             }
