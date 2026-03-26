@@ -451,7 +451,7 @@ public class StaticInteractions(
             Enum.TryParse<CommandCategory>(selectedCategory, out var category);
 
             var prefix = prefixService.GetPrefix(this.Context.Interaction.GuildId);
-            var allCommands = commandService.GetCommands().SelectMany(kvp => kvp.Value).ToList();
+            var allCommands = commandService.GetCommands().SelectMany(kvp => kvp.Value).Distinct().ToList();
             var userName = this.Context.User.GlobalName ?? this.Context.User.Username;
 
             var response = await staticBuilders.BuildHelpResponse(
@@ -487,7 +487,7 @@ public class StaticInteractions(
             }
 
             var prefix = prefixService.GetPrefix(this.Context.Interaction.GuildId);
-            var allCommands = commandService.GetCommands().SelectMany(kvp => kvp.Value).ToList();
+            var allCommands = commandService.GetCommands().SelectMany(kvp => kvp.Value).Distinct().ToList();
             var userName = this.Context.User.GlobalName ?? this.Context.User.Username;
 
             var response = await staticBuilders.BuildHelpResponse(
