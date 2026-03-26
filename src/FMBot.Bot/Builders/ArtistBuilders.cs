@@ -444,36 +444,29 @@ public class ArtistBuilders
 
         if (fullArtist.ArtistLinks != null && fullArtist.ArtistLinks.Any())
         {
-            var facebook = fullArtist.ArtistLinks.FirstOrDefault(f => f.Type == LinkType.Facebook);
-            if (facebook != null && fullArtist.ArtistLinks.All(a => a.Type != LinkType.Instagram))
-            {
-                socialRow.WithButton(emote: EmojiProperties.Custom(DiscordConstants.Facebook), url: facebook.Url);
-                hasSocialLinks = true;
-            }
-
             var instagram = fullArtist.ArtistLinks.FirstOrDefault(f => f.Type == LinkType.Instagram);
-            if (instagram != null)
+            if (instagram != null && socialRow.Components.Count() < 5)
             {
                 socialRow.WithButton(emote: EmojiProperties.Custom(DiscordConstants.Instagram), url: instagram.Url);
                 hasSocialLinks = true;
             }
 
             var twitter = fullArtist.ArtistLinks.FirstOrDefault(f => f.Type == LinkType.Twitter);
-            if (twitter != null)
+            if (twitter != null && socialRow.Components.Count() < 5)
             {
                 socialRow.WithButton(emote: EmojiProperties.Custom(DiscordConstants.Twitter), url: twitter.Url);
                 hasSocialLinks = true;
             }
 
             var tiktok = fullArtist.ArtistLinks.FirstOrDefault(f => f.Type == LinkType.TikTok);
-            if (tiktok != null)
+            if (tiktok != null && socialRow.Components.Count() < 5)
             {
                 socialRow.WithButton(emote: EmojiProperties.Custom(DiscordConstants.TikTok), url: tiktok.Url);
                 hasSocialLinks = true;
             }
 
             var bandcamp = fullArtist.ArtistLinks.FirstOrDefault(f => f.Type == LinkType.Bandcamp);
-            if (bandcamp != null)
+            if (bandcamp != null && socialRow.Components.Count() < 5)
             {
                 socialRow.WithButton(emote: EmojiProperties.Custom(DiscordConstants.Bandcamp), url: bandcamp.Url);
                 hasSocialLinks = true;
