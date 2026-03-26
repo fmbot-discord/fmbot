@@ -161,15 +161,10 @@ public class TrackBuilders
             guildUsersTask = this._guildService.GetGuildUsers(context.DiscordGuild.Id);
         }
 
-
         var dbTrack = await dbTrackTask;
-
         var userTitle = await userTitleTask;
-
         var featuredHistory = await featuredHistoryTask;
-
         var databaseAlbum = databaseAlbumTask != null ? await databaseAlbumTask : null;
-
 
         Task<EurovisionEntry> eurovisionTask = null;
         if (dbTrack?.SpotifyId != null)
@@ -224,7 +219,6 @@ public class TrackBuilders
             }
         }
 
-
         var headerSection = new StringBuilder();
         headerSection.AppendLine(trackSearch.Track.TrackUrl != null
             ? $"## [{trackSearch.Track.TrackName}]({trackSearch.Track.TrackUrl})"
@@ -268,7 +262,8 @@ public class TrackBuilders
 
             if (recentPlaycountsTask != null)
             {
-                var recentPlaycounts = await recentPlaycountsTask;                if (recentPlaycounts.month > 0)
+                var recentPlaycounts = await recentPlaycountsTask;
+                if (recentPlaycounts.month > 0)
                 {
                     playsLine += $" — **{recentPlaycounts.month.Format(context.NumberFormat)}** last month";
                 }
@@ -278,7 +273,8 @@ public class TrackBuilders
 
             if (listeningTimeTask != null)
             {
-                var listeningTime = await listeningTimeTask;                userStats.Append($"**{StringExtensions.GetLongListeningTimeString(listeningTime)}** listened");
+                var listeningTime = await listeningTimeTask;
+                userStats.Append($"**{StringExtensions.GetLongListeningTimeString(listeningTime)}** listened");
 
                 if (context.ContextUser.TotalPlaycount.HasValue && trackSearch.Track.UserPlaycount is >= 30)
                 {
@@ -296,7 +292,8 @@ public class TrackBuilders
 
             if (firstPlayTask != null)
             {
-                var firstPlay = await firstPlayTask;                if (firstPlay != null)
+                var firstPlay = await firstPlayTask;
+                if (firstPlay != null)
                 {
                     var firstListenValue = ((DateTimeOffset)firstPlay).ToUnixTimeSeconds();
                     userStats.AppendLine($"Discovered <t:{firstListenValue}:D>");
@@ -325,7 +322,8 @@ public class TrackBuilders
         {
             if (indexedUsersTask != null)
             {
-                var usersWithTrack = await indexedUsersTask;                var (_, filteredUsersWithTrack) =
+                var usersWithTrack = await indexedUsersTask;
+                var (_, filteredUsersWithTrack) =
                     WhoKnowsService.FilterWhoKnowsObjects(usersWithTrack, guildUsers, guild, context.ContextUser.UserId);
 
                 if (filteredUsersWithTrack.Count != 0)
@@ -1329,7 +1327,8 @@ public class TrackBuilders
             topGuildTracks = await this._playService.GetGuildTopTracksPlays(guild.GuildId,
                 guildListSettings.StartDateTime, guildListSettings.OrderType, guildListSettings.NewSearchValue, guildListSettings.EndDateTime);
             previousTopGuildTracks = (await this._playService.GetGuildTopTracksPlays(guild.GuildId,
-                guildListSettings.BillboardStartDateTime, guildListSettings.OrderType, guildListSettings.NewSearchValue, guildListSettings.BillboardEndDateTime)).ToList();
+                guildListSettings.BillboardStartDateTime, guildListSettings.OrderType, guildListSettings.NewSearchValue,
+                guildListSettings.BillboardEndDateTime)).ToList();
         }
 
         if (topGuildTracks.Count == 0)
@@ -1921,7 +1920,8 @@ public class TrackBuilders
             return trackSearch.Response;
         }
 
-        var title = $"### Lyrics for [{StringExtensions.Sanitize(trackSearch.Track.ArtistName)} - {StringExtensions.Sanitize(trackSearch.Track.TrackName)}]({trackSearch.Track.TrackUrl})";
+        var title =
+            $"### Lyrics for [{StringExtensions.Sanitize(trackSearch.Track.ArtistName)} - {StringExtensions.Sanitize(trackSearch.Track.TrackName)}]({trackSearch.Track.TrackUrl})";
 
         var track = await this._musicDataFactory.GetOrStoreTrackAsync(trackSearch.Track, true);
 
@@ -2144,8 +2144,10 @@ public class TrackBuilders
             "View recent scrobbles", ButtonStyle.Primary);
 
         var section = new ComponentSectionProperties(button,
-            [new TextDisplayProperties(
-                $"Listening along with **{displayName}** and not scrobbling yourself? View their recent scrobbles and add them to your own history.")]);
+        [
+            new TextDisplayProperties(
+                $"Listening along with **{displayName}** and not scrobbling yourself? View their recent scrobbles and add them to your own history.")
+        ]);
 
         response.ComponentsContainer.AddComponent(section);
 
@@ -2181,7 +2183,8 @@ public class TrackBuilders
         if (recentTracks.Count == 0)
         {
             response.ResponseType = ResponseType.ComponentsV2;
-            response.ComponentsContainer.WithTextDisplay($"No cached plays found for {targetDisplayName}. They might need to run a command first to index their plays.");
+            response.ComponentsContainer.WithTextDisplay(
+                $"No cached plays found for {targetDisplayName}. They might need to run a command first to index their plays.");
             response.CommandResponse = CommandResponse.NoScrobbles;
             return response;
         }
@@ -2255,8 +2258,10 @@ public class TrackBuilders
                 }
 
                 var section = new ComponentSectionProperties(button,
-                    [new TextDisplayProperties(
-                        StringService.TrackToLinkedStringWithTimestamp(track, context.ContextUser.RymEnabled))]);
+                [
+                    new TextDisplayProperties(
+                        StringService.TrackToLinkedStringWithTimestamp(track, context.ContextUser.RymEnabled))
+                ]);
 
                 container.AddComponent(section);
             }
