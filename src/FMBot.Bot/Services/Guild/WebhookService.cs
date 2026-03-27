@@ -369,45 +369,47 @@ public class WebhookService
         }
     }
 
-    public async Task ChangeToNewAvatar(ShardedGatewayClient client, string imageUrl)
+    public async Task ChangeToNewAvatar(ShardedGatewayClient client, string imageUrl, string albumName = null, string artistName = null)
     {
         Log.Information($"ChangeToNewAvatar: Updating avatar to {imageUrl}");
 
-        if (imageUrl.Contains("lastfm.freetls.fastly.net"))
-        {
-            imageUrl = imageUrl.Replace(".jpg", ".webp").Replace(".png", ".webp");
-        }
-
         try
         {
-            using (var response = await this._httpClient.GetAsync(imageUrl))
+            byte[] imageData = null;
+
+            if (albumName != null && artistName != null)
             {
+                var localPath = ChartService.AlbumUrlToCacheFilePath(albumName, artistName);
+                if (File.Exists(localPath))
+                {
+                    imageData = await File.ReadAllBytesAsync(localPath);
+                    Log.Information("ChangeToNewAvatar: Loaded image from cache");
+                }
+            }
+
+            if (imageData == null)
+            {
+                if (imageUrl.Contains("lastfm.freetls.fastly.net"))
+                {
+                    imageUrl = imageUrl.Replace(".jpg", ".webp").Replace(".png", ".webp");
+                }
+
+                using var response = await this._httpClient.GetAsync(imageUrl);
                 response.EnsureSuccessStatusCode();
-                Log.Information("ChangeToNewAvatar: Got new avatar in stream");
+                Log.Information("ChangeToNewAvatar: Got new avatar from URL");
 
                 var contentType = response.Content.Headers.ContentType?.MediaType;
-                Log.Information($"ChangeToNewAvatar: Content-Type: {contentType}");
-
-                var imageData = await response.Content.ReadAsByteArrayAsync();
-                var imageFormat = ImageFormat.Png;
+                imageData = await response.Content.ReadAsByteArrayAsync();
 
                 if (contentType?.ToLower() == "image/webp")
                 {
                     imageData = ConvertWebPToPng(imageData);
                     Log.Information("ChangeToNewAvatar: Converted WebP to PNG");
                 }
-                else if (contentType?.ToLower() == "image/jpeg" || contentType?.ToLower() == "image/jpg")
-                {
-                    imageFormat = ImageFormat.Jpeg;
-                }
-                else if (contentType?.ToLower() == "image/gif")
-                {
-                    imageFormat = ImageFormat.Gif;
-                }
-
-                await client.Rest.ModifyCurrentUserAsync(o => o.Avatar = new ImageProperties(imageFormat, imageData));
-                Log.Information("ChangeToNewAvatar: Avatar successfully changed");
             }
+
+            await client.Rest.ModifyCurrentUserAsync(o => o.Avatar = new ImageProperties(ImageFormat.Png, imageData));
+            Log.Information("ChangeToNewAvatar: Avatar successfully changed");
 
             await Task.Delay(3000);
         }

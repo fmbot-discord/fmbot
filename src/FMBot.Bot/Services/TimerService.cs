@@ -526,7 +526,7 @@ public class TimerService : IDisposable
         {
             try
             {
-                await this._webhookService.ChangeToNewAvatar(this._client, newFeatured.ImageUrl);
+                await this._webhookService.ChangeToNewAvatar(this._client, newFeatured.ImageUrl, newFeatured.AlbumName, newFeatured.ArtistName);
                 this._cache.Set("avatar", newFeatured.ImageUrl, TimeSpan.FromMinutes(30));
             }
             catch
