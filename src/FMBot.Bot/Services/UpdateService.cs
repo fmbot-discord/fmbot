@@ -348,11 +348,9 @@ public class UpdateService
         else
         {
             Statistics.UpdatedUsers.WithLabels("user_init").Inc();
-
-            _ = SmallIndex(user);
-            _ = BackfillPlayIds(user);
         }
 
+        _ = BackfillPlayIds(user);
         _ = SmallIndex(user);
 
         await connection.CloseAsync();
