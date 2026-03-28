@@ -968,7 +968,7 @@ public class AdminCommands(
             if (filteredUser != null && bottedUser == null)
             {
                 components = new ActionRowProperties().WithButton($"Convert to ban",
-                    $"gwk-filtered-user-to-ban-{filteredUser.GlobalFilteredUserId}", style: ButtonStyle.Secondary);
+                    $"gwk-filtered-user-to-ban:{filteredUser.GlobalFilteredUserId}", style: ButtonStyle.Secondary);
             }
 
             this._embed.WithFooter("Command not intended for use in public channels");
