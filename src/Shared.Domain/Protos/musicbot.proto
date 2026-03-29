@@ -2,13 +2,12 @@ syntax = "proto3";
 
 option csharp_namespace = "Web.InternalApi";
 
-import "google/protobuf/timestamp.proto";
-
 package musicbot;
 
 service MusicBotScrobbling {
   rpc CheckFmbotPresent (FmbotPresentRequest) returns (FmbotPresentReply);
   rpc SubmitScrobble (MusicBotScrobbleRequest) returns (MusicBotScrobbleReply);
+  rpc SubmitUrlScrobble (MusicBotUrlScrobbleRequest) returns (MusicBotScrobbleReply);
 }
 
 message FmbotPresentRequest {
@@ -23,12 +22,18 @@ message MusicBotScrobbleRequest {
   string trackName = 1;
   string artistName = 2;
   int64 trackLengthMs = 3;
-  google.protobuf.Timestamp startTimestamp = 4;
-  repeated int64 connectedUserDiscordIds = 5;
-  string albumName = 6;
-  string musicBotName = 7;
-  int64 discordGuildId = 8;
-  bool cleanTrackName = 9;
+  repeated int64 connectedUserDiscordIds = 4;
+  string albumName = 5;
+  string musicBotName = 6;
+  int64 discordGuildId = 7;
+  bool cleanTrackName = 8;
+}
+
+message MusicBotUrlScrobbleRequest {
+  string trackUrl = 1;
+  repeated int64 connectedUserDiscordIds = 2;
+  string musicBotName = 3;
+  int64 discordGuildId = 4;
 }
 
 message MusicBotScrobbleReply {
