@@ -24,7 +24,7 @@ public class PuppeteerService : IDisposable
 
     // Cache typeface to avoid repeated file loads and ensure proper disposal
     private readonly Lazy<SKTypeface> _cachedTypeface = new(() =>
-        SKTypeface.FromFile(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", "bot", "sourcehansans-medium.otf")));
+        SKTypeface.FromFamilyName("Comic Sans MS"));
 
 
     public PuppeteerService()
@@ -125,7 +125,7 @@ public class PuppeteerService : IDisposable
         await page.SetViewportAsync(new ViewPortOptions
         {
             Width = 1275,
-            Height = 888 + extraHeight
+            Height = 908 + extraHeight
         });
 
         var localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Pages", "whoknows.html");
@@ -277,7 +277,7 @@ public class PuppeteerService : IDisposable
     private static string GetWhoKnowsLine(string position, string name, int plays, NumberFormat numberFormat,
         bool self = false)
     {
-        name = name.Length > 18 ? $"{name[..17]}.." : name;
+        name = name.Length > 14 ? $"{name[..13]}.." : name;
         var cssClass = self ? "num own-num" : "num";
 
         name = self ? $"<b>{name}</b>" : name;
@@ -323,7 +323,7 @@ public class PuppeteerService : IDisposable
         await page.SetViewportAsync(new ViewPortOptions
         {
             Width = 650,
-            Height = 810 + extraHeight + (subNamesEnabled ? 125 : 0),
+            Height = 830 + extraHeight + (subNamesEnabled ? 125 : 0),
         });
 
         var localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Pages", "top.html");
@@ -415,7 +415,7 @@ public class PuppeteerService : IDisposable
         NumberFormat numberFormat)
     {
         name = htmlSanitizer.Sanitize(name);
-        name = name.Length > 28 ? $"{name[..27]}.." : name;
+        name = name.Length > 22 ? $"{name[..21]}.." : name;
 
         return $"""
                 <li>
@@ -428,10 +428,10 @@ public class PuppeteerService : IDisposable
         HtmlSanitizer htmlSanitizer, NumberFormat numberFormat)
     {
         name = htmlSanitizer.Sanitize(name);
-        name = name.Length > 28 ? $"{name[..27]}.." : name;
+        name = name.Length > 22 ? $"{name[..21]}.." : name;
 
         sub = htmlSanitizer.Sanitize(sub);
-        sub = sub.Length > 36 ? $"{sub[..35]}.." : sub;
+        sub = sub.Length > 30 ? $"{sub[..29]}.." : sub;
 
         return $"""
                 <li class="flex-wrap">
