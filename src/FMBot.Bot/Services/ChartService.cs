@@ -28,6 +28,7 @@ public class ChartService
 
     private readonly string _fontPath;
     private readonly string _workSansFontPath;
+    private readonly string _comicSansFontPath;
     private readonly string _loadingErrorImagePath;
     private readonly string _unknownImagePath;
     private readonly string _unknownArtistImagePath;
@@ -50,6 +51,7 @@ public class ChartService
 
         this._fontPath = Path.Combine(cachePath, "sourcehansans-medium.otf");
         this._workSansFontPath = Path.Combine(cachePath, "worksans-regular.otf");
+        this._comicSansFontPath = Path.Combine(cachePath, "comic-sans-ms.ttf");
         this._loadingErrorImagePath = Path.Combine(cachePath, "loading-error.png");
         this._unknownImagePath = Path.Combine(cachePath, "unknown.png");
         this._unknownArtistImagePath = Path.Combine(cachePath, "unknown-artist.png");
@@ -59,7 +61,7 @@ public class ChartService
 
     public async Task DownloadChartFilesAsync()
     {
-        if (File.Exists(this._fontPath))
+        if (File.Exists(this._fontPath) && File.Exists(this._comicSansFontPath))
         {
             Log.Information("Chart files already exist, not downloading them again");
             return;
@@ -69,6 +71,7 @@ public class ChartService
         {
             { "https://fm.bot/fonts/sourcehansans-medium.otf", this._fontPath },
             { "https://fm.bot/fonts/worksans-regular.otf", this._workSansFontPath },
+            { "https://fm.bot/fonts/comic-sans-ms.ttf", this._comicSansFontPath },
             { "https://fm.bot/img/bot/loading-error.png", this._loadingErrorImagePath },
             { "https://fm.bot/img/bot/unknown.png", this._unknownImagePath },
             { "https://fm.bot/img/bot/unknown-artist.png", this._unknownArtistImagePath },
@@ -542,7 +545,7 @@ public class ChartService
         var textColor = chartImage.GetTextColor();
         var rectangleColor = textColor == SKColors.Black ? SKColors.White : SKColors.Black;
 
-        using var typeface = SKTypeface.FromFamilyName("Comic Sans MS");
+        using var typeface = SKTypeface.FromFile(this._comicSansFontPath);
 
         var textSize = largerImages ? 17 : 12;
 
