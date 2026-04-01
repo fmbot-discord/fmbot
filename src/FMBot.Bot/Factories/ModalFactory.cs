@@ -613,7 +613,7 @@ public static class ModalFactory
         {
             Components =
             [
-                new LabelProperties("Deletion ID", new TextInputProperties("ID", TextInputStyle.Short)
+                new LabelProperties("Deletion ID", new TextInputProperties("streak_id", TextInputStyle.Short)
                 {
                     Placeholder = "1234",
                     MaxLength = 9
