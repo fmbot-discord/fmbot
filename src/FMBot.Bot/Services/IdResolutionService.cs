@@ -425,17 +425,19 @@ public class IdResolutionService(IdResolution.IdResolutionClient client, IOption
         await connection.OpenAsync();
 
         var cutoff = DateTime.UtcNow.AddMonths(-3);
-        var lastProcessedUserId = cache.TryGetValue(cacheKey, out int lastId) ? lastId : 0;
+        var recentCutoff = DateTime.UtcNow.AddDays(-7);
+        var lastProcessedUserId = cache.TryGetValue(cacheKey, out int lastId) ? lastId : 171000;
 
         const string sql = "SELECT user_id FROM public.users " +
                            "WHERE last_indexed IS NOT NULL " +
                            "AND (last_used IS NULL OR last_used <= @cutoff) " +
+                           "AND (last_updated IS NULL OR last_updated <= @recentCutoff) " +
                            "AND user_id > @lastProcessedUserId " +
                            "ORDER BY user_id " +
                            "LIMIT @batchSize";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
-        var userIds = (await connection.QueryAsync<int>(sql, new { cutoff, lastProcessedUserId, batchSize })).AsList();
+        var userIds = (await connection.QueryAsync<int>(sql, new { cutoff, recentCutoff, lastProcessedUserId, batchSize })).AsList();
 
         if (userIds.Count == 0)
         {

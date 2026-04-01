@@ -3,18 +3,21 @@
 <head>
     <style>
         @font-face {
-            font-family: "Comic Sans MS";
-            src: url("https://fm.bot/fonts/comic-sans-ms.ttf") format("truetype");
+            font-family: "worksans";
+            src: url("https://fm.bot/fonts/worksans-regular.otf") format("opentype");
         }
 
         body {
-            font-family: "Comic Sans MS", cursive;
+            font-family: "worksans";
             margin-right: 36px;
             margin-left: 36px;
             margin-top: 56px;
-            background-color: #ff00ff;
-            color: #00ff00;
-            background: linear-gradient(135deg, #ff6600, #ff00ff, #00ffff, #ffff00);
+            background-color: #282424;
+            color: #dcddde;
+            background: linear-gradient(0deg, rgba(0, 0, 0, 0.80), rgba(0, 0, 0, 0.65)), url('{{image-url}}');
+            background-position: center;
+            background-size: cover;
+            background-attachment: fixed;
         }
 
         .float-left {
@@ -35,41 +38,22 @@
 
         .title {
             font-size: 32px;
-            background: linear-gradient(45deg, #ff1493, #8a2be2);
+            background-color: #2f3136;
             padding: 20px 8px 20px 8px;
             margin-top: -12px;
-            box-shadow: 0px 0px 20px #ff00ff, 0px 0px 40px #00ffff;
+            box-shadow: 0px 1px 4px rgba(0, 0, 0, 0.6);
             border-radius: 8px;
-            transform: rotate(1deg);
-        }
-
-        .title .wordart {
-            font-family: Arial, sans-serif;
-            font-size: 1em;
-            font-weight: bold;
-            display: inline-flex;
-            transform: scale(1, 1.5);
-        }
-
-        .title .wordart .text {
-            background: linear-gradient(to right, #b306a9, #ef2667, #f42e2c, #ffa509, #fdfc00, #55ac2f, #0b13fd, #a804af);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
         }
 
         .subtitle {
             display: initial;
-            background: linear-gradient(90deg, #00ff88, #00ccff);
+            background-color: #2f3136;
             padding: 8px 8px 8px 8px;
             margin-top: -16px;
             margin-right: 8px;
             margin-left: 8px;
-            box-shadow: 0px 0px 15px #00ff00;
+            box-shadow: 0px 1px 4px rgba(0, 0, 0, 0.6);
             border-radius: 6px;
-            color: #ff0000;
-            font-weight: bold;
-            position: relative;
-            z-index: 2;
         }
 
         .result-container {
@@ -116,16 +100,15 @@
         .branding {
             margin-bottom: -20px;
             display: inline-block;
-            color: #ff6600;
+            color: rgba(220, 221, 222, 0.4);
             padding-left: 4px;
         }
 
         .result-list {
-            background: linear-gradient(180deg, #4b0082, #ff1493, #ff8c00);
+            background-color: #2f3136;
             border-radius: 8px;
             height: 100%;
-            box-shadow: 0px 0px 20px #ff00ff;
-            border: 3px solid #00ff00;
+            box-shadow: 0px 1px 4px rgba(0, 0, 0, 0.6);
         }
 
         ul {
@@ -133,11 +116,10 @@
             margin: 0 0 0 0;
             list-style-type: none;
             font-size: 28px;
-            color: #ffff00;
         }
 
         li {
-            margin-bottom: 8px;
+            margin-bottom: 16px;
             overflow: hidden;
             white-space: nowrap;
         }
@@ -169,7 +151,7 @@
             {{name}}
         </div>
         <div class="whoknows title align-center">
-            <span class="wordart"><span class="text" data-text="{{title}}">{{title}}</span></span>
+            {{title}}
         </div>
         <div class="whoknows subtitle float-right bottom">
             {{time}}
