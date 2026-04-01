@@ -545,7 +545,9 @@ public class ChartService
         var textColor = chartImage.GetTextColor();
         var rectangleColor = textColor == SKColors.Black ? SKColors.White : SKColors.Black;
 
-        using var typeface = SKTypeface.FromFile(this._comicSansFontPath);
+        var allText = (topName ?? "") + (bottomName ?? "");
+        var hasNonLatin = allText.Any(c => c > 0x024F);
+        using var typeface = SKTypeface.FromFile(hasNonLatin ? this._fontPath : this._comicSansFontPath);
 
         var textSize = largerImages ? 17 : 12;
 
