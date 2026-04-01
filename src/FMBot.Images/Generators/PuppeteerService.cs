@@ -24,7 +24,7 @@ public class PuppeteerService : IDisposable
 
     // Cache typeface to avoid repeated file loads and ensure proper disposal
     private readonly Lazy<SKTypeface> _cachedTypeface = new(() =>
-        SKTypeface.FromFile(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", "bot", "comic-sans-ms.ttf")));
+        SKTypeface.FromFamilyName("Comic Sans MS"));
 
 
     public PuppeteerService()
