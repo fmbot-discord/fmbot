@@ -1,12 +1,17 @@
 <html>
 <head>
     <style>
+        @font-face {
+            font-family: "receipt";
+            src: url("https://fm.bot/fonts/receipt.ttf") format("truetype");
+        }
+
         body {
-            background: linear-gradient(135deg, #ff00ff, #00ffff, #ffff00);
-            font-family: "Comic Sans MS", cursive;
+            background-image: url("https://fm.bot/img/bot/receipt.png");
+            font-family: "receipt";
             margin-right: 30px;
             margin-left: 30px;
-            color: #4b0082;
+            background-position: -{{background-offset}}px;
         }
 
         .receipt {
@@ -47,22 +52,6 @@
 
         .min-width {
             min-width: 160px;
-        }
-
-        h1 {
-            color: #ff0000;
-        }
-
-        h2 {
-            color: #0000ff;
-        }
-
-        td {
-            color: #4b0082;
-        }
-
-        .divider td {
-            color: #ff1493;
         }
     </style>
 </head>
