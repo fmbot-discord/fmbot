@@ -129,7 +129,6 @@ public class ArtistBuilders
         {
             artistSearch.Response.ResponseType = ResponseType.ComponentsV2;
             artistSearch.Response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
-            artistSearch.Response.ComponentsContainer.WithTextDisplay(artistSearch.Response.Embed.Description);
             return artistSearch.Response;
         }
 
@@ -501,7 +500,6 @@ public class ArtistBuilders
         {
             artistSearch.Response.ResponseType = ResponseType.ComponentsV2;
             artistSearch.Response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
-            artistSearch.Response.ComponentsContainer.WithTextDisplay(artistSearch.Response.Embed.Description);
             return artistSearch.Response;
         }
 
@@ -734,7 +732,6 @@ public class ArtistBuilders
         {
             artistSearch.Response.ResponseType = ResponseType.ComponentsV2;
             artistSearch.Response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
-            artistSearch.Response.ComponentsContainer.WithTextDisplay(artistSearch.Response.Embed.Description);
             return artistSearch.Response;
         }
 
@@ -939,7 +936,6 @@ public class ArtistBuilders
         {
             artistSearch.Response.ResponseType = ResponseType.ComponentsV2;
             artistSearch.Response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
-            artistSearch.Response.ComponentsContainer.WithTextDisplay(artistSearch.Response.Embed.Description);
             return artistSearch.Response;
         }
 

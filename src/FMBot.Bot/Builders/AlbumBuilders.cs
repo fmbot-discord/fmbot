@@ -110,7 +110,6 @@ public class AlbumBuilders
         {
             albumSearch.Response.ResponseType = ResponseType.ComponentsV2;
             albumSearch.Response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
-            albumSearch.Response.ComponentsContainer.WithTextDisplay(albumSearch.Response.Embed.Description);
             return albumSearch.Response;
         }
 
@@ -1005,7 +1004,6 @@ public class AlbumBuilders
         {
             albumSearch.Response.ResponseType = ResponseType.ComponentsV2;
             albumSearch.Response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
-            albumSearch.Response.ComponentsContainer.WithTextDisplay(albumSearch.Response.Embed.Description);
             return albumSearch.Response;
         }
 
@@ -1282,7 +1280,6 @@ public class AlbumBuilders
         {
             albumSearch.Response.ResponseType = ResponseType.ComponentsV2;
             albumSearch.Response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
-            albumSearch.Response.ComponentsContainer.WithTextDisplay(albumSearch.Response.Embed.Description);
             return albumSearch.Response;
         }
 
