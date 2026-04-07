@@ -923,18 +923,10 @@ public class TrackService
             return null;
         }
 
-        var alias = await this._aliasService.GetAlias(artistName);
-
-        var correctedArtistName = artistName;
-        if (alias != null && !alias.Options.HasFlag(AliasOption.NoRedirectInLastfmCalls))
-        {
-            correctedArtistName = alias.ArtistName;
-        }
-
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        var album = await TrackRepository.GetTrackForName(correctedArtistName, trackName, connection);
+        var album = await TrackRepository.GetTrackForName(artistName, trackName, connection);
 
         await connection.CloseAsync();
 

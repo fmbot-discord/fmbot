@@ -47,21 +47,33 @@ public static partial class MusicBotTestHelper
     private static partial Regex BleedRegex();
 
     /// <summary>
-    /// Tests GreenBotMusicBot parsing: extracts from "[track](url) by [artist](url)" format
+    /// Tests GreenBotMusicBot Components v2 parsing: extracts from "[**track**](url)\nBy **artist**" format
     /// </summary>
-    public static string ParseGreenBotFormat(string description)
+    public static string ParseGreenBotComponentsFormat(string content)
     {
-        var matches = Regex.Matches(description, @"\[(.*?)\]\(.*?\)");
-
-        if (matches.Count < 2)
+        var lines = content.Split('\n');
+        if (lines.Length < 2)
         {
             return string.Empty;
         }
 
-        var songName = matches[0].Groups[1].Value.Trim();
-        var artist = matches[1].Groups[1].Value.Trim();
+        var trackLine = lines[0];
+        if (!trackLine.StartsWith('['))
+        {
+            return string.Empty;
+        }
 
-        return $"{artist} - {songName}";
+        var track = trackLine.Split('[', ']')[1].Replace("**", "");
+
+        var artistLine = lines[1];
+        if (!artistLine.StartsWith("By "))
+        {
+            return string.Empty;
+        }
+
+        var artist = artistLine[3..].Replace("**", "");
+
+        return $"{artist} - {track}";
     }
 
     /// <summary>

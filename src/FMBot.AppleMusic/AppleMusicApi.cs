@@ -7,15 +7,8 @@ using Serilog;
 
 namespace FMBot.AppleMusic;
 
-public class AppleMusicApi
+public class AppleMusicApi(HttpClient client)
 {
-    private readonly HttpClient _client;
-
-    public AppleMusicApi(HttpClient client)
-    {
-        this._client = client;
-    }
-
     private static JsonSerializerOptions GetJsonSerializerOptions()
     {
         return new JsonSerializerOptions
@@ -31,7 +24,7 @@ public class AppleMusicApi
 
     public async Task<AmArtist> GetArtistAsync(string artistId)
     {
-        var response = await this._client.GetAsync($"artists/{artistId}");
+        var response = await client.GetAsync($"artists/{artistId}");
         var requestBody = await response.Content.ReadAsStringAsync();
 
         if (!response.IsSuccessStatusCode)
@@ -45,7 +38,7 @@ public class AppleMusicApi
 
     public async Task<AmAlbum> GetAlbumAsync(string albumId)
     {
-        var response = await this._client.GetAsync($"albums/{albumId}");
+        var response = await client.GetAsync($"albums/{albumId}");
         var requestBody = await response.Content.ReadAsStringAsync();
 
         if (!response.IsSuccessStatusCode)
@@ -59,7 +52,7 @@ public class AppleMusicApi
 
     public async Task<AmSong> GetSongAsync(string songId)
     {
-        var response = await this._client.GetAsync($"songs/{songId}");
+        var response = await client.GetAsync($"songs/{songId}");
         var requestBody = await response.Content.ReadAsStringAsync();
 
         if (!response.IsSuccessStatusCode)
@@ -79,7 +72,7 @@ public class AppleMusicApi
             { "term", searchQuery }
         };
 
-        var response = await this._client.GetAsync(QueryHelpers.AddQueryString("search", queryParams));
+        var response = await client.GetAsync(QueryHelpers.AddQueryString("search", queryParams));
         var requestBody = await response.Content.ReadAsStringAsync();
 
         if (!response.IsSuccessStatusCode)
@@ -100,7 +93,7 @@ public class AppleMusicApi
             { "term", searchQuery }
         };
 
-        var response = await this._client.GetAsync(QueryHelpers.AddQueryString("search", queryParams));
+        var response = await client.GetAsync(QueryHelpers.AddQueryString("search", queryParams));
         var requestBody = await response.Content.ReadAsStringAsync();
 
         if (!response.IsSuccessStatusCode)
@@ -121,7 +114,7 @@ public class AppleMusicApi
             { "term", searchQuery }
         };
 
-        var response = await this._client.GetAsync(QueryHelpers.AddQueryString("search", queryParams));
+        var response = await client.GetAsync(QueryHelpers.AddQueryString("search", queryParams));
         var requestBody = await response.Content.ReadAsStringAsync();
 
         if (!response.IsSuccessStatusCode)

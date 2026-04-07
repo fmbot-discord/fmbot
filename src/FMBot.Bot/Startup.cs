@@ -396,23 +396,14 @@ public class Startup
             client.BaseAddress = new Uri("https://api.music.apple.com/v1/catalog/us/");
         });
 
-        services.AddHttpClient<AppleMusicAltApi>((provider, client) =>
+        services.AddTransient<AppleMusicAltAuthHandler>();
+        services.AddHttpClient<AppleMusicAltApi>(client =>
         {
-            var authProvider = provider.GetRequiredService<PuppeteerService>();
-            var authHeader = authProvider.GetAppleToken().Result;
-            if (authHeader != null)
-            {
-                client.DefaultRequestHeaders.Add("Authorization", authHeader);
-                client.DefaultRequestHeaders.Add("Origin", "https://music.apple.com");
-                client.DefaultRequestHeaders.Add("Referer", "https://music.apple.com");
-            }
-            else
-            {
-                Log.Warning("No alt Apple Music auth header");
-            }
-
+            client.DefaultRequestHeaders.Add("Origin", "https://music.apple.com");
+            client.DefaultRequestHeaders.Add("Referer", "https://music.apple.com");
             client.BaseAddress = new Uri("https://amp-api.music.apple.com/v1/catalog/us/");
-        });
+        })
+        .AddHttpMessageHandler<AppleMusicAltAuthHandler>();
     }
 
     private void ConfigureGrpcServices(IServiceCollection services)
