@@ -25,8 +25,6 @@ public abstract class MusicBot
         new BleedMusicBot(),
         new UzoxMusicBot(),
         new ListenMusicBot(),
-        new FlaviMusicBot(),
-        new MakiMusicBot(),
         new EaraMusicBot()
     };
 
