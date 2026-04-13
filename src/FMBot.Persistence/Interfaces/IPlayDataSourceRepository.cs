@@ -18,7 +18,7 @@ public interface IPlayDataSourceRepository
         int milestoneScrobble);
 
     Task<DataSourceUser> GetLfmUserInfoAsync(ImportUser user, DataSourceUser dataSourceUser);
-    Task<int?> GetTrackPlaycount(ImportUser user, string trackName, string artistName);
+    Task<int?> GetTrackPlaycount(ImportUser user, int trackId);
     Task<int?> GetArtistPlaycount(ImportUser user, string artistName);
     Task<int?> GetAlbumPlaycount(ImportUser user, string artistName, string albumName);
 

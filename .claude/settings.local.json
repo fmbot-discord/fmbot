@@ -17,5 +17,9 @@
       "WebFetch(domain:ffmpeg.org)",
       "WebFetch(domain:www.ffmpeg.org)"
     ]
-  }
+  },
+  "enabledMcpjsonServers": [
+    "jetbrains"
+  ],
+  "enableAllProjectMcpServers": true
 }

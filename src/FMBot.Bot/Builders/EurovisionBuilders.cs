@@ -21,14 +21,16 @@ public class EurovisionBuilders
     private readonly EurovisionService _eurovisionService;
     private readonly CountryService _countryService;
     private readonly WhoKnowsTrackService _whoKnowsTrackService;
+    private readonly TrackService _trackService;
 
     public EurovisionBuilders(UserService userService, EurovisionService eurovisionService,
-        CountryService countryService, WhoKnowsTrackService whoKnowsTrackService)
+        CountryService countryService, WhoKnowsTrackService whoKnowsTrackService, TrackService trackService)
     {
         this._userService = userService;
         this._eurovisionService = eurovisionService;
         this._countryService = countryService;
         this._whoKnowsTrackService = whoKnowsTrackService;
+        this._trackService = trackService;
     }
 
     public async Task<ResponseModel> GetEurovisionYear(ContextModel context, int year)
@@ -265,13 +267,16 @@ public class EurovisionBuilders
 
         if (context.ContextUser != null)
         {
-            var userPlaycount = await this._whoKnowsTrackService.GetTrackPlayCountForUser(artistName,
-                entry.Title, context.ContextUser.UserId);
-
-            if (userPlaycount > 0)
+            var dbTrack = await this._trackService.GetTrackFromDatabase(artistName, entry.Title);
+            if (dbTrack != null)
             {
-                response.Embed.WithFooter(
-                    $"{userPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(userPlaycount)}");
+                var userPlaycount = await this._whoKnowsTrackService.GetTrackPlayCountForUser(dbTrack.Id, context.ContextUser.UserId);
+
+                if (userPlaycount > 0)
+                {
+                    response.Embed.WithFooter(
+                        $"{userPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(userPlaycount)}");
+                }
             }
         }
 

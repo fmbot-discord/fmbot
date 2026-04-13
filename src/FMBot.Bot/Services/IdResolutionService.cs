@@ -426,7 +426,7 @@ public class IdResolutionService(IdResolution.IdResolutionClient client, IOption
 
         var cutoff = DateTime.UtcNow.AddMonths(-3);
         var recentCutoff = DateTime.UtcNow.AddDays(-7);
-        var lastProcessedUserId = cache.TryGetValue(cacheKey, out int lastId) ? lastId : 928701;
+        var lastProcessedUserId = cache.TryGetValue(cacheKey, out int lastId) ? lastId : 1258153;
 
         const string sql = "SELECT user_id FROM public.users " +
                            "WHERE last_indexed IS NOT NULL " +

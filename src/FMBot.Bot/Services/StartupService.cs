@@ -163,8 +163,9 @@ public class StartupService
         BackgroundJob.Schedule(() => this.CacheSlashCommandIds(), TimeSpan.FromSeconds(warmupDelay));
         BackgroundJob.Schedule(() => this._timerService.UpdateStatus(), TimeSpan.FromSeconds(warmupDelay));
 
-        await this.CachePremiumGuilds();
-        await this.CacheDiscordUserIds();
+        await Task.WhenAll(
+            this.CachePremiumGuilds(),
+            this.CacheDiscordUserIds());
     }
 
     private void InitializeHangfireConfig()

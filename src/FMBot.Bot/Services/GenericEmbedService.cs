@@ -21,9 +21,6 @@ public static class GenericEmbedService
 {
     public static void UsernameNotSetErrorResponse(this EmbedProperties embed, string prfx, string name)
     {
-        var loginCommand = PublicProperties.SlashCommands.ContainsKey("login")
-            ? $"</login:{PublicProperties.SlashCommands["login"]}>"
-            : "`/login`";
         embed.WithDescription($"Hi {name}, welcome to .fmbot.\n" +
                               $"To use this bot you first need to add your Last.fm account.\n\n" +
                               $"Use the buttons below to sign up or connect your existing Last.fm account.");
