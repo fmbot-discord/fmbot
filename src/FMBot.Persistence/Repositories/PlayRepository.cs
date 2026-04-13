@@ -424,7 +424,10 @@ public static class PlayRepository
         }
 
         await using var renameArtistImports = new NpgsqlCommand("UPDATE public.user_plays " +
-                                                                "SET artist_name = @newArtistName " +
+                                                                "SET artist_name = @newArtistName, " +
+                                                                "artist_id = (SELECT id FROM public.artists WHERE name = CAST(@newArtistName AS CITEXT) LIMIT 1), " +
+                                                                "album_id = (SELECT id FROM public.albums WHERE artist_name = CAST(@newArtistName AS CITEXT) AND name = user_plays.album_name LIMIT 1), " +
+                                                                "track_id = (SELECT id FROM public.tracks WHERE artist_name = CAST(@newArtistName AS CITEXT) AND name = user_plays.track_name LIMIT 1) " +
                                                                 "WHERE user_id = @userId " +
                                                                 "AND play_source != 0 " +
                                                                 "AND LOWER(artist_name) = LOWER(@oldArtistName)", connection);
@@ -465,7 +468,10 @@ public static class PlayRepository
 
         await using var renameAlbumImports = new NpgsqlCommand("UPDATE public.user_plays " +
                                                                "SET artist_name = @newArtistName, " +
-                                                               "album_name = @newAlbumName " +
+                                                               "album_name = @newAlbumName, " +
+                                                               "artist_id = (SELECT id FROM public.artists WHERE name = CAST(@newArtistName AS CITEXT) LIMIT 1), " +
+                                                               "album_id = (SELECT id FROM public.albums WHERE artist_name = CAST(@newArtistName AS CITEXT) AND name = CAST(@newAlbumName AS CITEXT) LIMIT 1), " +
+                                                               "track_id = (SELECT id FROM public.tracks WHERE artist_name = CAST(@newArtistName AS CITEXT) AND name = user_plays.track_name LIMIT 1) " +
                                                                "WHERE user_id = @userId " +
                                                                "AND play_source != 0 " +
                                                                "AND LOWER(artist_name) = LOWER(@artistName) " +
@@ -511,7 +517,10 @@ public static class PlayRepository
 
         await using var renameTrackImports = new NpgsqlCommand("UPDATE public.user_plays " +
                                                                "SET artist_name = @newArtistName, " +
-                                                               "track_name = @newTrackName " +
+                                                               "track_name = @newTrackName, " +
+                                                               "artist_id = (SELECT id FROM public.artists WHERE name = CAST(@newArtistName AS CITEXT) LIMIT 1), " +
+                                                               "album_id = (SELECT id FROM public.albums WHERE artist_name = CAST(@newArtistName AS CITEXT) AND name = user_plays.album_name LIMIT 1), " +
+                                                               "track_id = (SELECT id FROM public.tracks WHERE artist_name = CAST(@newArtistName AS CITEXT) AND name = CAST(@newTrackName AS CITEXT) LIMIT 1) " +
                                                                "WHERE user_id = @userId " +
                                                                "AND play_source != 0 " +
                                                                "AND LOWER(artist_name) = LOWER(@artistName) " +
