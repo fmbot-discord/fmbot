@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -38,8 +37,6 @@ namespace FMBot.Bot.Services;
 
 public class TrackService
 {
-    private static readonly ActivitySource ActivitySource = new("FMBot.Services");
-
     private readonly IDataSourceFactory _dataSourceFactory;
     private readonly SpotifyService _spotifyService;
     private readonly AppleMusicService _appleMusicService;
@@ -117,9 +114,6 @@ public class TrackService
         string lastFmUserName, string sessionKey = null, string otherUserUsername = null, bool useCachedTracks = false,
         int? userId = null, ulong? interactionId = null, RestMessage referencedMessage = null)
     {
-        using var activity = ActivitySource.StartActivity("SearchTrack");
-        activity?.SetTag("track.query", trackValues);
-
         string searchValue;
         if (referencedMessage != null && string.IsNullOrWhiteSpace(trackValues))
         {

@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Diagnostics;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -29,8 +28,6 @@ namespace FMBot.Bot.Services;
 
 public class UpdateService
 {
-    private static readonly ActivitySource ActivitySource = new("FMBot.Services");
-
     private readonly IUserUpdateQueue _userUpdateQueue;
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
     private readonly IMemoryCache _cache;
@@ -110,10 +107,6 @@ public class UpdateService
 
     public async Task<Response<RecentTrackList>> UpdateUser(UpdateUserQueueItem queueItem)
     {
-        using var activity = ActivitySource.StartActivity("UpdateUser");
-        activity?.SetTag("user.id", queueItem.UserId.ToString());
-        activity?.SetTag("update.queue", queueItem.UpdateQueue.ToString());
-
         await this._aliasService.CacheArtistAliases();
 
         var user = await this._userService.GetUserForIdAsync(queueItem.UserId);

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Fergun.Interactive;
@@ -32,8 +31,6 @@ namespace FMBot.Bot.Handlers;
 
 public class CommandHandler
 {
-    private static readonly ActivitySource ActivitySource = new("FMBot.Commands");
-
     private readonly CommandService<CommandContext> _commands;
     private readonly UserService _userService;
     private readonly ShardedGatewayClient _discord;
@@ -241,12 +238,6 @@ public class CommandHandler
 
         using (Statistics.TextCommandHandlerDuration.NewTimer())
         {
-            var commandName = searchResult.IsSuccess ? searchResult.Command.Aliases[0] : "fm";
-            using var activity = ActivitySource.StartActivity(commandName);
-            activity?.SetTag("command.type", "text");
-            activity?.SetTag("discord.user_id", context.User.Id.ToString());
-            activity?.SetTag("discord.guild_id", context.Guild?.Id.ToString());
-
             // If command possibly equals .fm
             if (!searchResult.IsSuccess &&
                 msg.Content.StartsWith(this._botSettings.Bot.Prefix, StringComparison.OrdinalIgnoreCase))
@@ -315,6 +306,8 @@ public class CommandHandler
             {
                 return;
             }
+
+            var commandName = searchResult.Command.Aliases[0];
 
             if (!await CommandEnabled(context, searchResult, prfx, update, commandName))
             {

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using FMBot.AppleMusic;
@@ -27,8 +26,6 @@ namespace FMBot.Bot.Factories;
 
 public class MusicDataFactory
 {
-    private static readonly ActivitySource ActivitySource = new("FMBot.MusicData");
-
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
     private readonly SpotifyService _spotifyService;
     private readonly ArtistEnrichment.ArtistEnrichmentClient _artistEnrichment;
@@ -61,9 +58,6 @@ public class MusicDataFactory
     public async Task<Artist> GetOrStoreArtistAsync(ArtistInfo artistInfo, string artistNameBeforeCorrect = null,
         bool redirectsEnabled = true)
     {
-        using var activity = ActivitySource.StartActivity("GetOrStoreArtist");
-        activity?.SetTag("artist.name", artistInfo.ArtistName);
-
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
@@ -404,10 +398,6 @@ public class MusicDataFactory
 
     public async Task<Album> GetOrStoreAlbumAsync(AlbumInfo albumInfo)
     {
-        using var activity = ActivitySource.StartActivity("GetOrStoreAlbum");
-        activity?.SetTag("album.name", albumInfo.AlbumName);
-        activity?.SetTag("album.artist", albumInfo.ArtistName);
-
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
@@ -787,10 +777,6 @@ public class MusicDataFactory
 
     public async Task<Track> GetOrStoreTrackAsync(TrackInfo trackInfo, bool getSyncedLyrics = false)
     {
-        using var activity = ActivitySource.StartActivity("GetOrStoreTrack");
-        activity?.SetTag("track.name", trackInfo.TrackName);
-        activity?.SetTag("track.artist", trackInfo.ArtistName);
-
         try
         {
             await using var db = await this._contextFactory.CreateDbContextAsync();

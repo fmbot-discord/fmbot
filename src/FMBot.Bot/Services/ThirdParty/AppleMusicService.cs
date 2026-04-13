@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using FMBot.AppleMusic;
@@ -13,8 +12,6 @@ namespace FMBot.Bot.Services.ThirdParty;
 
 public class AppleMusicService
 {
-    private static readonly ActivitySource ActivitySource = new("FMBot.AppleMusic");
-
     private readonly AppleMusicApi _appleMusicApi;
     private readonly AppleMusicAltApi _appleMusicAltApi;
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
@@ -29,8 +26,6 @@ public class AppleMusicService
 
     public async Task<AmData<AmArtistAttributes>> GetAppleMusicArtist(string artist)
     {
-        using var activity = ActivitySource.StartActivity("GetArtist");
-
         var results = await this._appleMusicApi.SearchArtistAsync(artist);
         Statistics.AppleMusicApiCalls.Inc();
 
@@ -41,8 +36,6 @@ public class AppleMusicService
     public async Task<AmData<AmAlbumAttributes>> GetAppleMusicAlbum(string artist, string albumName,
         bool getMotionCovers = false)
     {
-        using var activity = ActivitySource.StartActivity("GetAlbum");
-
         var results = await this._appleMusicApi.SearchAlbumAsync($"{artist} - {albumName}");
         Statistics.AppleMusicApiCalls.Inc();
 
@@ -72,8 +65,6 @@ public class AppleMusicService
 
     public async Task<AmData<AmSongAttributes>> GetAppleMusicSong(string artist, string songName)
     {
-        using var activity = ActivitySource.StartActivity("GetSong");
-
         var results = await this._appleMusicApi.SearchSongAsync($"{artist} - {songName}");
         Statistics.AppleMusicApiCalls.Inc();
 

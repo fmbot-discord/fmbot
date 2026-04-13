@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -37,8 +36,6 @@ namespace FMBot.Bot.Services;
 
 public class AlbumService
 {
-    private static readonly ActivitySource ActivitySource = new("FMBot.Services");
-
     private readonly IMemoryCache _cache;
     private readonly BotSettings _botSettings;
     private readonly IDataSourceFactory _dataSourceFactory;
@@ -84,8 +81,6 @@ public class AlbumService
         string otherUserUsername = null, bool useCachedAlbums = false, int? userId = null, ulong? interactionId = null,
         RestMessage referencedMessage = null, bool redirectsEnabled = true)
     {
-        using var activity = ActivitySource.StartActivity("SearchAlbum");
-        activity?.SetTag("album.query", albumValues);
         string searchValue;
         if (referencedMessage != null && string.IsNullOrWhiteSpace(albumValues))
         {

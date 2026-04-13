@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -20,8 +19,6 @@ namespace FMBot.Bot.Services.ThirdParty;
 
 public class SpotifyService
 {
-    private static readonly ActivitySource ActivitySource = new("FMBot.Spotify");
-
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
     private readonly BotSettings _botSettings;
     private readonly HttpClient _httpClient;
@@ -53,8 +50,6 @@ public class SpotifyService
 
     public async Task<FullArtist> GetArtistFromSpotify(string artistName)
     {
-        using var activity = ActivitySource.StartActivity("GetArtist");
-
         var spotify = GetSpotifyWebApi();
 
         var searchRequest = new SearchRequest(SearchRequest.Types.Artist, artistName)
@@ -83,8 +78,7 @@ public class SpotifyService
 
     public async Task<FullTrack> GetTrackFromSpotify(string trackName, string artistName)
     {
-        using var activity = ActivitySource.StartActivity("GetTrack");
-
+        //Create the auth object
         var spotify = GetSpotifyWebApi();
 
         var searchRequest = new SearchRequest(SearchRequest.Types.Track, $"track:{trackName} artist:{artistName}");
@@ -109,8 +103,7 @@ public class SpotifyService
 
     public async Task<FullAlbum> GetAlbumFromSpotify(string albumName, string artistName)
     {
-        using var activity = ActivitySource.StartActivity("GetAlbum");
-
+        //Create the auth object
         var spotify = GetSpotifyWebApi();
 
         var searchQuery = $"{albumName} {artistName}";
