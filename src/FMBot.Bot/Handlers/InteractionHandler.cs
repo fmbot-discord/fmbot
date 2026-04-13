@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Fergun.Interactive;
@@ -28,6 +29,8 @@ namespace FMBot.Bot.Handlers;
 
 public class InteractionHandler
 {
+    private static readonly ActivitySource ActivitySource = new("FMBot.Commands");
+
     private readonly ShardedGatewayClient _client;
     private readonly ApplicationCommandService<ApplicationCommandContext, AutocompleteInteractionContext> _appCommands;
     private readonly ComponentInteractionService<ComponentInteractionContext> _componentCommands;
@@ -115,6 +118,11 @@ public class InteractionHandler
             var contextUser = await this._userService.GetUserAsync(context.User.Id);
 
             var commandName = slashCommand.Data.Name;
+
+            using var activity = ActivitySource.StartActivity(commandName);
+            activity?.SetTag("command.type", "slash");
+            activity?.SetTag("discord.user_id", context.User.Id.ToString());
+            activity?.SetTag("discord.guild_id", context.Guild?.Id.ToString());
 
             if (contextUser?.Blocked == true)
             {
@@ -220,6 +228,11 @@ public class InteractionHandler
 
         var customId = component.Data.CustomId;
 
+        using var activity = ActivitySource.StartActivity(customId);
+        activity?.SetTag("command.type", "select_menu");
+        activity?.SetTag("discord.user_id", context.User.Id.ToString());
+        activity?.SetTag("discord.guild_id", context.Guild?.Id.ToString());
+
         if (contextUser?.Blocked == true)
         {
             return;
@@ -254,6 +267,11 @@ public class InteractionHandler
         var contextUser = await this._userService.GetUserAsync(context.User.Id);
 
         var customId = component.Data.CustomId;
+
+        using var activity = ActivitySource.StartActivity(customId);
+        activity?.SetTag("command.type", "button");
+        activity?.SetTag("discord.user_id", context.User.Id.ToString());
+        activity?.SetTag("discord.guild_id", context.Guild?.Id.ToString());
 
         if (contextUser?.Blocked == true)
         {

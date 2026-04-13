@@ -23,7 +23,9 @@ using FMBot.Subscriptions.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using System.Diagnostics;
 using Serilog;
+using Serilog.Enrichers.Span;
 using Serilog.Events;
 using Serilog.Exceptions;
 using Hangfire;
@@ -100,6 +102,7 @@ public class Startup
         Log.Logger = new LoggerConfiguration()
             .MinimumLevel.Is(logLevel)
             .Enrich.WithExceptionDetails()
+            .Enrich.WithSpan()
             .Enrich.WithEnvironmentVariable("INSTANCE_NAME")
             .Enrich.WithMachineName()
             .Enrich.WithProperty("Environment",
@@ -112,6 +115,12 @@ public class Startup
                 LogEventLevel.Information,
                 apiKey: this.Configuration.GetSection("Logging:SeqApiKey")?.Value)
             .CreateLogger();
+
+        ActivitySource.AddActivityListener(new ActivityListener
+        {
+            ShouldListenTo = source => source.Name.StartsWith("FMBot."),
+            Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllData
+        });
 
         AppDomain.CurrentDomain.UnhandledException += AppUnhandledException;
 

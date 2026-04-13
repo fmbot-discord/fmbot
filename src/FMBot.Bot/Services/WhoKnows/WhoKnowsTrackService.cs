@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
@@ -17,6 +18,8 @@ namespace FMBot.Bot.Services.WhoKnows;
 
 public class WhoKnowsTrackService
 {
+    private static readonly ActivitySource ActivitySource = new("FMBot.WhoKnows");
+
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
     private readonly BotSettings _botSettings;
     private readonly IMemoryCache _cache;
@@ -31,6 +34,9 @@ public class WhoKnowsTrackService
     public async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForTrack(NetCord.Gateway.Guild discordGuild,
         IDictionary<int, FullGuildUser> guildUsers, int guildId, int trackId)
     {
+        using var activity = ActivitySource.StartActivity("WhoKnowsTrack");
+        activity?.SetTag("whoknows.scope", "guild");
+
         const string sql = "SELECT ut.user_id, " +
                            "ut.playcount " +
                            "FROM user_tracks AS ut " +
@@ -86,6 +92,9 @@ public class WhoKnowsTrackService
 
     public async Task<IList<WhoKnowsObjectWithUser>> GetGlobalUsersForTrack(NetCord.Gateway.Guild discordGuild, int trackId)
     {
+        using var activity = ActivitySource.StartActivity("WhoKnowsTrack");
+        activity?.SetTag("whoknows.scope", "global");
+
         const string sql = "SELECT * " +
                            "FROM(SELECT DISTINCT ON(UPPER(u.user_name_last_fm)) " +
                            "ut.user_id, " +
@@ -143,6 +152,9 @@ public class WhoKnowsTrackService
     public async Task<IList<WhoKnowsObjectWithUser>> GetFriendUsersForTrack(NetCord.Gateway.Guild discordGuild,
         IDictionary<int, FullGuildUser> guildUsers, int guildId, int userId, int trackId)
     {
+        using var activity = ActivitySource.StartActivity("WhoKnowsTrack");
+        activity?.SetTag("whoknows.scope", "friends");
+
         const string sql = "SELECT ut.user_id, " +
                            "ut.playcount, " +
                            "u.user_name_last_fm " +

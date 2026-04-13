@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -22,6 +23,8 @@ namespace FMBot.LastFM.Api;
 
 public class LastfmApi : ILastfmApi
 {
+    private static readonly ActivitySource ActivitySource = new("FMBot.LastFm");
+
     private const string ApiUrl = "https://ws.audioscrobbler.com/2.0/";
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -99,6 +102,8 @@ public class LastfmApi : ILastfmApi
             RequestUri = new Uri(url),
             Method = HttpMethod.Post
         };
+
+        using var activity = ActivitySource.StartActivity(call);
 
         var timer = Statistics.LastfmApiResponseTime.WithLabels(call).NewTimer();
         using var httpResponse = await this._client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -35,6 +36,8 @@ namespace FMBot.Bot.Services;
 
 public class ArtistsService
 {
+    private static readonly ActivitySource ActivitySource = new("FMBot.Services");
+
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
     private readonly IMemoryCache _cache;
     private readonly BotSettings _botSettings;
@@ -83,6 +86,8 @@ public class ArtistsService
         bool useCachedArtists = false, int? userId = null, bool redirectsEnabled = true, ulong? interactionId = null,
         RestMessage referencedMessage = null)
     {
+        using var activity = ActivitySource.StartActivity("SearchArtist");
+        activity?.SetTag("artist.query", artistValues);
         if (referencedMessage != null && string.IsNullOrWhiteSpace(artistValues))
         {
             var internalLookup = CommandContextExtensions.GetReferencedMusic(referencedMessage.Id)

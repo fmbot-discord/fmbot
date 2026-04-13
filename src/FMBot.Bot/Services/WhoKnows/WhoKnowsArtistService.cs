@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
@@ -19,6 +20,8 @@ namespace FMBot.Bot.Services.WhoKnows;
 
 public class WhoKnowsArtistService
 {
+    private static readonly ActivitySource ActivitySource = new("FMBot.WhoKnows");
+
     private readonly IMemoryCache _cache;
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
     private readonly BotSettings _botSettings;
@@ -37,6 +40,9 @@ public class WhoKnowsArtistService
     public async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForArtist(NetCord.Gateway.Guild discordGuild,
         IDictionary<int, FullGuildUser> guildUsers, int guildId, string artistName)
     {
+        using var activity = ActivitySource.StartActivity("WhoKnowsArtist");
+        activity?.SetTag("whoknows.scope", "guild");
+
         const string sql = "BEGIN; " +
                            "SET LOCAL enable_nestloop = OFF; " +
                            "SELECT ua.user_id, " +
@@ -95,6 +101,9 @@ public class WhoKnowsArtistService
 
     public async Task<IList<WhoKnowsObjectWithUser>> GetGlobalUsersForArtists(NetCord.Gateway.Guild discordGuild, string artistName)
     {
+        using var activity = ActivitySource.StartActivity("WhoKnowsArtist");
+        activity?.SetTag("whoknows.scope", "global");
+
         const string sql = "SELECT * " +
                            "FROM (SELECT DISTINCT ON(UPPER(u.user_name_last_fm)) " +
                            "ua.user_id, " +
@@ -152,6 +161,9 @@ public class WhoKnowsArtistService
     public async Task<IList<WhoKnowsObjectWithUser>> GetFriendUsersForArtists(NetCord.Gateway.Guild discordGuild,
         IDictionary<int, FullGuildUser> guildUsers, int guildId, int userId, string artistName)
     {
+        using var activity = ActivitySource.StartActivity("WhoKnowsArtist");
+        activity?.SetTag("whoknows.scope", "friends");
+
         const string sql = "SELECT * " +
                            "FROM (SELECT DISTINCT ON(UPPER(u.user_name_last_fm)) " +
                            "ua.user_id, " +
