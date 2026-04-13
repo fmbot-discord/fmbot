@@ -118,6 +118,8 @@ public class AlbumBuilders
         var artistUserTracksTask = this._trackService.GetArtistUserTracks(context.ContextUser.UserId, albumSearch.Album.ArtistName);
         var featuredHistoryTask = this._featuredService.GetAlbumFeaturedHistory(albumSearch.Album.ArtistName, albumSearch.Album.AlbumName);
 
+        var databaseAlbum = await databaseAlbumTask;
+
         Guild guild = null;
         IDictionary<int, FullGuildUser> guildUsers = null;
         Task<IList<WhoKnowsObjectWithUser>> indexedUsersTask = null;
@@ -126,14 +128,12 @@ public class AlbumBuilders
             guild = await this._guildService.GetGuildForWhoKnows(context.DiscordGuild.Id);
             guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
 
-            if (guild?.LastIndexed != null)
+            if (guild?.LastIndexed != null && databaseAlbum != null)
             {
                 indexedUsersTask = this._whoKnowsAlbumService.GetIndexedUsersForAlbum(context.DiscordGuild,
-                    guildUsers, guild.GuildId, albumSearch.Album.ArtistName, albumSearch.Album.AlbumName);
+                    guildUsers, guild.GuildId, databaseAlbum.Id);
             }
         }
-
-        var databaseAlbum = await databaseAlbumTask;
         var userTitle = await userTitleTask;
         var artistUserTracks = await artistUserTracksTask;
         var featuredHistory = await featuredHistoryTask;
@@ -411,7 +411,7 @@ public class AlbumBuilders
         var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
 
         var usersWithAlbum = await this._whoKnowsAlbumService.GetIndexedUsersForAlbum(context.DiscordGuild, guildUsers,
-            guild.GuildId, albumSearch.Album.ArtistName, albumSearch.Album.AlbumName);
+            guild.GuildId, databaseAlbum.Id);
 
         var discordGuildUser = await context.DiscordGuild.GetUserAsync(context.ContextUser.DiscordUserId);
         var currentUser =
@@ -598,7 +598,7 @@ public class AlbumBuilders
         var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild?.Id);
 
         var usersWithAlbum = await this._whoKnowsAlbumService.GetFriendUsersForAlbum(context.DiscordGuild, guildUsers,
-            guild?.GuildId ?? 0, context.ContextUser.UserId, albumSearch.Album.ArtistName, albumSearch.Album.AlbumName);
+            guild?.GuildId ?? 0, context.ContextUser.UserId, databaseAlbum.Id);
 
         usersWithAlbum = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithAlbum, context.ContextUser,
             albumName, context.DiscordGuild, albumSearch.Album.UserPlaycount);
@@ -729,7 +729,7 @@ public class AlbumBuilders
         var albumName = $"{albumSearch.Album.AlbumName} by {albumSearch.Album.ArtistName}";
 
         var usersWithAlbum = await this._whoKnowsAlbumService.GetGlobalUsersForAlbum(context.DiscordGuild,
-            albumSearch.Album.ArtistName, albumSearch.Album.AlbumName);
+            databaseAlbum.Id);
 
         var filteredUsersWithAlbum =
             await this._whoKnowsService.FilterGlobalUsersAsync(usersWithAlbum, settings.QualityFilterDisabled);

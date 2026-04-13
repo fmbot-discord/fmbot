@@ -31,15 +31,12 @@ public class WhoKnowsTrackService
     public async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForTrack(NetCord.Gateway.Guild discordGuild,
         IDictionary<int, FullGuildUser> guildUsers, int guildId, int trackId)
     {
-        const string sql = "BEGIN; " +
-                           "SET LOCAL enable_nestloop = OFF; " +
-                           "SELECT ut.user_id, " +
+        const string sql = "SELECT ut.user_id, " +
                            "ut.playcount " +
                            "FROM user_tracks AS ut " +
                            "INNER JOIN guild_users AS gu ON gu.user_id = ut.user_id " +
                            "WHERE gu.guild_id = @guildId AND ut.track_id = @trackId " +
-                           "ORDER BY ut.playcount DESC; " +
-                           "COMMIT; ";
+                           "ORDER BY ut.playcount DESC ";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);

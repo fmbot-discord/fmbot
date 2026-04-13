@@ -20,7 +20,7 @@ public interface IPlayDataSourceRepository
     Task<DataSourceUser> GetLfmUserInfoAsync(ImportUser user, DataSourceUser dataSourceUser);
     Task<int?> GetTrackPlaycount(ImportUser user, int trackId);
     Task<int?> GetArtistPlaycount(ImportUser user, string artistName);
-    Task<int?> GetAlbumPlaycount(ImportUser user, string artistName, string albumName);
+    Task<int?> GetAlbumPlaycount(ImportUser user, int albumId);
 
     Task<Response<TopAlbumList>> GetTopAlbumsAsync(ImportUser user,
         TimeSettingsModel timeSettings, int count = 2);

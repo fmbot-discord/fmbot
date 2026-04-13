@@ -259,8 +259,15 @@ public class DataSourceFactory : IDataSourceFactory
 
         if (importUser != null && album.Success && album.Content != null)
         {
-            album.Content.UserPlaycount =
-                await this._playDataSourceRepository.GetAlbumPlaycount(importUser, artistName, albumName);
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+            await connection.OpenAsync();
+
+            var dbAlbum = await AlbumRepository.GetAlbumForName(artistName, albumName, connection);
+            if (dbAlbum != null)
+            {
+                album.Content.UserPlaycount =
+                    await this._playDataSourceRepository.GetAlbumPlaycount(importUser, dbAlbum.Id);
+            }
         }
 
         return album;
