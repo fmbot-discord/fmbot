@@ -23,9 +23,9 @@ using FMBot.Subscriptions.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using System.Diagnostics;
 using Serilog;
 using Serilog.Enrichers.Span;
+using SerilogTracing;
 using Serilog.Events;
 using Serilog.Exceptions;
 using Hangfire;
@@ -75,6 +75,9 @@ public class Startup
     {
         ConfigureLogging();
 
+        using var listener = new ActivityListenerConfiguration()
+            .TraceToSharedLogger();
+
         var services = new ServiceCollection();
         ConfigureServices(services);
 
@@ -115,12 +118,6 @@ public class Startup
                 LogEventLevel.Information,
                 apiKey: this.Configuration.GetSection("Logging:SeqApiKey")?.Value)
             .CreateLogger();
-
-        ActivitySource.AddActivityListener(new ActivityListener
-        {
-            ShouldListenTo = source => source.Name.StartsWith("FMBot."),
-            Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllData
-        });
 
         AppDomain.CurrentDomain.UnhandledException += AppUnhandledException;
 
