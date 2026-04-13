@@ -66,7 +66,6 @@
         <PackageReference Include="Serilog.Sinks.Async" Version="2.1.0" />
         <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
         <PackageReference Include="Serilog.Sinks.Seq" Version="9.0.0" />
-        <PackageReference Include="SerilogTracing" Version="2.3.1" />
         <PackageReference Include="SkiaSharp" Version="3.119.2" />
         <PackageReference Include="SkiaSharp.HarfBuzz" Version="3.119.2" />
         <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="3.119.2" />
