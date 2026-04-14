@@ -423,7 +423,7 @@ public class DiscogsBuilder
             foreach (var artist in artistPage)
             {
                 var name =
-                    $"**[{artist.ArtistName}]({artist.ArtistUrl})** ({artist.UserReleasesInCollection} {StringExtensions.GetReleasesString(artist.UserReleasesInCollection)})";
+                    $"**{StringExtensions.MarkdownLink(artist.ArtistName, artist.ArtistUrl)}** ({artist.UserReleasesInCollection} {StringExtensions.GetReleasesString(artist.UserReleasesInCollection)})";
 
                 // TODO for those who know how to deal with this: honor Billboard :)
                 artistPageString.Append($"{counter}. ");

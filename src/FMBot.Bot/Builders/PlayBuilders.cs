@@ -150,7 +150,7 @@ public class PlayBuilder
         description.Append(
             $"**{(artistFirstPlay?.TimePlayed != null ? $"<t:{artistFirstPlay.TimePlayed.ToUnixEpochDate()}:D>" : noResult)}**");
         description.Append(
-            $" — **[{trackSearch.Track.ArtistName}]({LastfmUrlExtensions.GetArtistUrl(trackSearch.Track.ArtistName)})**");
+            $" — **{StringExtensions.MarkdownLink(trackSearch.Track.ArtistName, LastfmUrlExtensions.GetArtistUrl(trackSearch.Track.ArtistName))}**");
         description.AppendLine();
 
         if (!string.IsNullOrEmpty(albumName))
@@ -158,7 +158,7 @@ public class PlayBuilder
             description.Append(
                 $"**{(albumFirstPlayDate.HasValue ? $"<t:{albumFirstPlayDate.Value.ToUnixEpochDate()}:D>" : noResult)}**");
             description.Append(
-                $" — **[{albumName}]({LastfmUrlExtensions.GetAlbumUrl(trackSearch.Track.ArtistName, albumName)})**");
+                $" — **{StringExtensions.MarkdownLink(albumName, LastfmUrlExtensions.GetAlbumUrl(trackSearch.Track.ArtistName, albumName))}**");
             description.AppendLine();
             response.Embed.WithAuthor("Discovery date for artist, album and track");
         }
@@ -170,7 +170,7 @@ public class PlayBuilder
         description.Append(
             $"**{(trackFirstPlayDate.HasValue ? $"<t:{trackFirstPlayDate.Value.ToUnixEpochDate()}:D>" : noResult)}**");
         description.Append(
-            $" — **[{trackName}]({LastfmUrlExtensions.GetTrackUrl(trackSearch.Track.ArtistName, trackName)})**");
+            $" — **{StringExtensions.MarkdownLink(trackName, LastfmUrlExtensions.GetTrackUrl(trackSearch.Track.ArtistName, trackName))}**");
         description.AppendLine();
 
         response.Embed.WithDescription(description.ToString());
@@ -869,9 +869,7 @@ public class PlayBuilder
             var container = new ComponentContainerProperties();
 
             container.WithTextDisplay(
-                userSettings.DisplayName.ContainsEmoji()
-                    ? $"### Recent tracks for {StringExtensions.Sanitize(userSettings.DisplayName)} {userSettings.UserType.UserTypeToIcon()}"
-                    : $"### Recent tracks for [{StringExtensions.Sanitize(userSettings.DisplayName)}]({recentTracks.Content.UserRecentTracksUrl}) {userSettings.UserType.UserTypeToIcon()}");
+                $"### Recent tracks for {StringExtensions.MarkdownLink(StringExtensions.Sanitize(userSettings.DisplayName), recentTracks.Content.UserRecentTracksUrl)} {userSettings.UserType.UserTypeToIcon()}");
 
             foreach (var track in trackPage)
             {
@@ -1248,9 +1246,7 @@ public class PlayBuilder
             var container = new ComponentContainerProperties();
 
             container.WithTextDisplay(
-                userSettings.DisplayName.ContainsEmoji()
-                    ? $"### Daily overview for {StringExtensions.Sanitize(userSettings.DisplayName)} {userSettings.UserType.UserTypeToIcon()}"
-                    : $"### Daily overview for [{StringExtensions.Sanitize(userSettings.DisplayName)}]({LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library?date_preset=LAST_7_DAYS) {userSettings.UserType.UserTypeToIcon()}");
+                $"### Daily overview for {StringExtensions.MarkdownLink(StringExtensions.Sanitize(userSettings.DisplayName), $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library?date_preset=LAST_7_DAYS")} {userSettings.UserType.UserTypeToIcon()}");
 
             container.WithSeparator();
 
@@ -1766,7 +1762,7 @@ public class PlayBuilder
                 if (newArtistDescription.Length < 800)
                 {
                     newArtistDescription.AppendLine(
-                        $"**[{StringExtensions.TruncateLongString(newArtist.ArtistName, 28)}]({LastfmUrlExtensions.GetArtistUrl(newArtist.ArtistName)})** " +
+                        $"**{StringExtensions.MarkdownLink(StringExtensions.TruncateLongString(newArtist.ArtistName, 28), LastfmUrlExtensions.GetArtistUrl(newArtist.ArtistName))}** " +
                         $"— *{newArtist.UserPlaycount} {StringExtensions.GetPlaysString(newArtist.UserPlaycount)}* " +
                         $"— on **<t:{newArtist.FirstPlay.Value.ToUnixEpochDate()}:D>**");
                 }

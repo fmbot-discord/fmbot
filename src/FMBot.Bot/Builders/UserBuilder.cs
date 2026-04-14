@@ -1048,15 +1048,8 @@ public class UserBuilder
         var initialDescription = new StringBuilder();
 
         var userInfo = await this._dataSourceFactory.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
-        if (userTitle.ContainsEmoji())
-        {
-            initialDescription.AppendLine($"## {userTitle}");
-        }
-        else
-        {
-            initialDescription.AppendLine(
-                $"## [{userTitle}]({LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)})");
-        }
+        initialDescription.AppendLine(
+            $"## {StringExtensions.MarkdownLink(userTitle, LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm))}");
 
         // initialDescription.AppendLine($"-# {userInfo.Country}");
         initialDescription.AppendLine($"**{userInfo.Playcount.Format(context.NumberFormat)}** scrobbles");
@@ -1259,7 +1252,7 @@ public class UserBuilder
         var initialDescription = new StringBuilder();
         var userInfo = await this._dataSourceFactory.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
         initialDescription.AppendLine(
-            $"## [{userTitle}]({LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)})'s history");
+            $"## {StringExtensions.MarkdownLink(userTitle, LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm))}'s history");
         initialDescription.AppendLine($"**{userInfo.Playcount.Format(context.NumberFormat)}** scrobbles");
         initialDescription.AppendLine($"Since <t:{userInfo.LfmRegisteredUnix}:D>");
         if (user.UserType != UserType.User)

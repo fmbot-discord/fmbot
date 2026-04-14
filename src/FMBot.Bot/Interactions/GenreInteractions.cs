@@ -29,16 +29,7 @@ public class GenreInteractions(
     public async Task GuildGenresAsync(string discordUser, string requesterDiscordUser, string genre, string originalSearch)
     {
         await RespondAsync(InteractionCallback.DeferredModifyMessage);
-
-        var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
-        if (message == null)
-        {
-            return;
-        }
-
-        var components =
-            new ActionRowProperties().WithButton("Loading server view...", "1", ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.Loading), disabled: true);
-        await message.ModifyAsync(m => m.Components = [components]);
+        await this.Context.DisableButtonsAndMenus();
 
         var discordUserId = ulong.Parse(discordUser);
         var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
@@ -67,16 +58,7 @@ public class GenreInteractions(
     public async Task UserGenresAsync(string discordUser, string requesterDiscordUser, string genre, string originalSearch)
     {
         await RespondAsync(InteractionCallback.DeferredModifyMessage);
-
-        var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
-        if (message == null)
-        {
-            return;
-        }
-
-        var components =
-            new ActionRowProperties().WithButton("Loading user view...", "1", ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.Loading), disabled: true);
-        await Context.ModifyComponents(message, components);
+        await this.Context.DisableButtonsAndMenus();
 
         var discordUserId = ulong.Parse(discordUser);
         var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
@@ -111,22 +93,13 @@ public class GenreInteractions(
             var options = stringMenuInteraction.Data.SelectedValues.First().Split(":");
 
             await RespondAsync(InteractionCallback.DeferredModifyMessage);
-
-            var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
-            if (message == null)
-            {
-                return;
-            }
+            await this.Context.DisableButtonsAndMenus();
 
             var discordUserId = ulong.Parse(options[0]);
             var requesterDiscordUserId = ulong.Parse(options[1]);
             var view = options[2];
             var selectedOption = options[3];
             var originalSearch = string.IsNullOrWhiteSpace(options[4]) ? null : options[4];
-
-            var components =
-                new ActionRowProperties().WithButton($"Loading {selectedOption}...", "1", ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.Loading), disabled: true);
-            await Context.ModifyComponents(message, components);
 
             var guild = await guildService.GetGuildAsync(this.Context.Guild?.Id);
             var contextUser = await userService.GetUserWithFriendsAsync(requesterDiscordUserId);
