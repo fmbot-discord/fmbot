@@ -189,10 +189,10 @@ public class TrackBuilders
             guildUsers = await guildUsersTask;
 
 
-            if (guild?.LastIndexed != null)
+            if (guild?.LastIndexed != null && dbTrack != null)
             {
                 indexedUsersTask = this._whoKnowsTrackService.GetIndexedUsersForTrack(context.DiscordGuild,
-                    guildUsers, guild.GuildId, trackSearch.Track.ArtistName, trackSearch.Track.TrackName);
+                    guildUsers, guild.GuildId, dbTrack.Id);
             }
         }
 
@@ -517,7 +517,7 @@ public class TrackBuilders
         var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
 
         var usersWithTrack = await this._whoKnowsTrackService.GetIndexedUsersForTrack(context.DiscordGuild, guildUsers,
-            guild.GuildId, track.Track.ArtistName, track.Track.TrackName);
+            guild.GuildId, cachedTrack.Id);
 
         var discordGuildUser = await context.DiscordGuild.GetUserAsync(context.DiscordUser.Id);
         var currentUser =
@@ -677,10 +677,12 @@ public class TrackBuilders
             return track.Response;
         }
 
+        var cachedTrack = await this._musicDataFactory.GetOrStoreTrackAsync(track.Track);
+
         var trackName = $"{track.Track.TrackName} by {track.Track.ArtistName}";
 
         var usersWithTrack = await this._whoKnowsTrackService.GetFriendUsersForTrack(context.DiscordGuild, guildUsers,
-            guild?.GuildId ?? 0, context.ContextUser.UserId, track.Track.ArtistName, track.Track.TrackName);
+            guild?.GuildId ?? 0, context.ContextUser.UserId, cachedTrack.Id);
 
         usersWithTrack = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithTrack, context.ContextUser,
             trackName, context.DiscordGuild, track.Track.UserPlaycount);
@@ -791,7 +793,7 @@ public class TrackBuilders
         var trackName = $"{track.Track.TrackName} by {track.Track.ArtistName}";
 
         var usersWithTrack = await this._whoKnowsTrackService.GetGlobalUsersForTrack(context.DiscordGuild,
-            track.Track.ArtistName, track.Track.TrackName);
+            spotifyTrack.Id);
 
         var filteredUsersWithTrack =
             await this._whoKnowsService.FilterGlobalUsersAsync(usersWithTrack, settings.QualityFilterDisabled);

@@ -13,7 +13,9 @@ using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using FMBot.Persistence.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using FMBot.Persistence.Repositories;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
 using Npgsql;
 
 namespace FMBot.Bot.Factories;
@@ -26,12 +28,14 @@ public class DataSourceFactory : IDataSourceFactory
     private readonly IMemoryCache _cache;
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
     private readonly AliasService _aliasService;
+    private readonly BotSettings _botSettings;
 
     public DataSourceFactory(ILastfmRepository lastfmRepository,
         IPlayDataSourceRepository playDataSourceRepository,
         TimeService timeService,
         IMemoryCache cache,
-        IDbContextFactory<FMBotDbContext> contextFactory, AliasService aliasService)
+        IDbContextFactory<FMBotDbContext> contextFactory, AliasService aliasService,
+        IOptions<BotSettings> botSettings)
     {
         this._lastfmRepository = lastfmRepository;
         this._playDataSourceRepository = playDataSourceRepository;
@@ -39,6 +43,7 @@ public class DataSourceFactory : IDataSourceFactory
         this._cache = cache;
         this._contextFactory = contextFactory;
         this._aliasService = aliasService;
+        this._botSettings = botSettings.Value;
     }
 
     public async Task<User> GetCachedImportUserAsync(string userNameLastFm)
@@ -195,8 +200,15 @@ public class DataSourceFactory : IDataSourceFactory
 
         if (importUser != null && track.Success && track.Content != null)
         {
-            track.Content.UserPlaycount =
-                await this._playDataSourceRepository.GetTrackPlaycount(importUser, trackName, artistName);
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+            await connection.OpenAsync();
+
+            var dbTrack = await TrackRepository.GetTrackForName(artistName, trackName, connection);
+            if (dbTrack != null)
+            {
+                track.Content.UserPlaycount =
+                    await this._playDataSourceRepository.GetTrackPlaycount(importUser, dbTrack.Id);
+            }
         }
 
         return track;
@@ -247,8 +259,15 @@ public class DataSourceFactory : IDataSourceFactory
 
         if (importUser != null && album.Success && album.Content != null)
         {
-            album.Content.UserPlaycount =
-                await this._playDataSourceRepository.GetAlbumPlaycount(importUser, artistName, albumName);
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+            await connection.OpenAsync();
+
+            var dbAlbum = await AlbumRepository.GetAlbumForName(artistName, albumName, connection);
+            if (dbAlbum != null)
+            {
+                album.Content.UserPlaycount =
+                    await this._playDataSourceRepository.GetAlbumPlaycount(importUser, dbAlbum.Id);
+            }
         }
 
         return album;

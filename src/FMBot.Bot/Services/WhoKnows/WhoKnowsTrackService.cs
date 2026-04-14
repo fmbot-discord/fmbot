@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -8,6 +9,7 @@ using FMBot.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using FMBot.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Npgsql;
 
@@ -17,25 +19,24 @@ public class WhoKnowsTrackService
 {
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
     private readonly BotSettings _botSettings;
+    private readonly IMemoryCache _cache;
 
-    public WhoKnowsTrackService(IDbContextFactory<FMBotDbContext> contextFactory, IOptions<BotSettings> botSettings)
+    public WhoKnowsTrackService(IDbContextFactory<FMBotDbContext> contextFactory, IOptions<BotSettings> botSettings, IMemoryCache cache)
     {
         this._contextFactory = contextFactory;
         this._botSettings = botSettings.Value;
+        this._cache = cache;
     }
 
     public async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForTrack(NetCord.Gateway.Guild discordGuild,
-        IDictionary<int, FullGuildUser> guildUsers, int guildId, string artistName, string trackName)
+        IDictionary<int, FullGuildUser> guildUsers, int guildId, int trackId)
     {
-        const string sql = "BEGIN; " +
-                           "SET LOCAL enable_nestloop = OFF; " +
-                           "SELECT ut.user_id, " +
+        const string sql = "SELECT ut.user_id, " +
                            "ut.playcount " +
                            "FROM user_tracks AS ut " +
                            "INNER JOIN guild_users AS gu ON gu.user_id = ut.user_id " +
-                           "WHERE gu.guild_id = @guildId AND UPPER(ut.name) = UPPER(CAST(@trackName AS CITEXT)) AND UPPER(ut.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
-                           "ORDER BY ut.playcount DESC; " +
-                           "COMMIT; ";
+                           "WHERE gu.guild_id = @guildId AND ut.track_id = @trackId " +
+                           "ORDER BY ut.playcount DESC ";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
@@ -44,8 +45,7 @@ public class WhoKnowsTrackService
         var userTracks = (await connection.QueryAsync<WhoKnowsTrackDto>(sql, new
         {
             guildId,
-            trackName,
-            artistName
+            trackId
         })).ToList();
 
         var whoKnowsTrackList = new List<WhoKnowsObjectWithUser>();
@@ -84,7 +84,7 @@ public class WhoKnowsTrackService
         return whoKnowsTrackList;
     }
 
-    public async Task<IList<WhoKnowsObjectWithUser>> GetGlobalUsersForTrack(NetCord.Gateway.Guild discordGuild, string artistName, string trackName)
+    public async Task<IList<WhoKnowsObjectWithUser>> GetGlobalUsersForTrack(NetCord.Gateway.Guild discordGuild, int trackId)
     {
         const string sql = "SELECT * " +
                            "FROM(SELECT DISTINCT ON(UPPER(u.user_name_last_fm)) " +
@@ -97,7 +97,7 @@ public class WhoKnowsTrackService
                            "u.last_used " +
                            "FROM user_tracks AS ut " +
                            "FULL OUTER JOIN users AS u ON ut.user_id = u.user_id " +
-                           "WHERE UPPER(ut.name) = UPPER(CAST(@trackName AS CITEXT)) AND UPPER(ut.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
+                           "WHERE ut.track_id = @trackId " +
                            "ORDER BY UPPER(u.user_name_last_fm) DESC, ut.playcount DESC) ut " +
                            "ORDER BY last_used DESC";
 
@@ -107,8 +107,7 @@ public class WhoKnowsTrackService
 
         var userTracks = (await connection.QueryAsync<WhoKnowsGlobalTrackDto>(sql, new
         {
-            trackName,
-            artistName
+            trackId
         })).ToList();
 
         var whoKnowsTrackList = new List<WhoKnowsObjectWithUser>();
@@ -142,19 +141,16 @@ public class WhoKnowsTrackService
     }
 
     public async Task<IList<WhoKnowsObjectWithUser>> GetFriendUsersForTrack(NetCord.Gateway.Guild discordGuild,
-        IDictionary<int, FullGuildUser> guildUsers, int guildId, int userId, string artistName, string trackName)
+        IDictionary<int, FullGuildUser> guildUsers, int guildId, int userId, int trackId)
     {
         const string sql = "SELECT ut.user_id, " +
-                           "ut.name, " +
-                           "ut.artist_name, " +
                            "ut.playcount, " +
                            "u.user_name_last_fm " +
                            "FROM user_tracks AS ut " +
                            "FULL OUTER JOIN users AS u ON ut.user_id = u.user_id " +
                            "INNER JOIN friends AS fr ON fr.friend_user_id = ut.user_id " +
                            "LEFT JOIN guild_users AS gu ON gu.user_id = ut.user_id AND gu.guild_id = @guildId " +
-                           "WHERE fr.user_id = @userId AND " +
-                           "UPPER(ut.name) = UPPER(CAST(@trackName AS CITEXT)) AND UPPER(ut.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
+                           "WHERE fr.user_id = @userId AND ut.track_id = @trackId " +
                            "ORDER BY ut.playcount DESC ";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
@@ -163,8 +159,7 @@ public class WhoKnowsTrackService
 
         var userArtists = (await connection.QueryAsync<WhoKnowsTrackDto>(sql, new
         {
-            artistName,
-            trackName,
+            trackId,
             guildId,
             userId
         })).ToList();
@@ -188,7 +183,6 @@ public class WhoKnowsTrackService
 
             whoKnowsArtistList.Add(new WhoKnowsObjectWithUser
             {
-                Name = $"{trackName} by {artistName}",
                 DiscordName = userName,
                 Playcount = userArtist.Playcount,
                 LastFMUsername = userArtist.UserNameLastFm,
@@ -199,48 +193,66 @@ public class WhoKnowsTrackService
         return whoKnowsArtistList;
     }
 
-    public async Task<int?> GetTrackPlayCountForUser(string artistName, string trackName, int userId)
+    public async Task<int?> GetTrackPlayCountForUser(int trackId, int userId)
     {
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        return await TrackRepository.GetTrackPlayCountForUser(connection, artistName, trackName, userId);
+        return await TrackRepository.GetTrackPlayCountForUser(connection, trackId, userId);
     }
 
     public async Task<ICollection<GuildTrack>> GetTopAllTimeTracksForGuild(int guildId,
         OrderType orderType, string artistName)
     {
+        var cacheKey = $"guild-alltime-top-tracks-{guildId}-{orderType}-{artistName}";
+
+        if (this._cache.TryGetValue(cacheKey, out ICollection<GuildTrack> cachedTracks))
+        {
+            return cachedTracks;
+        }
+
         var dbArgs = new DynamicParameters();
         dbArgs.Add("guildId", guildId);
 
-        var sql = "SELECT ut.name AS track_name, ut.artist_name, " +
-                  "SUM(ut.playcount) AS total_playcount, " +
-                  "COUNT(ut.user_id) AS listener_count " +
-                  "FROM user_tracks AS ut   " +
-                  "INNER JOIN guild_users AS gu ON gu.user_id = ut.user_id  " +
-                  "WHERE gu.guild_id = @guildId  AND gu.bot != true " +
-                  "AND NOT ut.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
-                  "AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL) ";
+        var orderColumn = orderType == OrderType.Playcount ? "total_playcount" : "listener_count";
+        var thenByColumn = orderType == OrderType.Playcount ? "listener_count" : "total_playcount";
 
+        var artistFilter = "";
         if (!string.IsNullOrWhiteSpace(artistName))
         {
-            sql += "AND UPPER(ut.artist_name) = UPPER(CAST(@artistName AS CITEXT)) ";
+            artistFilter = "AND ut.track_id = ANY(SELECT id FROM tracks WHERE UPPER(artist_name) = UPPER(CAST(@artistName AS CITEXT))) ";
             dbArgs.Add("artistName", artistName);
         }
 
-        sql += "GROUP BY ut.name, ut.artist_name ";
-
-        sql += orderType == OrderType.Playcount ?
-            "ORDER BY total_playcount DESC, listener_count DESC " :
-            "ORDER BY listener_count DESC, total_playcount DESC ";
-
-        sql += "LIMIT 120";
+        var sql = "SELECT t.name AS track_name, t.artist_name, " +
+                  "agg.total_playcount, agg.listener_count " +
+                  "FROM ( " +
+                  "    SELECT ut.track_id, " +
+                  "           SUM(ut.playcount) AS total_playcount, " +
+                  "           COUNT(ut.user_id) AS listener_count " +
+                  "    FROM user_tracks AS ut " +
+                  "    INNER JOIN guild_users AS gu ON gu.user_id = ut.user_id " +
+                  "    WHERE gu.guild_id = @guildId AND gu.bot != true " +
+                  "    AND ut.track_id IS NOT NULL " +
+                  $"    {artistFilter}" +
+                  "    AND NOT ut.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
+                  "    AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL) " +
+                  "    GROUP BY ut.track_id " +
+                  $"    ORDER BY {orderColumn} DESC, {thenByColumn} DESC " +
+                  "    LIMIT 120 " +
+                  ") agg " +
+                  "INNER JOIN tracks t ON t.id = agg.track_id " +
+                  $"ORDER BY agg.{orderColumn} DESC, agg.{thenByColumn} DESC";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        return (await connection.QueryAsync<GuildTrack>(sql, dbArgs)).ToList();
+        var results = (await connection.QueryAsync<GuildTrack>(sql, dbArgs)).ToList();
+
+        this._cache.Set<ICollection<GuildTrack>>(cacheKey, results, TimeSpan.FromMinutes(10));
+
+        return results;
     }
 }

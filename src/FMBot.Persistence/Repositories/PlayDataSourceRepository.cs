@@ -131,13 +131,13 @@ public class PlayDataSourceRepository : IPlayDataSourceRepository
         return dataSourceUser;
     }
 
-    public async Task<int?> GetTrackPlaycount(ImportUser user, string trackName, string artistName)
+    public async Task<int?> GetTrackPlaycount(ImportUser user, int trackId)
     {
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        return await TrackRepository.GetTrackPlayCountForUser(connection, artistName, trackName, user.UserId);
+        return await TrackRepository.GetTrackPlayCountForUser(connection, trackId, user.UserId);
     }
 
     public async Task<int?> GetArtistPlaycount(ImportUser user, string artistName)
@@ -149,12 +149,12 @@ public class PlayDataSourceRepository : IPlayDataSourceRepository
         return await ArtistRepository.GetArtistPlayCountForUser(connection, artistName, user.UserId);
     }
 
-    public async Task<int?> GetAlbumPlaycount(ImportUser user, string artistName, string albumName)
+    public async Task<int?> GetAlbumPlaycount(ImportUser user, int albumId)
     {
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
-        return await AlbumRepository.GetAlbumPlayCountForUser(connection, artistName, albumName, user.UserId);
+        return await AlbumRepository.GetAlbumPlayCountForUser(connection, albumId, user.UserId);
     }
 
     public async Task<Response<TopAlbumList>> GetTopAlbumsAsync(ImportUser user, TimeSettingsModel timeSettings, int count = 2)

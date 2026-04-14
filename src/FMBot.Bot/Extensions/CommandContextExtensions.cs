@@ -28,10 +28,11 @@ public static class CommandContextExtensions
         private void LogCommandUsed(CommandResponse commandResponse = CommandResponse.Ok)
         {
             var shardId = context.Client.Shard?.Id ?? 0;
+            var responseTimeMs = (long)(DateTimeOffset.UtcNow - Snowflake.Timestamp(context.Message.Id)).TotalMilliseconds;
             Log.Information(
-                "CommandUsed: {discordUserName} / {discordUserId} | {guildName} / {guildId} #{shardId} | {commandResponse} | {messageContent}",
+                "CommandUsed: {discordUserName} / {discordUserId} | {guildName} / {guildId} #{shardId} | {commandResponse} | {responseTimeMs}ms | {messageContent}",
                 context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, shardId, commandResponse,
-                context.Message.Content);
+                responseTimeMs, context.Message.Content);
 
             PublicProperties.UsedCommandsResponses.TryAdd(context.Message.Id, commandResponse);
         }

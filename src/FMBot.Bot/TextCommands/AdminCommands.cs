@@ -3181,8 +3181,15 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                     return;
                 }
 
+                var dbTrack = await trackService.GetTrackFromDatabase(shortTrack.Track.ArtistName, shortTrack.Track.TrackName);
+                if (dbTrack == null)
+                {
+                    await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Track not found in database" });
+                    return;
+                }
+
                 var usersWithTrack = await whoKnowsTrackService.GetGlobalUsersForTrack(this.Context.Guild,
-                    shortTrack.Track.ArtistName, shortTrack.Track.TrackName);
+                    dbTrack.Id);
 
                 var bannedUsers = new StringBuilder();
                 var bannedUserCount = 0;

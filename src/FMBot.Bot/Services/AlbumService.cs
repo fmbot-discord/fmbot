@@ -326,8 +326,8 @@ public class AlbumService
 
             if (userId.HasValue)
             {
-                var userPlaycount = await this._whoKnowsAlbumService.GetAlbumPlayCountForUser(cachedAlbum.ArtistName,
-                    cachedAlbum.Name, userId.Value);
+                var userPlaycount = await this._whoKnowsAlbumService.GetAlbumPlayCountForUser(cachedAlbum.Id,
+                    userId.Value);
                 if (userPlaycount == 0)
                 {
                     albumInfo = await this._dataSourceFactory.GetAlbumInfoAsync(artistName, albumName,

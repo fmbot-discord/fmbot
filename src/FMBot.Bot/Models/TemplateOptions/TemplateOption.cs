@@ -374,8 +374,7 @@ public static class TemplateOptions
             Description = "Amount of plays user has on album",
             VariableType = VariableType.Text,
             FooterOrder = 30,
-            SqlQuery = "SELECT ua.playcount FROM user_albums AS ua WHERE ua.user_id = @userId AND " +
-                       "UPPER(ua.name) = UPPER(CAST(@albumName AS CITEXT)) AND UPPER(ua.artist_name) = UPPER(CAST(@artistName AS CITEXT))",
+            SqlQuery = "SELECT ua.playcount FROM user_albums AS ua WHERE ua.user_id = @userId AND ua.album_id = @albumId",
             ResultProcessor = async (context, reader) =>
             {
                 var playcount = await reader.IsDBNullAsync(0) ? 0 : await reader.GetFieldValueAsync<int>(0);
@@ -385,8 +384,7 @@ public static class TemplateOptions
             ParametersFactory = context => new Dictionary<string, object>
             {
                 { "userId", context.UserSettings.UserId },
-                { "artistName", context.CurrentTrack.ArtistName },
-                { "albumName", context.CurrentTrack.AlbumName ?? "" },
+                { "albumId", context.DbTrack?.AlbumId ?? 0 },
             }
         },
         new ComplexTemplateOption
@@ -432,8 +430,7 @@ public static class TemplateOptions
             Description = "Amount of plays user has on track",
             VariableType = VariableType.Text,
             FooterOrder = 40,
-            SqlQuery = "SELECT ut.playcount FROM user_tracks AS ut WHERE ut.user_id = @userId AND " +
-                       "UPPER(ut.name) = UPPER(CAST(@trackName AS CITEXT)) AND UPPER(ut.artist_name) = UPPER(CAST(@artistName AS CITEXT))",
+            SqlQuery = "SELECT ut.playcount FROM user_tracks AS ut WHERE ut.user_id = @userId AND ut.track_id = @trackId",
             ResultProcessor = async (context, reader) =>
             {
                 var playcount = await reader.IsDBNullAsync(0) ? 0 : await reader.GetFieldValueAsync<int>(0);
@@ -443,8 +440,7 @@ public static class TemplateOptions
             ParametersFactory = context => new Dictionary<string, object>
             {
                 { "userId", context.UserSettings.UserId },
-                { "artistName", context.CurrentTrack.ArtistName },
-                { "trackName", context.CurrentTrack.TrackName },
+                { "trackId", context.DbTrack?.Id ?? 0 },
             }
         },
         new ComplexTemplateOption
@@ -901,9 +897,13 @@ public static class TemplateOptions
                     return null;
                 }
 
+                if (context.DbTrack?.AlbumId == null)
+                {
+                    return null;
+                }
+
                 var albumListeners = await context.WhoKnowsAlbumService.GetIndexedUsersForAlbum(null,
-                    context.GuildUsers, context.Guild.GuildId, context.CurrentTrack.ArtistName,
-                    context.CurrentTrack.AlbumName);
+                    context.GuildUsers, context.Guild.GuildId, context.DbTrack.AlbumId.Value);
                 albumListeners = WhoKnowsService
                     .FilterWhoKnowsObjects(albumListeners, context.GuildUsers, context.Guild, 0).filteredUsers;
 
@@ -934,9 +934,13 @@ public static class TemplateOptions
                     return null;
                 }
 
+                if (context.DbTrack?.AlbumId == null)
+                {
+                    return null;
+                }
+
                 var albumListeners = await context.WhoKnowsAlbumService.GetIndexedUsersForAlbum(null,
-                    context.GuildUsers, context.Guild.GuildId, context.CurrentTrack.ArtistName,
-                    context.CurrentTrack.AlbumName);
+                    context.GuildUsers, context.Guild.GuildId, context.DbTrack.AlbumId.Value);
                 albumListeners = WhoKnowsService
                     .FilterWhoKnowsObjects(albumListeners, context.GuildUsers, context.Guild, 0).filteredUsers;
 
@@ -960,9 +964,13 @@ public static class TemplateOptions
                     return null;
                 }
 
+                if (context.DbTrack == null)
+                {
+                    return null;
+                }
+
                 var trackListeners = await context.WhoKnowsTrackService.GetIndexedUsersForTrack(null,
-                    context.GuildUsers, context.Guild.GuildId, context.CurrentTrack.ArtistName,
-                    context.CurrentTrack.TrackName);
+                    context.GuildUsers, context.Guild.GuildId, context.DbTrack.Id);
                 trackListeners = WhoKnowsService
                     .FilterWhoKnowsObjects(trackListeners, context.GuildUsers, context.Guild, 0).filteredUsers;
 
@@ -993,9 +1001,13 @@ public static class TemplateOptions
                     return null;
                 }
 
+                if (context.DbTrack == null)
+                {
+                    return null;
+                }
+
                 var trackListeners = await context.WhoKnowsTrackService.GetIndexedUsersForTrack(null,
-                    context.GuildUsers, context.Guild.GuildId, context.CurrentTrack.ArtistName,
-                    context.CurrentTrack.TrackName);
+                    context.GuildUsers, context.Guild.GuildId, context.DbTrack.Id);
                 trackListeners = WhoKnowsService
                     .FilterWhoKnowsObjects(trackListeners, context.GuildUsers, context.Guild, 0).filteredUsers;
 
@@ -1068,8 +1080,7 @@ public static class TemplateOptions
                                 ub.playcount
                             FROM user_albums AS ub
                             JOIN users AS u ON ub.user_id = u.user_id
-                            WHERE UPPER(ub.name) = UPPER(CAST(@albumName AS CITEXT))
-                              AND UPPER(ub.artist_name) = UPPER(CAST(@artistName AS CITEXT))
+                            WHERE ub.album_id = @albumId
                               AND NOT UPPER(u.user_name_last_fm) = ANY(SELECT UPPER(user_name_last_fm) FROM botted_users WHERE ban_active = true)
                               AND NOT UPPER(u.user_name_last_fm) = ANY(SELECT UPPER(user_name_last_fm) FROM global_filtered_users WHERE created >= NOW() - INTERVAL '3 months')
                             ORDER BY UPPER(u.user_name_last_fm), ub.playcount DESC
@@ -1091,8 +1102,7 @@ public static class TemplateOptions
             ParametersFactory = context => new Dictionary<string, object>
             {
                 { "userId", context.UserSettings.UserId },
-                { "artistName", context.CurrentTrack.ArtistName },
-                { "albumName", context.CurrentTrack.AlbumName ?? "" }
+                { "albumId", context.DbTrack?.AlbumId ?? 0 }
             }
         },
         new SqlTemplateOption
@@ -1114,8 +1124,7 @@ public static class TemplateOptions
                                 ut.playcount
                             FROM user_tracks AS ut
                             JOIN users AS u ON ut.user_id = u.user_id
-                            WHERE UPPER(ut.name) = UPPER(CAST(@trackName AS CITEXT))
-                              AND UPPER(ut.artist_name) = UPPER(CAST(@artistName AS CITEXT))
+                            WHERE ut.track_id = @trackId
                               AND NOT UPPER(u.user_name_last_fm) = ANY(SELECT UPPER(user_name_last_fm) FROM botted_users WHERE ban_active = true)
                               AND NOT UPPER(u.user_name_last_fm) = ANY(SELECT UPPER(user_name_last_fm) FROM global_filtered_users WHERE created >= NOW() - INTERVAL '3 months')
                             ORDER BY UPPER(u.user_name_last_fm), ut.playcount DESC
@@ -1137,8 +1146,7 @@ public static class TemplateOptions
             ParametersFactory = context => new Dictionary<string, object>
             {
                 { "userId", context.UserSettings.UserId },
-                { "artistName", context.CurrentTrack.ArtistName },
-                { "trackName", context.CurrentTrack.TrackName }
+                { "trackId", context.DbTrack?.Id ?? 0 }
             }
         },
         new ComplexTemplateOption

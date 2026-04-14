@@ -272,8 +272,12 @@ public class TrackService
 
             if (trackInfo?.Content == null || !trackInfo.Success)
             {
-                var userPlaycount = await this._whoKnowsTrackService.GetTrackPlayCountForUser(lastPlayedTrack.ArtistName,
-                    lastPlayedTrack.TrackName, userId.Value);
+                int? userPlaycount = null;
+                var dbTrack = await GetTrackFromDatabase(lastPlayedTrack.ArtistName, lastPlayedTrack.TrackName);
+                if (dbTrack != null)
+                {
+                    userPlaycount = await this._whoKnowsTrackService.GetTrackPlayCountForUser(dbTrack.Id, userId.Value);
+                }
 
                 return new TrackSearch(new TrackInfo
                 {
@@ -396,8 +400,7 @@ public class TrackService
 
             if (userId.HasValue)
             {
-                var userPlaycount = await this._whoKnowsTrackService.GetTrackPlayCountForUser(cachedTrack.ArtistName,
-                    cachedTrack.Name, userId.Value);
+                var userPlaycount = await this._whoKnowsTrackService.GetTrackPlayCountForUser(cachedTrack.Id, userId.Value);
                 if (userPlaycount == 0)
                 {
                     trackInfo = await this._dataSourceFactory.GetTrackInfoAsync(trackName, artistName, lastFmUserName);
@@ -674,8 +677,10 @@ public class TrackService
 
     public async Task<List<UserTrack>> GetArtistUserTracks(int userId, string artistName)
     {
-        const string sql = "SELECT user_track_id, user_id, name, artist_name, playcount" +
-                           " FROM public.user_tracks where user_id = @userId AND UPPER(artist_name) = UPPER(CAST(@artistName AS CITEXT));";
+        const string sql = "SELECT ut.user_track_id, ut.user_id, t.name, t.artist_name, ut.playcount" +
+                           " FROM public.user_tracks ut" +
+                           " INNER JOIN public.tracks t ON t.id = ut.track_id" +
+                           " WHERE ut.user_id = @userId AND UPPER(t.artist_name) = UPPER(CAST(@artistName AS CITEXT));";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);

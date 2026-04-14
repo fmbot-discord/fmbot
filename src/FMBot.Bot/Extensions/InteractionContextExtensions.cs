@@ -45,19 +45,21 @@ public static class InteractionContextExtensions
                 _ => null
             };
 
+            var responseTimeMs = (long)(DateTimeOffset.UtcNow - Snowflake.Timestamp(context.Interaction.Id)).TotalMilliseconds;
+
             if (context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
                 !context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall))
             {
                 Log.Information(
-                    "SlashCommandUsed: {discordUserName} / {discordUserId} | UserApp | {commandResponse} | {messageContent}",
-                    context.User?.Username, context.User?.Id, commandResponse, commandName);
+                    "SlashCommandUsed: {discordUserName} / {discordUserId} | UserApp | {commandResponse} | {responseTimeMs}ms | {messageContent}",
+                    context.User?.Username, context.User?.Id, commandResponse, responseTimeMs, commandName);
             }
             else
             {
                 Log.Information(
-                    "SlashCommandUsed: {discordUserName} / {discordUserId} | {guildName} / {guildId} | {commandResponse} | {messageContent}",
+                    "SlashCommandUsed: {discordUserName} / {discordUserId} | {guildName} / {guildId} | {commandResponse} | {responseTimeMs}ms | {messageContent}",
                     context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, commandResponse,
-                    commandName);
+                    responseTimeMs, commandName);
             }
 
             PublicProperties.UsedCommandsResponses.TryAdd(context.Interaction.Id, commandResponse);
@@ -129,19 +131,21 @@ public static class InteractionContextExtensions
                 }
             }
 
+            var responseTimeMs = (long)(DateTimeOffset.UtcNow - Snowflake.Timestamp(context.Interaction.Id)).TotalMilliseconds;
+
             if (context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
                 !context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall))
             {
                 Log.Information(
-                    "ComponentUsed: {discordUserName} / {discordUserId} | UserApp | {commandResponse} | {messageContent}",
-                    context.User?.Username, context.User?.Id, commandResponse, commandName);
+                    "ComponentUsed: {discordUserName} / {discordUserId} | UserApp | {commandResponse} | {responseTimeMs}ms | {messageContent}",
+                    context.User?.Username, context.User?.Id, commandResponse, responseTimeMs, commandName);
             }
             else
             {
                 Log.Information(
-                    "ComponentUsed: {discordUserName} / {discordUserId} | {guildName} / {guildId} | {commandResponse} | {messageContent}",
+                    "ComponentUsed: {discordUserName} / {discordUserId} | {guildName} / {guildId} | {commandResponse} | {responseTimeMs}ms | {messageContent}",
                     context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, commandResponse,
-                    commandName);
+                    responseTimeMs, commandName);
             }
 
             PublicProperties.UsedCommandsResponses.TryAdd(context.Interaction.Id, commandResponse);
