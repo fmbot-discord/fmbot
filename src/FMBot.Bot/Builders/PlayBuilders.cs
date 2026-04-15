@@ -1238,7 +1238,7 @@ public class PlayBuilder
 
         return response;
 
-        Fergun.Interactive.IPage GeneratePage(IComponentPaginator p)
+        IPage GeneratePage(IComponentPaginator p)
         {
             var page = dayPages.ElementAtOrDefault(p.CurrentPageIndex);
             var plays = new List<UserPlay>();

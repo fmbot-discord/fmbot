@@ -196,16 +196,14 @@ public class GenreBuilders
             ResponseType = ResponseType.Paginator
         };
 
-        var userTitle = await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser);
+        var authorUrl = $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library/artists?{timeSettings.UrlParameter}";
+        var userTitle = StringExtensions.MarkdownLink(await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser), authorUrl);
 
         if (userSettings.DifferentUser)
         {
             userTitle =
-                $"{userSettings.UserNameLastFm}, requested by {await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser)}";
+                $"{StringExtensions.MarkdownLink(userSettings.DisplayName, authorUrl)}, requested by {await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser)}";
         }
-
-        var title = $"Top {timeSettings.Description.ToLower()} artist genres for {userTitle}";
-        var authorUrl = $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library/artists?{timeSettings.UrlParameter}";
 
         Response<TopArtistList> artists;
         var previousTopArtists = new List<TopArtist>();
@@ -375,7 +373,7 @@ public class GenreBuilders
         {
             var container = new ComponentContainerProperties();
 
-            container.WithTextDisplay($"### [{title}]({authorUrl})");
+            container.WithTextDisplay($"### Top {timeSettings.Description.ToLower()} artist genres for {userTitle}");
             container.WithSeparator();
 
             var currentPage = pageDescriptions.ElementAtOrDefault(p.CurrentPageIndex);

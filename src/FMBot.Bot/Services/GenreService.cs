@@ -276,12 +276,12 @@ public class GenreService
             return new List<TopGenre>();
         }
 
-        var artistNames = artistList.Select(a => a.ArtistName.ToLower()).Distinct().ToArray();
+        var artistNames = artistList.Select(a => a.ArtistName).Distinct().ToArray();
 
-        const string sql = "SELECT ag.name AS Genre, LOWER(a.name) AS ArtistName " +
-                           "FROM artist_genres ag " +
-                           "INNER JOIN artists a ON a.id = ag.artist_id " +
-                           "WHERE LOWER(a.name) = ANY(@artistNames)";
+        const string sql = "SELECT ag.name AS Genre, a.name AS ArtistName " +
+                           "FROM artists a " +
+                           "INNER JOIN artist_genres ag ON ag.artist_id = a.id " +
+                           "WHERE a.name = ANY(@artistNames::citext[])";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
@@ -297,7 +297,7 @@ public class GenreService
         var allGenres = new List<GenreWithPlaycount>();
         foreach (var artist in artistList)
         {
-            if (artistGenreMap.TryGetValue(artist.ArtistName.ToLower(), out var genres))
+            if (artistGenreMap.TryGetValue(artist.ArtistName, out var genres))
             {
                 foreach (var genre in genres)
                 {
@@ -343,12 +343,12 @@ public class GenreService
             return new List<AffinityItemDto>();
         }
 
-        var artistNames = artistList.Select(a => a.Name.ToLower()).Distinct().ToArray();
+        var artistNames = artistList.Select(a => a.Name).Distinct().ToArray();
 
-        const string sql = "SELECT ag.name AS Genre, LOWER(a.name) AS ArtistName " +
-                           "FROM artist_genres ag " +
-                           "INNER JOIN artists a ON a.id = ag.artist_id " +
-                           "WHERE LOWER(a.name) = ANY(@artistNames)";
+        const string sql = "SELECT ag.name AS Genre, a.name AS ArtistName " +
+                           "FROM artists a " +
+                           "INNER JOIN artist_genres ag ON ag.artist_id = a.id " +
+                           "WHERE a.name = ANY(@artistNames::citext[])";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
@@ -364,7 +364,7 @@ public class GenreService
         var allGenres = new List<GenreWithPlaycount>();
         foreach (var artist in artistList)
         {
-            if (artistGenreMap.TryGetValue(artist.Name.ToLower(), out var genres))
+            if (artistGenreMap.TryGetValue(artist.Name, out var genres))
             {
                 foreach (var genre in genres)
                 {
@@ -395,16 +395,16 @@ public class GenreService
             return new List<string>();
         }
 
-        var artistNames = topArtists.Select(a => a.ToLower()).Distinct().ToArray();
+        var artistNames = topArtists.Distinct().ToArray();
         if (artistNames.Length == 0)
         {
             return new List<string>();
         }
 
-        const string sql = "SELECT ag.name AS Genre, LOWER(a.name) AS ArtistName " +
-                           "FROM artist_genres ag " +
-                           "INNER JOIN artists a ON a.id = ag.artist_id " +
-                           "WHERE LOWER(a.name) = ANY(@artistNames)";
+        const string sql = "SELECT ag.name AS Genre, a.name AS ArtistName " +
+                           "FROM artists a " +
+                           "INNER JOIN artist_genres ag ON ag.artist_id = a.id " +
+                           "WHERE a.name = ANY(@artistNames::citext[])";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
@@ -448,21 +448,21 @@ public class GenreService
     public async Task<List<TopGenre>> GetArtistsForGenres(IEnumerable<string> selectedGenres, List<TopArtist> topArtists)
     {
         var genreList = selectedGenres.ToList();
-        var artistNames = topArtists.Select(a => a.ArtistName.ToLower()).Distinct().ToArray();
-        var genreNamesLower = genreList.Select(g => g.ToLower()).ToArray();
+        var artistNames = topArtists.Select(a => a.ArtistName).Distinct().ToArray();
+        var genreNames = genreList.ToArray();
 
-        const string sql = "SELECT ag.name AS Genre, LOWER(a.name) AS ArtistName " +
-                           "FROM artist_genres ag " +
-                           "INNER JOIN artists a ON a.id = ag.artist_id " +
-                           "WHERE LOWER(a.name) = ANY(@artistNames) " +
-                           "AND LOWER(ag.name) = ANY(@genreNamesLower)";
+        const string sql = "SELECT ag.name AS Genre, a.name AS ArtistName " +
+                           "FROM artists a " +
+                           "INNER JOIN artist_genres ag ON ag.artist_id = a.id " +
+                           "WHERE a.name = ANY(@artistNames::citext[]) " +
+                           "AND ag.name = ANY(@genreNames::citext[])";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
         var genreMappings = (await connection.QueryAsync<(string Genre, string ArtistName)>(sql,
-            new { artistNames, genreNamesLower })).ToList();
+            new { artistNames, genreNames })).ToList();
 
         var genreArtistMap = genreMappings
             .GroupBy(g => g.Genre, StringComparer.OrdinalIgnoreCase)
@@ -477,7 +477,7 @@ public class GenreService
                 {
                     GenreName = selectedGenre,
                     Artists = topArtists
-                        .Where(w => artistsInGenre.Contains(w.ArtistName.ToLower()))
+                        .Where(w => artistsInGenre.Contains(w.ArtistName))
                         .OrderByDescending(o => o.UserPlaycount)
                         .ToList()
                 });
