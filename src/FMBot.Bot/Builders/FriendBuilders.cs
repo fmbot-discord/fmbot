@@ -162,7 +162,7 @@ public class FriendBuilders
             }
 
             friendResult.Add(new FriendResult(timePlayed,
-                $"**[{friendNameToDisplay}]({LastfmUrlExtensions.GetUserUrl(friendUsername)})** | {track}"));
+                $"**{StringExtensions.MarkdownLink(friendNameToDisplay, LastfmUrlExtensions.GetUserUrl(friendUsername))}** | {track}"));
         }, maxDegreeOfParallelism: 3);
 
         response.EmbedFooter.WithText(embedFooterText + totalPlaycount.ToString("0"));

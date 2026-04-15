@@ -190,7 +190,7 @@ public class ArtistBuilders
 
         var headerSection = new StringBuilder();
         headerSection.AppendLine(artistSearch.Artist.ArtistUrl != null
-            ? $"## [{artistSearch.Artist.ArtistName}]({artistSearch.Artist.ArtistUrl})"
+            ? $"## {StringExtensions.MarkdownLink(artistSearch.Artist.ArtistName, artistSearch.Artist.ArtistUrl)}"
             : $"## {artistSearch.Artist.ArtistName}");
 
         var countryFlag = fullArtist.CountryCode != null
@@ -556,7 +556,7 @@ public class ArtistBuilders
 
         var headerSection = new StringBuilder();
         headerSection.AppendLine(artistSearch.Artist.ArtistUrl != null
-            ? $"## [{artistSearch.Artist.ArtistName}]({artistSearch.Artist.ArtistUrl})"
+            ? $"## {StringExtensions.MarkdownLink(artistSearch.Artist.ArtistName, artistSearch.Artist.ArtistUrl)}"
             : $"## {artistSearch.Artist.ArtistName}");
         headerSection.AppendLine($"Artist overview for **{userTitle}**");
 
@@ -1313,7 +1313,7 @@ public class ArtistBuilders
             foreach (var artist in artistPage)
             {
                 var name =
-                    $"**[{artist.ArtistName}]({artist.ArtistUrl})** - *{artist.UserPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(artist.UserPlaycount)}*";
+                    $"**{StringExtensions.MarkdownLink(artist.ArtistName, artist.ArtistUrl)}** - *{artist.UserPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(artist.UserPlaycount)}*";
 
                 if (topListSettings.Billboard && previousTopArtists.Any())
                 {
@@ -1510,7 +1510,7 @@ public class ArtistBuilders
 
                 artistPageString.Append($"{counter}. ");
                 artistPageString.AppendLine(
-                    $"**[{StringExtensions.TruncateLongString(newArtist.ArtistName, 28)}]({LastfmUrlExtensions.GetArtistUrl(newArtist.ArtistName)})** " +
+                    $"**{StringExtensions.MarkdownLink(StringExtensions.TruncateLongString(newArtist.ArtistName, 28), LastfmUrlExtensions.GetArtistUrl(newArtist.ArtistName))}** " +
                     $"— *{newArtist.UserPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(newArtist.UserPlaycount)}* " +
                     $"— on **<t:{newArtist.FirstPlay.Value.ToUnixEpochDate()}:D>**");
 
@@ -2487,9 +2487,7 @@ public class ArtistBuilders
             container.WithAccentColor(cacheModel.AccentColor);
         }
 
-        container.WithTextDisplay(page.Title.ContainsEmoji()
-            ? $"### {page.Title}"
-            : $"### [{page.Title}]({page.Url})");
+        container.WithTextDisplay($"### {StringExtensions.MarkdownLink(page.Title, page.Url)}");
         container.WithTextDisplay(page.Content);
 
         var tabRow = new ActionRowProperties();
@@ -2692,7 +2690,7 @@ public class ArtistBuilders
                 guildUsers.TryGetValue(neighbor.Key, out var guildUser);
                 pageString.AppendLine(
                     $"**{CalculateAffinityPercentage(neighbor.Value.TotalPoints, self.TotalPoints)}** — " +
-                    $"**[{StringExtensions.Sanitize(guildUser?.UserName)}]({LastfmUrlExtensions.GetUserUrl(guildUser?.UserNameLastFM)})** — " +
+                    $"**{StringExtensions.MarkdownLink(StringExtensions.Sanitize(guildUser?.UserName), LastfmUrlExtensions.GetUserUrl(guildUser?.UserNameLastFM))}** — " +
                     $"`{CalculateAffinityPercentage(neighbor.Value.ArtistPoints, self.ArtistPoints)}` artists, " +
                     $"`{CalculateAffinityPercentage(neighbor.Value.GenrePoints, self.GenrePoints)}` genres, " +
                     $"`{CalculateAffinityPercentage(neighbor.Value.CountryPoints, self.CountryPoints, 1)}` countries");

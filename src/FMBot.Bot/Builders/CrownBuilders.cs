@@ -167,7 +167,7 @@ public class CrownBuilders
 
         if (url != null)
         {
-            description.Append($"**[{guildUser?.UserName ?? user.UserNameLastFM}]({url})** — ");
+            description.Append($"**{StringExtensions.MarkdownLink(guildUser?.UserName ?? user.UserNameLastFM, url)}** — ");
         }
         else
         {

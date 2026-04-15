@@ -172,10 +172,10 @@ public class AlbumBuilders
 
         var headerSection = new StringBuilder();
         headerSection.AppendLine(albumSearch.Album.AlbumUrl != null
-            ? $"## [{albumSearch.Album.AlbumName}]({albumSearch.Album.AlbumUrl})"
+            ? $"## {StringExtensions.MarkdownLink(albumSearch.Album.AlbumName, albumSearch.Album.AlbumUrl)}"
             : $"## {albumSearch.Album.AlbumName}");
         headerSection.AppendLine(albumSearch.Album.ArtistUrl != null
-            ? $"{albumType} by **[{albumSearch.Album.ArtistName}]({albumSearch.Album.ArtistUrl})**"
+            ? $"{albumType} by **{StringExtensions.MarkdownLink(albumSearch.Album.ArtistName, albumSearch.Album.ArtistUrl)}**"
             : $"{albumType} by **{albumSearch.Album.ArtistName}**");
 
         if (databaseAlbum.ReleaseDate != null)
@@ -1431,7 +1431,7 @@ public class AlbumBuilders
 
         var descriptionText = new StringBuilder();
         descriptionText.AppendLine(
-            $"**[{albumSearch.Album.ArtistName}]({albumSearch.Album.ArtistUrl}) - [{albumSearch.Album.AlbumName}]({albumSearch.Album.AlbumUrl})**");
+            $"**{StringExtensions.MarkdownLink(albumSearch.Album.ArtistName, albumSearch.Album.ArtistUrl)} - {StringExtensions.MarkdownLink(albumSearch.Album.AlbumName, albumSearch.Album.AlbumUrl)}**");
 
         if (safeForChannel == CensorService.CensorResult.Nsfw)
         {
@@ -1605,7 +1605,7 @@ public class AlbumBuilders
                 }
 
                 var name =
-                    $"**{album.ArtistName}** - **[{escapedAlbumName}]({url})** - *{album.UserPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(album.UserPlaycount)}*";
+                    $"**{album.ArtistName}** - **{StringExtensions.MarkdownLink(escapedAlbumName, url)}** - *{album.UserPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(album.UserPlaycount)}*";
 
                 if (topListSettings.Billboard && previousTopAlbums.Any())
                 {

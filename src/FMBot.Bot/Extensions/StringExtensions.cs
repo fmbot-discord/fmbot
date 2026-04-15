@@ -14,6 +14,16 @@ namespace FMBot.Bot.Extensions;
 
 public static partial class StringExtensions
 {
+    public static string MarkdownLink(string text, string url)
+    {
+        if (string.IsNullOrWhiteSpace(text) || text.ContainsEmoji())
+        {
+            return text;
+        }
+
+        return $"[{text}]({url})";
+    }
+
     extension(string str)
     {
         public string FilterOutMentions()

@@ -551,7 +551,7 @@ public static class TemplateOptions
             VariableType = VariableType.Text,
             FooterOrder = 110,
             SqlQuery = @"
-                    SELECT start_date, end_date
+                    SELECT start_date, end_date, type
                     FROM public.artists
                     WHERE UPPER(name) = UPPER(CAST(@artistName AS CITEXT))",
             ResultProcessor = async (context, reader) =>
@@ -562,29 +562,50 @@ public static class TemplateOptions
                     var endDate = await reader.IsDBNullAsync(1)
                         ? (DateTime?)null
                         : await reader.GetFieldValueAsync<DateTime>(1);
+                    var artistType = await reader.IsDBNullAsync(2)
+                        ? null
+                        : await reader.GetFieldValueAsync<string>(2);
+                    var isPerson = string.Equals(artistType, "Person", StringComparison.OrdinalIgnoreCase);
 
                     if (startDate.Month != 1 || startDate.Day != 1)
                     {
-                        var age = GetAgeInYears(startDate);
                         var today = DateTime.Today;
+
+                        if (endDate.HasValue)
+                        {
+                            if (isPerson)
+                            {
+                                var ageAtDeath = GetAgeAtDate(startDate, endDate.Value);
+
+                                if (startDate.Month == today.Month && startDate.Day == today.Day)
+                                {
+                                    return new VariableResult($"🎂 today (died at {ageAtDeath})");
+                                }
+
+                                return new VariableResult($"🎂 {startDate:MMMM d} (died at {ageAtDeath})");
+                            }
+
+                            if (startDate.Month == today.Month && startDate.Day == today.Day)
+                            {
+                                return new VariableResult("🎂 today");
+                            }
+
+                            return new VariableResult($"🎂 {startDate:MMMM d}");
+                        }
+
+                        var age = GetAgeInYears(startDate);
 
                         if (startDate.Month == today.Month && startDate.Day == today.Day)
                         {
-                            return !endDate.HasValue
-                                ? new VariableResult($"🎂 today! ({age})")
-                                : new VariableResult("🎂 today!");
+                            return new VariableResult($"🎂 today! ({age})");
                         }
 
                         if (startDate.Month == today.AddDays(1).Month && startDate.Day == today.AddDays(1).Day)
                         {
-                            return !endDate.HasValue
-                                ? new VariableResult($"🎂 tomorrow (becomes {age + 1})")
-                                : new VariableResult("🎂 tomorrow");
+                            return new VariableResult($"🎂 tomorrow (becomes {age + 1})");
                         }
 
-                        return !endDate.HasValue
-                            ? new VariableResult($"🎂 {startDate:MMMM d} (currently {age})")
-                            : new VariableResult($"🎂 {startDate:MMMM d}");
+                        return new VariableResult($"🎂 {startDate:MMMM d} (currently {age})");
                     }
                 }
 
@@ -596,6 +617,18 @@ public static class TemplateOptions
                     var age = now.Year - birthDate.Year;
 
                     if (now.Month < birthDate.Month || (now.Month == birthDate.Month && now.Day < birthDate.Day))
+                    {
+                        age--;
+                    }
+
+                    return age;
+                }
+
+                int GetAgeAtDate(DateTime birthDate, DateTime date)
+                {
+                    var age = date.Year - birthDate.Year;
+
+                    if (date.Month < birthDate.Month || (date.Month == birthDate.Month && date.Day < birthDate.Day))
                     {
                         age--;
                     }

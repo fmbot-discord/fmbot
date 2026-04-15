@@ -1,3 +1,4 @@
+using System.Net;
 using RestSharp.Authenticators;
 using RestSharp;
 using System.Web;
@@ -130,6 +131,12 @@ public class DiscogsApi
 
         if (!response.IsSuccessStatusCode)
         {
+            if (response.Content != null && response.Content.Contains("User does not exist"))
+            {
+                Log.Warning("Discogs: User {discogsUser} does not exist or has been deleted", discogsUser);
+                throw new HttpRequestException($"Discogs user '{discogsUser}' does not exist or has been deleted.", null, HttpStatusCode.NotFound);
+            }
+
             Log.Error("Discogs: Failed to get releases for {discogsUser} - Status: {statusCode} | Content: {content}",
                 discogsUser, response.StatusCode, response.Content);
             return response.Data;
@@ -185,6 +192,12 @@ public class DiscogsApi
 
         if (!response.IsSuccessStatusCode)
         {
+            if (response.Content != null && response.Content.Contains("User does not exist"))
+            {
+                Log.Warning("Discogs: User {discogsUser} does not exist or has been deleted", discogsUser);
+                throw new HttpRequestException($"Discogs user '{discogsUser}' does not exist or has been deleted.", null, HttpStatusCode.NotFound);
+            }
+
             Log.Error("Discogs: Failed to get collection value for {discogsUser} - Status: {statusCode} | Content: {content}", discogsUser, response.StatusCode, response.Content);
         }
 

@@ -221,10 +221,10 @@ public class TrackBuilders
 
         var headerSection = new StringBuilder();
         headerSection.AppendLine(trackSearch.Track.TrackUrl != null
-            ? $"## [{trackSearch.Track.TrackName}]({trackSearch.Track.TrackUrl})"
+            ? $"## {StringExtensions.MarkdownLink(trackSearch.Track.TrackName, trackSearch.Track.TrackUrl)}"
             : $"## {trackSearch.Track.TrackName}");
         headerSection.AppendLine(trackSearch.Track.ArtistUrl != null
-            ? $"Track by **[{trackSearch.Track.ArtistName}]({trackSearch.Track.ArtistUrl})**"
+            ? $"Track by **{StringExtensions.MarkdownLink(trackSearch.Track.ArtistName, trackSearch.Track.ArtistUrl)}**"
             : $"Track by **{trackSearch.Track.ArtistName}**");
 
         if (trackSearch.Track.AlbumName != null)
@@ -238,7 +238,7 @@ public class TrackBuilders
 
             var albumUrl = LastfmUrlExtensions.GetAlbumUrl(trackSearch.Track.ArtistName, trackSearch.Track.AlbumName);
             headerSection.Append(albumUrl != null
-                ? $"-# {albumType} [{trackSearch.Track.AlbumName}]({albumUrl})"
+                ? $"-# {albumType} {StringExtensions.MarkdownLink(trackSearch.Track.AlbumName, albumUrl)}"
                 : $"-# {albumType} {trackSearch.Track.AlbumName}");
         }
 
@@ -1558,7 +1558,7 @@ public class TrackBuilders
                 if (!tooMuchChars)
                 {
                     name.Append(
-                        $"**{StringExtensions.Sanitize(track.ArtistName)}** - **[{track.TrackName}]({track.TrackUrl})** ");
+                        $"**{StringExtensions.Sanitize(track.ArtistName)}** - **{StringExtensions.MarkdownLink(track.TrackName, track.TrackUrl)}** ");
                 }
                 else
                 {
@@ -1922,8 +1922,9 @@ public class TrackBuilders
             return trackSearch.Response;
         }
 
+        var lyricsName = $"{StringExtensions.Sanitize(trackSearch.Track.ArtistName)} - {StringExtensions.Sanitize(trackSearch.Track.TrackName)}";
         var title =
-            $"### Lyrics for [{StringExtensions.Sanitize(trackSearch.Track.ArtistName)} - {StringExtensions.Sanitize(trackSearch.Track.TrackName)}]({trackSearch.Track.TrackUrl})";
+            $"### Lyrics for {StringExtensions.MarkdownLink(lyricsName, trackSearch.Track.TrackUrl)}";
 
         var track = await this._musicDataFactory.GetOrStoreTrackAsync(trackSearch.Track, true);
 

@@ -166,7 +166,7 @@ public class CommandHandler
         if (prfx == fm && message.Content.StartsWith(".", StringComparison.OrdinalIgnoreCase))
         {
             argPos = 1;
-            var searchResult = this._commands.Search(message.Content[argPos..]);
+            var searchResult = this._commands.Search(message.Content[argPos..].TrimStart());
             if (searchResult.IsSuccess &&
                 searchResult.Command != null &&
                 searchResult.Command.Aliases.Any(a => a == "fm"))
@@ -206,7 +206,7 @@ public class CommandHandler
     private async Task ExecuteCommand(Message msg, CommandContext context, int argPos, string prfx,
         bool update = false)
     {
-        var messageContent = msg.Content[argPos..];
+        var messageContent = msg.Content[argPos..].TrimStart();
         var shortcutResult = ShortcutService.FindShortcut(context, messageContent);
 
         if (shortcutResult.HasValue)
@@ -242,7 +242,7 @@ public class CommandHandler
             if (!searchResult.IsSuccess &&
                 msg.Content.StartsWith(this._botSettings.Bot.Prefix, StringComparison.OrdinalIgnoreCase))
             {
-                var fmSearchResult = this._commands.Search(msg.Content[1..]);
+                var fmSearchResult = this._commands.Search(msg.Content[1..].TrimStart());
 
                 if (!fmSearchResult.IsSuccess)
                 {

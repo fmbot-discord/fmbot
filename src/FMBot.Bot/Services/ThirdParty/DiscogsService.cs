@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using FMBot.Discogs.Apis;
@@ -256,6 +258,11 @@ public class DiscogsService
             {
                 Log.Information("Discogs: Automatically updating {userId}", user.UserId);
                 await UpdateUserDiscogs(user);
+            }
+            catch (HttpRequestException e) when (e.StatusCode == HttpStatusCode.NotFound)
+            {
+                Log.Warning("Discogs: Removing Discogs link for user {userId} - account no longer exists", user.UserId);
+                await RemoveDiscogs(user.UserId);
             }
             catch (Exception e)
             {
