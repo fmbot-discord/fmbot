@@ -421,27 +421,48 @@ public class GenreService
             .ToList();
     }
 
-    public async Task<List<string>> GetTopGenresForPlays(IEnumerable<UserPlay> plays, int amount = 3)
+    public async Task<Dictionary<int, List<string>>> GetGenresByArtistIds(IEnumerable<int> artistIds)
     {
-        var artists = plays
-            .GroupBy(x => new { x.ArtistName })
-            .Select(s => new TopArtist
-            {
-                ArtistName = s.Key.ArtistName,
-                UserPlaycount = s.Count()
-            });
-
-        var result = await GetTopGenresForTopArtists(artists);
-
-        if (!result.Any())
+        var ids = artistIds.Distinct().ToArray();
+        if (ids.Length == 0)
         {
-            return new List<string>();
+            return new Dictionary<int, List<string>>();
         }
 
-        return result
-            .OrderByDescending(o => o.UserPlaycount)
-            .Select(s => s.GenreName)
+        const string sql = "SELECT ag.artist_id AS ArtistId, ag.name AS Genre " +
+                           "FROM artist_genres ag " +
+                           "WHERE ag.artist_id = ANY(@ids)";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        var rows = (await connection.QueryAsync<(int ArtistId, string Genre)>(sql, new { ids })).ToList();
+
+        return rows
+            .GroupBy(r => r.ArtistId)
+            .ToDictionary(g => g.Key, g => g.Select(r => r.Genre).ToList());
+    }
+
+    public static List<string> GetTopGenresFromPlays(IEnumerable<UserPlay> plays, Dictionary<int, List<string>> genreMap, int amount = 3)
+    {
+        var genreCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var play in plays)
+        {
+            if (play.ArtistId.HasValue && genreMap.TryGetValue(play.ArtistId.Value, out var genres))
+            {
+                foreach (var genre in genres)
+                {
+                    genreCounts[genre] = genreCounts.GetValueOrDefault(genre) + 1;
+                }
+            }
+        }
+
+        return genreCounts
+            .OrderByDescending(g => g.Value)
             .Take(amount)
+            .Select(g => g.Key)
             .ToList();
     }
 
