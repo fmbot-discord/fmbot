@@ -127,47 +127,45 @@ public class PlayService
             LastfmErrors = false
         };
 
-        var currentTopTracks =
-            await this._dataSourceFactory.GetTopTracksForCustomTimePeriodAsyncAsync(user.UserNameLastFM, startDateTime,
+        var currentTopTracksTask =
+            this._dataSourceFactory.GetTopTracksForCustomTimePeriodAsyncAsync(user.UserNameLastFM, startDateTime,
+                endDateTime, 500);
+        var currentTopAlbumsTask =
+            this._dataSourceFactory.GetTopAlbumsForCustomTimePeriodAsyncAsync(user.UserNameLastFM, startDateTime,
+                endDateTime, 500);
+        var currentTopArtistsTask =
+            this._dataSourceFactory.GetTopArtistsForCustomTimePeriodAsync(user.UserNameLastFM, startDateTime,
                 endDateTime, 500);
 
-        if (!currentTopTracks.Success)
+        var currentTopTracks = await currentTopTracksTask;
+        var currentTopAlbums = await currentTopAlbumsTask;
+        var currentTopArtists = await currentTopArtistsTask;
+
+        if (!currentTopTracks.Success || !currentTopAlbums.Success || !currentTopArtists.Success)
         {
             yearOverview.LastfmErrors = true;
             return yearOverview;
         }
 
         yearOverview.TopTracks = currentTopTracks.Content;
-
-        var currentTopAlbums =
-            await this._dataSourceFactory.GetTopAlbumsForCustomTimePeriodAsyncAsync(user.UserNameLastFM, startDateTime,
-                endDateTime, 500);
-
-        if (!currentTopAlbums.Success)
-        {
-            yearOverview.LastfmErrors = true;
-            return yearOverview;
-        }
-
         yearOverview.TopAlbums = currentTopAlbums.Content;
-
-        var currentTopArtists =
-            await this._dataSourceFactory.GetTopArtistsForCustomTimePeriodAsync(user.UserNameLastFM, startDateTime,
-                endDateTime, 500);
-
-        if (!currentTopArtists.Success)
-        {
-            yearOverview.LastfmErrors = true;
-            return yearOverview;
-        }
-
         yearOverview.TopArtists = currentTopArtists.Content;
 
         if (user.RegisteredLastFm < endDateTime.AddYears(-1))
         {
-            var previousTopTracks =
-                await this._dataSourceFactory.GetTopTracksForCustomTimePeriodAsyncAsync(user.UserNameLastFM,
+            var previousTopTracksTask =
+                this._dataSourceFactory.GetTopTracksForCustomTimePeriodAsyncAsync(user.UserNameLastFM,
                     startDateTime.AddYears(-1), endDateTime.AddYears(-1), 800);
+            var previousTopAlbumsTask =
+                this._dataSourceFactory.GetTopAlbumsForCustomTimePeriodAsyncAsync(user.UserNameLastFM,
+                    startDateTime.AddYears(-1), endDateTime.AddYears(-1), 800);
+            var previousTopArtistsTask =
+                this._dataSourceFactory.GetTopArtistsForCustomTimePeriodAsync(user.UserNameLastFM,
+                    startDateTime.AddYears(-1), endDateTime.AddYears(-1), 800);
+
+            var previousTopTracks = await previousTopTracksTask;
+            var previousTopAlbums = await previousTopAlbumsTask;
+            var previousTopArtists = await previousTopArtistsTask;
 
             if (previousTopTracks.Success)
             {
@@ -178,10 +176,6 @@ public class PlayService
                 yearOverview.LastfmErrors = true;
             }
 
-            var previousTopAlbums =
-                await this._dataSourceFactory.GetTopAlbumsForCustomTimePeriodAsyncAsync(user.UserNameLastFM,
-                    startDateTime.AddYears(-1), endDateTime.AddYears(-1), 800);
-
             if (previousTopAlbums.Success)
             {
                 yearOverview.PreviousTopAlbums = previousTopAlbums.Content;
@@ -190,10 +184,6 @@ public class PlayService
             {
                 yearOverview.LastfmErrors = true;
             }
-
-            var previousTopArtists =
-                await this._dataSourceFactory.GetTopArtistsForCustomTimePeriodAsync(user.UserNameLastFM,
-                    startDateTime.AddYears(-1), endDateTime.AddYears(-1), 800);
 
             if (previousTopArtists.Success)
             {
