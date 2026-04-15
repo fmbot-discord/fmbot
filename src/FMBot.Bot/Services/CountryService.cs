@@ -7,22 +7,18 @@ using System.Threading.Tasks;
 using Dapper;
 using FMBot.Bot.Models;
 using FMBot.Domain.Models;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Npgsql;
-using Serilog;
 
 namespace FMBot.Bot.Services;
 
 public class CountryService
 {
-    private readonly IMemoryCache _cache;
     private readonly BotSettings _botSettings;
     public readonly List<CountryInfo> Countries;
 
-    public CountryService(IMemoryCache cache, IOptions<BotSettings> botSettings)
+    public CountryService(IOptions<BotSettings> botSettings)
     {
-        this._cache = cache;
         this._botSettings = botSettings.Value;
 
         var countryJsonPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "countries.json");
@@ -31,48 +27,6 @@ public class CountryService
         {
             AllowTrailingCommas = true
         });
-    }
-
-    private static string CacheKeyForArtistCountry(string artistName)
-    {
-        return $"artist-country-{artistName}";
-    }
-    private static string CacheKeyForCountryArtists(string country)
-    {
-        return $"country-artists-{country}";
-    }
-
-    private async Task CacheAllArtistCountries()
-    {
-        const string cacheKey = "artist-countries-cached";
-        var cacheTime = TimeSpan.FromMinutes(5);
-
-        if (this._cache.TryGetValue(cacheKey, out _))
-        {
-            return;
-        }
-
-        const string sql = "SELECT LOWER(artists.name) AS artist_name, country_code " +
-                           "FROM public.artists " +
-                           "WHERE country_code IS NOT null;";
-
-        DefaultTypeMap.MatchNamesWithUnderscores = true;
-        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
-        await connection.OpenAsync();
-
-        var artistCountries = (await connection.QueryAsync<ArtistCountryDto>(sql)).ToList();
-
-        foreach (var artist in artistCountries)
-        {
-            this._cache.Set(CacheKeyForArtistCountry(artist.ArtistName), artist.CountryCode, cacheTime);
-        }
-        foreach (var country in artistCountries.GroupBy(g => g.CountryCode))
-        {
-            var artists = country.Select(s => s.ArtistName).ToList();
-            this._cache.Set(CacheKeyForCountryArtists(country.Key.ToLower()), artists, cacheTime);
-        }
-
-        this._cache.Set(cacheKey, true, cacheTime);
     }
 
     public CountryInfo GetValidCountry(string countryValues)
@@ -117,43 +71,74 @@ public class CountryService
         return country.ToLower().Replace(" ", "").Replace("-", "");
     }
 
+    public async Task<List<TopArtist>> GetUserArtistsForCountry(int userId, string countryCode)
+    {
+        const string sql = "SELECT ua.name AS ArtistName, ua.playcount AS UserPlaycount " +
+                           "FROM user_artists ua " +
+                           "INNER JOIN artists a ON a.id = ua.artist_id " +
+                           "WHERE ua.user_id = @userId AND ua.artist_id IS NOT NULL " +
+                           "AND LOWER(a.country_code) = LOWER(@countryCode) " +
+                           "ORDER BY ua.playcount DESC";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        return (await connection.QueryAsync<TopArtist>(sql, new { userId, countryCode })).ToList();
+    }
+
     public async Task<List<TopCountry>> GetTopCountriesForTopArtists(IEnumerable<TopArtist> topArtists, bool addArtists = false)
     {
         if (topArtists == null)
         {
-            return new List<TopCountry>();
+            return [];
         }
 
-        await CacheAllArtistCountries();
-
-        var allCountries = new List<CountryWithPlaycount>();
-        foreach (var artist in topArtists)
+        var artistList = topArtists.ToList();
+        if (artistList.Count == 0)
         {
-            allCountries = GetCountryWithPlaycountsForArtist(allCountries, artist.ArtistName, artist.UserPlaycount);
+            return [];
         }
 
-        var countries = allCountries
-            .GroupBy(g => g.CountryCode)
-            .OrderByDescending(o => o.Sum(s => s.Playcount))
-            .Where(w => w.Key != null)
-            .Select(s => new TopCountry
-            {
-                UserPlaycount = s.Sum(se => se.Playcount),
-                CountryName = this.Countries.FirstOrDefault(f => f.Code.ToLower() == s.Key.ToLower())?.Name,
-                CountryCode = s.Key,
-            }).ToList();
+        var artistNames = artistList.Select(a => a.ArtistName).Distinct().ToArray();
 
-        if (addArtists)
+        const string sql = "SELECT a.name AS ArtistName, a.country_code AS CountryCode " +
+                           "FROM artists a " +
+                           "WHERE a.name = ANY(@artistNames::citext[]) " +
+                           "AND a.country_code IS NOT NULL";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        var countryMappings = (await connection.QueryAsync<(string ArtistName, string CountryCode)>(sql,
+            new { artistNames })).ToList();
+
+        var artistCountryMap = countryMappings
+            .GroupBy(g => g.ArtistName, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First().CountryCode, StringComparer.OrdinalIgnoreCase);
+
+        var countriesWithArtists = new List<(string CountryCode, long Playcount, TopArtist Artist)>();
+        foreach (var artist in artistList)
         {
-            foreach (var country in countries)
+            if (artistCountryMap.TryGetValue(artist.ArtistName, out var countryCode) && artist.UserPlaycount > 0)
             {
-                var countryArtists = (List<string>)this._cache.Get(CacheKeyForCountryArtists(country.CountryCode.ToLower()));
-                country.Artists = topArtists.Where(w => countryArtists.Contains(w.ArtistName.ToLower())).ToList();
+                countriesWithArtists.Add((countryCode, artist.UserPlaycount, artist));
             }
         }
 
+        var countries = countriesWithArtists
+            .GroupBy(g => g.CountryCode, StringComparer.OrdinalIgnoreCase)
+            .Select(s => new TopCountry
+            {
+                UserPlaycount = s.Sum(se => se.Playcount),
+                CountryName = this.Countries.FirstOrDefault(f => f.Code.Equals(s.Key, StringComparison.OrdinalIgnoreCase))?.Name,
+                CountryCode = s.Key,
+                Artists = addArtists ? s.Select(a => a.Artist).OrderByDescending(a => a.UserPlaycount).ToList() : null
+            }).ToList();
+
         return countries
-            .OrderByDescending(o => addArtists ? o.Artists.Count : o.UserPlaycount)
+            .OrderByDescending(o => addArtists ? o.Artists?.Count ?? 0 : o.UserPlaycount)
             .ToList();
     }
 
@@ -170,19 +155,44 @@ public class CountryService
     {
         if (topArtists == null)
         {
-            return new List<AffinityItemDto>();
+            return [];
         }
 
-        await CacheAllArtistCountries();
-
-        var allCountries = new List<CountryWithPlaycount>();
-        foreach (var artist in topArtists)
+        var artistList = topArtists.ToList();
+        if (artistList.Count == 0)
         {
-            allCountries = GetCountryWithPlaycountsForArtist(allCountries, artist.Name, artist.Playcount);
+            return [];
+        }
+
+        var artistNames = artistList.Select(a => a.Name).Distinct().ToArray();
+
+        const string sql = "SELECT a.name AS ArtistName, a.country_code AS CountryCode " +
+                           "FROM artists a " +
+                           "WHERE a.name = ANY(@artistNames::citext[]) " +
+                           "AND a.country_code IS NOT NULL";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        var countryMappings = (await connection.QueryAsync<(string ArtistName, string CountryCode)>(sql,
+            new { artistNames })).ToList();
+
+        var artistCountryMap = countryMappings
+            .GroupBy(g => g.ArtistName, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First().CountryCode, StringComparer.OrdinalIgnoreCase);
+
+        var allCountries = new List<(string CountryCode, long Playcount)>();
+        foreach (var artist in artistList)
+        {
+            if (artistCountryMap.TryGetValue(artist.Name, out var countryCode) && artist.Playcount > 0)
+            {
+                allCountries.Add((countryCode, artist.Playcount));
+            }
         }
 
         return allCountries
-            .GroupBy(g => g.CountryCode)
+            .GroupBy(g => g.CountryCode, StringComparer.OrdinalIgnoreCase)
             .OrderByDescending(o => o.Sum(s => s.Playcount))
             .Where(w => w.Key != null)
             .Select((s, i) => new AffinityItemDto
@@ -206,60 +216,29 @@ public class CountryService
             return topCountries;
         }
 
-        await CacheAllArtistCountries();
-
-        foreach (var topArtist in topArtists)
+        var artistNames = topArtists.Distinct().ToArray();
+        if (artistNames.Length == 0)
         {
-            var country = GetCountry(topArtist);
-            if (country != null)
-            {
-                topCountries.Add(country);
-            }
+            return topCountries;
         }
 
-        return topCountries
-            .GroupBy(g => g)
+        const string sql = "SELECT a.name AS ArtistName, a.country_code AS CountryCode " +
+                           "FROM artists a " +
+                           "WHERE a.name = ANY(@artistNames::citext[]) " +
+                           "AND a.country_code IS NOT NULL";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        var countryMappings = (await connection.QueryAsync<(string ArtistName, string CountryCode)>(sql,
+            new { artistNames })).ToList();
+
+        return countryMappings
+            .GroupBy(g => g.CountryCode, StringComparer.OrdinalIgnoreCase)
             .OrderByDescending(o => o.Count())
             .Where(w => w.Key != null)
             .Select(s => s.Key)
             .ToList();
     }
-
-    public async Task<List<TopArtist>> GetTopArtistsForCountry(string country, IEnumerable<TopArtist> topArtists)
-    {
-        await CacheAllArtistCountries();
-
-        var countryArtists = (List<string>)this._cache.Get(CacheKeyForCountryArtists(country.ToLower()));
-
-        if (countryArtists == null || !countryArtists.Any())
-        {
-            return new List<TopArtist>();
-        }
-
-        return topArtists.Where(w => countryArtists.Contains(w.ArtistName.ToLower())).ToList();
-    }
-
-    private string GetCountry(string artist)
-    {
-        return (string)this._cache.Get(CacheKeyForArtistCountry(artist.ToLower()));
-    }
-
-    private List<CountryWithPlaycount> GetCountryWithPlaycountsForArtist(List<CountryWithPlaycount> countries, string artistName, long? artistPlaycount)
-    {
-        var foundCountry = GetCountry(artistName);
-
-        if (foundCountry != null)
-        {
-            var playcount = artistPlaycount.GetValueOrDefault();
-
-            if (playcount > 0)
-            {
-                countries.Add(new CountryWithPlaycount(foundCountry, playcount));
-            }
-        }
-
-        return countries;
-    }
-
-    private record CountryWithPlaycount(string CountryCode, long Playcount);
 }

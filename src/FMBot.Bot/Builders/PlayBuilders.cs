@@ -1524,14 +1524,21 @@ public class PlayBuilder
 
         response.Embed.WithDescription(description.ToString());
 
-        var genres = await this._genreService.GetTopGenresForTopArtists(yearOverview.TopArtists.TopArtists);
+        var genresTask = this._genreService.GetTopGenresForTopArtists(yearOverview.TopArtists.TopArtists);
+        var previousTopGenresTask = yearOverview.PreviousTopArtists?.TopArtists != null
+            ? this._genreService.GetTopGenresForTopArtists(yearOverview.PreviousTopArtists.TopArtists)
+            : Task.FromResult(new List<TopGenre>());
+        var countriesTask = this._countryService.GetTopCountriesForTopArtists(yearOverview.TopArtists.TopArtists);
+        var previousTopCountriesTask = yearOverview.PreviousTopArtists?.TopArtists != null
+            ? this._countryService.GetTopCountriesForTopArtists(yearOverview.PreviousTopArtists.TopArtists)
+            : Task.FromResult(new List<TopCountry>());
+        var tracksAudioOverviewTask =
+            this._trackService.GetAverageTrackAudioFeaturesForTopTracks(yearOverview.TopTracks.TopTracks);
+        var previousTracksAudioOverviewTask =
+            this._trackService.GetAverageTrackAudioFeaturesForTopTracks(yearOverview.PreviousTopTracks?.TopTracks);
 
-        var previousTopGenres = new List<TopGenre>();
-        if (yearOverview.PreviousTopArtists?.TopArtists != null)
-        {
-            previousTopGenres =
-                await this._genreService.GetTopGenresForTopArtists(yearOverview.PreviousTopArtists?.TopArtists);
-        }
+        var genres = await genresTask;
+        var previousTopGenres = await previousTopGenresTask;
 
         var genreDescription = new StringBuilder();
         var lines = new List<StringService.BillboardLine>();
@@ -1672,14 +1679,8 @@ public class PlayBuilder
 
         fields.Add(new EmbedFieldProperties().WithName("Tracks").WithValue(trackDescription.ToString()));
 
-        var countries = await this._countryService.GetTopCountriesForTopArtists(yearOverview.TopArtists.TopArtists);
-
-        var previousTopCountries = new List<TopCountry>();
-        if (yearOverview.PreviousTopArtists?.TopArtists != null)
-        {
-            previousTopCountries =
-                await this._countryService.GetTopCountriesForTopArtists(yearOverview.PreviousTopArtists?.TopArtists);
-        }
+        var countries = await countriesTask;
+        var previousTopCountries = await previousTopCountriesTask;
 
         var countryDescription = new StringBuilder();
         for (var i = 0; i < countries.Count; i++)
@@ -1703,11 +1704,8 @@ public class PlayBuilder
         fields.Add(new EmbedFieldProperties().WithName("Countries").WithValue(countryDescription.ToString())
             .WithInline(true));
 
-        var tracksAudioOverview =
-            await this._trackService.GetAverageTrackAudioFeaturesForTopTracks(yearOverview.TopTracks.TopTracks);
-        var previousTracksAudioOverview =
-            await this._trackService.GetAverageTrackAudioFeaturesForTopTracks(yearOverview.PreviousTopTracks
-                ?.TopTracks);
+        var tracksAudioOverview = await tracksAudioOverviewTask;
+        var previousTracksAudioOverview = await previousTracksAudioOverviewTask;
 
         if (tracksAudioOverview.Total > 0)
         {

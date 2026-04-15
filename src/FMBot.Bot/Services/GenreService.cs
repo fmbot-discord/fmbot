@@ -260,20 +260,20 @@ public class GenreService
         await connection.OpenAsync();
 
         var result = (await connection.QueryAsync<string>(sql, new { artistName })).ToList();
-        return result.Any() ? result : null;
+        return result.Count != 0 ? result : null;
     }
 
     public async Task<List<TopGenre>> GetTopGenresForTopArtists(IEnumerable<TopArtist> topArtists)
     {
         if (topArtists == null)
         {
-            return new List<TopGenre>();
+            return [];
         }
 
         var artistList = topArtists.ToList();
-        if (!artistList.Any())
+        if (artistList.Count == 0)
         {
-            return new List<TopGenre>();
+            return [];
         }
 
         var artistNames = artistList.Select(a => a.ArtistName).Distinct().ToArray();

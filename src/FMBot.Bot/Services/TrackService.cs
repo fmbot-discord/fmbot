@@ -697,7 +697,6 @@ public class TrackService
 
     public async Task<AudioFeaturesOverview> GetAverageTrackAudioFeaturesForTopTracks(List<TopTrack> topTracks)
     {
-        await CacheTrackAudioFeatures();
         var averageAudioFeatures = new InternalTrackAudioFeatures();
 
         if (topTracks == null || !topTracks.Any())
@@ -705,25 +704,33 @@ public class TrackService
             return new AudioFeaturesOverview(0, null);
         }
 
+        var trackNames = topTracks.Select(t => t.TrackName).ToArray();
+        var artistNames = topTracks.Select(t => t.ArtistName).ToArray();
+
+        const string sql = "SELECT name, artist_name, danceability, energy, speechiness, acousticness, instrumentalness, valence, tempo " +
+                           "FROM public.tracks " +
+                           "WHERE (UPPER(artist_name), UPPER(name)) IN (" +
+                           "    SELECT UPPER(CAST(unnest(@artistNames) AS CITEXT)), " +
+                           "           UPPER(CAST(unnest(@trackNames) AS CITEXT))" +
+                           ") AND valence IS NOT NULL AND tempo IS NOT NULL";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        var tracks = (await connection.QueryAsync<Track>(sql, new { artistNames, trackNames })).ToList();
+
         var count = 0;
-        foreach (var track in topTracks)
+        foreach (var track in tracks)
         {
-            var audioFeatures =
-                (InternalTrackAudioFeatures)this._cache.Get(CacheKeyForAudioFeature(track.TrackName, track.ArtistName));
-
-            if (audioFeatures != null)
-            {
-                averageAudioFeatures.Danceability += audioFeatures.Danceability;
-                averageAudioFeatures.Energy += audioFeatures.Energy;
-                averageAudioFeatures.Tempo += audioFeatures.Tempo;
-                averageAudioFeatures.Speechiness += audioFeatures.Speechiness;
-                averageAudioFeatures.Acousticness += audioFeatures.Acousticness;
-                averageAudioFeatures.Instrumentalness += audioFeatures.Instrumentalness;
-                averageAudioFeatures.Valence += audioFeatures.Valence;
-                averageAudioFeatures.Tempo += audioFeatures.Tempo;
-
-                count++;
-            }
+            averageAudioFeatures.Danceability += track.Danceability.GetValueOrDefault();
+            averageAudioFeatures.Energy += track.Energy.GetValueOrDefault();
+            averageAudioFeatures.Tempo += (decimal)track.Tempo.GetValueOrDefault();
+            averageAudioFeatures.Speechiness += track.Speechiness.GetValueOrDefault();
+            averageAudioFeatures.Acousticness += track.Acousticness.GetValueOrDefault();
+            averageAudioFeatures.Instrumentalness += track.Instrumentalness.GetValueOrDefault();
+            averageAudioFeatures.Valence += track.Valence.GetValueOrDefault();
+            count++;
         }
 
         return new AudioFeaturesOverview(count, averageAudioFeatures);
@@ -812,43 +819,6 @@ public class TrackService
         return trackAudioFeatureDescription.ToString();
     }
 
-    private async Task CacheTrackAudioFeatures()
-    {
-        const string cacheKey = "track-audio-features";
-        var cacheTime = TimeSpan.FromMinutes(5);
-
-        if (this._cache.TryGetValue(cacheKey, out _))
-        {
-            return;
-        }
-
-        const string sql = "SELECT * " +
-                           "FROM public.tracks where valence IS NOT null and tempo IS NOT null;";
-
-        DefaultTypeMap.MatchNamesWithUnderscores = true;
-        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
-        await connection.OpenAsync();
-
-        var audioFeatures = (await connection.QueryAsync<Track>(sql)).ToList();
-
-        foreach (var track in audioFeatures.Where(w => w.Valence.HasValue && w.Tempo.HasValue))
-        {
-            var audioFeature = new InternalTrackAudioFeatures(track.Danceability.GetValueOrDefault(),
-                track.Energy.GetValueOrDefault(), track.Speechiness.GetValueOrDefault(),
-                track.Acousticness.GetValueOrDefault(),
-                track.Instrumentalness.GetValueOrDefault(), track.Valence.GetValueOrDefault(),
-                (decimal)track.Tempo.GetValueOrDefault());
-
-            this._cache.Set(CacheKeyForAudioFeature(track.Name, track.ArtistName), audioFeature);
-        }
-
-        this._cache.Set(cacheKey, true, cacheTime);
-    }
-
-    public static string CacheKeyForAudioFeature(string trackName, string artistName)
-    {
-        return $"audio-features-{trackName.ToLower()}-{artistName.ToLower()}";
-    }
 
     public async Task<Track> GetTrackForId(int trackId)
     {

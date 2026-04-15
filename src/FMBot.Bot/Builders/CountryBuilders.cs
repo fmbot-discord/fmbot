@@ -234,18 +234,7 @@ public class CountryBuilders
             return response;
         }
 
-        var topArtists = await this._artistsService.GetUserAllTimeTopArtists(context.ContextUser.UserId, true);
-        if (topArtists.Count < 100)
-        {
-            response.Embed.WithDescription(
-                $"Sorry, you don't have enough top artists yet to use this command (must have at least 100 - you have {topArtists.Count}).\n\n" +
-                "Please try again later.");
-            response.CommandResponse = CommandResponse.NoScrobbles;
-            response.ResponseType = ResponseType.Embed;
-            return response;
-        }
-
-        var countryArtists = await this._countryService.GetTopArtistsForCountry(country.Code, topArtists);
+        var countryArtists = await this._countryService.GetUserArtistsForCountry(context.ContextUser.UserId, country.Code);
 
         if (!countryArtists.Any())
         {
