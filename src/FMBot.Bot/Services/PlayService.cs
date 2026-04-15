@@ -84,9 +84,14 @@ public class PlayService
                 });
             }
 
+            var allArtistIds = enrichedPlays.enrichedPlays
+                .Where(p => p.ArtistId.HasValue)
+                .Select(p => p.ArtistId.Value);
+            var genreMap = await this._genreService.GetGenresByArtistIds(allArtistIds);
+
             foreach (var day in overview.Days.Where(w => w.Plays.Any()))
             {
-                day.TopGenres = await this._genreService.GetTopGenresForPlays(day.Plays);
+                day.TopGenres = GenreService.GetTopGenresFromPlays(day.Plays, genreMap);
             }
 
             foreach (var day in overview.Days.Where(w => w.Plays.Any()))
