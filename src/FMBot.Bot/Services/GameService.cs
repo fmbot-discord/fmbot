@@ -445,7 +445,7 @@ public class GameService(
         {
             const string sql = """
                                WITH all_activity AS (
-                                   SELECT DATE(js.date_started) as activity_date
+                                   SELECT (js.date_started AT TIME ZONE 'Europe/Berlin')::date as activity_date
                                    FROM public.jumble_sessions js
                                    INNER JOIN public.users u ON js.starter_user_id = u.user_id
                                    WHERE u.discord_user_id = @discordUserId
@@ -453,7 +453,7 @@ public class GameService(
 
                                    UNION
 
-                                   SELECT DATE(jsa.date_answered) as activity_date
+                                   SELECT (jsa.date_answered AT TIME ZONE 'Europe/Berlin')::date as activity_date
                                    FROM public.jumble_session_answers jsa
                                    INNER JOIN public.jumble_sessions js ON jsa.jumble_session_id = js.jumble_session_id
                                    WHERE jsa.discord_user_id = @discordUserId
@@ -473,7 +473,7 @@ public class GameService(
                                )
                                SELECT COUNT(*)
                                FROM ranked
-                               WHERE max_play_date >= CURRENT_DATE - INTERVAL '1 day'
+                               WHERE max_play_date >= (now() AT TIME ZONE 'Europe/Berlin')::date - INTERVAL '1 day'
                                  AND play_date = max_play_date - (rn - 1) * INTERVAL '1 day';
                                """;
 
