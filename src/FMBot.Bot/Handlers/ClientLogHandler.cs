@@ -99,7 +99,7 @@ public class ClientLogHandler
             return ValueTask.CompletedTask;
         }
 
-        var isNewJoin = guild.JoinedAt > DateTimeOffset.UtcNow.AddMinutes(-10);
+        var isNewJoin = guild.JoinedAt > DateTimeOffset.UtcNow.AddMinutes(-3);
         if (!isNewJoin)
         {
             return ValueTask.CompletedTask;

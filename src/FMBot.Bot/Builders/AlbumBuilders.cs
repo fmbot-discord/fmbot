@@ -234,7 +234,7 @@ public class AlbumBuilders
                     artistUserTracks, albumSearch.Album.UserPlaycount.Value);
                 userStats.Append($"**{StringExtensions.GetLongListeningTimeString(listeningTime)}** listened");
 
-                if (context.ContextUser.TotalPlaycount.HasValue && albumSearch.Album.UserPlaycount is >= 30)
+                if (context.ContextUser.TotalPlaycount is > 0 && albumSearch.Album.UserPlaycount is >= 30)
                 {
                     userStats.Append(
                         $" — **{((decimal)albumSearch.Album.UserPlaycount.Value / context.ContextUser.TotalPlaycount.Value).FormatPercentage(context.NumberFormat)}** of all your plays");
