@@ -793,34 +793,18 @@ public class ArtistsService
     {
         try
         {
-            const string cacheKey = "artists-all";
-
-            var cacheAvailable = this._cache.TryGetValue(cacheKey, out List<Artist> artists);
-            if (!cacheAvailable && cacheEnabled)
+            var reply = await this._artistEnrichment.SearchArtistsAsync(new ArtistSearchRequest
             {
-                const string sql = "SELECT name, popularity " +
-                                   "FROM public.artists " +
-                                   "WHERE popularity is not null AND popularity > 9 ";
+                SearchValue = searchValue ?? string.Empty
+            });
 
-                DefaultTypeMap.MatchNamesWithUnderscores = true;
-                await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
-                await connection.OpenAsync();
-
-                artists = (await connection.QueryAsync<Artist>(sql)).ToList();
-
-                this._cache.Set(cacheKey, artists, TimeSpan.FromHours(2));
-            }
-
-            var results = artists.Where(w =>
-                    w.Name.StartsWith(searchValue, StringComparison.OrdinalIgnoreCase))
-                .OrderByDescending(o => o.Popularity)
+            return reply.Artists
+                .Select(s => new Artist
+                {
+                    Name = s.Name,
+                    Popularity = s.Popularity
+                })
                 .ToList();
-
-            results.AddRange(artists.Where(w =>
-                    w.Name.Contains(searchValue, StringComparison.OrdinalIgnoreCase))
-                .OrderByDescending(o => o.Popularity));
-
-            return results;
         }
         catch (Exception e)
         {

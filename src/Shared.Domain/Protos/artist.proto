@@ -13,6 +13,8 @@ service ArtistEnrichment {
   rpc AddArtistImageToCache (AddedArtistImage) returns (google.protobuf.Empty);
 
   rpc AddArtistToPlays (PlayWithoutArtistRequest) returns (PlayWithArtistReply);
+
+  rpc SearchArtists (ArtistSearchRequest) returns (ArtistSearchReply);
 }
 
 message ArtistRequest {
@@ -50,4 +52,17 @@ message PlayWithArtistReply {
   repeated PlayWithoutArtist plays = 1;
   int32 artistFound = 2;
   int32 artistNotFound = 3;
+}
+
+message ArtistSearchRequest {
+  string searchValue = 1;
+}
+
+message ArtistSearchReply {
+  repeated ArtistSearchItem artists = 1;
+}
+
+message ArtistSearchItem {
+  string name = 1;
+  int32 popularity = 2;
 }
