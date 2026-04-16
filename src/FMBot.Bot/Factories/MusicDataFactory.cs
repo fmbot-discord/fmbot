@@ -28,7 +28,6 @@ public class MusicDataFactory
 {
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
     private readonly SpotifyService _spotifyService;
-    private readonly ArtistEnrichment.ArtistEnrichmentClient _artistEnrichment;
     private readonly MusicBrainzService _musicBrainzService;
     private readonly BotSettings _botSettings;
     private readonly AppleMusicService _appleMusicService;
@@ -37,13 +36,12 @@ public class MusicDataFactory
     private readonly IDataSourceFactory _dataSourceFactory;
 
     public MusicDataFactory(IOptions<BotSettings> botSettings, SpotifyService spotifyService,
-        ArtistEnrichment.ArtistEnrichmentClient artistEnrichment, IDbContextFactory<FMBotDbContext> contextFactory,
+        IDbContextFactory<FMBotDbContext> contextFactory,
         MusicBrainzService musicBrainzService, AppleMusicService appleMusicService,
         AppleMusicVideoService appleMusicVideoService,
         TrackEnrichment.TrackEnrichmentClient trackEnrichment, IDataSourceFactory dataSourceFactory)
     {
         this._spotifyService = spotifyService;
-        this._artistEnrichment = artistEnrichment;
         this._contextFactory = contextFactory;
         this._musicBrainzService = musicBrainzService;
         this._appleMusicService = appleMusicService;
@@ -98,15 +96,6 @@ public class MusicDataFactory
                     {
                         artistToAdd.SpotifyImageUrl = spotifyArtist.Images.OrderByDescending(o => o.Height).First().Url;
                         artistToAdd.SpotifyImageDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
-
-                        if (artistInfo.ArtistUrl != null)
-                        {
-                            await this._artistEnrichment.AddArtistImageToCacheAsync(new AddedArtistImage
-                            {
-                                ArtistName = artistInfo.ArtistName,
-                                ArtistImageUrl = artistToAdd.SpotifyImageUrl
-                            });
-                        }
                     }
 
                     await db.Artists.AddAsync(artistToAdd);
@@ -269,15 +258,6 @@ public class MusicDataFactory
 
                     dbArtist.SpotifyId = spotifyArtist.Id;
                     dbArtist.Popularity = spotifyArtist.Popularity > 0 ? spotifyArtist.Popularity : dbArtist.Popularity;
-
-                    if (artistInfo.ArtistUrl != null)
-                    {
-                        await this._artistEnrichment.AddArtistImageToCacheAsync(new AddedArtistImage
-                        {
-                            ArtistName = artistInfo.ArtistName,
-                            ArtistImageUrl = dbArtist.SpotifyImageUrl
-                        });
-                    }
 
                     await AddOrUpdateArtistImage(db, dbArtist.Id, ImageSource.Spotify, newImage.Url, newImage.Height,
                         newImage.Width);
