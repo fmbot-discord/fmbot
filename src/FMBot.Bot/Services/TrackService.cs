@@ -32,6 +32,7 @@ using Microsoft.Extensions.Options;
 using NetCord.Rest;
 using Npgsql;
 using Serilog;
+using Web.InternalApi;
 
 namespace FMBot.Bot.Services;
 
@@ -50,6 +51,7 @@ public class TrackService
     private readonly UpdateService _updateService;
     private readonly AliasService _aliasService;
     private readonly UserService _userService;
+    private readonly TrackEnrichment.TrackEnrichmentClient _trackEnrichment;
 
     public TrackService(HttpClient httpClient,
         IDataSourceFactory dataSourceFactory,
@@ -63,7 +65,8 @@ public class TrackService
         WhoKnowsTrackService whoKnowsTrackService,
         UpdateService updateService,
         AliasService aliasService,
-        UserService userService)
+        UserService userService,
+        TrackEnrichment.TrackEnrichmentClient trackEnrichment)
     {
         this._dataSourceFactory = dataSourceFactory;
         this._spotifyService = spotifyService;
@@ -78,6 +81,7 @@ public class TrackService
         this._updateService = updateService;
         this._aliasService = aliasService;
         this._userService = userService;
+        this._trackEnrichment = trackEnrichment;
     }
 
     public string StoreScrobbleReference(string artistName, string trackName, string albumName, DateTime? timePlayed)
@@ -1042,37 +1046,14 @@ public class TrackService
     {
         try
         {
-            const string cacheKey = "tracks-all";
-
-            var cacheAvailable = this._cache.TryGetValue(cacheKey, out List<TrackAutoCompleteSearchModel> tracks);
-            if (!cacheAvailable && cacheEnabled)
+            var reply = await this._trackEnrichment.SearchTracksAsync(new TrackSearchRequest
             {
-                const string sql = "SELECT name, artist_name, popularity " +
-                                   "FROM public.tracks " +
-                                   "WHERE popularity is not null AND popularity > 5 ";
+                SearchValue = searchValue ?? string.Empty
+            });
 
-                DefaultTypeMap.MatchNamesWithUnderscores = true;
-                await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
-                await connection.OpenAsync();
-
-                var trackQuery = (await connection.QueryAsync<Track>(sql)).ToList();
-
-                tracks = trackQuery
-                    .Select(s => new TrackAutoCompleteSearchModel(s.ArtistName, s.Name, s.Popularity))
-                    .ToList();
-
-                this._cache.Set(cacheKey, tracks, TimeSpan.FromHours(2));
-            }
-
-            var results = tracks.Where(w =>
-                    w.Name.StartsWith(searchValue, StringComparison.OrdinalIgnoreCase) ||
-                    w.Artist.StartsWith(searchValue, StringComparison.OrdinalIgnoreCase) ||
-                    w.Name.Contains(searchValue, StringComparison.OrdinalIgnoreCase) ||
-                    w.Artist.Contains(searchValue, StringComparison.OrdinalIgnoreCase))
-                .OrderByDescending(o => o.Popularity)
+            return reply.Tracks
+                .Select(s => new TrackAutoCompleteSearchModel(s.ArtistName, s.Name, s.Popularity))
                 .ToList();
-
-            return results;
         }
         catch (Exception e)
         {

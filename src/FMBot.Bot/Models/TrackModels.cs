@@ -48,6 +48,7 @@ public class TrackAutoCompleteSearchModel
         this.Artist = artist;
         this.Track = track;
         this.Name = $"{artist} | {track}";
+        this.Popularity = popularity;
     }
 
     public TrackAutoCompleteSearchModel(string name)

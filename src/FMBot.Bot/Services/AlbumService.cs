@@ -841,37 +841,14 @@ public class AlbumService
     {
         try
         {
-            const string cacheKey = "albums-all";
-
-            var cacheAvailable = this._cache.TryGetValue(cacheKey, out List<AlbumAutoCompleteSearchModel> albums);
-            if (!cacheAvailable && cacheEnabled)
+            var reply = await this._albumEnrichment.SearchAlbumsAsync(new AlbumSearchRequest
             {
-                const string sql = "SELECT name, artist_name, popularity " +
-                                   "FROM public.albums " +
-                                   "WHERE popularity IS NOT NULL AND name IS NOT NULL and artist_name IS NOT NULL AND popularity > 5 ";
+                SearchValue = searchValue ?? string.Empty
+            });
 
-                DefaultTypeMap.MatchNamesWithUnderscores = true;
-                await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
-                await connection.OpenAsync();
-
-                var albumQuery = (await connection.QueryAsync<Album>(sql)).ToList();
-
-                albums = albumQuery
-                    .Select(s => new AlbumAutoCompleteSearchModel(s.ArtistName, s.Name, s.Popularity))
-                    .ToList();
-
-                this._cache.Set(cacheKey, albums, TimeSpan.FromHours(2));
-            }
-
-            var results = albums.Where(w =>
-                    w.Name.StartsWith(searchValue, StringComparison.OrdinalIgnoreCase) ||
-                    w.Artist.StartsWith(searchValue, StringComparison.OrdinalIgnoreCase) ||
-                    w.Name.Contains(searchValue, StringComparison.OrdinalIgnoreCase) ||
-                    w.Artist.Contains(searchValue, StringComparison.OrdinalIgnoreCase))
-                .OrderByDescending(o => o.Popularity)
+            return reply.Albums
+                .Select(s => new AlbumAutoCompleteSearchModel(s.ArtistName, s.Name, s.Popularity))
                 .ToList();
-
-            return results;
         }
         catch (Exception e)
         {

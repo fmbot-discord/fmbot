@@ -460,7 +460,7 @@ public class ArtistsService
         {
             var customTable = artists
                 .Take(amount)
-                .ToTasteTable(new[] { type, mainUser, "   ", userToCompare },
+                .ToTasteTable([type, mainUser, "   ", userToCompare],
                     u => u.Artist,
                     u => u.OwnPlaycount,
                     u => GetCompareChar(u.OwnPlaycount, u.OtherPlaycount),
@@ -493,7 +493,7 @@ public class ArtistsService
         }
 
         var description =
-            $"**{matchedArtists.Count()}** ({percentage:0.0}%) out of top **{mainUserArtists.Count()}** {timeDescription.ToLower()} match";
+            $"-# **{matchedArtists.Count()}** ({percentage:0.0}%) out of top **{mainUserArtists.Count()}** {timeDescription.ToLower()} match";
 
         return description;
     }

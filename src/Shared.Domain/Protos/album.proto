@@ -13,6 +13,8 @@ service AlbumEnrichment {
   rpc AddAlbumCoverToCache (AddedAlbumCover) returns (google.protobuf.Empty);
 
   rpc AddAlbumReleaseDates (AlbumReleaseDateRequest) returns (AlbumReleaseDateReply);
+
+  rpc SearchAlbums (AlbumSearchRequest) returns (AlbumSearchReply);
 }
 
 message AlbumRequest {
@@ -49,4 +51,18 @@ message AlbumWithDate {
 
 message AlbumReleaseDateReply {
   repeated AlbumWithDate albums = 1;
+}
+
+message AlbumSearchRequest {
+  string searchValue = 1;
+}
+
+message AlbumSearchReply {
+  repeated AlbumSearchItem albums = 1;
+}
+
+message AlbumSearchItem {
+  string name = 1;
+  string artistName = 2;
+  int32 popularity = 3;
 }
