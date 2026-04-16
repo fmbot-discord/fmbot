@@ -420,43 +420,60 @@ public class AlbumService
             return;
         }
 
-        var minTimestamp = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Utc));
-        var request = new AlbumReleaseDateRequest
-        {
-            Albums =
-            {
-                albumsToEnrich.Select(s => new AlbumWithDate
-                {
-                    ArtistName = s.ArtistName,
-                    AlbumName = s.AlbumName,
-                    ReleaseDate = minTimestamp,
-                    ReleaseDatePrecision = s.ReleaseDatePrecision ?? "",
-                    AlbumType = s.AlbumType ?? ""
-                })
-            }
-        };
+        var artistNames = albumsToEnrich.Select(s => s.ArtistName).ToArray();
+        var albumNames = albumsToEnrich.Select(s => s.AlbumName).ToArray();
 
-        var albums = await this._albumEnrichment.AddAlbumReleaseDatesAsync(request);
+        const string sql = "SELECT a.name AS album_name, a.artist_name, a.release_date, a.release_date_precision, a.type AS album_type " +
+                           "FROM albums a " +
+                           "INNER JOIN unnest(@artistNames::citext[], @albumNames::citext[]) AS q(artist_name, album_name) " +
+                           "  ON a.artist_name = q.artist_name AND a.name = q.album_name " +
+                           "WHERE a.release_date IS NOT NULL AND a.release_date <> '0000'";
 
-        var albumGroups = albums.Albums
-            .Where(a => a.ReleaseDate != minTimestamp || !string.IsNullOrEmpty(a.AlbumType))
-            .GroupBy(a => (a.AlbumName.ToLower(), a.ArtistName.ToLower()))
-            .ToDictionary(g => g.Key, g => g.ToList());
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        var rows = (await connection.QueryAsync<AlbumEnrichmentRow>(sql, new { artistNames, albumNames })).ToList();
+
+        var lookup = rows
+            .GroupBy(g => (g.AlbumName.ToLower(), g.ArtistName.ToLower()))
+            .ToDictionary(g => g.Key, g => g.First());
 
         foreach (var topAlbum in albumsToEnrich)
         {
             var key = (topAlbum.AlbumName.ToLower(), topAlbum.ArtistName.ToLower());
 
-            if (albumGroups.TryGetValue(key, out var matchedAlbums))
+            if (lookup.TryGetValue(key, out var row))
             {
-                var album = matchedAlbums.FirstOrDefault();
-                if (album != null)
-                {
-                    topAlbum.ReleaseDate ??= album.ReleaseDate.ToDateTime();
-                    topAlbum.ReleaseDatePrecision ??= album.ReleaseDatePrecision;
-                    topAlbum.AlbumType ??= !string.IsNullOrEmpty(album.AlbumType) ? album.AlbumType : null;
-                }
+                topAlbum.ReleaseDate ??= ParseReleaseDate(row.ReleaseDate, row.ReleaseDatePrecision);
+                topAlbum.ReleaseDatePrecision ??= row.ReleaseDatePrecision;
+                topAlbum.AlbumType ??= !string.IsNullOrEmpty(row.AlbumType) ? row.AlbumType : null;
             }
+        }
+    }
+
+    private static DateTime? ParseReleaseDate(string releaseDate, string precision)
+    {
+        if (string.IsNullOrEmpty(releaseDate) || releaseDate == "0000")
+        {
+            return null;
+        }
+
+        try
+        {
+            var parsed = precision switch
+            {
+                "year" => DateTime.Parse($"{releaseDate}-1-1", CultureInfo.InvariantCulture),
+                "month" => DateTime.Parse($"{releaseDate}-1", CultureInfo.InvariantCulture),
+                "day" => DateTime.Parse(releaseDate, CultureInfo.InvariantCulture),
+                _ => (DateTime?)null
+            };
+
+            return parsed.HasValue ? DateTime.SpecifyKind(parsed.Value, DateTimeKind.Utc) : null;
+        }
+        catch (FormatException)
+        {
+            return null;
         }
     }
 
