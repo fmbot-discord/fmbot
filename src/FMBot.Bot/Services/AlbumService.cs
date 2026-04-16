@@ -740,6 +740,54 @@ public class AlbumService
         return freshTopAlbums;
     }
 
+    public async Task<List<TopAlbum>> GetUserAllTimeTopAlbumsByReleaseYear(int userId, int year)
+    {
+        return await GetUserAllTimeTopAlbumsByReleasePrefix(userId, year.ToString(), prefixLength: 4);
+    }
+
+    public async Task<List<TopAlbum>> GetUserAllTimeTopAlbumsByReleaseDecade(int userId, int decade)
+    {
+        return await GetUserAllTimeTopAlbumsByReleasePrefix(userId, (decade / 10).ToString(), prefixLength: 3);
+    }
+
+    private async Task<List<TopAlbum>> GetUserAllTimeTopAlbumsByReleasePrefix(int userId, string prefix, int prefixLength)
+    {
+        const string sql = @"
+            SELECT ua.name AS album_name,
+                   ua.artist_name,
+                   ua.playcount AS user_playcount,
+                   COALESCE(a.spotify_image_url, a.lastfm_image_url) AS album_cover_url,
+                   TO_DATE(
+                     CASE a.release_date_precision
+                       WHEN 'year' THEN a.release_date || '-01-01'
+                       WHEN 'month' THEN a.release_date || '-01'
+                       ELSE a.release_date
+                     END, 'YYYY-MM-DD')::timestamp AS release_date,
+                   a.release_date_precision,
+                   a.type AS album_type
+            FROM user_albums ua
+            INNER JOIN albums a ON ua.album_id = a.id
+            WHERE ua.user_id = @userId
+              AND a.release_date IS NOT NULL
+              AND a.release_date <> '0000'
+              AND LEFT(a.release_date, @prefixLength) = @prefix
+            ORDER BY ua.playcount DESC";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        var albums = (await connection.QueryAsync<TopAlbum>(sql, new { userId, prefix, prefixLength })).ToList();
+
+        foreach (var album in albums)
+        {
+            album.ArtistUrl = LastfmUrlExtensions.GetArtistUrl(album.ArtistName);
+            album.AlbumUrl = LastfmUrlExtensions.GetAlbumUrl(album.ArtistName, album.AlbumName);
+        }
+
+        return albums;
+    }
+
     public async Task<List<AlbumPopularity>> GetAlbumsPopularity(List<TopAlbum> topAlbums)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);

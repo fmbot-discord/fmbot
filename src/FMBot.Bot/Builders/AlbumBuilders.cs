@@ -1512,11 +1512,13 @@ public class AlbumBuilders
         if ((topListSettings.ReleaseYearFilter.HasValue || topListSettings.ReleaseDecadeFilter.HasValue) &&
             timeSettings.TimePeriod == TimePeriod.AllTime)
         {
-            var topAllTimeDb = await this._albumService.GetUserAllTimeTopAlbums(userSettings.UserId);
-            if (topAllTimeDb.Count > 1000)
-            {
-                albums.Content.TopAlbums = topAllTimeDb;
-            }
+            var topAllTimeDb = topListSettings.ReleaseYearFilter.HasValue
+                ? await this._albumService.GetUserAllTimeTopAlbumsByReleaseYear(userSettings.UserId,
+                    topListSettings.ReleaseYearFilter.Value)
+                : await this._albumService.GetUserAllTimeTopAlbumsByReleaseDecade(userSettings.UserId,
+                    topListSettings.ReleaseDecadeFilter.Value);
+
+            albums.Content.TopAlbums = topAllTimeDb;
         }
 
         if (topListSettings.ReleaseYearFilter.HasValue)
