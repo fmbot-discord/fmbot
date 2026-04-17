@@ -122,6 +122,6 @@ public class ArtistSearch
 public class ArtistImageRow
 {
     public string Name { get; set; }
-    public string SpotifyImageUrl { get; set; }
+    public string ImageUrl { get; set; }
 }
 
