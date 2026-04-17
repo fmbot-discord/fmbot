@@ -752,7 +752,7 @@ public class LastFmRepository : ILastfmRepository
             if (useCache)
             {
                 var cachedTopAlbums = this._cache.TryGetValue(cacheKey, out TopAlbumList topAlbumResponse);
-                if (cachedTopAlbums && topAlbumResponse.TopAlbums.Any() &&
+                if (cachedTopAlbums && topAlbumResponse?.TopAlbums != null && topAlbumResponse.TopAlbums.Any() &&
                     topAlbumResponse.TopAlbums.Count >= count)
                 {
                     return new Response<TopAlbumList>
@@ -865,7 +865,7 @@ public class LastFmRepository : ILastfmRepository
             return new Response<TopAlbumList>
             {
                 Success = true,
-                Content = new TopAlbumList()
+                Content = new TopAlbumList { TopAlbums = new List<TopAlbum>() }
             };
         }
 
@@ -949,7 +949,7 @@ public class LastFmRepository : ILastfmRepository
             if (useCache)
             {
                 var cachedTopArtists = this._cache.TryGetValue(cacheKey, out TopArtistList topArtistResponse);
-                if (cachedTopArtists && topArtistResponse.TopArtists.Any() &&
+                if (cachedTopArtists && topArtistResponse?.TopArtists != null && topArtistResponse.TopArtists.Any() &&
                     topArtistResponse.TopArtists.Count >= count)
                 {
                     return new Response<TopArtistList>
@@ -1061,7 +1061,7 @@ public class LastFmRepository : ILastfmRepository
             return new Response<TopArtistList>
             {
                 Success = true,
-                Content = new TopArtistList()
+                Content = new TopArtistList { TopArtists = new List<TopArtist>() }
             };
         }
 
