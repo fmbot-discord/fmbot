@@ -276,7 +276,7 @@ public class TrackBuilders
                 var listeningTime = await listeningTimeTask;
                 userStats.Append($"**{StringExtensions.GetLongListeningTimeString(listeningTime)}** listened");
 
-                if (context.ContextUser.TotalPlaycount.HasValue && trackSearch.Track.UserPlaycount is >= 30)
+                if (context.ContextUser.TotalPlaycount is > 0 && trackSearch.Track.UserPlaycount is >= 30)
                 {
                     userStats.Append(
                         $" — **{((decimal)trackSearch.Track.UserPlaycount.Value / context.ContextUser.TotalPlaycount.Value).FormatPercentage(context.NumberFormat)}** of all your plays");
@@ -284,7 +284,7 @@ public class TrackBuilders
 
                 userStats.AppendLine();
             }
-            else if (context.ContextUser.TotalPlaycount.HasValue && trackSearch.Track.UserPlaycount is >= 30)
+            else if (context.ContextUser.TotalPlaycount is > 0 && trackSearch.Track.UserPlaycount is >= 30)
             {
                 userStats.AppendLine(
                     $"**{((decimal)trackSearch.Track.UserPlaycount.Value / context.ContextUser.TotalPlaycount.Value).FormatPercentage(context.NumberFormat)}** of all your plays");

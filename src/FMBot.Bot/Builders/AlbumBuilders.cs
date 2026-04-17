@@ -234,7 +234,7 @@ public class AlbumBuilders
                     artistUserTracks, albumSearch.Album.UserPlaycount.Value);
                 userStats.Append($"**{StringExtensions.GetLongListeningTimeString(listeningTime)}** listened");
 
-                if (context.ContextUser.TotalPlaycount.HasValue && albumSearch.Album.UserPlaycount is >= 30)
+                if (context.ContextUser.TotalPlaycount is > 0 && albumSearch.Album.UserPlaycount is >= 30)
                 {
                     userStats.Append(
                         $" — **{((decimal)albumSearch.Album.UserPlaycount.Value / context.ContextUser.TotalPlaycount.Value).FormatPercentage(context.NumberFormat)}** of all your plays");
@@ -1512,11 +1512,13 @@ public class AlbumBuilders
         if ((topListSettings.ReleaseYearFilter.HasValue || topListSettings.ReleaseDecadeFilter.HasValue) &&
             timeSettings.TimePeriod == TimePeriod.AllTime)
         {
-            var topAllTimeDb = await this._albumService.GetUserAllTimeTopAlbums(userSettings.UserId);
-            if (topAllTimeDb.Count > 1000)
-            {
-                albums.Content.TopAlbums = topAllTimeDb;
-            }
+            var topAllTimeDb = topListSettings.ReleaseYearFilter.HasValue
+                ? await this._albumService.GetUserAllTimeTopAlbumsByReleaseYear(userSettings.UserId,
+                    topListSettings.ReleaseYearFilter.Value)
+                : await this._albumService.GetUserAllTimeTopAlbumsByReleaseDecade(userSettings.UserId,
+                    topListSettings.ReleaseDecadeFilter.Value);
+
+            albums.Content.TopAlbums = topAllTimeDb;
         }
 
         if (topListSettings.ReleaseYearFilter.HasValue)

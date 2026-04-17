@@ -289,7 +289,7 @@ public class ArtistBuilders
 
             userStats.AppendLine(playsLine);
 
-            if (context.ContextUser.TotalPlaycount.HasValue && artistSearch.Artist.UserPlaycount is >= 30)
+            if (context.ContextUser.TotalPlaycount is > 0 && artistSearch.Artist.UserPlaycount is >= 30)
             {
                 userStats.AppendLine(
                     $"**{((decimal)artistSearch.Artist.UserPlaycount.Value / context.ContextUser.TotalPlaycount.Value).FormatPercentage(context.NumberFormat)}** of all your plays");

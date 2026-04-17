@@ -275,88 +275,38 @@ public class ArtistsService
 
     public async Task<List<TopArtist>> FillArtistImages(List<TopArtist> topArtists)
     {
-        var request = new ArtistRequest
+        var artistsToFill = topArtists.Where(w => string.IsNullOrWhiteSpace(w.ArtistImageUrl)).ToList();
+        if (artistsToFill.Count == 0)
         {
-            Artists =
-            {
-                topArtists.Select(s => new ArtistWithImage
-                {
-                    ArtistName = s.ArtistName,
-                    ArtistImageUrl = s.ArtistImageUrl ?? ""
-                })
-            }
-        };
+            return topArtists;
+        }
 
-        var artists = await this._artistEnrichment.AddMissingArtistImagesAsync(request);
+        var names = artistsToFill.Select(s => s.ArtistName).ToArray();
 
-        foreach (var topArtist in topArtists.Where(w => w.ArtistImageUrl == null))
+        const string sql = "SELECT a.name, a.spotify_image_url " +
+                           "FROM artists a " +
+                           "INNER JOIN unnest(@names::citext[]) AS q(name) ON a.name = q.name " +
+                           "WHERE a.last_fm_url IS NOT NULL AND a.spotify_image_url IS NOT NULL";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        var rows = (await connection.QueryAsync<ArtistImageRow>(sql, new { names })).ToList();
+
+        var lookup = rows
+            .GroupBy(g => g.Name, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First().SpotifyImageUrl, StringComparer.OrdinalIgnoreCase);
+
+        foreach (var topArtist in artistsToFill)
         {
-            var artist = artists.Artists.FirstOrDefault(f => !string.IsNullOrWhiteSpace(f.ArtistImageUrl) &&
-                                                             f.ArtistName == topArtist.ArtistName);
-
-            if (artist != null)
+            if (lookup.TryGetValue(topArtist.ArtistName, out var url))
             {
-                topArtist.ArtistImageUrl = artist.ArtistImageUrl;
+                topArtist.ArtistImageUrl = url;
             }
         }
 
         return topArtists;
-    }
-
-    // Top artists for 2 users
-    public TasteModels GetEmbedTaste(ICollection<TasteItem> leftUserArtists,
-        ICollection<TasteItem> rightUserArtists, int amount, string timeDescription)
-    {
-        var matchedArtists = ArtistsToShow(leftUserArtists, rightUserArtists);
-
-        var left = "";
-        var right = "";
-        foreach (var artist in matchedArtists.Take(amount))
-        {
-            var name = artist.Name;
-            if (!string.IsNullOrWhiteSpace(name) && name.Length > 24)
-            {
-                left += $"**{name.Substring(0, 24)}..**\n";
-            }
-            else
-            {
-                left += $"**{name}**\n";
-            }
-
-            var ownPlaycount = artist.Playcount;
-            var otherPlaycount = rightUserArtists.First(f => f.Name.Equals(name)).Playcount;
-
-            if (ownPlaycount > otherPlaycount)
-            {
-                right += $"**{ownPlaycount}**";
-            }
-            else
-            {
-                right += $"{ownPlaycount}";
-            }
-
-            right += " • ";
-
-            if (otherPlaycount > ownPlaycount)
-            {
-                right += $"**{otherPlaycount}**";
-            }
-            else
-            {
-                right += $"{otherPlaycount}";
-            }
-
-            right += $"\n";
-        }
-
-        var description = Description(leftUserArtists, timeDescription, matchedArtists);
-
-        return new TasteModels
-        {
-            Description = description,
-            LeftDescription = left,
-            RightDescription = right
-        };
     }
 
     public async Task<List<TopArtist>> GetUserAllTimeTopArtists(int userId, bool useCache = false)
@@ -460,7 +410,7 @@ public class ArtistsService
         {
             var customTable = artists
                 .Take(amount)
-                .ToTasteTable(new[] { type, mainUser, "   ", userToCompare },
+                .ToTasteTable([type, mainUser, "   ", userToCompare],
                     u => u.Artist,
                     u => u.OwnPlaycount,
                     u => GetCompareChar(u.OwnPlaycount, u.OtherPlaycount),
@@ -493,7 +443,7 @@ public class ArtistsService
         }
 
         var description =
-            $"**{matchedArtists.Count()}** ({percentage:0.0}%) out of top **{mainUserArtists.Count()}** {timeDescription.ToLower()} match";
+            $"-# **{matchedArtists.Count()}** ({percentage:0.0}%) out of top **{mainUserArtists.Count()}** {timeDescription.ToLower()} match";
 
         return description;
     }
@@ -789,38 +739,22 @@ public class ArtistsService
         }
     }
 
-    public async Task<List<Artist>> SearchThroughArtists(string searchValue, bool cacheEnabled = true)
+    public async Task<List<Artist>> SearchThroughArtists(string searchValue)
     {
         try
         {
-            const string cacheKey = "artists-all";
-
-            var cacheAvailable = this._cache.TryGetValue(cacheKey, out List<Artist> artists);
-            if (!cacheAvailable && cacheEnabled)
+            var reply = await this._artistEnrichment.SearchArtistsAsync(new ArtistSearchRequest
             {
-                const string sql = "SELECT name, popularity " +
-                                   "FROM public.artists " +
-                                   "WHERE popularity is not null AND popularity > 9 ";
+                SearchValue = searchValue ?? string.Empty
+            });
 
-                DefaultTypeMap.MatchNamesWithUnderscores = true;
-                await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
-                await connection.OpenAsync();
-
-                artists = (await connection.QueryAsync<Artist>(sql)).ToList();
-
-                this._cache.Set(cacheKey, artists, TimeSpan.FromHours(2));
-            }
-
-            var results = artists.Where(w =>
-                    w.Name.StartsWith(searchValue, StringComparison.OrdinalIgnoreCase))
-                .OrderByDescending(o => o.Popularity)
+            return reply.Artists
+                .Select(s => new Artist
+                {
+                    Name = s.Name,
+                    Popularity = s.Popularity
+                })
                 .ToList();
-
-            results.AddRange(artists.Where(w =>
-                    w.Name.Contains(searchValue, StringComparison.OrdinalIgnoreCase))
-                .OrderByDescending(o => o.Popularity));
-
-            return results;
         }
         catch (Exception e)
         {

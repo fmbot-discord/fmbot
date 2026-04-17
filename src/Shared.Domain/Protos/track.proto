@@ -9,6 +9,7 @@ package track;
 
 service TrackEnrichment {
   rpc GetLyrics (LyricsRequest) returns (LyricsReply);
+  rpc SearchTracks (TrackSearchRequest) returns (TrackSearchReply);
 }
 
 message LyricsRequest {
@@ -27,4 +28,18 @@ message LyricsReply {
   bool result = 1;
   string plainLyrics = 2;
   repeated SyncedLyric syncedLyrics = 3;
+}
+
+message TrackSearchRequest {
+  string searchValue = 1;
+}
+
+message TrackSearchReply {
+  repeated TrackSearchItem tracks = 1;
+}
+
+message TrackSearchItem {
+  string name = 1;
+  string artistName = 2;
+  int32 popularity = 3;
 }

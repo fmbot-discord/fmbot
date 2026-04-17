@@ -420,43 +420,60 @@ public class AlbumService
             return;
         }
 
-        var minTimestamp = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Utc));
-        var request = new AlbumReleaseDateRequest
-        {
-            Albums =
-            {
-                albumsToEnrich.Select(s => new AlbumWithDate
-                {
-                    ArtistName = s.ArtistName,
-                    AlbumName = s.AlbumName,
-                    ReleaseDate = minTimestamp,
-                    ReleaseDatePrecision = s.ReleaseDatePrecision ?? "",
-                    AlbumType = s.AlbumType ?? ""
-                })
-            }
-        };
+        var artistNames = albumsToEnrich.Select(s => s.ArtistName).ToArray();
+        var albumNames = albumsToEnrich.Select(s => s.AlbumName).ToArray();
 
-        var albums = await this._albumEnrichment.AddAlbumReleaseDatesAsync(request);
+        const string sql = "SELECT a.name AS album_name, a.artist_name, a.release_date, a.release_date_precision, a.type AS album_type " +
+                           "FROM albums a " +
+                           "INNER JOIN unnest(@artistNames::citext[], @albumNames::citext[]) AS q(artist_name, album_name) " +
+                           "  ON a.artist_name = q.artist_name AND a.name = q.album_name " +
+                           "WHERE a.release_date IS NOT NULL AND a.release_date <> '0000'";
 
-        var albumGroups = albums.Albums
-            .Where(a => a.ReleaseDate != minTimestamp || !string.IsNullOrEmpty(a.AlbumType))
-            .GroupBy(a => (a.AlbumName.ToLower(), a.ArtistName.ToLower()))
-            .ToDictionary(g => g.Key, g => g.ToList());
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        var rows = (await connection.QueryAsync<AlbumEnrichmentRow>(sql, new { artistNames, albumNames })).ToList();
+
+        var lookup = rows
+            .GroupBy(g => (g.AlbumName.ToLower(), g.ArtistName.ToLower()))
+            .ToDictionary(g => g.Key, g => g.First());
 
         foreach (var topAlbum in albumsToEnrich)
         {
             var key = (topAlbum.AlbumName.ToLower(), topAlbum.ArtistName.ToLower());
 
-            if (albumGroups.TryGetValue(key, out var matchedAlbums))
+            if (lookup.TryGetValue(key, out var row))
             {
-                var album = matchedAlbums.FirstOrDefault();
-                if (album != null)
-                {
-                    topAlbum.ReleaseDate ??= album.ReleaseDate.ToDateTime();
-                    topAlbum.ReleaseDatePrecision ??= album.ReleaseDatePrecision;
-                    topAlbum.AlbumType ??= !string.IsNullOrEmpty(album.AlbumType) ? album.AlbumType : null;
-                }
+                topAlbum.ReleaseDate ??= ParseReleaseDate(row.ReleaseDate, row.ReleaseDatePrecision);
+                topAlbum.ReleaseDatePrecision ??= row.ReleaseDatePrecision;
+                topAlbum.AlbumType ??= !string.IsNullOrEmpty(row.AlbumType) ? row.AlbumType : null;
             }
+        }
+    }
+
+    private static DateTime? ParseReleaseDate(string releaseDate, string precision)
+    {
+        if (string.IsNullOrEmpty(releaseDate) || releaseDate == "0000")
+        {
+            return null;
+        }
+
+        try
+        {
+            var parsed = precision switch
+            {
+                "year" => DateTime.Parse($"{releaseDate}-1-1", CultureInfo.InvariantCulture),
+                "month" => DateTime.Parse($"{releaseDate}-1", CultureInfo.InvariantCulture),
+                "day" => DateTime.Parse(releaseDate, CultureInfo.InvariantCulture),
+                _ => (DateTime?)null
+            };
+
+            return parsed.HasValue ? DateTime.SpecifyKind(parsed.Value, DateTimeKind.Utc) : null;
+        }
+        catch (FormatException)
+        {
+            return null;
         }
     }
 
@@ -723,6 +740,54 @@ public class AlbumService
         return freshTopAlbums;
     }
 
+    public async Task<List<TopAlbum>> GetUserAllTimeTopAlbumsByReleaseYear(int userId, int year)
+    {
+        return await GetUserAllTimeTopAlbumsByReleasePrefix(userId, year.ToString(), prefixLength: 4);
+    }
+
+    public async Task<List<TopAlbum>> GetUserAllTimeTopAlbumsByReleaseDecade(int userId, int decade)
+    {
+        return await GetUserAllTimeTopAlbumsByReleasePrefix(userId, (decade / 10).ToString(), prefixLength: 3);
+    }
+
+    private async Task<List<TopAlbum>> GetUserAllTimeTopAlbumsByReleasePrefix(int userId, string prefix, int prefixLength)
+    {
+        const string sql = @"
+            SELECT ua.name AS album_name,
+                   ua.artist_name,
+                   ua.playcount AS user_playcount,
+                   COALESCE(a.spotify_image_url, a.lastfm_image_url) AS album_cover_url,
+                   TO_DATE(
+                     CASE a.release_date_precision
+                       WHEN 'year' THEN a.release_date || '-01-01'
+                       WHEN 'month' THEN a.release_date || '-01'
+                       ELSE a.release_date
+                     END, 'YYYY-MM-DD')::timestamp AS release_date,
+                   a.release_date_precision,
+                   a.type AS album_type
+            FROM user_albums ua
+            INNER JOIN albums a ON ua.album_id = a.id
+            WHERE ua.user_id = @userId
+              AND a.release_date IS NOT NULL
+              AND a.release_date <> '0000'
+              AND LEFT(a.release_date, @prefixLength) = @prefix
+            ORDER BY ua.playcount DESC";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        var albums = (await connection.QueryAsync<TopAlbum>(sql, new { userId, prefix, prefixLength })).ToList();
+
+        foreach (var album in albums)
+        {
+            album.ArtistUrl = LastfmUrlExtensions.GetArtistUrl(album.ArtistName);
+            album.AlbumUrl = LastfmUrlExtensions.GetAlbumUrl(album.ArtistName, album.AlbumName);
+        }
+
+        return albums;
+    }
+
     public async Task<List<AlbumPopularity>> GetAlbumsPopularity(List<TopAlbum> topAlbums)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
@@ -836,42 +901,18 @@ public class AlbumService
         }
     }
 
-    public async Task<List<AlbumAutoCompleteSearchModel>> SearchThroughAlbums(string searchValue,
-        bool cacheEnabled = true)
+    public async Task<List<AlbumAutoCompleteSearchModel>> SearchThroughAlbums(string searchValue)
     {
         try
         {
-            const string cacheKey = "albums-all";
-
-            var cacheAvailable = this._cache.TryGetValue(cacheKey, out List<AlbumAutoCompleteSearchModel> albums);
-            if (!cacheAvailable && cacheEnabled)
+            var reply = await this._albumEnrichment.SearchAlbumsAsync(new AlbumSearchRequest
             {
-                const string sql = "SELECT name, artist_name, popularity " +
-                                   "FROM public.albums " +
-                                   "WHERE popularity IS NOT NULL AND name IS NOT NULL and artist_name IS NOT NULL AND popularity > 5 ";
+                SearchValue = searchValue ?? string.Empty
+            });
 
-                DefaultTypeMap.MatchNamesWithUnderscores = true;
-                await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
-                await connection.OpenAsync();
-
-                var albumQuery = (await connection.QueryAsync<Album>(sql)).ToList();
-
-                albums = albumQuery
-                    .Select(s => new AlbumAutoCompleteSearchModel(s.ArtistName, s.Name, s.Popularity))
-                    .ToList();
-
-                this._cache.Set(cacheKey, albums, TimeSpan.FromHours(2));
-            }
-
-            var results = albums.Where(w =>
-                    w.Name.StartsWith(searchValue, StringComparison.OrdinalIgnoreCase) ||
-                    w.Artist.StartsWith(searchValue, StringComparison.OrdinalIgnoreCase) ||
-                    w.Name.Contains(searchValue, StringComparison.OrdinalIgnoreCase) ||
-                    w.Artist.Contains(searchValue, StringComparison.OrdinalIgnoreCase))
-                .OrderByDescending(o => o.Popularity)
+            return reply.Albums
+                .Select(s => new AlbumAutoCompleteSearchModel(s.ArtistName, s.Name, s.Popularity))
                 .ToList();
-
-            return results;
         }
         catch (Exception e)
         {

@@ -108,7 +108,7 @@
         {
           "id": "manage-subscription",
           "title": "Managing your subscription",
-          "answer": "There are three ways to manage a subscription made directly with us:\n- Through the `/getsupporter` command\n- Through the button in each receipt email\n- In the [Stripe customer portal](https://billing.stripe.com/p/login/3cs7ww1tR6ay6t28ww) where you can login with the email you used during purchase\n\nIf you purchased through Discord, go to your Discord settings and then 'Subscriptions'. Note that this is currently only available on Discord desktop and browser."
+          "answer": "You can cancel or change your subscription yourself at any time. The steps depend on how you originally purchased:\n\n**Purchased through the bot (Stripe)**\nUse any of these options to cancel, switch between monthly/yearly billing, or update your payment method:\n- Run `/getsupporter` in Discord - this is the easiest way\n- Click the 'Manage subscription' link in the Stripe receipt emails you get every month\n- Log in to the [Stripe customer portal](https://billing.stripe.com/p/login/3cs7ww1tR6ay6t28ww) with the email you used during purchase. If you don't receive an email, double check you are actually providing the email you used during purchase.\n\nIf none of these work for you, open a thread in <#1006526334316576859>. Keep in mind that Last.fm and .fmbot are separate services.\n\n**Purchased through Discord**\nGo to your Discord **Settings → Subscriptions** to manage or cancel. Note: this page is only available on Discord desktop and browser, not on mobile."
         },
         {
           "id": "gift-supporter",

@@ -28,8 +28,6 @@ public class MusicDataFactory
 {
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
     private readonly SpotifyService _spotifyService;
-    private readonly ArtistEnrichment.ArtistEnrichmentClient _artistEnrichment;
-    private readonly AlbumEnrichment.AlbumEnrichmentClient _albumEnrichment;
     private readonly MusicBrainzService _musicBrainzService;
     private readonly BotSettings _botSettings;
     private readonly AppleMusicService _appleMusicService;
@@ -38,17 +36,15 @@ public class MusicDataFactory
     private readonly IDataSourceFactory _dataSourceFactory;
 
     public MusicDataFactory(IOptions<BotSettings> botSettings, SpotifyService spotifyService,
-        ArtistEnrichment.ArtistEnrichmentClient artistEnrichment, IDbContextFactory<FMBotDbContext> contextFactory,
+        IDbContextFactory<FMBotDbContext> contextFactory,
         MusicBrainzService musicBrainzService, AppleMusicService appleMusicService,
-        AlbumEnrichment.AlbumEnrichmentClient albumEnrichment, AppleMusicVideoService appleMusicVideoService,
+        AppleMusicVideoService appleMusicVideoService,
         TrackEnrichment.TrackEnrichmentClient trackEnrichment, IDataSourceFactory dataSourceFactory)
     {
         this._spotifyService = spotifyService;
-        this._artistEnrichment = artistEnrichment;
         this._contextFactory = contextFactory;
         this._musicBrainzService = musicBrainzService;
         this._appleMusicService = appleMusicService;
-        this._albumEnrichment = albumEnrichment;
         this._appleMusicVideoService = appleMusicVideoService;
         this._trackEnrichment = trackEnrichment;
         this._dataSourceFactory = dataSourceFactory;
@@ -100,15 +96,6 @@ public class MusicDataFactory
                     {
                         artistToAdd.SpotifyImageUrl = spotifyArtist.Images.OrderByDescending(o => o.Height).First().Url;
                         artistToAdd.SpotifyImageDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
-
-                        if (artistInfo.ArtistUrl != null)
-                        {
-                            await this._artistEnrichment.AddArtistImageToCacheAsync(new AddedArtistImage
-                            {
-                                ArtistName = artistInfo.ArtistName,
-                                ArtistImageUrl = artistToAdd.SpotifyImageUrl
-                            });
-                        }
                     }
 
                     await db.Artists.AddAsync(artistToAdd);
@@ -271,15 +258,6 @@ public class MusicDataFactory
 
                     dbArtist.SpotifyId = spotifyArtist.Id;
                     dbArtist.Popularity = spotifyArtist.Popularity > 0 ? spotifyArtist.Popularity : dbArtist.Popularity;
-
-                    if (artistInfo.ArtistUrl != null)
-                    {
-                        await this._artistEnrichment.AddArtistImageToCacheAsync(new AddedArtistImage
-                        {
-                            ArtistName = artistInfo.ArtistName,
-                            ArtistImageUrl = dbArtist.SpotifyImageUrl
-                        });
-                    }
 
                     await AddOrUpdateArtistImage(db, dbArtist.Id, ImageSource.Spotify, newImage.Url, newImage.Height,
                         newImage.Width);
@@ -462,17 +440,6 @@ public class MusicDataFactory
                 }
             }
 
-            var coverUrl = albumInfo.AlbumCoverUrl ?? albumToAdd.SpotifyImageUrl;
-            if (coverUrl != null && albumInfo.AlbumUrl != null)
-            {
-                await this._albumEnrichment.AddAlbumCoverToCacheAsync(new AddedAlbumCover
-                {
-                    ArtistName = albumInfo.ArtistName,
-                    AlbumName = albumInfo.AlbumName,
-                    AlbumCoverUrl = coverUrl
-                });
-            }
-
             albumToAdd.SpotifyImageDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
             albumToAdd.AppleMusicDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
 
@@ -588,17 +555,6 @@ public class MusicDataFactory
                 }
 
                 await GetOrStoreAlbumTracks(spotifyAlbum.Tracks.Items, albumInfo, dbAlbum.Id, connection);
-            }
-
-            var coverUrl = albumInfo.AlbumCoverUrl ?? dbAlbum.SpotifyImageUrl;
-            if (coverUrl != null && albumInfo.AlbumUrl != null)
-            {
-                await this._albumEnrichment.AddAlbumCoverToCacheAsync(new AddedAlbumCover
-                {
-                    ArtistName = albumInfo.ArtistName,
-                    AlbumName = albumInfo.AlbumName,
-                    AlbumCoverUrl = coverUrl
-                });
             }
 
             db.Entry(dbAlbum).State = EntityState.Modified;

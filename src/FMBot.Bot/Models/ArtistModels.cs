@@ -119,3 +119,9 @@ public class ArtistSearch
     public long? RandomArtistPlaycount { get; set; }
 }
 
+public class ArtistImageRow
+{
+    public string Name { get; set; }
+    public string SpotifyImageUrl { get; set; }
+}
+

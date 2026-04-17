@@ -893,12 +893,24 @@ public class UserService
 
     public async Task<int> GetCommandExecutedAmount(int userId, string command, DateTime filterDateTime)
     {
-        await using var db = await this._contextFactory.CreateDbContextAsync();
-        return await db.UserInteractions
-            .CountAsync(c => c.UserId == userId &&
-                             c.Timestamp >= filterDateTime &&
-                             c.Response == CommandResponse.Ok &&
-                             c.CommandName == command);
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        const string sql = "SELECT count(*)::int " +
+                           "FROM public.user_interactions " +
+                           "WHERE user_id = @userId " +
+                           "AND command_name = @command " +
+                           "AND \"timestamp\" >= @filterDateTime " +
+                           "AND response = @response";
+
+        return await connection.ExecuteScalarAsync<int>(sql, new
+        {
+            userId,
+            command,
+            filterDateTime,
+            response = (int)CommandResponse.Ok
+        });
     }
 
     public async Task<bool> HintShownBefore(int userId, string command)

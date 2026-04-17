@@ -2,51 +2,23 @@ syntax = "proto3";
 
 option csharp_namespace = "Web.InternalApi";
 
-import "google/protobuf/empty.proto";
-import "google/protobuf/timestamp.proto";
-
 package album;
 
 // The greeting service definition.
 service AlbumEnrichment {
-  rpc AddMissingAlbumCovers (AlbumRequest) returns (AlbumReply);
-  rpc AddAlbumCoverToCache (AddedAlbumCover) returns (google.protobuf.Empty);
-
-  rpc AddAlbumReleaseDates (AlbumReleaseDateRequest) returns (AlbumReleaseDateReply);
+  rpc SearchAlbums (AlbumSearchRequest) returns (AlbumSearchReply);
 }
 
-message AlbumRequest {
-  repeated AlbumWithCover albums = 1;
+message AlbumSearchRequest {
+  string searchValue = 1;
 }
 
-message AlbumWithCover {
-  string artistName = 1;
-  string albumName = 2;
-  string albumCoverUrl = 3;
+message AlbumSearchReply {
+  repeated AlbumSearchItem albums = 1;
 }
 
-message AlbumReply {
-  repeated AlbumWithCover albums = 1;
-}
-
-message AddedAlbumCover {
-  string artistName = 1;
-  string albumName = 2;
-  string albumCoverUrl = 3;
-}
-
-message AlbumReleaseDateRequest {
-  repeated AlbumWithDate albums = 1;
-}
-
-message AlbumWithDate {
-  string artistName = 1;
-  string albumName = 2;
-  google.protobuf.Timestamp releaseDate = 3;
-  string releaseDatePrecision = 4;
-  string albumType = 5;
-}
-
-message AlbumReleaseDateReply {
-  repeated AlbumWithDate albums = 1;
+message AlbumSearchItem {
+  string name = 1;
+  string artistName = 2;
+  int32 popularity = 3;
 }

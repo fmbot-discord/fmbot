@@ -175,12 +175,14 @@ public class ChartBuilders
         if ((chartSettings.ReleaseYearFilter.HasValue || chartSettings.ReleaseDecadeFilter.HasValue) &&
             chartSettings.TimeSettings.TimePeriod == TimePeriod.AllTime)
         {
-            var topAllTimeDb = await this._albumService.GetUserAllTimeTopAlbums(userSettings.UserId);
-            if (topAllTimeDb.Count > 1000)
-            {
-                albums.Content.TopAlbums = topAllTimeDb;
-                albums.Content.TotalAmount = topAllTimeDb.Count;
-            }
+            var topAllTimeDb = chartSettings.ReleaseYearFilter.HasValue
+                ? await this._albumService.GetUserAllTimeTopAlbumsByReleaseYear(userSettings.UserId,
+                    chartSettings.ReleaseYearFilter.Value)
+                : await this._albumService.GetUserAllTimeTopAlbumsByReleaseDecade(userSettings.UserId,
+                    chartSettings.ReleaseDecadeFilter.Value);
+
+            albums.Content.TopAlbums = topAllTimeDb;
+            albums.Content.TotalAmount = topAllTimeDb.Count;
         }
 
         albums.Content.TopAlbums = await this._albumService.FillMissingAlbumCovers(albums.Content.TopAlbums);

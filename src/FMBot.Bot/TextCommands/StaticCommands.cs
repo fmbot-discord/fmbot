@@ -731,49 +731,56 @@ public class StaticCommands(
     [Summary("Displays all available commands.")]
     public async Task FullHelpAsync()
     {
-        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
-        this._embed.WithColor(DiscordConstants.InformationColorBlue);
-
-        this._embed.WithDescription("**See a list of all available commands below.**\n" +
-                                    $"Use `{prfx}serverhelp` to view all your configurable server settings.");
-
-        var allCommands = service.GetCommands().SelectMany(kvp => kvp.Value).Distinct()
-            .Where(w => !GetAllAttributes(w).OfType<ExcludeFromHelp>().Any() &&
-                        !GetAllAttributes(w).OfType<CommandCategoriesAttribute>().SelectMany(s => s.Categories)
-                            .Contains(CommandCategory.ServerSettings))
-            .ToList();
-
-        var commandsByModule = allCommands
-            .GroupBy(c => GetAllAttributes(c).OfType<CommandCategoriesAttribute>().FirstOrDefault()?.Categories.FirstOrDefault().ToString() ?? "Other")
-            .OrderByDescending(g => g.Count());
-
-        foreach (var moduleGroup in commandsByModule)
+        try
         {
-            var moduleCommands = "";
-            foreach (var cmd in moduleGroup)
+            var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+            this._embed.WithColor(DiscordConstants.InformationColorBlue);
+
+            this._embed.WithDescription("**See a list of all available commands below.**\n" +
+                                        $"Use `{prfx}serverhelp` to view all your configurable server settings.");
+
+            var allCommands = service.GetCommands().SelectMany(kvp => kvp.Value).Distinct()
+                .Where(w => !GetAllAttributes(w).OfType<ExcludeFromHelp>().Any() &&
+                            !GetAllAttributes(w).OfType<CommandCategoriesAttribute>().SelectMany(s => s.Categories)
+                                .Contains(CommandCategory.ServerSettings))
+                .ToList();
+
+            var commandsByModule = allCommands
+                .GroupBy(c => GetAllAttributes(c).OfType<CommandCategoriesAttribute>().FirstOrDefault()?.Categories.FirstOrDefault().ToString() ?? "Other")
+                .OrderByDescending(g => g.Count());
+
+            foreach (var moduleGroup in commandsByModule)
             {
-                if (!string.IsNullOrEmpty(moduleCommands))
+                var moduleCommands = "";
+                foreach (var cmd in moduleGroup)
                 {
-                    moduleCommands += ", ";
+                    if (!string.IsNullOrEmpty(moduleCommands))
+                    {
+                        moduleCommands += ", ";
+                    }
+
+                    var cmdName = GetCommandName(cmd);
+                    var name = $"`{prfx}{cmdName}`";
+                    name = name.Replace("fmfm", "fm");
+
+                    moduleCommands += name;
                 }
 
-                var cmdName = GetCommandName(cmd);
-                var name = $"`{prfx}{cmdName}`";
-                name = name.Replace("fmfm", "fm");
-
-                moduleCommands += name;
+                if (!string.IsNullOrEmpty(moduleGroup.Key) && !string.IsNullOrEmpty(moduleCommands))
+                {
+                    this._embed.AddField(moduleGroup.Key, moduleCommands, true);
+                }
             }
 
-            if (!string.IsNullOrEmpty(moduleGroup.Key) && !string.IsNullOrEmpty(moduleCommands))
-            {
-                this._embed.AddField(moduleGroup.Key, moduleCommands, true);
-            }
+            this._embed.WithFooter($"Add 'help' after a command to get more info. For example: '{prfx}chart help'");
+            await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
+
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
         }
-
-        this._embed.WithFooter($"Add 'help' after a command to get more info. For example: '{prfx}chart help'");
-        await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
-
-        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
     }
 
     [Command("settinghelp", "serverhelp")]
@@ -787,7 +794,8 @@ public class StaticCommands(
         this._embed.WithDescription("**See all server settings below.**\n" +
                                     "These commands require either the `Admin` or the `Ban Members` permission.");
 
-        var allCommands = service.GetCommands().SelectMany(kvp => kvp.Value).Distinct()
+        var allCommands = service.GetCommands().SelectMany(kvp => kvp.Value)
+            .DistinctBy(c => GetCommandName(c))
             .Where(w => !GetAllAttributes(w).OfType<ExcludeFromHelp>().Any() &&
                         GetAllAttributes(w).OfType<CommandCategoriesAttribute>().SelectMany(s => s.Categories)
                             .Contains(CommandCategory.ServerSettings))
