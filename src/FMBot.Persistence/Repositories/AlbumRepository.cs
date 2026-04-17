@@ -121,18 +121,32 @@ LIMIT 1;";
     {
         const string getAlbumQuery = @"
         SELECT
-            name,
-            artist_name,
-            COALESCE(spotify_image_url, lastfm_image_url) as album_cover_url,
-            spotify_id,
-            release_date,
-            release_date_precision,
-            mbid
-        FROM public.albums
-        WHERE (UPPER(name), UPPER(artist_name)) IN (
-            SELECT UPPER(CAST(unnest(@albumNames) AS CITEXT)),
-                   UPPER(CAST(unnest(@artistNames) AS CITEXT))
-        ) AND release_date != '0000'";
+            ab.name,
+            ab.artist_name,
+            COALESCE(
+                ab.spotify_image_url,
+                REPLACE(REPLACE(ai.url, '{w}', ai.width::text), '{h}', ai.height::text),
+                ab.lastfm_image_url
+            ) as album_cover_url,
+            ab.spotify_id,
+            ab.release_date,
+            ab.release_date_precision,
+            ab.mbid
+        FROM public.albums ab
+        LEFT JOIN LATERAL (
+            SELECT url, width, height
+            FROM album_images
+            WHERE ab.spotify_image_url IS NULL
+              AND album_id = ab.id
+              AND image_source = 3
+              AND width IS NOT NULL
+              AND height IS NOT NULL
+            LIMIT 1
+        ) ai ON TRUE
+        WHERE (ab.artist_name, ab.name) IN (
+            SELECT CAST(unnest(@artistNames) AS CITEXT),
+                   CAST(unnest(@albumNames) AS CITEXT)
+        ) AND ab.release_date != '0000'";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         var albumData = await connection.QueryAsync<AlbumData>(getAlbumQuery, new
