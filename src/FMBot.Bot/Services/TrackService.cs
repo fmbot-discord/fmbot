@@ -1041,8 +1041,7 @@ public class TrackService
         }
     }
 
-    public async Task<List<TrackAutoCompleteSearchModel>> SearchThroughTracks(string searchValue,
-        bool cacheEnabled = true)
+    public async Task<List<TrackAutoCompleteSearchModel>> SearchThroughTracks(string searchValue)
     {
         try
         {

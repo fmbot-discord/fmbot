@@ -739,7 +739,7 @@ public class ArtistsService
         }
     }
 
-    public async Task<List<Artist>> SearchThroughArtists(string searchValue, bool cacheEnabled = true)
+    public async Task<List<Artist>> SearchThroughArtists(string searchValue)
     {
         try
         {

@@ -901,8 +901,7 @@ public class AlbumService
         }
     }
 
-    public async Task<List<AlbumAutoCompleteSearchModel>> SearchThroughAlbums(string searchValue,
-        bool cacheEnabled = true)
+    public async Task<List<AlbumAutoCompleteSearchModel>> SearchThroughAlbums(string searchValue)
     {
         try
         {
