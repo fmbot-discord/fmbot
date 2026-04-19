@@ -197,13 +197,13 @@ public class GenreBuilders
         };
 
         var authorUrl = $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library/artists?{timeSettings.UrlParameter}";
-        var userTitle = StringExtensions.MarkdownLink(await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser), authorUrl);
-
-        if (userSettings.DifferentUser)
-        {
-            userTitle =
-                $"{StringExtensions.MarkdownLink(userSettings.DisplayName, authorUrl)}, requested by {await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser)}";
-        }
+        var requesterName = await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser);
+        var userTitle = userSettings.DifferentUser
+            ? $"{userSettings.DisplayName}, requested by {requesterName}"
+            : requesterName;
+        var userTitleWithLink = userSettings.DifferentUser
+            ? $"{StringExtensions.MarkdownLink(userSettings.DisplayName, authorUrl)}, requested by {requesterName}"
+            : StringExtensions.MarkdownLink(requesterName, authorUrl);
 
         Response<TopArtistList> artists;
         var previousTopArtists = new List<TopArtist>();
@@ -373,7 +373,7 @@ public class GenreBuilders
         {
             var container = new ComponentContainerProperties();
 
-            container.WithTextDisplay($"### Top {timeSettings.Description.ToLower()} artist genres for {userTitle}");
+            container.WithTextDisplay($"### Top {timeSettings.Description.ToLower()} artist genres for {userTitleWithLink}");
             container.WithSeparator();
 
             var currentPage = pageDescriptions.ElementAtOrDefault(p.CurrentPageIndex);

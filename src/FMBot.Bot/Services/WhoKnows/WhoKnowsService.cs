@@ -369,7 +369,7 @@ public class WhoKnowsService
             }
             else
             {
-                nameWithLink = NameWithLink(user);
+                nameWithLink = NameWithLink(user, true);
                 if (user.UserId == requestedUserId)
                 {
                     nameWithLink = $"**{nameWithLink}";
@@ -420,7 +420,7 @@ public class WhoKnowsService
             var requestedUser = whoKnowsObjects.FirstOrDefault(f => f.UserId == requestedUserId);
             if (requestedUser != null)
             {
-                var nameWithLink = NameWithLink(requestedUser);
+                var nameWithLink = NameWithLink(requestedUser, true);
                 var playString = StringExtensions.GetPlaysString(requestedUser.Playcount);
 
                 reply.Append($"**{spacer}{whoKnowsObjects.IndexOf(requestedUser) + 1}.  {nameWithLink} ");
@@ -437,7 +437,7 @@ public class WhoKnowsService
         return reply.ToString();
     }
 
-    public static string NameWithLink(WhoKnowsObjectWithUser user)
+    public static string NameWithLink(WhoKnowsObjectWithUser user, bool doNotLinkEmojis = false)
     {
         var discordName = user.DiscordName != null
             ? StringExtensions.Sanitize(user.DiscordName
@@ -452,7 +452,7 @@ public class WhoKnowsService
             discordName = user.LastFMUsername;
         }
 
-        if (user.DiscordName.ContainsEmoji())
+        if (doNotLinkEmojis && user.DiscordName.ContainsEmoji())
         {
             return $"\u2066{discordName}\u2069";
         }
@@ -545,7 +545,7 @@ public class WhoKnowsService
                 }
                 else
                 {
-                    nameWithLink = NameWithLink(user);
+                    nameWithLink = NameWithLink(user, true);
                     if (user.UserId == requestedUserId)
                     {
                         nameWithLink = $"**{nameWithLink}";
@@ -592,7 +592,7 @@ public class WhoKnowsService
             {
                 container.WithSeparator();
 
-                var reqNameWithLink = NameWithLink(requestedUser);
+                var reqNameWithLink = NameWithLink(requestedUser, true);
                 var reqPlayString = StringExtensions.GetPlaysString(requestedUser.Playcount);
                 container.WithTextDisplay(
                     $"**{requestedUserIndex}.  {reqNameWithLink}  - {requestedUser.Playcount.Format(numberFormat)} {reqPlayString}**");
