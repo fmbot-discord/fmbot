@@ -519,11 +519,11 @@ public class TrackBuilders
         var usersWithTrack = await this._whoKnowsTrackService.GetIndexedUsersForTrack(context.DiscordGuild, guildUsers,
             guild.GuildId, cachedTrack.Id);
 
-        var discordGuildUser = await context.DiscordGuild.GetUserAsync(context.DiscordUser.Id);
+        var discordGuildUser = await context.DiscordGuild.GetCachedGuildUserAsync(context.DiscordUser.Id);
         var currentUser =
             await this._indexService.GetOrAddUserToGuild(guildUsers, guild, discordGuildUser, context.ContextUser);
         await this._indexService.UpdateGuildUser(guildUsers,
-            await context.DiscordGuild.GetUserAsync(context.ContextUser.DiscordUserId), currentUser.UserId, guild);
+            await context.DiscordGuild.GetCachedGuildUserAsync(context.ContextUser.DiscordUserId), currentUser.UserId, guild);
 
         usersWithTrack = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithTrack, context.ContextUser,
             trackName, context.DiscordGuild, track.Track.UserPlaycount);

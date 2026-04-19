@@ -38,7 +38,7 @@ public class WhoKnowsService
         NetCord.GuildUser netcordGuildUser = null;
         if (discordGuild != null)
         {
-            netcordGuildUser = await discordGuild.GetUserAsync(contextUser.DiscordUserId);
+            netcordGuildUser = await discordGuild.GetCachedGuildUserAsync(contextUser.DiscordUserId);
         }
 
         var guildUser = new GuildUser
@@ -369,7 +369,7 @@ public class WhoKnowsService
             }
             else
             {
-                nameWithLink = NameWithLink(user);
+                nameWithLink = NameWithLink(user, true);
                 if (user.UserId == requestedUserId)
                 {
                     nameWithLink = $"**{nameWithLink}";
@@ -420,7 +420,7 @@ public class WhoKnowsService
             var requestedUser = whoKnowsObjects.FirstOrDefault(f => f.UserId == requestedUserId);
             if (requestedUser != null)
             {
-                var nameWithLink = NameWithLink(requestedUser);
+                var nameWithLink = NameWithLink(requestedUser, true);
                 var playString = StringExtensions.GetPlaysString(requestedUser.Playcount);
 
                 reply.Append($"**{spacer}{whoKnowsObjects.IndexOf(requestedUser) + 1}.  {nameWithLink} ");
@@ -592,7 +592,7 @@ public class WhoKnowsService
             {
                 container.WithSeparator();
 
-                var reqNameWithLink = NameWithLink(requestedUser);
+                var reqNameWithLink = NameWithLink(requestedUser, true);
                 var reqPlayString = StringExtensions.GetPlaysString(requestedUser.Playcount);
                 container.WithTextDisplay(
                     $"**{requestedUserIndex}.  {reqNameWithLink}  - {requestedUser.Playcount.Format(numberFormat)} {reqPlayString}**");

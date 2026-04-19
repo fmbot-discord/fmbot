@@ -250,7 +250,7 @@ public class PlayBuilder
             {
                 guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
                 var discordGuildUser =
-                    await context.DiscordGuild.GetUserAsync(context.ContextUser.DiscordUserId);
+                    await context.DiscordGuild.GetCachedGuildUserAsync(context.ContextUser.DiscordUserId);
 
                 await this._indexService.UpdateGuildUser(guildUsers, discordGuildUser, context.ContextUser.UserId,
                     guild);

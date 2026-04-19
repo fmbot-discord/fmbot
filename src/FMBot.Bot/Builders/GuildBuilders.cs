@@ -171,7 +171,7 @@ public class GuildBuilders
                         var ltPageString = new StringBuilder();
                         foreach (var user in ltPage)
                         {
-                            ltPageString.AppendLine($"{counter}. **{WhoKnowsService.NameWithLink(user)}** - *{user.Name}*");
+                            ltPageString.AppendLine($"{counter}. **{WhoKnowsService.NameWithLink(user, true)}** - *{user.Name}*");
                             counter++;
                         }
 
@@ -221,7 +221,7 @@ public class GuildBuilders
                         var playcountPageString = new StringBuilder();
                         foreach (var user in playcountPage)
                         {
-                            playcountPageString.AppendLine($"{counter}. **{WhoKnowsService.NameWithLink(user)}** - *{user.Playcount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(user.Playcount)}*");
+                            playcountPageString.AppendLine($"{counter}. **{WhoKnowsService.NameWithLink(user, true)}** - *{user.Playcount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(user.Playcount)}*");
                             counter++;
                         }
 

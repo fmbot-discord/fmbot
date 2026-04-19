@@ -450,22 +450,23 @@ public class ChartService
             var ratioBitmap = (float)chartImage.Width / (float)chartImage.Height;
             var ratioMax = (float)chartImageWidth / (float)chartImageHeight;
 
-            var finalWidth = chartImageWidth;
-            var finalHeight = chartImageHeight;
-            if (ratioMax > ratioBitmap)
+            var srcWidth = chartImage.Width;
+            var srcHeight = chartImage.Height;
+            if (ratioBitmap > ratioMax)
             {
-                finalWidth = (int)((float)chartImageHeight * ratioBitmap);
+                srcWidth = (int)(chartImage.Height * ratioMax);
             }
-            else
+            else if (ratioBitmap < ratioMax)
             {
-                finalHeight = (int)((float)chartImageWidth / ratioBitmap);
+                srcHeight = (int)(chartImage.Width / ratioMax);
             }
 
-            var leftOffset = finalWidth != chartImageWidth ? (chartImageWidth - finalWidth) / 2 : 0;
-            var topOffset = finalHeight != chartImageHeight ? (chartImageHeight - finalHeight) / 2 : 0;
+            var srcLeft = (chartImage.Width - srcWidth) / 2;
+            var srcTop = (chartImage.Height - srcHeight) / 2;
 
             surface.Canvas.DrawBitmap(chartImage,
-                new SKRectI(leftOffset, topOffset, finalWidth + leftOffset, finalHeight + topOffset),
+                new SKRect(srcLeft, srcTop, srcLeft + srcWidth, srcTop + srcHeight),
+                new SKRect(0, 0, chartImageWidth, chartImageHeight),
                 paint);
             surface.Canvas.Flush();
 

@@ -378,9 +378,9 @@ public class ChartBuilders
         var artists = await this._dataSourceFactory.GetTopArtistsAsync(userSettings.UserNameLastFm,
             chartSettings.TimeSettings, imagesToRequest, useCache: true);
 
-        if (artists.Content.TopArtists == null || artists.Content.TopArtists.Count < chartSettings.ImagesNeeded)
+        if (artists?.Content?.TopArtists == null || artists.Content.TopArtists.Count < chartSettings.ImagesNeeded)
         {
-            var count = artists.Content.TopArtists?.Count ?? 0;
+            var count = artists?.Content?.TopArtists?.Count ?? 0;
 
             var reply =
                 $"User hasn't listened to enough artists ({count} of required {chartSettings.ImagesNeeded}) for a chart this size. \n" +
