@@ -108,58 +108,42 @@ public class GuildService
             return new Dictionary<int, FullGuildUser>();
         }
 
-        const string sql = "SELECT gu.user_id, " +
-                           "gu.user_name, " +
-                           "gu.bot, " +
-                           "gu.last_message, " +
-                           "gu.roles AS dto_roles, " +
-                           "u.user_name_last_fm, " +
-                           "u.discord_user_id, " +
-                           "u.last_used, " +
-                           "COALESCE(gbu.blocked_from_crowns, false) as blocked_from_crowns, " +
-                           "COALESCE(gbu.blocked_from_who_knows, false) as blocked_from_who_knows " +
-                           "FROM public.guild_users AS gu " +
-                           "LEFT JOIN users AS u ON gu.user_id = u.user_id " +
-                           "LEFT JOIN guilds AS g ON gu.guild_id = g.guild_id " +
-                           "LEFT OUTER JOIN guild_blocked_users AS gbu ON gu.user_id = gbu.user_id AND gbu.guild_id = gu.guild_id " +
-                           "WHERE g.discord_guild_id = @discordGuildId";
-
-        DefaultTypeMap.MatchNamesWithUnderscores = true;
-        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
-        await connection.OpenAsync();
-
-        var result = (await connection.QueryAsync<FullGuildUser>(sql, new
+        var cacheKey = $"guild-users-{discordGuildId}";
+        return await this._cache.GetOrCreateAsync(cacheKey, async entry =>
         {
-            discordGuildId = Convert.ToInt64(discordGuildId)
-        })).ToList();
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(12);
 
-        foreach (var row in result.Where(w => w.DtoRoles != null))
-        {
-            row.Roles = row.DtoRoles.Select(s => (ulong)s).ToArray();
-        }
+            const string sql = "SELECT gu.user_id, " +
+                               "gu.user_name, " +
+                               "gu.bot, " +
+                               "gu.last_message, " +
+                               "gu.roles AS dto_roles, " +
+                               "u.user_name_last_fm, " +
+                               "u.discord_user_id, " +
+                               "u.last_used, " +
+                               "COALESCE(gbu.blocked_from_crowns, false) as blocked_from_crowns, " +
+                               "COALESCE(gbu.blocked_from_who_knows, false) as blocked_from_who_knows " +
+                               "FROM public.guild_users AS gu " +
+                               "LEFT JOIN users AS u ON gu.user_id = u.user_id " +
+                               "LEFT JOIN guilds AS g ON gu.guild_id = g.guild_id " +
+                               "LEFT OUTER JOIN guild_blocked_users AS gbu ON gu.user_id = gbu.user_id AND gbu.guild_id = gu.guild_id " +
+                               "WHERE g.discord_guild_id = @discordGuildId";
 
-        return result.ToDictionary(d => d.UserId, d => d);
-    }
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+            await connection.OpenAsync();
 
-    public async Task<int> GetGuildUserCount(ulong? discordGuildId = null)
-    {
-        if (discordGuildId == null)
-        {
-            return 0;
-        }
+            var result = (await connection.QueryAsync<FullGuildUser>(sql, new
+            {
+                discordGuildId = Convert.ToInt64(discordGuildId)
+            })).ToList();
 
-        const string sql = "SELECT COUNT(*) " +
-                           "FROM public.guild_users AS gu " +
-                           "LEFT JOIN guilds AS g ON gu.guild_id = g.guild_id " +
-                           "WHERE g.discord_guild_id = @discordGuildId";
+            foreach (var row in result.Where(w => w.DtoRoles != null))
+            {
+                row.Roles = row.DtoRoles.Select(s => (ulong)s).ToArray();
+            }
 
-        DefaultTypeMap.MatchNamesWithUnderscores = true;
-        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
-        await connection.OpenAsync();
-
-        return await connection.ExecuteScalarAsync<int>(sql, new
-        {
-            discordGuildId = Convert.ToInt64(discordGuildId)
+            return (IDictionary<int, FullGuildUser>)result.ToDictionary(d => d.UserId, d => d);
         });
     }
 
@@ -271,7 +255,7 @@ public class GuildService
             stats.BlockedRolesFiltered = preFilterCount - users.Count;
         }
 
-        if (roles != null && roles.Any())
+        if (roles != null && roles.Count != 0)
         {
             var preFilterCount = users.Count;
 
@@ -733,10 +717,6 @@ public class GuildService
             };
 
             await db.Guilds.AddAsync(newGuild);
-
-            await db.SaveChangesAsync();
-
-            await RemoveGuildFromCache(discordGuild.Id);
         }
         else
         {
@@ -744,11 +724,10 @@ public class GuildService
             existingGuild.Name = discordGuild.Name;
 
             db.Entry(existingGuild).State = EntityState.Modified;
-
-            await db.SaveChangesAsync();
-
-            await RemoveGuildFromCache(discordGuild.Id);
         }
+
+        await db.SaveChangesAsync();
+        await RemoveGuildFromCache(discordGuild.Id);
     }
 
     public async Task<string[]> AddGuildDisabledCommandAsync(NetCord.Gateway.Guild discordGuild, string command)
@@ -764,7 +743,7 @@ public class GuildService
             {
                 DiscordGuildId = discordGuild.Id,
                 Name = discordGuild.Name,
-                DisabledCommands = new[] { command }
+                DisabledCommands = [command]
             };
 
             await db.Guilds.AddAsync(newGuild);
@@ -776,7 +755,7 @@ public class GuildService
             return newGuild.DisabledCommands;
         }
 
-        if (existingGuild.DisabledCommands != null && existingGuild.DisabledCommands.Length > 0)
+        if (existingGuild.DisabledCommands is { Length: > 0 })
         {
             var newDisabledCommands = existingGuild.DisabledCommands;
             Array.Resize(ref newDisabledCommands, newDisabledCommands.Length + 1);
@@ -785,7 +764,7 @@ public class GuildService
         }
         else
         {
-            existingGuild.DisabledCommands = new[] { command };
+            existingGuild.DisabledCommands = [command];
         }
 
         existingGuild.Name = discordGuild.Name;

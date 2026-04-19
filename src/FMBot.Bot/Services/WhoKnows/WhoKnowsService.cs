@@ -38,7 +38,7 @@ public class WhoKnowsService
         NetCord.GuildUser netcordGuildUser = null;
         if (discordGuild != null)
         {
-            netcordGuildUser = await discordGuild.GetUserAsync(contextUser.DiscordUserId);
+            netcordGuildUser = await discordGuild.GetCachedGuildUserAsync(contextUser.DiscordUserId);
         }
 
         var guildUser = new GuildUser
@@ -437,7 +437,7 @@ public class WhoKnowsService
         return reply.ToString();
     }
 
-    public static string NameWithLink(WhoKnowsObjectWithUser user, bool doNotLinkEmojis = false)
+    public static string NameWithLink(WhoKnowsObjectWithUser user)
     {
         var discordName = user.DiscordName != null
             ? StringExtensions.Sanitize(user.DiscordName
@@ -452,7 +452,7 @@ public class WhoKnowsService
             discordName = user.LastFMUsername;
         }
 
-        if (doNotLinkEmojis && user.DiscordName.ContainsEmoji())
+        if (user.DiscordName.ContainsEmoji())
         {
             return $"\u2066{discordName}\u2069";
         }
@@ -545,7 +545,7 @@ public class WhoKnowsService
                 }
                 else
                 {
-                    nameWithLink = NameWithLink(user, true);
+                    nameWithLink = NameWithLink(user);
                     if (user.UserId == requestedUserId)
                     {
                         nameWithLink = $"**{nameWithLink}";

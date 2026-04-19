@@ -993,7 +993,7 @@ public class GenreBuilders
 
         var usersWithGenre = await this._genreService.GetGuildUsersForGenre(guild.GuildId, genres.genres.First(), guildUsers);
 
-        var discordGuildUser = await context.DiscordGuild.GetUserAsync(context.ContextUser.DiscordUserId);
+        var discordGuildUser = await context.DiscordGuild.GetCachedGuildUserAsync(context.ContextUser.DiscordUserId);
         var currentUser =
             await this._indexService.GetOrAddUserToGuild(guildUsers, guild, discordGuildUser, context.ContextUser);
         await this._indexService.UpdateGuildUser(guildUsers, discordGuildUser, currentUser.UserId, guild);
@@ -1120,7 +1120,7 @@ public class GenreBuilders
 
         if (context.DiscordGuild != null)
         {
-            var discordGuildUser = await context.DiscordGuild.GetUserAsync(context.ContextUser.DiscordUserId);
+            var discordGuildUser = await context.DiscordGuild.GetCachedGuildUserAsync(context.ContextUser.DiscordUserId);
             var currentUser =
                 await this._indexService.GetOrAddUserToGuild(guildUsers, guild, discordGuildUser, context.ContextUser);
             await this._indexService.UpdateGuildUser(guildUsers, discordGuildUser, currentUser.UserId, guild);

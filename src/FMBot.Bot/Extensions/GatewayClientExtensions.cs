@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using NetCord;
 using NetCord.Gateway;
 using NetCord.Rest;
-using NetCord.Services.ApplicationCommands;
 using NetCord.Services.Commands;
 using NetCord.Services.ComponentInteractions;
 
@@ -18,14 +17,19 @@ public static class GatewayClientExtensions
         {
             return client.FirstOrDefault()?.Cache.User;
         }
-
-        public ulong? GetCurrentUserId()
-        {
-            return client.GetCurrentUser()?.Id;
-        }
     }
 
-    public static async Task<User> GetUserAsync(this GatewayClient client, ulong userId, ulong? guildId = null)
+    public static async Task<GuildUser> GetCachedGuildUserAsync(this Guild guild, ulong userId)
+    {
+        if (guild.Users.TryGetValue(userId, out var cachedUser))
+        {
+            return cachedUser;
+        }
+
+        return await guild.GetUserAsync(userId);
+    }
+
+    public static async Task<User> GetCachedUserAsync(this GatewayClient client, ulong userId, ulong? guildId = null)
     {
         if (guildId.HasValue)
         {
@@ -39,19 +43,14 @@ public static class GatewayClientExtensions
         return await client.Rest.GetUserAsync(userId);
     }
 
-    public static Task<User> GetUserAsync(this ApplicationCommandContext context, ulong userId)
-    {
-        return context.Client.GetUserAsync(userId, context.Guild?.Id);
-    }
-
     public static Task<User> GetUserAsync(this CommandContext context, ulong userId)
     {
-        return context.Client.GetUserAsync(userId, context.Guild?.Id);
+        return context.Client.GetCachedUserAsync(userId, context.Guild?.Id);
     }
 
     public static Task<User> GetUserAsync(this ComponentInteractionContext context, ulong userId)
     {
-        return context.Client.GetUserAsync(userId, context.Guild?.Id);
+        return context.Client.GetCachedUserAsync(userId, context.Guild?.Id);
     }
 
     public static async Task<RestGuild> GetGuildAsync(this GatewayClient client, ulong guildId)
