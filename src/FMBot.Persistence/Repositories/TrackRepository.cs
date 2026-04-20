@@ -114,7 +114,7 @@ public class TrackRepository
         return await connection.QueryFirstOrDefaultAsync<int>(sql, new { userId });
     }
 
-    public record UserTrackSearchResult(string Name, string ArtistName, int Playcount);
+    public record UserTrackSearchResult(string Name, string ArtistName, int Playcount, int Rank);
 
     public static async Task<IReadOnlyList<UserTrackSearchResult>> SearchUserTracks(int userId, string query,
         NpgsqlConnection connection)
@@ -126,10 +126,15 @@ public class TrackRepository
         }
 
         const string sql = @"
-SELECT name, artist_name, playcount
-FROM public.user_tracks
-WHERE user_id = @userId
-  AND (artist_name || ' ' || name) ILIKE ALL(@patterns)
+WITH ranked AS (
+    SELECT name, artist_name, playcount,
+           CAST(ROW_NUMBER() OVER (ORDER BY playcount DESC) AS int) AS rank
+    FROM public.user_tracks
+    WHERE user_id = @userId
+)
+SELECT name, artist_name, playcount, rank
+FROM ranked
+WHERE (artist_name || ' ' || name) ILIKE ALL(@patterns)
 ORDER BY playcount DESC;";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;

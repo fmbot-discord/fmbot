@@ -13,6 +13,7 @@ public class SearchResultRow
     public string Secondary { get; set; }
     public string Album { get; set; }
     public long Count { get; set; }
+    public int Rank { get; set; }
     public DateTime? TimePlayed { get; set; }
     public int PlaySource { get; set; }
 }

@@ -2150,6 +2150,13 @@ public class PlayBuilder
             page = 0;
         }
 
+        var isInitialInvocation = cacheKey == null;
+        if (isInitialInvocation &&
+            context.ContextUser.LastUpdated < DateTime.UtcNow.AddMinutes(-2))
+        {
+            await this._updateService.UpdateUser(context.ContextUser);
+        }
+
         cacheKey ??= Guid.NewGuid().ToString("N")[..8];
         this._cache.Set($"search-{cacheKey}", search, TimeSpan.FromMinutes(30));
 
@@ -2185,7 +2192,7 @@ public class PlayBuilder
         var rows = fullResults.Skip(pageStart).Take(pageSize).ToList();
         var hasNext = pageStart + pageSize < totalMatches;
 
-        BuildSearchPage(response, search, cacheKey, context, tab, page, pageSize, hasNext, rows, totalMatches, showUpsell);
+        BuildSearchPage(response, search, cacheKey, context, tab, page, hasNext, rows, totalMatches, showUpsell);
         return response;
     }
 
@@ -2216,7 +2223,8 @@ public class PlayBuilder
                 {
                     Primary = t.Name,
                     Secondary = t.ArtistName,
-                    Count = t.Playcount
+                    Count = t.Playcount,
+                    Rank = t.Rank
                 }).ToList();
             }
             case SearchTab.Albums:
@@ -2226,7 +2234,8 @@ public class PlayBuilder
                 {
                     Primary = a.Name,
                     Secondary = a.ArtistName,
-                    Count = a.Playcount
+                    Count = a.Playcount,
+                    Rank = a.Rank
                 }).ToList();
             }
             case SearchTab.Artists:
@@ -2235,7 +2244,8 @@ public class PlayBuilder
                 return artists.Select(a => new SearchResultRow
                 {
                     Primary = a.Name,
-                    Count = a.Playcount
+                    Count = a.Playcount,
+                    Rank = a.Rank
                 }).ToList();
             }
             case SearchTab.Plays:
@@ -2257,7 +2267,7 @@ public class PlayBuilder
     }
 
     private static void BuildSearchPage(ResponseModel response, SearchQueryModel search, string cacheKey,
-        ContextModel context, SearchTab tab, int page, int pageSize, bool hasNext,
+        ContextModel context, SearchTab tab, int page, bool hasNext,
         IReadOnlyList<SearchResultRow> rows, int totalMatches, bool showUpsell)
     {
         var container = response.ComponentsContainer;
@@ -2279,8 +2289,7 @@ public class PlayBuilder
 
         container.WithSeparator();
 
-        var startIndex = page * pageSize + 1;
-        AppendSearchBody(container, rows, tab, context.NumberFormat, startIndex);
+        AppendSearchBody(container, rows, tab, context.NumberFormat);
 
         var navRow = new ActionRowProperties();
         navRow.WithButton(
@@ -2316,7 +2325,7 @@ public class PlayBuilder
     }
 
     private static void AppendSearchBody(ComponentContainerProperties container, IReadOnlyList<SearchResultRow> rows,
-        SearchTab tab, NumberFormat numberFormat, int startIndex)
+        SearchTab tab, NumberFormat numberFormat)
     {
         if (rows == null || rows.Count == 0)
         {
@@ -2350,10 +2359,8 @@ public class PlayBuilder
         }
 
         var sb = new StringBuilder();
-        for (var i = 0; i < rows.Count; i++)
+        foreach (var row in rows)
         {
-            var row = rows[i];
-
             switch (tab)
             {
                 case SearchTab.Artists:
@@ -2362,7 +2369,7 @@ public class PlayBuilder
                         StringExtensions.Sanitize(row.Primary),
                         LastfmUrlExtensions.GetArtistUrl(row.Primary));
                     sb.AppendLine(
-                        $"{startIndex + i}. **{artistLink}** - *{row.Count.Format(numberFormat)} {StringExtensions.GetPlaysString(row.Count)}*");
+                        $"**`#{row.Rank}`**  **{artistLink}** - *{row.Count.Format(numberFormat)} {StringExtensions.GetPlaysString(row.Count)}*");
                     break;
                 }
                 case SearchTab.Albums:
@@ -2372,7 +2379,7 @@ public class PlayBuilder
                         StringExtensions.Sanitize(row.Primary),
                         LastfmUrlExtensions.GetAlbumUrl(row.Secondary, row.Primary));
                     sb.AppendLine(
-                        $"{startIndex + i}. **{artist}** - **{albumLink}** - *{row.Count.Format(numberFormat)} {StringExtensions.GetPlaysString(row.Count)}*");
+                        $"**`#{row.Rank}`**  **{artist}** - **{albumLink}** - *{row.Count.Format(numberFormat)} {StringExtensions.GetPlaysString(row.Count)}*");
                     break;
                 }
                 case SearchTab.Tracks:
@@ -2383,7 +2390,7 @@ public class PlayBuilder
                         StringExtensions.Sanitize(row.Primary),
                         LastfmUrlExtensions.GetTrackUrl(row.Secondary, row.Primary));
                     sb.AppendLine(
-                        $"{startIndex + i}. **{artist}** - **{trackLink}** - *{row.Count.Format(numberFormat)} {StringExtensions.GetPlaysString(row.Count)}*");
+                        $"**`#{row.Rank}`**  **{artist}** - **{trackLink}** - *{row.Count.Format(numberFormat)} {StringExtensions.GetPlaysString(row.Count)}*");
                     break;
                 }
             }
