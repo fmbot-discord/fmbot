@@ -318,7 +318,7 @@ public class WhoKnowsService
 
     public static string WhoKnowsListToString(IList<WhoKnowsObjectWithUser> whoKnowsObjects, int requestedUserId,
         PrivacyLevel minPrivacyLevel, NumberFormat numberFormat, CrownModel crownModel = null,
-        bool hidePrivateUsers = false)
+        bool hidePrivateUsers = false, bool doNotLinkEmojis = false)
     {
         var reply = new StringBuilder();
 
@@ -369,7 +369,7 @@ public class WhoKnowsService
             }
             else
             {
-                nameWithLink = NameWithLink(user, true);
+                nameWithLink = NameWithLink(user, doNotLinkEmojis);
                 if (user.UserId == requestedUserId)
                 {
                     nameWithLink = $"**{nameWithLink}";
@@ -420,7 +420,7 @@ public class WhoKnowsService
             var requestedUser = whoKnowsObjects.FirstOrDefault(f => f.UserId == requestedUserId);
             if (requestedUser != null)
             {
-                var nameWithLink = NameWithLink(requestedUser, true);
+                var nameWithLink = NameWithLink(requestedUser, doNotLinkEmojis);
                 var playString = StringExtensions.GetPlaysString(requestedUser.Playcount);
 
                 reply.Append($"**{spacer}{whoKnowsObjects.IndexOf(requestedUser) + 1}.  {nameWithLink} ");

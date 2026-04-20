@@ -1043,7 +1043,7 @@ public class GenreBuilders
 
         var serverUsers =
             WhoKnowsService.WhoKnowsListToString(filteredUsersWithGenre, context.ContextUser.UserId,
-                PrivacyLevel.Server, context.NumberFormat);
+                PrivacyLevel.Server, context.NumberFormat, doNotLinkEmojis: true);
         if (filteredUsersWithGenre.Count == 0)
         {
             serverUsers = "Nobody in this server (not even you) has listened to this genre.";
@@ -1165,7 +1165,7 @@ public class GenreBuilders
         }
 
         var serverUsers = WhoKnowsService.WhoKnowsListToString(usersWithGenre.ToList(), context.ContextUser.UserId,
-            PrivacyLevel.Server, context.NumberFormat);
+            PrivacyLevel.Server, context.NumberFormat, doNotLinkEmojis: true);
         if (usersWithGenre.Count == 0)
         {
             serverUsers = "None of your friends have listened to this genre.";
