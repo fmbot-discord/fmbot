@@ -22,8 +22,12 @@ using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Images.Generators;
 using FMBot.Persistence.Domain.Models;
+using FMBot.Persistence.Repositories;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
 using NetCord;
 using NetCord.Rest;
+using Npgsql;
 using SkiaSharp;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 using User = FMBot.Persistence.Domain.Models.User;
@@ -48,6 +52,8 @@ public class PlayBuilder
     private readonly AlbumService _albumService;
     private readonly PuppeteerService _puppeteerService;
     private readonly ArtistsService _artistsService;
+    private readonly IMemoryCache _cache;
+    private readonly BotSettings _botSettings;
 
     private InteractiveService Interactivity { get; }
 
@@ -67,7 +73,9 @@ public class PlayBuilder
         CountryService countryService,
         AlbumService albumService,
         PuppeteerService puppeteerService,
-        ArtistsService artistsService)
+        ArtistsService artistsService,
+        IMemoryCache cache,
+        IOptions<BotSettings> botSettings)
     {
         this._guildService = guildService;
         this._indexService = indexService;
@@ -85,6 +93,8 @@ public class PlayBuilder
         this._albumService = albumService;
         this._puppeteerService = puppeteerService;
         this._artistsService = artistsService;
+        this._cache = cache;
+        this._botSettings = botSettings.Value;
     }
 
     public async Task<ResponseModel> DiscoveryDate(
@@ -2125,5 +2135,260 @@ public class PlayBuilder
         response.ComponentPaginator = StringService.BuildComponentPaginatorWithSelectMenu(pages, viewType);
         response.ResponseType = ResponseType.Paginator;
         return response;
+    }
+
+    public async Task<ResponseModel> SearchAsync(ContextModel context, SearchQueryModel search, SearchTab tab,
+        int page = 0, string cacheKey = null)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.ComponentsV2
+        };
+
+        if (page < 0)
+        {
+            page = 0;
+        }
+
+        cacheKey ??= Guid.NewGuid().ToString("N")[..8];
+        this._cache.Set($"search-{cacheKey}", search, TimeSpan.FromMinutes(30));
+
+        var resultsKey = $"search-results-{cacheKey}-{(int)tab}-{search.Query}";
+        var showUpsell = false;
+        if (!this._cache.TryGetValue<IReadOnlyList<SearchResultRow>>(resultsKey, out var fullResults) ||
+            fullResults == null)
+        {
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+            await connection.OpenAsync();
+            fullResults = await FetchSearchRowsAsync(context.ContextUser.UserId, search.Query, tab, connection);
+            this._cache.Set(resultsKey, fullResults, TimeSpan.FromMinutes(1));
+
+            if (context.ContextUser.UserType == UserType.User)
+            {
+                showUpsell = await IsOverNonSupporterCapAsync(context.ContextUser, tab, connection);
+                this._cache.Set($"search-upsell-{cacheKey}-{(int)tab}", showUpsell, TimeSpan.FromMinutes(1));
+            }
+        }
+        else if (context.ContextUser.UserType == UserType.User)
+        {
+            this._cache.TryGetValue($"search-upsell-{cacheKey}-{(int)tab}", out showUpsell);
+        }
+
+        var pageSize = tab == SearchTab.Plays ? 6 : 12;
+        var totalMatches = fullResults.Count;
+        var pageStart = page * pageSize;
+        if (pageStart >= totalMatches && totalMatches > 0)
+        {
+            page = (totalMatches - 1) / pageSize;
+            pageStart = page * pageSize;
+        }
+        var rows = fullResults.Skip(pageStart).Take(pageSize).ToList();
+        var hasNext = pageStart + pageSize < totalMatches;
+
+        BuildSearchPage(response, search, cacheKey, context, tab, page, pageSize, hasNext, rows, totalMatches, showUpsell);
+        return response;
+    }
+
+    private static async Task<bool> IsOverNonSupporterCapAsync(User user, SearchTab tab, NpgsqlConnection connection)
+    {
+        return tab switch
+        {
+            SearchTab.Tracks => await TrackRepository.GetUserTrackCount(user.UserId, connection) >=
+                                Constants.NonSupporterMaxSavedTracks,
+            SearchTab.Albums => await AlbumRepository.GetUserAlbumCount(user.UserId, connection) >=
+                                Constants.NonSupporterMaxSavedAlbums,
+            SearchTab.Artists => await ArtistRepository.GetUserArtistCount(user.UserId, connection) >=
+                                 Constants.NonSupporterMaxSavedArtists,
+            SearchTab.Plays => (user.TotalPlaycount ?? 0) >= Constants.NonSupporterMaxSavedPlays,
+            _ => false
+        };
+    }
+
+    private static async Task<IReadOnlyList<SearchResultRow>> FetchSearchRowsAsync(int userId, string query,
+        SearchTab tab, NpgsqlConnection connection)
+    {
+        switch (tab)
+        {
+            case SearchTab.Tracks:
+            {
+                var tracks = await TrackRepository.SearchUserTracks(userId, query, connection);
+                return tracks.Select(t => new SearchResultRow
+                {
+                    Primary = t.Name,
+                    Secondary = t.ArtistName,
+                    Count = t.Playcount
+                }).ToList();
+            }
+            case SearchTab.Albums:
+            {
+                var albums = await AlbumRepository.SearchUserAlbums(userId, query, connection);
+                return albums.Select(a => new SearchResultRow
+                {
+                    Primary = a.Name,
+                    Secondary = a.ArtistName,
+                    Count = a.Playcount
+                }).ToList();
+            }
+            case SearchTab.Artists:
+            {
+                var artists = await ArtistRepository.SearchUserArtists(userId, query, connection);
+                return artists.Select(a => new SearchResultRow
+                {
+                    Primary = a.Name,
+                    Count = a.Playcount
+                }).ToList();
+            }
+            case SearchTab.Plays:
+            {
+                var plays = await PlayRepository.SearchUserPlays(userId, query, connection);
+                return plays.Select(p => new SearchResultRow
+                {
+                    Primary = p.TrackName,
+                    Secondary = p.ArtistName,
+                    Album = p.AlbumName,
+                    Count = 1,
+                    TimePlayed = p.TimePlayed,
+                    PlaySource = p.PlaySource
+                }).ToList();
+            }
+            default:
+                return [];
+        }
+    }
+
+    private static void BuildSearchPage(ResponseModel response, SearchQueryModel search, string cacheKey,
+        ContextModel context, SearchTab tab, int page, int pageSize, bool hasNext,
+        IReadOnlyList<SearchResultRow> rows, int totalMatches, bool showUpsell)
+    {
+        var container = response.ComponentsContainer;
+        var contextUser = context.ContextUser;
+
+        var sanitizedQuery = StringExtensions.Sanitize(search?.Query ?? string.Empty);
+        container.WithTextDisplay($"### 🔎 Search results for '{sanitizedQuery}'");
+
+        var tabLabel = tab.ToString().ToLowerInvariant();
+        var matchWord = totalMatches == 1 ? "match" : "matches";
+        var header = $"-# {totalMatches.Format(context.NumberFormat)} {matchWord} in your cached {tabLabel}";
+        if (showUpsell)
+        {
+            header +=
+                $"\n-# Want your full Last.fm history cached? [{Constants.GetSupporterButton}]({Constants.GetSupporterOverviewLink}).";
+        }
+
+        container.WithTextDisplay(header);
+
+        container.WithSeparator();
+
+        var startIndex = page * pageSize + 1;
+        AppendSearchBody(container, rows, tab, context.NumberFormat, startIndex);
+
+        var navRow = new ActionRowProperties();
+        navRow.WithButton(
+            null,
+            customId: $"{InteractionConstants.Search.Page}:{cacheKey}:{(int)tab}:{page - 1}:{contextUser.DiscordUserId}",
+            style: ButtonStyle.Secondary,
+            disabled: page <= 0,
+            emote: EmojiProperties.Custom(DiscordConstants.PagesPrevious));
+        navRow.WithButton(
+            null,
+            customId: $"{InteractionConstants.Search.Page}:{cacheKey}:{(int)tab}:{page + 1}:{contextUser.DiscordUserId}",
+            style: ButtonStyle.Secondary,
+            disabled: !hasNext,
+            emote: EmojiProperties.Custom(DiscordConstants.PagesNext));
+        navRow.WithButton(
+            "Edit",
+            customId: $"{InteractionConstants.Search.EditButton}:{cacheKey}:{(int)tab}:{contextUser.DiscordUserId}",
+            style: ButtonStyle.Secondary);
+        container.WithActionRow(navRow);
+
+        var tabRow = new ActionRowProperties();
+        foreach (var tabValue in Enum.GetValues<SearchTab>())
+        {
+            var isActive = tabValue == tab;
+            tabRow.WithButton(
+                tabValue.GetAttribute<OptionAttribute>().Name,
+                customId: $"{InteractionConstants.Search.Tab}:{cacheKey}:{(int)tabValue}:{contextUser.DiscordUserId}",
+                style: isActive ? ButtonStyle.Primary : ButtonStyle.Secondary,
+                disabled: isActive);
+        }
+
+        container.WithActionRow(tabRow);
+    }
+
+    private static void AppendSearchBody(ComponentContainerProperties container, IReadOnlyList<SearchResultRow> rows,
+        SearchTab tab, NumberFormat numberFormat, int startIndex)
+    {
+        if (rows == null || rows.Count == 0)
+        {
+            container.WithTextDisplay("*No matches found in your library.*");
+            return;
+        }
+
+        if (tab == SearchTab.Plays)
+        {
+            for (var i = 0; i < rows.Count; i++)
+            {
+                if (i > 0)
+                {
+                    container.WithSeparator();
+                }
+
+                var row = rows[i];
+                var recent = new RecentTrack
+                {
+                    TrackName = row.Primary,
+                    ArtistName = row.Secondary,
+                    AlbumName = row.Album,
+                    TimePlayed = row.TimePlayed,
+                    TrackUrl = LastfmUrlExtensions.GetTrackUrl(row.Secondary, row.Primary),
+                    ArtistUrl = LastfmUrlExtensions.GetArtistUrl(row.Secondary),
+                    AlbumUrl = LastfmUrlExtensions.GetAlbumUrl(row.Secondary, row.Album),
+                };
+                container.WithTextDisplay(StringService.TrackToLinkedStringWithTimestamp(recent).TrimEnd());
+            }
+            return;
+        }
+
+        var sb = new StringBuilder();
+        for (var i = 0; i < rows.Count; i++)
+        {
+            var row = rows[i];
+
+            switch (tab)
+            {
+                case SearchTab.Artists:
+                {
+                    var artistLink = StringExtensions.MarkdownLink(
+                        StringExtensions.Sanitize(row.Primary),
+                        LastfmUrlExtensions.GetArtistUrl(row.Primary));
+                    sb.AppendLine(
+                        $"{startIndex + i}. **{artistLink}** - *{row.Count.Format(numberFormat)} {StringExtensions.GetPlaysString(row.Count)}*");
+                    break;
+                }
+                case SearchTab.Albums:
+                {
+                    var artist = StringExtensions.Sanitize(row.Secondary);
+                    var albumLink = StringExtensions.MarkdownLink(
+                        StringExtensions.Sanitize(row.Primary),
+                        LastfmUrlExtensions.GetAlbumUrl(row.Secondary, row.Primary));
+                    sb.AppendLine(
+                        $"{startIndex + i}. **{artist}** - **{albumLink}** - *{row.Count.Format(numberFormat)} {StringExtensions.GetPlaysString(row.Count)}*");
+                    break;
+                }
+                case SearchTab.Tracks:
+                default:
+                {
+                    var artist = StringExtensions.Sanitize(row.Secondary);
+                    var trackLink = StringExtensions.MarkdownLink(
+                        StringExtensions.Sanitize(row.Primary),
+                        LastfmUrlExtensions.GetTrackUrl(row.Secondary, row.Primary));
+                    sb.AppendLine(
+                        $"{startIndex + i}. **{artist}** - **{trackLink}** - *{row.Count.Format(numberFormat)} {StringExtensions.GetPlaysString(row.Count)}*");
+                    break;
+                }
+            }
+        }
+
+        container.WithTextDisplay(sb.ToString().TrimEnd());
     }
 }

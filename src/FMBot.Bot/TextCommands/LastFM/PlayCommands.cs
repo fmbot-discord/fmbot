@@ -94,7 +94,8 @@ public class PlayCommands(
             this._embed.UsernameNotSetErrorResponse(prfx,
                 discordGuildUser?.GetDisplayName() ?? this.Context.User.GetDisplayName());
 
-            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new () { Embeds = [this._embed], Components = [GenericEmbedService.UsernameNotSetErrorComponents()] });
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
+                new() { Embeds = [this._embed], Components = [GenericEmbedService.UsernameNotSetErrorComponents()] });
             await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.UsernameNotSet }, userService);
             return;
         }
@@ -145,9 +146,10 @@ public class PlayCommands(
                         if (secondsLeft <= existingFmCooldown.Value - 2)
                         {
                             _ = (await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
-                                {
-                                    Content = $"This channel has a `{existingFmCooldown.Value}` second cooldown on `{prfx}fm`. Please wait for this to expire before using this command again."
-                                })).DeleteAfterAsync(6);
+                            {
+                                Content =
+                                    $"This channel has a `{existingFmCooldown.Value}` second cooldown on `{prfx}fm`. Please wait for this to expire before using this command again."
+                            })).DeleteAfterAsync(6);
                             await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Cooldown }, userService);
                         }
 
@@ -169,7 +171,8 @@ public class PlayCommands(
 
             var response =
                 await playBuilder.NowPlayingAsync(new ContextModel(this.Context, prfx, contextUser),
-                    userSettings, configuredFmType.embedType);;
+                    userSettings, configuredFmType.embedType);
+            ;
 
             await this.Context.SendResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);
@@ -180,7 +183,11 @@ public class PlayCommands(
                 e.Message.Contains("Response status code does not indicate success: 403"))
             {
                 await this.Context.HandleCommandException(e, userService, sendReply: false);
-                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Error while replying: The bot is missing permissions.\nMake sure it has permission to 'Embed links' and 'Attach Images'" });
+                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
+                    new MessageProperties
+                    {
+                        Content = "Error while replying: The bot is missing permissions.\nMake sure it has permission to 'Embed links' and 'Attach Images'"
+                    });
             }
             else
             {
@@ -404,7 +411,8 @@ public class PlayCommands(
     [Examples("p", "plays", "plays @frikandel", "plays monthly")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Other)]
-    [SupporterEnhanced($"For non-supporters, the maximum amount of cached plays is limited to their last 15000 scrobbles, meaning this is also the limit for streaks")]
+    [SupporterEnhanced(
+        $"For non-supporters, the maximum amount of cached plays is limited to their last 15000 scrobbles, meaning this is also the limit for streaks")]
     public async Task PlaysAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
@@ -421,6 +429,38 @@ public class PlayCommands(
 
         await this.Context.SendResponse(this.Interactivity, response, userService);
         await this.Context.LogCommandUsedAsync(response, userService);
+    }
+
+    [Command("search", "sr", "find")]
+    [Summary("Search through your stored library (tracks, albums, artists, scrobbles)")]
+    [Examples("search daft punk", "sr radiohead creep", "find in rainbows")]
+    [UsernameSetRequired]
+    [CommandCategories(CommandCategory.Tracks, CommandCategory.Albums, CommandCategory.Artists)]
+    public async Task SearchAsync([CommandParameter(Remainder = true)] string query = null)
+    {
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            await ReplyAsync($"Please provide a search query, e.g. `{prfx}search daft punk`.");
+            return;
+        }
+
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+
+        try
+        {
+            var response = await playBuilder.SearchAsync(new ContextModel(this.Context, prfx, contextUser),
+                new SearchQueryModel { Query = query }, Domain.Enums.SearchTab.Tracks);
+
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
     }
 
     [Command("streak", "str", "combo", "cb")]

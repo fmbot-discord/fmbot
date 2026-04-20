@@ -234,6 +234,28 @@ public static class PlayRepository
         })).ToList();
     }
 
+    public record UserPlaySearchResult(string TrackName, string AlbumName, string ArtistName, DateTime TimePlayed, int PlaySource);
+
+    public static async Task<IReadOnlyList<UserPlaySearchResult>> SearchUserPlays(int userId, string query,
+        NpgsqlConnection connection)
+    {
+        var patterns = UserLibrarySearch.BuildPatterns(query);
+        if (patterns.Length == 0)
+        {
+            return [];
+        }
+
+        const string sql = @"
+SELECT track_name, album_name, artist_name, time_played, play_source
+FROM public.user_plays
+WHERE user_id = @userId
+  AND (artist_name || ' ' || COALESCE(album_name, '') || ' ' || track_name) ILIKE ALL(@patterns)
+ORDER BY time_played DESC;";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        return (await connection.QueryAsync<UserPlaySearchResult>(sql, new { userId, patterns })).ToList();
+    }
+
     private static string GetUserPlaysSqlString(string initialSql, DataSource dataSource, DateTime? start = null,
         DateTime? end = null)
     {

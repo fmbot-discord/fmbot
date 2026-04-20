@@ -608,6 +608,22 @@ public static class ModalFactory
             ]
         };
 
+    public static ModalProperties CreateSearchModal(string customId, SearchQueryModel current) =>
+        new(customId, "Search settings")
+        {
+            Components =
+            [
+                new LabelProperties("Search query", new TextInputProperties("query", TextInputStyle.Short)
+                {
+                    Value = current?.Query,
+                    Placeholder = "daft punk one more time",
+                    MinLength = 1,
+                    MaxLength = 100,
+                    Required = true
+                })
+            ]
+        };
+
     public static ModalProperties CreateDeleteStreakModal(string customId) =>
         new(customId, "Enter Streak ID to delete")
         {

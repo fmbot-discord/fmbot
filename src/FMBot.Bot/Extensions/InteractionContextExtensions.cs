@@ -592,7 +592,8 @@ public static class InteractionContextExtensions
     public static async Task UpdateInteractionEmbed(this ComponentInteractionContext context, ResponseModel response,
         InteractiveService interactiveService = null, bool defer = true)
     {
-        var message = (context.Interaction as MessageComponentInteraction)?.Message;
+        var message = (context.Interaction as MessageComponentInteraction)?.Message
+                      ?? (context.Interaction as ModalInteraction)?.Message;
 
         if (message == null)
         {

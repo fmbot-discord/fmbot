@@ -126,6 +126,14 @@ public static class InteractionConstants
         public const string Tab = "taste-tab";
     }
 
+    public static class Search
+    {
+        public const string Tab = "search-tab";
+        public const string Page = "search-page";
+        public const string EditButton = "search-edit";
+        public const string EditModal = "search-modal";
+    }
+
     public static class Artist
     {
         public const string Info = "artist-info";

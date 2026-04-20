@@ -78,6 +78,34 @@ public class AlbumRepository
         });
     }
 
+    public static async Task<int> GetUserAlbumCount(int userId, NpgsqlConnection connection)
+    {
+        const string sql = "SELECT COUNT(*) FROM public.user_albums WHERE user_id = @userId";
+        return await connection.QueryFirstOrDefaultAsync<int>(sql, new { userId });
+    }
+
+    public record UserAlbumSearchResult(string Name, string ArtistName, int Playcount);
+
+    public static async Task<IReadOnlyList<UserAlbumSearchResult>> SearchUserAlbums(int userId, string query,
+        NpgsqlConnection connection)
+    {
+        var patterns = UserLibrarySearch.BuildPatterns(query);
+        if (patterns.Length == 0)
+        {
+            return [];
+        }
+
+        const string sql = @"
+SELECT name, artist_name, playcount
+FROM public.user_albums
+WHERE user_id = @userId
+  AND (artist_name || ' ' || name) ILIKE ALL(@patterns)
+ORDER BY playcount DESC;";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        return (await connection.QueryAsync<UserAlbumSearchResult>(sql, new { userId, patterns })).ToList();
+    }
+
     public static async Task<Album> SearchAlbum(string searchTerm, NpgsqlConnection connection)
     {
         const string sql = @"

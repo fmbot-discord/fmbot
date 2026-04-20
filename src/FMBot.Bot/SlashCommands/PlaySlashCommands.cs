@@ -366,6 +366,33 @@ public class PlaySlashCommands(
         }
     }
 
+    [SlashCommand("search", "Search your own stored library (tracks, albums, artists, scrobbles)",
+        Contexts =
+            [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild],
+        IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
+    [UsernameSetRequired]
+    public async Task SearchAsync(
+        [SlashCommandParameter(Name = "query", Description = "What to search for (matches track, album, or artist)")]
+        string query)
+    {
+        await RespondAsync(InteractionCallback.DeferredMessage());
+
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+
+        try
+        {
+            var response = await playBuilder.SearchAsync(new ContextModel(this.Context, contextUser),
+                new SearchQueryModel { Query = query }, SearchTab.Tracks);
+
+            await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
     [SlashCommand("milestone", "Shows a milestone scrobble",
         Contexts =
             [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild],
