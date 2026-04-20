@@ -663,9 +663,15 @@ public class PlayBuilder
         ulong discordUserId)
     {
         var result = new List<IActionRowComponentProperties>();
+        var maxButtons = isSupporter ? Constants.MaxButtonsSupporter : Constants.MaxButtons;
 
         foreach (FmButton flag in Enum.GetValues<FmButton>())
         {
+            if (result.Count >= maxButtons)
+            {
+                break;
+            }
+
             if ((buttons & flag) == 0)
             {
                 continue;
