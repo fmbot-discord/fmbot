@@ -1102,11 +1102,16 @@ public class UserService
         var dbTrack =
             await TrackRepository.GetTrackForName(currentTrack.ArtistName, currentTrack.TrackName, connection);
 
+        var dbAlbum = !string.IsNullOrEmpty(currentTrack.AlbumName)
+            ? await AlbumRepository.GetAlbumForName(currentTrack.ArtistName, currentTrack.AlbumName, connection)
+            : null;
+
         var footerContext = new TemplateContext
         {
             UserService = this,
             CurrentTrack = currentTrack,
             DbTrack = dbTrack,
+            DbAlbum = dbAlbum,
             PreviousTrack = previousTrack,
             Connection = connection,
             Guild = guild,
