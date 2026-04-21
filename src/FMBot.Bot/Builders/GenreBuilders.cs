@@ -425,8 +425,14 @@ public class GenreBuilders
 
             if (GenericEmbedService.RecentScrobbleCallFailed(recentTracks))
             {
-                response = GenericEmbedService.RecentScrobbleCallFailedResponse(recentTracks,
+                var errorResponse = GenericEmbedService.RecentScrobbleCallFailedResponse(recentTracks,
                     userSettings.UserNameLastFM);
+                response.ComponentsContainer = errorResponse.ComponentsContainer;
+                response.CommandResponse = errorResponse.CommandResponse;
+                if (errorResponse.Components?.Any() == true)
+                {
+                    response.ComponentsContainer.WithActionRow(errorResponse.Components);
+                }
                 response.ResponseType = ResponseType.ComponentsV2;
                 return (null, selectMenu);
             }
