@@ -441,7 +441,8 @@ public class PlayCommands(
 
         if (string.IsNullOrWhiteSpace(query))
         {
-            await ReplyAsync($"Please provide a search query, e.g. `{prfx}search daft punk`.");
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = $"Please provide a search query, e.g. `{prfx}search daft punk`." });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
             return;
         }
 
