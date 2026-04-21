@@ -341,7 +341,7 @@ public static class GenericEmbedService
                 footer.AppendLine();
             }
 
-            footer.Append("Problem while contacting Last.fm - .fmbot is not affiliated with Last.fm");
+            footer.Append(".fmbot is not affiliated with Last.fm");
 
             embed.WithFooter(footer.ToString());
 

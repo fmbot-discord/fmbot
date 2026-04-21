@@ -117,8 +117,8 @@ Primary services: Last.fm (core), Spotify (features), Apple Music (metadata), Yo
 - Multiple environment support (local, dev, prod)
 
 ### Code Conventions
-- **C# 13+ features** with nullable reference types enabled
-- **NetCord** framework for Discord API interactions (migrated from Discord.Net). When unsure about NetCord APIs or types, you can look up documentation, search online, or read the local source code at `C:\projects\NetCord`
+- **C# 14+ features** with nullable reference types enabled
+- **NetCord** framework for Discord API interactions (migrated from Discord.Net). When unsure about NetCord APIs or types, you can look up documentation, search online, or read the local source code at `P:\NetCord`
 - **Async/await** patterns throughout
 - **Structured logging** with Serilog
 - **Extension methods** for common operations

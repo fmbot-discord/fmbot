@@ -178,6 +178,7 @@ public class Startup
             return new ShardedGatewayClient(new BotToken(ConfigData.Data.Discord.Token), new ShardedGatewayClientConfiguration
             {
                 IntentsFactory = _ => intents,
+                CacheProviderFactory = _ => ConcurrentGatewayClientCacheProvider.Empty,
                 TotalShardCount = ConfigData.Data.Shards.TotalShards,
                 ShardRange = startShard..(endShard + 1), // End is exclusive in NetCord
                 MaxConcurrency = maxConcurrency,
@@ -189,6 +190,7 @@ public class Startup
         return new ShardedGatewayClient(new BotToken(ConfigData.Data.Discord.Token), new ShardedGatewayClientConfiguration
         {
             IntentsFactory = _ => intents,
+            CacheProviderFactory = _ => ConcurrentGatewayClientCacheProvider.Empty,
             MaxConcurrency = maxConcurrency,
             LoggerFactory = shard => new SerilogGatewayLogger(shard)
         });
