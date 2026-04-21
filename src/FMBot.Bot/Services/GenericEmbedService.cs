@@ -295,7 +295,8 @@ public static class GenericEmbedService
             {
                 case ResponseStatus.Failure:
                     embed.WithDescription(
-                        "We tried fetching your data from Last.fm, but they returned an error. Please try again in a bit.");
+                        "We tried fetching your data from Last.fm, but they returned an error. Please try again in a bit."
+                        + LastfmErrorRateTracker.GetFailureRateDescription());
                     break;
                 case ResponseStatus.LoginRequired:
                     embed.WithDescription(
