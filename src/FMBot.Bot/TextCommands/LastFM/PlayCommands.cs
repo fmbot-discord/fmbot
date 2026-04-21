@@ -411,8 +411,6 @@ public class PlayCommands(
     [Examples("p", "plays", "plays @frikandel", "plays monthly")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Other)]
-    [SupporterEnhanced(
-        $"For non-supporters, the maximum amount of cached plays is limited to their last 15000 scrobbles, meaning this is also the limit for streaks")]
     public async Task PlaysAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
