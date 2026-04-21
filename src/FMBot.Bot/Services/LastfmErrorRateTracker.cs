@@ -45,7 +45,7 @@ public static class LastfmErrorRateTracker
         }
 
         return
-            $"\n\nIn the last hour, Last.fm has returned this error on {snap.AveragePercent.ToString("0.#", CultureInfo.InvariantCulture)}% of our requests.  `{snap.Sparkline}`";
+            $"\n\nIn the last hour they've returned an error on {snap.AveragePercent.ToString("0.#", CultureInfo.InvariantCulture)}% of our requests.  `{snap.Sparkline}`";
     }
 
     private static void TriggerRefresh()
@@ -130,10 +130,12 @@ public static class LastfmErrorRateTracker
 
         var avgPercent = sum / count * 100d;
 
+        var scaleMax = Math.Max(max, 0.10d);
+
         var sb = new StringBuilder(count);
         for (var i = 0; i < count; i++)
         {
-            var idx = max <= 0 ? 0 : (int)Math.Round(series[i] / max * (Blocks.Length - 1));
+            var idx = (int)Math.Round(series[i] / scaleMax * (Blocks.Length - 1));
             if (idx < 0)
             {
                 idx = 0;
