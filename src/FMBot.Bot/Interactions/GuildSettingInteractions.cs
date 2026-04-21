@@ -165,7 +165,7 @@ public class GuildSettingInteractions(
         }
         else if (newPrefix.Contains('/') || newPrefix.Contains('*') || newPrefix.Contains('|') ||
                  newPrefix.Contains('`') || newPrefix.Contains('#') || newPrefix.Contains('_') ||
-                 newPrefix.Contains('~'))
+                 newPrefix.Contains('~') || newPrefix.Contains('@'))
         {
             await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
                 .WithContent("Prefix contains disallowed characters. Please try a different prefix.")
