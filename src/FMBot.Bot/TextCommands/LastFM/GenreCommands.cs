@@ -95,7 +95,7 @@ public class GenreCommands(
         }
     }
 
-    [Command("whoknowsgenre", "wg", "wkg")]
+    [Command("whoknowsgenre", "wg", "wkg", "wkgenre")]
     [Summary("Shows what other users listen to a genre in your server")]
     [Examples("wg", "wkg hip hop", "whoknowsgenre", "whoknowsgenre techno")]
     [UsernameSetRequired]

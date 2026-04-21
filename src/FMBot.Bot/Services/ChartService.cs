@@ -146,11 +146,9 @@ public class ChartService
                         {
                             var albumCoverUrl = album.AlbumCoverUrl;
 
-                            if (albumCoverUrl.Contains("lastfm.freetls.fastly.net") &&
-                                !albumCoverUrl.Contains("/300x300/"))
+                            if (albumCoverUrl.Contains("lastfm.freetls.fastly.net"))
                             {
                                 albumCoverUrl = albumCoverUrl.Replace("/770x0/", "/");
-                                albumCoverUrl = albumCoverUrl.Replace("/i/u/", "/i/u/300x300/");
                             }
 
                             try
@@ -164,7 +162,7 @@ public class ChartService
                             }
                             catch (Exception e)
                             {
-                                Log.Error(e, "Error while loading image for generated chart");
+                                Log.Error(e, "Error while loading image for generated chart - {albumCoverUrl}", albumCoverUrl);
                                 chartImage = SKBitmap.Decode(this._loadingErrorImagePath);
                                 validImage = false;
                             }
@@ -445,29 +443,34 @@ public class ChartService
         if (chartImage.Height != chartImageHeight || chartImage.Width != chartImageWidth)
         {
             using var surface = SKSurface.Create(new SKImageInfo(chartImageWidth, chartImageHeight));
-            using var paint = new SKPaint { IsAntialias = true, FilterQuality = SKFilterQuality.High };
+            using var paint = new SKPaint { IsAntialias = true };
+            using var sourceImage = SKImage.FromBitmap(chartImage);
+            var sampling = new SKSamplingOptions(SKCubicResampler.Mitchell);
 
-            var ratioBitmap = (float)chartImage.Width / (float)chartImage.Height;
-            var ratioMax = (float)chartImageWidth / (float)chartImageHeight;
+            var ratioBitmap = (float)chartImage.Width / chartImage.Height;
+            var ratioMax = (float)chartImageWidth / chartImageHeight;
 
-            var srcWidth = chartImage.Width;
-            var srcHeight = chartImage.Height;
-            if (ratioBitmap > ratioMax)
+            SKRect src, dst;
+            if (chart.ArtistChart)
             {
-                srcWidth = (int)(chartImage.Height * ratioMax);
+                var srcWidth = ratioBitmap > ratioMax ? chartImage.Height * ratioMax : chartImage.Width;
+                var srcHeight = ratioBitmap < ratioMax ? chartImage.Width / ratioMax : chartImage.Height;
+                var srcLeft = (chartImage.Width - srcWidth) / 2f;
+                var srcTop = (chartImage.Height - srcHeight) / 2f;
+                src = new SKRect(srcLeft, srcTop, srcLeft + srcWidth, srcTop + srcHeight);
+                dst = new SKRect(0, 0, chartImageWidth, chartImageHeight);
             }
-            else if (ratioBitmap < ratioMax)
+            else
             {
-                srcHeight = (int)(chartImage.Width / ratioMax);
+                var dstWidth = ratioMax > ratioBitmap ? chartImageHeight * ratioBitmap : chartImageWidth;
+                var dstHeight = ratioMax < ratioBitmap ? chartImageWidth / ratioBitmap : chartImageHeight;
+                var dstLeft = (chartImageWidth - dstWidth) / 2f;
+                var dstTop = (chartImageHeight - dstHeight) / 2f;
+                src = new SKRect(0, 0, chartImage.Width, chartImage.Height);
+                dst = new SKRect(dstLeft, dstTop, dstLeft + dstWidth, dstTop + dstHeight);
             }
 
-            var srcLeft = (chartImage.Width - srcWidth) / 2;
-            var srcTop = (chartImage.Height - srcHeight) / 2;
-
-            surface.Canvas.DrawBitmap(chartImage,
-                new SKRect(srcLeft, srcTop, srcLeft + srcWidth, srcTop + srcHeight),
-                new SKRect(0, 0, chartImageWidth, chartImageHeight),
-                paint);
+            surface.Canvas.DrawImage(sourceImage, src, dst, sampling, paint);
             surface.Canvas.Flush();
 
             using var resizedImage = surface.Snapshot();

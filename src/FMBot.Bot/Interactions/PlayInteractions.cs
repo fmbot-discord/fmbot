@@ -13,6 +13,7 @@ using FMBot.Domain;
 using FMBot.Domain.Attributes;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
+using Microsoft.Extensions.Caching.Memory;
 using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ComponentInteractions;
@@ -24,7 +25,8 @@ public class PlayInteractions(
     SettingService settingService,
     PlayBuilder playBuilder,
     RecapBuilders recapBuilders,
-    InteractiveService interactivity)
+    InteractiveService interactivity,
+    IMemoryCache cache)
     : ComponentInteractionModule<ComponentInteractionContext>
 {
     [ComponentInteraction(InteractionConstants.DeleteStreak)]
@@ -194,6 +196,152 @@ public class PlayInteractions(
                 await recapBuilders.RecapAsync(
                     new ContextModel(this.Context, contextUser, discordContextUser), userSettings, timeSettings,
                     viewType);
+
+            await this.Context.UpdateInteractionEmbed(response, interactivity, false);
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.Search.Tab)]
+    [UsernameSetRequired]
+    public async Task SearchTabAsync(string cacheKey, string tabIndexStr, string discordUserIdStr)
+    {
+        await RenderSearchAsync(cacheKey, tabIndexStr, "0", discordUserIdStr);
+    }
+
+    [ComponentInteraction(InteractionConstants.Search.Page)]
+    [UsernameSetRequired]
+    public async Task SearchPageAsync(string cacheKey, string tabIndexStr, string pageStr, string discordUserIdStr)
+    {
+        await RenderSearchAsync(cacheKey, tabIndexStr, pageStr, discordUserIdStr);
+    }
+
+    private async Task RenderSearchAsync(string cacheKey, string tabIndexStr, string pageStr, string discordUserIdStr)
+    {
+        try
+        {
+            if (!ulong.TryParse(discordUserIdStr, out var ownerDiscordId) ||
+                !Enum.TryParse<SearchTab>(tabIndexStr, out var tab) ||
+                !Enum.IsDefined(tab) ||
+                !int.TryParse(pageStr, out var page))
+            {
+                return;
+            }
+
+            if (page < 0)
+            {
+                page = 0;
+            }
+
+            if (this.Context.User.Id != ownerDiscordId)
+            {
+                await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                    .WithContent("Only the user who ran the search can interact with it.")
+                    .WithFlags(MessageFlags.Ephemeral)));
+                return;
+            }
+
+            if (!cache.TryGetValue<SearchQueryModel>($"search-{cacheKey}", out var search) || search == null)
+            {
+                await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                    .WithContent("Search expired — please run `/search` again.")
+                    .WithFlags(MessageFlags.Ephemeral)));
+                return;
+            }
+
+            await RespondAsync(InteractionCallback.DeferredModifyMessage);
+
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+            var response = await playBuilder.SearchAsync(new ContextModel(this.Context, contextUser), search, tab,
+                page, cacheKey);
+
+            await this.Context.UpdateInteractionEmbed(response, interactivity, false);
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.Search.EditButton)]
+    [UsernameSetRequired]
+    public async Task SearchEditButtonAsync(string cacheKey, string tabIndexStr, string discordUserIdStr)
+    {
+        try
+        {
+            if (!ulong.TryParse(discordUserIdStr, out var ownerDiscordId) ||
+                !Enum.TryParse<SearchTab>(tabIndexStr, out var tab) ||
+                !Enum.IsDefined(tab))
+            {
+                return;
+            }
+
+            if (this.Context.User.Id != ownerDiscordId)
+            {
+                await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                    .WithContent("Only the user who ran the search can edit it.")
+                    .WithFlags(MessageFlags.Ephemeral)));
+                return;
+            }
+
+            if (!cache.TryGetValue<SearchQueryModel>($"search-{cacheKey}", out var search) || search == null)
+            {
+                await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                    .WithContent("Search expired — please run `/search` again.")
+                    .WithFlags(MessageFlags.Ephemeral)));
+                return;
+            }
+
+            var modalCustomId = $"{InteractionConstants.Search.EditModal}:{cacheKey}:{(int)tab}:{ownerDiscordId}";
+            await RespondAsync(InteractionCallback.Modal(ModalFactory.CreateSearchModal(modalCustomId, search)));
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.Search.EditModal)]
+    [UsernameSetRequired]
+    public async Task SearchEditModalAsync(string cacheKey, string tabIndexStr, string discordUserIdStr)
+    {
+        try
+        {
+            if (!ulong.TryParse(discordUserIdStr, out var ownerDiscordId) ||
+                !Enum.TryParse<SearchTab>(tabIndexStr, out var tab) ||
+                !Enum.IsDefined(tab))
+            {
+                return;
+            }
+
+            if (this.Context.User.Id != ownerDiscordId)
+            {
+                await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                    .WithContent("Only the user who ran the search can edit it.")
+                    .WithFlags(MessageFlags.Ephemeral)));
+                return;
+            }
+
+            var newQuery = this.Context.GetModalValue("query");
+            if (string.IsNullOrWhiteSpace(newQuery))
+            {
+                await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                    .WithContent("Please enter a search query.")
+                    .WithFlags(MessageFlags.Ephemeral)));
+                return;
+            }
+
+            await RespondAsync(InteractionCallback.DeferredModifyMessage);
+
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+            var search = new SearchQueryModel { Query = newQuery };
+            var response = await playBuilder.SearchAsync(new ContextModel(this.Context, contextUser), search,
+                tab, 0, cacheKey);
 
             await this.Context.UpdateInteractionEmbed(response, interactivity, false);
             await this.Context.LogCommandUsedAsync(response, userService);

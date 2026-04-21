@@ -159,13 +159,20 @@ public class SpotifyService
 
     public async Task<TrackAudioFeatures> GetAudioFeaturesFromSpotify(string spotifyId)
     {
-        //Create the auth object
-        var spotify = GetSpotifyWebApi();
+        try
+        {
+            var spotify = GetSpotifyWebApi();
 
-        var result = await spotify.Tracks.GetAudioFeatures(spotifyId);
-        Statistics.SpotifyApiCalls.Inc();
+            var result = await spotify.Tracks.GetAudioFeatures(spotifyId);
+            Statistics.SpotifyApiCalls.Inc();
 
-        return result;
+            return result;
+        }
+        catch (Exception e)
+        {
+            Log.Warning(e, "SpotifyService: Failed to get audio features for {spotifyId}", spotifyId);
+            return null;
+        }
     }
 
     public async Task<ICollection<Track>> GetDatabaseAlbumTracks(int albumId)

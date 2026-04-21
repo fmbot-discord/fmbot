@@ -102,22 +102,18 @@ public class DiscogsService
 
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
-        var ids = releases.Releases.Select(s => s.Id);
+        var uniqueReleases = releases.Releases
+            .GroupBy(g => g.Id)
+            .Select(g => g.First())
+            .ToList();
+
+        var ids = uniqueReleases.Select(s => s.Id);
         var existingReleases = await db.DiscogsReleases
             .Where(f => ids.Contains(f.DiscogsId))
             .ToListAsync();
 
-        foreach (var release in releases.Releases)
+        foreach (var release in uniqueReleases)
         {
-            var userDiscogsRelease = new UserDiscogsReleases
-            {
-                DateAdded = DateTime.SpecifyKind(release.DateAdded, DateTimeKind.Utc),
-                InstanceId = release.InstanceId,
-                Quantity = release.BasicInformation.Formats.First().Qty,
-                Rating = release.Rating == 0 ? null : release.Rating,
-                UserId = user.UserId
-            };
-
             var existingRelease = existingReleases.FirstOrDefault(f => f.DiscogsId == release.Id);
             if (existingRelease == null)
             {
@@ -127,8 +123,6 @@ public class DiscogsService
                 await db.DiscogsReleases.AddAsync(newRelease);
 
                 existingReleases.Add(newRelease);
-
-                userDiscogsRelease.ReleaseId = newRelease.DiscogsId;
             }
             else
             {
@@ -141,11 +135,20 @@ public class DiscogsService
                     """);
 
                 db.DiscogsReleases.Update(existingRelease);
-
-                userDiscogsRelease.ReleaseId = existingRelease.DiscogsId;
             }
+        }
 
-            await db.UserDiscogsReleases.AddAsync(userDiscogsRelease);
+        foreach (var release in releases.Releases)
+        {
+            await db.UserDiscogsReleases.AddAsync(new UserDiscogsReleases
+            {
+                DateAdded = DateTime.SpecifyKind(release.DateAdded, DateTimeKind.Utc),
+                InstanceId = release.InstanceId,
+                Quantity = release.BasicInformation.Formats.First().Qty,
+                Rating = release.Rating == 0 ? null : release.Rating,
+                UserId = user.UserId,
+                ReleaseId = release.Id
+            });
         }
 
         var artistNames = existingReleases

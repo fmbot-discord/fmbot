@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -21,23 +23,28 @@ public static class GatewayClientExtensions
 
     public static async Task<GuildUser> GetCachedGuildUserAsync(this Guild guild, ulong userId)
     {
-        if (guild.Users.TryGetValue(userId, out var cachedUser))
+        if (Random.Shared.Next(4) != 0 && guild.Users.TryGetValue(userId, out var cachedUser))
         {
             return cachedUser;
         }
 
-        return await guild.GetUserAsync(userId);
+        var freshUser = await guild.GetUserAsync(userId);
+
+        if (guild.Users is ConcurrentDictionary<ulong, GuildUser> writableUsers)
+        {
+            writableUsers[userId] = freshUser;
+        }
+
+        return freshUser;
     }
 
     public static async Task<User> GetCachedUserAsync(this GatewayClient client, ulong userId, ulong? guildId = null)
     {
-        if (guildId.HasValue)
+        if (guildId.HasValue &&
+            client.Cache.Guilds.TryGetValue(guildId.Value, out var guild) &&
+            guild.Users.ContainsKey(userId))
         {
-            var guild = client.Cache.Guilds.GetValueOrDefault(guildId.Value);
-            if (guild?.Users?.TryGetValue(userId, out var cachedUser) == true)
-            {
-                return cachedUser;
-            }
+            return await guild.GetCachedGuildUserAsync(userId);
         }
 
         return await client.Rest.GetUserAsync(userId);

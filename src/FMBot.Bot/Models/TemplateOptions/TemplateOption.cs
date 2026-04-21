@@ -81,6 +81,8 @@ public class TemplateContext
 
     public Track DbTrack { get; set; }
 
+    public Album DbAlbum { get; set; }
+
     public RecentTrack PreviousTrack { get; set; }
 
     public long TotalScrobbles { get; set; }
@@ -384,7 +386,7 @@ public static class TemplateOptions
             ParametersFactory = context => new Dictionary<string, object>
             {
                 { "userId", context.UserSettings.UserId },
-                { "albumId", context.DbTrack?.AlbumId ?? 0 },
+                { "albumId", context.DbAlbum?.Id ?? 0 },
             }
         },
         new ComplexTemplateOption
@@ -930,13 +932,13 @@ public static class TemplateOptions
                     return null;
                 }
 
-                if (context.DbTrack?.AlbumId == null)
+                if (context.DbAlbum == null)
                 {
                     return null;
                 }
 
                 var albumListeners = await context.WhoKnowsAlbumService.GetIndexedUsersForAlbum(null,
-                    context.GuildUsers, context.Guild.GuildId, context.DbTrack.AlbumId.Value);
+                    context.GuildUsers, context.Guild.GuildId, context.DbAlbum.Id);
                 albumListeners = WhoKnowsService
                     .FilterWhoKnowsObjects(albumListeners, context.GuildUsers, context.Guild, 0).filteredUsers;
 
@@ -967,13 +969,13 @@ public static class TemplateOptions
                     return null;
                 }
 
-                if (context.DbTrack?.AlbumId == null)
+                if (context.DbAlbum == null)
                 {
                     return null;
                 }
 
                 var albumListeners = await context.WhoKnowsAlbumService.GetIndexedUsersForAlbum(null,
-                    context.GuildUsers, context.Guild.GuildId, context.DbTrack.AlbumId.Value);
+                    context.GuildUsers, context.Guild.GuildId, context.DbAlbum.Id);
                 albumListeners = WhoKnowsService
                     .FilterWhoKnowsObjects(albumListeners, context.GuildUsers, context.Guild, 0).filteredUsers;
 
@@ -1135,7 +1137,7 @@ public static class TemplateOptions
             ParametersFactory = context => new Dictionary<string, object>
             {
                 { "userId", context.UserSettings.UserId },
-                { "albumId", context.DbTrack?.AlbumId ?? 0 }
+                { "albumId", context.DbAlbum?.Id ?? 0 }
             }
         },
         new SqlTemplateOption

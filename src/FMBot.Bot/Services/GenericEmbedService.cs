@@ -45,47 +45,50 @@ public static class GenericEmbedService
                 customId: InteractionConstants.User.Login);
     }
 
-    public static void RateLimitedResponse(this EmbedProperties embed)
+    extension(EmbedProperties embed)
     {
-        embed.WithDescription(
-            $"Sorry, you're being rate-limited. Please cool down and wait a minute before using commands again.");
-        embed.WithColor(DiscordConstants.WarningColorOrange);
-    }
+        public void RateLimitedResponse()
+        {
+            embed.WithDescription(
+                $"Sorry, you're being rate-limited. Please cool down and wait a minute before using commands again.");
+            embed.WithColor(DiscordConstants.WarningColorOrange);
+        }
 
-    public static void UserBlockedResponse(this EmbedProperties embed, string prfx)
-    {
-        embed.WithDescription("You're banned from using .fmbot.");
-        embed.WithThumbnail("https://i.imgur.com/wNmcoR5.jpg");
+        public void UserBlockedResponse(string prfx)
+        {
+            embed.WithDescription("You're banned from using .fmbot.");
+            embed.WithThumbnail("https://i.imgur.com/wNmcoR5.jpg");
 
-        embed.WithColor(DiscordConstants.WarningColorOrange);
-    }
+            embed.WithColor(DiscordConstants.WarningColorOrange);
+        }
 
-    public static void SessionRequiredResponse(this EmbedProperties embed, string prfx)
-    {
-        embed.WithDescription(
-            "While you have set your username, you haven't connected .fmbot to your Last.fm account yet, which is required for the command you're trying to use.\n" +
-            $"Please reconnect your Last.fm account with the button below.");
+        public void SessionRequiredResponse(string prfx)
+        {
+            embed.WithDescription(
+                "While you have set your username, you haven't connected .fmbot to your Last.fm account yet, which is required for the command you're trying to use.\n" +
+                $"Please reconnect your Last.fm account with the button below.");
 
-        embed.WithColor(DiscordConstants.WarningColorOrange);
-    }
+            embed.WithColor(DiscordConstants.WarningColorOrange);
+        }
 
-    private static void NoScrobblesFoundErrorResponse(this EmbedProperties embed, string userName)
-    {
-        var description = new StringBuilder();
-        description.AppendLine(
-            $"The Last.fm user **{userName}** has no listening history on [their profile]({Constants.LastFMUserUrl}{userName}) yet.");
-        description.AppendLine();
-        description.AppendLine(
-            "Just created your Last.fm account? Make sure you set it to [track your music app](https://www.last.fm/about/trackmymusic).");
-        description.AppendLine();
-        description.AppendLine(
-            "Using Spotify? You can link that [here](https://www.last.fm/settings/applications). This can take a few minutes to start working.");
-        description.AppendLine();
-        description.AppendLine($"Please note that .fmbot is not affiliated with Last.fm or Spotify.");
+        private void NoScrobblesFoundErrorResponse(string userName)
+        {
+            var description = new StringBuilder();
+            description.AppendLine(
+                $"The Last.fm user **{userName}** has no listening history on [their profile]({Constants.LastFMUserUrl}{userName}) yet.");
+            description.AppendLine();
+            description.AppendLine(
+                "Just created your Last.fm account? Make sure you set it to [track your music app](https://www.last.fm/about/trackmymusic).");
+            description.AppendLine();
+            description.AppendLine(
+                "Using Spotify? You can link that [here](https://www.last.fm/settings/applications). This can take a few minutes to start working.");
+            description.AppendLine();
+            description.AppendLine($"Please note that .fmbot is not affiliated with Last.fm or Spotify.");
 
-        embed.WithDescription(description.ToString());
+            embed.WithDescription(description.ToString());
 
-        embed.WithColor(DiscordConstants.WarningColorOrange);
+            embed.WithColor(DiscordConstants.WarningColorOrange);
+        }
     }
 
     private static ActionRowProperties NoScrobblesFoundComponents()
@@ -93,77 +96,6 @@ public static class GenericEmbedService
         return new ActionRowProperties()
             .WithButton("Track my music app", url: "https://www.last.fm/about/trackmymusic")
             .WithButton("Track Spotify", url: "https://www.last.fm/settings/applications");
-    }
-
-    public static void ErrorResponse(this EmbedProperties embed, ResponseStatus? responseStatus, string message,
-        string commandContent, NetCord.User contextUser = null, string expectedResultType = null)
-    {
-        embed.WithTitle("Problem while contacting Last.fm");
-
-        if (PublicProperties.IssuesAtLastFm && PublicProperties.IssuesReason != null)
-        {
-            embed.AddField("Note from .fmbot staff:", $"*\"{PublicProperties.IssuesReason}\"*");
-        }
-
-        var loginCommand = PublicProperties.SlashCommands.ContainsKey("login")
-            ? $"</login:{PublicProperties.SlashCommands["login"]}>"
-            : "`/login`";
-
-        switch (responseStatus)
-        {
-            case ResponseStatus.Failure:
-                embed.WithDescription(
-                    "Can't retrieve data because Last.fm returned an error. Please try again later.\n" +
-                    $"Please note that .fmbot isn't affiliated with Last.fm.");
-                break;
-            case ResponseStatus.LoginRequired:
-                embed.WithDescription(
-                    "Can't retrieve data because your recent tracks are marked as private in your [Last.fm privacy settings](https://www.last.fm/settings/privacy).\n\n" +
-                    $"You can either change this setting or authorize .fmbot to access your private scrobbles with {loginCommand}.\n\n" +
-                    $"Please note that .fmbot isn't affiliated with Last.fm.");
-                break;
-            case ResponseStatus.BadAuth:
-                embed.WithDescription(
-                    "Can't retrieve data because your Last.fm session is expired, invalid or Last.fm is having issues.\n" +
-                    $"Please try a re-login to the bot with {loginCommand}.");
-                break;
-            case ResponseStatus.SessionExpired:
-                embed.WithDescription(
-                    "Can't retrieve data because .fmbot has been disconnected from your Last.fm account.\n" +
-                    $"Please re-authorize .fmbot with {loginCommand}.");
-                break;
-            case ResponseStatus.MissingParameters:
-                if (expectedResultType != null)
-                {
-                    embed.Title = null;
-                    embed.WithDescription(
-                        $"Sorry, Last.fm did not return an {expectedResultType} for the name you searched for.");
-                }
-                else if (message.Equals("Not found"))
-                {
-                    embed.WithDescription(
-                        $"Last.fm did not return a result. There may be no results, or you might be looking for a user who recently changed their username. In that case, they should re-run /login.");
-                }
-                else
-                {
-                    goto default;
-                }
-
-                break;
-            default:
-                embed.WithDescription(message ?? "Unknown error");
-                break;
-        }
-
-        if (responseStatus != null)
-        {
-            embed.WithFooter($"Last.fm error code: {responseStatus}");
-        }
-
-        embed.WithColor(DiscordConstants.WarningColorOrange);
-        Log.Information(
-            "Last.fm returned error: {message} | {responseStatus} | {discordUserName} / {discordUserId} | {messageContent}",
-            message, responseStatus, contextUser?.Username, contextUser?.Id, commandContent);
     }
 
     public static bool RecentScrobbleCallFailed(Response<RecentTrackList> recentScrobbles)
@@ -204,25 +136,6 @@ public static class GenericEmbedService
         }
 
         return false;
-    }
-
-    public static EmbedProperties RecentScrobbleCallFailedBuilder(Response<RecentTrackList> recentScrobbles,
-        string lastFmUserName)
-    {
-        var embed = new EmbedProperties();
-        if (recentScrobbles.Content?.RecentTracks == null || !recentScrobbles.Success)
-        {
-            embed.ErrorResponse(recentScrobbles.Error, recentScrobbles.Message, null);
-            return embed;
-        }
-
-        if (!recentScrobbles.Content.RecentTracks.Any())
-        {
-            embed.NoScrobblesFoundErrorResponse(lastFmUserName);
-            return embed;
-        }
-
-        return null;
     }
 
     public static ResponseModel RecentScrobbleCallFailedResponse(Response<RecentTrackList> recentScrobbles,
@@ -365,39 +278,114 @@ public static class GenericEmbedService
                 Name = value
             });
         }
-    }
 
-    public static ActionRowProperties WithButton(this ActionRowProperties actionRow, EmojiProperties emote,
-        string url = null, string label = null)
-    {
-        var linkButton = label == null
-            ? new LinkButtonProperties(url, emote)
-            : new LinkButtonProperties(url, label, emote);
-        actionRow.Add(linkButton);
-        return actionRow;
-    }
-
-    public static ActionRowProperties WithButton(this ActionRowProperties actionRow, string label,
-        string customId = null, ButtonStyle style = ButtonStyle.Secondary, EmojiProperties emote = null,
-        bool disabled = false, string url = null, int row = 0)
-    {
-        if (url != null)
+        public void ErrorResponse(ResponseStatus? responseStatus, string message,
+            string commandContent, User contextUser = null, string expectedResultType = null)
         {
-            var linkButton = emote == null
-                ? new LinkButtonProperties(url, label)
+            if (PublicProperties.IssuesAtLastFm && PublicProperties.IssuesReason != null)
+            {
+                embed.AddField("Note from .fmbot staff:", $"*\"{PublicProperties.IssuesReason}\"*");
+            }
+
+            var loginCommand = PublicProperties.SlashCommands.TryGetValue("login", out var slashCommand)
+                ? $"</login:{slashCommand}>"
+                : "`/login`";
+
+            switch (responseStatus)
+            {
+                case ResponseStatus.Failure:
+                    embed.WithDescription(
+                        "We tried fetching your data from Last.fm, but they returned an error. Please try again in a bit.");
+                    break;
+                case ResponseStatus.LoginRequired:
+                    embed.WithDescription(
+                        "We couldn't fetch your data, your recent tracks are marked private on Last.fm.\n\n" +
+                        $"Change this in your [privacy settings](https://www.last.fm/settings/privacy), or authorize .fmbot to access private scrobbles with {loginCommand}.");
+                    break;
+                case ResponseStatus.BadAuth:
+                    embed.WithDescription(
+                        $"We couldn't reach Last.fm for you, your session is invalid or Last.fm is having issues. You can try logging in again with {loginCommand} or trying again in a bit.");
+                    break;
+                case ResponseStatus.SessionExpired:
+                    embed.WithDescription(
+                        $"We couldn't fetch your data, .fmbot got disconnected from your Last.fm account. Please re-authorize with {loginCommand} and use the 'Connect Last.fm account' button.");
+                    break;
+                case ResponseStatus.MissingParameters:
+                    if (expectedResultType != null)
+                    {
+                        embed.Title = null;
+                        embed.WithDescription(
+                            $"Last.fm didn't return a {expectedResultType} for your search.");
+                    }
+                    else if (message.Equals("Not found"))
+                    {
+                        embed.WithDescription(
+                            "Last.fm didn't return a result. If you're searching for a user who recently changed their username, they should re-run `/login`.");
+                    }
+                    else
+                    {
+                        goto default;
+                    }
+
+                    break;
+                default:
+                    embed.WithDescription(message ?? "Unknown error");
+                    break;
+            }
+
+            var footer = new StringBuilder();
+
+            if (responseStatus != null)
+            {
+                footer.Append($"Error code: {responseStatus}");
+                footer.AppendLine();
+            }
+
+            footer.Append(".fmbot is not affiliated with Last.fm");
+
+            embed.WithFooter(footer.ToString());
+
+            embed.WithColor(DiscordConstants.WarningColorOrange);
+            Log.Information(
+                "Last.fm returned error: {message} | {responseStatus} | {discordUserName} / {discordUserId} | {messageContent}",
+                message, responseStatus, contextUser?.Username, contextUser?.Id, commandContent);
+        }
+    }
+
+    extension(ActionRowProperties actionRow)
+    {
+        public ActionRowProperties WithButton(EmojiProperties emote,
+            string url = null, string label = null)
+        {
+            var linkButton = label == null
+                ? new LinkButtonProperties(url, emote)
                 : new LinkButtonProperties(url, label, emote);
             actionRow.Add(linkButton);
-        }
-        else if (customId != null)
-        {
-            var button = emote == null
-                ? new ButtonProperties(customId, label, style)
-                : new ButtonProperties(customId, label, emote, style);
-            button.Disabled = disabled;
-            actionRow.Add(button);
+            return actionRow;
         }
 
-        return actionRow;
+        public ActionRowProperties WithButton(string label,
+            string customId = null, ButtonStyle style = ButtonStyle.Secondary, EmojiProperties emote = null,
+            bool disabled = false, string url = null, int row = 0)
+        {
+            if (url != null)
+            {
+                var linkButton = emote == null
+                    ? new LinkButtonProperties(url, label)
+                    : new LinkButtonProperties(url, label, emote);
+                actionRow.Add(linkButton);
+            }
+            else if (customId != null)
+            {
+                var button = emote == null
+                    ? new ButtonProperties(customId, label, style)
+                    : new ButtonProperties(customId, label, emote, style);
+                button.Disabled = disabled;
+                actionRow.Add(button);
+            }
+
+            return actionRow;
+        }
     }
 
     public static List<ActionRowProperties> WithButton(this List<ActionRowProperties> rows, string label,
@@ -406,7 +394,7 @@ public static class GenericEmbedService
     {
         while (rows.Count <= row)
         {
-            rows.Add(new ActionRowProperties());
+            rows.Add([]);
         }
 
         if (url != null)
@@ -427,7 +415,7 @@ public static class GenericEmbedService
     {
         if (!rows.ContainsKey(row))
         {
-            rows[row] = new ActionRowProperties();
+            rows[row] = [];
         }
 
         if (url != null)
@@ -448,66 +436,68 @@ public static class GenericEmbedService
         return components;
     }
 
-    public static StringMenuProperties AddOption(this StringMenuProperties menu,
-        StringMenuSelectOptionProperties properties)
+    extension(StringMenuProperties menu)
     {
-        menu.Add(properties);
-        return menu;
-    }
-
-    public static StringMenuProperties AddOption(this StringMenuProperties menu, string label, string value,
-        bool isDefault = false, string description = null)
-    {
-        var option = new StringMenuSelectOptionProperties(label, value)
+        public StringMenuProperties AddOption(StringMenuSelectOptionProperties properties)
         {
-            Default = isDefault,
-            Description = description
-        };
+            menu.Add(properties);
+            return menu;
+        }
 
-        menu.Add(option);
-        return menu;
+        public StringMenuProperties AddOption(string label, string value,
+            bool isDefault = false, string description = null)
+        {
+            var option = new StringMenuSelectOptionProperties(label, value)
+            {
+                Default = isDefault,
+                Description = description
+            };
+
+            menu.Add(option);
+            return menu;
+        }
     }
 
-    public static ComponentContainerProperties AddComponent(this ComponentContainerProperties component,
-        IComponentContainerComponentProperties properties)
+    extension(ComponentContainerProperties component)
     {
-        component.AddComponents(properties);
-        return component;
-    }
+        public ComponentContainerProperties AddComponent(IComponentContainerComponentProperties properties)
+        {
+            component.AddComponents(properties);
+            return component;
+        }
 
-    public static ComponentContainerProperties WithSection(this ComponentContainerProperties component,
-        IEnumerable<TextDisplayProperties> textDisplays, string thumbnailUrl)
-    {
-        var section = new ComponentSectionProperties(
-            new ComponentSectionThumbnailProperties(new ComponentMediaProperties(thumbnailUrl)),
-            textDisplays);
-        component.AddComponents(section);
-        return component;
-    }
+        public ComponentContainerProperties WithSection(IEnumerable<TextDisplayProperties> textDisplays, string thumbnailUrl)
+        {
+            var section = new ComponentSectionProperties(
+                new ComponentSectionThumbnailProperties(new ComponentMediaProperties(thumbnailUrl)),
+                textDisplays);
+            component.AddComponents(section);
+            return component;
+        }
 
-    public static ComponentContainerProperties WithSection(this ComponentContainerProperties component,
-        IEnumerable<TextDisplayProperties> textDisplays, ComponentSectionThumbnailProperties thumbnail)
-    {
-        var section = new ComponentSectionProperties(thumbnail, textDisplays);
-        component.AddComponents(section);
-        return component;
-    }
+        public ComponentContainerProperties WithSection(IEnumerable<TextDisplayProperties> textDisplays, ComponentSectionThumbnailProperties thumbnail)
+        {
+            var section = new ComponentSectionProperties(thumbnail, textDisplays);
+            component.AddComponents(section);
+            return component;
+        }
 
-    public static ComponentContainerProperties WithTextDisplay(this ComponentContainerProperties component, string text)
-    {
-        component.AddComponents(new TextDisplayProperties(text));
-        return component;
-    }
+        public ComponentContainerProperties WithTextDisplay(string text)
+        {
+            component.AddComponents(new TextDisplayProperties(text));
+            return component;
+        }
 
-    public static ComponentContainerProperties WithSeparator(this ComponentContainerProperties component)
-    {
-        component.AddComponents(new ComponentSeparatorProperties());
-        return component;
-    }
+        public ComponentContainerProperties WithSeparator()
+        {
+            component.AddComponents(new ComponentSeparatorProperties());
+            return component;
+        }
 
-    public static ComponentContainerProperties WithActionRow(this ComponentContainerProperties component, ActionRowProperties actionRow)
-    {
-        component.AddComponents(actionRow);
-        return component;
+        public ComponentContainerProperties WithActionRow(ActionRowProperties actionRow)
+        {
+            component.AddComponents(actionRow);
+            return component;
+        }
     }
 }

@@ -61,6 +61,9 @@ public static class Constants
 
     public const int NonSupporterMaxSavedPlays = 15000;
     public const int NonSupporterMaxSavedPlayPages = 15;
+    public const int NonSupporterMaxSavedTracks = 6000;
+    public const int NonSupporterMaxSavedAlbums = 5000;
+    public const int NonSupporterMaxSavedArtists = 4000;
 
     public const string GetPremiumServer = "This feature is not quite ready yet. Stay tuned!";
 
