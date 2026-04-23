@@ -130,7 +130,7 @@ public class GameService(
             .Where(w => w.UserPlaycount >= finalMinPlaycount)
             .ToList();
 
-        Log.Information(
+        Log.Debug(
             "PickArtistForJumble: {topArtistCount} top artists - {jumblesPlayedTodayCount} jumbles played today - " +
             "{multiplier} multiplier - {minPlaycount} min playcount - {finalMinPlaycount} final min playcount",
             topArtists.Count, recentJumbles.Count, multiplier, minPlaycount, finalMinPlaycount);
@@ -183,7 +183,7 @@ public class GameService(
 
         var selected = WeightedRandomSelect(scored);
 
-        Log.Information(
+        Log.Debug(
             "PickArtistForJumble: Selected '{artistName}' with {playcount} plays, global pop: {globalPop}",
             selected.ArtistName, selected.UserPlaycount,
             popLookup.GetValueOrDefault(selected.ArtistName, defaultPopularity));
@@ -253,7 +253,7 @@ public class GameService(
                 w.UserPlaycount >= finalMinPlaycount)
             .ToList();
 
-        Log.Information(
+        Log.Debug(
             "PickAlbumForPixelation: {topArtistCount} top artists - {jumblesPlayedTodayCount} jumbles played today - " +
             "{multiplier} multiplier - {minPlaycount} min playcount - {finalMinPlaycount} final min playcount",
             topAlbums.Count, recentJumbles.Count, multiplier, minPlaycount, finalMinPlaycount);
@@ -316,7 +316,7 @@ public class GameService(
         var selected = WeightedRandomSelect(scored);
 
         var selectedKey = $"{selected.ArtistName}|||{selected.AlbumName}".ToLowerInvariant();
-        Log.Information(
+        Log.Debug(
             "PickAlbumForPixelation: Selected '{albumName}' by '{artistName}' with {playcount} plays, global pop: {globalPop}",
             selected.AlbumName, selected.ArtistName, selected.UserPlaycount,
             popLookup.GetValueOrDefault(selectedKey, defaultPopularity));
