@@ -563,14 +563,15 @@ public static class ModalFactory
                     MaxLength = 5
                 }),
                 new LabelProperties("Time period", GetTimePeriodMenu("time_period", timePeriod)),
-                new LabelProperties("Options", new CheckboxGroupProperties("options")
-                {
+                new LabelProperties("Options", new CheckboxGroupProperties("options",
+                [
                     new CheckboxGroupOptionProperties("Show titles", "titles") { Default = titleSetting == 1 },
                     new CheckboxGroupOptionProperties("Skip albums without image", "skip") { Default = skip },
                     new CheckboxGroupOptionProperties("SFW only", "sfw") { Default = sfw },
                     new CheckboxGroupOptionProperties("Rainbow sort", "rainbow") { Default = rainbow },
                     new CheckboxGroupOptionProperties("Hide singles", "hidesingles") { Default = filterSingles },
-                }),
+                ])
+                { Required = false }),
                 new LabelProperties("Release filter (e.g. 2024 or 1990s)",
                     new TextInputProperties("release_filter", TextInputStyle.Short)
                     {
@@ -599,12 +600,13 @@ public static class ModalFactory
                     MaxLength = 5
                 }),
                 new LabelProperties("Time period", GetTimePeriodMenu("time_period", timePeriod)),
-                new LabelProperties("Options", new CheckboxGroupProperties("options")
-                {
+                new LabelProperties("Options", new CheckboxGroupProperties("options",
+                [
                     new CheckboxGroupOptionProperties("Show titles", "titles") { Default = titleSetting == 1 },
                     new CheckboxGroupOptionProperties("Skip artists without image", "skip") { Default = skip },
                     new CheckboxGroupOptionProperties("Rainbow sort", "rainbow") { Default = rainbow },
-                })
+                ])
+                { Required = false })
             ]
         };
 
