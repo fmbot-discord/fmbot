@@ -302,14 +302,14 @@ public class SettingService
         }
         else if (Contains(options, yesterday) && dailyTimePeriods)
         {
-            settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, oneDay);
+            settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, yesterday);
             var dateString = localTime.AddDays(-1).ToString("yyyy-M-dd");
             settingsModel.Description = "yesterday";
             settingsModel.AltDescription = "yesterday";
             settingsModel.UrlParameter = $"from={dateString}&to={dateString}";
             settingsModel.UsePlays = true;
             settingsModel.UseCustomTimePeriod = true;
-            settingsModel.PlayDays = 2;
+            settingsModel.PlayDays = 1;
             settingsModel.StartDateTime = localMidnightInUtc.AddDays(-1);
             settingsModel.EndDateTime = localMidnightInUtc;
         }

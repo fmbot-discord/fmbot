@@ -343,9 +343,17 @@ public class PlayBuilder
                     currentTrack.ArtistName, currentTrack.TrackName);
             }
 
+            Album dbAlbum = null;
+            if ((configuredButtons & (FmButton.AlbumCover | FmButton.AlbumTracks)) != 0 &&
+                !string.IsNullOrEmpty(currentTrack.AlbumName))
+            {
+                dbAlbum = await this._albumService.GetAlbumFromDatabase(
+                    currentTrack.ArtistName, currentTrack.AlbumName);
+            }
+
             var isSupporter = SupporterService.IsSupporter(context.ContextUser.UserType);
             fmButtonComponents = BuildNowPlayingButtons(
-                configuredButtons, currentTrack, dbTrack,
+                configuredButtons, currentTrack, dbTrack, dbAlbum,
                 userSettings.UserNameLastFm, isSupporter,
                 context.DiscordUser.Id);
         }
@@ -668,6 +676,7 @@ public class PlayBuilder
         FmButton buttons,
         RecentTrack currentTrack,
         Track dbTrack,
+        Album dbAlbum,
         string userNameLastFm,
         bool isSupporter,
         ulong discordUserId)
@@ -720,12 +729,12 @@ public class PlayBuilder
                 switch (flag)
                 {
                     case FmButton.AlbumCover:
-                        if (dbTrack?.AlbumId == null) continue;
-                        customId = $"{attr.CustomId}:{dbTrack.AlbumId}:{discordUserId}:{discordUserId}:still";
+                        if (dbAlbum == null) continue;
+                        customId = $"{attr.CustomId}:{dbAlbum.Id}:{discordUserId}:{discordUserId}:still";
                         break;
                     case FmButton.AlbumTracks:
-                        if (dbTrack?.AlbumId == null) continue;
-                        customId = $"{attr.CustomId}:{dbTrack.AlbumId}:{discordUserId}:{discordUserId}";
+                        if (dbAlbum == null) continue;
+                        customId = $"{attr.CustomId}:{dbAlbum.Id}:{discordUserId}:{discordUserId}";
                         break;
                     case FmButton.ArtistTracks:
                         if (dbTrack?.ArtistId == null) continue;
