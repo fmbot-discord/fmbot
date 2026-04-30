@@ -23,7 +23,7 @@ public class TrackRepository
     public static async Task<ulong> AddOrReplaceUserTracksInDatabase(IReadOnlyList<UserTrack> tracks, int userId,
         NpgsqlConnection connection)
     {
-        Log.Information("Index: {userId} - Inserting {albumCount} top tracks", userId, tracks.Count);
+        Log.Information("Index: {userId} - Inserting {trackCount} top tracks", userId, tracks.Count);
 
         var copyHelper = new PostgreSQLCopyHelper<UserTrack>("public", "user_tracks")
             .MapText("name", x => x.Name)

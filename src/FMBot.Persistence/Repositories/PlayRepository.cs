@@ -81,7 +81,7 @@ public static class PlayRepository
                 await resolveIds(addedPlays);
             }
 
-            Log.Information("Inserting {addedPlaysCount} new time series plays for user {userId}", addedPlays.Count,
+            Log.Debug("Inserting {addedPlaysCount} new time series plays for user {userId}", addedPlays.Count,
                 userId);
             await InsertTimeSeriesPlays(addedPlays, connection);
         }
@@ -94,7 +94,7 @@ public static class PlayRepository
     {
         await RemoveAllCurrentLastFmPlays(userId, connection);
 
-        Log.Information($"Inserting {playsToInsert.Count} time series plays for user {userId}");
+        Log.Debug("Inserting {playCount} time series plays for user {userId}", playsToInsert.Count, userId);
         await InsertTimeSeriesPlays(playsToInsert, connection);
     }
 

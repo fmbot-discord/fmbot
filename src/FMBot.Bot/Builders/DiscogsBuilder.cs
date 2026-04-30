@@ -286,7 +286,7 @@ public class DiscogsBuilder
                 footer.AppendLine($"Searching for '{StringExtensions.Sanitize(searchValues)}'");
             }
 
-            if (searchValues == null && user.UserDiscogs.HideValue != true)
+            if (string.IsNullOrWhiteSpace(searchValues) && user.UserDiscogs.HideValue != true)
             {
                 footer.AppendLine($"{user.UserDiscogs.MinimumValue} min " +
                                   $"- {user.UserDiscogs.MedianValue} med" +

@@ -457,7 +457,7 @@ public static class TemplateOptions
                     context.Connection, start);
                 var count = plays.Count(a =>
                     a.ArtistName.Equals(context.CurrentTrack.ArtistName, StringComparison.OrdinalIgnoreCase) &&
-                    a.AlbumName.Equals(context.CurrentTrack.TrackName, StringComparison.OrdinalIgnoreCase));
+                    a.TrackName.Equals(context.CurrentTrack.TrackName, StringComparison.OrdinalIgnoreCase));
                 return new VariableResult($"{count.Format(context.NumberFormat)} track plays this week",
                     count.Format(context.NumberFormat).ToString());
             }
@@ -474,7 +474,7 @@ public static class TemplateOptions
                     context.Connection, start);
                 var count = plays.Count(a =>
                     a.ArtistName.Equals(context.CurrentTrack.ArtistName, StringComparison.OrdinalIgnoreCase) &&
-                    a.AlbumName.Equals(context.CurrentTrack.TrackName, StringComparison.OrdinalIgnoreCase));
+                    a.TrackName.Equals(context.CurrentTrack.TrackName, StringComparison.OrdinalIgnoreCase));
                 return new VariableResult($"{count.Format(context.NumberFormat)} track plays this month",
                     count.Format(context.NumberFormat).ToString());
             }
