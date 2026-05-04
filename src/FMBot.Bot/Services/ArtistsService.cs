@@ -540,7 +540,7 @@ public class ArtistsService
                 }
                 case MusicLinkExtensions.MusicLinkType.AppleMusicArtist:
                 {
-                    if (int.TryParse(linkResult.Id, out var appleMusicId))
+                    if (long.TryParse(linkResult.Id, out var appleMusicId))
                     {
                         var dbArtist = await this._appleMusicService.GetArtistForAppleMusicId(appleMusicId);
                         if (dbArtist != null)

@@ -25,7 +25,7 @@ public class Album
     public string LastfmImageUrl { get; set; }
 
     public string SpotifyId { get; set; }
-    public int? AppleMusicId { get; set; }
+    public long? AppleMusicId { get; set; }
 
     public int? Popularity { get; set; }
     public string Label { get; set; }

@@ -17,7 +17,7 @@ public class AppleMusicApi(HttpClient client)
             Converters =
             {
                 new JsonStringEnumConverter(JsonNamingPolicy.CamelCase),
-                new StringToIntConverter()
+                new StringToLongConverter()
             }
         };
     }

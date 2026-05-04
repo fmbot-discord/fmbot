@@ -15,7 +15,7 @@ public class Track
     public Guid? Mbid { get; set; }
     public string Isrc { get; set; }
     public string SpotifyId { get; set; }
-    public int? AppleMusicId { get; set; }
+    public long? AppleMusicId { get; set; }
 
     public string LastFmUrl { get; set; }
     public string LastFmDescription { get; set; }

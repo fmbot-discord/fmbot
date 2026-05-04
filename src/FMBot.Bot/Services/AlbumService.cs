@@ -521,7 +521,7 @@ public class AlbumService
                 }
                 case MusicLinkExtensions.MusicLinkType.AppleMusicAlbum:
                 {
-                    if (int.TryParse(linkResult.Id, out var appleMusicId))
+                    if (long.TryParse(linkResult.Id, out var appleMusicId))
                     {
                         var dbAlbum = await this._appleMusicService.GetAlbumForAppleMusicId(appleMusicId);
                         if (dbAlbum != null)
