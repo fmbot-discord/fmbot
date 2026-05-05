@@ -82,19 +82,19 @@ public class AppleMusicService
         return results?.FirstOrDefault();
     }
 
-    public async Task<Track> GetTrackForAppleMusicId(int appleMusicId)
+    public async Task<Track> GetTrackForAppleMusicId(long appleMusicId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         return await db.Tracks.FirstOrDefaultAsync(f => f.AppleMusicId == appleMusicId);
     }
 
-    public async Task<Album> GetAlbumForAppleMusicId(int appleMusicId)
+    public async Task<Album> GetAlbumForAppleMusicId(long appleMusicId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         return await db.Albums.FirstOrDefaultAsync(f => f.AppleMusicId == appleMusicId);
     }
 
-    public async Task<Artist> GetArtistForAppleMusicId(int appleMusicId)
+    public async Task<Artist> GetArtistForAppleMusicId(long appleMusicId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         return await db.Artists.FirstOrDefaultAsync(f => f.AppleMusicId == appleMusicId);

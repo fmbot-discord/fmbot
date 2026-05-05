@@ -16,7 +16,7 @@ public class Artist
     public string SpotifyImageUrl { get; set; }
     public DateTime? SpotifyImageDate { get; set; }
     public string SpotifyId { get; set; }
-    public int? AppleMusicId { get; set; }
+    public long? AppleMusicId { get; set; }
 
     public int? Popularity { get; set; }
 
