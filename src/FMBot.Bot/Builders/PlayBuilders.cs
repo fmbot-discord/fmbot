@@ -288,14 +288,14 @@ public class PlayBuilder
         if (userSettings.DisplayName.ContainsEmoji())
         {
             embedTitle = !userSettings.DifferentUser
-                ? $"{userSettings.DisplayName} {userSettings.UserType.UserTypeToIcon()}"
-                : $"{userSettings.DisplayName} {userSettings.UserType.UserTypeToIcon()}, requested by {requesterUserTitle}";
+                ? $"{userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}"
+                : $"{userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}, requested by {requesterUserTitle}";
         }
         else
         {
             embedTitle = !userSettings.DifferentUser
-                ? $"[{userSettings.DisplayName}](<{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}>) {userSettings.UserType.UserTypeToIcon()}"
-                : $"[{userSettings.DisplayName}](<{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}>) {userSettings.UserType.UserTypeToIcon()}, requested by {requesterUserTitle}";
+                ? $"[{userSettings.DisplayName}](<{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}>){userSettings.UserType.UserTypeToIcon()}"
+                : $"[{userSettings.DisplayName}](<{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}>){userSettings.UserType.UserTypeToIcon()}, requested by {requesterUserTitle}";
         }
         // var embed = await this._userService.GetTemplateFmAsync(context.ContextUser.UserId, userSettings, currentTrack,
         //     previousTrack, totalPlaycount, guild, guildUsers);
@@ -894,7 +894,7 @@ public class PlayBuilder
             var container = new ComponentContainerProperties();
 
             container.WithTextDisplay(
-                $"### Recent tracks for {StringExtensions.MarkdownLink(StringExtensions.Sanitize(userSettings.DisplayName), recentTracks.Content.UserRecentTracksUrl)} {userSettings.UserType.UserTypeToIcon()}");
+                $"### Recent tracks for {StringExtensions.MarkdownLink(StringExtensions.Sanitize(userSettings.DisplayName), recentTracks.Content.UserRecentTracksUrl)}{userSettings.UserType.UserTypeToIcon()}");
 
             foreach (var track in trackPage)
             {
@@ -1271,7 +1271,7 @@ public class PlayBuilder
             var container = new ComponentContainerProperties();
 
             container.WithTextDisplay(
-                $"### Daily overview for {StringExtensions.MarkdownLink(StringExtensions.Sanitize(userSettings.DisplayName), $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library?date_preset=LAST_7_DAYS")} {userSettings.UserType.UserTypeToIcon()}");
+                $"### Daily overview for {StringExtensions.MarkdownLink(StringExtensions.Sanitize(userSettings.DisplayName), $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library?date_preset=LAST_7_DAYS")}{userSettings.UserType.UserTypeToIcon()}");
 
             container.WithSeparator();
 
