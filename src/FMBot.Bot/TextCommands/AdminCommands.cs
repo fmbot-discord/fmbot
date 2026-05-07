@@ -62,6 +62,7 @@ public class AdminCommands(
     WebhookService webhookService,
     TrackService trackService,
     WhoKnowsTrackService whoKnowsTrackService,
+    FriendBuilders friendBuilders,
     IDbContextFactory<FMBotDbContext> contextFactory)
     : BaseCommandModule(botSettings)
 {
@@ -3293,5 +3294,36 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
         }
 
         await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Done" });
+    }
+
+    [Command("debugfriends")]
+    public async Task LastFmFriendsAsync([CommandParameter(Remainder = true)] string targetUser = null)
+    {
+        if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        {
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
+                new MessageProperties { Content = Constants.FmbotStaffOnly });
+            await this.Context.LogCommandUsedAsync(
+                new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
+            return;
+        }
+
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
+
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id) ?? this._botSettings.Bot.Prefix;
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+
+        try
+        {
+            var response = await friendBuilders.LastFmFriendsAsync(
+                new ContextModel(this.Context, prfx, contextUser), targetUser);
+
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
     }
 }

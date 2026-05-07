@@ -12,6 +12,7 @@ public abstract class Call
         TrackScrobble = "track.scrobble",
         TrackUpdateNowPlaying = "track.updateNowPlaying",
         UserInfo = "user.getInfo",
+        UserFriends = "user.getFriends",
         TopTracks = "user.getTopTracks",
         RecentTracks = "user.getRecentTracks",
         LovedTracks = "user.getLovedTracks",

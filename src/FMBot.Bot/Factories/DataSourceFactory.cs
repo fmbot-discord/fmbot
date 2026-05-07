@@ -507,6 +507,12 @@ public class DataSourceFactory : IDataSourceFactory
         return await this._lastfmRepository.GetLovedTracksAsync(lastFmUserName, count, sessionKey, fromUnixTimestamp);
     }
 
+    public async Task<Response<LastFmUserFriendsList>> GetFriendsAsync(string lastFmUserName, string sessionKey,
+        int limit = 100, int page = 1, int errorRetries = 1)
+    {
+        return await this._lastfmRepository.GetFriendsAsync(lastFmUserName, sessionKey, limit, page, errorRetries);
+    }
+
     public async Task<MemoryStream> GetAlbumImageAsStreamAsync(string imageUrl)
     {
         return await this._lastfmRepository.GetAlbumImageAsStreamAsync(imageUrl);

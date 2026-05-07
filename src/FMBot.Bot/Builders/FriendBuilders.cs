@@ -421,6 +421,103 @@ public class FriendBuilders
         return response;
     }
 
+    public async Task<ResponseModel> LastFmFriendsAsync(ContextModel context, string targetLastFmUserName = null)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Paginator,
+        };
+
+        if (string.IsNullOrWhiteSpace(context.ContextUser?.SessionKeyLastFm))
+        {
+            response.Embed.WithDescription(
+                "Your Last.fm account is not linked. Use `/login` to connect your account first.");
+            response.CommandResponse = CommandResponse.UsernameNotSet;
+            response.ResponseType = ResponseType.Embed;
+            return response;
+        }
+
+        var username = !string.IsNullOrWhiteSpace(targetLastFmUserName)
+            ? targetLastFmUserName
+            : context.ContextUser.UserNameLastFM;
+
+        var friendsResponse = await this._dataSourceFactory.GetFriendsAsync(
+            username, context.ContextUser.SessionKeyLastFm, limit: 200);
+
+        if (!friendsResponse.Success || friendsResponse.Content == null)
+        {
+            response.Embed.WithDescription(
+                $"Last.fm returned an error fetching friends for **{username}**: {friendsResponse.Message ?? friendsResponse.Error?.ToString() ?? "unknown error"}");
+            response.CommandResponse = CommandResponse.LastFmError;
+            response.ResponseType = ResponseType.Embed;
+            return response;
+        }
+
+        var friends = friendsResponse.Content.Friends ?? [];
+
+        response.EmbedAuthor.WithName($"Last.fm friends for {username}");
+        response.EmbedAuthor.WithUrl(LastfmUrlExtensions.GetUserUrl(username, "/following"));
+
+        if (friends.Count == 0)
+        {
+            response.Embed.WithAuthor(response.EmbedAuthor);
+            response.Embed.WithDescription($"**{username}** has no friends on Last.fm, or their friends list is private.");
+            response.CommandResponse = CommandResponse.NotFound;
+            response.ResponseType = ResponseType.Embed;
+            return response;
+        }
+
+        var pages = new List<PageBuilder>();
+        var friendPages = friends.ChunkBy(10);
+        var counter = 1;
+        var pageCounter = 1;
+        foreach (var friendPage in friendPages)
+        {
+            var pageBody = new StringBuilder();
+            foreach (var friend in friendPage)
+            {
+                var profileUrl = !string.IsNullOrWhiteSpace(friend.Url)
+                    ? friend.Url
+                    : LastfmUrlExtensions.GetUserUrl(friend.UserName);
+
+                pageBody.Append(
+                    $"{counter}. **{StringExtensions.MarkdownLink(friend.UserName, profileUrl)}**");
+
+                if (!string.IsNullOrWhiteSpace(friend.RealName))
+                {
+                    pageBody.Append($" — *{friend.RealName}*");
+                }
+
+                if (friend.Subscriber)
+                {
+                    pageBody.Append(" · `pro`");
+                }
+
+                pageBody.AppendLine();
+                pageBody.AppendLine(
+                    $"-# " +
+                    (string.IsNullOrWhiteSpace(friend.Country) ? "" : $" · {friend.Country}") +
+                    (friend.RegisteredUnix > 0
+                        ? $" · joined <t:{friend.RegisteredUnix}:D>"
+                        : ""));
+
+                pageBody.AppendLine();
+                counter++;
+            }
+
+            pages.Add(new PageBuilder()
+                .WithDescription(pageBody.ToString().TrimEnd())
+                .WithAuthor(response.EmbedAuthor)
+                .WithFooter(
+                    $"Page {pageCounter}/{friendPages.Count} — Showing {friends.Count} of {friendsResponse.Content.TotalAmount} friends"));
+
+            pageCounter++;
+        }
+
+        response.ComponentPaginator = StringService.BuildComponentPaginator(pages);
+        return response;
+    }
+
     public async Task<ResponseModel> FriendedAsync(ContextModel context)
     {
         var response = new ResponseModel
