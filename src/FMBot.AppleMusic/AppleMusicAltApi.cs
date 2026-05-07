@@ -24,6 +24,7 @@ public class AppleMusicAltApi
             Converters =
             {
                 new JsonStringEnumConverter(JsonNamingPolicy.CamelCase),
+                new StringToLongConverter(),
                 new StringToIntConverter()
             }
         };

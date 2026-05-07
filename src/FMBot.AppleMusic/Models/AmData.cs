@@ -6,7 +6,7 @@ namespace FMBot.AppleMusic.Models;
 public class AmData<T>
 {
     [JsonPropertyName("id")]
-    public int Id { get; set; }
+    public long Id { get; set; }
 
     [JsonPropertyName("type")]
     public AmType? Type { get; set; }
@@ -24,7 +24,7 @@ public class AmData<T>
 public class AmSubData
 {
     [JsonPropertyName("id")]
-    public int Id { get; set; }
+    public long Id { get; set; }
 
     [JsonPropertyName("type")]
     public AmType Type { get; set; }

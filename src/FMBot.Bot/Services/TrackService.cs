@@ -868,7 +868,7 @@ public class TrackService
                 }
                 case MusicLinkExtensions.MusicLinkType.AppleMusicSong:
                 {
-                    if (int.TryParse(linkResult.Id, out var appleMusicId))
+                    if (long.TryParse(linkResult.Id, out var appleMusicId))
                     {
                         var dbTrack = await this._appleMusicService.GetTrackForAppleMusicId(appleMusicId);
                         if (dbTrack != null)

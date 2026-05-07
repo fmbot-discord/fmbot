@@ -598,13 +598,13 @@ public class LastFmRepository : ILastfmRepository
                     AlbumArtist = trackCall.Content.Track.Album?.Artist,
                     AlbumUrl = trackCall.Content.Track.Album?.Url,
                     ArtistName = trackCall.Content.Track.Artist?.Name,
-                    ArtistUrl = Uri.IsWellFormedUriString(trackCall.Content.Track.Artist?.Url, UriKind.Absolute)
+                    ArtistUrl = Uri.IsWellFormedUriString(trackCall.Content.Track?.Artist?.Url, UriKind.Absolute)
                         ? trackCall.Content.Track.Artist?.Url
                         : null,
-                    ArtistMbid = !string.IsNullOrWhiteSpace(trackCall.Content.Track.Artist?.Mbid)
-                        ? Guid.Parse(trackCall.Content.Track.Artist?.Mbid)
+                    ArtistMbid = !string.IsNullOrWhiteSpace(trackCall.Content.Track?.Artist?.Mbid)
+                        ? Guid.Parse(trackCall.Content.Track.Artist.Mbid)
                         : null,
-                    Mbid = !string.IsNullOrWhiteSpace(trackCall.Content.Track.Mbid)
+                    Mbid = !string.IsNullOrWhiteSpace(trackCall.Content.Track?.Mbid)
                         ? Guid.Parse(trackCall.Content.Track.Mbid)
                         : null,
                     Description = !string.IsNullOrWhiteSpace(filteredSummary)

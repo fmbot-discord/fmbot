@@ -246,7 +246,9 @@ public class WebhookService
 
                             var localFeaturedMsg = await channel.SendMessageAsync(new MessageProperties()
                                 .WithComponents([container])
-                                .WithFlags(MessageFlags.IsComponentsV2));
+                                .WithFlags(MessageFlags.IsComponentsV2)
+                                .WithAllowedMentions(new AllowedMentionsProperties()
+                                    .WithAllowedUsers([guildUser.User.DiscordUserId])));
 
                             if (localFeaturedMsg != null)
                             {
