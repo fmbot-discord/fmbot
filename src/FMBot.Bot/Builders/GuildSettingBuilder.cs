@@ -16,8 +16,10 @@ using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
 using NetCord;
+using NetCord.Gateway;
 using NetCord.Rest;
 using NetCord.Services;
+using FMBot.Bot.Extensions;
 
 namespace FMBot.Bot.Builders;
 
@@ -26,15 +28,17 @@ public class GuildSettingBuilder
     private readonly GuildService _guildService;
     private readonly BotSettings _botSettings;
     private readonly AdminService _adminService;
+    private readonly ShardedGatewayClient _client;
 
-    public GuildSettingBuilder(GuildService guildService, IOptions<BotSettings> botSettings, AdminService adminService)
+    public GuildSettingBuilder(GuildService guildService, IOptions<BotSettings> botSettings, AdminService adminService, ShardedGatewayClient client)
     {
         this._guildService = guildService;
         this._adminService = adminService;
         this._botSettings = botSettings.Value;
+        this._client = client;
     }
 
-    public async Task<ResponseModel> GetGuildSettings(ContextModel context, Permissions guildPermissions)
+    public async Task<ResponseModel> GetGuildSettings(ContextModel context, Permissions channelPermissions)
     {
         var response = new ResponseModel
         {
@@ -146,35 +150,37 @@ public class GuildSettingBuilder
 
         response.Embed.WithDescription(settings.ToString());
 
-        var serverPermission = new StringBuilder();
-        if (!guildPermissions.HasFlag(Permissions.SendMessages))
+        var missingPermissions = new StringBuilder();
+        if (!channelPermissions.HasFlag(Permissions.SendMessages))
         {
-            serverPermission.AppendLine("❌ Send messages");
+            missingPermissions.AppendLine("❌ Send messages");
         }
 
-        if (!guildPermissions.HasFlag(Permissions.AttachFiles))
+        if (!channelPermissions.HasFlag(Permissions.AttachFiles))
         {
-            serverPermission.AppendLine("❌ Attach files");
+            missingPermissions.AppendLine("❌ Attach files");
         }
 
-        if (!guildPermissions.HasFlag(Permissions.EmbedLinks))
+        if (!channelPermissions.HasFlag(Permissions.EmbedLinks))
         {
-            serverPermission.AppendLine("❌ Embed links");
+            missingPermissions.AppendLine("❌ Embed links");
         }
 
-        if (!guildPermissions.HasFlag(Permissions.AddReactions))
+        if (!channelPermissions.HasFlag(Permissions.AddReactions))
         {
-            serverPermission.AppendLine("❌ Add reactions");
+            missingPermissions.AppendLine("❌ Add reactions");
         }
 
-        if (!guildPermissions.HasFlag(Permissions.UseExternalEmojis))
+        if (!channelPermissions.HasFlag(Permissions.UseExternalEmojis))
         {
-            serverPermission.AppendLine("❌ Use external emojis");
+            missingPermissions.AppendLine("❌ Use external emojis");
         }
 
-        if (serverPermission.Length > 0)
+        if (missingPermissions.Length > 0)
         {
-            response.Embed.AddField("Missing server-wide permissions", serverPermission.ToString());
+            missingPermissions.AppendLine();
+            missingPermissions.AppendLine("These are missing in this channel. We recommend granting them server-wide via `Server Settings` > `Roles` so all .fmbot commands work everywhere.");
+            response.Embed.AddField("Missing permissions in this channel", missingPermissions.ToString());
         }
 
         var guildSettings = new StringMenuProperties(InteractionConstants.GuildSetting)
@@ -953,6 +959,12 @@ public class GuildSettingBuilder
             footer.AppendLine("All commands disabled except for those explicitly enabled");
         }
 
+        var missingPermissions = GetMissingBotPermissionsInChannel(context.DiscordGuild, selectedChannel);
+        if (missingPermissions.Length > 0)
+        {
+            response.Embed.AddField("Missing permissions in this channel", missingPermissions.ToString());
+        }
+
         var upDisabled = previousCategoryId == 0 || previousChannelId == 0;
         var downDisabled = nextCategoryId == 0 || nextChannelId == 0;
 
@@ -1043,5 +1055,55 @@ public class GuildSettingBuilder
         response.Embed.WithDescription(description.ToString());
 
         return response;
+    }
+
+    private StringBuilder GetMissingBotPermissionsInChannel(NetCord.Gateway.Guild guild, IGuildChannel channel)
+    {
+        var missing = new StringBuilder();
+        if (guild == null || channel == null)
+        {
+            return missing;
+        }
+
+        var botUserId = this._client.GetCurrentUser()?.Id;
+        if (!botUserId.HasValue || !guild.Users.TryGetValue(botUserId.Value, out var botUser))
+        {
+            return missing;
+        }
+
+        var guildPermissions = botUser.GetPermissions(guild);
+        var perms = botUser.GetChannelPermissions(guildPermissions, channel);
+
+        if (!perms.HasFlag(Permissions.ViewChannel))
+        {
+            missing.AppendLine("❌ View channel");
+        }
+
+        if (!perms.HasFlag(Permissions.SendMessages))
+        {
+            missing.AppendLine("❌ Send messages");
+        }
+
+        if (!perms.HasFlag(Permissions.EmbedLinks))
+        {
+            missing.AppendLine("❌ Embed links");
+        }
+
+        if (!perms.HasFlag(Permissions.AttachFiles))
+        {
+            missing.AppendLine("❌ Attach files");
+        }
+
+        if (!perms.HasFlag(Permissions.AddReactions))
+        {
+            missing.AppendLine("❌ Add reactions");
+        }
+
+        if (!perms.HasFlag(Permissions.UseExternalEmojis))
+        {
+            missing.AppendLine("❌ Use external emojis");
+        }
+
+        return missing;
     }
 }
