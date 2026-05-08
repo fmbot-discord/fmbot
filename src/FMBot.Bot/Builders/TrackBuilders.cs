@@ -192,7 +192,7 @@ public class TrackBuilders
             if (guild?.LastIndexed != null && dbTrack != null)
             {
                 indexedUsersTask = this._whoKnowsTrackService.GetIndexedUsersForTrack(context.DiscordGuild,
-                    guildUsers, guild.GuildId, dbTrack.Id);
+                    guildUsers, guild.GuildId, dbTrack.ArtistName, dbTrack.Name);
             }
         }
 
@@ -517,7 +517,7 @@ public class TrackBuilders
         var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
 
         var usersWithTrack = await this._whoKnowsTrackService.GetIndexedUsersForTrack(context.DiscordGuild, guildUsers,
-            guild.GuildId, cachedTrack.Id);
+            guild.GuildId, track.Track.ArtistName, track.Track.TrackName);
 
         var discordGuildUser = await context.DiscordGuild.GetCachedGuildUserAsync(context.DiscordUser.Id);
         var currentUser =
@@ -682,7 +682,7 @@ public class TrackBuilders
         var trackName = $"{track.Track.TrackName} by {track.Track.ArtistName}";
 
         var usersWithTrack = await this._whoKnowsTrackService.GetFriendUsersForTrack(context.DiscordGuild, guildUsers,
-            guild?.GuildId ?? 0, context.ContextUser.UserId, cachedTrack.Id);
+            guild?.GuildId ?? 0, context.ContextUser.UserId, track.Track.ArtistName, track.Track.TrackName);
 
         usersWithTrack = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithTrack, context.ContextUser,
             trackName, context.DiscordGuild, track.Track.UserPlaycount);
@@ -793,7 +793,7 @@ public class TrackBuilders
         var trackName = $"{track.Track.TrackName} by {track.Track.ArtistName}";
 
         var usersWithTrack = await this._whoKnowsTrackService.GetGlobalUsersForTrack(context.DiscordGuild,
-            spotifyTrack.Id);
+            track.Track.ArtistName, track.Track.TrackName);
 
         var filteredUsersWithTrack =
             await this._whoKnowsService.FilterGlobalUsersAsync(usersWithTrack, settings.QualityFilterDisabled);

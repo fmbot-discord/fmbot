@@ -280,7 +280,8 @@ public class TrackService
                 var dbTrack = await GetTrackFromDatabase(lastPlayedTrack.ArtistName, lastPlayedTrack.TrackName);
                 if (dbTrack != null)
                 {
-                    userPlaycount = await this._whoKnowsTrackService.GetTrackPlayCountForUser(dbTrack.Id, userId.Value);
+                    userPlaycount = await this._whoKnowsTrackService.GetTrackPlayCountForUser(
+                        lastPlayedTrack.ArtistName, lastPlayedTrack.TrackName, userId.Value);
                 }
 
                 return new TrackSearch(new TrackInfo
@@ -404,7 +405,8 @@ public class TrackService
 
             if (userId.HasValue)
             {
-                var userPlaycount = await this._whoKnowsTrackService.GetTrackPlayCountForUser(cachedTrack.Id, userId.Value);
+                var userPlaycount = await this._whoKnowsTrackService.GetTrackPlayCountForUser(
+                    cachedTrack.ArtistName, cachedTrack.Name, userId.Value);
                 if (userPlaycount == 0)
                 {
                     trackInfo = await this._dataSourceFactory.GetTrackInfoAsync(trackName, artistName, lastFmUserName);

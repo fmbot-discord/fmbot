@@ -3190,7 +3190,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                 }
 
                 var usersWithTrack = await whoKnowsTrackService.GetGlobalUsersForTrack(this.Context.Guild,
-                    dbTrack.Id);
+                    dbTrack.ArtistName, dbTrack.Name);
 
                 var bannedUsers = new StringBuilder();
                 var bannedUserCount = 0;

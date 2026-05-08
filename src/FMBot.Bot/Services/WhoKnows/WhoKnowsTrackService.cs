@@ -20,26 +20,32 @@ public class WhoKnowsTrackService
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
     private readonly BotSettings _botSettings;
     private readonly IMemoryCache _cache;
+    private readonly IdResolutionService _idResolutionService;
 
-    public WhoKnowsTrackService(IDbContextFactory<FMBotDbContext> contextFactory, IOptions<BotSettings> botSettings, IMemoryCache cache)
+    public WhoKnowsTrackService(IDbContextFactory<FMBotDbContext> contextFactory, IOptions<BotSettings> botSettings,
+        IMemoryCache cache, IdResolutionService idResolutionService)
     {
         this._contextFactory = contextFactory;
         this._botSettings = botSettings.Value;
         this._cache = cache;
+        this._idResolutionService = idResolutionService;
     }
 
     public async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForTrack(NetCord.Gateway.Guild discordGuild,
-        IDictionary<int, FullGuildUser> guildUsers, int guildId, int trackId)
+        IDictionary<int, FullGuildUser> guildUsers, int guildId, string artistName, string trackName)
     {
-        const string sql = "BEGIN; " +
-                           "SET LOCAL enable_nestloop = OFF; " +
-                           "SELECT ut.user_id, " +
+        var trackId = await this._idResolutionService.ResolveTrackId(artistName, trackName);
+        if (!trackId.HasValue)
+        {
+            return new List<WhoKnowsObjectWithUser>();
+        }
+
+        const string sql = "SELECT ut.user_id, " +
                            "ut.playcount " +
                            "FROM user_tracks AS ut " +
                            "WHERE ut.track_id = @trackId " +
                            "AND ut.user_id = ANY(SELECT user_id FROM guild_users WHERE guild_id = @guildId) " +
-                           "ORDER BY ut.playcount DESC; " +
-                           "COMMIT; ";
+                           "ORDER BY ut.playcount DESC";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
@@ -48,7 +54,7 @@ public class WhoKnowsTrackService
         var userTracks = (await connection.QueryAsync<WhoKnowsTrackDto>(sql, new
         {
             guildId,
-            trackId
+            trackId = trackId.Value
         })).ToList();
 
         var whoKnowsTrackList = new List<WhoKnowsObjectWithUser>();
@@ -87,8 +93,15 @@ public class WhoKnowsTrackService
         return whoKnowsTrackList;
     }
 
-    public async Task<IList<WhoKnowsObjectWithUser>> GetGlobalUsersForTrack(NetCord.Gateway.Guild discordGuild, int trackId)
+    public async Task<IList<WhoKnowsObjectWithUser>> GetGlobalUsersForTrack(NetCord.Gateway.Guild discordGuild,
+        string artistName, string trackName)
     {
+        var trackId = await this._idResolutionService.ResolveTrackId(artistName, trackName);
+        if (!trackId.HasValue)
+        {
+            return new List<WhoKnowsObjectWithUser>();
+        }
+
         const string sql = "SELECT * " +
                            "FROM(SELECT DISTINCT ON(UPPER(u.user_name_last_fm)) " +
                            "ut.user_id, " +
@@ -110,7 +123,7 @@ public class WhoKnowsTrackService
 
         var userTracks = (await connection.QueryAsync<WhoKnowsGlobalTrackDto>(sql, new
         {
-            trackId
+            trackId = trackId.Value
         })).ToList();
 
         var whoKnowsTrackList = new List<WhoKnowsObjectWithUser>();
@@ -144,8 +157,14 @@ public class WhoKnowsTrackService
     }
 
     public async Task<IList<WhoKnowsObjectWithUser>> GetFriendUsersForTrack(NetCord.Gateway.Guild discordGuild,
-        IDictionary<int, FullGuildUser> guildUsers, int guildId, int userId, int trackId)
+        IDictionary<int, FullGuildUser> guildUsers, int guildId, int userId, string artistName, string trackName)
     {
+        var trackId = await this._idResolutionService.ResolveTrackId(artistName, trackName);
+        if (!trackId.HasValue)
+        {
+            return new List<WhoKnowsObjectWithUser>();
+        }
+
         const string sql = "SELECT ut.user_id, " +
                            "ut.playcount, " +
                            "u.user_name_last_fm " +
@@ -162,7 +181,7 @@ public class WhoKnowsTrackService
 
         var userArtists = (await connection.QueryAsync<WhoKnowsTrackDto>(sql, new
         {
-            trackId,
+            trackId = trackId.Value,
             guildId,
             userId
         })).ToList();
@@ -196,13 +215,19 @@ public class WhoKnowsTrackService
         return whoKnowsArtistList;
     }
 
-    public async Task<int?> GetTrackPlayCountForUser(int trackId, int userId)
+    public async Task<int?> GetTrackPlayCountForUser(string artistName, string trackName, int userId)
     {
+        var trackId = await this._idResolutionService.ResolveTrackId(artistName, trackName);
+        if (!trackId.HasValue)
+        {
+            return null;
+        }
+
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        return await TrackRepository.GetTrackPlayCountForUser(connection, trackId, userId);
+        return await TrackRepository.GetTrackPlayCountForUser(connection, trackId.Value, userId);
     }
 
     public async Task<ICollection<GuildTrack>> GetTopAllTimeTracksForGuild(int guildId,
