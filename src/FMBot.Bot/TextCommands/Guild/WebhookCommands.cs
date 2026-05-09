@@ -44,11 +44,11 @@ public class WebhookCommands(
             return;
         }
 
-        var permissions = await GuildService.GetGuildPermissionsAsync(this.Context);
+        var permissions = await GuildService.GetChannelPermissionsAsync(this.Context);
         if (!permissions.HasFlag(Permissions.ManageWebhooks))
         {
             var currentUser = client.GetCurrentUser();
-            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = $"In order to create the featured webhook, I need permission to add webhooks.\n\nYou can add this permission by going to `Server Settings` > `Roles` > `{currentUser?.Username}` and enabling the `Manage Webhooks` permission." });
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = $"In order to create the featured webhook, I need permission to add webhooks in this channel.\n\nYou can add this permission by going to `Server Settings` > `Roles` > `{currentUser?.Username}` and enabling the `Manage Webhooks` permission, or by allowing it for this channel specifically." });
             await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             return;
         }

@@ -398,6 +398,88 @@ public class LastFmRepository : ILastfmRepository
         return tagString.ToString();
     }
 
+    public async Task<Response<LastFmUserFriendsList>> GetFriendsAsync(string lastFmUserName, string sessionKey,
+        int limit = 50, int page = 1, int errorRetries = 1)
+    {
+        if (string.IsNullOrWhiteSpace(sessionKey))
+        {
+            return new Response<LastFmUserFriendsList>
+            {
+                Success = false,
+                Error = ResponseStatus.LoginRequired,
+                Message = "user.getFriends requires a Last.fm session key."
+            };
+        }
+
+        var queryParams = new Dictionary<string, string>
+        {
+            { "user", lastFmUserName },
+            { "sk", sessionKey },
+            { "limit", limit.ToString() },
+            { "page", page.ToString() },
+            { "recenttracks", "1" }
+        };
+
+        var friendsCall = await CallApiWithRetryAsync<UserFriendsLfmResponse>(
+            queryParams, Call.UserFriends, true, errorRetries, lastFmUserName);
+
+        if (!friendsCall.Success)
+        {
+            return new Response<LastFmUserFriendsList>
+            {
+                Success = false,
+                Error = friendsCall.Error,
+                Message = friendsCall.Message
+            };
+        }
+
+        var friends = friendsCall.Content?.Friends;
+        var attr = friends?.AttributesLfm;
+
+        return new Response<LastFmUserFriendsList>
+        {
+            Success = true,
+            Content = new LastFmUserFriendsList
+            {
+                TotalAmount = attr?.Total ?? 0,
+                Page = attr?.Page ?? page,
+                PerPage = attr?.PerPage ?? limit,
+                TotalPages = attr?.TotalPages ?? 0,
+                Friends = friends?.User?.Select(LastfmFriendToLastFmUserFriend).ToList() ?? []
+            }
+        };
+    }
+
+    private static LastFmUserFriend LastfmFriendToLastFmUserFriend(UserLfm friend)
+    {
+        return new LastFmUserFriend
+        {
+            UserName = friend.Name,
+            RealName = friend.Realname,
+            Url = friend.Url?.ToString(),
+            Country = string.IsNullOrWhiteSpace(friend.Country) || friend.Country == "None" ? null : friend.Country,
+            ImageUrl = PickExtraLargeImage(friend.Image),
+            Subscriber = friend.Subscriber == 1,
+            Type = friend.Type,
+            RegisteredUnix = friend.Registered?.Unixtime ?? 0,
+            Registered = friend.Registered?.Unixtime > 0
+                ? DateTime.UnixEpoch.AddSeconds(friend.Registered.Unixtime).ToUniversalTime()
+                : default,
+        };
+    }
+
+    private static string PickExtraLargeImage(ImageLfm[] images)
+    {
+        var extraLarge = images?.FirstOrDefault(a => a.Size == "extralarge");
+        if (string.IsNullOrWhiteSpace(extraLarge?.Text) ||
+            extraLarge.Text.Contains(Constants.LastFmNonExistentImageName))
+        {
+            return null;
+        }
+
+        return extraLarge.Text.Replace("/u/300x300/", "/u/");
+    }
+
 // User
     public async Task<DataSourceUser> GetLfmUserInfoAsync(string lastFmUserName)
     {

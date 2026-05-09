@@ -29,13 +29,15 @@ public class DataSourceFactory : IDataSourceFactory
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
     private readonly AliasService _aliasService;
     private readonly BotSettings _botSettings;
+    private readonly IdResolutionService _idResolutionService;
 
     public DataSourceFactory(ILastfmRepository lastfmRepository,
         IPlayDataSourceRepository playDataSourceRepository,
         TimeService timeService,
         IMemoryCache cache,
         IDbContextFactory<FMBotDbContext> contextFactory, AliasService aliasService,
-        IOptions<BotSettings> botSettings)
+        IOptions<BotSettings> botSettings,
+        IdResolutionService idResolutionService)
     {
         this._lastfmRepository = lastfmRepository;
         this._playDataSourceRepository = playDataSourceRepository;
@@ -44,6 +46,7 @@ public class DataSourceFactory : IDataSourceFactory
         this._contextFactory = contextFactory;
         this._aliasService = aliasService;
         this._botSettings = botSettings.Value;
+        this._idResolutionService = idResolutionService;
     }
 
     public async Task<User> GetCachedImportUserAsync(string userNameLastFm)
@@ -206,8 +209,12 @@ public class DataSourceFactory : IDataSourceFactory
             var dbTrack = await TrackRepository.GetTrackForName(artistName, trackName, connection);
             if (dbTrack != null)
             {
-                track.Content.UserPlaycount =
-                    await this._playDataSourceRepository.GetTrackPlaycount(importUser, dbTrack.Id);
+                var trackId = await this._idResolutionService.ResolveTrackId(artistName, trackName);
+                if (trackId.HasValue)
+                {
+                    track.Content.UserPlaycount =
+                        await this._playDataSourceRepository.GetTrackPlaycount(importUser, trackId.Value);
+                }
             }
         }
 
@@ -505,6 +512,12 @@ public class DataSourceFactory : IDataSourceFactory
         long? fromUnixTimestamp = null)
     {
         return await this._lastfmRepository.GetLovedTracksAsync(lastFmUserName, count, sessionKey, fromUnixTimestamp);
+    }
+
+    public async Task<Response<LastFmUserFriendsList>> GetFriendsAsync(string lastFmUserName, string sessionKey,
+        int limit = 100, int page = 1, int errorRetries = 1)
+    {
+        return await this._lastfmRepository.GetFriendsAsync(lastFmUserName, sessionKey, limit, page, errorRetries);
     }
 
     public async Task<MemoryStream> GetAlbumImageAsStreamAsync(string imageUrl)

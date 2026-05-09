@@ -270,7 +270,8 @@ public class EurovisionBuilders
             var dbTrack = await this._trackService.GetTrackFromDatabase(artistName, entry.Title);
             if (dbTrack != null)
             {
-                var userPlaycount = await this._whoKnowsTrackService.GetTrackPlayCountForUser(dbTrack.Id, context.ContextUser.UserId);
+                var userPlaycount = await this._whoKnowsTrackService.GetTrackPlayCountForUser(
+                    artistName, entry.Title, context.ContextUser.UserId);
 
                 if (userPlaycount > 0)
                 {

@@ -181,6 +181,34 @@ public class IdResolutionService(IdResolution.IdResolutionClient client, IOption
         }
     }
 
+    public async Task<int?> ResolveTrackId(string artistName, string trackName)
+    {
+        if (string.IsNullOrEmpty(artistName) || string.IsNullOrEmpty(trackName))
+        {
+            return null;
+        }
+
+        try
+        {
+            var request = new ResolveTrackIdsRequest();
+            request.Tracks.Add(new TrackKey
+            {
+                ArtistName = artistName,
+                TrackName = trackName
+            });
+
+            var reply = await client.ResolveTrackIdsAsync(request);
+
+            var mapping = reply.Mappings.FirstOrDefault(m => m.TrackId != 0);
+            return mapping?.TrackId;
+        }
+        catch (Exception e)
+        {
+            Log.Warning(e, "IdResolution: Failed to resolve track ID for {artist}/{track}", artistName, trackName);
+            return null;
+        }
+    }
+
     public async Task BackfillUserPlayIds(int userId)
     {
         try

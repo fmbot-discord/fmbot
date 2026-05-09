@@ -272,32 +272,35 @@ public class GuildService
         return (stats, users);
     }
 
-    public static async Task<Permissions> GetGuildPermissionsAsync(CommandContext context)
+    public static async Task<Permissions> GetChannelPermissionsAsync(CommandContext context)
     {
         var botUserId = context.Client.Id;
         var guild = context.Guild;
+        var channel = context.Channel;
+
+        PartialGuildUser guildUser;
         var cachedUsers = context.Client.Cache.Guilds[guild.Id]?.Users;
         if (cachedUsers != null && cachedUsers.TryGetValue(botUserId, out var cachedGuildUser))
         {
-            return cachedGuildUser.GetPermissions(guild);
+            guildUser = cachedGuildUser;
+        }
+        else
+        {
+            guildUser = await guild.GetUserAsync(botUserId);
         }
 
-        var guildUser = await guild.GetUserAsync(botUserId);
-        return guildUser.GetPermissions(guild);
+        var guildPermissions = guildUser.GetPermissions(guild);
+        if (channel is IGuildChannel guildChannel)
+        {
+            return guildUser.GetChannelPermissions(guildPermissions, guildChannel);
+        }
+
+        return guildPermissions;
     }
 
-    public static async Task<Permissions> GetGuildPermissionsAsync(ApplicationCommandContext context)
+    public static Permissions GetChannelPermissions(ApplicationCommandContext context)
     {
-        var botUserId = context.Client.Id;
-        var guild = context.Guild;
-        var cachedUsers = context.Client.Cache.Guilds[guild.Id]?.Users;
-        if (cachedUsers != null && cachedUsers.TryGetValue(botUserId, out var cachedGuildUser))
-        {
-            return cachedGuildUser.GetPermissions(guild);
-        }
-
-        var guildUser = await guild.GetUserAsync(botUserId);
-        return guildUser.GetPermissions(guild);
+        return context.Interaction.AppPermissions;
     }
 
     public async Task ChangeGuildAllowedRoles(NetCord.Gateway.Guild discordGuild, ulong[] allowedRoles)

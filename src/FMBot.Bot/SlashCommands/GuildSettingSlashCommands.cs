@@ -30,11 +30,11 @@ public class GuildSettingSlashCommands(
         try
         {
             var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
-            var guildPermissions = await GuildService.GetGuildPermissionsAsync(this.Context);
+            var channelPermissions = GuildService.GetChannelPermissions(this.Context);
 
             var response =
                 await guildSettingBuilder.GetGuildSettings(new ContextModel(this.Context, contextUser),
-                    guildPermissions);
+                    channelPermissions);
 
             await this.Context.SendResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);

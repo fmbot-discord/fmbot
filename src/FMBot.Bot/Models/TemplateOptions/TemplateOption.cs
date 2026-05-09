@@ -1005,7 +1005,7 @@ public static class TemplateOptions
                 }
 
                 var trackListeners = await context.WhoKnowsTrackService.GetIndexedUsersForTrack(null,
-                    context.GuildUsers, context.Guild.GuildId, context.DbTrack.Id);
+                    context.GuildUsers, context.Guild.GuildId, context.DbTrack.ArtistName, context.DbTrack.Name);
                 trackListeners = WhoKnowsService
                     .FilterWhoKnowsObjects(trackListeners, context.GuildUsers, context.Guild, 0).filteredUsers;
 
@@ -1042,7 +1042,7 @@ public static class TemplateOptions
                 }
 
                 var trackListeners = await context.WhoKnowsTrackService.GetIndexedUsersForTrack(null,
-                    context.GuildUsers, context.Guild.GuildId, context.DbTrack.Id);
+                    context.GuildUsers, context.Guild.GuildId, context.DbTrack.ArtistName, context.DbTrack.Name);
                 trackListeners = WhoKnowsService
                     .FilterWhoKnowsObjects(trackListeners, context.GuildUsers, context.Guild, 0).filteredUsers;
 

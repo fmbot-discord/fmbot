@@ -64,11 +64,11 @@ public class ChartCommands(
 
         if (this.Context.Guild != null)
         {
-            var perms = await GuildService.GetGuildPermissionsAsync(this.Context);
+            var perms = await GuildService.GetChannelPermissionsAsync(this.Context);
             if (!perms.HasFlag(Permissions.AttachFiles))
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
-                    { Content = "I'm missing the 'Attach files' permission in this server, so I can't post a chart." });
+                    { Content = "I'm missing the 'Attach files' permission in this channel, so I can't post a chart. Grant it server-wide via `Server Settings` > `Roles`, or allow it for this channel specifically." });
                 await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
                 return;
             }
@@ -128,11 +128,11 @@ public class ChartCommands(
 
         if (this.Context.Guild != null)
         {
-            var perms = await GuildService.GetGuildPermissionsAsync(this.Context);
+            var perms = await GuildService.GetChannelPermissionsAsync(this.Context);
             if (!perms.HasFlag(Permissions.AttachFiles))
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
-                    { Content = "I'm missing the 'Attach files' permission in this server, so I can't post a chart." });
+                    { Content = "I'm missing the 'Attach files' permission in this channel, so I can't post a chart. Grant it server-wide via `Server Settings` > `Roles`, or allow it for this channel specifically." });
                 await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
                 return;
             }

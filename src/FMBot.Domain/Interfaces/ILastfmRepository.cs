@@ -60,6 +60,9 @@ public interface ILastfmRepository
     Task<Response<RecentTrackList>> GetLovedTracksAsync(string lastFmUserName, int count = 2, string sessionKey = null,
         long? fromUnixTimestamp = null);
 
+    Task<Response<LastFmUserFriendsList>> GetFriendsAsync(string lastFmUserName, string sessionKey,
+        int limit = 100, int page = 1, int errorRetries = 1);
+
     Task<MemoryStream> GetAlbumImageAsStreamAsync(string imageUrl);
     Task<bool> LastFmUserExistsAsync(string lastFmUserName, bool alsoExistsIfPrivate = false);
     Task<Response<TokenResponse>> GetAuthToken();
