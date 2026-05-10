@@ -68,7 +68,7 @@ public class ChartCommands(
             if (!perms.HasFlag(Permissions.AttachFiles))
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
-                    { Content = "I'm missing the 'Attach files' permission in this channel, so I can't post a chart. Grant it server-wide via `Server Settings` > `Roles`, or allow it for this channel specifically." });
+                    { Content = "The bot is missing the `Attach Files` permission in this channel, so it can't post a chart. Please grant it server-wide via `Server Settings` > `Roles`, or per-channel via the channel permissions." });
                 await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
                 return;
             }
@@ -132,7 +132,7 @@ public class ChartCommands(
             if (!perms.HasFlag(Permissions.AttachFiles))
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
-                    { Content = "I'm missing the 'Attach files' permission in this channel, so I can't post a chart. Grant it server-wide via `Server Settings` > `Roles`, or allow it for this channel specifically." });
+                    { Content = "The bot is missing the `Attach Files` permission in this channel, so it can't post a chart. Please grant it server-wide via `Server Settings` > `Roles`, or per-channel via the channel permissions." });
                 await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
                 return;
             }

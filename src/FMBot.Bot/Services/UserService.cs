@@ -582,7 +582,8 @@ public class UserService
 
             CommandUsage = interactions
                 .GroupBy(i => i.CommandName)
-                .Where(w => w.Key != "discordsupporters" &&
+                .Where(w => w.Key != null &&
+                            w.Key != "discordsupporters" &&
                             w.Key != "opencollectivesupporters")
                 .ToDictionary(g => g.Key, g => g.Count()),
             UniqueArtistsSearched = interactions
@@ -748,7 +749,8 @@ public class UserService
             var current = orderedInteractions[i];
             var next = orderedInteractions[i + 1];
 
-            if ((next.Timestamp - current.Timestamp).TotalMinutes <= combinationTimeWindowMinutes)
+            if ((next.Timestamp - current.Timestamp).TotalMinutes <= combinationTimeWindowMinutes &&
+                current.CommandName != null && next.CommandName != null)
             {
                 if (!combinations.ContainsKey(current.CommandName))
                 {
