@@ -6,10 +6,12 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services;
+using FMBot.Bot.Services.Guild;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
 using System.Threading;
 using FMBot.Domain;
+using NetCord;
 using NetCord.Services.Commands;
 using Fergun.Interactive;
 using NetCord.Rest;
@@ -54,6 +56,11 @@ public class GameCommands(
                 var statResponse = await gameBuilders.GetJumbleUserStats(context, userSettings, JumbleType.Artist);
                 await this.Context.SendResponse(this.Interactivity, statResponse, userService);
                 await this.Context.LogCommandUsedAsync(statResponse, userService);
+                return;
+            }
+
+            if (!await HasJumbleReactionPermissions())
+            {
                 return;
             }
 
@@ -148,6 +155,23 @@ public class GameCommands(
                 return;
             }
 
+            if (!await HasJumbleReactionPermissions())
+            {
+                return;
+            }
+
+            if (this.Context.Guild != null)
+            {
+                var perms = await GuildService.GetChannelPermissionsAsync(this.Context);
+                if (!perms.HasFlag(Permissions.AttachFiles))
+                {
+                    await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
+                        { Content = "The bot is missing the `Attach Files` permission in this channel, which is required for playing Pixel Jumble properly. Please grant it server-wide via `Server Settings` > `Roles`, or per-channel via the channel permissions." });
+                    await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
+                    return;
+                }
+            }
+
             var cancellationTokenSource = new CancellationTokenSource();
             var response = await gameBuilders.StartPixelJumble(context, contextUser.UserId, cancellationTokenSource);
 
@@ -176,5 +200,26 @@ public class GameCommands(
         {
             await this.Context.HandleCommandException(e, userService);
         }
+    }
+
+    private async Task<bool> HasJumbleReactionPermissions()
+    {
+        if (this.Context.Guild == null)
+        {
+            return true;
+        }
+
+        var perms = await GuildService.GetChannelPermissionsAsync(this.Context);
+        if (perms.HasFlag(Permissions.AddReactions))
+        {
+            return true;
+        }
+
+        await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
+        {
+            Content = "The bot is missing the `Add Reactions` permission in this channel, which is required for playing Jumble properly. Please grant it server-wide via `Server Settings` > `Roles`, or per-channel via the channel permissions."
+        });
+        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
+        return false;
     }
 }
