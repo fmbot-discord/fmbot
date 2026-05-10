@@ -39,4 +39,4 @@ jobs:
             ghcr.io/fmbot-discord/fmbot:latest
             ghcr.io/fmbot-discord/fmbot:${{ steps.extract_branch.outputs.branch }}
           cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-to: type=gha,mode=min
