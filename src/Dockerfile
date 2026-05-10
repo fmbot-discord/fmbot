@@ -43,10 +43,9 @@ COPY ["src/FMBot.AppleMusic", "FMBot.AppleMusic/"]
 RUN dotnet restore "FMBot.Bot/FMBot.Bot.csproj"
 COPY . .
 WORKDIR "/src/FMBot.Bot"
-RUN dotnet build "FMBot.Bot.csproj" -c Release -o /app/build
 
 FROM build AS publish
-RUN dotnet publish "FMBot.Bot.csproj" -c Release -o /app/publish
+RUN dotnet publish "FMBot.Bot.csproj" -c Release -o /app/publish --no-restore
 
 FROM base AS final
 WORKDIR /app
