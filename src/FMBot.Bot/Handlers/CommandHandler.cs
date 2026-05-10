@@ -238,6 +238,30 @@ public class CommandHandler
 
         using (Statistics.TextCommandHandlerDuration.NewTimer())
         {
+            var botPermissions = CheckBotChannelPermissions(context);
+            if (!botPermissions.canSend)
+            {
+                Log.Information(
+                    "CommandHandler: missing 'Send Messages' permission | {discordUserName} / {discordUserId} | {guildName} / {guildId} | {channelId} | {messageContent}",
+                    context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, context.Channel?.Id, context.Message.Content);
+                return;
+            }
+
+            if (!botPermissions.canEmbed)
+            {
+                Log.Information(
+                    "CommandHandler: missing 'Embed Links' permission | {discordUserName} / {discordUserId} | {guildName} / {guildId} | {channelId} | {messageContent}",
+                    context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, context.Channel?.Id, context.Message.Content);
+
+                await context.Client.Rest.SendMessageAsync(context.Message.ChannelId, new MessageProperties
+                {
+                    Content = "The bot is missing the `Embed Links` permission in this channel, so it can't reply properly. " +
+                              "Please grant it server-wide via `Server Settings` > `Roles`, or per-channel via the channel permissions.",
+                    AllowedMentions = AllowedMentionsProperties.None
+                });
+                return;
+            }
+
             // If command possibly equals .fm
             if (!searchResult.IsSuccess &&
                 msg.Content.StartsWith(this._botSettings.Bot.Prefix, StringComparison.OrdinalIgnoreCase))
@@ -468,6 +492,21 @@ public class CommandHandler
                     failResult.Message);
             }
         }
+    }
+
+    private static (bool canSend, bool canEmbed) CheckBotChannelPermissions(CommandContext context)
+    {
+        if (context.Guild == null || !context.Guild.Users.TryGetValue(context.Client.Id, out var botUser))
+        {
+            return (true, true);
+        }
+
+        var guildPermissions = botUser.GetPermissions(context.Guild);
+        var permissions = context.Channel is IGuildChannel guildChannel
+            ? botUser.GetChannelPermissions(guildPermissions, guildChannel)
+            : guildPermissions;
+
+        return (permissions.HasFlag(Permissions.SendMessages), permissions.HasFlag(Permissions.EmbedLinks));
     }
 
     private (bool rateLimited, bool messageSent) CheckUserRateLimit(ulong discordUserId)
