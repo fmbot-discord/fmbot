@@ -506,7 +506,7 @@ public class TrackService
                 };
             }
 
-            if (!description.Contains("-"))
+            if (!description.Contains(" - "))
             {
                 // Maki
                 if (description.Contains("—"))
