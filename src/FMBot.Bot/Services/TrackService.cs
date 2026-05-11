@@ -518,12 +518,13 @@ public class TrackService
                     };
                 }
 
-                if (description.Contains(" by ", StringComparison.OrdinalIgnoreCase))
+                var byIndex = description.IndexOf(" by ", StringComparison.OrdinalIgnoreCase);
+                if (byIndex != -1)
                 {
                     return new TrackSearchResult
                     {
-                        TrackName = description.Split(" by ")[0],
-                        ArtistName = description.Split(" by ")[1]
+                        TrackName = description[..byIndex],
+                        ArtistName = description[(byIndex + " by ".Length)..]
                     };
                 }
 
