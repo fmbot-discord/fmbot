@@ -52,7 +52,9 @@ public class SpotifyService
     {
         var spotify = GetSpotifyWebApi();
 
-        var searchRequest = new SearchRequest(SearchRequest.Types.Artist, artistName)
+        var truncatedArtistName = artistName.Length > 100 ? artistName[..100] : artistName;
+
+        var searchRequest = new SearchRequest(SearchRequest.Types.Artist, truncatedArtistName)
         {
             Limit = 50
         };
@@ -81,7 +83,10 @@ public class SpotifyService
         //Create the auth object
         var spotify = GetSpotifyWebApi();
 
-        var searchRequest = new SearchRequest(SearchRequest.Types.Track, $"track:{trackName} artist:{artistName}");
+        var truncatedTrackName = trackName.Length > 100 ? trackName[..100] : trackName;
+        var truncatedArtistName = artistName.Length > 100 ? artistName[..100] : artistName;
+
+        var searchRequest = new SearchRequest(SearchRequest.Types.Track, $"track:{truncatedTrackName} artist:{truncatedArtistName}");
 
         var results = await spotify.Search.Item(searchRequest);
         Statistics.SpotifyApiCalls.Inc();
@@ -106,13 +111,10 @@ public class SpotifyService
         //Create the auth object
         var spotify = GetSpotifyWebApi();
 
-        var searchQuery = $"{albumName} {artistName}";
-        if (searchQuery.Length > 100)
-        {
-            searchQuery = searchQuery[..100];
-        }
+        var truncatedAlbumName = albumName.Length > 100 ? albumName[..100] : albumName;
+        var truncatedArtistName = artistName.Length > 100 ? artistName[..100] : artistName;
 
-        var searchRequest = new SearchRequest(SearchRequest.Types.Album, searchQuery);
+        var searchRequest = new SearchRequest(SearchRequest.Types.Album, $"{truncatedAlbumName} {truncatedArtistName}");
 
         var results = await spotify.Search.Item(searchRequest);
         Statistics.SpotifyApiCalls.Inc();

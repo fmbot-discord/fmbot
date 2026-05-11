@@ -1,7 +1,7 @@
 FROM mcr.microsoft.com/dotnet/runtime:10.0-noble-amd64 AS base
 
 RUN apt-get update -y && apt-get install -y libjemalloc2 libgdiplus software-properties-common curl
-RUN add-apt-repository ppa:ubuntuhandbook1/ffmpeg7 && apt-get update -y && apt-get install -y ffmpeg
+RUN add-apt-repository ppa:ubuntuhandbook1/ffmpeg8 && apt-get update -y && apt-get install -y ffmpeg
 
 #####################
 #PUPPETEER RECIPE
@@ -28,25 +28,24 @@ RUN dotnet tool install --global dotnet-dump \
     && dotnet tool install --global dotnet-trace \
     && dotnet tool install --global dotnet-gcdump
 
-COPY ["src/FMBot.Bot", "FMBot.Bot/"]
-COPY ["src/FMBot.Images", "FMBot.Images/"]
-COPY ["src/FMBot.Persistence.Domain", "FMBot.Persistence.Domain/"]
-COPY ["src/FMBot.Domain", "FMBot.Domain/"]
-COPY ["src/FMBot.Persistence", "FMBot.Persistence/"]
-COPY ["src/FMBot.Persistence.EntityFrameWork", "FMBot.Persistence.EntityFrameWork/"]
-COPY ["src/FMBot.LastFM", "FMBot.LastFM/"]
-COPY ["src/FMBot.LastFM.Domain", "FMBot.LastFM.Domain/"]
-COPY ["src/FMBot.Subscriptions", "FMBot.Subscriptions/"]
-COPY ["src/FMBot.Discogs", "FMBot.Discogs/"]
-COPY ["src/Shared.Domain", "Shared.Domain/"]
-COPY ["src/FMBot.AppleMusic", "FMBot.AppleMusic/"]
+COPY ["src/FMBot.Bot/FMBot.Bot.csproj", "FMBot.Bot/"]
+COPY ["src/FMBot.Images/FMBot.Images.csproj", "FMBot.Images/"]
+COPY ["src/FMBot.Persistence.Domain/FMBot.Persistence.Domain.csproj", "FMBot.Persistence.Domain/"]
+COPY ["src/FMBot.Domain/FMBot.Domain.csproj", "FMBot.Domain/"]
+COPY ["src/FMBot.Persistence/FMBot.Persistence.csproj", "FMBot.Persistence/"]
+COPY ["src/FMBot.Persistence.EntityFrameWork/FMBot.Persistence.EntityFrameWork.csproj", "FMBot.Persistence.EntityFrameWork/"]
+COPY ["src/FMBot.LastFM/FMBot.LastFM.csproj", "FMBot.LastFM/"]
+COPY ["src/FMBot.LastFM.Domain/FMBot.LastFM.Domain.csproj", "FMBot.LastFM.Domain/"]
+COPY ["src/FMBot.Subscriptions/FMBot.Subscriptions.csproj", "FMBot.Subscriptions/"]
+COPY ["src/FMBot.Discogs/FMBot.Discogs.csproj", "FMBot.Discogs/"]
+COPY ["src/Shared.Domain/Shared.Domain.csproj", "Shared.Domain/"]
+COPY ["src/FMBot.AppleMusic/FMBot.AppleMusic.csproj", "FMBot.AppleMusic/"]
 RUN dotnet restore "FMBot.Bot/FMBot.Bot.csproj"
-COPY . .
+COPY src/ ./
 WORKDIR "/src/FMBot.Bot"
-RUN dotnet build "FMBot.Bot.csproj" -c Release -o /app/build
 
 FROM build AS publish
-RUN dotnet publish "FMBot.Bot.csproj" -c Release -o /app/publish
+RUN dotnet publish "FMBot.Bot.csproj" -c Release -o /app/publish --no-restore
 
 FROM base AS final
 WORKDIR /app
