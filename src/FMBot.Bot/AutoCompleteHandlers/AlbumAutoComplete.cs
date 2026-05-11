@@ -7,6 +7,7 @@ using FMBot.Bot.Services;
 using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
+using Serilog;
 
 namespace FMBot.Bot.AutoCompleteHandlers;
 
@@ -99,7 +100,7 @@ public class AlbumAutoComplete : IAutocompleteProvider<AutocompleteInteractionCo
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                Log.Error(e, "Error in album autocomplete for search value {SearchValue}", option.Value);
                 throw;
             }
         }
