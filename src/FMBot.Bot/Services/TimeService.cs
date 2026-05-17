@@ -137,7 +137,7 @@ public class TimeService
 
                 if (trackPlaycount > 0)
                 {
-                    var trackLength = track.DurationSeconds ?? (int)(await GetTrackLengthForTrack(track.ArtistName, track.ArtistName)).TotalSeconds;
+                    var trackLength = track.DurationSeconds ?? (int)(await GetTrackLengthForTrack(track.ArtistName, track.TrackName)).TotalSeconds;
 
                     timeListenedSeconds += (trackLength * trackPlaycount);
                     playsLeft -= trackPlaycount;
