@@ -248,8 +248,8 @@ public static class InteractionContextExtensions
 
         Log.Error(exception,
             "InteractionUsed: Error {referenceId} | {discordUserName} / {discordUserId} | {guildName} / {guildId} | {commandResponse} ({message}) | {messageContent}",
-            referenceId, context.Interaction.User?.Username, context.Interaction.User?.Id, context.Interaction.GuildId,
-            context.Interaction.GuildId, CommandResponse.Error, message, commandName);
+            referenceId, context.Interaction.User?.Username, context.Interaction.User?.Id, context.Interaction.Guild?.Name,
+            context.Interaction.Guild?.Id, CommandResponse.Error, message, commandName);
 
         if (sendReply)
         {

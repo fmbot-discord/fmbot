@@ -273,8 +273,8 @@ public class SupporterService
         }
         catch (Exception e)
         {
-            Log.Information("SupporterService: Error while sending gift purchaser thank you message to {discordUserId}",
-                purchaserUser.Id, e);
+            Log.Information(e, "SupporterService: Error while sending gift purchaser thank you message to {discordUserId}",
+                purchaserUser.Id);
         }
     }
 
@@ -313,8 +313,8 @@ public class SupporterService
         }
         catch (Exception e)
         {
-            Log.Information("SupporterService: Error while sending goodbye message to {discordUserId}", discordUser.Id,
-                e);
+            Log.Information(e, "SupporterService: Error while sending goodbye message to {discordUserId}",
+                discordUser.Id);
         }
     }
 
@@ -800,7 +800,7 @@ public class SupporterService
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
         Log.Information("Removing supporter status for {supporterName} - {openCollectiveId}", supporter.Name,
-            supporter.Name);
+            supporter.OpenCollectiveId);
         if (supporter.DiscordUserId.HasValue)
         {
             var otherActiveSupporter = await db.Supporters
@@ -982,7 +982,7 @@ public class SupporterService
                         openCollectiveSupporter.LastPayment >= DateTime.UtcNow.AddHours(-3))
                     {
                         Log.Information("Re-activating supporter status for {supporterName} - {openCollectiveId}",
-                            existingSupporter.Name, existingSupporter.Name);
+                            existingSupporter.Name, existingSupporter.OpenCollectiveId);
                         var reActivateDescription = new StringBuilder();
 
                         if (existingSupporter.DiscordUserId.HasValue)
@@ -1184,8 +1184,8 @@ public class SupporterService
                     }
                     catch (Exception e)
                     {
-                        Log.Error("Could not send welcome dm to new Discord supporter {discordUserId}",
-                            userEntitlements.DiscordUserId, e);
+                        Log.Error(e, "Could not send welcome dm to new Discord supporter {discordUserId}",
+                            userEntitlements.DiscordUserId);
                     }
                 }
 
@@ -1201,8 +1201,8 @@ public class SupporterService
                     }
                     catch (Exception e)
                     {
-                        Log.Error("Could not send gift purchaser thank you message to {purchaserDiscordUserId}",
-                            stripeSub.PurchaserDiscordUserId, e);
+                        Log.Error(e, "Could not send gift purchaser thank you message to {purchaserDiscordUserId}",
+                            stripeSub.PurchaserDiscordUserId);
                     }
                 }
 

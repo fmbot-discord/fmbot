@@ -213,8 +213,8 @@ public class MusicBotService
 
             if (usersInChannel.Count == 0)
             {
-                Log.Debug("BotScrobbling: Skipped scrobble for {guildName} / {guildId} because no connected users in voice channel",
-                    context.Guild.Name, context.Guild.Id, botId);
+                Log.Debug("BotScrobbling: Skipped scrobble for bot {botId} in {guildName} / {guildId} because no connected users in voice channel",
+                    botId, context.Guild.Name, context.Guild.Id);
                 this.BotScrobblingLogs.Add(new BotScrobblingLog(context.Guild.Id, DateTime.UtcNow,
                     $"Skipped scrobble because no connected users in voice channel"));
                 return null;
