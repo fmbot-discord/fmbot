@@ -39,7 +39,7 @@ public static class LastfmUrlExtensions
             return null;
         }
 
-        return $"https://last.fm/music/{LastfmUrlExtensions.Encode}/_/{encodedTrackName}";
+        return $"https://last.fm/music/{LastfmUrlExtensions.Encode(artistName)}/_/{encodedTrackName}";
     }
 
     public static string GetUserUrl(string userName, string addOn = null)
