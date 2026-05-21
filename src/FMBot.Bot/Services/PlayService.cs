@@ -503,7 +503,7 @@ public class PlayService
         var description = new StringBuilder();
         if (streak.ArtistName != null && streak.ArtistPlaycount.HasValue)
         {
-            var artistDisplay = HttpUtility.UrlEncode(streak.ArtistName).Length > 80
+            var artistDisplay = LastfmUrlExtensions.Encode(streak.ArtistName).Length > 80
                 ? $"**{streak.ArtistName}**"
                 : $"**[{streak.ArtistName}]({LastfmUrlExtensions.GetArtistUrl(streak.ArtistName)})**";
 
@@ -514,9 +514,9 @@ public class PlayService
 
         if (streak.AlbumName != null && streak.AlbumPlaycount.HasValue)
         {
-            var albumDisplay = HttpUtility.UrlEncode(streak.AlbumName).Length + HttpUtility.UrlEncode(streak.ArtistName ?? "").Length > 100
+            var albumDisplay = LastfmUrlExtensions.Encode(streak.AlbumName).Length + LastfmUrlExtensions.Encode(streak.ArtistName ?? "").Length > 100
                 ? $"**{streak.AlbumName}**"
-                : $"**[{streak.AlbumName}](https://www.last.fm/music/{HttpUtility.UrlEncode(streak.ArtistName)}/{HttpUtility.UrlEncode(streak.AlbumName)})**";
+                : $"**[{streak.AlbumName}]({LastfmUrlExtensions.GetAlbumUrl(streak.ArtistName, streak.AlbumName)})**";
 
             description.AppendLine(
                 $"` Album:` {albumDisplay} - " +
@@ -525,9 +525,9 @@ public class PlayService
 
         if (streak.TrackName != null && streak.TrackPlaycount.HasValue)
         {
-            var trackDisplay = HttpUtility.UrlEncode(streak.TrackName).Length + HttpUtility.UrlEncode(streak.ArtistName ?? "").Length > 100
+            var trackDisplay = LastfmUrlExtensions.Encode(streak.TrackName).Length + LastfmUrlExtensions.Encode(streak.ArtistName ?? "").Length > 100
                 ? $"**{streak.TrackName}**"
-                : $"**[{streak.TrackName}](https://www.last.fm/music/{HttpUtility.UrlEncode(streak.ArtistName)}/_/{HttpUtility.UrlEncode(streak.TrackName)})**";
+                : $"**[{streak.TrackName}]({LastfmUrlExtensions.GetTrackUrl(streak.ArtistName, streak.TrackName)})**";
 
             description.AppendLine(
                 $"` Track:` {trackDisplay} - " +

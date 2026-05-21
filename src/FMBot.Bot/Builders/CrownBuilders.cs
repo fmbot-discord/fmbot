@@ -117,7 +117,7 @@ public class CrownBuilders
             .First();
 
         var userArtistUrl =
-            $"{LastfmUrlExtensions.GetUserUrl(users[currentCrown.UserId].UserNameLastFM)}/library/music/{HttpUtility.UrlEncode(artistSearch.Artist.ArtistName)}";
+            LastfmUrlExtensions.GetUserMusicLibraryUrl(users[currentCrown.UserId].UserNameLastFM, artistSearch.Artist.ArtistName);
 
         guildUsers.TryGetValue(currentCrown.UserId, out var currentGuildUser);
         response.Embed.AddField("Current crown holder", CrownToString(currentGuildUser, users[currentCrown.UserId], currentCrown, context.NumberFormat, userArtistUrl));
