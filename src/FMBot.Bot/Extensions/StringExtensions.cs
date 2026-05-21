@@ -460,7 +460,7 @@ public static partial class StringExtensions
             return months <= 1 ? "one month ago" : months + " months ago";
         }
 
-        return "more then a month ago";
+        return "more than a month ago";
     }
 
     public static string GetTimeAgoShortString(DateTime timeAgo)
