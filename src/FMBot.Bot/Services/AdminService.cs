@@ -422,7 +422,7 @@ public class AdminService
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
+            Log.Error(e, "Error posting botted user report {ReportId}", report.Id);
             throw;
         }
     }

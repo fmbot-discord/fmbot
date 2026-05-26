@@ -138,7 +138,6 @@ public class PlayInteractions(
 
     [ComponentInteraction(InteractionConstants.RecapPicker)]
     [RequiresIndex]
-    [GuildOnly]
     public async Task RecapAsync(params string[] inputs)
     {
         try

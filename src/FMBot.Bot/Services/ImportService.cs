@@ -245,8 +245,8 @@ public class ImportService(
                 }
                 catch (Exception e)
                 {
-                    Log.Error("Importing: {userId} / {discordUserId} - Error in import .zip file ({fileName})",
-                        user.UserId, user.DiscordUserId, attachment.Key, e);
+                    Log.Error(e, "Importing: {userId} / {discordUserId} - Error in import .zip file ({fileName})",
+                        user.UserId, user.DiscordUserId, attachment.Key);
                 }
             }
 
@@ -274,8 +274,8 @@ public class ImportService(
                     }
                     catch (Exception e)
                     {
-                        Log.Error("Importing: {userId} / {discordUserId} - Error in import .zip file ({fileName})",
-                            user.UserId, user.DiscordUserId, entry.Name, e);
+                        Log.Error(e, "Importing: {userId} / {discordUserId} - Error in import .zip file ({fileName})",
+                            user.UserId, user.DiscordUserId, entry.Name);
                     }
                 }
             }
@@ -284,8 +284,8 @@ public class ImportService(
         }
         catch (Exception e)
         {
-            Log.Error("Importing: {userId} / {discordUserId} - Error while attempting to process Spotify import file",
-                user.UserId, user.DiscordUserId, e);
+            Log.Error(e, "Importing: {userId} / {discordUserId} - Error while attempting to process Spotify import file",
+                user.UserId, user.DiscordUserId);
             return (ImportStatus.UnknownFailure, null, null);
         }
     }

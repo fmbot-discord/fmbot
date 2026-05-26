@@ -16,6 +16,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Npgsql;
 using PostgreSQLCopyHelper;
+using Serilog;
 
 namespace FMBot.Bot.Services.WhoKnows;
 
@@ -420,7 +421,7 @@ public class CrownService
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
+            Log.Error(e, "Error seeding crowns for guild {GuildId}", guild.GuildId);
             throw;
         }
     }

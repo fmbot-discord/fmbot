@@ -184,7 +184,7 @@ public class ArtistRepository
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
+            Log.Error(e, "Error updating artist links for artist {ArtistId}", artistId);
             throw;
         }
     }

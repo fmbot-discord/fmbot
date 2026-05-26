@@ -433,7 +433,7 @@ public class CensorService
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
+            Log.Error(e, "Error posting censored music report {ReportId}", report.Id);
             throw;
         }
     }

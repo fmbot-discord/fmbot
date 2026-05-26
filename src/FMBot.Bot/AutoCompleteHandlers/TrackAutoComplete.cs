@@ -7,6 +7,7 @@ using FMBot.Bot.Services;
 using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
+using Serilog;
 
 namespace FMBot.Bot.AutoCompleteHandlers;
 
@@ -100,7 +101,7 @@ public class TrackAutoComplete : IAutocompleteProvider<AutocompleteInteractionCo
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                Log.Error(e, "Error in track autocomplete for search value {SearchValue}", option.Value);
                 throw;
             }
         }

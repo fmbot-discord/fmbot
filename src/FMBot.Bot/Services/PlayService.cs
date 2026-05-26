@@ -21,6 +21,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Npgsql;
+using Serilog;
 
 namespace FMBot.Bot.Services;
 
@@ -103,7 +104,7 @@ public class PlayService
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
+            Log.Error(e, "Error getting daily overview for user {UserId}", userId);
             throw;
         }
     }
