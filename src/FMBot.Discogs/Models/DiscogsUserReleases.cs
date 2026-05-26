@@ -119,7 +119,7 @@ public class Release
     public int Id { get; set; }
 
     [JsonPropertyName("instance_id")]
-    public int InstanceId { get; set; }
+    public long InstanceId { get; set; }
 
     [JsonPropertyName("date_added")]
     public DateTime DateAdded { get; set; }
