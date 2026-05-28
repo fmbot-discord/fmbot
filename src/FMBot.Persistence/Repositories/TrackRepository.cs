@@ -43,7 +43,9 @@ public class TrackRepository
     {
         const string getTrackQuery = "SELECT * FROM public.tracks " +
                                      "WHERE artist_name = CAST(@artistName AS CITEXT) AND " +
-                                     "name = CAST(@trackName AS CITEXT)";
+                                     "name = CAST(@trackName AS CITEXT) " +
+                                     "ORDER BY COALESCE(album_name, '') " +
+                                     "LIMIT 1";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         var track = await connection.QueryFirstOrDefaultAsync<Track>(getTrackQuery, new
