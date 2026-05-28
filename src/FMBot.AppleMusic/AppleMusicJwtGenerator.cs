@@ -19,7 +19,7 @@ public class AppleMusicJwtAuthProvider
 
 
 
-    public Task<string> CreateAuthorizationHeaderAsync()
+    public string CreateAuthorizationHeader()
     {
         var timeNow = DateTime.UtcNow;
         var timeExpired = timeNow.AddDays(180);
@@ -42,7 +42,7 @@ public class AppleMusicJwtAuthProvider
         var tokenHandler = new JwtSecurityTokenHandler();
         var jwtToken = tokenHandler.WriteToken(token);
 
-        return Task.FromResult($"Bearer {jwtToken}");
+        return $"Bearer {jwtToken}";
     }
 
     private static ECDsa ParsePrivateKey(string privateKey)
