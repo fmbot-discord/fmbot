@@ -77,7 +77,7 @@ public class PlayInteractions(
         var contextUser = await userService.GetUserWithDiscogs(requesterDiscordUserId);
         var userSettings = await settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId,
             this.Context.Guild, this.Context.User);
-        var targetUser = await userService.GetUserWithDiscogs(requesterDiscordUserId);
+        var targetUser = await userService.GetUserWithDiscogs(discordUserId);
 
         try
         {
