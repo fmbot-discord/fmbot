@@ -35,6 +35,8 @@ public class EurovisionBuilders
 
     public async Task<ResponseModel> GetEurovisionYear(ContextModel context, int year)
     {
+        year = Math.Max(year, 1956);
+
         var response = new ResponseModel
         {
             ResponseType = ResponseType.Embed,
@@ -52,6 +54,9 @@ public class EurovisionBuilders
         }
 
         var hostCountry = this._countryService.GetValidCountry(contest.HostCountry);
+        var hostLocation = string.Join(", ",
+            new[] { contest.HostCity, hostCountry?.Name }.Where(s => !string.IsNullOrWhiteSpace(s)));
+        var hostLocationTitle = hostLocation.Length > 0 ? $" in {hostLocation}" : "";
 
         var pages = new List<PageBuilder>();
         var pageCounter = 1;
@@ -71,17 +76,20 @@ public class EurovisionBuilders
 
             foreach (var eurovisionEntry in page)
             {
-                var validCountry = this._countryService.GetValidCountry(eurovisionEntry.EntryCode);
+                var countryCode = eurovisionEntry.EntryCode.Length >= 2
+                    ? eurovisionEntry.EntryCode[..2]
+                    : eurovisionEntry.EntryCode;
+                var validCountry = this._countryService.GetValidCountry(countryCode);
 
                 if (eurovisionEntry.HasPosition)
                 {
                     pageDescription.Append(
-                        $"#{eurovisionEntry.Position} — {validCountry?.Name ?? eurovisionEntry.EntryCode}");
+                        $"#{eurovisionEntry.Position} — {validCountry?.Name ?? countryCode}");
                 }
                 else
                 {
                     pageDescription.Append(
-                        $"{validCountry?.Name ?? eurovisionEntry.EntryCode}");
+                        $"{validCountry?.Name ?? countryCode}");
                 }
 
                 if (!eurovisionEntry.HasScore)
@@ -100,10 +108,15 @@ public class EurovisionBuilders
                         pageDescription.Append(
                             $" — {eurovisionEntry.SemiFinalNr}{StringExtensions.GetAmountEnd(eurovisionEntry.SemiFinalNr)} semi-final - {eurovisionEntry.SemiFinalScore} points");
                     }
-                    else
+                    else if (eurovisionEntry.HasSemiFinalNr)
                     {
                         pageDescription.Append(
-                            $" — {eurovisionEntry.SemiFinalNr}{StringExtensions.GetAmountEnd(eurovisionEntry.SemiFinalNr)} semi-final - {eurovisionEntry.SemiFinalDraw}{StringExtensions.GetAmountEnd(eurovisionEntry.SemiFinalDraw)} running");
+                            $" — {eurovisionEntry.SemiFinalNr}{StringExtensions.GetAmountEnd(eurovisionEntry.SemiFinalNr)} semi-final");
+                        if (eurovisionEntry.HasSemiFinalDraw)
+                        {
+                            pageDescription.Append(
+                                $" - {eurovisionEntry.SemiFinalDraw}{StringExtensions.GetAmountEnd(eurovisionEntry.SemiFinalDraw)} running");
+                        }
                     }
                 }
                 else
@@ -112,7 +125,7 @@ public class EurovisionBuilders
                 }
 
                 pageDescription.AppendLine();
-                pageDescription.Append($":flag_{eurovisionEntry.EntryCode}:  ");
+                pageDescription.Append($":flag_{countryCode}:  ");
                 if (!string.IsNullOrWhiteSpace(eurovisionEntry.VideoLink))
                 {
                     pageDescription.Append(
@@ -136,7 +149,7 @@ public class EurovisionBuilders
             footer.Append($" - Add country for details");
 
             pages.Add(new PageBuilder()
-                .WithTitle($"Eurovision {year} in {contest.HostCity}, {hostCountry.Name} <:eurovision:1084971471610323035>")
+                .WithTitle($"Eurovision {year}{hostLocationTitle} <:eurovision:1084971471610323035>")
                 .WithDescription(pageDescription.ToString())
                 .WithFooter(footer.ToString()));
             pageCounter++;
@@ -150,6 +163,8 @@ public class EurovisionBuilders
 
     public async Task<ResponseModel> GetEurovisionCountryYear(ContextModel context, CountryInfo country, int year)
     {
+        year = Math.Max(year, 1956);
+
         var response = new ResponseModel
         {
             ResponseType = ResponseType.Embed,
@@ -233,7 +248,10 @@ public class EurovisionBuilders
                          .Take(8))
             {
                 var votedCountry = this._countryService.GetValidCountry(vote.FromCountry);
-                juryVotesDesc.AppendLine($"**{vote.Points}**  ·  {votedCountry.Emoji} {votedCountry.Name}");
+                var votedCountryLabel = votedCountry != null
+                    ? $"{votedCountry.Emoji} {votedCountry.Name}"
+                    : vote.FromCountry.ToUpper();
+                juryVotesDesc.AppendLine($"**{vote.Points}**  ·  {votedCountryLabel}");
             }
 
             response.Embed.AddField("Received jury points", juryVotesDesc.ToString(), true);
@@ -252,7 +270,10 @@ public class EurovisionBuilders
                          .Take(8))
             {
                 var votedCountry = this._countryService.GetValidCountry(vote.FromCountry);
-                teleVotesDesc.AppendLine($"**{vote.Points}**  ·  {votedCountry.Emoji} {votedCountry.Name}");
+                var votedCountryLabel = votedCountry != null
+                    ? $"{votedCountry.Emoji} {votedCountry.Name}"
+                    : vote.FromCountry.ToUpper();
+                teleVotesDesc.AppendLine($"**{vote.Points}**  ·  {votedCountryLabel}");
             }
 
             response.Embed.AddField("Received televote points", teleVotesDesc.ToString(), true);
