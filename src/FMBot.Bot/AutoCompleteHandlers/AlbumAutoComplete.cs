@@ -105,7 +105,13 @@ public class AlbumAutoComplete : IAutocompleteProvider<AutocompleteInteractionCo
             }
         }
 
-        return new List<ApplicationCommandOptionChoiceProperties>(results.Select(s =>
-            new ApplicationCommandOptionChoiceProperties(s, s)));
+        return new List<ApplicationCommandOptionChoiceProperties>(results
+            .Where(s => !string.IsNullOrEmpty(s))
+            .Take(25)
+            .Select(s =>
+            {
+                var choice = StringExtensions.TruncateLongString(s, 100);
+                return new ApplicationCommandOptionChoiceProperties(choice, choice);
+            }));
     }
 }
