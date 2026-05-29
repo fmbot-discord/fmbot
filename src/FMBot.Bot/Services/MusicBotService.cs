@@ -143,7 +143,7 @@ public class MusicBotService
             $"Scrobbled `{trackResult.TrackName}` by `{trackResult.ArtistName}`"));
 
         var messageDelayMs = (int)(trackResult.DurationMs - 3000 ?? 120000);
-        await Task.Delay(messageDelayMs);
+        await Task.Delay(Math.Max(messageDelayMs, 0));
 
         await scrobbleMessage.DeleteAsync();
     }
