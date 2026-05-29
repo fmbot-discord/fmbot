@@ -730,7 +730,10 @@ public class GenreBuilders
         if (userView)
         {
             var userArtistsWithGenres = await this._genreService.GetUserArtistsForGenres(userSettings.UserId, genres.genres);
-            userGenre = userArtistsWithGenres.FirstOrDefault();
+            var primaryGenre = genres.genres.First();
+            userGenre = userArtistsWithGenres.FirstOrDefault(g =>
+                            g.GenreName.Equals(primaryGenre, StringComparison.OrdinalIgnoreCase))
+                        ?? userArtistsWithGenres.FirstOrDefault();
 
             if (userGenre == null || !userGenre.Artists.Any())
             {

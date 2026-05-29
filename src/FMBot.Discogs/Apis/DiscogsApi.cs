@@ -114,6 +114,13 @@ public class DiscogsApi
         var response = await client.ExecuteAsync<DiscogsIdentity>(request);
         Statistics.DiscogsApiCalls.Inc();
 
+        if (!response.IsSuccessful)
+        {
+            Log.Error(response.ErrorException, "Discogs: Failed to get identity - Status: {statusCode} | ResponseStatus: {responseStatus} | Content: {content}",
+                response.StatusCode, response.ResponseStatus, response.Content);
+            return null;
+        }
+
         return response.Data;
     }
 
@@ -129,7 +136,7 @@ public class DiscogsApi
         var response = await client.ExecuteAsync<DiscogsUserReleases>(request);
         Statistics.DiscogsApiCalls.Inc();
 
-        if (!response.IsSuccessStatusCode)
+        if (!response.IsSuccessful)
         {
             if (response.Content != null && response.Content.Contains("User does not exist"))
             {
@@ -137,9 +144,9 @@ public class DiscogsApi
                 throw new HttpRequestException($"Discogs user '{discogsUser}' does not exist or has been deleted.", null, HttpStatusCode.NotFound);
             }
 
-            Log.Error("Discogs: Failed to get releases for {discogsUser} - Status: {statusCode} | Content: {content}",
-                discogsUser, response.StatusCode, response.Content);
-            return response.Data;
+            Log.Error(response.ErrorException, "Discogs: Failed to get releases for {discogsUser} - Status: {statusCode} | ResponseStatus: {responseStatus} | Content: {content}",
+                discogsUser, response.StatusCode, response.ResponseStatus, response.Content);
+            return null;
         }
 
         if (response.Data != null &&
@@ -156,10 +163,10 @@ public class DiscogsApi
                 var pageResponse = await client.ExecuteAsync<DiscogsUserReleases>(request);
                 Statistics.DiscogsApiCalls.Inc();
 
-                if (!pageResponse.IsSuccessStatusCode)
+                if (!pageResponse.IsSuccessful)
                 {
-                    Log.Warning("Discogs: Failed to get page {page} for {discogsUser} - Status: {statusCode} | Content: {content}",
-                        i, discogsUser, pageResponse.StatusCode, pageResponse.Content);
+                    Log.Warning(pageResponse.ErrorException, "Discogs: Failed to get page {page} for {discogsUser} - Status: {statusCode} | ResponseStatus: {responseStatus} | Content: {content}",
+                        i, discogsUser, pageResponse.StatusCode, pageResponse.ResponseStatus, pageResponse.Content);
                     break;
                 }
 
@@ -190,7 +197,7 @@ public class DiscogsApi
         var response = await client.ExecuteAsync<DiscogsCollectionValue>(request);
         Statistics.DiscogsApiCalls.Inc();
 
-        if (!response.IsSuccessStatusCode)
+        if (!response.IsSuccessful)
         {
             if (response.Content != null && response.Content.Contains("User does not exist"))
             {
@@ -198,7 +205,8 @@ public class DiscogsApi
                 throw new HttpRequestException($"Discogs user '{discogsUser}' does not exist or has been deleted.", null, HttpStatusCode.NotFound);
             }
 
-            Log.Error("Discogs: Failed to get collection value for {discogsUser} - Status: {statusCode} | Content: {content}", discogsUser, response.StatusCode, response.Content);
+            Log.Error(response.ErrorException, "Discogs: Failed to get collection value for {discogsUser} - Status: {statusCode} | ResponseStatus: {responseStatus} | Content: {content}",
+                discogsUser, response.StatusCode, response.ResponseStatus, response.Content);
         }
 
         return response.Data;
@@ -212,9 +220,10 @@ public class DiscogsApi
         var response = await client.ExecuteAsync<DiscogsFullRelease>(request);
         Statistics.DiscogsApiCalls.Inc();
 
-        if (!response.IsSuccessStatusCode)
+        if (!response.IsSuccessful)
         {
-            Log.Error("Discogs: Failed to get release {releaseId} - Status: {statusCode} | Content: {content}", releaseId, response.StatusCode, response.Content);
+            Log.Error(response.ErrorException, "Discogs: Failed to get release {releaseId} - Status: {statusCode} | ResponseStatus: {responseStatus} | Content: {content}",
+                releaseId, response.StatusCode, response.ResponseStatus, response.Content);
             return null;
         }
 

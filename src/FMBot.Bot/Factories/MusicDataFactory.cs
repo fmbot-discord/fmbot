@@ -684,47 +684,50 @@ public class MusicDataFactory
 
         if (editorialVideo != null)
         {
-            var existingEditorialVideo = existingImages.FirstOrDefault(f =>
-                f.ImageSource == imageSource && f.ImageType == ImageType.VideoSquare);
-
             var video = editorialVideo.MotionDetailSquare ?? editorialVideo.MotionSquareVideo1x1;
 
-            if (existingEditorialVideo != null)
+            if (video?.PreviewFrame != null)
             {
-                existingEditorialVideo.Url = video.Video;
-                existingEditorialVideo.LastUpdated = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+                var existingEditorialVideo = existingImages.FirstOrDefault(f =>
+                    f.ImageSource == imageSource && f.ImageType == ImageType.VideoSquare);
 
-                existingEditorialVideo.Width = video.PreviewFrame.Width;
-                existingEditorialVideo.Height = video.PreviewFrame.Height;
-
-                existingEditorialVideo.BgColor = video.PreviewFrame.BgColor;
-                existingEditorialVideo.TextColor1 = video.PreviewFrame.TextColor1;
-                existingEditorialVideo.TextColor2 = video.PreviewFrame.TextColor2;
-                existingEditorialVideo.TextColor3 = video.PreviewFrame.TextColor3;
-                existingEditorialVideo.TextColor4 = video.PreviewFrame.TextColor4;
-
-                existingEditorialVideo.PreviewFrameUrl = video.PreviewFrame.Url;
-
-                db.AlbumImages.Update(existingEditorialVideo);
-            }
-            else
-            {
-                await db.AlbumImages.AddAsync(new AlbumImage
+                if (existingEditorialVideo != null)
                 {
-                    AlbumId = albumId,
-                    ImageSource = imageSource,
-                    ImageType = ImageType.VideoSquare,
-                    Width = editorialVideo.MotionDetailSquare.PreviewFrame.Width,
-                    Height = editorialVideo.MotionDetailSquare.PreviewFrame.Height,
-                    LastUpdated = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
-                    Url = video.Video,
-                    BgColor = editorialVideo.MotionDetailSquare.PreviewFrame.BgColor,
-                    TextColor1 = editorialVideo.MotionDetailSquare.PreviewFrame.TextColor1,
-                    TextColor2 = editorialVideo.MotionDetailSquare.PreviewFrame.TextColor2,
-                    TextColor3 = editorialVideo.MotionDetailSquare.PreviewFrame.TextColor3,
-                    TextColor4 = editorialVideo.MotionDetailSquare.PreviewFrame.TextColor4,
-                    PreviewFrameUrl = editorialVideo.MotionDetailSquare.PreviewFrame.Url
-                });
+                    existingEditorialVideo.Url = video.Video;
+                    existingEditorialVideo.LastUpdated = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+
+                    existingEditorialVideo.Width = video.PreviewFrame.Width;
+                    existingEditorialVideo.Height = video.PreviewFrame.Height;
+
+                    existingEditorialVideo.BgColor = video.PreviewFrame.BgColor;
+                    existingEditorialVideo.TextColor1 = video.PreviewFrame.TextColor1;
+                    existingEditorialVideo.TextColor2 = video.PreviewFrame.TextColor2;
+                    existingEditorialVideo.TextColor3 = video.PreviewFrame.TextColor3;
+                    existingEditorialVideo.TextColor4 = video.PreviewFrame.TextColor4;
+
+                    existingEditorialVideo.PreviewFrameUrl = video.PreviewFrame.Url;
+
+                    db.AlbumImages.Update(existingEditorialVideo);
+                }
+                else
+                {
+                    await db.AlbumImages.AddAsync(new AlbumImage
+                    {
+                        AlbumId = albumId,
+                        ImageSource = imageSource,
+                        ImageType = ImageType.VideoSquare,
+                        Width = video.PreviewFrame.Width,
+                        Height = video.PreviewFrame.Height,
+                        LastUpdated = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
+                        Url = video.Video,
+                        BgColor = video.PreviewFrame.BgColor,
+                        TextColor1 = video.PreviewFrame.TextColor1,
+                        TextColor2 = video.PreviewFrame.TextColor2,
+                        TextColor3 = video.PreviewFrame.TextColor3,
+                        TextColor4 = video.PreviewFrame.TextColor4,
+                        PreviewFrameUrl = video.PreviewFrame.Url
+                    });
+                }
             }
         }
 

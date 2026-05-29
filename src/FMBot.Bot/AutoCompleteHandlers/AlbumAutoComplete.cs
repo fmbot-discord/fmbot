@@ -57,22 +57,22 @@ public class AlbumAutoComplete : IAutocompleteProvider<AutocompleteInteractionCo
                     await this._albumService.SearchThroughAlbums(searchValue);
 
                 results.ReplaceOrAddToList(recentlyPlayedAlbums
-                    .Where(w => w.Album.StartsWith(searchValue, StringComparison.OrdinalIgnoreCase))
+                    .Where(w => w.Album != null && w.Album.StartsWith(searchValue, StringComparison.OrdinalIgnoreCase))
                     .Select(s => s.Name)
                     .Take(4));
 
                 results.ReplaceOrAddToList(recentTopAlbums
-                    .Where(w => w.Album.StartsWith(searchValue, StringComparison.OrdinalIgnoreCase))
+                    .Where(w => w.Album != null && w.Album.StartsWith(searchValue, StringComparison.OrdinalIgnoreCase))
                     .Select(s => s.Name)
                     .Take(4));
 
                 results.ReplaceOrAddToList(recentlyPlayedAlbums
-                    .Where(w => w.Album.Contains(searchValue, StringComparison.OrdinalIgnoreCase))
+                    .Where(w => w.Album != null && w.Album.Contains(searchValue, StringComparison.OrdinalIgnoreCase))
                     .Select(s => s.Name)
                     .Take(2));
 
                 results.ReplaceOrAddToList(recentTopAlbums
-                    .Where(w => w.Album.Contains(searchValue, StringComparison.OrdinalIgnoreCase))
+                    .Where(w => w.Album != null && w.Album.Contains(searchValue, StringComparison.OrdinalIgnoreCase))
                     .Select(s => s.Name)
                     .Take(3));
 

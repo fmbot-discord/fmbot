@@ -393,7 +393,7 @@ public class Startup
         services.AddHttpClient<AppleMusicApi>((provider, client) =>
         {
             var authProvider = provider.GetRequiredService<AppleMusicJwtAuthProvider>();
-            var authHeader = authProvider.CreateAuthorizationHeaderAsync().Result;
+            var authHeader = authProvider.CreateAuthorizationHeader();
             client.DefaultRequestHeaders.Add("Authorization", authHeader);
             client.BaseAddress = new Uri("https://api.music.apple.com/v1/catalog/us/");
         });

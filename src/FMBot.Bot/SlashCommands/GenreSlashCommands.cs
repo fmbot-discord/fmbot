@@ -56,6 +56,41 @@ public class GenreSlashCommands(
         }
     }
 
+    [SlashCommand("wkgenre", "Shows what other users listen to a genre in your server")]
+    [UsernameSetRequired]
+    [RequiresIndex]
+    [GuildOnly]
+    public async Task WhoKnowsGenreAsync(
+        [SlashCommandParameter(Name = "search", Description = "The genre or artist you want to view",
+            AutocompleteProviderType = typeof(GenreArtistAutoComplete))]
+        string search = null,
+        [SlashCommandParameter(Name = "mode", Description = "The type of response you want - change default with /responsemode")]
+        WhoKnowsResponseMode? mode = null)
+    {
+        await RespondAsync(InteractionCallback.DeferredMessage());
+
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+
+        mode ??= contextUser.WhoKnowsMode ?? WhoKnowsResponseMode.Default;
+        if (mode == WhoKnowsResponseMode.Image)
+        {
+            mode = WhoKnowsResponseMode.Default;
+        }
+
+        try
+        {
+            var response = await genreBuilders.WhoKnowsGenreAsync(new ContextModel(this.Context, contextUser),
+                mode.Value, search);
+
+            await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
     [SlashCommand("fwkgenre", "Shows who of your friends listen to a genre",
         Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild],
         IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]

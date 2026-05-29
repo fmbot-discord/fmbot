@@ -57,22 +57,22 @@ public class TrackAutoComplete : IAutocompleteProvider<AutocompleteInteractionCo
                     await this._trackService.SearchThroughTracks(searchValue);
 
                 results.ReplaceOrAddToList(recentlyPlayedTracks
-                    .Where(w => w.Track.StartsWith(searchValue, StringComparison.OrdinalIgnoreCase))
+                    .Where(w => w.Track != null && w.Track.StartsWith(searchValue, StringComparison.OrdinalIgnoreCase))
                     .Select(s => s.Name)
                     .Take(4));
 
                 results.ReplaceOrAddToList(recentTopTracks
-                    .Where(w => w.Track.StartsWith(searchValue, StringComparison.OrdinalIgnoreCase))
+                    .Where(w => w.Track != null && w.Track.StartsWith(searchValue, StringComparison.OrdinalIgnoreCase))
                     .Select(s => s.Name)
                     .Take(4));
 
                 results.ReplaceOrAddToList(recentlyPlayedTracks
-                    .Where(w => w.Track.Contains(searchValue, StringComparison.OrdinalIgnoreCase))
+                    .Where(w => w.Track != null && w.Track.Contains(searchValue, StringComparison.OrdinalIgnoreCase))
                     .Select(s => s.Name)
                     .Take(2));
 
                 results.ReplaceOrAddToList(recentTopTracks
-                    .Where(w => w.Track.Contains(searchValue, StringComparison.OrdinalIgnoreCase))
+                    .Where(w => w.Track != null && w.Track.Contains(searchValue, StringComparison.OrdinalIgnoreCase))
                     .Select(s => s.Name)
                     .Take(3));
 
