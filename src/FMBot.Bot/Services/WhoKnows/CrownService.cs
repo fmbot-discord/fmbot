@@ -147,7 +147,7 @@ public class CrownService
             // Current crownholder playcount is still higher after extra check
             if (eligibleUserIds.Contains(currentCrownHolder.UserId) && currentPlaycountForCrownHolder >= topUser.Playcount)
             {
-                currentCrownHolder.CurrentPlaycount = topUser.Playcount;
+                currentCrownHolder.CurrentPlaycount = (int)currentPlaycountForCrownHolder;
                 currentCrownHolder.Modified = DateTime.UtcNow;
 
                 if (currentCrownHolderIndex != -1 && users[currentCrownHolderIndex]?.UserId == currentCrownHolder.UserId)
@@ -409,7 +409,7 @@ public class CrownService
                 .MapInteger("current_playcount", x => x.CurrentPlaycount)
                 .MapInteger("start_playcount", x => x.StartPlaycount)
                 .MapTimeStampTz("created", x => DateTime.SpecifyKind(x.Created, DateTimeKind.Utc))
-                .MapTimeStampTz("modified", x => DateTime.SpecifyKind(x.Created, DateTimeKind.Utc))
+                .MapTimeStampTz("modified", x => DateTime.SpecifyKind(x.Modified, DateTimeKind.Utc))
                 .MapBoolean("active", x => x.Active)
                 .MapBoolean("seeded_crown", x => x.SeededCrown);
 
