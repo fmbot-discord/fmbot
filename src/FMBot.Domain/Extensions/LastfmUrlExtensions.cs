@@ -4,7 +4,7 @@ namespace FMBot.Domain.Extensions;
 
 public static class LastfmUrlExtensions
 {
-	private static string Encode(string name) {
+	public static string Encode(string name) {
 		return HttpUtility.UrlEncode(name).Replace("%2b", "%252B");
 	}
 	
