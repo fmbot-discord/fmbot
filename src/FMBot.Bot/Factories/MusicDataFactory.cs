@@ -984,7 +984,10 @@ public class MusicDataFactory
 
                 if (lyrics.Result)
                 {
-                    dbTrack.PlainLyrics = lyrics.PlainLyrics;
+                    if (!string.IsNullOrWhiteSpace(lyrics.PlainLyrics))
+                    {
+                        dbTrack.PlainLyrics = lyrics.PlainLyrics;
+                    }
 
                     if (lyrics.SyncedLyrics != null && lyrics.SyncedLyrics.Count != 0)
                     {
