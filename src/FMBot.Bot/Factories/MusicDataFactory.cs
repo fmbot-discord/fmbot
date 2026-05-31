@@ -824,7 +824,7 @@ public class MusicDataFactory
                     }
                 }
 
-                if (lyrics.Result && !string.IsNullOrWhiteSpace(trackToAdd.PlainLyrics))
+                if (lyrics.Result && !string.IsNullOrWhiteSpace(lyrics.PlainLyrics))
                 {
                     trackToAdd.PlainLyrics = lyrics.PlainLyrics;
                 }
