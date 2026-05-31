@@ -99,7 +99,7 @@ public class EurovisionService
                 $"- Got **{entry.SemiFinalPosition}{StringExtensions.GetAmountEnd(entry.SemiFinalPosition)} place in semi-finals**");
             if (entry.HasSemiFinalScore)
             {
-                full.Append($" with **{entry.HasSemiFinalScore} points**");
+                full.Append($" with **{entry.SemiFinalScore} points**");
             }
         }
 
