@@ -474,7 +474,9 @@ public class ChartService
             surface.Canvas.Flush();
 
             using var resizedImage = surface.Snapshot();
-            chartImage = SKBitmap.FromImage(resizedImage);
+            var resizedBitmap = SKBitmap.FromImage(resizedImage);
+            chartImage.Dispose();
+            chartImage = resizedBitmap;
         }
 
         switch (chart.TitleSetting)
@@ -868,7 +870,7 @@ public class ChartService
         return (chartSettings, changed);
     }
 
-    public static string AddSettingsToDescription(ChartSettings chartSettings, StringBuilder embedDescription,
+    public static void AddSettingsToDescription(ChartSettings chartSettings, StringBuilder embedDescription,
         string randomSupporter, string prfx)
     {
         var single = chartSettings.ArtistChart ? "Artist" : "Album";
@@ -905,7 +907,7 @@ public class ChartService
             embedDescription.AppendLine($"- {single} titles disabled");
         }
 
-        if (chartSettings.FilteredArtist != null)
+        if (chartSettings.FilteredArtist != null && !chartSettings.ArtistChart)
         {
             embedDescription.AppendLine(
                 $"- Filtering to artist **[{chartSettings.FilteredArtist.Name}]({LastfmUrlExtensions.GetArtistUrl(chartSettings.FilteredArtist.Name)})**");
@@ -927,7 +929,5 @@ public class ChartService
             embedDescription.AppendLine(
                 $"- *Brought to you by .fmbot supporter {StringExtensions.Sanitize(randomSupporter)}.*");
         }
-
-        return embedDescription.ToString();
     }
 }
