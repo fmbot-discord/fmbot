@@ -93,7 +93,12 @@ public class DiscogsService
 
         var releases = await this._discogsApi.GetUserReleases(discogsAuth, user.UserDiscogs.Username, pages);
 
-        if (releases?.Releases == null || releases.Releases.Count == 0)
+        if (releases?.Releases == null)
+        {
+            return user.UserDiscogs;
+        }
+
+        if (releases.Releases.Count == 0)
         {
             user.DiscogsReleases = new List<UserDiscogsReleases>();
 

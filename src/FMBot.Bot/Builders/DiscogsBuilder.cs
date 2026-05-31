@@ -372,6 +372,8 @@ public class DiscogsBuilder
             user.UserDiscogs = await this._discogsService.UpdateCollectionValue(user.UserId);
         }
 
+        user.DiscogsReleases = await this._discogsService.GetUserCollection(user.UserId);
+
         var pages = new List<PageBuilder>();
 
         string userTitle;
