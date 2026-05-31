@@ -955,7 +955,7 @@ public class TrackService
             var tracks = plays
                 .OrderByDescending(o => o.TimePlayed)
                 .Select(s => new TrackAutoCompleteSearchModel(s.ArtistName, s.TrackName))
-                .Distinct()
+                .DistinctBy(s => s.Name)
                 .ToList();
 
             this._cache.Set(cacheKey, tracks, TimeSpan.FromSeconds(30));
