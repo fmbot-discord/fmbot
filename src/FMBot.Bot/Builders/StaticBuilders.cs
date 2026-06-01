@@ -44,45 +44,43 @@ public class StaticBuilders
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed,
+            ResponseType = ResponseType.ComponentsV2,
         };
 
-        response.Embed.WithTitle("Using Spotify and tracking is out of sync?");
-        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+        var container = response.ComponentsContainer;
+        container.WithAccentColor(DiscordConstants.InformationColorBlue);
+        container.WithTextDisplay("### Using Spotify and tracking is out of sync?");
 
-        var embedDescription = new StringBuilder();
-        embedDescription.AppendLine(".fmbot uses your Last.fm account for knowing what you listen to. ");
-        embedDescription.AppendLine(
+        var intro = new StringBuilder();
+        intro.AppendLine($".fmbot uses [your Last.fm account]({LastfmUrlExtensions.GetUserUrl(context.ContextUser?.UserNameLastFM) ?? "https://last.fm/user/_"}) for knowing what you listen to. ");
+        intro.AppendLine(
             $"Last.fm and Spotify sometimes have issues keeping up with your current song, which can cause `{context.Prefix}fm` and other commands to lag behind the song you're currently listening to.");
-        embedDescription.AppendLine();
-        embedDescription.Append(
+        intro.AppendLine();
+        intro.Append(
             "**.fmbot is not affiliated with Last.fm**. Your music is tracked by Last.fm, and not by .fmbot. ");
-        embedDescription.AppendLine(
+        intro.AppendLine(
             "This means that this is a Last.fm issue and **not an .fmbot issue**. __We can't fix it for you__, but we can give you tips that worked for others.");
-        embedDescription.AppendLine();
-        embedDescription.AppendLine("Things you can try:");
-        embedDescription.AppendLine("- Restarting your Spotify application");
-        embedDescription.AppendLine(
-            "- Disconnecting and **reconnecting Spotify in [your Last.fm settings](https://www.last.fm/settings/applications)**");
-        embedDescription.AppendLine();
-        embedDescription.AppendLine(
-            "If the two options above don't work, check out **[the complete guide for this issue on the Last.fm support forums](https://support.last.fm/t/spotify-has-stopped-scrobbling-what-can-i-do/3184)**.");
 
-        response.Embed.WithDescription(embedDescription.ToString());
+        container.WithTextDisplay(intro.ToString());
+        container.WithSeparator();
+
+        var thingsToTry = new StringBuilder();
+        thingsToTry.AppendLine("Things you can try:");
+        thingsToTry.AppendLine("- Restarting your Spotify application");
+        thingsToTry.AppendLine(
+            "- Disconnecting and **reconnecting Spotify in [your Last.fm settings](https://www.last.fm/settings/applications)**");
+        thingsToTry.AppendLine();
+        thingsToTry.AppendLine("Still not working? Check **[the complete guide for this issue on the Last.fm support forums](https://support.last.fm/t/spotify-has-stopped-scrobbling-what-can-i-do/3184)**.");
+
+        container.WithTextDisplay(thingsToTry.ToString());
 
         if (PublicProperties.IssuesAtLastFm)
         {
-            response.Embed.AddField("Note:",
-                "⚠️ [Last.fm](https://twitter.com/lastfmstatus) is currently experiencing issues, so the steps listed above might not work. " +
+            container.WithSeparator();
+            container.WithTextDisplay(
+                "**Note:**\n⚠️ [Last.fm](https://twitter.com/lastfmstatus) is currently experiencing issues, so the steps listed above might not work. " +
                 ".fmbot is not affiliated with Last.fm.");
         }
-
-        response.Components = new ActionRowProperties()
-            .WithButton("Last.fm settings", url: "https://www.last.fm/settings/applications")
-            .WithButton("Full guide",
-                url: "https://support.last.fm/t/spotify-has-stopped-scrobbling-what-can-i-do/3184")
-            .WithButton("Your profile",
-                url: $"{LastfmUrlExtensions.GetUserUrl(context.ContextUser.UserNameLastFM)}");
 
         return response;
     }
