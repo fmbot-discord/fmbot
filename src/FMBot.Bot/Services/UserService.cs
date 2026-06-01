@@ -570,7 +570,12 @@ public class UserService
     {
         if (!interactions.Any())
         {
-            return new BotUsageStats();
+            return new BotUsageStats
+            {
+                CommandUsage = new Dictionary<string, int>(),
+                TopSearchedArtists = new Dictionary<string, int>(),
+                PeakUsageDays = []
+            };
         }
 
         var orderedInteractions = interactions.OrderBy(i => i.Timestamp).ToList();

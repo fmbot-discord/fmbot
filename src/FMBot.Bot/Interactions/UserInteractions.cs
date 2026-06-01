@@ -264,14 +264,21 @@ public class UserInteractions(
                 {
                     var list = await userBuilder.ListShortcutsAsync(new ContextModel(this.Context, contextUser));
                     var overviewMsg = await this.Context.Interaction.Channel.GetMessageAsync(parsedOverviewMessageId);
-                    await overviewMsg.ModifyAsync(m => { m.Components = list.GetComponentsV2(); });
+                    await overviewMsg.ModifyAsync(m =>
+                    {
+                        m.Components = list.GetComponentsV2();
+                        m.AllowedMentions = AllowedMentionsProperties.None;
+                    });
                 }
 
                 var manage = await userBuilder.ManageShortcutAsync(new ContextModel(this.Context, contextUser),
                     id,
                     parsedOverviewMessageId);
                 await this.Context.Interaction.ModifyResponseAsync(m =>
-                    m.Components = manage.GetComponentsV2());
+                {
+                    m.Components = manage.GetComponentsV2();
+                    m.AllowedMentions = AllowedMentionsProperties.None;
+                });
             }
             else
             {

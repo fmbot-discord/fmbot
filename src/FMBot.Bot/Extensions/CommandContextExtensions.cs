@@ -115,6 +115,7 @@ public static class CommandContextExtensions
                             PublicProperties.UsedCommandsResponseMessageId[context.Message.Id],
                             msg =>
                             {
+                                msg.AllowedMentions = AllowedMentionsProperties.None;
                                 msg.Content = response.Text;
                                 msg.Embeds = [];
                                 msg.Components = response.Components?.Any() == true ? new[] { response.Components } : [];
@@ -128,6 +129,7 @@ public static class CommandContextExtensions
                             PublicProperties.UsedCommandsResponseMessageId[context.Message.Id],
                             msg =>
                             {
+                                msg.AllowedMentions = AllowedMentionsProperties.None;
                                 msg.Content = response.Text ?? string.Empty;
                                 msg.Embeds = response.ResponseType == ResponseType.ImageOnly
                                     ? []
@@ -155,6 +157,7 @@ public static class CommandContextExtensions
                             PublicProperties.UsedCommandsResponseMessageId[context.Message.Id],
                             msg =>
                             {
+                                msg.AllowedMentions = AllowedMentionsProperties.None;
                                 msg.Flags = MessageFlags.IsComponentsV2;
                                 msg.Components = response.GetComponentsV2();
                                 msg.Attachments = response.Stream != null
