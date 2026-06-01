@@ -173,8 +173,8 @@ public class SmallIndexRepository
 
         foreach (var currentTopAlbum in currentUserAlbums)
         {
-            var alias = (string)this._cache.Get(CacheKeyForAlias(currentTopAlbum.Name.ToLower()));
-            var artistName = alias ?? currentTopAlbum.Name;
+            var alias = (string)this._cache.Get(CacheKeyForAlias(currentTopAlbum.ArtistName.ToLower()));
+            var artistName = alias ?? currentTopAlbum.ArtistName;
 
             var existingPlaycountToCorrect = existingUserAlbums
                 .FirstOrDefault(f => f.ArtistName.ToLower() == artistName.ToLower() &&
@@ -212,8 +212,8 @@ public class SmallIndexRepository
 
         foreach (var currentTopTrack in currentUserTracks)
         {
-            var alias = (string)this._cache.Get(CacheKeyForAlias(currentTopTrack.Name.ToLower()));
-            var artistName = alias ?? currentTopTrack.Name;
+            var alias = (string)this._cache.Get(CacheKeyForAlias(currentTopTrack.ArtistName.ToLower()));
+            var artistName = alias ?? currentTopTrack.ArtistName;
 
             var existingPlaycountToCorrect = existingUserTracks
                 .FirstOrDefault(f => f.ArtistName.ToLower() == artistName.ToLower() &&

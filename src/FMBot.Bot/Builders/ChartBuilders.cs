@@ -102,7 +102,7 @@ public class ChartBuilders
 
         if (chartSettings.SkipNsfw)
         {
-            extraAlbums = chartSettings.Height;
+            extraAlbums += chartSettings.Height;
         }
 
         Response<TopAlbumList> albums = null;

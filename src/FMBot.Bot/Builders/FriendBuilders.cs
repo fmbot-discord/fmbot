@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Dasync.Collections;
 using Fergun.Interactive;
@@ -89,7 +91,7 @@ public class FriendBuilders
         response.Embed.WithAuthor(response.EmbedAuthor);
 
         var totalPlaycount = 0;
-        var friendResult = new List<FriendResult>();
+        var friendResult = new ConcurrentBag<FriendResult>();
         await friends.ParallelForEachAsync(async friend =>
         {
             var friendUsername = friend.FriendUser?.UserNameLastFM ?? friend.LastFMUserName;
@@ -158,12 +160,12 @@ public class FriendBuilders
                     track += $" ({StringExtensions.GetTimeAgoShortString(lastTrack.TimePlayed.Value)})";
                 }
 
-                totalPlaycount += (int)tracks.Content.TotalAmount;
+                Interlocked.Add(ref totalPlaycount, (int)tracks.Content.TotalAmount);
             }
 
             friendResult.Add(new FriendResult(timePlayed,
                 $"**{StringExtensions.MarkdownLink(friendNameToDisplay, LastfmUrlExtensions.GetUserUrl(friendUsername))}** | {track}"));
-        }, maxDegreeOfParallelism: 3);
+        }, maxDegreeOfParallelism: 5);
 
         response.EmbedFooter.WithText(embedFooterText + totalPlaycount.ToString("0"));
         response.Embed.WithFooter(response.EmbedFooter);

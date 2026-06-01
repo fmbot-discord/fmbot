@@ -43,14 +43,15 @@ public class EurovisionService
         var full = new StringBuilder();
         var oneLine = new StringBuilder();
 
-        var country = this.CountryService.GetValidCountry(entry.EntryCode);
+        var countryCode = entry.EntryCode.Length >= 2 ? entry.EntryCode[..2] : entry.EntryCode;
+        var country = this.CountryService.GetValidCountry(countryCode);
 
         full.Append(
-            $"- **{entry.Year}** entry for **{country.Name}** {country.Emoji}");
+            $"- **{entry.Year}** entry for **{country?.Name ?? countryCode}** {country?.Emoji}");
         full.AppendLine();
 
         oneLine.Append(
-            $"Eurovision {entry.Year} for {country.Name} {country.Emoji}");
+            $"Eurovision {entry.Year} for {country?.Name ?? countryCode} {country?.Emoji}");
 
         if (!entry.HasScore && !entry.ReachedFinals && entry.HasSemiFinalNr)
         {
@@ -98,7 +99,7 @@ public class EurovisionService
                 $"- Got **{entry.SemiFinalPosition}{StringExtensions.GetAmountEnd(entry.SemiFinalPosition)} place in semi-finals**");
             if (entry.HasSemiFinalScore)
             {
-                full.Append($" with **{entry.HasSemiFinalScore} points**");
+                full.Append($" with **{entry.SemiFinalScore} points**");
             }
         }
 

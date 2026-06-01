@@ -264,14 +264,21 @@ public class UserInteractions(
                 {
                     var list = await userBuilder.ListShortcutsAsync(new ContextModel(this.Context, contextUser));
                     var overviewMsg = await this.Context.Interaction.Channel.GetMessageAsync(parsedOverviewMessageId);
-                    await overviewMsg.ModifyAsync(m => { m.Components = list.GetComponentsV2(); });
+                    await overviewMsg.ModifyAsync(m =>
+                    {
+                        m.Components = list.GetComponentsV2();
+                        m.AllowedMentions = AllowedMentionsProperties.None;
+                    });
                 }
 
                 var manage = await userBuilder.ManageShortcutAsync(new ContextModel(this.Context, contextUser),
                     id,
                     parsedOverviewMessageId);
                 await this.Context.Interaction.ModifyResponseAsync(m =>
-                    m.Components = manage.GetComponentsV2());
+                {
+                    m.Components = manage.GetComponentsV2();
+                    m.AllowedMentions = AllowedMentionsProperties.None;
+                });
             }
             else
             {
@@ -1094,11 +1101,19 @@ public class UserInteractions(
     {
         try
         {
-            await RespondAsync(InteractionCallback.DeferredModifyMessage);
-            await this.Context.DisableInteractionButtons();
-
             var discordUserId = ulong.Parse(discordUser);
             var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
+
+            if (requesterDiscordUserId != this.Context.User.Id)
+            {
+                await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                    .WithContent("Hey, this button is not for you. At least you tried.")
+                    .WithFlags(MessageFlags.Ephemeral)));
+                return;
+            }
+
+            await RespondAsync(InteractionCallback.DeferredModifyMessage);
+            await this.Context.DisableInteractionButtons();
 
             var contextUser = await userService.GetFullUserAsync(requesterDiscordUserId);
             var userSettings = await settingService.GetOriginalContextUser(
@@ -1189,7 +1204,6 @@ public class UserInteractions(
 
     [ComponentInteraction(InteractionConstants.FeaturedLog)]
     [RequiresIndex]
-    [GuildOnly]
     public async Task FeaturedLogAsync(params string[] inputs)
     {
         try

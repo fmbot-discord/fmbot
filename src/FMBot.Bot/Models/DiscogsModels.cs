@@ -18,6 +18,10 @@ public class DiscogsCollectionSettings
     public string NewSearchValue { get; set; }
 
     public static (DiscogsFormat format, string value) ToDiscogsFormat(string format) {
+        if (string.IsNullOrEmpty(format)) {
+            return (DiscogsFormat.Vinyl, null);
+        }
+
         format = format.ToLower();
 
         switch (format) {

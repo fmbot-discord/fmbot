@@ -824,7 +824,7 @@ public class MusicDataFactory
                     }
                 }
 
-                if (lyrics.Result && !string.IsNullOrWhiteSpace(trackToAdd.PlainLyrics))
+                if (lyrics.Result && !string.IsNullOrWhiteSpace(lyrics.PlainLyrics))
                 {
                     trackToAdd.PlainLyrics = lyrics.PlainLyrics;
                 }
@@ -984,7 +984,10 @@ public class MusicDataFactory
 
                 if (lyrics.Result)
                 {
-                    dbTrack.PlainLyrics = lyrics.PlainLyrics;
+                    if (!string.IsNullOrWhiteSpace(lyrics.PlainLyrics))
+                    {
+                        dbTrack.PlainLyrics = lyrics.PlainLyrics;
+                    }
 
                     if (lyrics.SyncedLyrics != null && lyrics.SyncedLyrics.Count != 0)
                     {

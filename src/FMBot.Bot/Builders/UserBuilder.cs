@@ -804,7 +804,9 @@ public class UserBuilder
                 featuredHistory = await this._featuredService.GetGlobalFeaturedHistory();
                 break;
             case FeaturedView.Server:
-                title = $"{StringExtensions.Sanitize(context.DiscordGuild.Name)}'s server featured history";
+                title = context.DiscordGuild != null
+                    ? $"{StringExtensions.Sanitize(context.DiscordGuild.Name)}'s server featured history"
+                    : "Server featured history";
                 featuredHistory = await this._featuredService.GetFeaturedHistoryForGuild(guildUsers);
                 break;
             case FeaturedView.Friends:
@@ -1048,6 +1050,13 @@ public class UserBuilder
         var initialDescription = new StringBuilder();
 
         var userInfo = await this._dataSourceFactory.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
+        if (userInfo == null)
+        {
+            response.Embed.WithDescription("Could not load this profile due to a Last.fm error, please try again later.");
+            response.CommandResponse = CommandResponse.LastFmError;
+            return response;
+        }
+
         initialDescription.AppendLine(
             $"## {StringExtensions.MarkdownLink(userTitle, LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm))}");
 
@@ -1251,6 +1260,14 @@ public class UserBuilder
 
         var initialDescription = new StringBuilder();
         var userInfo = await this._dataSourceFactory.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
+        if (userInfo == null)
+        {
+            response.ResponseType = ResponseType.Embed;
+            response.Embed.WithDescription("Could not load this profile due to a Last.fm error, please try again later.");
+            response.CommandResponse = CommandResponse.LastFmError;
+            return response;
+        }
+
         initialDescription.AppendLine(
             $"## {StringExtensions.MarkdownLink(userTitle, LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm))}'s history");
         initialDescription.AppendLine($"**{userInfo.Playcount.Format(context.NumberFormat)}** scrobbles");

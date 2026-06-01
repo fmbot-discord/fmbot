@@ -103,8 +103,8 @@ public class ImportService(
                 using var csv = new CsvReader(innerCsvStreamReader, csvConfig);
 
 
-                var records = csv.GetRecords<AppleMusicCsvImportModel>();
-                if (records.Any())
+                var records = csv.GetRecords<AppleMusicCsvImportModel>().ToList();
+                if (records.Count != 0)
                 {
                     appleMusicPlays.AddRange(records.Where(w => w.PlayDurationMs > 0 &&
                                                                 !string.IsNullOrWhiteSpace(w.AlbumName) &&
@@ -134,8 +134,8 @@ public class ImportService(
 
             var csv = new CsvReader(innerCsvStreamReader, csvConfig);
 
-            var records = csv.GetRecords<AppleMusicCsvImportModel>();
-            if (records.Any())
+            var records = csv.GetRecords<AppleMusicCsvImportModel>().ToList();
+            if (records.Count != 0)
             {
                 appleMusicPlays.AddRange(records.Where(w => w.PlayDurationMs > 0 &&
                                                             !string.IsNullOrWhiteSpace(w.AlbumName) &&
@@ -188,7 +188,11 @@ public class ImportService(
             "Importing: {userId} / {discordUserId} - AppleMusicImportToUserPlays - {validScrobbles} plays left after listening time filter",
             user.UserId, user.DiscordUserId, validPlays.Count);
 
-        return (playsWithArtist.Plays, $"{(decimal)playsWithArtist.ArtistFound / playsWithArtist.Plays.Count:0%}");
+        var matchFoundPercentage = playsWithArtist.Plays.Count == 0
+            ? "0%"
+            : $"{(decimal)playsWithArtist.ArtistFound / playsWithArtist.Plays.Count:0%}";
+
+        return (playsWithArtist.Plays, matchFoundPercentage);
     }
 
     public static List<UserPlay> AppleMusicImportsToValidUserPlays(User user,

@@ -287,7 +287,7 @@ public class DiscordSkuService
             StartInfo = new ProcessStartInfo
             {
                 FileName = "ffmpeg",
-                Arguments = $"{formatArg} -i pipe:0 -ac 1 -ar 48000 -f s16le pipe:1",
+                Arguments = $"{formatArg} -i pipe:0 -ac 2 -ar 48000 -f s16le pipe:1",
                 RedirectStandardInput = true,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
@@ -342,45 +342,40 @@ public class DiscordSkuService
 
     private static (string waveform, double durationSecs) GenerateWaveformFromPcm(byte[] pcmBytes)
     {
-        // Calculate duration based on PCM data (mono 16-bit 48kHz)
-        var durationSecs = (double)pcmBytes.Length / (48000 * 2); // bytes / (sample_rate * bytes_per_sample)
+        const int bytesPerSample = 2;
+        const int channels = 2;
 
-        // Calculate number of samples needed for waveform
-        var samplesNeeded = Math.Min(256, (int)(durationSecs * 10)); // 10 samples per second (100ms intervals)
-        if (samplesNeeded <= 0) samplesNeeded = 1;
+        var durationSecs = (double)pcmBytes.Length / (48000 * bytesPerSample * channels);
 
-        var samplesPerPoint = pcmBytes.Length / (2 * samplesNeeded); // 2 bytes per sample
-        var waveformPoints = new byte[samplesNeeded];
-
-        using var pcmStream = new MemoryStream(pcmBytes);
-        using var reader = new BinaryReader(pcmStream);
-
-        for (int i = 0; i < samplesNeeded; i++)
+        var totalSamples = pcmBytes.Length / bytesPerSample;
+        if (totalSamples <= 0)
         {
-            float maxAmplitude = 0;
-            for (int j = 0; j < samplesPerPoint && pcmStream.Position < pcmStream.Length - 1; j++)
+            return (Convert.ToBase64String(new byte[] { 0 }), durationSecs);
+        }
+
+        const double floorDb = -60;
+
+        var pointCount = Math.Clamp((int)Math.Round(durationSecs * 10), 1, 256);
+        var waveformPoints = new byte[pointCount];
+
+        for (var i = 0; i < pointCount; i++)
+        {
+            var start = (int)((long)i * totalSamples / pointCount);
+            var end = (int)((long)(i + 1) * totalSamples / pointCount);
+
+            double sumSquares = 0;
+            var count = 0;
+            for (var s = start; s < end; s++)
             {
-                try
-                {
-                    var sample = reader.ReadInt16() / 32768f; // Normalize to [-1, 1]
-                    maxAmplitude = Math.Max(maxAmplitude, Math.Abs(sample));
-                }
-                catch (EndOfStreamException)
-                {
-                    Log.Warning("Reached end of stream while reading PCM data");
-                    break;
-                }
+                var sample = BitConverter.ToInt16(pcmBytes, s * bytesPerSample) / 32768f;
+                sumSquares += (double)sample * sample;
+                count++;
             }
 
-            // Scale to [0, 255]
-            waveformPoints[i] = (byte)Math.Min(255, Math.Floor(maxAmplitude * 255));
-
-            // Skip to next sampling point if we have remaining data
-            var bytesToSkip = (long)(((i + 1) * pcmBytes.Length / samplesNeeded) - pcmStream.Position);
-            if (bytesToSkip > 0)
-            {
-                pcmStream.Seek(bytesToSkip, SeekOrigin.Current);
-            }
+            var rms = count > 0 ? Math.Sqrt(sumSquares / count) : 0;
+            var db = rms > 0 ? 20 * Math.Log10(rms) : floorDb;
+            var normalized = Math.Clamp((db - floorDb) / -floorDb, 0, 1);
+            waveformPoints[i] = (byte)Math.Clamp((int)Math.Round(normalized * 255), 0, 255);
         }
 
         return (Convert.ToBase64String(waveformPoints), durationSecs);
@@ -396,9 +391,9 @@ public class DiscordSkuService
             StartInfo = new ProcessStartInfo
             {
                 FileName = "ffmpeg",
-                // Input is raw PCM: mono, 16-bit signed little-endian, 48kHz
+                // Input is raw PCM: stereo, 16-bit signed little-endian, 48kHz
                 // Output is OGG Opus for Discord voice messages
-                Arguments = "-f s16le -ar 48000 -ac 1 -i pipe:0 -c:a libopus -b:a 64k -f ogg pipe:1",
+                Arguments = "-f s16le -ar 48000 -ac 2 -i pipe:0 -c:a libopus -b:a 128k -application audio -f ogg pipe:1",
                 RedirectStandardInput = true,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
