@@ -2260,7 +2260,7 @@ public class ArtistBuilders
             return response;
         }
 
-        if (lastfmToCompare.ToLower() == ownLastFmUsername)
+        if (string.Equals(lastfmToCompare, ownLastFmUsername, StringComparison.OrdinalIgnoreCase))
         {
             response.ComponentsContainer.AddComponent(
                 new TextDisplayProperties(
