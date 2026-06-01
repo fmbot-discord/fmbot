@@ -265,7 +265,7 @@ public class CrownGuildSettingCommands(
         }
     }
 
-    [Command("crownblockedusers", "crownblocked", "crownbanned", "crownbannedusers", "crownbannedmembers")]
+    [Command("crownblockedusers", "crownblocked", "crownbanned", "crownbannedusers", "crownbannedmembers", "crownblockedmembers")]
     [Summary("View all users that are blocked from earning crowns in your server")]
     [GuildOnly]
     [RequiresIndex]
