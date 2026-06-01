@@ -841,8 +841,8 @@ public class PuppeteerService : IDisposable
             return null;
         }
 
-        cachedAppleMusicAuthToken = match.Value;
-        return $"Bearer {cachedAppleMusicAuthToken}";
+        cachedAppleMusicAuthToken = $"Bearer {match.Value}";
+        return $"Bearer {match.Value}";
     }
 
     public void Dispose()

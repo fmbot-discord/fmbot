@@ -111,7 +111,7 @@ public class GenreArtistAutoComplete : IAutocompleteProvider<AutocompleteInterac
                 .Select(s => s.Name));
         }
 
-        return new List<ApplicationCommandOptionChoiceProperties>(results.Select(s =>
+        return new List<ApplicationCommandOptionChoiceProperties>(results.Take(25).Select(s =>
             new ApplicationCommandOptionChoiceProperties(s, s)));
     }
 }
