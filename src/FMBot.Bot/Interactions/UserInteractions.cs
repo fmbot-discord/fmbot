@@ -1197,7 +1197,6 @@ public class UserInteractions(
 
     [ComponentInteraction(InteractionConstants.FeaturedLog)]
     [RequiresIndex]
-    [GuildOnly]
     public async Task FeaturedLogAsync(params string[] inputs)
     {
         try

@@ -804,7 +804,9 @@ public class UserBuilder
                 featuredHistory = await this._featuredService.GetGlobalFeaturedHistory();
                 break;
             case FeaturedView.Server:
-                title = $"{StringExtensions.Sanitize(context.DiscordGuild.Name)}'s server featured history";
+                title = context.DiscordGuild != null
+                    ? $"{StringExtensions.Sanitize(context.DiscordGuild.Name)}'s server featured history"
+                    : "Server featured history";
                 featuredHistory = await this._featuredService.GetFeaturedHistoryForGuild(guildUsers);
                 break;
             case FeaturedView.Friends:
