@@ -1094,11 +1094,19 @@ public class UserInteractions(
     {
         try
         {
-            await RespondAsync(InteractionCallback.DeferredModifyMessage);
-            await this.Context.DisableInteractionButtons();
-
             var discordUserId = ulong.Parse(discordUser);
             var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
+
+            if (requesterDiscordUserId != this.Context.User.Id)
+            {
+                await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                    .WithContent("Hey, this button is not for you. At least you tried.")
+                    .WithFlags(MessageFlags.Ephemeral)));
+                return;
+            }
+
+            await RespondAsync(InteractionCallback.DeferredModifyMessage);
+            await this.Context.DisableInteractionButtons();
 
             var contextUser = await userService.GetFullUserAsync(requesterDiscordUserId);
             var userSettings = await settingService.GetOriginalContextUser(
