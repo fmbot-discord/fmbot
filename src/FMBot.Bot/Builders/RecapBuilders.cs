@@ -149,29 +149,32 @@ public class RecapBuilders
                     userSettings.UserNameLastFm, topArtists);
                 response.Embed.WithDescription(description);
 
-                var genres = await this._genreService.GetTopGenresForTopArtists(topArtists.Content.TopArtists);
-                var genreString = new StringBuilder();
-                for (var index = 0; index < Math.Min(genres.Count, 6); index++)
+                if (topArtists.Content?.TopArtists != null)
                 {
-                    var genre = genres[index];
-                    genreString.AppendLine($"{index + 1}. **{genre.GenreName}**");
-                }
+                    var genres = await this._genreService.GetTopGenresForTopArtists(topArtists.Content.TopArtists);
+                    var genreString = new StringBuilder();
+                    for (var index = 0; index < Math.Min(genres.Count, 6); index++)
+                    {
+                        var genre = genres[index];
+                        genreString.AppendLine($"{index + 1}. **{genre.GenreName}**");
+                    }
 
-                if (genreString.Length > 0)
-                {
-                    response.Embed.AddField("Top genres", genreString.ToString(), true);
-                }
+                    if (genreString.Length > 0)
+                    {
+                        response.Embed.AddField("Top genres", genreString.ToString(), true);
+                    }
 
-                var topArtistString = new StringBuilder();
-                for (var index = 0; index < Math.Min(topArtists.Content.TopArtists.Count, 6); index++)
-                {
-                    var topArtist = topArtists.Content.TopArtists[index];
-                    topArtistString.AppendLine($"{index + 1}. **{topArtist.ArtistName}**");
-                }
+                    var topArtistString = new StringBuilder();
+                    for (var index = 0; index < Math.Min(topArtists.Content.TopArtists.Count, 6); index++)
+                    {
+                        var topArtist = topArtists.Content.TopArtists[index];
+                        topArtistString.AppendLine($"{index + 1}. **{topArtist.ArtistName}**");
+                    }
 
-                if (topArtistString.Length > 0)
-                {
-                    response.Embed.AddField("Top artists", topArtistString.ToString(), true);
+                    if (topArtistString.Length > 0)
+                    {
+                        response.Embed.AddField("Top artists", topArtistString.ToString(), true);
+                    }
                 }
 
                 if (SupporterService.IsSupporter(userSettings.UserType))
@@ -441,6 +444,12 @@ public class RecapBuilders
                         .Where(w =>
                             w.TimePlayed >= timeSettings.StartDateTime && w.TimePlayed <= timeSettings.EndDateTime)
                         .ToList();
+
+                    if (filteredPlays.Count == 0)
+                    {
+                        response.Embed.WithDescription("You have no plays in this period.");
+                        break;
+                    }
 
                     var enrichedPlays = await this._timeService.EnrichPlaysWithPlayTime(filteredPlays);
 
