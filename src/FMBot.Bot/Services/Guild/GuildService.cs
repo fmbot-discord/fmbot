@@ -781,14 +781,15 @@ public class GuildService
         return existingGuild.DisabledCommands;
     }
 
-    public async Task<string[]> RemoveGuildDisabledCommandAsync(NetCord.Gateway.Guild discordGuild, string command)
+    public async Task<string[]> RemoveGuildDisabledCommandsAsync(NetCord.Gateway.Guild discordGuild, IReadOnlyCollection<string> commands)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var existingGuild = await db.Guilds
             .AsQueryable()
             .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuild.Id);
 
-        existingGuild.DisabledCommands = existingGuild.DisabledCommands.Where(w => !w.Contains(command)).ToArray();
+        existingGuild.DisabledCommands = existingGuild.DisabledCommands
+            .Where(w => !commands.Any(c => string.Equals(w, c, StringComparison.OrdinalIgnoreCase))).ToArray();
         existingGuild.Name = discordGuild.Name;
 
         db.Entry(existingGuild).State = EntityState.Modified;
@@ -935,7 +936,8 @@ public class GuildService
             .AsQueryable()
             .FirstOrDefaultAsync(f => f.DiscordChannelId == discordChannel.Id);
 
-        existingChannel.DisabledCommands = existingChannel.DisabledCommands.Where(w => !commands.Contains(w)).ToArray();
+        existingChannel.DisabledCommands = existingChannel.DisabledCommands
+            .Where(w => !commands.Any(c => string.Equals(w, c, StringComparison.OrdinalIgnoreCase))).ToArray();
         existingChannel.Name = discordChannel.Name;
 
         db.Entry(existingChannel).State = EntityState.Modified;

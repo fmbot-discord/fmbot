@@ -1847,7 +1847,8 @@ public class TrackBuilders
             if (!string.IsNullOrWhiteSpace(track.Duration))
             {
                 var splitDuration = track.Duration.Split(":");
-                if (int.TryParse(splitDuration[0], out var minutes) &&
+                if (splitDuration.Length >= 2 &&
+                    int.TryParse(splitDuration[0], out var minutes) &&
                     int.TryParse(splitDuration[1], out var seconds))
                 {
                     var totalSeconds = minutes * 60 + seconds;

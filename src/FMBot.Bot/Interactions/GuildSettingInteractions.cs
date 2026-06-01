@@ -19,6 +19,7 @@ using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
 using NetCord;
 using NetCord.Rest;
+using NetCord.Services.Commands;
 using NetCord.Services.ComponentInteractions;
 
 namespace FMBot.Bot.Interactions;
@@ -30,6 +31,7 @@ public class GuildSettingInteractions(
     GuildBuilders guildBuilders,
     GuildDisabledCommandService guildDisabledCommandService,
     ChannelToggledCommandService channelToggledCommandService,
+    CommandService<CommandContext> commandService,
     DisabledChannelService disabledChannelService,
     CrownService crownService,
     UserService userService,
@@ -251,7 +253,7 @@ public class GuildSettingInteractions(
         var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
 
         await guildService.DisableChannelCommandsAsync(selectedChannel, guild.GuildId,
-            new List<string> { command.ToLower() }, this.Context.Guild.Id);
+            new List<string> { ResolveCommandName(command) }, this.Context.Guild.Id);
 
         await channelToggledCommandService.ReloadToggledCommands(this.Context.Guild.Id);
 
@@ -269,7 +271,7 @@ public class GuildSettingInteractions(
         var channels = await this.Context.Guild.GetChannelsAsync();
         var selectedChannel = channels.FirstOrDefault(f => f.Id == parsedChannelId);
 
-        await guildService.EnableChannelCommandsAsync(selectedChannel, new List<string> { command.ToLower() },
+        await guildService.EnableChannelCommandsAsync(selectedChannel, ResolveCommandNames(command),
             this.Context.Guild.Id);
 
         await channelToggledCommandService.ReloadToggledCommands(this.Context.Guild.Id);
@@ -283,7 +285,7 @@ public class GuildSettingInteractions(
     {
         var command = this.Context.GetModalValue("command");
 
-        await guildService.AddGuildDisabledCommandAsync(this.Context.Guild, command.ToLower());
+        await guildService.AddGuildDisabledCommandAsync(this.Context.Guild, ResolveCommandName(command));
         GuildDisabledCommandService.StoreDisabledCommands((await guildService.GetGuildAsync(this.Context.Guild.Id)).DisabledCommands, this.Context.Guild.Id);
 
         var response = await guildSettingBuilder.ToggleGuildCommand(new ContextModel(this.Context), this.Context.User);
@@ -295,7 +297,7 @@ public class GuildSettingInteractions(
     {
         var command = this.Context.GetModalValue("command");
 
-        await guildService.RemoveGuildDisabledCommandAsync(this.Context.Guild, command.ToLower());
+        await guildService.RemoveGuildDisabledCommandsAsync(this.Context.Guild, ResolveCommandNames(command));
         GuildDisabledCommandService.StoreDisabledCommands((await guildService.GetGuildAsync(this.Context.Guild.Id)).DisabledCommands, this.Context.Guild.Id);
 
         var response = await guildSettingBuilder.ToggleGuildCommand(new ContextModel(this.Context), this.Context.User);
@@ -679,5 +681,17 @@ public class GuildSettingInteractions(
     {
         var response = await guildSettingBuilder.ToggleCrowns(new ContextModel(this.Context), true);
         await this.Context.UpdateInteractionEmbed(response);
+    }
+
+    private string ResolveCommandName(string input)
+    {
+        var searchResult = commandService.Search(input);
+        return searchResult.IsSuccess ? searchResult.Command.Aliases[0] : input.ToLower();
+    }
+
+    private List<string> ResolveCommandNames(string input)
+    {
+        var searchResult = commandService.Search(input);
+        return searchResult.IsSuccess ? searchResult.Command.Aliases.ToList() : new List<string> { input.ToLower() };
     }
 }

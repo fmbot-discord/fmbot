@@ -93,11 +93,21 @@ public class CountryBuilders
                 {
                     var cachedArtist = await this._musicDataFactory.GetOrStoreArtistAsync(artistCall.Content);
 
-                    if (cachedArtist.CountryCode != null)
+                    switch (cachedArtist)
                     {
-                        var artistCountry = this._countryService.GetValidCountry(cachedArtist.CountryCode);
-                        country = artistCountry;
+                        case { Mbid: null }:
+                            response.Embed.WithDescription($"Sorry, the artist **{StringExtensions.Sanitize(cachedArtist.Name)}** was not found on MusicBrainz.");
+                            response.CommandResponse = CommandResponse.NotFound;
+                            response.ResponseType = ResponseType.Embed;
+                            return response;
+                        case { CountryCode: null }:
+                            response.Embed.WithDescription($"Sorry, the artist **{StringExtensions.Sanitize(cachedArtist.Name)}** does not have a country associated with them on MusicBrainz.");
+                            response.CommandResponse = CommandResponse.NotFound;
+                            response.ResponseType = ResponseType.Embed;
+                            return response;
                     }
+
+                    country = this._countryService.GetValidCountry(cachedArtist.CountryCode);
                 }
             }
             else
@@ -113,8 +123,8 @@ public class CountryBuilders
                 {
                     response.Embed.WithDescription(
                         artist == null
-                            ? "Sorry, the country or artist you're searching for does not exist."
-                            : "Sorry, the artist you're searching for does not have a country associated with them on MusicBrainz.");
+                            ? "Sorry, the country or artist you're searching for does not exist in our database."
+                            : $"Sorry, the artist **{StringExtensions.Sanitize(artist.Name)}** does not have a country associated with them on MusicBrainz.");
 
                     response.CommandResponse = CommandResponse.NotFound;
                     response.ResponseType = ResponseType.Embed;
@@ -134,6 +144,15 @@ public class CountryBuilders
 
                 var description = new StringBuilder();
                 foundCountry = this._countryService.GetValidCountry(artist.CountryCode);
+
+                if (foundCountry == null)
+                {
+                    response.Embed.WithDescription(
+                        $"Sorry, the artist **{StringExtensions.Sanitize(artist.Name)}** has a country code (`{StringExtensions.Sanitize(artist.CountryCode)}`) that we couldn't resolve to a country.");
+                    response.CommandResponse = CommandResponse.NotFound;
+                    response.ResponseType = ResponseType.Embed;
+                    return response;
+                }
 
                 description.AppendLine(
                     $"### :flag_{foundCountry.Code.ToLower()}: {artist.Name}");
@@ -190,6 +209,15 @@ public class CountryBuilders
 
                     foundCountry = this._countryService.GetValidCountry(artist.CountryCode);
 
+                    if (foundCountry == null)
+                    {
+                        response.Embed.WithDescription(
+                            $"Sorry, the artist **{StringExtensions.Sanitize(artist.Name)}** has a country code (`{StringExtensions.Sanitize(artist.CountryCode)}`) that we couldn't resolve to a country.");
+                        response.CommandResponse = CommandResponse.NotFound;
+                        response.ResponseType = ResponseType.Embed;
+                        return response;
+                    }
+
                     description.AppendLine(
                         $"### :flag_{foundCountry.Code.ToLower()}: {artist.Name}");
                     description.AppendLine(
@@ -214,8 +242,8 @@ public class CountryBuilders
 
                 response.Embed.WithDescription(
                     artist == null
-                        ? "Sorry, the country or artist you're searching for does not exist."
-                        : "Sorry, the artist you're searching for does not have a country associated with them on MusicBrainz.");
+                        ? "Sorry, the country or artist you're searching for does not exist in our database."
+                        : $"Sorry, the artist **{StringExtensions.Sanitize(artist.Name)}** does not have a country associated with them on MusicBrainz.");
                 response.CommandResponse = CommandResponse.NotFound;
                 response.ResponseType = ResponseType.Embed;
                 return response;

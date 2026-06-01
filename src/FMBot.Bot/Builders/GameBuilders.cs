@@ -239,9 +239,9 @@ public class GameBuilders
                 return response;
             }
 
-            image = GameService.PixelateCoverImage(image, game.BlurLevel.GetValueOrDefault());
+            using var pixelated = GameService.PixelateCoverImage(image, game.BlurLevel.GetValueOrDefault());
 
-            var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
+            var encoded = pixelated.Encode(SKEncodedImageFormat.Png, 100);
             response.Stream = encoded.AsStream(true);
             response.FileName = $"pixelation-{game.JumbleSessionId}-{game.BlurLevel.GetValueOrDefault()}.png";
 
@@ -454,9 +454,9 @@ public class GameBuilders
             var blurLevel = GetNextBlurLevel(currentGame.BlurLevel.Value);
 
             await this._gameService.JumbleStoreBlurLevel(currentGame, blurLevel);
-            image = GameService.PixelateCoverImage(image, blurLevel);
+            using var pixelated = GameService.PixelateCoverImage(image, blurLevel);
 
-            var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
+            var encoded = pixelated.Encode(SKEncodedImageFormat.Png, 100);
             response.Stream = encoded.AsStream(true);
             response.FileName = $"pixelation-{currentGame.JumbleSessionId}-{blurLevel}.png";
         }
@@ -496,9 +496,9 @@ public class GameBuilders
             var blurLevel = GetNextBlurLevel(currentGame.BlurLevel.Value);
 
             await this._gameService.JumbleStoreBlurLevel(currentGame, blurLevel);
-            image = GameService.PixelateCoverImage(image, blurLevel);
+            using var pixelated = GameService.PixelateCoverImage(image, blurLevel);
 
-            var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
+            var encoded = pixelated.Encode(SKEncodedImageFormat.Png, 100);
             response.Stream = encoded.AsStream(true);
             response.FileName = $"pixelation-{currentGame.JumbleSessionId}-{blurLevel}.png";
         }
@@ -549,9 +549,9 @@ public class GameBuilders
             var image = await this._gameService.GetImageFromCache(currentGame.JumbleSessionId);
             if (image != null)
             {
-                image = GameService.PixelateCoverImage(image, currentGame.BlurLevel.Value);
+                using var pixelated = GameService.PixelateCoverImage(image, currentGame.BlurLevel.Value);
 
-                var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
+                var encoded = pixelated.Encode(SKEncodedImageFormat.Png, 100);
                 response.Stream = encoded.AsStream(true);
                 response.FileName = $"pixelation-{currentGame.JumbleSessionId}-{currentGame.BlurLevel.Value}.png";
             }

@@ -40,6 +40,11 @@ public static class LastfmUrlExtensions
 
     public static string GetUserUrl(string userName, string addOn = null)
     {
+        if (userName == null)
+        {
+            return null;
+        }
+
         var url =  $"https://last.fm/user/{UrlEncoder.Default.Encode(userName)}";
 
         if (addOn != null)

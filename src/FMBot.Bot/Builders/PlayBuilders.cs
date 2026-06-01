@@ -1251,7 +1251,7 @@ public class PlayBuilder
             return response;
         }
 
-        var dayPages = dailyOverview.Days.OrderByDescending(o => o.Date).Chunk(amount).ToList();
+        var dayPages = dailyOverview.Days.OrderByDescending(o => o.Date).Chunk(Math.Max(1, amount)).ToList();
 
         var paginator = new ComponentPaginatorBuilder()
             .WithPageFactory(GeneratePage)

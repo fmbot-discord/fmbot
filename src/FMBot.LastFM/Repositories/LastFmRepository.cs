@@ -169,7 +169,7 @@ public class LastFmRepository : ILastfmRepository
                     Success = true
                 };
 
-                this._cache.Set(cacheKey, response.Content, TimeSpan.FromSeconds(8));
+                this._cache.Set(cacheKey, response.Content, TimeSpan.FromSeconds(4));
 
                 return response;
             }
