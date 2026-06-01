@@ -344,26 +344,33 @@ public class PlayCommands(
 
         _ = this.Context.Channel?.TriggerTypingAsync()!;
 
-        var userSettings = await settingService.GetUser(extraOptions, contextUser, this.Context);
-        var userInfo = await dataSourceFactory.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
-
-        var goalAmount = SettingService.GetGoalAmount(extraOptions, userInfo.Playcount);
-        var timeSettings =
-            SettingService.GetTimePeriod(extraOptions, TimePeriod.AllTime, timeZone: userSettings.TimeZone);
-        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
-
-        if (string.IsNullOrWhiteSpace(extraOptions) &&
-            !string.IsNullOrWhiteSpace(this.Context.Message.ReferencedMessage?.Content))
+        try
         {
-            goalAmount =
-                SettingService.GetGoalAmount(this.Context.Message.ReferencedMessage.Content, userInfo.Playcount);
+            var userSettings = await settingService.GetUser(extraOptions, contextUser, this.Context);
+            var userInfo = await dataSourceFactory.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
+
+            var goalAmount = SettingService.GetGoalAmount(extraOptions, userInfo.Playcount);
+            var timeSettings =
+                SettingService.GetTimePeriod(extraOptions, TimePeriod.AllTime, timeZone: userSettings.TimeZone);
+            var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+
+            if (string.IsNullOrWhiteSpace(extraOptions) &&
+                !string.IsNullOrWhiteSpace(this.Context.Message.ReferencedMessage?.Content))
+            {
+                goalAmount =
+                    SettingService.GetGoalAmount(this.Context.Message.ReferencedMessage.Content, userInfo.Playcount);
+            }
+
+            var response = await playBuilder.PaceAsync(new ContextModel(this.Context, prfx, contextUser),
+                userSettings, timeSettings, goalAmount, userInfo.Playcount, userInfo.RegisteredUnix);
+
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
-
-        var response = await playBuilder.PaceAsync(new ContextModel(this.Context, prfx, contextUser),
-            userSettings, timeSettings, goalAmount, userInfo.Playcount, userInfo.RegisteredUnix);
-
-        await this.Context.SendResponse(this.Interactivity, response, userService);
-        await this.Context.LogCommandUsedAsync(response, userService);
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
     }
 
     [Command("milestone", "m", "ms")]

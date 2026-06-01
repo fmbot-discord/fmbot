@@ -1050,6 +1050,13 @@ public class UserBuilder
         var initialDescription = new StringBuilder();
 
         var userInfo = await this._dataSourceFactory.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
+        if (userInfo == null)
+        {
+            response.Embed.WithDescription("Could not load this profile due to a Last.fm error, please try again later.");
+            response.CommandResponse = CommandResponse.LastFmError;
+            return response;
+        }
+
         initialDescription.AppendLine(
             $"## {StringExtensions.MarkdownLink(userTitle, LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm))}");
 
@@ -1253,6 +1260,14 @@ public class UserBuilder
 
         var initialDescription = new StringBuilder();
         var userInfo = await this._dataSourceFactory.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
+        if (userInfo == null)
+        {
+            response.ResponseType = ResponseType.Embed;
+            response.Embed.WithDescription("Could not load this profile due to a Last.fm error, please try again later.");
+            response.CommandResponse = CommandResponse.LastFmError;
+            return response;
+        }
+
         initialDescription.AppendLine(
             $"## {StringExtensions.MarkdownLink(userTitle, LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm))}'s history");
         initialDescription.AppendLine($"**{userInfo.Playcount.Format(context.NumberFormat)}** scrobbles");
