@@ -257,7 +257,7 @@ public class UserService
     {
         var user = await GetUserSettingsAsync(discordUser);
 
-        return SupporterService.IsSupporter(user.UserType);
+        return SupporterService.IsSupporter(user?.UserType);
     }
 
     public async Task<Dictionary<int, User>> GetMultipleUsers(HashSet<int> userIds)
