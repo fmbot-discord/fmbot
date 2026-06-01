@@ -221,8 +221,9 @@ public class RecapBuilders
                 var activeHourTimestamp = ((DateTimeOffset)timeForHour).ToUnixTimeSeconds();
                 activityField.AppendLine($"Most active hour: <t:{activeHourTimestamp}:t>");
                 activityField.AppendLine($"Most active day: **{stats.MostActiveDayOfWeek}**");
+                var avgDays = Math.Max(1, (timeSettings.EndDateTime.Value - timeSettings.StartDateTime.Value).Days);
                 activityField.AppendLine(
-                    $"Avg commands per day: **{stats.TotalCommands / (timeSettings.EndDateTime.Value - timeSettings.StartDateTime.Value).Days:F1}**");
+                    $"Avg commands per day: **{stats.TotalCommands / avgDays:F1}**");
                 response.Embed.AddField("Activity patterns", activityField.ToString(), true);
 
                 var usageField = new StringBuilder();
