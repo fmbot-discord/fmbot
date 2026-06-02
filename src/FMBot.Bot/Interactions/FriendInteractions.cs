@@ -8,6 +8,7 @@ using FMBot.Bot.Factories;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Domain;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 using NetCord;
@@ -121,6 +122,24 @@ public class FriendInteractions(
             var selected = this.Context.GetModalMenuValue("friend_type");
 
             var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+
+            if (int.TryParse(selected, out var selectedType)
+                && (FriendType)selectedType == FriendType.CloseFriend
+                && contextUser.UserType == UserType.User)
+            {
+                var supporterRequired = new ComponentContainerProperties();
+                supporterRequired.AddComponent(new TextDisplayProperties(
+                    "**Close friends are only available for supporters.** Add someone as a close friend so they'll always visible in WhoKnows no matter where they rank and in `friendsfm`."));
+                supporterRequired.AddComponent(new ActionRowProperties().WithButton(Constants.GetSupporterButton,
+                    style: ButtonStyle.Primary,
+                    customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "friends-closefriend")));
+
+                await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                    .WithComponents([supporterRequired])
+                    .WithFlags(MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral)));
+                return;
+            }
+
             if (source == "add")
             {
                 var note = await friendBuilders.ApplyFriendTypeSelectionAsync(
