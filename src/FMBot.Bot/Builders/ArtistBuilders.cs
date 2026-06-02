@@ -61,6 +61,7 @@ public class ArtistBuilders
     private readonly MusicDataFactory _musicDataFactory;
     private readonly ShardedGatewayClient _client;
     private readonly IMemoryCache _cache;
+    private readonly FriendsService _friendsService;
 
 
     public ArtistBuilders(ArtistsService artistsService,
@@ -84,7 +85,8 @@ public class ArtistBuilders
         FeaturedService featuredService,
         MusicDataFactory musicDataFactory,
         ShardedGatewayClient client,
-        IMemoryCache cache)
+        IMemoryCache cache,
+        FriendsService friendsService)
     {
         this._artistsService = artistsService;
         this._dataSourceFactory = dataSourceFactory;
@@ -108,6 +110,7 @@ public class ArtistBuilders
         this._musicDataFactory = musicDataFactory;
         this._client = client;
         this._cache = cache;
+        this._friendsService = friendsService;
     }
 
     public async Task<ResponseModel> ArtistInfoAsync(ContextModel context,
@@ -1843,11 +1846,13 @@ public class ArtistBuilders
             footer.AppendLine(guildAlsoPlaying);
         }
 
+        var closeFriendUserIds = await this._friendsService.GetCloseFriendUserIdsAsync(context.ContextUser);
+
         if (mode == WhoKnowsResponseMode.Pagination)
         {
             var paginator = WhoKnowsService.CreateWhoKnowsPaginator(filteredUsersWithArtist,
                 context.ContextUser.UserId, PrivacyLevel.Server, context.NumberFormat,
-                title, footer.ToString(), crownModel);
+                title, footer.ToString(), crownModel, closeFriendUserIds: closeFriendUserIds);
 
             response.ResponseType = ResponseType.Paginator;
             response.ComponentPaginator = paginator;
@@ -1855,7 +1860,7 @@ public class ArtistBuilders
         }
 
         var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithArtist, context.ContextUser.UserId,
-            PrivacyLevel.Server, context.NumberFormat, crownModel);
+            PrivacyLevel.Server, context.NumberFormat, crownModel, closeFriendUserIds: closeFriendUserIds);
         if (filteredUsersWithArtist.Count == 0)
         {
             serverUsers = "Nobody in this server (not even you) has listened to this artist.";
@@ -2032,11 +2037,13 @@ public class ArtistBuilders
             footer.AppendLine($"{((int)avgPlaycount).Format(context.NumberFormat)} avg");
         }
 
+        var closeFriendUserIds = await this._friendsService.GetCloseFriendUserIdsAsync(context.ContextUser);
+
         if (settings.ResponseMode == WhoKnowsResponseMode.Pagination)
         {
             var paginator = WhoKnowsService.CreateWhoKnowsPaginator(filteredUsersWithArtist,
                 context.ContextUser.UserId, privacyLevel, context.NumberFormat,
-                title, footer.ToString(), hidePrivateUsers: settings.HidePrivateUsers);
+                title, footer.ToString(), hidePrivateUsers: settings.HidePrivateUsers, closeFriendUserIds: closeFriendUserIds);
 
             response.ResponseType = ResponseType.Paginator;
             response.ComponentPaginator = paginator;
@@ -2044,7 +2051,7 @@ public class ArtistBuilders
         }
 
         var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithArtist, context.ContextUser.UserId,
-            privacyLevel, context.NumberFormat, hidePrivateUsers: settings.HidePrivateUsers);
+            privacyLevel, context.NumberFormat, hidePrivateUsers: settings.HidePrivateUsers, closeFriendUserIds: closeFriendUserIds);
         if (filteredUsersWithArtist.Count == 0)
         {
             serverUsers = "Nobody that uses .fmbot has listened to this artist.";
@@ -2177,11 +2184,13 @@ public class ArtistBuilders
 
         footer.AppendLine($"Friends WhoKnow artist for {userTitle}");
 
+        var closeFriendUserIds = await this._friendsService.GetCloseFriendUserIdsAsync(context.ContextUser);
+
         if (mode == WhoKnowsResponseMode.Pagination)
         {
             var paginator = WhoKnowsService.CreateWhoKnowsPaginator(usersWithArtist,
                 context.ContextUser.UserId, PrivacyLevel.Server, context.NumberFormat,
-                title, footer.ToString());
+                title, footer.ToString(), closeFriendUserIds: closeFriendUserIds);
 
             response.ResponseType = ResponseType.Paginator;
             response.ComponentPaginator = paginator;
@@ -2190,7 +2199,7 @@ public class ArtistBuilders
 
         var serverUsers =
             WhoKnowsService.WhoKnowsListToString(usersWithArtist, context.ContextUser.UserId, PrivacyLevel.Server,
-                context.NumberFormat);
+                context.NumberFormat, closeFriendUserIds: closeFriendUserIds);
         if (usersWithArtist.Count == 0)
         {
             serverUsers = "None of your friends has listened to this artist.";

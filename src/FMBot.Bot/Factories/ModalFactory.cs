@@ -2,8 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using FMBot.Bot.Models;
-using FMBot.Bot.Models.Modals;
-using NetCord;
+using FMBot.Domain.Enums;
 using NetCord.Rest;
 
 namespace FMBot.Bot.Factories;
@@ -514,6 +513,61 @@ public static class ModalFactory
                 })
             ]
         };
+
+    public static ModalProperties CreateFriendTypeModal(string customId, string title, FriendType currentType,
+        bool isSupporter)
+    {
+        var menu = new StringMenuProperties("friend_type");
+        menu.AddOptions(new StringMenuSelectOptionProperties("Normal", ((int)FriendType.Normal).ToString())
+        {
+            Description = "Shown in all friends commands except 'friendsfm'",
+            Default = currentType == FriendType.Normal
+        }, new StringMenuSelectOptionProperties("Visible everywhere", ((int)FriendType.VisibleInNowPlaying).ToString())
+        {
+            Description = "Shown in all friends commands including 'friendsfm'",
+            Default = currentType == FriendType.VisibleInNowPlaying
+        }, new StringMenuSelectOptionProperties("Close friend ⭐", ((int)FriendType.CloseFriend).ToString())
+        {
+            Description = isSupporter
+                ? "Shown in all friend commands and always pinned in WhoKnows"
+                : "Supporter only — always pinned in WhoKnows",
+            Default = currentType == FriendType.CloseFriend
+        }, new StringMenuSelectOptionProperties("Remove friend", "remove")
+        {
+            Description = "Remove this person from your friends"
+        });
+
+        return new ModalProperties(customId, title)
+        {
+            Components =
+            [
+                new LabelProperties("Friend type", menu)
+            ]
+        };
+    }
+
+    public static ModalProperties CreateLastFmSyncModal(string customId)
+    {
+        var radio = new RadioGroupProperties("sync_action")
+        {
+            Required = true
+        };
+        radio.AddOptions(new RadioGroupOptionProperties("Add friends from Last.fm", "add")
+        {
+            Description = "Add people you follow on Last.fm and use .fmbot"
+        }, new RadioGroupOptionProperties("Remove Last.fm friends", "remove")
+        {
+            Description = "Removes the friends that were synced from Last.fm"
+        });
+
+        return new ModalProperties(customId, "Manage Last.fm friends")
+        {
+            Components =
+            [
+                new LabelProperties("What would you like to do?", radio)
+            ]
+        };
+    }
 
     private static StringMenuProperties GetTimePeriodMenu(string customId, string currentTimePeriod)
     {

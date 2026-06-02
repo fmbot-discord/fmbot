@@ -54,6 +54,7 @@ public class TrackBuilders
     private readonly DiscordSkuService _discordSkuService;
     private readonly SupporterService _supporterService;
     private readonly EurovisionService _eurovisionService;
+    private readonly FriendsService _friendsService;
 
     public TrackBuilders(UserService userService,
         GuildService guildService,
@@ -75,7 +76,9 @@ public class TrackBuilders
         ArtistsService artistsService,
         FeaturedService featuredService,
         MusicDataFactory musicDataFactory,
-        DiscordSkuService discordSkuService, EurovisionService eurovisionService)
+        DiscordSkuService discordSkuService,
+        EurovisionService eurovisionService,
+        FriendsService friendsService)
     {
         this._userService = userService;
         this._guildService = guildService;
@@ -99,6 +102,7 @@ public class TrackBuilders
         this._discordSkuService = discordSkuService;
         this._eurovisionService = eurovisionService;
         this._supporterService = supporterService;
+        this._friendsService = friendsService;
     }
 
     public async Task<ResponseModel> TrackAsync(
@@ -595,11 +599,13 @@ public class TrackBuilders
             footer.AppendLine(guildAlsoPlaying);
         }
 
+        var closeFriendUserIds = await this._friendsService.GetCloseFriendUserIdsAsync(context.ContextUser);
+
         if (mode == WhoKnowsResponseMode.Pagination)
         {
             var paginator = WhoKnowsService.CreateWhoKnowsPaginator(filteredUsersWithTrack,
                 context.ContextUser.UserId, PrivacyLevel.Server, context.NumberFormat,
-                title, footer.ToString());
+                title, footer.ToString(), closeFriendUserIds: closeFriendUserIds);
 
             response.ResponseType = ResponseType.Paginator;
             response.ComponentPaginator = paginator;
@@ -608,7 +614,7 @@ public class TrackBuilders
 
         var serverUsers =
             WhoKnowsService.WhoKnowsListToString(filteredUsersWithTrack, context.ContextUser.UserId,
-                PrivacyLevel.Server, context.NumberFormat);
+                PrivacyLevel.Server, context.NumberFormat, closeFriendUserIds: closeFriendUserIds);
         if (filteredUsersWithTrack.Count == 0)
         {
             serverUsers = "Nobody in this server (not even you) has listened to this track.";
@@ -735,11 +741,13 @@ public class TrackBuilders
 
         footer += $"\nFriends WhoKnow track for {userTitle}";
 
+        var closeFriendUserIds = await this._friendsService.GetCloseFriendUserIdsAsync(context.ContextUser);
+
         if (mode == WhoKnowsResponseMode.Pagination)
         {
             var paginator = WhoKnowsService.CreateWhoKnowsPaginator(usersWithTrack,
                 context.ContextUser.UserId, PrivacyLevel.Server, context.NumberFormat,
-                title, footer);
+                title, footer, closeFriendUserIds: closeFriendUserIds);
 
             response.ResponseType = ResponseType.Paginator;
             response.ComponentPaginator = paginator;
@@ -748,7 +756,7 @@ public class TrackBuilders
 
         var serverUsers =
             WhoKnowsService.WhoKnowsListToString(usersWithTrack, context.ContextUser.UserId, PrivacyLevel.Server,
-                context.NumberFormat);
+                context.NumberFormat, closeFriendUserIds: closeFriendUserIds);
         if (!usersWithTrack.Any())
         {
             serverUsers = "None of your friends have listened to this track.";
@@ -868,11 +876,14 @@ public class TrackBuilders
             footer.AppendLine($"{((int)avgPlaycount).Format(context.NumberFormat)} avg");
         }
 
+        var closeFriendUserIds = await this._friendsService.GetCloseFriendUserIdsAsync(context.ContextUser);
+
         if (settings.ResponseMode == WhoKnowsResponseMode.Pagination)
         {
             var paginator = WhoKnowsService.CreateWhoKnowsPaginator(filteredUsersWithTrack,
                 context.ContextUser.UserId, privacyLevel, context.NumberFormat,
-                title, footer.ToString(), hidePrivateUsers: settings.HidePrivateUsers);
+                title, footer.ToString(), hidePrivateUsers: settings.HidePrivateUsers,
+                closeFriendUserIds: closeFriendUserIds);
 
             response.ResponseType = ResponseType.Paginator;
             response.ComponentPaginator = paginator;
@@ -880,7 +891,8 @@ public class TrackBuilders
         }
 
         var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithTrack, context.ContextUser.UserId,
-            privacyLevel, context.NumberFormat, hidePrivateUsers: settings.HidePrivateUsers);
+            privacyLevel, context.NumberFormat, hidePrivateUsers: settings.HidePrivateUsers,
+            closeFriendUserIds: closeFriendUserIds);
         if (!filteredUsersWithTrack.Any())
         {
             serverUsers = "Nobody that uses .fmbot has listened to this track.";

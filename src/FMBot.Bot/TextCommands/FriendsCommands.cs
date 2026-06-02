@@ -20,29 +20,21 @@ namespace FMBot.Bot.TextCommands;
 [ModuleName("Friends")]
 public class FriendsCommands(
     FriendsService friendsService,
-    GuildService guildService,
     IPrefixService prefixService,
-    IDataSourceFactory dataSourceFactory,
     UserService userService,
     IOptions<BotSettings> botSettings,
-    SettingService settingService,
-    UpdateService updateService,
     FriendBuilders friendBuilders,
     InteractiveService interactivity)
     : BaseCommandModule(botSettings)
 {
-    private readonly GuildService _guildService = guildService;
-    private readonly IDataSourceFactory _dataSourceFactory = dataSourceFactory;
-    private readonly SettingService _settingService = settingService;
-    private readonly UpdateService _updateService = updateService;
 
     private InteractiveService Interactivity { get; } = interactivity;
 
-    [Command("friends", "recentfriends", "friendsrecent", "f")]
+    [Command("friendsfm", "ffm", "friends", "recentfriends", "friendsrecent", "f")]
     [Summary("Displays your friends and what they're listening to.")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Friends)]
-    [SupporterEnhanced($"Supporters can add up to 18 friends (up from 12)")]
+    [SupporterEnhanced($"Supporters can show 24 friends in now playing (up from 12), add 4 close friends, and store up to 240")]
     public async Task FriendsAsync([CommandParameter(Remainder = true)]string unused = null)
     {
         _ = this.Context.Channel?.TriggerTypingAsync()!;
@@ -92,7 +84,7 @@ public class FriendsCommands(
     [UsernameSetRequired]
     [GuildOnly]
     [CommandCategories(CommandCategory.Friends)]
-    [SupporterEnhanced($"Supporters can add up to 18 friends (up from 12)")]
+    [SupporterEnhanced($"Supporters can show 24 friends in now playing (up from 12), add 4 close friends, and store up to 240")]
     public async Task AddFriends([CommandParameter(Remainder = true)] string friendsInput = null)
     {
         if (string.IsNullOrWhiteSpace(friendsInput) && this.Context.Message.ReferencedMessage != null)

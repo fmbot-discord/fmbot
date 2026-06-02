@@ -42,6 +42,7 @@ public class GenreBuilders
     private readonly PuppeteerService _puppeteerService;
     private readonly CensorService _censorService;
     private readonly MusicDataFactory _musicDataFactory;
+    private readonly FriendsService _friendsService;
 
     public GenreBuilders(UserService userService,
         GuildService guildService,
@@ -53,7 +54,8 @@ public class GenreBuilders
         IndexService indexService,
         PuppeteerService puppeteerService,
         CensorService censorService,
-        MusicDataFactory musicDataFactory)
+        MusicDataFactory musicDataFactory,
+        FriendsService friendsService)
     {
         this._userService = userService;
         this._guildService = guildService;
@@ -66,6 +68,7 @@ public class GenreBuilders
         this._puppeteerService = puppeteerService;
         this._censorService = censorService;
         this._musicDataFactory = musicDataFactory;
+        this._friendsService = friendsService;
     }
 
     public async Task<ResponseModel> GetGuildGenres(ContextModel context, Guild guild,
@@ -1039,11 +1042,13 @@ public class GenreBuilders
             footer.AppendLine(filterStats.FullDescription);
         }
 
+        var closeFriendUserIds = await this._friendsService.GetCloseFriendUserIdsAsync(context.ContextUser);
+
         if (mode == WhoKnowsResponseMode.Pagination)
         {
             var paginator = WhoKnowsService.CreateWhoKnowsPaginator(filteredUsersWithGenre,
                 context.ContextUser.UserId, PrivacyLevel.Server, context.NumberFormat,
-                title, footer.ToString());
+                title, footer.ToString(), closeFriendUserIds: closeFriendUserIds);
 
             response.ResponseType = ResponseType.Paginator;
             response.ComponentPaginator = paginator;
@@ -1052,7 +1057,7 @@ public class GenreBuilders
 
         var serverUsers =
             WhoKnowsService.WhoKnowsListToString(filteredUsersWithGenre, context.ContextUser.UserId,
-                PrivacyLevel.Server, context.NumberFormat, doNotLinkEmojis: true);
+                PrivacyLevel.Server, context.NumberFormat, doNotLinkEmojis: true, closeFriendUserIds: closeFriendUserIds);
         if (filteredUsersWithGenre.Count == 0)
         {
             serverUsers = "Nobody in this server (not even you) has listened to this genre.";
@@ -1162,11 +1167,13 @@ public class GenreBuilders
             footer.AppendLine();
         }
 
+        var closeFriendUserIds = await this._friendsService.GetCloseFriendUserIdsAsync(context.ContextUser);
+
         if (mode == WhoKnowsResponseMode.Pagination)
         {
             var paginator = WhoKnowsService.CreateWhoKnowsPaginator(usersWithGenre.ToList(),
                 context.ContextUser.UserId, PrivacyLevel.Server, context.NumberFormat,
-                title, footer.ToString());
+                title, footer.ToString(), closeFriendUserIds: closeFriendUserIds);
 
             response.ResponseType = ResponseType.Paginator;
             response.ComponentPaginator = paginator;
@@ -1174,7 +1181,7 @@ public class GenreBuilders
         }
 
         var serverUsers = WhoKnowsService.WhoKnowsListToString(usersWithGenre.ToList(), context.ContextUser.UserId,
-            PrivacyLevel.Server, context.NumberFormat, doNotLinkEmojis: true);
+            PrivacyLevel.Server, context.NumberFormat, doNotLinkEmojis: true, closeFriendUserIds: closeFriendUserIds);
         if (usersWithGenre.Count == 0)
         {
             serverUsers = "None of your friends have listened to this genre.";

@@ -398,30 +398,19 @@ public class LastFmRepository : ILastfmRepository
         return tagString.ToString();
     }
 
-    public async Task<Response<LastFmUserFriendsList>> GetFriendsAsync(string lastFmUserName, string sessionKey,
-        int limit = 50, int page = 1, int errorRetries = 1)
+    public async Task<Response<LastFmUserFriendsList>> GetFriendsAsync(string lastFmUserName,
+        int limit = 500, int page = 1, int errorRetries = 1)
     {
-        if (string.IsNullOrWhiteSpace(sessionKey))
-        {
-            return new Response<LastFmUserFriendsList>
-            {
-                Success = false,
-                Error = ResponseStatus.LoginRequired,
-                Message = "user.getFriends requires a Last.fm session key."
-            };
-        }
-
         var queryParams = new Dictionary<string, string>
         {
             { "user", lastFmUserName },
-            { "sk", sessionKey },
             { "limit", limit.ToString() },
             { "page", page.ToString() },
             { "recenttracks", "1" }
         };
 
         var friendsCall = await CallApiWithRetryAsync<UserFriendsLfmResponse>(
-            queryParams, Call.UserFriends, true, errorRetries, lastFmUserName);
+            queryParams, Call.UserFriends, false, errorRetries, lastFmUserName);
 
         if (!friendsCall.Success)
         {

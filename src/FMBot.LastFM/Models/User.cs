@@ -47,7 +47,4 @@ internal class UserLfm
 internal class Registered
 {
     public long Unixtime { get; set; }
-
-    [JsonPropertyName("#text")]
-    public long Text { get; set; }
 }
