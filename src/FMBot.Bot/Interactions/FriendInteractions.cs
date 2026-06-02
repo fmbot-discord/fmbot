@@ -8,6 +8,7 @@ using FMBot.Bot.Factories;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Domain;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 using NetCord;
@@ -69,17 +70,25 @@ public class FriendInteractions(
 
     [ComponentInteraction(InteractionConstants.Friends.Manage)]
     [UsernameSetRequired]
-    public async Task FriendManageButton(string friendId, string page)
+    public async Task FriendManageButton(string friendId, string page, string source = "manage")
     {
         try
         {
             var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
             var friend = await friendsService.GetFriendAsync(int.Parse(friendId));
 
-            if (friend == null || friend.UserId != contextUser.UserId)
+            if (friend == null)
             {
                 await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
                     .WithContent("This friend could not be found.")
+                    .WithFlags(MessageFlags.Ephemeral)));
+                return;
+            }
+
+            if (friend.UserId != contextUser.UserId)
+            {
+                await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                    .WithContent("Only the person who added this friend can change it.")
                     .WithFlags(MessageFlags.Ephemeral)));
                 return;
             }
@@ -93,7 +102,7 @@ public class FriendInteractions(
 
             await RespondAsync(InteractionCallback.Modal(
                 ModalFactory.CreateFriendTypeModal(
-                    $"{InteractionConstants.Friends.TypeModal}:{friendId}:{page}",
+                    $"{InteractionConstants.Friends.TypeModal}:{friendId}:{page}:{source}",
                     title,
                     friend.FriendType,
                     contextUser.UserType != UserType.User)));
@@ -106,15 +115,46 @@ public class FriendInteractions(
 
     [ComponentInteraction(InteractionConstants.Friends.TypeModal)]
     [UsernameSetRequired]
-    public async Task FriendTypeModal(string friendId, string page)
+    public async Task FriendTypeModal(string friendId, string page, string source)
     {
         try
         {
             var selected = this.Context.GetModalMenuValue("friend_type");
 
-            await this.Context.Interaction.SendResponseAsync(InteractionCallback.DeferredModifyMessage);
-
             var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+
+            if (int.TryParse(selected, out var selectedType)
+                && (FriendType)selectedType == FriendType.CloseFriend
+                && contextUser.UserType == UserType.User)
+            {
+                var supporterRequired = new ComponentContainerProperties();
+                supporterRequired.AddComponent(new TextDisplayProperties(
+                    "**Close friends are only available for supporters.** Add someone as a close friend so they'll always visible in WhoKnows no matter where they rank and in `friendsfm`."));
+                supporterRequired.AddComponent(new ActionRowProperties().WithButton(Constants.GetSupporterButton,
+                    style: ButtonStyle.Primary,
+                    customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "friends-closefriend")));
+
+                await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                    .WithComponents([supporterRequired])
+                    .WithFlags(MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral)));
+                return;
+            }
+
+            if (source == "add")
+            {
+                var note = await friendBuilders.ApplyFriendTypeSelectionAsync(
+                    new ContextModel(this.Context, contextUser), int.Parse(friendId), selected);
+
+                var container = new ComponentContainerProperties();
+                container.AddComponent(new TextDisplayProperties(note));
+
+                await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                    .WithComponents([container])
+                    .WithFlags(MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral)));
+                return;
+            }
+
+            await this.Context.Interaction.SendResponseAsync(InteractionCallback.DeferredModifyMessage);
 
             string error = null;
             if (selected == "remove")

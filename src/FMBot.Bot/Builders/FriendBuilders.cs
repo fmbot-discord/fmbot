@@ -7,8 +7,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Dasync.Collections;
 using Fergun.Interactive;
+using Fergun.Interactive.Pagination;
 using FMBot.Bot.Extensions;
-using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
@@ -86,7 +86,6 @@ public class FriendBuilders
 
         var guild = await this._guildService.GetGuildForWhoKnows(context.DiscordGuild?.Id);
 
-        var footerText = "Total scrobbles: ";
         string title;
         if (visibleFriends.Count > 1)
         {
@@ -95,7 +94,6 @@ public class FriendBuilders
         else
         {
             title = "Now playing for 1 friend from ";
-            footerText = "Total scrobbles: ";
         }
 
         title += await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
@@ -177,26 +175,77 @@ public class FriendBuilders
                 $"**{StringExtensions.MarkdownLink(friendNameToDisplay, LastfmUrlExtensions.GetUserUrl(friendUsername))}** | {track}"));
         }, maxDegreeOfParallelism: 6);
 
-        var friendsText = new StringBuilder();
-        foreach (var friend in friendResult.OrderByDescending(o => o.TimePlayed).ThenBy(o => o.Result))
+        var friendsFooter =
+            $"-# {totalPlaycount:0} total scrobbles - {friends.Count} total {StringExtensions.GetFriendsString(friends.Count)}";
+
+        var orderedFriends = friendResult
+            .OrderByDescending(o => o.TimePlayed)
+            .ThenBy(o => o.Result)
+            .ToList();
+
+        const int friendsPerPage = 12;
+
+        var pages = orderedFriends.ChunkBy(friendsPerPage);
+
+        if (pages.Count <= 1)
         {
-            friendsText.AppendLine(friend.Result);
+            AddFriendsContent(response.ComponentsContainer, orderedFriends);
+            response.ComponentsContainer.AddComponent(new ComponentSectionProperties(
+                new ButtonProperties(InteractionConstants.Friends.Overview, "Manage", ButtonStyle.Secondary))
+            {
+                Components =
+                [
+                    new TextDisplayProperties(friendsFooter)
+                ]
+            });
+            return response;
         }
 
-        response.ComponentsContainer.AddComponent(new TextDisplayProperties($"### {title}"));
-        response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
-        response.ComponentsContainer.AddComponent(new TextDisplayProperties(friendsText.ToString().TrimEnd()));
-        response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
-        response.ComponentsContainer.AddComponent(new ComponentSectionProperties(
-            new ButtonProperties(InteractionConstants.Friends.Overview, "Manage", ButtonStyle.Secondary))
-        {
-            Components =
-            [
-                new TextDisplayProperties($"-# {footerText}{totalPlaycount:0}")
-            ]
-        });
+        response.ResponseType = ResponseType.Paginator;
+        response.ComponentPaginator = new ComponentPaginatorBuilder()
+            .WithPageFactory(GeneratePage)
+            .WithPageCount(pages.Count)
+            .WithActionOnTimeout(ActionOnStop.DisableInput);
 
         return response;
+
+        void AddFriendsContent(ComponentContainerProperties container, IEnumerable<FriendResult> pageFriends)
+        {
+            var friendsText = new StringBuilder();
+            foreach (var friend in pageFriends)
+            {
+                friendsText.AppendLine(friend.Result);
+            }
+
+            container.AddComponent(new TextDisplayProperties($"### {title}"));
+            container.AddComponent(new ComponentSeparatorProperties());
+            container.AddComponent(new TextDisplayProperties(friendsText.ToString().TrimEnd()));
+            container.AddComponent(new ComponentSeparatorProperties());
+        }
+
+        IPage GeneratePage(IComponentPaginator p)
+        {
+            var container = new ComponentContainerProperties();
+            container.WithAccentColor(DiscordConstants.LastFmColorRed);
+
+            AddFriendsContent(container, pages[p.CurrentPageIndex]);
+
+            container.AddComponent(new TextDisplayProperties(friendsFooter));
+
+            container.AddComponent(new ActionRowProperties()
+                .AddPreviousButton(p, style: ButtonStyle.Secondary,
+                    emote: EmojiProperties.Custom(DiscordConstants.PagesPrevious))
+                .AddNextButton(p, style: ButtonStyle.Secondary,
+                    emote: EmojiProperties.Custom(DiscordConstants.PagesNext))
+                .WithButton("Manage", customId: InteractionConstants.Friends.Overview,
+                    style: ButtonStyle.Secondary));
+
+            return new PageBuilder()
+                .WithAllowedMentions(AllowedMentionsProperties.None)
+                .WithMessageFlags(NetCord.MessageFlags.IsComponentsV2)
+                .WithComponents([container])
+                .Build();
+        }
     }
 
     private static ActionRowProperties FriendButtons()
@@ -214,7 +263,7 @@ public class FriendBuilders
             ResponseType = ResponseType.ComponentsV2,
         };
 
-        var addedFriendsList = new List<(string Name, FriendType Type)>();
+        var addedFriendsList = new List<(string Name, FriendType Type, int FriendId)>();
         var friendNotFoundList = new List<string>();
         var duplicateFriendsList = new List<(string Name, FriendType Type)>();
 
@@ -262,9 +311,9 @@ public class FriendBuilders
                         ? FriendType.VisibleInNowPlaying
                         : FriendType.Normal;
 
-                    await this._friendsService.AddLastFmFriendAsync(context.ContextUser, friendUsername,
+                    var friendId = await this._friendsService.AddLastFmFriendAsync(context.ContextUser, friendUsername,
                         friendUserId, friendType);
-                    addedFriendsList.Add((friendUsername, friendType));
+                    addedFriendsList.Add((friendUsername, friendType, friendId));
                     existingFriends.Add(new Friend
                     {
                         LastFMUserName = friendUsername,
@@ -346,9 +395,17 @@ public class FriendBuilders
         if (body.Length > 0)
         {
             response.ComponentsContainer.AddComponent(new TextDisplayProperties(body.ToString().TrimEnd()));
-            response.ComponentsContainer.AddComponent(new ActionRowProperties()
+
+            var buttons = new ActionRowProperties()
                 .WithButton("Manage friends", customId: InteractionConstants.Friends.Overview,
-                    style: ButtonStyle.Secondary));
+                    style: ButtonStyle.Secondary);
+            if (addedFriendsList.Count == 1)
+            {
+                buttons.WithButton("Change type",
+                    customId: $"{InteractionConstants.Friends.Manage}:{addedFriendsList[0].FriendId}:0:add",
+                    style: ButtonStyle.Secondary);
+            }
+            response.ComponentsContainer.AddComponent(buttons);
         }
 
         if (friendLimitReached)
@@ -592,7 +649,7 @@ public class FriendBuilders
             var lastFmTag = friend.LastFmFriend ? " · `Last.fm`" : "";
 
             response.ComponentsContainer.AddComponent(new ComponentSectionProperties(
-                new ButtonProperties($"{InteractionConstants.Friends.Manage}:{friend.FriendId}:{page}",
+                new ButtonProperties($"{InteractionConstants.Friends.Manage}:{friend.FriendId}:{page}:manage",
                     EmojiProperties.Standard("⚙️"), ButtonStyle.Secondary))
             {
                 Components =
@@ -710,6 +767,46 @@ public class FriendBuilders
         await this._friendsService.RemoveFriendByIdAsync(friendId);
 
         return $"Removed **{friendName}** from your friends.";
+    }
+
+    public async Task<string> ApplyFriendTypeSelectionAsync(ContextModel context, int friendId, string selectedValue)
+    {
+        var friends = await this._friendsService.GetFriendsAsync(context.ContextUser.DiscordUserId);
+        var friend = friends.FirstOrDefault(f => f.FriendId == friendId);
+
+        if (friend == null)
+        {
+            return "This friend could not be found.";
+        }
+
+        var friendName = friend.FriendUser?.UserNameLastFM ?? friend.LastFMUserName;
+
+        if (selectedValue == "remove")
+        {
+            await this._friendsService.RemoveFriendByIdAsync(friendId);
+            return $"Removed **{friendName}** from your friends.";
+        }
+
+        if (!int.TryParse(selectedValue, out var typeValue) || !Enum.IsDefined(typeof(FriendType), typeValue))
+        {
+            return "This option could not be processed.";
+        }
+
+        var newType = (FriendType)typeValue;
+        var error = await this.SetFriendTypeAsync(context, friendId, newType);
+        if (error != null)
+        {
+            return error;
+        }
+
+        var typeNote = newType switch
+        {
+            FriendType.CloseFriend => "⭐ Close friend",
+            FriendType.VisibleInNowPlaying => "👁️ Visible in all friends commands including `friendsfm`",
+            _ => "👥 Visible in all friends commands except `friendsfm`"
+        };
+
+        return $"Set **{friendName}** to: {typeNote}.";
     }
 
     public async Task<(string Note, bool Success)> SyncLastFmFriendsAsync(ContextModel context)
