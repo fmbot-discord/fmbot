@@ -761,7 +761,7 @@ public class FriendBuilders
         {
             if (!isSupporter)
             {
-                return $"**Close friends are [a Supporter perk]({Constants.GetSupporterOverviewLink}).** They stay visible in WhoKnows no matter their rank, plus your `friendsfm` now playing list.";
+                return $"**Close friends are [a Supporter perk]({Constants.GetSupporterOverviewLink}).** They're always visible in WhoKnows no matter their rank, plus in `friendsfm`.";
             }
             if (closeCount >= Constants.MaxCloseFriends)
             {
