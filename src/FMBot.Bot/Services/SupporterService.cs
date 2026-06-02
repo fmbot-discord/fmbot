@@ -476,6 +476,16 @@ public class SupporterService
                     supporterSource = "updatepromo-usershortcuts";
                     break;
                 }
+                case 18:
+                case 19:
+                {
+                    SetGuildSupporterPromoCache(guildId);
+                    message =
+                        $"*⭐ Supporters can set close friends - always visible in WhoKnows no matter their rank, plus in `{prfx}friendsfm`*";
+                    showUpgradeButton = true;
+                    supporterSource = "updatepromo-closefriends";
+                    break;
+                }
                 case 20:
                 {
                     message =

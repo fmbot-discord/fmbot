@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
+using FMBot.Domain.Attributes;
 using FMBot.Domain.Enums;
 using NetCord.Rest;
 
@@ -517,20 +519,22 @@ public static class ModalFactory
     public static ModalProperties CreateFriendTypeModal(string customId, string title, FriendType currentType,
         bool isSupporter)
     {
+        var normal = FriendType.Normal.GetAttribute<OptionAttribute>();
+        var visible = FriendType.VisibleInNowPlaying.GetAttribute<OptionAttribute>();
+        var closeFriend = FriendType.CloseFriend.GetAttribute<OptionAttribute>();
+
         var menu = new StringMenuProperties("friend_type");
-        menu.AddOptions(new StringMenuSelectOptionProperties("Normal", ((int)FriendType.Normal).ToString())
+        menu.AddOptions(new StringMenuSelectOptionProperties(normal.Name, ((int)FriendType.Normal).ToString())
         {
-            Description = "Shown in all friends commands except 'friendsfm'",
+            Description = normal.Description,
             Default = currentType == FriendType.Normal
-        }, new StringMenuSelectOptionProperties("Visible everywhere", ((int)FriendType.VisibleInNowPlaying).ToString())
+        }, new StringMenuSelectOptionProperties(visible.Name, ((int)FriendType.VisibleInNowPlaying).ToString())
         {
-            Description = "Shown in all friends commands including 'friendsfm'",
+            Description = visible.Description,
             Default = currentType == FriendType.VisibleInNowPlaying
-        }, new StringMenuSelectOptionProperties("Close friend ⭐", ((int)FriendType.CloseFriend).ToString())
+        }, new StringMenuSelectOptionProperties(closeFriend.Name, ((int)FriendType.CloseFriend).ToString())
         {
-            Description = isSupporter
-                ? "Shown in all friend commands and always pinned in WhoKnows"
-                : "Supporter only — always pinned in WhoKnows",
+            Description = isSupporter ? closeFriend.Description : $"Supporter only — {closeFriend.Description}",
             Default = currentType == FriendType.CloseFriend
         }, new StringMenuSelectOptionProperties("Remove friend", "remove")
         {

@@ -14,6 +14,7 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
+using FMBot.Domain.Attributes;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
@@ -379,11 +380,8 @@ public class FriendBuilders
                 $"Successfully added {addedFriendsList.Count} {StringExtensions.GetFriendsString(addedFriendsList.Count)}:");
             foreach (var addedFriend in addedFriendsList)
             {
-                var typeNote = addedFriend.Type == FriendType.VisibleInNowPlaying
-                    ? "👁️ Visible in all friends commands including `friendsfm`"
-                    : "👥 Visible in all friends commands except `friendsfm`";
                 body.AppendLine(
-                    $"- *[{addedFriend.Name}]({LastfmUrlExtensions.GetUserUrl(addedFriend.Name)})* — {typeNote}");
+                    $"- *[{addedFriend.Name}]({LastfmUrlExtensions.GetUserUrl(addedFriend.Name)})* — {addedFriend.Type.GetAttribute<OptionAttribute>().Name}");
             }
         }
 
@@ -413,14 +411,8 @@ public class FriendBuilders
                 $"You are already friends with these users:");
             foreach (var dupeFriend in duplicateFriendsList)
             {
-                var typeNote = dupeFriend.Type switch
-                {
-                    FriendType.CloseFriend => "⭐ Close friend",
-                    FriendType.VisibleInNowPlaying => "👁️ Visible in all friends commands including `friendsfm`",
-                    _ => "👥 Visible in all friends commands except `friendsfm`"
-                };
                 body.AppendLine(
-                    $"- *[{dupeFriend.Name}]({LastfmUrlExtensions.GetUserUrl(dupeFriend.Name)})* — {typeNote}");
+                    $"- *[{dupeFriend.Name}]({LastfmUrlExtensions.GetUserUrl(dupeFriend.Name)})* — {dupeFriend.Type.GetAttribute<OptionAttribute>().Name}");
             }
         }
 
@@ -682,12 +674,7 @@ public class FriendBuilders
         foreach (var friend in pageFriends)
         {
             var friendName = friend.FriendUser?.UserNameLastFM ?? friend.LastFMUserName;
-            var typeLabel = friend.FriendType switch
-            {
-                FriendType.CloseFriend => "⭐ Close friend - always visible",
-                FriendType.VisibleInNowPlaying => "👁️ Visible in all friend commands",
-                _ => "👥 Visible in commands"
-            };
+            var typeLabel = friend.FriendType.GetAttribute<OptionAttribute>().Name;
             var lastFmTag = friend.LastFmFriend ? " · `Last.fm`" : "";
 
             response.ComponentsContainer.AddComponent(new ComponentSectionProperties(
@@ -774,7 +761,7 @@ public class FriendBuilders
         {
             if (!isSupporter)
             {
-                return $"**Close friends are [a Supporter perk]({Constants.GetSupporterOverviewLink}).** They're always shown in your now playing list and pinned in WhoKnows regardless of their position.";
+                return $"**Close friends are [a Supporter perk]({Constants.GetSupporterOverviewLink}).** They stay visible in WhoKnows no matter their rank, plus your `friendsfm` now playing list.";
             }
             if (closeCount >= Constants.MaxCloseFriends)
             {
@@ -782,13 +769,13 @@ public class FriendBuilders
             }
             if (visibleCount >= visibleCap)
             {
-                return $"You can show at most **{visibleCap}** friends in your now playing list. Hide another friend first.";
+                return $"You can show at most **{visibleCap}** friends in your `friendsfm`. Hide another friend first.";
             }
         }
         else if (newType == FriendType.VisibleInNowPlaying && visibleCount >= visibleCap)
         {
             var supporterHint = isSupporter ? "" : $" Supporters can show up to {Constants.MaxVisibleFriendsSupporter}.";
-            return $"You can show at most **{visibleCap}** friends in your now playing list. Hide another friend first.{supporterHint}";
+            return $"You can show at most **{visibleCap}** friends in your `friendsfm`. Hide another friend first.{supporterHint}";
         }
 
         await this._friendsService.SetFriendTypeAsync(friendId, newType);
@@ -842,14 +829,7 @@ public class FriendBuilders
             return (error, false);
         }
 
-        var typeNote = newType switch
-        {
-            FriendType.CloseFriend => "⭐ Close friend",
-            FriendType.VisibleInNowPlaying => "👁️ Visible in all friends commands including `friendsfm`",
-            _ => "👥 Visible in all friends commands except `friendsfm`"
-        };
-
-        return ($"Set **{friendName}** to: {typeNote}.", true);
+        return ($"Set **{friendName}** to: {newType.GetAttribute<OptionAttribute>().Name}.", true);
     }
 
     public async Task<(string Note, bool Success)> SyncLastFmFriendsAsync(ContextModel context)
