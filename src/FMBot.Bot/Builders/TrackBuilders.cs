@@ -1241,6 +1241,13 @@ public class TrackBuilders
             await this._dataSourceFactory.GetLovedTracksAsync(userSettings.UserNameLastFm, amount,
                 sessionKey: sessionKey);
 
+        if (GenericEmbedService.RecentScrobbleCallFailed(lovedTracks))
+        {
+            var errorResponse =
+                GenericEmbedService.RecentScrobbleCallFailedResponse(lovedTracks, userSettings.UserNameLastFm);
+            return errorResponse;
+        }
+
         if (!lovedTracks.Content.RecentTracks.Any())
         {
             response.Embed.WithDescription(
@@ -1249,13 +1256,6 @@ public class TrackBuilders
             response.CommandResponse = CommandResponse.NoScrobbles;
             response.ResponseType = ResponseType.Embed;
             return response;
-        }
-
-        if (GenericEmbedService.RecentScrobbleCallFailed(lovedTracks))
-        {
-            var errorResponse =
-                GenericEmbedService.RecentScrobbleCallFailedResponse(lovedTracks, userSettings.UserNameLastFm);
-            return errorResponse;
         }
 
         var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);

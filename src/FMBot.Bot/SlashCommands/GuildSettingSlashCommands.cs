@@ -7,6 +7,7 @@ using FMBot.Bot.Attributes;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using Fergun.Interactive;
+using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 
@@ -22,9 +23,10 @@ public class GuildSettingSlashCommands(
 {
     private InteractiveService Interactivity { get; } = interactivity;
 
-    [SlashCommand("configuration", "Server configuration for .fmbot")]
+    [SlashCommand("configuration", "Server configuration for .fmbot",
+        Contexts = [InteractionContextType.Guild],
+        IntegrationTypes = [ApplicationIntegrationType.GuildInstall])]
     [RequiresIndex]
-    [GuildOnly]
     public async Task ServerSettingsAsync()
     {
         try
@@ -45,9 +47,10 @@ public class GuildSettingSlashCommands(
         }
     }
 
-    [SlashCommand("members", "Members in this server that use .fmbot")]
+    [SlashCommand("members", "Members in this server that use .fmbot",
+        Contexts = [InteractionContextType.Guild],
+        IntegrationTypes = [ApplicationIntegrationType.GuildInstall])]
     [RequiresIndex]
-    [GuildOnly]
     public async Task MemberOverviewAsync(
         [SlashCommandParameter(Name = "view", Description = "Statistic you want to view")]
         GuildViewType viewType)

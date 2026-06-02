@@ -56,10 +56,11 @@ public class GenreSlashCommands(
         }
     }
 
-    [SlashCommand("wkgenre", "Shows what other users listen to a genre in your server")]
+    [SlashCommand("wkgenre", "Shows what other users listen to a genre in your server",
+        Contexts = [InteractionContextType.Guild],
+        IntegrationTypes = [ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     [RequiresIndex]
-    [GuildOnly]
     public async Task WhoKnowsGenreAsync(
         [SlashCommandParameter(Name = "search", Description = "The genre or artist you want to view",
             AutocompleteProviderType = typeof(GenreArtistAutoComplete))]

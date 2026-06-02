@@ -35,7 +35,7 @@ public class BotListService
         var currentProcess = Process.GetCurrentProcess();
         var startTime = DateTime.Now - currentProcess.StartTime;
 
-        if (startTime.Minutes <= 30)
+        if (startTime.TotalMinutes <= 30)
         {
             Log.Information($"Skipping {nameof(UpdateBotLists)} because bot only just started");
             return;
