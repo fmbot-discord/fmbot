@@ -1519,7 +1519,7 @@ public class TrackBuilders
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
             response.Stream = encoded.AsStream(true);
-            response.FileName = $"top-tracks-{userSettings.DiscordUserId}.png";
+            response.FileName = $"top-tracks-{userSettings.UserId}.png";
             response.ResponseType = ResponseType.ImageOnly;
 
             return response;

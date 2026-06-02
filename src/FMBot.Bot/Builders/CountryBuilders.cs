@@ -422,7 +422,7 @@ public class CountryBuilders
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
             response.Stream = encoded.AsStream(true);
-            response.FileName = $"top-countries-{userSettings.DiscordUserId}.png";
+            response.FileName = $"top-countries-{userSettings.UserId}.png";
             response.ResponseType = ResponseType.ImageOnly;
 
             return response;

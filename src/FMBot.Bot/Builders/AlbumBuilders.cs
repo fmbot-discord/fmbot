@@ -1578,7 +1578,7 @@ public class AlbumBuilders
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
             response.Stream = encoded.AsStream(true);
-            response.FileName = $"top-albums-{userSettings.DiscordUserId}.png";
+            response.FileName = $"top-albums-{userSettings.UserId}.png";
             response.ResponseType = ResponseType.ImageOnly;
 
             return response;
