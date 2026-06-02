@@ -76,10 +76,18 @@ public class FriendInteractions(
             var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
             var friend = await friendsService.GetFriendAsync(int.Parse(friendId));
 
-            if (friend == null || friend.UserId != contextUser.UserId)
+            if (friend == null)
             {
                 await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
                     .WithContent("This friend could not be found.")
+                    .WithFlags(MessageFlags.Ephemeral)));
+                return;
+            }
+
+            if (friend.UserId != contextUser.UserId)
+            {
+                await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                    .WithContent("Only the person who added this friend can change it.")
                     .WithFlags(MessageFlags.Ephemeral)));
                 return;
             }
