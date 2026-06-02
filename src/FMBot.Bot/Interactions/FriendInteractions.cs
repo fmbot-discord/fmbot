@@ -142,10 +142,13 @@ public class FriendInteractions(
 
             if (source == "add")
             {
-                var note = await friendBuilders.ApplyFriendTypeSelectionAsync(
+                var (note, success) = await friendBuilders.ApplyFriendTypeSelectionAsync(
                     new ContextModel(this.Context, contextUser), int.Parse(friendId), selected);
 
                 var container = new ComponentContainerProperties();
+                container.WithAccentColor(success
+                    ? DiscordConstants.SuccessColorGreen
+                    : DiscordConstants.WarningColorOrange);
                 container.AddComponent(new TextDisplayProperties(note));
 
                 await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()

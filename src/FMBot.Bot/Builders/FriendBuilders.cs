@@ -251,9 +251,40 @@ public class FriendBuilders
     private static ActionRowProperties FriendButtons()
     {
         return new ActionRowProperties()
-            .WithButton("Manage",
+            .WithButton("Manage friends",
                 customId: InteractionConstants.Friends.Overview,
                 style: ButtonStyle.Secondary);
+    }
+
+    public static ResponseModel FriendInputInstructions(ContextModel context, bool removing)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.ComponentsV2,
+            CommandResponse = CommandResponse.WrongInput,
+        };
+
+        response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
+
+        if (removing)
+        {
+            response.ComponentsContainer.AddComponent(new TextDisplayProperties(
+                "Please enter at least one friend to remove. For example:\n" +
+                $"`{context.Prefix}removefriend {Constants.UserMentionOrLfmUserNameExample.Replace("`", "")}`\n\n" +
+                "You can use Last.fm usernames, Discord mentions, or Discord IDs. Alternatively you can use the **Manage** button below."));
+        }
+        else
+        {
+            response.ComponentsContainer.AddComponent(new TextDisplayProperties(
+                "Please enter at least one friend to add. For example:\n" +
+                $"`{context.Prefix}addfriend {Constants.UserMentionOrLfmUserNameExample.Replace("`", "")}`\n\n" +
+                "You can use Last.fm usernames, Discord mentions, or Discord IDs.\n\n" +
+                "Or right-click a user, go to apps and click 'Add as friend'. You can also sync your Last.fm friends with **Manage** button below."));
+        }
+
+        response.ComponentsContainer.AddComponent(FriendButtons());
+
+        return response;
     }
 
     public async Task<ResponseModel> AddFriendsAsync(ContextModel context, string[] enteredFriends)
@@ -265,7 +296,7 @@ public class FriendBuilders
 
         var addedFriendsList = new List<(string Name, FriendType Type, int FriendId)>();
         var friendNotFoundList = new List<string>();
-        var duplicateFriendsList = new List<(string Name, FriendType Type)>();
+        var duplicateFriendsList = new List<(string Name, FriendType Type, int FriendId)>();
 
         var existingFriends = await this._friendsService.GetFriendsAsync(context.DiscordUser.Id);
 
@@ -335,7 +366,8 @@ public class FriendBuilders
                 var existingMatch = existingFriends.FirstOrDefault(w =>
                     w.LastFMUserName?.ToLower() == friendUsername.ToLower() ||
                     w.FriendUser?.UserNameLastFM?.ToLower() == friendUsername.ToLower());
-                duplicateFriendsList.Add((friendUsername, existingMatch?.FriendType ?? FriendType.Normal));
+                duplicateFriendsList.Add((friendUsername, existingMatch?.FriendType ?? FriendType.Normal,
+                    existingMatch?.FriendId ?? 0));
             }
         }
 
@@ -378,7 +410,7 @@ public class FriendBuilders
             }
 
             body.AppendLine(
-                $"Could not add {duplicateFriendsList.Count} {StringExtensions.GetFriendsString(duplicateFriendsList.Count)} because you already have them added:");
+                $"You are already friends with these users:");
             foreach (var dupeFriend in duplicateFriendsList)
             {
                 var typeNote = dupeFriend.Type switch
@@ -405,6 +437,12 @@ public class FriendBuilders
                     customId: $"{InteractionConstants.Friends.Manage}:{addedFriendsList[0].FriendId}:0:add",
                     style: ButtonStyle.Secondary);
             }
+            else if (duplicateFriendsList.Count == 1 && duplicateFriendsList[0].FriendId > 0)
+            {
+                buttons.WithButton("Change type",
+                    customId: $"{InteractionConstants.Friends.Manage}:{duplicateFriendsList[0].FriendId}:0:add",
+                    style: ButtonStyle.Secondary);
+            }
             response.ComponentsContainer.AddComponent(buttons);
         }
 
@@ -415,7 +453,6 @@ public class FriendBuilders
                 response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
             }
 
-            response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
             if (context.ContextUser.UserType == UserType.User)
             {
                 response.ComponentsContainer.AddComponent(new TextDisplayProperties(
@@ -438,6 +475,10 @@ public class FriendBuilders
             response.ComponentsContainer.AddComponent(new TextDisplayProperties(
                 $"-# Thank you for being an .fmbot {userType}! You can add up to {Constants.MaxFriendsSupporter} friends."));
         }
+
+        response.ComponentsContainer.WithAccentColor(addedFriendsList.Count > 0
+            ? DiscordConstants.SuccessColorGreen
+            : DiscordConstants.WarningColorOrange);
 
         return response;
     }
@@ -769,14 +810,15 @@ public class FriendBuilders
         return $"Removed **{friendName}** from your friends.";
     }
 
-    public async Task<string> ApplyFriendTypeSelectionAsync(ContextModel context, int friendId, string selectedValue)
+    public async Task<(string Note, bool Success)> ApplyFriendTypeSelectionAsync(ContextModel context, int friendId,
+        string selectedValue)
     {
         var friends = await this._friendsService.GetFriendsAsync(context.ContextUser.DiscordUserId);
         var friend = friends.FirstOrDefault(f => f.FriendId == friendId);
 
         if (friend == null)
         {
-            return "This friend could not be found.";
+            return ("This friend could not be found.", false);
         }
 
         var friendName = friend.FriendUser?.UserNameLastFM ?? friend.LastFMUserName;
@@ -784,19 +826,19 @@ public class FriendBuilders
         if (selectedValue == "remove")
         {
             await this._friendsService.RemoveFriendByIdAsync(friendId);
-            return $"Removed **{friendName}** from your friends.";
+            return ($"Removed **{friendName}** from your friends.", true);
         }
 
         if (!int.TryParse(selectedValue, out var typeValue) || !Enum.IsDefined(typeof(FriendType), typeValue))
         {
-            return "This option could not be processed.";
+            return ("This option could not be processed.", false);
         }
 
         var newType = (FriendType)typeValue;
         var error = await this.SetFriendTypeAsync(context, friendId, newType);
         if (error != null)
         {
-            return error;
+            return (error, false);
         }
 
         var typeNote = newType switch
@@ -806,7 +848,7 @@ public class FriendBuilders
             _ => "👥 Visible in all friends commands except `friendsfm`"
         };
 
-        return $"Set **{friendName}** to: {typeNote}.";
+        return ($"Set **{friendName}** to: {typeNote}.", true);
     }
 
     public async Task<(string Note, bool Success)> SyncLastFmFriendsAsync(ContextModel context)

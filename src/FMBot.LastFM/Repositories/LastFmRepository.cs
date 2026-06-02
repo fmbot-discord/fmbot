@@ -414,6 +414,22 @@ public class LastFmRepository : ILastfmRepository
 
         if (!friendsCall.Success)
         {
+            // Last.fm returns error 6 with "no such page" for users with no friends rather than an empty list
+            if (friendsCall.Error == ResponseStatus.MissingParameters &&
+                friendsCall.Message?.Contains("no such page", StringComparison.OrdinalIgnoreCase) == true)
+            {
+                return new Response<LastFmUserFriendsList>
+                {
+                    Success = true,
+                    Content = new LastFmUserFriendsList
+                    {
+                        Page = page,
+                        PerPage = limit,
+                        Friends = []
+                    }
+                };
+            }
+
             return new Response<LastFmUserFriendsList>
             {
                 Success = false,

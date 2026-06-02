@@ -457,7 +457,7 @@ public class WhoKnowsService
             else
             {
                 reply.Append(
-                    $" {rank}.  *{nameWithLink}* - **{pinnedUser.Playcount.Format(numberFormat)}** {playString}\n");
+                    $"{spacer}{rank}.  *{nameWithLink}* - **{pinnedUser.Playcount.Format(numberFormat)}** {playString}\n");
             }
         }
 
