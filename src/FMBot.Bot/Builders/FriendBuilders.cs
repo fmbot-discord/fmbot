@@ -437,7 +437,8 @@ public class FriendBuilders
                     customId: $"{InteractionConstants.Friends.Manage}:{addedFriendsList[0].FriendId}:0:add",
                     style: ButtonStyle.Secondary);
             }
-            else if (duplicateFriendsList.Count == 1 && duplicateFriendsList[0].FriendId > 0)
+            else if (addedFriendsList.Count == 0 && duplicateFriendsList.Count == 1 &&
+                     duplicateFriendsList[0].FriendId > 0)
             {
                 buttons.WithButton("Change type",
                     customId: $"{InteractionConstants.Friends.Manage}:{duplicateFriendsList[0].FriendId}:0:add",
