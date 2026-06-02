@@ -69,7 +69,7 @@ public class FriendInteractions(
 
     [ComponentInteraction(InteractionConstants.Friends.Manage)]
     [UsernameSetRequired]
-    public async Task FriendManageButton(string friendId, string page)
+    public async Task FriendManageButton(string friendId, string page, string source = "manage")
     {
         try
         {
@@ -93,7 +93,7 @@ public class FriendInteractions(
 
             await RespondAsync(InteractionCallback.Modal(
                 ModalFactory.CreateFriendTypeModal(
-                    $"{InteractionConstants.Friends.TypeModal}:{friendId}:{page}",
+                    $"{InteractionConstants.Friends.TypeModal}:{friendId}:{page}:{source}",
                     title,
                     friend.FriendType,
                     contextUser.UserType != UserType.User)));
@@ -106,15 +106,28 @@ public class FriendInteractions(
 
     [ComponentInteraction(InteractionConstants.Friends.TypeModal)]
     [UsernameSetRequired]
-    public async Task FriendTypeModal(string friendId, string page)
+    public async Task FriendTypeModal(string friendId, string page, string source)
     {
         try
         {
             var selected = this.Context.GetModalMenuValue("friend_type");
 
-            await this.Context.Interaction.SendResponseAsync(InteractionCallback.DeferredModifyMessage);
-
             var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+            if (source == "add")
+            {
+                var note = await friendBuilders.ApplyFriendTypeSelectionAsync(
+                    new ContextModel(this.Context, contextUser), int.Parse(friendId), selected);
+
+                var container = new ComponentContainerProperties();
+                container.AddComponent(new TextDisplayProperties(note));
+
+                await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                    .WithComponents([container])
+                    .WithFlags(MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral)));
+                return;
+            }
+
+            await this.Context.Interaction.SendResponseAsync(InteractionCallback.DeferredModifyMessage);
 
             string error = null;
             if (selected == "remove")

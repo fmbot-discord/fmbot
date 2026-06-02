@@ -54,7 +54,7 @@ public class FriendsService
         return friended;
     }
 
-    public async Task AddLastFmFriendAsync(User contextUser, string lastFmUserName, int? friendUserId,
+    public async Task<int> AddLastFmFriendAsync(User contextUser, string lastFmUserName, int? friendUserId,
         FriendType friendType = FriendType.VisibleInNowPlaying, bool lastFmFriend = false)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -74,6 +74,8 @@ public class FriendsService
         await db.Friends.AddAsync(friend);
 
         await db.SaveChangesAsync();
+
+        return friend.FriendId;
     }
 
     public async Task<Dictionary<string, int>> GetRegisteredUserIdsAsync(IReadOnlyList<string> lastFmUserNames)
