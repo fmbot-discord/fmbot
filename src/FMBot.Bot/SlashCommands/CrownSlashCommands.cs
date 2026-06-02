@@ -9,6 +9,7 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using NetCord.Services.ApplicationCommands;
+using NetCord;
 using NetCord.Rest;
 
 namespace FMBot.Bot.SlashCommands;
@@ -24,7 +25,9 @@ public class CrownSlashCommands(
     private InteractiveService Interactivity { get; } = interactivity;
 
 
-    [SlashCommand("crown", "History for a specific crown")]
+    [SlashCommand("crown", "History for a specific crown",
+        Contexts = [InteractionContextType.Guild],
+        IntegrationTypes = [ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task CrownAsync(
         [SlashCommandParameter(Name = "artist",
@@ -50,7 +53,9 @@ public class CrownSlashCommands(
         }
     }
 
-    [SlashCommand("crowns", "View a list of crowns for you or someone else")]
+    [SlashCommand("crowns", "View a list of crowns for you or someone else",
+        Contexts = [InteractionContextType.Guild],
+        IntegrationTypes = [ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task CrownOverViewAsync(
         [SlashCommandParameter(Name = "view", Description = "View of crowns you want to see")]

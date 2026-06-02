@@ -50,7 +50,9 @@ public class AlbumSlashCommands(
         }
     }
 
-    [SlashCommand("wkalbum", "Shows what other users listen to an album in your server")]
+    [SlashCommand("wkalbum", "Shows what other users listen to an album in your server",
+        Contexts = [InteractionContextType.Guild],
+        IntegrationTypes = [ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task WhoKnowsAlbumAsync(
         [SlashCommandParameter(Name = "album", Description = "The album you want to search for (defaults to currently playing)",
