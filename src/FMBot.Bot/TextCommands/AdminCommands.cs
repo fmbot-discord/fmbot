@@ -2228,7 +2228,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
 
                 foreach (var id in idsToUpdate)
                 {
-                    var userToUpdate = await settingService.GetDifferentUser(user);
+                    var userToUpdate = await settingService.GetDifferentUser(id.Trim());
 
                     if (userToUpdate == null)
                     {
