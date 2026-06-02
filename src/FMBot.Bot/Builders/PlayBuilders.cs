@@ -2066,7 +2066,7 @@ public class PlayBuilder
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
             response.Stream = encoded.AsStream(true);
 
-            response.FileName = $"{entityTypeDisplay.ToLower()}-gaps-{userSettings.DiscordUserId}.png";
+            response.FileName = $"{entityTypeDisplay.ToLower()}-gaps-{userSettings.UserId}.png";
             response.ResponseType = ResponseType.ImageOnly;
             response.Embed = null;
             response.StringMenus.Add(viewType);

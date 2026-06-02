@@ -110,17 +110,18 @@ public class FriendsCommands(
             ? []
             : friendsInput.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id) ?? this._botSettings.Bot.Prefix;
+
         if (enteredFriends.Length == 0)
         {
-            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Please enter at least one friend to add. You can use their Last.fm usernames, Discord mentions, or Discord IDs." });
-            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
+            var instructions = FriendBuilders.FriendInputInstructions(new ContextModel(this.Context, prfx, contextUser), removing: false);
+            await this.Context.SendResponse(this.Interactivity, instructions, userService);
+            await this.Context.LogCommandUsedAsync(instructions, userService);
             return;
         }
 
         _ = this.Context.Channel?.TriggerTypingAsync()!;
-
-        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
-        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id) ?? this._botSettings.Bot.Prefix;
 
         try
         {
@@ -171,8 +172,9 @@ public class FriendsCommands(
 
         if (enteredFriends.Length == 0)
         {
-            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Please enter at least one friend to remove. You can use their Last.fm usernames, Discord mentions, or Discord IDs." });
-            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
+            var instructions = FriendBuilders.FriendInputInstructions(new ContextModel(this.Context, prfx, contextUser), removing: true);
+            await this.Context.SendResponse(this.Interactivity, instructions, userService);
+            await this.Context.LogCommandUsedAsync(instructions, userService);
             return;
         }
 
