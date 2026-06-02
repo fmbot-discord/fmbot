@@ -274,7 +274,7 @@ public class AdminService
             if (reason != null)
             {
                 bottedUser.Notes = stringToAdd;
-                bottedUser.Notes = $"\n{reason}";
+                bottedUser.Notes += $"\n{reason}";
             }
             else
             {
