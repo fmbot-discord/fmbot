@@ -1756,7 +1756,7 @@ public class PlayBuilder
             allPlays = (await this._timeService.EnrichPlaysWithPlayTime(allPlays)).enrichedPlays;
 
             var filter = new DateTime(year, 01, 01);
-            var endFilter = new DateTime(year, 12, 12, 23, 59, 59);
+            var endFilter = new DateTime(year, 12, 31, 23, 59, 59);
             var knownArtists = allPlays
                 .Where(w => w.TimePlayed < filter)
                 .GroupBy(g => g.ArtistName)

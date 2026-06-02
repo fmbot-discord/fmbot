@@ -220,7 +220,7 @@ public class PlaySlashCommands(
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e, userService, deferFirst: true);
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 

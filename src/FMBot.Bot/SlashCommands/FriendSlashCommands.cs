@@ -20,7 +20,7 @@ public class FriendSlashCommands(
 {
     private InteractiveService Interactivity { get; } = interactivity;
 
-    [SlashCommand("friends", "Displays your friends and what they're listening to",
+    [SlashCommand("friendsfm", "Displays your friends and what they're listening to",
         Contexts =
             [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild],
         IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]

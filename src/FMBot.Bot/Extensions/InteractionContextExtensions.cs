@@ -216,6 +216,19 @@ public static class InteractionContextExtensions
                 ?.FirstOrDefault();
         }
 
+        public string GetModalRadioValue(string customId)
+        {
+            if (context.Interaction is not ModalInteraction modal)
+                return null;
+
+            return modal.Data.Components
+                .OfType<Label>()
+                .Select(l => l.Component)
+                .OfType<RadioGroup>()
+                .FirstOrDefault(r => string.Equals(r.CustomId, customId, StringComparison.OrdinalIgnoreCase))
+                ?.SelectedValue;
+        }
+
         public IReadOnlyList<string> GetModalCheckboxValues(string customId)
         {
             if (context.Interaction is not ModalInteraction modal)

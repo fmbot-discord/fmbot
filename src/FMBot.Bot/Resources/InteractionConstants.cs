@@ -121,6 +121,16 @@ public static class InteractionConstants
         public const string CreateModal = "shortcut-createmodal";
     }
 
+    public static class Friends
+    {
+        public const string Overview = "friend-overview";
+        public const string OverviewPage = "friend-page";
+        public const string Manage = "friend-manage";
+        public const string TypeModal = "friend-typemodal";
+        public const string Sync = "friend-sync";
+        public const string SyncModal = "friend-syncmodal";
+    }
+
     public static class Taste
     {
         public const string Tab = "taste-tab";

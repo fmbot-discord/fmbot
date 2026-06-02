@@ -30,7 +30,9 @@ public class IndexSlashCommands(
 {
     private InteractiveService Interactivity { get; } = interactivity;
 
-    [SlashCommand("refreshmembers", "Refreshes the cached member list that .fmbot has for your server")]
+    [SlashCommand("refreshmembers", "Refreshes the cached member list that .fmbot has for your server",
+        Contexts = [InteractionContextType.Guild],
+        IntegrationTypes = [ApplicationIntegrationType.GuildInstall])]
     public async Task RefreshMembersAsync()
     {
         await RespondAsync(InteractionCallback.DeferredMessage());

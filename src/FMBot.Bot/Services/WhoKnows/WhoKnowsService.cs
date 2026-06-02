@@ -318,7 +318,7 @@ public class WhoKnowsService
 
     public static string WhoKnowsListToString(IList<WhoKnowsObjectWithUser> whoKnowsObjects, int requestedUserId,
         PrivacyLevel minPrivacyLevel, NumberFormat numberFormat, CrownModel crownModel = null,
-        bool hidePrivateUsers = false, bool doNotLinkEmojis = false)
+        bool hidePrivateUsers = false, bool doNotLinkEmojis = false, HashSet<int> closeFriendUserIds = null)
     {
         var reply = new StringBuilder();
 
@@ -415,17 +415,49 @@ public class WhoKnowsService
             }
         }
 
+        var pinnedUsers = new List<WhoKnowsObjectWithUser>();
+
         if (!requestedUserAdded)
         {
-            var requestedUser = whoKnowsObjects.FirstOrDefault(f => f.UserId == requestedUserId);
+            var requestedUser = usersToShow.FirstOrDefault(f => f.UserId == requestedUserId);
             if (requestedUser != null)
             {
-                var nameWithLink = NameWithLink(requestedUser, doNotLinkEmojis);
-                var playString = StringExtensions.GetPlaysString(requestedUser.Playcount);
+                pinnedUsers.Add(requestedUser);
+            }
+        }
 
-                reply.Append($"**{spacer}{whoKnowsObjects.IndexOf(requestedUser) + 1}.  {nameWithLink} ");
+        if (closeFriendUserIds is { Count: > 0 })
+        {
+            foreach (var closeFriend in usersToShow
+                         .Where(w => closeFriendUserIds.Contains(w.UserId) && w.UserId != requestedUserId &&
+                                     !addedUsers.Contains(w.UserId))
+                         .GroupBy(g => g.UserId)
+                         .Select(s => s.First()))
+            {
+                if (minPrivacyLevel == PrivacyLevel.Global && closeFriend.PrivacyLevel != PrivacyLevel.Global)
+                {
+                    continue;
+                }
 
-                reply.Append($" - {requestedUser.Playcount} {playString}**\n");
+                pinnedUsers.Add(closeFriend);
+                addedUsers.Add(closeFriend.UserId);
+            }
+        }
+
+        foreach (var pinnedUser in pinnedUsers.OrderByDescending(o => o.Playcount))
+        {
+            var nameWithLink = NameWithLink(pinnedUser, doNotLinkEmojis);
+            var playString = StringExtensions.GetPlaysString(pinnedUser.Playcount);
+            var rank = usersToShow.IndexOf(pinnedUser) + 1;
+
+            if (pinnedUser.UserId == requestedUserId)
+            {
+                reply.Append($"**{spacer}{rank}.  {nameWithLink}  - {pinnedUser.Playcount} {playString}**\n");
+            }
+            else
+            {
+                reply.Append(
+                    $" {rank}.  *{nameWithLink}* - **{pinnedUser.Playcount.Format(numberFormat)}** {playString}\n");
             }
         }
 
@@ -475,7 +507,8 @@ public class WhoKnowsService
         string footerText,
         CrownModel crownModel = null,
         bool hidePrivateUsers = false,
-        int usersPerPage = 10)
+        int usersPerPage = 10,
+        HashSet<int> closeFriendUserIds = null)
     {
         var usersToShow = whoKnowsObjects
             .OrderByDescending(o => o.Playcount)
@@ -596,6 +629,33 @@ public class WhoKnowsService
                 var reqPlayString = StringExtensions.GetPlaysString(requestedUser.Playcount);
                 container.WithTextDisplay(
                     $"**{requestedUserIndex}.  {reqNameWithLink}  - {requestedUser.Playcount.Format(numberFormat)} {reqPlayString}**");
+            }
+
+            if (pageIndex == 0 && closeFriendUserIds is { Count: > 0 })
+            {
+                var shownOnPage = new HashSet<int>(pageUsers.Select(u => u.UserId));
+                var closeFriendsBuilder = new StringBuilder();
+
+                foreach (var closeFriend in deduplicated
+                             .Where(w => closeFriendUserIds.Contains(w.UserId) && w.UserId != requestedUserId &&
+                                         !shownOnPage.Contains(w.UserId)))
+                {
+                    if (minPrivacyLevel == PrivacyLevel.Global && closeFriend.PrivacyLevel != PrivacyLevel.Global)
+                    {
+                        continue;
+                    }
+
+                    var cfNameWithLink = NameWithLink(closeFriend, true);
+                    var cfPlayString = StringExtensions.GetPlaysString(closeFriend.Playcount);
+                    closeFriendsBuilder.Append(
+                        $"{deduplicated.IndexOf(closeFriend) + 1}.  *{cfNameWithLink}*  - **{closeFriend.Playcount.Format(numberFormat)}** {cfPlayString}\n");
+                }
+
+                if (closeFriendsBuilder.Length > 0)
+                {
+                    container.WithSeparator();
+                    container.WithTextDisplay(closeFriendsBuilder.ToString().TrimEnd());
+                }
             }
 
             container.WithSeparator();

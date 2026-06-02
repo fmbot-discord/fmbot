@@ -127,7 +127,7 @@ public class CountryArtistAutoComplete : IAutocompleteProvider<AutocompleteInter
                 .Select(s => s.Name));
         }
 
-        return new List<ApplicationCommandOptionChoiceProperties>(results.Select(s =>
+        return new List<ApplicationCommandOptionChoiceProperties>(results.Take(25).Select(s =>
             new ApplicationCommandOptionChoiceProperties(s, s)));
     }
 }

@@ -207,8 +207,12 @@ public class SupporterService
         thankYouMessage.AppendLine($"- `.shortcuts` — Configure shortcuts to easily access your favorite commands");
         thankYouMessage.AppendLine($"- `/fmmode` — Expand your `fm` footer with more and exclusive customization");
         thankYouMessage.AppendLine($"- `.userreactions` — Set your own emote reactions used globally");
-        thankYouMessage.AppendLine(
-            $"- `.addfriends` — Add up to {Constants.MaxFriendsSupporter} friends, up from {Constants.MaxFriends}");
+        thankYouMessage.AppendLine();
+
+        thankYouMessage.AppendLine("👥 **Add more friends**");
+        thankYouMessage.AppendLine($"- Add up to {Constants.MaxCloseFriends} close friends that are always visible in every WhoKnows command");
+        thankYouMessage.AppendLine($"- Add up to {Constants.MaxFriendsSupporter} friends (up from {Constants.MaxFriends})");
+        thankYouMessage.AppendLine($"- View up to {Constants.MaxVisibleFriendsSupporter} friends in `friendsfm` (up from {Constants.MaxVisibleFriends})");
         thankYouMessage.AppendLine();
 
         thankYouMessage.AppendLine("🌐 **Community perks**");

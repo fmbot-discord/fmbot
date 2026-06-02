@@ -53,6 +53,7 @@ public class AlbumBuilders
     private readonly FeaturedService _featuredService;
     private readonly MusicDataFactory _musicDataFactory;
     private readonly AppleMusicVideoService _appleMusicVideoService;
+    private readonly FriendsService _friendsService;
 
     public AlbumBuilders(UserService userService,
         GuildService guildService,
@@ -71,7 +72,8 @@ public class AlbumBuilders
         PuppeteerService puppeteerService,
         WhoKnowsService whoKnowsService,
         FeaturedService featuredService,
-        MusicDataFactory musicDataFactory, AppleMusicVideoService appleMusicVideoService)
+        MusicDataFactory musicDataFactory, AppleMusicVideoService appleMusicVideoService,
+        FriendsService friendsService)
     {
         this._userService = userService;
         this._guildService = guildService;
@@ -92,6 +94,7 @@ public class AlbumBuilders
         this._featuredService = featuredService;
         this._musicDataFactory = musicDataFactory;
         this._appleMusicVideoService = appleMusicVideoService;
+        this._friendsService = friendsService;
     }
 
     public async Task<ResponseModel> AlbumAsync(ContextModel context,
@@ -508,11 +511,13 @@ public class AlbumBuilders
             footer.AppendLine(guildAlsoPlaying);
         }
 
+        var closeFriendUserIds = await this._friendsService.GetCloseFriendUserIdsAsync(context.ContextUser);
+
         if (mode == WhoKnowsResponseMode.Pagination)
         {
             var paginator = WhoKnowsService.CreateWhoKnowsPaginator(filteredUsersWithAlbum,
                 context.ContextUser.UserId, PrivacyLevel.Server, context.NumberFormat,
-                title, footer.ToString());
+                title, footer.ToString(), closeFriendUserIds: closeFriendUserIds);
 
             response.ResponseType = ResponseType.Paginator;
             response.ComponentPaginator = paginator;
@@ -521,7 +526,7 @@ public class AlbumBuilders
 
         var serverUsers =
             WhoKnowsService.WhoKnowsListToString(filteredUsersWithAlbum, context.ContextUser.UserId,
-                PrivacyLevel.Server, context.NumberFormat);
+                PrivacyLevel.Server, context.NumberFormat, closeFriendUserIds: closeFriendUserIds);
         if (filteredUsersWithAlbum.Count == 0)
         {
             serverUsers = "Nobody in this server (not even you) has listened to this album.";
@@ -671,11 +676,13 @@ public class AlbumBuilders
 
         footer += $"\nFriends WhoKnow album for {userTitle}";
 
+        var closeFriendUserIds = await this._friendsService.GetCloseFriendUserIdsAsync(context.ContextUser);
+
         if (mode == WhoKnowsResponseMode.Pagination)
         {
             var paginator = WhoKnowsService.CreateWhoKnowsPaginator(usersWithAlbum,
                 context.ContextUser.UserId, PrivacyLevel.Server, context.NumberFormat,
-                title, footer);
+                title, footer, closeFriendUserIds: closeFriendUserIds);
 
             response.ResponseType = ResponseType.Paginator;
             response.ComponentPaginator = paginator;
@@ -684,7 +691,7 @@ public class AlbumBuilders
 
         var serverUsers =
             WhoKnowsService.WhoKnowsListToString(usersWithAlbum, context.ContextUser.UserId, PrivacyLevel.Server,
-                context.NumberFormat);
+                context.NumberFormat, closeFriendUserIds: closeFriendUserIds);
         if (usersWithAlbum.Count == 0)
         {
             serverUsers = "None of your friends have listened to this album.";
@@ -813,11 +820,14 @@ public class AlbumBuilders
             footer.AppendLine($"{((int)avgPlaycount).Format(context.NumberFormat)} avg");
         }
 
+        var closeFriendUserIds = await this._friendsService.GetCloseFriendUserIdsAsync(context.ContextUser);
+
         if (settings.ResponseMode == WhoKnowsResponseMode.Pagination)
         {
             var paginator = WhoKnowsService.CreateWhoKnowsPaginator(filteredUsersWithAlbum,
                 context.ContextUser.UserId, privacyLevel, context.NumberFormat,
-                title, footer.ToString(), hidePrivateUsers: settings.HidePrivateUsers);
+                title, footer.ToString(), hidePrivateUsers: settings.HidePrivateUsers,
+                closeFriendUserIds: closeFriendUserIds);
 
             response.ResponseType = ResponseType.Paginator;
             response.ComponentPaginator = paginator;
@@ -825,7 +835,8 @@ public class AlbumBuilders
         }
 
         var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithAlbum, context.ContextUser.UserId,
-            privacyLevel, context.NumberFormat, hidePrivateUsers: settings.HidePrivateUsers);
+            privacyLevel, context.NumberFormat, hidePrivateUsers: settings.HidePrivateUsers,
+            closeFriendUserIds: closeFriendUserIds);
         if (filteredUsersWithAlbum.Count == 0)
         {
             serverUsers = "Nobody that uses .fmbot has listened to this album.";

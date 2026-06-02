@@ -249,7 +249,7 @@ public class GuildService
             var preFilterCount = users.Count;
 
             users = users
-                .Where(w => w.Value.Roles != null && !guild.BlockedRoles.Any(a => w.Value.Roles.Contains(a)))
+                .Where(w => w.Value.Roles == null || !guild.BlockedRoles.Any(a => w.Value.Roles.Contains(a)))
                 .ToDictionary(i => i.Key, i => i.Value);
 
             stats.BlockedRolesFiltered = preFilterCount - users.Count;

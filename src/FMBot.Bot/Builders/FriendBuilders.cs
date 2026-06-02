@@ -14,6 +14,7 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
@@ -45,54 +46,63 @@ public class FriendBuilders
         this._settingService = settingService;
     }
 
-    private record FriendResult(DateTime? timePlayed, string Result);
+    private record FriendResult(DateTime? TimePlayed, string Result);
 
     public async Task<ResponseModel> FriendsAsync(ContextModel context)
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed,
+            ResponseType = ResponseType.ComponentsV2,
         };
+
+        response.ComponentsContainer.WithAccentColor(DiscordConstants.LastFmColorRed);
 
         var friends = await this._friendsService.GetFriendsAsync(context.ContextUser.DiscordUserId);
 
         if (friends?.Any() != true)
         {
-            response.Embed.WithDescription("We couldn't find any friends. To add friends:\n" +
-                                           $"`{context.Prefix}friendsadd {Constants.UserMentionOrLfmUserNameExample.Replace("`", "")}`\n\n" +
-                                           $"Or right-click a user, go to apps and click 'Add as friend'");
+            response.ComponentsContainer.AddComponent(new TextDisplayProperties(
+                "We couldn't find any friends. To add friends:\n" +
+                $"`{context.Prefix}friendsadd {Constants.UserMentionOrLfmUserNameExample.Replace("`", "")}`\n\n" +
+                "Or right-click a user, go to apps and click 'Add as friend'.\n\n" +
+                "You can also sync your Last.fm friends — open **Manage** below."));
+            response.ComponentsContainer.AddComponent(FriendButtons());
             response.CommandResponse = CommandResponse.NotFound;
+            return response;
+        }
+
+        var visibleFriends = friends
+            .Where(f => f.FriendType >= FriendType.VisibleInNowPlaying)
+            .ToList();
+
+        if (visibleFriends.Count == 0)
+        {
+            response.ComponentsContainer.AddComponent(new TextDisplayProperties(
+                $"You have **{friends.Count}** {StringExtensions.GetFriendsString(friends.Count)}, but none of them are set to show here.\n\n" +
+                "Use **Manage** below to choose who appears in your now playing list."));
+            response.ComponentsContainer.AddComponent(FriendButtons());
             return response;
         }
 
         var guild = await this._guildService.GetGuildForWhoKnows(context.DiscordGuild?.Id);
 
-        var embedFooterText = "Amount of scrobbles of all your friends together: ";
-        string embedTitle;
-        if (friends.Count > 1)
+        var footerText = "Total scrobbles: ";
+        string title;
+        if (visibleFriends.Count > 1)
         {
-            embedTitle = $"Last songs for {friends.Count} friends from ";
+            title = $"Now playing for {visibleFriends.Count} friends from ";
         }
         else
         {
-            embedTitle = "Last songs for 1 friend from ";
-            embedFooterText = "Amount of scrobbles from your friend: ";
+            title = "Now playing for 1 friend from ";
+            footerText = "Total scrobbles: ";
         }
 
-        embedTitle += await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
-
-        response.EmbedAuthor.WithName(embedTitle);
-        if (!context.SlashCommand)
-        {
-            response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl()?.ToString());
-        }
-
-        response.EmbedAuthor.WithUrl(LastfmUrlExtensions.GetUserUrl(context.ContextUser.UserNameLastFM));
-        response.Embed.WithAuthor(response.EmbedAuthor);
+        title += await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
 
         var totalPlaycount = 0;
         var friendResult = new ConcurrentBag<FriendResult>();
-        await friends.ParallelForEachAsync(async friend =>
+        await visibleFriends.ParallelForEachAsync(async friend =>
         {
             var friendUsername = friend.FriendUser?.UserNameLastFM ?? friend.LastFMUserName;
             var friendNameToDisplay = friendUsername;
@@ -165,20 +175,36 @@ public class FriendBuilders
 
             friendResult.Add(new FriendResult(timePlayed,
                 $"**{StringExtensions.MarkdownLink(friendNameToDisplay, LastfmUrlExtensions.GetUserUrl(friendUsername))}** | {track}"));
-        }, maxDegreeOfParallelism: 5);
+        }, maxDegreeOfParallelism: 6);
 
-        response.EmbedFooter.WithText(embedFooterText + totalPlaycount.ToString("0"));
-        response.Embed.WithFooter(response.EmbedFooter);
-
-        var embedDescription = new StringBuilder();
-        foreach (var friend in friendResult.OrderByDescending(o => o.timePlayed).ThenBy(o => o.Result))
+        var friendsText = new StringBuilder();
+        foreach (var friend in friendResult.OrderByDescending(o => o.TimePlayed).ThenBy(o => o.Result))
         {
-            embedDescription.AppendLine(friend.Result);
+            friendsText.AppendLine(friend.Result);
         }
 
-        response.Embed.WithDescription(embedDescription.ToString());
+        response.ComponentsContainer.AddComponent(new TextDisplayProperties($"### {title}"));
+        response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
+        response.ComponentsContainer.AddComponent(new TextDisplayProperties(friendsText.ToString().TrimEnd()));
+        response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
+        response.ComponentsContainer.AddComponent(new ComponentSectionProperties(
+            new ButtonProperties(InteractionConstants.Friends.Overview, "Manage", ButtonStyle.Secondary))
+        {
+            Components =
+            [
+                new TextDisplayProperties($"-# {footerText}{totalPlaycount:0}")
+            ]
+        });
 
         return response;
+    }
+
+    private static ActionRowProperties FriendButtons()
+    {
+        return new ActionRowProperties()
+            .WithButton("Manage",
+                customId: InteractionConstants.Friends.Overview,
+                style: ButtonStyle.Secondary);
     }
 
     public async Task<ResponseModel> AddFriendsAsync(ContextModel context, string[] enteredFriends)
@@ -188,11 +214,15 @@ public class FriendBuilders
             ResponseType = ResponseType.ComponentsV2,
         };
 
-        var addedFriendsList = new List<string>();
+        var addedFriendsList = new List<(string Name, FriendType Type)>();
         var friendNotFoundList = new List<string>();
-        var duplicateFriendsList = new List<string>();
+        var duplicateFriendsList = new List<(string Name, FriendType Type)>();
 
         var existingFriends = await this._friendsService.GetFriendsAsync(context.DiscordUser.Id);
+
+        var isSupporter = context.ContextUser.UserType != UserType.User;
+        var visibleCap = isSupporter ? Constants.MaxVisibleFriendsSupporter : Constants.MaxVisibleFriends;
+        var visibleCount = existingFriends.Count(f => f.FriendType >= FriendType.VisibleInNowPlaying);
 
         var friendLimitReached = false;
 
@@ -228,12 +258,23 @@ public class FriendBuilders
             {
                 if (await this._dataSourceFactory.LastFmUserExistsAsync(friendUsername))
                 {
-                    await this._friendsService.AddLastFmFriendAsync(context.ContextUser, friendUsername, friendUserId);
-                    addedFriendsList.Add(friendUsername);
+                    var friendType = visibleCount < visibleCap
+                        ? FriendType.VisibleInNowPlaying
+                        : FriendType.Normal;
+
+                    await this._friendsService.AddLastFmFriendAsync(context.ContextUser, friendUsername,
+                        friendUserId, friendType);
+                    addedFriendsList.Add((friendUsername, friendType));
                     existingFriends.Add(new Friend
                     {
-                        LastFMUserName = friendUsername
+                        LastFMUserName = friendUsername,
+                        FriendType = friendType
                     });
+
+                    if (friendType == FriendType.VisibleInNowPlaying)
+                    {
+                        visibleCount++;
+                    }
                 }
                 else
                 {
@@ -242,67 +283,77 @@ public class FriendBuilders
             }
             else
             {
-                duplicateFriendsList.Add(friendUsername);
+                var existingMatch = existingFriends.FirstOrDefault(w =>
+                    w.LastFMUserName?.ToLower() == friendUsername.ToLower() ||
+                    w.FriendUser?.UserNameLastFM?.ToLower() == friendUsername.ToLower());
+                duplicateFriendsList.Add((friendUsername, existingMatch?.FriendType ?? FriendType.Normal));
             }
         }
 
-        var sectionCount = 0;
+        var body = new StringBuilder();
 
         if (addedFriendsList.Count > 0)
         {
-            var section = new StringBuilder();
-            section.AppendLine(
+            body.AppendLine(
                 $"Successfully added {addedFriendsList.Count} {StringExtensions.GetFriendsString(addedFriendsList.Count)}:");
             foreach (var addedFriend in addedFriendsList)
             {
-                section.AppendLine($"- *[{addedFriend}]({LastfmUrlExtensions.GetUserUrl(addedFriend)})*");
+                var typeNote = addedFriend.Type == FriendType.VisibleInNowPlaying
+                    ? "👁️ Visible in all friends commands including `friendsfm`"
+                    : "👥 Visible in all friends commands except `friendsfm`";
+                body.AppendLine(
+                    $"- *[{addedFriend.Name}]({LastfmUrlExtensions.GetUserUrl(addedFriend.Name)})* — {typeNote}");
             }
-
-            response.ComponentsContainer.AddComponent(new TextDisplayProperties(section.ToString().TrimEnd()));
-            sectionCount++;
         }
 
         if (friendNotFoundList.Count > 0)
         {
-            if (sectionCount > 0)
+            if (body.Length > 0)
             {
-                response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
+                body.AppendLine();
             }
 
-            var section = new StringBuilder();
-            section.AppendLine(
+            body.AppendLine(
                 $"Could not add {friendNotFoundList.Count} {StringExtensions.GetFriendsString(friendNotFoundList.Count)}. Ensure they are registered in .fmbot and their Last.fm is not set to private.");
             foreach (var notFoundFriend in friendNotFoundList)
             {
-                section.AppendLine($"- *[{notFoundFriend}]({LastfmUrlExtensions.GetUserUrl(notFoundFriend)})*");
+                body.AppendLine($"- *[{notFoundFriend}]({LastfmUrlExtensions.GetUserUrl(notFoundFriend)})*");
             }
-
-            response.ComponentsContainer.AddComponent(new TextDisplayProperties(section.ToString().TrimEnd()));
-            sectionCount++;
         }
 
         if (duplicateFriendsList.Count > 0)
         {
-            if (sectionCount > 0)
+            if (body.Length > 0)
             {
-                response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
+                body.AppendLine();
             }
 
-            var section = new StringBuilder();
-            section.AppendLine(
+            body.AppendLine(
                 $"Could not add {duplicateFriendsList.Count} {StringExtensions.GetFriendsString(duplicateFriendsList.Count)} because you already have them added:");
             foreach (var dupeFriend in duplicateFriendsList)
             {
-                section.AppendLine($"- *[{dupeFriend}]({LastfmUrlExtensions.GetUserUrl(dupeFriend)})*");
+                var typeNote = dupeFriend.Type switch
+                {
+                    FriendType.CloseFriend => "⭐ Close friend",
+                    FriendType.VisibleInNowPlaying => "👁️ Visible in all friends commands including `friendsfm`",
+                    _ => "👥 Visible in all friends commands except `friendsfm`"
+                };
+                body.AppendLine(
+                    $"- *[{dupeFriend.Name}]({LastfmUrlExtensions.GetUserUrl(dupeFriend.Name)})* — {typeNote}");
             }
+        }
 
-            response.ComponentsContainer.AddComponent(new TextDisplayProperties(section.ToString().TrimEnd()));
-            sectionCount++;
+        if (body.Length > 0)
+        {
+            response.ComponentsContainer.AddComponent(new TextDisplayProperties(body.ToString().TrimEnd()));
+            response.ComponentsContainer.AddComponent(new ActionRowProperties()
+                .WithButton("Manage friends", customId: InteractionConstants.Friends.Overview,
+                    style: ButtonStyle.Secondary));
         }
 
         if (friendLimitReached)
         {
-            if (sectionCount > 0)
+            if (body.Length > 0)
             {
                 response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
             }
@@ -373,150 +424,43 @@ public class FriendBuilders
             }
         }
 
-        var sectionCount = 0;
+        var body = new StringBuilder();
 
         if (removedFriendsList.Count > 0)
         {
-            var section = new StringBuilder();
-            section.AppendLine($"Successfully removed {removedFriendsList.Count} friend(s):");
+            body.AppendLine($"Successfully removed {removedFriendsList.Count} friend(s):");
             foreach (var removedFriend in removedFriendsList)
             {
-                section.AppendLine($"- *[{removedFriend}]({LastfmUrlExtensions.GetUserUrl(removedFriend)})*");
+                body.AppendLine($"- *[{removedFriend}]({LastfmUrlExtensions.GetUserUrl(removedFriend)})*");
             }
-
-            response.ComponentsContainer.AddComponent(new TextDisplayProperties(section.ToString().TrimEnd()));
-            sectionCount++;
         }
 
         if (failedRemoveFriends.Count > 0)
         {
-            if (sectionCount > 0)
+            if (body.Length > 0)
             {
-                response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
+                body.AppendLine();
             }
 
-            var section = new StringBuilder();
-            section.AppendLine($"Could not remove {failedRemoveFriends.Count} friend(s):");
+            body.AppendLine($"Could not remove {failedRemoveFriends.Count} friend(s):");
             foreach (var failedRemovedFriend in failedRemoveFriends)
             {
-                section.AppendLine($"- *[{failedRemovedFriend}]({LastfmUrlExtensions.GetUserUrl(failedRemovedFriend)})*");
+                body.AppendLine($"- *[{failedRemovedFriend}]({LastfmUrlExtensions.GetUserUrl(failedRemovedFriend)})*");
             }
-
-            response.ComponentsContainer.AddComponent(new TextDisplayProperties(section.ToString().TrimEnd()));
-            sectionCount++;
         }
 
         if (removedFriendsList.Count == 0 && failedRemoveFriends.Count == 0)
         {
-            if (contextCommand)
-            {
-                response.ComponentsContainer.AddComponent(new TextDisplayProperties(
-                    "Could not find that user in your friend list."));
-            }
-            else
-            {
-                response.ComponentsContainer.AddComponent(new TextDisplayProperties(
-                    "Could not find any friends to remove. Please enter their Last.fm username, mention them or use their Discord id."));
-            }
+            body.AppendLine(contextCommand
+                ? "Could not find that user in your friend list."
+                : "Could not find any friends to remove. Please enter their Last.fm username, mention them or use their Discord id.");
         }
 
-        return response;
-    }
+        response.ComponentsContainer.AddComponent(new TextDisplayProperties(body.ToString().TrimEnd()));
+        response.ComponentsContainer.AddComponent(new ActionRowProperties()
+            .WithButton("Manage friends", customId: InteractionConstants.Friends.Overview,
+                style: ButtonStyle.Secondary));
 
-    public async Task<ResponseModel> LastFmFriendsAsync(ContextModel context, string targetLastFmUserName = null)
-    {
-        var response = new ResponseModel
-        {
-            ResponseType = ResponseType.Paginator,
-        };
-
-        if (string.IsNullOrWhiteSpace(context.ContextUser?.SessionKeyLastFm))
-        {
-            response.Embed.WithDescription(
-                "Your Last.fm account is not linked. Use `/login` to connect your account first.");
-            response.CommandResponse = CommandResponse.UsernameNotSet;
-            response.ResponseType = ResponseType.Embed;
-            return response;
-        }
-
-        var username = !string.IsNullOrWhiteSpace(targetLastFmUserName)
-            ? targetLastFmUserName
-            : context.ContextUser.UserNameLastFM;
-
-        var friendsResponse = await this._dataSourceFactory.GetFriendsAsync(
-            username, context.ContextUser.SessionKeyLastFm, limit: 200);
-
-        if (!friendsResponse.Success || friendsResponse.Content == null)
-        {
-            response.Embed.WithDescription(
-                $"Last.fm returned an error fetching friends for **{username}**: {friendsResponse.Message ?? friendsResponse.Error?.ToString() ?? "unknown error"}");
-            response.CommandResponse = CommandResponse.LastFmError;
-            response.ResponseType = ResponseType.Embed;
-            return response;
-        }
-
-        var friends = friendsResponse.Content.Friends ?? [];
-
-        response.EmbedAuthor.WithName($"Last.fm friends for {username}");
-        response.EmbedAuthor.WithUrl(LastfmUrlExtensions.GetUserUrl(username, "/following"));
-
-        if (friends.Count == 0)
-        {
-            response.Embed.WithAuthor(response.EmbedAuthor);
-            response.Embed.WithDescription($"**{username}** has no friends on Last.fm, or their friends list is private.");
-            response.CommandResponse = CommandResponse.NotFound;
-            response.ResponseType = ResponseType.Embed;
-            return response;
-        }
-
-        var pages = new List<PageBuilder>();
-        var friendPages = friends.ChunkBy(10);
-        var counter = 1;
-        var pageCounter = 1;
-        foreach (var friendPage in friendPages)
-        {
-            var pageBody = new StringBuilder();
-            foreach (var friend in friendPage)
-            {
-                var profileUrl = !string.IsNullOrWhiteSpace(friend.Url)
-                    ? friend.Url
-                    : LastfmUrlExtensions.GetUserUrl(friend.UserName);
-
-                pageBody.Append(
-                    $"{counter}. **{StringExtensions.MarkdownLink(friend.UserName, profileUrl)}**");
-
-                if (!string.IsNullOrWhiteSpace(friend.RealName))
-                {
-                    pageBody.Append($" — *{friend.RealName}*");
-                }
-
-                if (friend.Subscriber)
-                {
-                    pageBody.Append(" · `pro`");
-                }
-
-                pageBody.AppendLine();
-                pageBody.AppendLine(
-                    $"-# " +
-                    (string.IsNullOrWhiteSpace(friend.Country) ? "" : $" · {friend.Country}") +
-                    (friend.RegisteredUnix > 0
-                        ? $" · joined <t:{friend.RegisteredUnix}:D>"
-                        : ""));
-
-                pageBody.AppendLine();
-                counter++;
-            }
-
-            pages.Add(new PageBuilder()
-                .WithDescription(pageBody.ToString().TrimEnd())
-                .WithAuthor(response.EmbedAuthor)
-                .WithFooter(
-                    $"Page {pageCounter}/{friendPages.Count} — Showing {friends.Count} of {friendsResponse.Content.TotalAmount} friends"));
-
-            pageCounter++;
-        }
-
-        response.ComponentPaginator = StringService.BuildComponentPaginator(pages);
         return response;
     }
 
@@ -573,5 +517,272 @@ public class FriendBuilders
 
         response.ComponentPaginator = StringService.BuildComponentPaginator(pages);
         return response;
+    }
+
+    public async Task<ResponseModel> ManageFriendsAsync(ContextModel context, int page = 0, string note = null,
+        bool noteSuccess = false)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.ComponentsV2,
+        };
+
+        var friends = await this._friendsService.GetFriendsAsync(context.ContextUser.DiscordUserId);
+
+        var isSupporter = context.ContextUser.UserType != UserType.User;
+        var totalCap = isSupporter ? Constants.MaxFriendsSupporter : Constants.MaxFriends;
+        var visibleCap = isSupporter ? Constants.MaxVisibleFriendsSupporter : Constants.MaxVisibleFriends;
+        var visibleCount = friends.Count(f => f.FriendType >= FriendType.VisibleInNowPlaying);
+        var closeCount = friends.Count(f => f.FriendType == FriendType.CloseFriend);
+
+        response.ComponentsContainer.WithAccentColor(string.IsNullOrWhiteSpace(note)
+            ? DiscordConstants.InformationColorBlue
+            : noteSuccess
+                ? DiscordConstants.SuccessColorGreen
+                : DiscordConstants.WarningColorOrange);
+
+        var header = $"-# {friends.Count}/{totalCap} friends · {visibleCount}/{visibleCap} shown in now playing";
+        if (isSupporter)
+        {
+            header += $" · {closeCount}/{Constants.MaxCloseFriends} close friends";
+        }
+
+        response.ComponentsContainer.AddComponent(new TextDisplayProperties(
+            "## 👥 Manage friends\n" + header));
+
+        if (friends.Count == 0)
+        {
+            response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
+            response.ComponentsContainer.AddComponent(new TextDisplayProperties(
+                "You don't have any friends yet. Add some with `addfriends`, or sync them from Last.fm below."));
+            AddLastFmSection(response, note);
+            return response;
+        }
+
+        const int pageSize = 8;
+        var totalPages = (int)Math.Ceiling(friends.Count / (double)pageSize);
+        if (page < 0)
+        {
+            page = 0;
+        }
+        if (page >= totalPages)
+        {
+            page = totalPages - 1;
+        }
+
+        var pageFriends = friends
+            .OrderByDescending(o => o.FriendType)
+            .ThenBy(o => o.LastFmFriend)
+            .ThenBy(o => o.FriendUser?.UserNameLastFM ?? o.LastFMUserName)
+            .Skip(page * pageSize)
+            .Take(pageSize)
+            .ToList();
+
+        response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
+
+        foreach (var friend in pageFriends)
+        {
+            var friendName = friend.FriendUser?.UserNameLastFM ?? friend.LastFMUserName;
+            var typeLabel = friend.FriendType switch
+            {
+                FriendType.CloseFriend => "⭐ Close friend - always visible",
+                FriendType.VisibleInNowPlaying => "👁️ Visible in all friend commands",
+                _ => "👥 Visible in commands"
+            };
+            var lastFmTag = friend.LastFmFriend ? " · `Last.fm`" : "";
+
+            response.ComponentsContainer.AddComponent(new ComponentSectionProperties(
+                new ButtonProperties($"{InteractionConstants.Friends.Manage}:{friend.FriendId}:{page}",
+                    EmojiProperties.Standard("⚙️"), ButtonStyle.Secondary))
+            {
+                Components =
+                [
+                    new TextDisplayProperties(
+                        $"**{StringExtensions.MarkdownLink(friendName, LastfmUrlExtensions.GetUserUrl(friendName))}**\n" +
+                        $"-# {typeLabel}{lastFmTag}")
+                ]
+            });
+        }
+
+        if (totalPages > 1)
+        {
+            response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
+
+            var navRow = new ActionRowProperties();
+            navRow.Add(new ButtonProperties(
+                $"{InteractionConstants.Friends.OverviewPage}:first:0",
+                EmojiProperties.Custom(DiscordConstants.PagesFirst), ButtonStyle.Secondary) { Disabled = page == 0 });
+            navRow.Add(new ButtonProperties(
+                $"{InteractionConstants.Friends.OverviewPage}:prev:{page - 1}",
+                EmojiProperties.Custom(DiscordConstants.PagesPrevious), ButtonStyle.Secondary) { Disabled = page == 0 });
+            navRow.Add(new ButtonProperties(
+                $"{InteractionConstants.Friends.OverviewPage}:current:{page}",
+                $"{page + 1}/{totalPages}", ButtonStyle.Secondary) { Disabled = true });
+            navRow.Add(new ButtonProperties(
+                $"{InteractionConstants.Friends.OverviewPage}:next:{page + 1}",
+                EmojiProperties.Custom(DiscordConstants.PagesNext), ButtonStyle.Secondary) { Disabled = page >= totalPages - 1 });
+            navRow.Add(new ButtonProperties(
+                $"{InteractionConstants.Friends.OverviewPage}:last:{totalPages - 1}",
+                EmojiProperties.Custom(DiscordConstants.PagesLast), ButtonStyle.Secondary) { Disabled = page >= totalPages - 1 });
+            response.ComponentsContainer.AddComponent(navRow);
+        }
+
+        AddLastFmSection(response, note);
+
+        return response;
+    }
+
+    private static void AddLastFmSection(ResponseModel response, string note)
+    {
+        response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
+
+        var text = "**Sync Last.fm friends**";
+        text += !string.IsNullOrWhiteSpace(note)
+            ? $"\n{note}"
+            : "\n-# People you follow on Last.fm";
+
+        response.ComponentsContainer.AddComponent(new ComponentSectionProperties(
+            new ButtonProperties(InteractionConstants.Friends.Sync, "Sync", ButtonStyle.Secondary))
+        {
+            Components =
+            [
+                new TextDisplayProperties(text)
+            ]
+        });
+    }
+
+    public async Task<string> SetFriendTypeAsync(ContextModel context, int friendId, FriendType newType)
+    {
+        var friends = await this._friendsService.GetFriendsAsync(context.ContextUser.DiscordUserId);
+        var friend = friends.FirstOrDefault(f => f.FriendId == friendId);
+
+        if (friend == null)
+        {
+            return "This friend could not be found.";
+        }
+
+        if (friend.FriendType == newType)
+        {
+            return null;
+        }
+
+        var isSupporter = context.ContextUser.UserType != UserType.User;
+        var visibleCap = isSupporter ? Constants.MaxVisibleFriendsSupporter : Constants.MaxVisibleFriends;
+        var visibleCount = friends.Count(f => f.FriendId != friendId && f.FriendType >= FriendType.VisibleInNowPlaying);
+        var closeCount = friends.Count(f => f.FriendId != friendId && f.FriendType == FriendType.CloseFriend);
+
+        if (newType == FriendType.CloseFriend)
+        {
+            if (!isSupporter)
+            {
+                return $"**Close friends are [a Supporter perk]({Constants.GetSupporterOverviewLink}).** They're always shown in your now playing list and pinned in WhoKnows regardless of their position.";
+            }
+            if (closeCount >= Constants.MaxCloseFriends)
+            {
+                return $"You can have at most **{Constants.MaxCloseFriends}** close friends. Change another close friend's type first.";
+            }
+            if (visibleCount >= visibleCap)
+            {
+                return $"You can show at most **{visibleCap}** friends in your now playing list. Hide another friend first.";
+            }
+        }
+        else if (newType == FriendType.VisibleInNowPlaying && visibleCount >= visibleCap)
+        {
+            var supporterHint = isSupporter ? "" : $" Supporters can show up to {Constants.MaxVisibleFriendsSupporter}.";
+            return $"You can show at most **{visibleCap}** friends in your now playing list. Hide another friend first.{supporterHint}";
+        }
+
+        await this._friendsService.SetFriendTypeAsync(friendId, newType);
+        return null;
+    }
+
+    public async Task<string> RemoveFriendAsync(ContextModel context, int friendId)
+    {
+        var friends = await this._friendsService.GetFriendsAsync(context.ContextUser.DiscordUserId);
+        var friend = friends.FirstOrDefault(f => f.FriendId == friendId);
+
+        if (friend == null)
+        {
+            return "This friend could not be found.";
+        }
+
+        var friendName = friend.FriendUser?.UserNameLastFM ?? friend.LastFMUserName;
+        await this._friendsService.RemoveFriendByIdAsync(friendId);
+
+        return $"Removed **{friendName}** from your friends.";
+    }
+
+    public async Task<(string Note, bool Success)> SyncLastFmFriendsAsync(ContextModel context)
+    {
+        var existingFriends = await this._friendsService.GetFriendsAsync(context.ContextUser.DiscordUserId);
+        var isSupporter = context.ContextUser.UserType != UserType.User;
+        var totalCap = isSupporter ? Constants.MaxFriendsSupporter : Constants.MaxFriends;
+
+        var remainingSlots = totalCap - existingFriends.Count;
+        if (remainingSlots <= 0)
+        {
+            return ($"You've reached your friend limit of **{totalCap}**, so no Last.fm friends were synced.", false);
+        }
+
+        var friendsResponse = await this._dataSourceFactory.GetFriendsAsync(context.ContextUser.UserNameLastFM);
+
+        if (!friendsResponse.Success || friendsResponse.Content?.Friends == null)
+        {
+            return ("Last.fm returned an error while fetching your friends. Please try again later.", false);
+        }
+
+        var existingNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var existing in existingFriends)
+        {
+            if (existing.LastFMUserName != null)
+            {
+                existingNames.Add(existing.LastFMUserName);
+            }
+            if (existing.FriendUser?.UserNameLastFM != null)
+            {
+                existingNames.Add(existing.FriendUser.UserNameLastFM);
+            }
+        }
+
+        var candidateNames = friendsResponse.Content.Friends
+            .Where(f => !string.IsNullOrWhiteSpace(f.UserName) && !existingNames.Contains(f.UserName))
+            .Select(f => f.UserName)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var registeredUserIds = await this._friendsService.GetRegisteredUserIdsAsync(candidateNames);
+        var toAdd = candidateNames.Where(n => registeredUserIds.ContainsKey(n.ToLower())).ToList();
+
+        if (toAdd.Count == 0)
+        {
+            return ("No friends to add - none of your Last.fm friends use .fmbot, or you've already added the ones that do.", false);
+        }
+
+        var capped = toAdd.Count > remainingSlots;
+        if (capped)
+        {
+            toAdd = toAdd.Take(remainingSlots).ToList();
+        }
+
+        var added = await this._friendsService.AddLastFmFriendsAsync(context.ContextUser, toAdd, registeredUserIds);
+
+        var note =
+            $"Added **{added}** {StringExtensions.GetFriendsString(added)} from Last.fm. " +
+            "Use ⚙️ to adjust their visibility.";
+        if (capped)
+        {
+            note += $"\nSome friends weren't added because you reached your limit of **{totalCap}** friends.";
+        }
+
+        return (note, true);
+    }
+
+    public async Task<(string Note, bool Success)> RemoveSyncedLastFmFriendsAsync(ContextModel context)
+    {
+        var removed = await this._friendsService.RemoveSyncedLastFmFriendsAsync(context.ContextUser.UserId);
+
+        return removed == 0
+            ? ("No synced Last.fm friends to remove.", false)
+            : ($"Removed **{removed}** synced Last.fm {StringExtensions.GetFriendsString(removed)}.", true);
     }
 }

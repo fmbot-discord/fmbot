@@ -48,8 +48,13 @@ public static class Constants
     public const int FeaturedMinute = 0;
     public const int DaysLastUsedForFeatured = 1;
 
-    public const int MaxFriends = 12;
-    public const int MaxFriendsSupporter = 18;
+    public const int MaxFriends = 80;
+    public const int MaxFriendsSupporter = 240;
+
+    public const int MaxVisibleFriends = 12;
+    public const int MaxVisibleFriendsSupporter = 24;
+
+    public const int MaxCloseFriends = 4;
 
     public const int MaxFooterOptions = 4;
     public const int MaxFooterOptionsSupporter = 10;

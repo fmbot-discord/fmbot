@@ -785,8 +785,8 @@ public class GameBuilders
                             m.Embeds = [response.Embed];
                             m.Attachments = response.Stream != null
                                 ? [new AttachmentProperties(response.Spoiler
-                                    ? $"SPOILER_{response.FileName}.png"
-                                    : $"{response.FileName}.png", response.Stream)]
+                                    ? $"SPOILER_{response.FileName}"
+                                    : response.FileName, response.Stream)]
                                 : null;
                         });
                     }

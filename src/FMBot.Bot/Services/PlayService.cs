@@ -1157,7 +1157,9 @@ public class PlayService
             .Where(w => w.TimePlayed != null)
             .MinBy(o => o.TimePlayed);
 
-        var playsToAdd = plays.Where(w => w.TimePlayed < firstRecentTrack.TimePlayed);
+        var playsToAdd = firstRecentTrack == null
+            ? Enumerable.Empty<UserPlay>()
+            : plays.Where(w => w.TimePlayed < firstRecentTrack.TimePlayed);
 
         foreach (var play in playsToAdd)
         {

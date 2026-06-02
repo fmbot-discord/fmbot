@@ -324,7 +324,7 @@ public class FeaturedService
 
     public async Task<List<FeaturedLog>> GetArtistFeaturedHistory(string artistName)
     {
-        const string sql = "SELECT * FROM public.featured_logs where UPPER(artist_name) = UPPER(@artistName) ";
+        const string sql = "SELECT * FROM public.featured_logs where UPPER(artist_name) = UPPER(@artistName) AND has_featured = true ";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);

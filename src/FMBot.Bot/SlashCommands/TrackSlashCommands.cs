@@ -55,7 +55,9 @@ public class TrackSlashCommands(
         }
     }
 
-    [SlashCommand("wktrack", "Shows what other users listen to a track in your server")]
+    [SlashCommand("wktrack", "Shows what other users listen to a track in your server",
+        Contexts = [InteractionContextType.Guild],
+        IntegrationTypes = [ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task WhoKnowsTrackAsync(
         [SlashCommandParameter(Name = "track",

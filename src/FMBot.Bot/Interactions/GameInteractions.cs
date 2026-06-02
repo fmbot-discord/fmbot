@@ -52,6 +52,7 @@ public class GameInteractions(
     }
 
     [ComponentInteraction(InteractionConstants.Game.JumbleGiveUp)]
+    [UsernameSetRequired]
     public async Task JumbleGiveUp(string gameId)
     {
         var parsedGameId = int.Parse(gameId);

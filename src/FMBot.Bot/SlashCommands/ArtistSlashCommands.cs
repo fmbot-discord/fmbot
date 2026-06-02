@@ -215,10 +215,11 @@ public class ArtistSlashCommands(
         Monthly = 2
     }
 
-    [SlashCommand("whoknows", "Shows what other users listen to an artist in your server")]
+    [SlashCommand("whoknows", "Shows what other users listen to an artist in your server",
+        Contexts = [InteractionContextType.Guild],
+        IntegrationTypes = [ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     [RequiresIndex]
-    [GuildOnly]
     public async Task WhoKnowsAsync(
         [SlashCommandParameter(Name = "artist", Description = "The artist you want to search for (defaults to currently playing)",
             AutocompleteProviderType = typeof(ArtistAutoComplete))]
@@ -415,10 +416,11 @@ public class ArtistSlashCommands(
         }
     }
 
-    [SlashCommand("affinity", "Shows users from this server with similar top artists.")]
+    [SlashCommand("affinity", "Shows users from this server with similar top artists.",
+        Contexts = [InteractionContextType.Guild],
+        IntegrationTypes = [ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     [RequiresIndex]
-    [GuildOnly]
     public async Task AffinityAsync([SlashCommandParameter(Name = "user", Description = "The user to get the affinity for")] string user = null)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());

@@ -412,8 +412,11 @@ public class ChartService
 
         if (format == SKEncodedImageFormat.Png)
         {
-            var chartImage = SKBitmap.Decode(stream);
-            await SaveImageToCache(chartImage, cacheFilePath);
+            using var chartImage = SKBitmap.Decode(stream);
+            if (chartImage != null)
+            {
+                await SaveImageToCache(chartImage, cacheFilePath);
+            }
         }
         else
         {

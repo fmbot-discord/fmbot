@@ -20,7 +20,7 @@ public class GuidConverter : JsonConverter<Guid?>
                 }
                 else
                 {
-                    return new Guid(str);
+                    return Guid.TryParse(str, out var guid) ? guid : (Guid?)null;
                 }
             default:
                 throw new ArgumentException("Invalid token type");

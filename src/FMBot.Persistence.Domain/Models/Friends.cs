@@ -1,4 +1,7 @@
 
+using System;
+using FMBot.Domain.Enums;
+
 namespace FMBot.Persistence.Domain.Models;
 
 public class Friend
@@ -11,7 +14,16 @@ public class Friend
 
     public int? FriendUserId { get; set; }
 
+    public bool LastFmFriend { get; set; }
+
+    public FriendType FriendType { get; set; }
+
+    public DateTime? Created { get; set; }
+
+    public DateTime? Modified { get; set; }
+
     public User FriendUser { get; set; }
 
     public User User { get; set; }
 }
+

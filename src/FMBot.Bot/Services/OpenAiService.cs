@@ -279,6 +279,11 @@ public class OpenAiService
 
             var response = await SendRequest(prompt.Prompt, userMessage: promptBuilder.ToString());
 
+            if (string.IsNullOrWhiteSpace(response?.Output))
+            {
+                return null;
+            }
+
             this._cache.Set(cacheKey, response.Output, TimeSpan.FromHours(2));
 
             return response.Output;
