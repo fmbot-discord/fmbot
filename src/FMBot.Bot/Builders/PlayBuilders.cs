@@ -247,15 +247,21 @@ public class PlayBuilder
         var trackLastPlayDate = await trackLastPlayDateTask;
         var albumLastPlayDate = await albumLastPlayDateTask;
 
-        var noResult = "Just now";
+        var noResult = "First time";
         if (!string.IsNullOrWhiteSpace(searchValue))
         {
             noResult = "No plays yet";
         }
 
+        var dateStyle = "D";
+        if (artistLastPlay != null && artistLastPlay.TimePlayed >= DateTime.UtcNow.AddDays(-30))
+        {
+            dateStyle = "f";
+        }
+
         var description = new StringBuilder();
         description.Append(
-            $"**{(artistLastPlay?.TimePlayed != null ? $"<t:{artistLastPlay.TimePlayed.ToUnixEpochDate()}:D>" : noResult)}**");
+            $"**{(artistLastPlay?.TimePlayed != null ? $"<t:{artistLastPlay.TimePlayed.ToUnixEpochDate()}:{dateStyle}>" : noResult)}**");
         description.Append(
             $" — **{StringExtensions.MarkdownLink(trackSearch.Track.ArtistName, LastfmUrlExtensions.GetArtistUrl(trackSearch.Track.ArtistName))}**");
         description.AppendLine();
@@ -263,7 +269,7 @@ public class PlayBuilder
         if (!string.IsNullOrEmpty(albumName))
         {
             description.Append(
-                $"**{(albumLastPlayDate.HasValue ? $"<t:{albumLastPlayDate.Value.ToUnixEpochDate()}:D>" : noResult)}**");
+                $"**{(albumLastPlayDate.HasValue ? $"<t:{albumLastPlayDate.Value.ToUnixEpochDate()}:{dateStyle}>" : noResult)}**");
             description.Append(
                 $" — **{StringExtensions.MarkdownLink(albumName, LastfmUrlExtensions.GetAlbumUrl(trackSearch.Track.ArtistName, albumName))}**");
             description.AppendLine();
@@ -275,7 +281,7 @@ public class PlayBuilder
         }
 
         description.Append(
-            $"**{(trackLastPlayDate.HasValue ? $"<t:{trackLastPlayDate.Value.ToUnixEpochDate()}:D>" : noResult)}**");
+            $"**{(trackLastPlayDate.HasValue ? $"<t:{trackLastPlayDate.Value.ToUnixEpochDate()}:{dateStyle}>" : noResult)}**");
         description.Append(
             $" — **{StringExtensions.MarkdownLink(trackName, LastfmUrlExtensions.GetTrackUrl(trackSearch.Track.ArtistName, trackName))}**");
         description.AppendLine();
