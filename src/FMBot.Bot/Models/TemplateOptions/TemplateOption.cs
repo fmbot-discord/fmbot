@@ -1251,6 +1251,87 @@ public static class TemplateOptions
                 var timestamp = ((DateTimeOffset)DateTime.SpecifyKind(firstPlay.Value, DateTimeKind.Utc)).ToUnixTimeSeconds();
                 return new VariableResult($"Track discovered <t:{timestamp}:D>", $"<t:{timestamp}:D>");
             }
+        },
+        new ComplexTemplateOption
+        {
+            FooterOption = FmFooterOption.LastArtistListen,
+            Variable = "lastlisten.artist-lastlistened",
+            Description = "Artist last listened date",
+            VariableType = VariableType.Text,
+            FooterOrder = 830,
+            ExecutionLogic = async context =>
+            {
+                if (!SupporterService.IsSupporter(context.UserSettings.UserType))
+                {
+                    return null;
+                }
+
+                var lastPlay =
+                    await context.PlayService.GetArtistLastPlayDate(context.UserSettings.UserId,
+                        context.CurrentTrack.ArtistName);
+                if (lastPlay == null) return null;
+
+                var firstPlay =
+                    await context.PlayService.GetArtistFirstPlayDate(context.UserSettings.UserId,
+                        context.CurrentTrack.ArtistName);
+                if (firstPlay != null && firstPlay.Value.Date == lastPlay.Value.Date) return null;
+
+                var timestamp = ((DateTimeOffset)DateTime.SpecifyKind(lastPlay.Value, DateTimeKind.Utc)).ToUnixTimeSeconds();
+                return new VariableResult($"Artist last listened <t:{timestamp}:D>", $"<t:{timestamp}:D>");
+            }
+        },
+        new ComplexTemplateOption
+        {
+            FooterOption = FmFooterOption.LastAlbumListen,
+            Variable = "lastlisten.album-lastlistened",
+            Description = "Album last listened date",
+            VariableType = VariableType.Text,
+            FooterOrder = 840,
+            ExecutionLogic = async context =>
+            {
+                if (!SupporterService.IsSupporter(context.UserSettings.UserType) ||
+                    context.CurrentTrack.AlbumName == null)
+                {
+                    return null;
+                }
+
+                var lastPlay = await context.PlayService.GetAlbumLastPlayDate(context.UserSettings.UserId,
+                    context.CurrentTrack.ArtistName, context.CurrentTrack.AlbumName);
+                if (lastPlay == null) return null;
+
+                var firstPlay = await context.PlayService.GetAlbumFirstPlayDate(context.UserSettings.UserId,
+                    context.CurrentTrack.ArtistName, context.CurrentTrack.AlbumName);
+                if (firstPlay != null && firstPlay.Value.Date == lastPlay.Value.Date) return null;
+
+                var timestamp = ((DateTimeOffset)DateTime.SpecifyKind(lastPlay.Value, DateTimeKind.Utc)).ToUnixTimeSeconds();
+                return new VariableResult($"Album last listened <t:{timestamp}:D>", $"<t:{timestamp}:D>");
+            }
+        },
+        new ComplexTemplateOption
+        {
+            FooterOption = FmFooterOption.LastTrackListen,
+            Variable = "lastlisten.track-lastlistened",
+            Description = "Track last listened date",
+            VariableType = VariableType.Text,
+            FooterOrder = 850,
+            ExecutionLogic = async context =>
+            {
+                if (!SupporterService.IsSupporter(context.UserSettings.UserType))
+                {
+                    return null;
+                }
+
+                var lastPlay = await context.PlayService.GetTrackLastPlayDate(context.UserSettings.UserId,
+                    context.CurrentTrack.ArtistName, context.CurrentTrack.TrackName);
+                if (lastPlay == null) return null;
+
+                var firstPlay = await context.PlayService.GetTrackFirstPlayDate(context.UserSettings.UserId,
+                    context.CurrentTrack.ArtistName, context.CurrentTrack.TrackName);
+                if (firstPlay != null && firstPlay.Value.Date == lastPlay.Value.Date) return null;
+
+                var timestamp = ((DateTimeOffset)DateTime.SpecifyKind(lastPlay.Value, DateTimeKind.Utc)).ToUnixTimeSeconds();
+                return new VariableResult($"Track last listened <t:{timestamp}:D>", $"<t:{timestamp}:D>");
+            }
         }
     };
 }

@@ -278,7 +278,7 @@ public class ArtistCommands(
         }
     }
 
-    [Command("discoveries", "d", "discovered", "discovery", "artistdiscoveries", "firstlistened")]
+    [Command("discoveries", "d", "discovered", "discovery", "artistdiscoveries")]
     [Summary("Artists you've recently discovered")]
     [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample, Constants.EmbedSizeExample)]
     [Examples("d", "discovered", "ta a lfm:fm-bot", "topartists weekly @user", "ta bb xl")]

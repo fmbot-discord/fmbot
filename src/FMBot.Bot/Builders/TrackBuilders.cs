@@ -140,9 +140,12 @@ public class TrackBuilders
         }
 
         Task<DateTime?> firstPlayTask = null;
+        Task<DateTime?> lastPlayTask = null;
         if (context.ContextUser.UserType != UserType.User && trackSearch.Track.UserPlaycount > 0)
         {
             firstPlayTask = this._playService.GetTrackFirstPlayDate(context.ContextUser.UserId,
+                trackSearch.Track.ArtistName, trackSearch.Track.TrackName);
+            lastPlayTask = this._playService.GetTrackLastPlayDate(context.ContextUser.UserId,
                 trackSearch.Track.ArtistName, trackSearch.Track.TrackName);
         }
 
@@ -301,6 +304,16 @@ public class TrackBuilders
                 {
                     var firstListenValue = ((DateTimeOffset)firstPlay).ToUnixTimeSeconds();
                     userStats.AppendLine($"Discovered <t:{firstListenValue}:D>");
+                }
+
+                if (lastPlayTask != null)
+                {
+                    var lastPlay = await lastPlayTask;
+                    if (lastPlay != null && (firstPlay == null || lastPlay.Value.Date > firstPlay.Value.Date))
+                    {
+                        var lastListenValue = ((DateTimeOffset)lastPlay).ToUnixTimeSeconds();
+                        userStats.AppendLine($"Last listened <t:{lastListenValue}:D>");
+                    }
                 }
             }
             else

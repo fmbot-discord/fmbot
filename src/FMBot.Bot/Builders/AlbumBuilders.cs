@@ -212,9 +212,12 @@ public class AlbumBuilders
                 context.ContextUser.UserId, albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
 
             Task<DateTime?> firstPlayTask = null;
+            Task<DateTime?> lastPlayTask = null;
             if (context.ContextUser.UserType != UserType.User && albumSearch.Album.UserPlaycount > 0)
             {
                 firstPlayTask = this._playService.GetAlbumFirstPlayDate(context.ContextUser.UserId,
+                    albumSearch.Album.ArtistName, albumSearch.Album.AlbumName);
+                lastPlayTask = this._playService.GetAlbumLastPlayDate(context.ContextUser.UserId,
                     albumSearch.Album.ArtistName, albumSearch.Album.AlbumName);
             }
 
@@ -260,6 +263,16 @@ public class AlbumBuilders
                 {
                     var firstListenValue = ((DateTimeOffset)firstPlay).ToUnixTimeSeconds();
                     userStats.AppendLine($"Discovered <t:{firstListenValue}:D>");
+                }
+
+                if (lastPlayTask != null)
+                {
+                    var lastPlay = await lastPlayTask;
+                    if (lastPlay != null && (firstPlay == null || lastPlay.Value.Date > firstPlay.Value.Date))
+                    {
+                        var lastListenValue = ((DateTimeOffset)lastPlay).ToUnixTimeSeconds();
+                        userStats.AppendLine($"Last listened <t:{lastListenValue}:D>");
+                    }
                 }
             }
             else

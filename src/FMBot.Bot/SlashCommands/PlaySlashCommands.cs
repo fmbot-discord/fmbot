@@ -76,6 +76,49 @@ public class PlaySlashCommands(
         }
     }
 
+    [SlashCommand("lastlistened", "⭐ Shows the date you last listened to the artist, album, and track",
+        Contexts =
+            [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild],
+        IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
+    [UsernameSetRequired]
+    public async Task LastListenedAsync(
+        [SlashCommandParameter(Name = "track",
+            Description = "The track you want to search for (defaults to currently playing)",
+            AutocompleteProviderType = typeof(TrackAutoComplete))]
+        string name = null,
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
+        string user = null)
+    {
+        await RespondAsync(InteractionCallback.DeferredMessage());
+
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var context = new ContextModel(this.Context, contextUser);
+        var userSettings =
+            await settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+
+        try
+        {
+            var supporterRequiredResponse = ArtistBuilders.DiscoverySupporterRequired(context, userSettings);
+
+            if (supporterRequiredResponse != null)
+            {
+                await this.Context.SendFollowUpResponse(this.Interactivity, supporterRequiredResponse, userService);
+                await this.Context.LogCommandUsedAsync(supporterRequiredResponse, userService);
+                return;
+            }
+
+            var response =
+                await playBuilder.LastListenedDate(context, name, userSettings);
+
+            await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
     [SlashCommand("fm", "Now Playing - Shows you or someone else's current track",
         Contexts =
             [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild],

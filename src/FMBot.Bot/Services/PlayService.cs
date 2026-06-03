@@ -782,6 +782,97 @@ public class PlayService
             .TimePlayed;
     }
 
+    private static readonly TimeSpan LastListenedExclusionWindow = TimeSpan.FromMinutes(30);
+
+    private static DateTime? GetLastListenedCutoff(ICollection<UserPlay> plays)
+    {
+        if (plays.Count == 0)
+        {
+            return null;
+        }
+
+        return plays.Max(p => p.TimePlayed) - LastListenedExclusionWindow;
+    }
+
+    public async Task<UserPlay> GetArtistLastPlay(int userId, string artistName)
+    {
+        var plays = await this.GetAllUserPlays(userId);
+        var cutoff = GetLastListenedCutoff(plays);
+        if (cutoff == null)
+        {
+            return null;
+        }
+
+        return plays
+            .Where(w => w.TimePlayed < cutoff.Value)
+            .OrderByDescending(o => o.TimePlayed)
+            .FirstOrDefault(f =>
+                f.ArtistName != null &&
+                f.ArtistName.Equals(artistName, StringComparison.OrdinalIgnoreCase));
+    }
+
+    public async Task<DateTime?> GetArtistLastPlayDate(int userId, string artistName)
+    {
+        var plays = await this.GetAllUserPlays(userId);
+        var cutoff = GetLastListenedCutoff(plays);
+        if (cutoff == null)
+        {
+            return null;
+        }
+
+        return plays
+            .Where(w => w.TimePlayed < cutoff.Value)
+            .OrderByDescending(o => o.TimePlayed)
+            .FirstOrDefault(f =>
+                f.ArtistName != null &&
+                f.ArtistName.Equals(artistName, StringComparison.OrdinalIgnoreCase))?
+            .TimePlayed;
+    }
+
+    public async Task<DateTime?> GetAlbumLastPlayDate(int userId, string artistName, string albumName)
+    {
+        if (albumName == null)
+        {
+            return null;
+        }
+
+        var plays = await this.GetAllUserPlays(userId);
+        var cutoff = GetLastListenedCutoff(plays);
+        if (cutoff == null)
+        {
+            return null;
+        }
+
+        return plays
+            .Where(w => w.TimePlayed < cutoff.Value)
+            .OrderByDescending(o => o.TimePlayed)
+            .FirstOrDefault(f =>
+                f.ArtistName != null &&
+                f.ArtistName.Equals(artistName, StringComparison.OrdinalIgnoreCase) &&
+                f.AlbumName != null &&
+                f.AlbumName.Equals(albumName, StringComparison.OrdinalIgnoreCase))?
+            .TimePlayed;
+    }
+
+    public async Task<DateTime?> GetTrackLastPlayDate(int userId, string artistName, string trackName)
+    {
+        var plays = await this.GetAllUserPlays(userId);
+        var cutoff = GetLastListenedCutoff(plays);
+        if (cutoff == null)
+        {
+            return null;
+        }
+
+        return plays
+            .Where(w => w.TimePlayed < cutoff.Value)
+            .OrderByDescending(o => o.TimePlayed)
+            .FirstOrDefault(f =>
+                f.ArtistName != null &&
+                f.ArtistName.Equals(artistName, StringComparison.OrdinalIgnoreCase) &&
+                f.TrackName.Equals(trackName, StringComparison.OrdinalIgnoreCase))?
+            .TimePlayed;
+    }
+
     public async Task<IList<UserPlay>> GetGuildUsersPlays(int guildId, int amountOfDays)
     {
         var cacheKey = $"guild-user-plays-{guildId}-{amountOfDays}";
@@ -1108,7 +1199,25 @@ public class PlayService
             .Count(w => w.Count() > 2500) >= 7;
     }
 
-    public async Task<ICollection<UserPlay>> GetAllUserPlays(int userId, bool finalizeImport = true)
+    public Task<ICollection<UserPlay>> GetAllUserPlays(int userId, bool finalizeImport = true)
+    {
+        var cacheKey = $"all-user-plays-{userId}-{finalizeImport}";
+
+        if (this._cache.TryGetValue(cacheKey, out Task<ICollection<UserPlay>> existingTask))
+        {
+            return existingTask;
+        }
+
+        var task = GetAllUserPlaysInternal(userId, finalizeImport);
+        this._cache.Set(cacheKey, task, TimeSpan.FromSeconds(5));
+
+        _ = task.ContinueWith(_ => this._cache.Remove(cacheKey),
+            TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously);
+
+        return task;
+    }
+
+    private async Task<ICollection<UserPlay>> GetAllUserPlaysInternal(int userId, bool finalizeImport)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
