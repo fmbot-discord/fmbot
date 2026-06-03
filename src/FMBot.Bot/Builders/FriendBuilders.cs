@@ -35,9 +35,10 @@ public class FriendBuilders
     private readonly IDataSourceFactory _dataSourceFactory;
     private readonly UpdateService _updateService;
     private readonly SettingService _settingService;
+    private readonly AdminService _adminService;
 
     public FriendBuilders(FriendsService friendsService, UserService userService, GuildService guildService,
-        IDataSourceFactory dataSourceFactory, UpdateService updateService, SettingService settingService)
+        IDataSourceFactory dataSourceFactory, UpdateService updateService, SettingService settingService, AdminService adminService)
     {
         this._friendsService = friendsService;
         this._userService = userService;
@@ -45,6 +46,7 @@ public class FriendBuilders
         this._dataSourceFactory = dataSourceFactory;
         this._updateService = updateService;
         this._settingService = settingService;
+        this._adminService = adminService;
     }
 
     private record FriendResult(DateTime? TimePlayed, string Result);
@@ -105,6 +107,18 @@ public class FriendBuilders
         {
             var friendUsername = friend.FriendUser?.UserNameLastFM ?? friend.LastFMUserName;
             var friendNameToDisplay = friendUsername;
+
+            var userAccounts = await this._adminService.GetUsersWithLfmUsernameAsync(friendUsername);
+            var lastUsedFriendUser = userAccounts
+                .OrderBy(o => o.LastUsed == null)
+                .ThenByDescending(o => o.LastUsed)
+                .FirstOrDefault();
+
+            if (lastUsedFriendUser != null && lastUsedFriendUser.UserId != friend.FriendUserId)
+            {
+                friend.FriendUserId = lastUsedFriendUser.UserId;
+                friend.FriendUser = lastUsedFriendUser;
+            }
 
             if (guild?.GuildUsers != null && guild.GuildUsers.Any() && friend.FriendUserId.HasValue)
             {
@@ -174,7 +188,7 @@ public class FriendBuilders
 
             friendResult.Add(new FriendResult(timePlayed,
                 $"**{StringExtensions.MarkdownLink(friendNameToDisplay, LastfmUrlExtensions.GetUserUrl(friendUsername))}** | {track}"));
-        }, maxDegreeOfParallelism: 6);
+        }, maxDegreeOfParallelism: 8);
 
         var friendsFooter =
             $"-# {totalPlaycount:0} total scrobbles - {friends.Count} total {StringExtensions.GetFriendsString(friends.Count)}";
@@ -436,6 +450,7 @@ public class FriendBuilders
                     customId: $"{InteractionConstants.Friends.Manage}:{duplicateFriendsList[0].FriendId}:0:add",
                     style: ButtonStyle.Secondary);
             }
+
             response.ComponentsContainer.AddComponent(buttons);
         }
 
@@ -656,6 +671,7 @@ public class FriendBuilders
         {
             page = 0;
         }
+
         if (page >= totalPages)
         {
             page = totalPages - 1;
@@ -694,22 +710,24 @@ public class FriendBuilders
         {
             response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
 
-            var navRow = new ActionRowProperties();
-            navRow.Add(new ButtonProperties(
-                $"{InteractionConstants.Friends.OverviewPage}:first:0",
-                EmojiProperties.Custom(DiscordConstants.PagesFirst), ButtonStyle.Secondary) { Disabled = page == 0 });
-            navRow.Add(new ButtonProperties(
-                $"{InteractionConstants.Friends.OverviewPage}:prev:{page - 1}",
-                EmojiProperties.Custom(DiscordConstants.PagesPrevious), ButtonStyle.Secondary) { Disabled = page == 0 });
-            navRow.Add(new ButtonProperties(
-                $"{InteractionConstants.Friends.OverviewPage}:current:{page}",
-                $"{page + 1}/{totalPages}", ButtonStyle.Secondary) { Disabled = true });
-            navRow.Add(new ButtonProperties(
-                $"{InteractionConstants.Friends.OverviewPage}:next:{page + 1}",
-                EmojiProperties.Custom(DiscordConstants.PagesNext), ButtonStyle.Secondary) { Disabled = page >= totalPages - 1 });
-            navRow.Add(new ButtonProperties(
-                $"{InteractionConstants.Friends.OverviewPage}:last:{totalPages - 1}",
-                EmojiProperties.Custom(DiscordConstants.PagesLast), ButtonStyle.Secondary) { Disabled = page >= totalPages - 1 });
+            var navRow = new ActionRowProperties
+            {
+                new ButtonProperties(
+                    $"{InteractionConstants.Friends.OverviewPage}:first:0",
+                    EmojiProperties.Custom(DiscordConstants.PagesFirst), ButtonStyle.Secondary) { Disabled = page == 0 },
+                new ButtonProperties(
+                    $"{InteractionConstants.Friends.OverviewPage}:prev:{page - 1}",
+                    EmojiProperties.Custom(DiscordConstants.PagesPrevious), ButtonStyle.Secondary) { Disabled = page == 0 },
+                new ButtonProperties(
+                    $"{InteractionConstants.Friends.OverviewPage}:current:{page}",
+                    $"{page + 1}/{totalPages}", ButtonStyle.Secondary) { Disabled = true },
+                new ButtonProperties(
+                    $"{InteractionConstants.Friends.OverviewPage}:next:{page + 1}",
+                    EmojiProperties.Custom(DiscordConstants.PagesNext), ButtonStyle.Secondary) { Disabled = page >= totalPages - 1 },
+                new ButtonProperties(
+                    $"{InteractionConstants.Friends.OverviewPage}:last:{totalPages - 1}",
+                    EmojiProperties.Custom(DiscordConstants.PagesLast), ButtonStyle.Secondary) { Disabled = page >= totalPages - 1 }
+            };
             response.ComponentsContainer.AddComponent(navRow);
         }
 
@@ -761,12 +779,15 @@ public class FriendBuilders
         {
             if (!isSupporter)
             {
-                return $"**Close friends are [a Supporter perk]({Constants.GetSupporterOverviewLink}).** They're always visible in WhoKnows no matter their rank, plus in `friendsfm`.";
+                return
+                    $"**Close friends are [a Supporter perk]({Constants.GetSupporterOverviewLink}).** They're always visible in WhoKnows no matter their rank, plus in `friendsfm`.";
             }
+
             if (closeCount >= Constants.MaxCloseFriends)
             {
                 return $"You can have at most **{Constants.MaxCloseFriends}** close friends. Change another close friend's type first.";
             }
+
             if (visibleCount >= visibleCap)
             {
                 return $"You can show at most **{visibleCap}** friends in your `friendsfm`. Hide another friend first.";
@@ -858,6 +879,7 @@ public class FriendBuilders
             {
                 existingNames.Add(existing.LastFMUserName);
             }
+
             if (existing.FriendUser?.UserNameLastFM != null)
             {
                 existingNames.Add(existing.FriendUser.UserNameLastFM);
