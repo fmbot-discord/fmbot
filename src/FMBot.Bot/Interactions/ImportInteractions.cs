@@ -433,6 +433,76 @@ public class ImportInteractions(
         }
     }
 
+    [ComponentInteraction(InteractionConstants.ImportModify.Start)]
+    [UsernameSetRequired]
+    public async Task ModifyImportAsync()
+    {
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var supporterRequired = ImportBuilders.ImportSupporterRequired(new ContextModel(this.Context, contextUser));
+
+        if (supporterRequired != null)
+        {
+            await this.Context.SendResponse(interactivity, supporterRequired, userService);
+            await this.Context.LogCommandUsedAsync(supporterRequired, userService);
+            return;
+        }
+
+        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
+
+        if (this.Context.Guild != null)
+        {
+            var serverEmbed = new EmbedProperties()
+                .WithColor(DiscordConstants.InformationColorBlue)
+                .WithDescription("Check your DMs to continue with modifying your .fmbot imports.");
+
+            await this.Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
+                .WithEmbeds([serverEmbed])
+                .WithFlags(MessageFlags.Ephemeral));
+        }
+        else if (this.Context.Channel != null)
+        {
+            _ = this.Context.Channel?.TriggerTypingAsync()!;
+        }
+
+        try
+        {
+            var response =
+                await importBuilders.ImportModify(new ContextModel(this.Context, contextUser),
+                    contextUser.UserId);
+            var dmChannel = await this.Context.User.GetDMChannelAsync();
+            await dmChannel.SendMessageAsync(new MessageProperties
+            {
+                Embeds = [response.Embed],
+                Components = [response.Components]
+            });
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.ImportInstructionsPickSource)]
+    [UsernameSetRequired]
+    public async Task ImportPickSource()
+    {
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+
+        try
+        {
+            var response =
+                ImportBuilders.ImportInstructionsPickSource(new ContextModel(this.Context, contextUser));
+
+            await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
     [ComponentInteraction(InteractionConstants.ImportInstructionsSpotify)]
     [UsernameSetRequired]
     public async Task ImportInstructionsSpotify()

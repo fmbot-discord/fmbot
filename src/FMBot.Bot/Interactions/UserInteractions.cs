@@ -1578,6 +1578,34 @@ public class UserInteractions(
         }
     }
 
+    [ComponentInteraction(InteractionConstants.Shortcuts.ViewAll)]
+    [UsernameSetRequired]
+    public async Task ViewShortcuts()
+    {
+        try
+        {
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+            var context = new ContextModel(this.Context, contextUser);
+
+            var supporterRequiredResponse = UserBuilder.ShortcutsSupporterRequired(context);
+            if (supporterRequiredResponse != null)
+            {
+                await this.Context.SendResponse(interactivity, supporterRequiredResponse, userService, true);
+                await this.Context.LogCommandUsedAsync(supporterRequiredResponse, userService);
+                return;
+            }
+
+            var response = await userBuilder.ListShortcutsAsync(context);
+
+            await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
     [ComponentInteraction(InteractionConstants.Shortcuts.Manage)]
     public async Task ManageShortcut(string shortcutId)
     {

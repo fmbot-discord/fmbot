@@ -56,7 +56,7 @@ public class ImportCommands(
         }
         else
         {
-            response = importBuilders.ImportInstructionsPickSource(new ContextModel(this.Context, prfx, contextUser));
+            response = ImportBuilders.ImportInstructionsPickSource(new ContextModel(this.Context, prfx, contextUser));
         }
 
         await this.Context.SendResponse(this.Interactivity, response, userService);

@@ -132,120 +132,125 @@ public class SupporterService
     public static async Task SendSupporterWelcomeMessage(NetCord.User discordUser, bool hasDiscogs, Supporter supporter,
         bool reactivation = false, bool isGifted = false, StripeSupporter stripeSupporter = null)
     {
-        var thankYouEmbed = new EmbedProperties();
-        thankYouEmbed.WithColor(DiscordConstants.InformationColorBlue);
+        var container = new ComponentContainerProperties
+        {
+            AccentColor = DiscordConstants.InformationColorBlue
+        };
 
-        var thankYouMessage = new StringBuilder();
-
+        var intro = new StringBuilder();
         if (isGifted)
         {
-            thankYouEmbed.WithAuthor("🎁 You've received .fmbot supporter as a gift!");
-            thankYouMessage.AppendLine("Someone has gifted you .fmbot supporter!");
-            thankYouMessage.AppendLine();
-            if (stripeSupporter?.DateEnding != null)
-            {
-                thankYouMessage.AppendLine(
-                    $"You will now have full access to all .fmbot supporter features until <t:{((DateTimeOffset)stripeSupporter.DateEnding).ToUnixTimeSeconds()}:D>.");
-            }
-            else
-            {
-                thankYouMessage.AppendLine("This gift gives you access to the following supporter features:");
-            }
+            intro.AppendLine("## 🎁 You've received .fmbot supporter as a gift!");
+            intro.Append(stripeSupporter?.DateEnding != null
+                ? $"You have full access to all supporter features until <t:{((DateTimeOffset)stripeSupporter.DateEnding).ToUnixTimeSeconds()}:D>."
+                : "You now have access to all .fmbot supporter features.");
         }
         else
         {
-            thankYouEmbed.WithAuthor("Thank you for getting .fmbot supporter!");
-
-            if (supporter != null && (supporter.SubscriptionType == SubscriptionType.LifetimeOpenCollective ||
-                                      supporter.SubscriptionType == SubscriptionType.LifetimeStripeManual))
+            intro.AppendLine("## ⭐ Thank you for getting .fmbot supporter!");
+            var lifetime = supporter is
             {
-                thankYouMessage.AppendLine(
-                    "Your purchase allows us to keep the bot running and continuously add improvements. Here's an overview of the features you can now access:");
-            }
-            else
-            {
-                thankYouMessage.AppendLine(
-                    "Your subscription allows us to keep the bot running and continuously add improvements. Here's an overview of the features you can now access:");
-            }
+                SubscriptionType: SubscriptionType.LifetimeOpenCollective or SubscriptionType.LifetimeStripeManual
+            };
+            intro.Append(lifetime
+                ? "Your purchase keeps the bot running and helps us keep improving it."
+                : "Your subscription keeps the bot running and helps us keep improving it.");
         }
 
-        thankYouMessage.AppendLine();
+        container.AddComponent(new TextDisplayProperties(intro.ToString()));
+        container.AddComponent(new ComponentSeparatorProperties());
 
-        thankYouMessage.AppendLine("📈 **Expanded commands with more statistics**");
-        thankYouMessage.AppendLine("- `.profile` — Expanded profile with more insights and a yearly overview");
-        thankYouMessage.AppendLine("- `.recap` — Extra pages with discoveries and listening time");
-        thankYouMessage.AppendLine("- `.overview` — See your lifetime listening history day to day");
-        thankYouMessage.AppendLine("- `.recent` — See your lifetime listening history");
-        thankYouMessage.AppendLine("- `.artisttracks` — See all tracks, even those outside of your top 6000");
-        thankYouMessage.AppendLine("- `.artistalbums` — See all albums, even those outside of your top 5000");
-        thankYouMessage.AppendLine();
+        var importing = new StringBuilder();
+        importing.AppendLine($"### {EmojiProperties.Custom(DiscordConstants.Imports).ToDiscordString("imports")} Use your Spotify and Apple Music history");
+        importing.AppendLine("- `/import spotify` — Import your full Spotify History");
+        importing.AppendLine("- `/import applemusic` — Import your full Apple Music History");
+        importing.AppendLine("- `/import manage` — Configure your imports and how they're used");
+        importing.AppendLine("- `/import modify` — Edit and delete artists, albums and tracks in your imports");
+        container.AddComponent(new TextDisplayProperties(importing.ToString()));
+        container.AddComponent(new ComponentSeparatorProperties());
 
-        thankYouMessage.AppendLine("🎮 **Enhanced commands**");
-        thankYouMessage.AppendLine("- `.lyrics` — View lyrics for a track");
-        thankYouMessage.AppendLine(
-            $"- `.featured` — Chance to get featured on Supporter Sunday (next in {FeaturedService.GetDaysUntilNextSupporterSunday()} {StringExtensions.GetDaysString(FeaturedService.GetDaysUntilNextSupporterSunday())})");
-        thankYouMessage.AppendLine("- `.judge` — Higher usage limit and better quality output");
-        thankYouMessage.AppendLine("- `.jumble` / `.j` — Play unlimited Jumble games");
-        thankYouMessage.AppendLine("- `.pixel` / `.px` — Play unlimited Pixel Jumble games");
-        thankYouMessage.AppendLine();
+        var expandedCommands = new StringBuilder();
+        expandedCommands.AppendLine("### 📈 Expanded commands with more statistics");
+        expandedCommands.AppendLine("- `.profile` & `.recap` — Expanded profile with more insights and stats");
+        expandedCommands.AppendLine("- `.overview` & `.recent` — See your lifetime listening history");
+        expandedCommands.AppendLine("- `.artistalbums` & `.artisttracks` — See all results, even outside of your top 5000/6000");
+        expandedCommands.AppendLine("- `.lyrics` — View lyrics for a track");
+        container.AddComponent(new TextDisplayProperties(expandedCommands.ToString()));
+        container.AddComponent(new ComponentSeparatorProperties());
 
-        thankYouMessage.AppendLine("<:discoveries:1145740579284713512> **Go back in time**");
-        thankYouMessage.AppendLine("- `.discoveries` — View your recently discovered artists");
-        thankYouMessage.AppendLine("- `.gaps` — View music you returned to after a gap in listening");
-        thankYouMessage.AppendLine("- `.discoverydate` / `.dd` — View when you discovered an artist, album, and track");
-        thankYouMessage.AppendLine("- `.artist`, `.album`, `.track` — See discovery dates");
-        thankYouMessage.AppendLine();
+        var customization = new StringBuilder();
+        customization.AppendLine($"### {EmojiProperties.Custom(DiscordConstants.Shortcut).ToDiscordString("shortcuts")} More customization");
+        customization.AppendLine("- `.friends` — Add close friends that'll always be visible in WhoKnows regardless of their position");
+        customization.AppendLine($"- `.shortcuts` — Configure shortcuts to easily access your favorite text commands");
+        customization.AppendLine($"- `/fmmode` — Expand your `fm` footer with more and exclusive customization");
+        customization.AppendLine($"- `.userreactions` — Set your own emote reactions used globally");
+        container.AddComponent(new TextDisplayProperties(customization.ToString()));
+        container.AddComponent(new ComponentSeparatorProperties());
 
-        thankYouMessage.AppendLine("<:history:1131511469096312914> **Use your Spotify and Apple Music history**");
-        thankYouMessage.AppendLine("- `/import spotify` — Import your full Spotify History");
-        thankYouMessage.AppendLine("- `/import applemusic` — Import your full Apple Music History");
-        thankYouMessage.AppendLine("- `/import manage` — Configure your imports and how they're used");
-        thankYouMessage.AppendLine("- `/import modify` — Edit and delete artists, albums and tracks in your imports");
-        thankYouMessage.AppendLine();
+        var higherLimits = new StringBuilder();
+        higherLimits.AppendLine("### 🎮 Higher limits");
+        higherLimits.AppendLine("- `.jumble` / `.j` — Play unlimited Jumble games");
+        higherLimits.AppendLine("- `.pixel` / `.px` — Play unlimited Pixel Jumble games");
+        higherLimits.AppendLine("- `.judge` — Higher usage limit and better quality output");
+        container.AddComponent(new TextDisplayProperties(higherLimits.ToString()));
+        container.AddComponent(new ComponentSeparatorProperties());
 
-        thankYouMessage.AppendLine("⚙️ **More customization**");
-        thankYouMessage.AppendLine($"- `.shortcuts` — Configure shortcuts to easily access your favorite commands");
-        thankYouMessage.AppendLine($"- `/fmmode` — Expand your `fm` footer with more and exclusive customization");
-        thankYouMessage.AppendLine($"- `.userreactions` — Set your own emote reactions used globally");
-        thankYouMessage.AppendLine();
-
-        thankYouMessage.AppendLine("👥 **Add more friends**");
-        thankYouMessage.AppendLine($"- Add up to {Constants.MaxCloseFriends} close friends that are always visible in every WhoKnows command");
-        thankYouMessage.AppendLine($"- Add up to {Constants.MaxFriendsSupporter} friends (up from {Constants.MaxFriends})");
-        thankYouMessage.AppendLine($"- View up to {Constants.MaxVisibleFriendsSupporter} friends in `friendsfm` (up from {Constants.MaxVisibleFriends})");
-        thankYouMessage.AppendLine();
-
-        thankYouMessage.AppendLine("🌐 **Community perks**");
-        thankYouMessage.AppendLine("- Support hosting and development");
-        thankYouMessage.AppendLine("- ⭐ — Supporter badge in the bot");
-        thankYouMessage.AppendLine("- Exclusive role and channel on [our server](https://discord.gg/fmbot)");
-        thankYouMessage.AppendLine();
-
-        thankYouEmbed.WithDescription(thankYouMessage.ToString());
-
-        var dmChannel = await discordUser.GetDMChannelAsync();
+        var backInTime = new StringBuilder();
+        backInTime.AppendLine("### <:discoveries:1145740579284713512> Go back in time");
+        backInTime.AppendLine("- `.discoveries` & `.gaps` — View your recently (re-)discovered artists");
+        backInTime.AppendLine("- `.discoverydate` / `.dd` — View when you discovered an artist, album, and track");
+        backInTime.AppendLine("- `.last` — View when you last listened to an artist, album, and track");
+        backInTime.AppendLine("- `.artist`, `.album`, `.track` — See discovery dates");
+        container.AddComponent(new TextDisplayProperties(backInTime.ToString()));
+        container.AddComponent(new ComponentSeparatorProperties());
 
         if (reactivation)
         {
-            var reactivateEmbed = new EmbedProperties();
-            reactivateEmbed.WithDescription(
-                "Welcome back. Please use the `/import manage` command to re-activate the import service if you've used it previously.");
-            reactivateEmbed.WithColor(DiscordConstants.InformationColorBlue);
-            await dmChannel.SendMessageAsync(new MessageProperties
+            container.AddComponent(new ComponentSectionProperties(
+                new ButtonProperties(InteractionConstants.ImportManage, "Re-enable imports", ButtonStyle.Secondary))
             {
-                Embeds = [thankYouEmbed, reactivateEmbed]
+                Components =
+                [
+                    new TextDisplayProperties(
+                        $"{EmojiProperties.Custom(DiscordConstants.Imports).ToDiscordString("imports")} Welcome back! Use the button to re-activate the import service if you've used it before.")
+                ]
             });
         }
         else
         {
-            await dmChannel.SendMessageAsync(new MessageProperties
-            {
-                Embeds = [thankYouEmbed]
-            });
+            var highlightImport = stripeSupporter?.PurchaseSource?.Contains("import") == true;
+            var highlightFmMode = stripeSupporter?.PurchaseSource?.Contains("fmmode") == true ||
+                                  stripeSupporter?.PurchaseSource?.Contains("fm-buttons") == true||
+                                  stripeSupporter?.PurchaseSource?.Contains("fm-accentcolor") == true;
+            var highlightShortcut = stripeSupporter?.PurchaseSource?.Contains("shortcut") == true;
+            var highlightFriend = stripeSupporter?.PurchaseSource?.Contains("friend") == true;
+            container.AddComponent(new ActionRowProperties()
+                .AddComponents(new ButtonProperties(
+                    InteractionConstants.ImportInstructionsPickSource, "Import your history",
+                    highlightImport ? ButtonStyle.Primary : ButtonStyle.Secondary))
+                .AddComponents(new ButtonProperties(
+                    InteractionConstants.FmCommand.FmModeChange, "Customize .fm",
+                    highlightFmMode ? ButtonStyle.Primary : ButtonStyle.Secondary))
+                .AddComponents(new ButtonProperties(
+                    InteractionConstants.Shortcuts.ViewAll, "Shortcuts",
+                    highlightShortcut ? ButtonStyle.Primary : ButtonStyle.Secondary))
+                .AddComponents(new ButtonProperties(
+                    InteractionConstants.Friends.Overview, "Friends",
+                    highlightFriend ? ButtonStyle.Primary : ButtonStyle.Secondary))
+                .AddComponents(new LinkButtonProperties(
+                    $"https://discord.gg/fmbot", "Support")));
         }
+
+        var dmChannel = await discordUser.GetDMChannelAsync();
+        await dmChannel.SendMessageAsync(new MessageProperties
+        {
+            Components = [container],
+            Flags = MessageFlags.IsComponentsV2,
+            AllowedMentions = AllowedMentionsProperties.None
+        });
     }
 
-    public static async Task SendGiftPurchaserThankYouMessage(NetCord.User purchaserUser,
+    private static async Task SendGiftPurchaserThankYouMessage(NetCord.User purchaserUser,
         StripeSupporter stripeSupporter)
     {
         try
