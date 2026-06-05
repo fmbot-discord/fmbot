@@ -319,8 +319,11 @@ public class ImportInteractions(
     {
         await this.Context.Interaction.ModifyResponseAsync(e =>
         {
-            e.Components = [new ActionRowProperties().WithButton(text, customId: "0",
-                emote: EmojiProperties.Custom(DiscordConstants.Loading), disabled: true, style: ButtonStyle.Secondary)];
+            e.Components =
+            [
+                new ActionRowProperties().WithButton(text, customId: "0",
+                    emote: EmojiProperties.Custom(DiscordConstants.Loading), disabled: true, style: ButtonStyle.Secondary)
+            ];
         });
     }
 
@@ -425,6 +428,76 @@ public class ImportInteractions(
                 await userBuilder.ImportMode(new ContextModel(this.Context, contextUser), contextUser.UserId);
 
             await this.Context.SendFollowUpResponse(interactivity, response, userService, ephemeral: true);
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.ImportModify.Start)]
+    [UsernameSetRequired]
+    public async Task ModifyImportAsync()
+    {
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var supporterRequired = ImportBuilders.ImportSupporterRequired(new ContextModel(this.Context, contextUser));
+
+        if (supporterRequired != null)
+        {
+            await this.Context.SendResponse(interactivity, supporterRequired, userService);
+            await this.Context.LogCommandUsedAsync(supporterRequired, userService);
+            return;
+        }
+
+        if (this.Context.Guild != null)
+        {
+            await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
+
+            var serverEmbed = new EmbedProperties()
+                .WithColor(DiscordConstants.InformationColorBlue)
+                .WithDescription("Check your DMs to continue with modifying your .fmbot imports.");
+
+            await this.Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
+                .WithEmbeds([serverEmbed])
+                .WithFlags(MessageFlags.Ephemeral));
+        }
+        else if (this.Context.Channel != null)
+        {
+            _ = this.Context.Channel?.TriggerTypingAsync()!;
+        }
+
+        try
+        {
+            var response =
+                await importBuilders.ImportModify(new ContextModel(this.Context, contextUser),
+                    contextUser.UserId);
+            var dmChannel = await this.Context.User.GetDMChannelAsync();
+            await dmChannel.SendMessageAsync(new MessageProperties
+            {
+                Embeds = [response.Embed],
+                Components = [response.Components]
+            });
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.ImportInstructionsPickSource)]
+    [UsernameSetRequired]
+    public async Task ImportPickSource()
+    {
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+
+        try
+        {
+            var response =
+                ImportBuilders.ImportInstructionsPickSource(new ContextModel(this.Context, contextUser));
+
+            await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
             await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
@@ -814,8 +887,11 @@ public class ImportInteractions(
     {
         await this.Context.Interaction.ModifyResponseAsync(e =>
         {
-            e.Components = [new ActionRowProperties().WithButton(text, customId: "0",
-                emote: EmojiProperties.Custom(DiscordConstants.Loading), disabled: true, style: ButtonStyle.Secondary)];
+            e.Components =
+            [
+                new ActionRowProperties().WithButton(text, customId: "0",
+                    emote: EmojiProperties.Custom(DiscordConstants.Loading), disabled: true, style: ButtonStyle.Secondary)
+            ];
         });
     }
 }

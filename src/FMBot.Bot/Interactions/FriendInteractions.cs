@@ -117,6 +117,7 @@ public class FriendInteractions(
     [UsernameSetRequired]
     public async Task FriendTypeModal(string friendId, string page, string source)
     {
+        var acknowledged = false;
         try
         {
             var selected = this.Context.GetModalMenuValue("friend_type");
@@ -158,6 +159,7 @@ public class FriendInteractions(
             }
 
             await this.Context.Interaction.SendResponseAsync(InteractionCallback.DeferredModifyMessage);
+            acknowledged = true;
 
             string error = null;
             if (selected == "remove")
@@ -182,7 +184,7 @@ public class FriendInteractions(
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e, userService);
+            await this.Context.HandleCommandException(e, userService, deferFirst: !acknowledged);
         }
     }
 

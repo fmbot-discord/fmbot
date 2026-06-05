@@ -140,9 +140,12 @@ public class ArtistBuilders
         var featuredHistoryTask = this._featuredService.GetArtistFeaturedHistory(artistSearch.Artist.ArtistName);
 
         Task<DateTime?> firstPlayTask = null;
+        Task<DateTime?> lastPlayTask = null;
         if (context.ContextUser.UserType != UserType.User && artistSearch.Artist.UserPlaycount > 0)
         {
             firstPlayTask = this._playService.GetArtistFirstPlayDate(context.ContextUser.UserId,
+                artistSearch.Artist.ArtistName);
+            lastPlayTask = this._playService.GetArtistLastPlayDate(context.ContextUser.UserId,
                 artistSearch.Artist.ArtistName);
         }
 
@@ -305,6 +308,16 @@ public class ArtistBuilders
                 {
                     var firstListenValue = ((DateTimeOffset)firstPlay).ToUnixTimeSeconds();
                     userStats.AppendLine($"Discovered <t:{firstListenValue}:D>");
+                }
+
+                if (lastPlayTask != null)
+                {
+                    var lastPlay = await lastPlayTask;
+                    if (lastPlay != null && (firstPlay == null || lastPlay.Value.Date > firstPlay.Value.Date))
+                    {
+                        var lastListenValue = ((DateTimeOffset)lastPlay).ToUnixTimeSeconds();
+                        userStats.AppendLine($"Last listened <t:{lastListenValue}:D>");
+                    }
                 }
             }
             else

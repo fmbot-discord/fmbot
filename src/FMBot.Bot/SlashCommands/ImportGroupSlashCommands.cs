@@ -563,7 +563,6 @@ public class ImportGroupSlashCommands(
     public async Task ModifyImportAsync()
     {
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
-
         var supporterRequired = ImportBuilders.ImportSupporterRequired(new ContextModel(this.Context, contextUser));
 
         if (supporterRequired != null)

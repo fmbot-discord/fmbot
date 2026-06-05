@@ -87,9 +87,9 @@ public class FriendsService
 
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
-        var lowered = lastFmUserNames.Select(s => s.ToLower()).Distinct().ToList();
+        var uppered = lastFmUserNames.Select(s => s.ToUpper()).Distinct().ToList();
         var matchedUsers = await db.Users
-            .Where(u => lowered.Contains(u.UserNameLastFM.ToLower()))
+            .Where(u => uppered.Contains(u.UserNameLastFM.ToUpper()))
             .OrderBy(u => u.LastUsed == null)
             .ThenByDescending(u => u.LastUsed)
             .Select(u => new { u.UserId, u.UserNameLastFM })

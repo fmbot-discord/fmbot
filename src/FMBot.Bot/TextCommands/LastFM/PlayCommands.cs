@@ -41,7 +41,7 @@ public class PlayCommands(
     private static readonly List<NetCord.User> StackCooldownTarget = [];
 
 
-    [Command("discoverydate", "dd", "datediscovered", "datediscovery")]
+    [Command("discoverydate", "dd", "datediscovered", "datediscovery", "first", "firstlistened")]
     [Summary("Shows the date you discovered the artist, album, and track")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks)]
@@ -68,6 +68,43 @@ public class PlayCommands(
             }
 
             var response = await playBuilder.DiscoveryDate(context, userSettings.NewSearchValue, userSettings);
+
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
+    [Command("lastlistened", "last", "ll", "lastlisten", "lastplayed", "lastheard")]
+    [Summary("Shows the date you last listened to the artist, album, and track")]
+    [UsernameSetRequired]
+    [CommandCategories(CommandCategory.Tracks)]
+    [SupporterExclusive(
+        "To see when you last listened to this artist, album and track we need to store your lifetime Last.fm history. Your lifetime history and more are only available for supporters")]
+    public async Task LastListenedAsync([CommandParameter(Remainder = true)] string options = null)
+    {
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
+
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+
+        try
+        {
+            var context = new ContextModel(this.Context, prfx, contextUser);
+            var userSettings = await settingService.GetUser(options, contextUser, this.Context);
+
+            var supporterRequiredResponse = ArtistBuilders.DiscoverySupporterRequired(context, userSettings);
+            if (supporterRequiredResponse != null)
+            {
+                await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse, userService);
+                await this.Context.LogCommandUsedAsync(supporterRequiredResponse, userService);
+                return;
+            }
+
+            var response = await playBuilder.LastListenedDate(context, userSettings.NewSearchValue, userSettings);
 
             await this.Context.SendResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);

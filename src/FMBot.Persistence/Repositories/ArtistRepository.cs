@@ -145,7 +145,8 @@ public class ArtistRepository
         await connection.ExecuteAsync(deleteQuery, new { artistId });
 
         const string insertQuery = @"INSERT INTO public.artist_genres(artist_id, name) " +
-                                   "VALUES (@artistId, @name)";
+                                   "VALUES (@artistId, @name) " +
+                                   "ON CONFLICT (artist_id, name) DO NOTHING";
 
         foreach (var genreName in genreNames.GroupBy(g => g))
         {

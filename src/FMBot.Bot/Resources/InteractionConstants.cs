@@ -60,6 +60,7 @@ public static class InteractionConstants
 
     public static class ImportModify
     {
+        public const string Start = "user-import-start";
         public const string Modify = "user-import-modify";
 
         public const string PickSelect = "im-ps";
@@ -86,6 +87,7 @@ public static class InteractionConstants
         public const string TrackDeleteConfirmed = "im-trdl^y";
     }
 
+    public const string ImportInstructionsPickSource = "import-picksource";
     public const string ImportInstructionsSpotify = "import-spotify-instructions";
     public const string ImportInstructionsAppleMusic = "import-applemusic-instructions";
 

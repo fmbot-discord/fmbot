@@ -66,5 +66,12 @@ public enum FmFooterOption : long
     [Option("⭐ Album discovery date", "Date you first listened to an album", true)]
     FirstAlbumListen = 1 << 23,
     [Option("⭐ Track discovery date", "Date you first listened to a track", true)]
-    FirstTrackListen = 1 << 24
+    FirstTrackListen = 1 << 24,
+
+    [Option("⭐ Artist last listened", "Date you last listened to an artist (excludes the current session)", true)]
+    LastArtistListen = 1 << 25,
+    [Option("⭐ Album last listened", "Date you last listened to an album (excludes the current session)", true)]
+    LastAlbumListen = 1 << 26,
+    [Option("⭐ Track last listened", "Date you last listened to a track (excludes the current session)", true)]
+    LastTrackListen = 1 << 27
 }

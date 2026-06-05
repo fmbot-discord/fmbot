@@ -194,6 +194,109 @@ public class PlayBuilder
         return response;
     }
 
+    public async Task<ResponseModel> LastListenedDate(
+        ContextModel context,
+        string searchValue,
+        UserSettingsModel userSettings)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue,
+            context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
+            userId: context.ContextUser.UserId, interactionId: context.InteractionId,
+            referencedMessage: context.ReferencedMessage);
+        if (trackSearch.Track == null)
+        {
+            return trackSearch.Response;
+        }
+
+        var artistLastPlay =
+            await this._playService.GetArtistLastPlay(userSettings.UserId, trackSearch.Track.ArtistName);
+
+        var albumName = trackSearch.Track.AlbumName;
+        var trackName = trackSearch.Track.TrackName;
+
+        if (!string.IsNullOrWhiteSpace(searchValue) &&
+            artistLastPlay != null)
+        {
+            var splitSearch = searchValue.Split(" ");
+            var useLastArtistTrack = true;
+            foreach (var split in splitSearch)
+            {
+                if (trackName.Contains(split, StringComparison.OrdinalIgnoreCase))
+                {
+                    useLastArtistTrack = false;
+                }
+            }
+
+            if (useLastArtistTrack)
+            {
+                albumName = artistLastPlay.AlbumName;
+                trackName = artistLastPlay.TrackName;
+            }
+        }
+
+        var trackLastPlayDateTask = this._playService.GetTrackLastPlayDate(userSettings.UserId,
+            trackSearch.Track.ArtistName, trackName);
+        var albumLastPlayDateTask = this._playService.GetAlbumLastPlayDate(userSettings.UserId,
+            trackSearch.Track.ArtistName, albumName);
+
+        var trackLastPlayDate = await trackLastPlayDateTask;
+        var albumLastPlayDate = await albumLastPlayDateTask;
+
+        var noResult = "First time";
+        if (!string.IsNullOrWhiteSpace(searchValue))
+        {
+            noResult = "No plays yet";
+        }
+
+        var dateStyle = "D";
+        if (artistLastPlay != null && artistLastPlay.TimePlayed >= DateTime.UtcNow.AddDays(-30))
+        {
+            dateStyle = "f";
+        }
+
+        var description = new StringBuilder();
+        description.Append(
+            $"**{(artistLastPlay?.TimePlayed != null ? $"<t:{artistLastPlay.TimePlayed.ToUnixEpochDate()}:{dateStyle}>" : noResult)}**");
+        description.Append(
+            $" — **{StringExtensions.MarkdownLink(trackSearch.Track.ArtistName, LastfmUrlExtensions.GetArtistUrl(trackSearch.Track.ArtistName))}**");
+        description.AppendLine();
+
+        if (!string.IsNullOrEmpty(albumName))
+        {
+            description.Append(
+                $"**{(albumLastPlayDate.HasValue ? $"<t:{albumLastPlayDate.Value.ToUnixEpochDate()}:{dateStyle}>" : noResult)}**");
+            description.Append(
+                $" — **{StringExtensions.MarkdownLink(albumName, LastfmUrlExtensions.GetAlbumUrl(trackSearch.Track.ArtistName, albumName))}**");
+            description.AppendLine();
+            response.Embed.WithAuthor("Last listened for artist, album and track");
+        }
+        else
+        {
+            response.Embed.WithAuthor("Last listened for artist and track");
+        }
+
+        description.Append(
+            $"**{(trackLastPlayDate.HasValue ? $"<t:{trackLastPlayDate.Value.ToUnixEpochDate()}:{dateStyle}>" : noResult)}**");
+        description.Append(
+            $" — **{StringExtensions.MarkdownLink(trackName, LastfmUrlExtensions.GetTrackUrl(trackSearch.Track.ArtistName, trackName))}**");
+        description.AppendLine();
+
+        response.Embed.WithDescription(description.ToString());
+        response.EmbedAuthor.WithName($"Last listened dates for {userSettings.DisplayName}");
+
+        if (userSettings.DifferentUser)
+        {
+            response.Embed.WithFooter($"Date for {userSettings.DisplayName}");
+        }
+
+        return response;
+    }
+
     public async Task<ResponseModel> NowPlayingAsync(
         ContextModel context,
         UserSettingsModel userSettings,
