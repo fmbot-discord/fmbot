@@ -319,8 +319,11 @@ public class ImportInteractions(
     {
         await this.Context.Interaction.ModifyResponseAsync(e =>
         {
-            e.Components = [new ActionRowProperties().WithButton(text, customId: "0",
-                emote: EmojiProperties.Custom(DiscordConstants.Loading), disabled: true, style: ButtonStyle.Secondary)];
+            e.Components =
+            [
+                new ActionRowProperties().WithButton(text, customId: "0",
+                    emote: EmojiProperties.Custom(DiscordConstants.Loading), disabled: true, style: ButtonStyle.Secondary)
+            ];
         });
     }
 
@@ -447,10 +450,10 @@ public class ImportInteractions(
             return;
         }
 
-        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
-
         if (this.Context.Guild != null)
         {
+            await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
+
             var serverEmbed = new EmbedProperties()
                 .WithColor(DiscordConstants.InformationColorBlue)
                 .WithDescription("Check your DMs to continue with modifying your .fmbot imports.");
@@ -884,8 +887,11 @@ public class ImportInteractions(
     {
         await this.Context.Interaction.ModifyResponseAsync(e =>
         {
-            e.Components = [new ActionRowProperties().WithButton(text, customId: "0",
-                emote: EmojiProperties.Custom(DiscordConstants.Loading), disabled: true, style: ButtonStyle.Secondary)];
+            e.Components =
+            [
+                new ActionRowProperties().WithButton(text, customId: "0",
+                    emote: EmojiProperties.Custom(DiscordConstants.Loading), disabled: true, style: ButtonStyle.Secondary)
+            ];
         });
     }
 }
