@@ -169,7 +169,7 @@ public class DiscordSkuService
         return true;
     }
 
-    public async Task<bool> AddStripeEntitlement(ulong discordUserId)
+    public async Task AddStripeEntitlement(ulong discordUserId)
     {
         var request = new HttpRequestMessage
         {
@@ -178,7 +178,7 @@ public class DiscordSkuService
             Content = new StringContent(
                 JsonSerializer.Serialize(new
                 {
-                    sku_id = 1120720816154345532,
+                    sku_id = 1513233978050609213,
                     owner_id = discordUserId.ToString(),
                     owner_type = 2
                 }),
@@ -193,10 +193,8 @@ public class DiscordSkuService
         {
             Log.Error("DiscordEntitlements - Add entitlement - HTTP status code {statusCode} - {reason}", httpResponse.StatusCode,
                 httpResponse.ReasonPhrase);
-            return false;
+            return;
         }
-
-        return true;
     }
 
     public async Task SendVoiceMessage(string audioUrl, string interactionToken)
