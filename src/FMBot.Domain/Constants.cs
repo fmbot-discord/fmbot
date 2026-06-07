@@ -34,7 +34,7 @@ public static class Constants
     public const string GetSupporterButton = "Get .fmbot supporter";
 
     public const string GetSupporterOverviewLink = "https://fm.bot/supporter/";
-    public const string GetSupporterDiscordLink = "https://discord.com/application-directory/356268235697553409/store/1120720816154345532";
+    public const string GetSupporterDiscordLink = "https://discord.com/application-directory/356268235697553409/store/1513233978050609213";
 
     public const int SupporterMessageChance = 12;
     public const int SupporterPromoChance = 10;
