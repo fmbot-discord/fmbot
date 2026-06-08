@@ -1902,7 +1902,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                     [
                         new TextDisplayProperties(
                             "## ⭐ Lifetime .fmbot supporter\n" +
-                            "Get lifetime access to all .fmbot supporter perks with a single one-time payment. This offer expires <t:1772010000:R>."),
+                            "Get lifetime access to all .fmbot supporter perks with a single one-time payment, no subscription required. Offer expires <t:1781341200:R>."),
                         new ComponentSeparatorProperties { Spacing = ComponentSeparatorSpacingSize.Large },
                         new ComponentSectionProperties(new ButtonProperties(
                             $"{InteractionConstants.SupporterLinks.GetLifetimePromoLink}:usd",

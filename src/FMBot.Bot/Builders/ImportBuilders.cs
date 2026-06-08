@@ -137,7 +137,7 @@ public class ImportBuilders
             var importedPlays = new StringBuilder();
             importedPlays.AppendLine("### ⚙️ Your imported Spotify plays");
             importedPlays.AppendLine(
-                $"You have already imported **{count}** {StringExtensions.GetPlaysString(count)}. To configure how these are used and combined with your Last.fm scrobbles, use the button below.");
+                $"You have already imported **{count}** {StringExtensions.GetPlaysString(count)}. To configure how these are used and combined with your Last.fm scrobbles, use the buttons below.");
             response.ComponentsContainer.AddComponent(new TextDisplayProperties(importedPlays.ToString()));
         }
 
@@ -223,7 +223,7 @@ public class ImportBuilders
             var importedPlays = new StringBuilder();
             importedPlays.AppendLine("### ⚙️ Your imported Apple Music plays");
             importedPlays.AppendLine(
-                $"You have already imported **{count}** {StringExtensions.GetPlaysString(count)}. To configure how these are used and combined with your Last.fm scrobbles, use the button below.");
+                $"You have already imported **{count}** {StringExtensions.GetPlaysString(count)}. To configure how these are used and combined with your Last.fm scrobbles, use the buttons below.");
             response.ComponentsContainer.AddComponent(new TextDisplayProperties(importedPlays.ToString()));
         }
 

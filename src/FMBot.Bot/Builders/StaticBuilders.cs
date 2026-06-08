@@ -103,23 +103,20 @@ public class StaticBuilders
 
         if (expandWithPerks)
         {
-            response.Embed.AddField("📊 More stats, more insights",
-                "-# Unlock lifetime Last.fm data for deeper analysis. Track first listens, get expanded profiles, expanded commands, your full Discogs collection and more.");
+            response.Embed.AddField("📈 Expanded commands & stats",
+                "-# Get expanded `.profile`, `.recap`, `.overview` and `.recent` commands, see all `.artistalbums` and `.artisttracks` results, and view lyrics right inside .fmbot.");
 
             response.Embed.AddField("<:history:1131511469096312914> Import your history",
                 "-# Import and access your full Spotify and Apple Music history together with your Last.fm data for the most accurate playcounts, listening time, and insights.");
 
+            response.Embed.AddField("⚙️ More customization",
+                "-# Add close friends, configure shortcuts, customize your `fm` with exclusive options, and set your own global emoji reactions.");
+
+            response.Embed.AddField("🎮 Higher limits",
+                "-# Play unlimited Jumble and Pixel Jumble games, get better quality output on `.judge`, and add more friends.");
+
             response.Embed.AddField("<:discoveries:1145740579284713512> Go back in time",
-                "-# See exactly when you discovered and re-discovered artists, albums, and tracks in commands and through the exclusive Discoveries and Gaps commands.");
-
-            response.Embed.AddField("🎮 Play unlimited games",
-                "-# Remove the daily limit on Jumble and Pixel Jumble and play as much as you want.");
-
-            response.Embed.AddField("⚙️ Customize your commands",
-                "-# Expand your .fm footer, add more friends, set automatic emoji reactions, and personalize your experience.");
-
-            response.Embed.AddField("🎤 View lyrics",
-                "-# View your favorite `.lyrics` directly inside of .fmbot.");
+                "-# See exactly when you discovered and re-discovered artists, albums, and tracks with the exclusive `.discoveries`, `.gaps`, `.discoverydate` and `.last` commands.");
 
             response.Embed.AddField("⭐ Exclusive supporter perks",
                 $"-# Show your support with a badge, gain access to a private [Discord role and channel](https://discord.gg/fmbot), and a higher chance to be featured on Supporter Sunday (next up in {FeaturedService.GetDaysUntilNextSupporterSunday()} {StringExtensions.GetDaysString(FeaturedService.GetDaysUntilNextSupporterSunday())}).");

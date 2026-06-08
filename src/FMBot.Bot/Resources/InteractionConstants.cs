@@ -1,3 +1,4 @@
+using System.Linq;
 using FMBot.Bot.Models;
 
 namespace FMBot.Bot.Resources;
@@ -298,14 +299,34 @@ public static class InteractionConstants
         public static string BuildEditCustomId(
             ulong userId, string chartType, ChartSettings chartSettings, string userNameLastFm)
         {
-            return $"{EditButton}:{userId}:{chartType}" +
-                   $":{chartSettings.Width}x{chartSettings.Height}:{chartSettings.TimeSettings.Description.ToLower()}" +
-                   $":{(int)chartSettings.TitleSetting}" +
-                   $":{(chartSettings.SkipWithoutImage ? 1 : 0)}" +
-                   $":{(chartSettings.SkipNsfw ? 1 : 0)}" +
-                   $":{(chartSettings.RainbowSortingEnabled ? 1 : 0)}" +
-                   $":{chartSettings.ReleaseYearFilter ?? 0}:{chartSettings.ReleaseDecadeFilter ?? 0}" +
-                   $":{chartSettings.FilteredArtist?.Id ?? 0}:{(chartSettings.FilterSingles ? 1 : 0)}:{userNameLastFm}";
+            var baseId = $"{EditButton}:{userId}:{chartType}" +
+                         $":{chartSettings.Width}x{chartSettings.Height}:{chartSettings.TimeSettings.Description.ToLower()}" +
+                         $":{(int)chartSettings.TitleSetting}" +
+                         $":{(chartSettings.SkipWithoutImage ? 1 : 0)}" +
+                         $":{(chartSettings.SkipNsfw ? 1 : 0)}" +
+                         $":{(chartSettings.RainbowSortingEnabled ? 1 : 0)}" +
+                         $":{chartSettings.ReleaseYearFilter ?? 0}:{chartSettings.ReleaseDecadeFilter ?? 0}" +
+                         $":{chartSettings.FilteredArtist?.Id ?? 0}:{(chartSettings.FilterSingles ? 1 : 0)}" +
+                         $":{userNameLastFm}";
+
+            if (chartSettings.FilteredGenres is not { Count: > 0 })
+            {
+                return baseId;
+            }
+
+            var genres = chartSettings.FilteredGenres
+                .Select(g => g.Replace(",", ""))
+                .Where(g => g.Length > 0)
+                .ToList();
+
+            var genreSegment = string.Join(",", genres);
+            while (genres.Count > 0 && baseId.Length + 1 + genreSegment.Length > 100)
+            {
+                genres.RemoveAt(genres.Count - 1);
+                genreSegment = string.Join(",", genres);
+            }
+
+            return genres.Count > 0 ? $"{baseId}:{genreSegment}" : baseId;
         }
     }
 

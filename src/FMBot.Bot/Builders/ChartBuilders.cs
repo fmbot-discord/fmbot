@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -26,13 +27,15 @@ public class ChartBuilders
     private readonly SupporterService _supporterService;
     private readonly ArtistsService _artistService;
     private readonly MusicDataFactory _musicDataFactory;
+    private readonly GenreService _genreService;
 
     public ChartBuilders(ChartService chartService,
         IDataSourceFactory dataSourceFactory,
         AlbumService albumService,
         SupporterService supporterService,
         ArtistsService artistService,
-        MusicDataFactory musicDataFactory)
+        MusicDataFactory musicDataFactory,
+        GenreService genreService)
     {
         this._chartService = chartService;
         this._dataSourceFactory = dataSourceFactory;
@@ -40,6 +43,7 @@ public class ChartBuilders
         this._supporterService = supporterService;
         this._artistService = artistService;
         this._musicDataFactory = musicDataFactory;
+        this._genreService = genreService;
     }
 
     private static ResponseModel BuildChartValidationError(
@@ -125,7 +129,8 @@ public class ChartBuilders
             var imagesToGet = chartSettings.ReleaseYearFilter.HasValue ||
                               chartSettings.ReleaseDecadeFilter.HasValue ||
                               chartSettings.FilteredArtist != null ||
-                              chartSettings.FilterSingles
+                              chartSettings.FilterSingles ||
+                              chartSettings.HasGenreFilter
                 ? 1000
                 : 250;
             albums = await this._dataSourceFactory.GetTopAlbumsAsync(userSettings.UserNameLastFm,
@@ -140,6 +145,16 @@ public class ChartBuilders
             }
         }
 
+        if (chartSettings.HasGenreFilter && albums?.Content?.TopAlbums != null)
+        {
+            var artistsInGenres = await this._genreService.GetArtistsInGenres(
+                albums.Content.TopAlbums.Select(f => f.ArtistName), chartSettings.FilteredGenres);
+
+            albums.Content.TopAlbums = albums.Content.TopAlbums
+                .Where(f => artistsInGenres.Contains(f.ArtistName))
+                .ToList();
+        }
+
         if (albums?.Content?.TopAlbums == null || albums.Content.TopAlbums.Count < chartSettings.ImagesNeeded)
         {
             var count = albums?.Content?.TopAlbums?.Count ?? 0;
@@ -152,6 +167,14 @@ public class ChartBuilders
                 reply.AppendLine(
                     $"Try a smaller chart, bigger time period ({Constants.CompactTimePeriodList}) or remove the artist filter.");
             }
+            else if (chartSettings.HasGenreFilter)
+            {
+                reply.AppendLine(
+                    $"Not enough scrobbled albums ({count} of required {chartSettings.ImagesNeeded}) in the **{string.Join("**, **", chartSettings.FilteredGenres)}** {(chartSettings.FilteredGenres.Count == 1 ? "genre" : "genres")} in {chartSettings.TimeSettings.Description} time period.");
+                reply.AppendLine();
+                reply.AppendLine(
+                    $"Try a smaller chart, a bigger time period ({Constants.CompactTimePeriodList}) or different genres.");
+            }
             else
             {
                 reply.AppendLine(
@@ -160,7 +183,7 @@ public class ChartBuilders
                 reply.AppendLine($"Try a smaller chart or a bigger time period ({Constants.CompactTimePeriodList}).");
             }
 
-            if (chartSettings.SkipWithoutImage && chartSettings.FilteredArtist == null)
+            if (chartSettings.SkipWithoutImage && chartSettings.FilteredArtist == null && !chartSettings.HasGenreFilter)
             {
                 reply.AppendLine();
                 reply.AppendLine(
@@ -179,6 +202,14 @@ public class ChartBuilders
                     chartSettings.ReleaseYearFilter.Value)
                 : await this._albumService.GetUserAllTimeTopAlbumsByReleaseDecade(userSettings.UserId,
                     chartSettings.ReleaseDecadeFilter.Value);
+
+            if (chartSettings.HasGenreFilter)
+            {
+                var artistsInGenres = await this._genreService.GetArtistsInGenres(
+                    topAllTimeDb.Select(f => f.ArtistName), chartSettings.FilteredGenres);
+
+                topAllTimeDb = topAllTimeDb.Where(f => artistsInGenres.Contains(f.ArtistName)).ToList();
+            }
 
             albums.Content.TopAlbums = topAllTimeDb;
             albums.Content.TotalAmount = topAllTimeDb.Count;
@@ -372,30 +403,55 @@ public class ChartBuilders
             extraArtists = chartSettings.Height * 2 + (chartSettings.Height > 5 ? 8 : 2);
         }
 
-        var imagesToRequest = chartSettings.ImagesNeeded + extraArtists;
+        var imagesToRequest = chartSettings.HasGenreFilter
+            ? 1000
+            : chartSettings.ImagesNeeded + extraArtists;
 
         var artists = await this._dataSourceFactory.GetTopArtistsAsync(userSettings.UserNameLastFm,
             chartSettings.TimeSettings, imagesToRequest, useCache: true);
 
-        if (artists?.Content?.TopArtists == null || artists.Content.TopArtists.Count < chartSettings.ImagesNeeded)
+        var topArtists = artists?.Content?.TopArtists ?? [];
+
+        if (chartSettings.HasGenreFilter && topArtists.Count != 0)
         {
-            var count = artists?.Content?.TopArtists?.Count ?? 0;
+            var genreArtists =
+                await this._genreService.GetArtistsForGenres(chartSettings.FilteredGenres, topArtists);
+            var artistsInGenres = new HashSet<string>(
+                genreArtists.SelectMany(g => g.Artists.Select(a => a.ArtistName)),
+                StringComparer.OrdinalIgnoreCase);
 
-            var reply =
-                $"User hasn't listened to enough artists ({count} of required {chartSettings.ImagesNeeded}) for a chart this size. \n" +
-                $"Please try a smaller chart or a bigger time period ({Constants.CompactTimePeriodList}).";
+            topArtists = topArtists.Where(w => artistsInGenres.Contains(w.ArtistName)).ToList();
+        }
 
-            if (chartSettings.SkipWithoutImage)
+        if (topArtists.Count < chartSettings.ImagesNeeded)
+        {
+            var count = topArtists.Count;
+
+            string reply;
+            if (chartSettings.HasGenreFilter)
             {
-                reply += "\n\n" +
-                         $"Note that {extraArtists} extra artists are required because you are skipping artists without an image.";
+                reply =
+                    $"Not enough scrobbled artists ({count} of required {chartSettings.ImagesNeeded}) in the **{string.Join("**, **", chartSettings.FilteredGenres)}** {(chartSettings.FilteredGenres.Count == 1 ? "genre" : "genres")} for a chart this size. \n" +
+                    $"Please try a smaller chart, a bigger time period ({Constants.CompactTimePeriodList}) or different genres.";
+            }
+            else
+            {
+                reply =
+                    $"User hasn't listened to enough artists ({count} of required {chartSettings.ImagesNeeded}) for a chart this size. \n" +
+                    $"Please try a smaller chart or a bigger time period ({Constants.CompactTimePeriodList}).";
+
+                if (chartSettings.SkipWithoutImage)
+                {
+                    reply += "\n\n" +
+                             $"Note that {extraArtists} extra artists are required because you are skipping artists without an image.";
+                }
             }
 
             return BuildChartValidationError(context, reply,
                 InteractionConstants.Chart.ArtistType, chartSettings, userSettings.UserNameLastFm);
         }
 
-        var topArtists = artists.Content.TopArtists;
+        topArtists = topArtists.Take(chartSettings.ImagesNeeded + extraArtists).ToList();
 
         topArtists = await this._artistService.FillArtistImages(topArtists);
 

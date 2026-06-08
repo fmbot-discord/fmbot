@@ -216,6 +216,19 @@ public static class InteractionContextExtensions
                 ?.FirstOrDefault();
         }
 
+        public IReadOnlyList<string> GetModalMenuValues(string customId)
+        {
+            if (context.Interaction is not ModalInteraction modal)
+                return [];
+
+            return modal.Data.Components
+                .OfType<Label>()
+                .Select(l => l.Component)
+                .OfType<StringMenu>()
+                .FirstOrDefault(m => string.Equals(m.CustomId, customId, StringComparison.OrdinalIgnoreCase))
+                ?.SelectedValues ?? [];
+        }
+
         public string GetModalRadioValue(string customId)
         {
             if (context.Interaction is not ModalInteraction modal)

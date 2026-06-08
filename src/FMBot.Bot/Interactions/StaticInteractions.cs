@@ -47,13 +47,7 @@ public class StaticInteractions(
             }
             else
             {
-                await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
-
-                await this.Context.Interaction.ModifyResponseAsync(m =>
-                {
-                    m.Components = response.Components?.Any() == true ? [response.Components] : [];
-                    m.Embeds = [response.Embed];
-                });
+                await this.Context.UpdateInteractionEmbed(response, interactivity);
             }
 
             await this.Context.LogCommandUsedAsync(response, userService);

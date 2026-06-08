@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using FMBot.Bot.Builders;
@@ -7,6 +8,7 @@ using FMBot.Bot.Factories;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using NetCord;
 using NetCord.Rest;
@@ -18,14 +20,17 @@ public class ChartInteractions(
     UserService userService,
     SettingService settingService,
     ChartBuilders chartBuilders,
-    ArtistsService artistsService)
+    ArtistsService artistsService,
+    GenreService genreService,
+    IDataSourceFactory dataSourceFactory)
     : ComponentInteractionModule<ComponentInteractionContext>
 {
     [ComponentInteraction(InteractionConstants.Chart.EditButton)]
     public async Task EditChartButtonAsync(
         string creatorId, string chartType, string size, string timePeriodStr,
         int titleSetting, int skip, int sfw, int rainbow,
-        string yearFilter, string decadeFilter, string artistFilterId, string filterSingles, string targetLfm)
+        string yearFilter, string decadeFilter, string artistFilterId, string filterSingles,
+        string targetLfm)
     {
         try
         {
@@ -42,25 +47,40 @@ public class ChartInteractions(
             var decadeFilterValue = int.TryParse(decadeFilter, out var df) && df > 0 ? df : (int?)null;
             var filterSinglesValue = int.TryParse(filterSingles, out var fs) && fs == 1;
 
+            var lfmParts = targetLfm.Split(':', 2);
+            var lastFmUserName = lfmParts[0];
+            var selectedGenres = (lfmParts.Length > 1 ? lfmParts[1] : string.Empty)
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
             var chartSettings = new ChartSettings(this.Context.User);
             chartSettings = ChartService.GetDimensions(chartSettings, size).newChartSettings;
 
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+            var userSettings = await settingService.GetUser(
+                lastFmUserName, contextUser, this.Context.Guild, this.Context.User, true);
+
+            var menuGenres = await GetChartGenreOptions(chartType, userSettings, timePeriodStr, selectedGenres);
+
             var modalCustomId =
-                $"{InteractionConstants.Chart.EditModal}:{creatorId}:{chartType}:{artistFilterId}:{targetLfm}";
+                $"{InteractionConstants.Chart.EditModal}:{creatorId}:{chartType}:{artistFilterId}:{lastFmUserName}";
 
             if (chartType == "a")
             {
                 var modal = ModalFactory.CreateAlbumChartSettingsModal(
                     modalCustomId, chartSettings.Width, chartSettings.Height, timePeriodStr,
                     titleSetting, skip == 1, sfw == 1, rainbow == 1,
-                    yearFilterValue, decadeFilterValue, filterSinglesValue);
+                    yearFilterValue, decadeFilterValue, filterSinglesValue,
+                    menuGenres, selectedGenres);
                 await RespondAsync(InteractionCallback.Modal(modal));
             }
             else
             {
                 var modal = ModalFactory.CreateArtistChartSettingsModal(
                     modalCustomId, chartSettings.Width, chartSettings.Height, timePeriodStr,
-                    titleSetting, skip == 1, rainbow == 1);
+                    titleSetting, skip == 1, rainbow == 1,
+                    menuGenres, selectedGenres);
                 await RespondAsync(InteractionCallback.Modal(modal));
             }
         }
@@ -68,6 +88,59 @@ public class ChartInteractions(
         {
             await this.Context.HandleCommandException(e, userService);
         }
+    }
+
+    private async Task<List<string>> GetChartGenreOptions(
+        string chartType, UserSettingsModel userSettings, string timePeriodStr, List<string> selectedGenres)
+    {
+        var timeSettings = SettingService.GetTimePeriod(timePeriodStr, timeZone: userSettings.TimeZone);
+
+        List<string> artistNames;
+        if (chartType == "a")
+        {
+            var topAlbums = await dataSourceFactory.GetTopAlbumsAsync(
+                userSettings.UserNameLastFm, timeSettings, 250, useCache: true);
+            artistNames = topAlbums?.Content?.TopAlbums?
+                .Select(a => a.ArtistName)
+                .Where(n => !string.IsNullOrEmpty(n))
+                .Distinct()
+                .ToList() ?? [];
+        }
+        else
+        {
+            var topArtists = await dataSourceFactory.GetTopArtistsAsync(
+                userSettings.UserNameLastFm, timeSettings, 250, useCache: true);
+            artistNames = topArtists?.Content?.TopArtists?
+                .Select(a => a.ArtistName)
+                .Where(n => !string.IsNullOrEmpty(n))
+                .ToList() ?? [];
+        }
+
+        var chartGenres = await genreService.GetTopGenresForTopArtistsString(artistNames);
+
+        var menuGenres = new List<string>();
+        foreach (var genre in selectedGenres)
+        {
+            if (!menuGenres.Contains(genre, StringComparer.OrdinalIgnoreCase))
+            {
+                menuGenres.Add(genre);
+            }
+        }
+
+        foreach (var genre in chartGenres)
+        {
+            if (menuGenres.Count >= 25)
+            {
+                break;
+            }
+
+            if (!menuGenres.Contains(genre, StringComparer.OrdinalIgnoreCase))
+            {
+                menuGenres.Add(genre);
+            }
+        }
+
+        return menuGenres;
     }
 
     [ComponentInteraction(InteractionConstants.Chart.EditModal)]
@@ -117,6 +190,11 @@ public class ChartInteractions(
                 filteredArtist = await artistsService.GetArtistForId(artId);
             }
 
+            var filteredGenres = this.Context.GetModalMenuValues("genre")
+                .Where(v => !string.IsNullOrWhiteSpace(v))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
             int? releaseYear = null;
             int? releaseDecade = null;
             if (chartType == "a")
@@ -157,7 +235,9 @@ public class ChartInteractions(
                 TimespanUrlString = timeSettings.UrlParameter,
                 ReleaseYearFilter = releaseYear,
                 ReleaseDecadeFilter = releaseDecade,
-                CustomOptionsEnabled = titleSetting != TitleSetting.Titles || skip || hasSfw || hasRainbow || hasHideSingles
+                FilteredGenres = filteredGenres,
+                CustomOptionsEnabled = titleSetting != TitleSetting.Titles || skip || hasSfw || hasRainbow ||
+                                       hasHideSingles || filteredGenres.Count > 0
             };
 
             chartSettings = ChartService.GetDimensions(chartSettings, sizeStr).newChartSettings;

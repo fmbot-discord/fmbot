@@ -508,6 +508,72 @@ public class GenreService
         return foundGenres;
     }
 
+    public async Task<List<string>> ResolveGenres(IEnumerable<string> inputs)
+    {
+        var result = new List<string>();
+        if (inputs == null)
+        {
+            return result;
+        }
+
+        const string cacheKey = "genres-all";
+        if (!this._cache.TryGetValue(cacheKey, out List<string> genres))
+        {
+            const string sql = "SELECT DISTINCT name FROM public.artist_genres";
+
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+            await connection.OpenAsync();
+
+            genres = (await connection.QueryAsync<string>(sql)).ToList();
+            this._cache.Set(cacheKey, genres, TimeSpan.FromHours(2));
+        }
+
+        foreach (var input in inputs)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+            {
+                continue;
+            }
+
+            var query = input.ToLower().Replace(" ", "").Replace("-", "");
+            var match = genres.FirstOrDefault(g =>
+                            g.Replace(" ", "").Replace("-", "").Equals(query, StringComparison.OrdinalIgnoreCase))
+                        ?? genres.FirstOrDefault(g =>
+                            g.Replace(" ", "").Replace("-", "").Contains(query, StringComparison.OrdinalIgnoreCase));
+
+            if (match != null && !result.Contains(match, StringComparer.OrdinalIgnoreCase))
+            {
+                result.Add(match);
+            }
+        }
+
+        return result;
+    }
+
+    public async Task<HashSet<string>> GetArtistsInGenres(IEnumerable<string> artistNames, IEnumerable<string> genreNames)
+    {
+        var names = artistNames.Distinct().ToArray();
+        var genres = genreNames.Distinct().ToArray();
+        if (names.Length == 0 || genres.Length == 0)
+        {
+            return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        const string sql = "SELECT DISTINCT a.name " +
+                           "FROM artists a " +
+                           "INNER JOIN artist_genres ag ON ag.artist_id = a.id " +
+                           "WHERE a.name = ANY(@names::citext[]) " +
+                           "AND ag.name = ANY(@genres::citext[])";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        var rows = await connection.QueryAsync<string>(sql, new { names, genres });
+        return new HashSet<string>(rows, StringComparer.OrdinalIgnoreCase);
+    }
+
     public async Task<List<string>> GetValidGenres(string genreValues)
     {
         if (string.IsNullOrWhiteSpace(genreValues))

@@ -21,6 +21,7 @@ public class ChartSettings
         this.SkipWithoutImage = false;
         this.ContainsNsfw = false;
         this.FileDescription = new StringBuilder();
+        this.FilteredGenres = new List<string>();
     }
 
     public List<TopAlbum> Albums { get; set; }
@@ -89,6 +90,10 @@ public class ChartSettings
     public StringBuilder FileDescription { get; set; }
 
     public Artist FilteredArtist { get; set; }
+
+    public List<string> FilteredGenres { get; set; }
+
+    public bool HasGenreFilter => this.FilteredGenres is { Count: > 0 };
 }
 
 public class ChartImage
