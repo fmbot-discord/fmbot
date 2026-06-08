@@ -822,47 +822,43 @@ public class ChartService
             cleanedOptions = SettingService.ContainsAndRemove(cleanedOptions, processedFilters.ToArray());
         }
 
-        var genreInputs = new List<string>();
-        var genreTokens = new List<string>();
-        foreach (var option in splitOptions)
-        {
-            if (option.StartsWith("genre:", StringComparison.OrdinalIgnoreCase))
-            {
-                genreTokens.Add(option);
-                genreInputs.AddRange(option["genre:".Length..]
-                    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
-            }
-            else if (option.StartsWith("g:", StringComparison.OrdinalIgnoreCase))
-            {
-                genreTokens.Add(option);
-                genreInputs.AddRange(option["g:".Length..]
-                    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
-            }
-        }
-
-        if (genreTokens.Count != 0)
-        {
-            cleanedOptions = SettingService.ContainsAndRemove(cleanedOptions, genreTokens.ToArray());
-
-            var resolvedGenres = await this._genreService.ResolveGenres(genreInputs);
-            if (resolvedGenres.Count != 0)
-            {
-                chartSettings.FilteredGenres = resolvedGenres;
-                chartSettings.CustomOptionsEnabled = true;
-            }
-        }
-
         var timeSettings = SettingService.GetTimePeriod(cleanedOptions,
             aoty || aotd ? TimePeriod.AllTime : TimePeriod.Weekly, timeZone: userSettings.TimeZone);
 
         if (!string.IsNullOrWhiteSpace(timeSettings.NewSearchValue))
         {
-            var artist = await this._artistsService.GetArtistFromDatabase(timeSettings.NewSearchValue);
-            if (artist != null)
+            var leftover = timeSettings.NewSearchValue.Trim();
+
+            string genreValue = null;
+            if (leftover.StartsWith("genre:", StringComparison.OrdinalIgnoreCase))
             {
-                chartSettings.FilteredArtist = artist;
-                timeSettings = SettingService.GetTimePeriod(cleanedOptions, TimePeriod.AllTime,
-                    timeZone: userSettings.TimeZone);
+                genreValue = leftover["genre:".Length..];
+            }
+            else if (leftover.StartsWith("g:", StringComparison.OrdinalIgnoreCase))
+            {
+                genreValue = leftover["g:".Length..];
+            }
+
+            if (genreValue != null)
+            {
+                var genreInputs = genreValue.Split(',',
+                    StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                var resolvedGenres = await this._genreService.ResolveGenres(genreInputs);
+                if (resolvedGenres.Count != 0)
+                {
+                    chartSettings.FilteredGenres = resolvedGenres;
+                    chartSettings.CustomOptionsEnabled = true;
+                }
+            }
+            else
+            {
+                var artist = await this._artistsService.GetArtistFromDatabase(leftover);
+                if (artist != null)
+                {
+                    chartSettings.FilteredArtist = artist;
+                    timeSettings = SettingService.GetTimePeriod(cleanedOptions, TimePeriod.AllTime,
+                        timeZone: userSettings.TimeZone);
+                }
             }
         }
 
