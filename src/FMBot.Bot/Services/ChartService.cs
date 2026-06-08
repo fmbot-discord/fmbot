@@ -25,6 +25,7 @@ public class ChartService
 
     private readonly CensorService _censorService;
     private readonly ArtistsService _artistsService;
+    private readonly GenreService _genreService;
 
     private readonly string _fontPath;
     private readonly string _workSansFontPath;
@@ -36,11 +37,13 @@ public class ChartService
 
     private readonly HttpClient _client;
 
-    public ChartService(CensorService censorService, HttpClient httpClient, ArtistsService artistsService)
+    public ChartService(CensorService censorService, HttpClient httpClient, ArtistsService artistsService,
+        GenreService genreService)
     {
         this._censorService = censorService;
         this._client = httpClient;
         this._artistsService = artistsService;
+        this._genreService = genreService;
 
         var cachePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", "bot");
         if (!Directory.Exists(cachePath))
@@ -819,6 +822,36 @@ public class ChartService
             cleanedOptions = SettingService.ContainsAndRemove(cleanedOptions, processedFilters.ToArray());
         }
 
+        var genreInputs = new List<string>();
+        var genreTokens = new List<string>();
+        foreach (var option in splitOptions)
+        {
+            if (option.StartsWith("genre:", StringComparison.OrdinalIgnoreCase))
+            {
+                genreTokens.Add(option);
+                genreInputs.AddRange(option["genre:".Length..]
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+            }
+            else if (option.StartsWith("g:", StringComparison.OrdinalIgnoreCase))
+            {
+                genreTokens.Add(option);
+                genreInputs.AddRange(option["g:".Length..]
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+            }
+        }
+
+        if (genreTokens.Count != 0)
+        {
+            cleanedOptions = SettingService.ContainsAndRemove(cleanedOptions, genreTokens.ToArray());
+
+            var resolvedGenres = await this._genreService.ResolveGenres(genreInputs);
+            if (resolvedGenres.Count != 0)
+            {
+                chartSettings.FilteredGenres = resolvedGenres;
+                chartSettings.CustomOptionsEnabled = true;
+            }
+        }
+
         var timeSettings = SettingService.GetTimePeriod(cleanedOptions,
             aoty || aotd ? TimePeriod.AllTime : TimePeriod.Weekly, timeZone: userSettings.TimeZone);
 
@@ -914,6 +947,13 @@ public class ChartService
         {
             embedDescription.AppendLine(
                 $"- Filtering to artist **[{chartSettings.FilteredArtist.Name}]({LastfmUrlExtensions.GetArtistUrl(chartSettings.FilteredArtist.Name)})**");
+        }
+
+        if (chartSettings.HasGenreFilter)
+        {
+            var genreWord = chartSettings.FilteredGenres.Count == 1 ? "genre" : "genres";
+            embedDescription.AppendLine(
+                $"- Filtering to {genreWord} **{string.Join("**, **", chartSettings.FilteredGenres.Select(g => StringExtensions.Sanitize(g)))}**");
         }
 
         if (chartSettings.RainbowSortingEnabled)

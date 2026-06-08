@@ -605,68 +605,121 @@ public static class ModalFactory
         return menu;
     }
 
+    private static LabelProperties GetGenreLabel(
+        IReadOnlyList<string> genres, IReadOnlyCollection<string> selectedGenres)
+    {
+        if (genres is not { Count: > 0 })
+        {
+            return null;
+        }
+
+        var menu = new StringMenuProperties("genre")
+        {
+            Placeholder = "Filter to one or more genres (optional)",
+            MinValues = 0,
+            MaxValues = Math.Min(genres.Count, 25),
+            Required = false
+        };
+
+        var options = new List<StringMenuSelectOptionProperties>();
+        for (var i = 0; i < genres.Count && i < 25; i++)
+        {
+            var genre = genres[i];
+            options.Add(new StringMenuSelectOptionProperties(genre, genre)
+            {
+                Default = selectedGenres != null &&
+                          selectedGenres.Contains(genre, StringComparer.OrdinalIgnoreCase)
+            });
+        }
+
+        menu.AddOptions(options);
+        return new LabelProperties("Genre", menu);
+    }
+
     public static ModalProperties CreateAlbumChartSettingsModal(
         string customId, int width, int height, string timePeriod,
         int titleSetting, bool skip, bool sfw, bool rainbow,
-        int? yearFilter, int? decadeFilter, bool filterSingles = false) =>
-        new(customId, "Edit chart settings")
+        int? yearFilter, int? decadeFilter, bool filterSingles,
+        IReadOnlyList<string> genres, IReadOnlyCollection<string> selectedGenres)
+    {
+        var components = new List<IModalComponentProperties>
         {
-            Components =
+            new LabelProperties("Size (e.g. 3x3)", new TextInputProperties("size", TextInputStyle.Short)
+            {
+                Value = $"{width}x{height}",
+                Placeholder = "3x3",
+                MinLength = 3,
+                MaxLength = 5
+            }),
+            new LabelProperties("Time period", GetTimePeriodMenu("time_period", timePeriod)),
+            new LabelProperties("Options", new CheckboxGroupProperties("options",
             [
-                new LabelProperties("Size (e.g. 3x3)", new TextInputProperties("size", TextInputStyle.Short)
+                new CheckboxGroupOptionProperties("Show titles", "titles") { Default = titleSetting == 1 },
+                new CheckboxGroupOptionProperties("Skip albums without image", "skip") { Default = skip },
+                new CheckboxGroupOptionProperties("SFW only", "sfw") { Default = sfw },
+                new CheckboxGroupOptionProperties("Rainbow sort", "rainbow") { Default = rainbow },
+                new CheckboxGroupOptionProperties("Hide singles", "hidesingles") { Default = filterSingles },
+            ])
+            { Required = false }),
+            new LabelProperties("Release filter (e.g. 2024 or 1990s)",
+                new TextInputProperties("release_filter", TextInputStyle.Short)
                 {
-                    Value = $"{width}x{height}",
-                    Placeholder = "3x3",
-                    MinLength = 3,
+                    Placeholder = "2024 or 1990s",
+                    Required = false,
+                    Value = decadeFilter is > 0 ? $"{decadeFilter}s"
+                        : yearFilter is > 0 ? yearFilter.ToString()
+                        : null,
                     MaxLength = 5
-                }),
-                new LabelProperties("Time period", GetTimePeriodMenu("time_period", timePeriod)),
-                new LabelProperties("Options", new CheckboxGroupProperties("options",
-                [
-                    new CheckboxGroupOptionProperties("Show titles", "titles") { Default = titleSetting == 1 },
-                    new CheckboxGroupOptionProperties("Skip albums without image", "skip") { Default = skip },
-                    new CheckboxGroupOptionProperties("SFW only", "sfw") { Default = sfw },
-                    new CheckboxGroupOptionProperties("Rainbow sort", "rainbow") { Default = rainbow },
-                    new CheckboxGroupOptionProperties("Hide singles", "hidesingles") { Default = filterSingles },
-                ])
-                { Required = false }),
-                new LabelProperties("Release filter (e.g. 2024 or 1990s)",
-                    new TextInputProperties("release_filter", TextInputStyle.Short)
-                    {
-                        Placeholder = "2024 or 1990s",
-                        Required = false,
-                        Value = decadeFilter is > 0 ? $"{decadeFilter}s"
-                            : yearFilter is > 0 ? yearFilter.ToString()
-                            : null,
-                        MaxLength = 5
-                    })
-            ]
+                })
         };
+
+        var genreLabel = GetGenreLabel(genres, selectedGenres);
+        if (genreLabel != null)
+        {
+            components.Add(genreLabel);
+        }
+
+        return new ModalProperties(customId, "Edit chart settings")
+        {
+            Components = components
+        };
+    }
 
     public static ModalProperties CreateArtistChartSettingsModal(
         string customId, int width, int height, string timePeriod,
-        int titleSetting, bool skip, bool rainbow) =>
-        new(customId, "Edit chart settings")
+        int titleSetting, bool skip, bool rainbow,
+        IReadOnlyList<string> genres, IReadOnlyCollection<string> selectedGenres)
+    {
+        var components = new List<IModalComponentProperties>
         {
-            Components =
+            new LabelProperties("Size (e.g. 3x3)", new TextInputProperties("size", TextInputStyle.Short)
+            {
+                Value = $"{width}x{height}",
+                Placeholder = "3x3",
+                MinLength = 3,
+                MaxLength = 5
+            }),
+            new LabelProperties("Time period", GetTimePeriodMenu("time_period", timePeriod)),
+            new LabelProperties("Options", new CheckboxGroupProperties("options",
             [
-                new LabelProperties("Size (e.g. 3x3)", new TextInputProperties("size", TextInputStyle.Short)
-                {
-                    Value = $"{width}x{height}",
-                    Placeholder = "3x3",
-                    MinLength = 3,
-                    MaxLength = 5
-                }),
-                new LabelProperties("Time period", GetTimePeriodMenu("time_period", timePeriod)),
-                new LabelProperties("Options", new CheckboxGroupProperties("options",
-                [
-                    new CheckboxGroupOptionProperties("Show titles", "titles") { Default = titleSetting == 1 },
-                    new CheckboxGroupOptionProperties("Skip artists without image", "skip") { Default = skip },
-                    new CheckboxGroupOptionProperties("Rainbow sort", "rainbow") { Default = rainbow },
-                ])
-                { Required = false })
-            ]
+                new CheckboxGroupOptionProperties("Show titles", "titles") { Default = titleSetting == 1 },
+                new CheckboxGroupOptionProperties("Skip artists without image", "skip") { Default = skip },
+                new CheckboxGroupOptionProperties("Rainbow sort", "rainbow") { Default = rainbow },
+            ])
+            { Required = false })
         };
+
+        var genreLabel = GetGenreLabel(genres, selectedGenres);
+        if (genreLabel != null)
+        {
+            components.Add(genreLabel);
+        }
+
+        return new ModalProperties(customId, "Edit chart settings")
+        {
+            Components = components
+        };
+    }
 
     public static ModalProperties CreateSearchModal(string customId, SearchQueryModel current) =>
         new(customId, "Search settings")
