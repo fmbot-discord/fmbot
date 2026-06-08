@@ -117,9 +117,12 @@ public class StaticInteractions(
             var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
             var existingStripeSupporter = await supporterService.GetStripeSupporter(contextUser.DiscordUserId);
 
-            var priceId = currency.Equals("eur", StringComparison.OrdinalIgnoreCase)
-                ? InteractionConstants.SupporterLinks.LifetimePromoEurPriceId
-                : InteractionConstants.SupporterLinks.LifetimePromoUsdPriceId;
+            var priceId = currency.ToLowerInvariant() switch
+            {
+                "eur" => InteractionConstants.SupporterLinks.LifetimePromoEurPriceId,
+                "gbp" => InteractionConstants.SupporterLinks.LifetimePromoGbpPriceId,
+                _ => InteractionConstants.SupporterLinks.LifetimePromoUsdPriceId
+            };
 
             var link = await supporterService.GetSupporterLifetimePromoCheckoutLink(
                 this.Context.User.Id,

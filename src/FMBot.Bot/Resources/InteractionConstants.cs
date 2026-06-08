@@ -218,6 +218,7 @@ public static class InteractionConstants
         public const string GetLifetimePromoLink = "supporter-lifetime-promo-link";
         public const string LifetimePromoUsdPriceId = "price_1T2d3vDmwlsh3IxTSEU4o9ym";
         public const string LifetimePromoEurPriceId = "price_1T2d3WDmwlsh3IxTjoK8SlVG";
+        public const string LifetimePromoGbpPriceId = "price_1Tg4zbDmwlsh3IxTgTYcK8M4";
     }
 
     public const string BotScrobblingEnable = "user-setting-botscrobbling-enable";
