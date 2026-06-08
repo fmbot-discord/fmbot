@@ -1916,6 +1916,12 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                         {
                             Components = [new TextDisplayProperties("### 🇪🇺 Pay in EUR")]
                         },
+                        new ComponentSectionProperties(new ButtonProperties(
+                            $"{InteractionConstants.SupporterLinks.GetLifetimePromoLink}:gbp",
+                            "Get - £51.99", ButtonStyle.Primary))
+                        {
+                            Components = [new TextDisplayProperties("### 🇬🇧 Pay in GBP")]
+                        },
                     ]
                 }
             };
