@@ -108,6 +108,77 @@ public class UserSlashCommands(
         await this.Context.LogCommandUsedAsync(response, userService);
     }
 
+    [SlashCommand("selfblock", "Hides you from WhoKnows and server-wide charts in this server",
+        Contexts = [InteractionContextType.Guild],
+        IntegrationTypes = [ApplicationIntegrationType.GuildInstall])]
+    [UsernameSetRequired]
+    public async Task SelfBlockAsync()
+    {
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+
+        var selfBlocked = await guildService.SelfBlockGuildUserAsync(this.Context.Guild, contextUser.UserId);
+
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed
+        };
+
+        if (selfBlocked)
+        {
+            response.Embed.WithTitle("Selfblocked on this server");
+            response.Embed.WithDescription(
+                "You will no longer appear in WhoKnows and server-wide charts in this server.\n" +
+                "Run `/selfunblock` here to undo this.");
+            response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+            response.CommandResponse = CommandResponse.Ok;
+        }
+        else
+        {
+            response.Embed.WithDescription(
+                "Something went wrong while attempting to add a selfblock, please contact .fmbot staff.");
+            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+            response.CommandResponse = CommandResponse.Error;
+        }
+
+        await this.Context.SendResponse(this.Interactivity, response, userService, ephemeral: true);
+        await this.Context.LogCommandUsedAsync(response, userService);
+    }
+
+    [SlashCommand("selfunblock", "Removes a block you added to yourself with selfblock in this server",
+        Contexts = [InteractionContextType.Guild],
+        IntegrationTypes = [ApplicationIntegrationType.GuildInstall])]
+    [UsernameSetRequired]
+    public async Task SelfUnblockAsync()
+    {
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+
+        var selfUnblocked = await guildService.SelfUnblockGuildUserAsync(this.Context.Guild, contextUser.UserId);
+
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed
+        };
+
+        if (selfUnblocked)
+        {
+            response.Embed.WithTitle("No longer selfblocked on this server");
+            response.Embed.WithDescription(
+                "You will appear in WhoKnows and server-wide charts in this server again.");
+            response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+            response.CommandResponse = CommandResponse.Ok;
+        }
+        else
+        {
+            response.Embed.WithDescription(
+                "You haven't blocked yourself on this server. If server staff blocked you, only they can remove that block.");
+            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+            response.CommandResponse = CommandResponse.WrongInput;
+        }
+
+        await this.Context.SendResponse(this.Interactivity, response, userService, ephemeral: true);
+        await this.Context.LogCommandUsedAsync(response, userService);
+    }
+
     [SlashCommand("fmmode", "Changes your '/fm' layout", Contexts =
     [
         InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,

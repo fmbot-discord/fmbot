@@ -122,7 +122,8 @@ public class GuildService
                                "u.discord_user_id, " +
                                "u.last_used, " +
                                "COALESCE(gbu.blocked_from_crowns, false) as blocked_from_crowns, " +
-                               "COALESCE(gbu.blocked_from_who_knows, false) as blocked_from_who_knows " +
+                               "COALESCE(gbu.blocked_from_who_knows, false) as blocked_from_who_knows, " +
+                               "COALESCE(gbu.self_block_from_who_knows, false) as self_block_from_who_knows " +
                                "FROM public.guild_users AS gu " +
                                "LEFT JOIN users AS u ON gu.user_id = u.user_id " +
                                "LEFT JOIN guilds AS g ON gu.guild_id = g.guild_id " +
@@ -217,12 +218,12 @@ public class GuildService
             stats.GuildActivityThresholdFiltered = preFilterCount - users.Count;
         }
 
-        if (users.Any(a => a.Value.BlockedFromWhoKnows))
+        if (users.Any(a => a.Value.BlockedFromWhoKnows || a.Value.SelfBlockFromWhoKnows))
         {
             var preFilterCount = users.Count;
 
             var usersToFilter = users
-                .Where(w => w.Value.BlockedFromWhoKnows)
+                .Where(w => w.Value.BlockedFromWhoKnows || w.Value.SelfBlockFromWhoKnows)
                 .Select(s => s.Key)
                 .ToHashSet();
 
@@ -654,12 +655,112 @@ public class GuildService
             return true;
         }
 
-        db.GuildBlockedUsers.Remove(existingBlockedUser);
+        if (existingBlockedUser.SelfBlockFromWhoKnows)
+        {
+            existingBlockedUser.BlockedFromCrowns = false;
+            existingBlockedUser.BlockedFromWhoKnows = false;
+
+            db.Entry(existingBlockedUser).State = EntityState.Modified;
+        }
+        else
+        {
+            db.GuildBlockedUsers.Remove(existingBlockedUser);
+        }
+
         await db.SaveChangesAsync();
 
         await RemoveGuildFromCache(discordGuild.Id);
 
         Log.Information("Removed blocked user {userId} from guild {guildName}", userId, discordGuild.Name);
+
+        return true;
+    }
+
+    public async Task<bool> SelfBlockGuildUserAsync(NetCord.Gateway.Guild discordGuild, int userId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var existingGuild = await db.Guilds
+            .AsQueryable()
+            .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuild.Id);
+
+        if (existingGuild == null)
+        {
+            return false;
+        }
+
+        var existingBlockedUser = await db.GuildBlockedUsers
+            .AsQueryable()
+            .FirstOrDefaultAsync(a => a.GuildId == existingGuild.GuildId && a.UserId == userId);
+
+        if (existingBlockedUser != null)
+        {
+            existingBlockedUser.SelfBlockFromWhoKnows = true;
+
+            db.Entry(existingBlockedUser).State = EntityState.Modified;
+
+            await db.SaveChangesAsync();
+
+            await RemoveGuildFromCache(discordGuild.Id);
+
+            return true;
+        }
+
+        var blockedGuildUserToAdd = new GuildBlockedUser
+        {
+            GuildId = existingGuild.GuildId,
+            UserId = userId,
+            SelfBlockFromWhoKnows = true
+        };
+
+        await db.GuildBlockedUsers.AddAsync(blockedGuildUserToAdd);
+        await db.SaveChangesAsync();
+
+        await RemoveGuildFromCache(discordGuild.Id);
+
+        db.Entry(blockedGuildUserToAdd).State = EntityState.Detached;
+
+        Log.Information("Added self-blocked user {userId} to guild {guildName}", userId, discordGuild.Name);
+
+        return true;
+    }
+
+    public async Task<bool> SelfUnblockGuildUserAsync(NetCord.Gateway.Guild discordGuild, int userId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var existingGuild = await db.Guilds
+            .AsQueryable()
+            .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuild.Id);
+
+        if (existingGuild == null)
+        {
+            return false;
+        }
+
+        var existingBlockedUser = await db.GuildBlockedUsers
+            .AsQueryable()
+            .FirstOrDefaultAsync(a => a.GuildId == existingGuild.GuildId && a.UserId == userId);
+
+        if (existingBlockedUser == null || !existingBlockedUser.SelfBlockFromWhoKnows)
+        {
+            return false;
+        }
+
+        existingBlockedUser.SelfBlockFromWhoKnows = false;
+
+        if (existingBlockedUser.BlockedFromCrowns || existingBlockedUser.BlockedFromWhoKnows)
+        {
+            db.Entry(existingBlockedUser).State = EntityState.Modified;
+        }
+        else
+        {
+            db.GuildBlockedUsers.Remove(existingBlockedUser);
+        }
+
+        await db.SaveChangesAsync();
+
+        await RemoveGuildFromCache(discordGuild.Id);
+
+        Log.Information("Removed self-blocked user {userId} from guild {guildName}", userId, discordGuild.Name);
 
         return true;
     }
