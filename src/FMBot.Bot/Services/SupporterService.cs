@@ -248,6 +248,10 @@ public class SupporterService
             Flags = MessageFlags.IsComponentsV2,
             AllowedMentions = AllowedMentionsProperties.None
         });
+
+        Log.Information(
+            "Sent supporter welcome DM to {discordUserId} - reactivation {reactivation} - gifted {isGifted} - source {source}",
+            discordUser.Id, reactivation, isGifted, stripeSupporter?.PurchaseSource);
     }
 
     private static async Task SendGiftPurchaserThankYouMessage(NetCord.User purchaserUser,
@@ -1301,8 +1305,8 @@ public class SupporterService
                         }
                         catch (Exception e)
                         {
-                            Log.Error("Could not send welcome dm to new Discord supporter {discordUserId}",
-                                userEntitlements.DiscordUserId, e);
+                            Log.Error(e, "Could not send welcome dm to new Discord supporter {discordUserId}",
+                                userEntitlements.DiscordUserId);
                         }
                     }
 
@@ -1318,8 +1322,8 @@ public class SupporterService
                         }
                         catch (Exception e)
                         {
-                            Log.Error("Could not send gift purchaser thank you message to {purchaserDiscordUserId}",
-                                stripeSub.PurchaserDiscordUserId, e);
+                            Log.Error(e, "Could not send gift purchaser thank you message to {purchaserDiscordUserId}",
+                                stripeSub.PurchaserDiscordUserId);
                         }
                     }
 
