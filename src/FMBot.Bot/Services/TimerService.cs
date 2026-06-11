@@ -91,7 +91,6 @@ public class TimerService : IDisposable
         this._updateService = updateService;
         this._botSettings = botSettings.Value;
 
-        this.CurrentFeatured = this._featuredService.GetFeaturedForDateTime(DateTime.UtcNow).Result;
         this._updateQueueHandler = new UpdateQueueHandler(this._updateService, TimeSpan.FromMilliseconds(200));
     }
 
@@ -502,6 +501,11 @@ public class TimerService : IDisposable
     {
         Log.Information("StartProcessingUpdateQueue called - starting queue processing");
         return _updateQueueHandler.ProcessQueueAsync();
+    }
+
+    public async Task LoadCurrentFeatured()
+    {
+        this.CurrentFeatured = await this._featuredService.GetFeaturedForDateTime(DateTime.UtcNow);
     }
 
     public async Task CheckForNewFeatured()
