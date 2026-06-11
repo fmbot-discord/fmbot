@@ -106,9 +106,44 @@ public class StartupService
         Log.Information("Loading command modules");
         this._textCommands.AddModules(typeof(Program).Assembly);
 
+        var cachesTask = LoadInitialCaches(databaseTask);
+
         Log.Information("Logging into Discord");
         await this._client.StartAsync();
 
+        await cachesTask;
+        await lastFmTask;
+
+        var gateway = await this._client.Rest.GetGatewayBotAsync();
+        Log.Information("Gateway: connects left {connectsLeft} - reset after {resetAfter} - recommended shards {shardCount}",
+            gateway.SessionStartLimit.Remaining, gateway.SessionStartLimit.ResetAfter, gateway.ShardCount);
+
+        await this._timerService.UpdateHealthCheck();
+        await this.RegisterSlashCommands();
+
+        InitializeHangfireConfig();
+        this._timerService.QueueJobs();
+
+        this.StartMetricsPusher();
+
+        const int warmupDelay = 15;
+
+        if (ConfigData.Data.Shards == null || ConfigData.Data.Shards.MainInstance == true)
+        {
+            BackgroundJob.Schedule(() => this.RegisterSlashCommands(), TimeSpan.FromSeconds(warmupDelay));
+            BackgroundJob.Schedule(() => this._supporterService.AddRoleToNewSupporters(), TimeSpan.FromSeconds(warmupDelay));
+        }
+
+        BackgroundJob.Schedule(() => this.CacheSlashCommandIds(), TimeSpan.FromSeconds(warmupDelay));
+        BackgroundJob.Schedule(() => this._timerService.UpdateStatus(), TimeSpan.FromSeconds(warmupDelay));
+
+        await Task.WhenAll(
+            this.CachePremiumGuilds(),
+            this.CacheDiscordUserIds());
+    }
+
+    private async Task LoadInitialCaches(Task databaseTask)
+    {
         await databaseTask;
 
         Log.Information("Loading all prefixes");
@@ -142,35 +177,7 @@ public class StartupService
             disabledChannelsTask,
             shortcutsTask,
             featuredTask,
-            chartFilesTask,
-            lastFmTask);
-
-        var gateway = await this._client.Rest.GetGatewayBotAsync();
-        Log.Information("Gateway: connects left {connectsLeft} - reset after {resetAfter} - recommended shards {shardCount}",
-            gateway.SessionStartLimit.Remaining, gateway.SessionStartLimit.ResetAfter, gateway.ShardCount);
-
-        await this._timerService.UpdateHealthCheck();
-        await this.RegisterSlashCommands();
-
-        InitializeHangfireConfig();
-        this._timerService.QueueJobs();
-
-        this.StartMetricsPusher();
-
-        const int warmupDelay = 15;
-
-        if (ConfigData.Data.Shards == null || ConfigData.Data.Shards.MainInstance == true)
-        {
-            BackgroundJob.Schedule(() => this.RegisterSlashCommands(), TimeSpan.FromSeconds(warmupDelay));
-            BackgroundJob.Schedule(() => this._supporterService.AddRoleToNewSupporters(), TimeSpan.FromSeconds(warmupDelay));
-        }
-
-        BackgroundJob.Schedule(() => this.CacheSlashCommandIds(), TimeSpan.FromSeconds(warmupDelay));
-        BackgroundJob.Schedule(() => this._timerService.UpdateStatus(), TimeSpan.FromSeconds(warmupDelay));
-
-        await Task.WhenAll(
-            this.CachePremiumGuilds(),
-            this.CacheDiscordUserIds());
+            chartFilesTask);
     }
 
     private async Task EnsureDatabaseUpdated()
