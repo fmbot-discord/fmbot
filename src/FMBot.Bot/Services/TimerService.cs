@@ -220,9 +220,6 @@ public class TimerService : IDisposable
 
         Log.Information($"RecurringJob: Adding {nameof(EnrichMissingMetadata)}");
         RecurringJob.AddOrUpdate(nameof(EnrichMissingMetadata), () => EnrichMissingMetadata(), "*/20 * * * *");
-
-        Log.Information($"RecurringJob: Adding {nameof(BackfillInactiveUserIds)}");
-        RecurringJob.AddOrUpdate(nameof(BackfillInactiveUserIds), () => BackfillInactiveUserIds(), "*/10 * * * *");
     }
 
     public async Task UpdateStatus()
@@ -750,22 +747,6 @@ public class TimerService : IDisposable
         catch (Exception e)
         {
             Log.Error(e, nameof(EnrichMissingMetadata));
-            throw;
-        }
-    }
-
-    public async Task BackfillInactiveUserIds()
-    {
-        Log.Information($"Running {nameof(BackfillInactiveUserIds)}");
-
-        try
-        {
-            var idResolutionService = this._serviceProvider.GetRequiredService<IdResolutionService>();
-            await idResolutionService.BackfillInactiveUserIds();
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, nameof(BackfillInactiveUserIds));
             throw;
         }
     }
