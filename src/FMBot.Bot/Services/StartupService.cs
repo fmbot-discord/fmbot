@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FMBot.Bot.Configurations;
@@ -89,7 +90,12 @@ public class StartupService
         try
         {
             Log.Information("Ensuring database is up to date");
-            await context.Database.MigrateAsync();
+            var pendingMigrations = (await context.Database.GetPendingMigrationsAsync()).ToList();
+            if (pendingMigrations.Count != 0)
+            {
+                Log.Information("Applying {count} pending migration(s)", pendingMigrations.Count);
+                await context.Database.MigrateAsync();
+            }
         }
         catch (Exception e)
         {
