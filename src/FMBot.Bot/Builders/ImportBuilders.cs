@@ -344,6 +344,12 @@ public class ImportBuilders
                     "Because you have selected the mode **Imports, then full Last.fm** not all imports might be used. This mode only uses your imports up until you started scrobbling on Last.fm.");
             }
 
+            if (context.ContextUser.DataSource == DataSource.MergedDeduplicated)
+            {
+                noteDescription.AppendLine(
+                    "Because you have selected the mode **Smart deduplication** *(Beta)* imported plays that you also scrobbled to Last.fm are removed, keeping your Last.fm scrobble. All other imports are used.");
+            }
+
             if (noteDescription.Length > 0)
             {
                 response.Embed.AddField($"📝 How your imports are used", noteDescription.ToString());

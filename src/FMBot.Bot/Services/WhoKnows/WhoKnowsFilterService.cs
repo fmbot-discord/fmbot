@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Dapper;
 using FMBot.Bot.Extensions;
+using FMBot.Bot.Models;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
@@ -20,17 +21,14 @@ public class WhoKnowsFilterService
 {
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
     private readonly BotSettings _botSettings;
-    private readonly TimeService _timeService;
 
     public const int MaxAmountOfPlaysPerDay = 650;
     private const int MaxAmountOfHoursPerPeriod = 144;
     public const int PeriodAmountOfDays = 8;
 
-    public WhoKnowsFilterService(IDbContextFactory<FMBotDbContext> contextFactory, IOptions<BotSettings> botSettings,
-        TimeService timeService)
+    public WhoKnowsFilterService(IDbContextFactory<FMBotDbContext> contextFactory, IOptions<BotSettings> botSettings)
     {
         this._contextFactory = contextFactory;
-        this._timeService = timeService;
         this._botSettings = botSettings.Value;
     }
 
@@ -47,42 +45,42 @@ public class WhoKnowsFilterService
 
             for (var i = highestUserId; i >= 0; i -= 10000)
             {
-                var userPlays = await GetGlobalUserPlays(i, i - 10000);
+                var candidates = await GetGlobalFilterCandidates(i, i - 10000);
 
-                foreach (var user in userPlays)
+                foreach (var candidate in candidates)
                 {
-                    var timeListened = await this._timeService.EnrichPlaysWithPlayTime(user.Value, true);
+                    var totalPlayTime = TimeSpan.FromMilliseconds(candidate.TotalMsPlayed);
 
-                    if (timeListened.totalPlayTime.TotalHours >= MaxAmountOfHoursPerPeriod)
+                    if (totalPlayTime.TotalHours >= MaxAmountOfHoursPerPeriod)
                     {
                         Log.Information("GWKFilter: Found user {userId} with too much playtime - {totalHours}",
-                            user.Key, (int)timeListened.totalPlayTime.TotalHours);
+                            candidate.UserId, (int)totalPlayTime.TotalHours);
 
                         newFilteredUsers.Add(new GlobalFilteredUser
                         {
                             Created = DateTime.UtcNow,
-                            OccurrenceStart = user.Value.MinBy(b => b.TimePlayed).TimePlayed,
-                            OccurrenceEnd = user.Value.MaxBy(b => b.TimePlayed).TimePlayed,
+                            OccurrenceStart = candidate.FirstPlay,
+                            OccurrenceEnd = candidate.LastPlay,
                             Reason = GlobalFilterReason.PlayTimeInPeriod,
-                            ReasonAmount = (int)timeListened.totalPlayTime.TotalHours,
-                            UserId = user.Key,
+                            ReasonAmount = (int)totalPlayTime.TotalHours,
+                            UserId = candidate.UserId,
                             MonthLength = 3
                         });
                     }
-                    else if ((user.Value.Count / PeriodAmountOfDays) >= MaxAmountOfPlaysPerDay)
+                    else if ((candidate.PlayCount / PeriodAmountOfDays) >= MaxAmountOfPlaysPerDay)
                     {
                         Log.Information(
                             "GWKFilter: Found user {userId} with too much plays - {totalPlays} in {totalDays}",
-                            user.Key, user.Value.Count, MaxAmountOfPlaysPerDay);
+                            candidate.UserId, candidate.PlayCount, MaxAmountOfPlaysPerDay);
 
                         newFilteredUsers.Add(new GlobalFilteredUser
                         {
                             Created = DateTime.UtcNow,
-                            OccurrenceStart = user.Value.MinBy(b => b.TimePlayed).TimePlayed,
-                            OccurrenceEnd = user.Value.MaxBy(b => b.TimePlayed).TimePlayed,
+                            OccurrenceStart = candidate.FirstPlay,
+                            OccurrenceEnd = candidate.LastPlay,
                             Reason = GlobalFilterReason.AmountPerPeriod,
-                            ReasonAmount = user.Value.Count,
-                            UserId = user.Key,
+                            ReasonAmount = candidate.PlayCount,
+                            UserId = candidate.UserId,
                             MonthLength = 3
                         });
                     }
@@ -214,27 +212,82 @@ public class WhoKnowsFilterService
         return filterInfo.ToString();
     }
 
-    private async Task<Dictionary<int, List<UserPlay>>> GetGlobalUserPlays(int topUserId, int botUserId)
+    private async Task<List<GlobalFilterCandidate>> GetGlobalFilterCandidates(int topUserId, int botUserId)
     {
-        Log.Information("GWKFilter: Getting plays from userIds {topUserId} to {botUserId}", topUserId, botUserId);
+        Log.Information("GWKFilter: Getting filter candidates from userIds {topUserId} to {botUserId}", topUserId, botUserId);
 
         const int start = PeriodAmountOfDays + 3;
         const int end = 3;
 
-        var sql = "SELECT up.* " +
-                  "FROM user_plays AS up " +
-                  $"WHERE time_played >= current_date - interval '{start}' day AND  time_played <= current_date - interval '{end}' day " +
-                  $"AND user_id  >= {botUserId} AND user_id <= {topUserId} AND play_source = 0";
+        var sql = $"""
+                   WITH range_plays AS (
+                       SELECT up.user_id, up.track_id, up.artist_id,
+                              COUNT(*) AS plays,
+                              MIN(up.time_played) AS first_play,
+                              MAX(up.time_played) AS last_play
+                       FROM user_plays AS up
+                       WHERE up.user_id >= @botUserId AND up.user_id <= @topUserId
+                         AND up.time_played >= current_date - interval '{start}' day
+                         AND up.time_played <= current_date - interval '{end}' day
+                         AND up.play_source = 0
+                       GROUP BY up.user_id, up.track_id, up.artist_id
+                   ),
+                   track_durations AS (
+                       SELECT ti.track_id, NULLIF(t.duration_ms, 0)::bigint AS duration_ms
+                       FROM (SELECT DISTINCT rp.track_id FROM range_plays AS rp WHERE rp.track_id IS NOT NULL) AS ti
+                       JOIN tracks AS t ON t.id = ti.track_id
+                   ),
+                   track_plays AS (
+                       SELECT rp.user_id, rp.artist_id, rp.plays, rp.first_play, rp.last_play, td.duration_ms
+                       FROM range_plays AS rp
+                       LEFT JOIN track_durations AS td ON td.track_id = rp.track_id
+                   ),
+                   artist_avgs AS (
+                       SELECT t.artist_id, AVG(t.duration_ms)::bigint AS avg_duration_ms
+                       FROM tracks AS t
+                       WHERE t.duration_ms IS NOT NULL AND t.duration_ms != 0
+                         AND t.artist_id IN (SELECT DISTINCT tp.artist_id
+                                             FROM track_plays AS tp
+                                             WHERE tp.artist_id IS NOT NULL AND tp.duration_ms IS NULL)
+                       GROUP BY t.artist_id
+                   ),
+                   enriched AS (
+                       SELECT tp.user_id, tp.plays, tp.first_play, tp.last_play,
+                              tp.plays * COALESCE(
+                                  tp.duration_ms,
+                                  CASE
+                                      WHEN aa.avg_duration_ms > 360000 THEN aa.avg_duration_ms - 120000
+                                      WHEN aa.avg_duration_ms > 240000 THEN aa.avg_duration_ms - 90000
+                                      WHEN aa.avg_duration_ms > 120000 THEN aa.avg_duration_ms - 60000
+                                      ELSE aa.avg_duration_ms
+                                  END,
+                                  60000) AS ms_played
+                       FROM track_plays AS tp
+                       LEFT JOIN artist_avgs AS aa ON aa.artist_id = tp.artist_id
+                   )
+                   SELECT user_id,
+                          SUM(plays)::int AS play_count,
+                          SUM(ms_played)::bigint AS total_ms_played,
+                          MIN(first_play) AS first_play,
+                          MAX(last_play) AS last_play
+                   FROM enriched
+                   GROUP BY user_id
+                   HAVING SUM(ms_played) >= @maxMsPerPeriod OR SUM(plays) >= @maxPlaysPerPeriod
+                   """;
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        var userPlays = await connection.QueryAsync<UserPlay>(sql);
+        var candidates = await connection.QueryAsync<GlobalFilterCandidate>(sql, new
+        {
+            topUserId,
+            botUserId,
+            maxMsPerPeriod = MaxAmountOfHoursPerPeriod * 3600000L,
+            maxPlaysPerPeriod = MaxAmountOfPlaysPerDay * PeriodAmountOfDays
+        });
 
-        return userPlays
-            .GroupBy(g => g.UserId)
-            .ToDictionary(d => d.Key, d => d.ToList());
+        return candidates.ToList();
     }
 
     private async Task<int> GetHighestUserId()

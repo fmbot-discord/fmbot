@@ -1394,6 +1394,7 @@ public class UserBuilder
                 {
                     case DataSource.FullImportThenLastFm:
                     case DataSource.ImportThenFullLastFm:
+                    case DataSource.MergedDeduplicated:
                         response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
                         response.ComponentsContainer.AddComponent(
                             new TextDisplayProperties($"{EmojiProperties.Custom(DiscordConstants.Imports).ToDiscordString("imports")} .fmbot imports: {name}"));
@@ -1856,6 +1857,21 @@ public class UserBuilder
         embedDescription.Append(
             $"{playsWithImportUntilFullLastFm.Count(c => c.PlaySource == PlaySource.LastFm).Format(context.NumberFormat)} scrobbles = ");
         embedDescription.Append($"{playsWithImportUntilFullLastFm.Count().Format(context.NumberFormat)} plays");
+        embedDescription.AppendLine();
+        embedDescription.AppendLine();
+
+        embedDescription.AppendLine($"**Smart deduplication** *(Beta)*");
+        embedDescription.AppendLine(
+            $"- Combines both sources and removes imported plays you already scrobbled to Last.fm");
+        embedDescription.AppendLine("- Keeps your Last.fm scrobble whenever an import is a duplicate");
+
+        var playsWithMergedDeduplicated =
+            await this._playService.GetPlaysWithDataSource(userId, DataSource.MergedDeduplicated);
+        embedDescription.Append(
+            $"- {playsWithMergedDeduplicated.Count(c => c.PlaySource == PlaySource.SpotifyImport || c.PlaySource == PlaySource.AppleMusicImport).Format(context.NumberFormat)} imports + ");
+        embedDescription.Append(
+            $"{playsWithMergedDeduplicated.Count(c => c.PlaySource == PlaySource.LastFm).Format(context.NumberFormat)} scrobbles = ");
+        embedDescription.Append($"{playsWithMergedDeduplicated.Count().Format(context.NumberFormat)} plays");
         embedDescription.AppendLine();
 
         if (!hasImported)

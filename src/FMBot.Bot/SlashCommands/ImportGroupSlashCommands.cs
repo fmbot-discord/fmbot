@@ -253,6 +253,13 @@ public class ImportGroupSlashCommands(
                     importSetting.AppendLine(
                         "Your import setting has been set to **Imports, then full Last.fm**. This uses your Spotify history up until you started using Last.fm.");
                     break;
+                case DataSource.MergedDeduplicated:
+                    importActivated.AppendLine(
+                        "With this service all playcounts and history in the bot will consist of your imports combined with your Last.fm history. The bot re-calculates this every time you run a command, all while still responding quickly.");
+
+                    importSetting.AppendLine(
+                        "Your import setting has been set to **Smart deduplication** *(Beta)*. This combines your full Spotify history with your Last.fm scrobbles and removes imported plays you already scrobbled to Last.fm.");
+                    break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -444,6 +451,13 @@ public class ImportGroupSlashCommands(
 
                     importSetting.AppendLine(
                         "Your import setting has been set to **Imports, then full Last.fm**. This uses your Apple Music history up until you started using Last.fm.");
+                    break;
+                case DataSource.MergedDeduplicated:
+                    importActivated.AppendLine(
+                        "With this service all playcounts and history in the bot will consist of your imports combined with your Last.fm history. The bot re-calculates this every time you run a command, all while still responding quickly.");
+
+                    importSetting.AppendLine(
+                        "Your import setting has been set to **Smart deduplication** *(Beta)*. This combines your full Apple Music history with your Last.fm scrobbles and removes imported plays you already scrobbled to Last.fm.");
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
