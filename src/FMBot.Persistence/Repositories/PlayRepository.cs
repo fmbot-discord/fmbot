@@ -289,12 +289,9 @@ ORDER BY time_played DESC;";
                 "AND lfm.artist_name = up.artist_name AND lfm.track_name = up.track_name " +
                 "AND lfm.time_played BETWEEN " +
                 "(CASE WHEN COALESCE(up.ms_played, 0) > 0 " +
-                "THEN up.time_played - (up.ms_played::float8 * INTERVAL '1 millisecond') - INTERVAL '240 seconds' " +
-                "ELSE up.time_played - INTERVAL '5 minutes' END) " +
-                "AND " +
-                "(CASE WHEN COALESCE(up.ms_played, 0) > 0 " +
-                "THEN up.time_played + INTERVAL '240 seconds' " +
-                "ELSE up.time_played + INTERVAL '5 minutes' END) " +
+                "THEN up.time_played - (up.ms_played::float8 * INTERVAL '1 millisecond') - INTERVAL '2 hours' " +
+                "ELSE up.time_played - INTERVAL '2 hours' END) " +
+                "AND up.time_played + INTERVAL '2 hours' " +
                 "))) ",
             _ => " FROM public.user_plays WHERE user_id = @userId "
         };
