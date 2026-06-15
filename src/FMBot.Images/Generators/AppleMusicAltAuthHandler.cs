@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Headers;
 using Serilog;
 
@@ -11,14 +12,13 @@ public class AppleMusicAltAuthHandler(PuppeteerService puppeteerService) : Deleg
     {
         this._cachedToken ??= await puppeteerService.GetAppleToken();
 
-        if (this._cachedToken != null)
+        if (this._cachedToken == null)
         {
-            request.Headers.Authorization = AuthenticationHeaderValue.Parse(this._cachedToken);
+            Log.Error("No alt Apple Music auth header");
+            return new HttpResponseMessage(HttpStatusCode.Unauthorized);
         }
-        else
-        {
-            Log.Warning("No alt Apple Music auth header");
-        }
+
+        request.Headers.Authorization = AuthenticationHeaderValue.Parse(this._cachedToken);
 
         return await base.SendAsync(request, cancellationToken);
     }
