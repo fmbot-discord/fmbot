@@ -825,7 +825,7 @@ public class PuppeteerService : IDisposable
         var scriptElement = await page.QuerySelectorAsync("script[type='module']");
         if (scriptElement == null)
         {
-            Log.Information("Failed to find Apple script with auth token.");
+            Log.Error("Failed to find Apple script with auth token.");
             return null;
         }
 
@@ -834,10 +834,10 @@ public class PuppeteerService : IDisposable
 
         var pageContent = await page.GetContentAsync();
 
-        var match = Regex.Match(pageContent, "(?<=\")eyJhbGciOiJ.+?(?=\")");
+        var match = Regex.Match(pageContent, @"eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+");
         if (!match.Success)
         {
-            Log.Information("Failed to find Apple auth token from script.");
+            Log.Error("Failed to find Apple auth token from script.");
             return null;
         }
 
