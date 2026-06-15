@@ -966,15 +966,17 @@ public class PlayBuilder
 
         if (trackPages.Count == 0)
         {
-            response.ResponseType = ResponseType.Text;
-            response.Text = "No recent tracks found.";
+            var noResultsText = "No recent tracks found.";
             if (!string.IsNullOrWhiteSpace(artistToFilter))
             {
-                response.Text = SupporterService.IsSupporter(userSettings.UserType)
+                noResultsText = SupporterService.IsSupporter(userSettings.UserType)
                     ? "No recent tracks found for this artist."
                     : $"No recent tracks found for this artist. Get [.fmbot supporter]({Constants.GetSupporterOverviewLink}) to search through your lifetime history and more.";
             }
 
+            response.ResponseType = ResponseType.ComponentsV2;
+            response.ComponentsContainer.WithTextDisplay(noResultsText);
+            response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
             response.CommandResponse = CommandResponse.NoScrobbles;
             return response;
         }

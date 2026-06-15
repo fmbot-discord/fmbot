@@ -154,7 +154,7 @@ public class UpdateService
         if (dateFromFilter > now.AddHours(-22) && queueItem.GetAccurateTotalPlaycount)
         {
             var playsToGet = (int)((now - dateFromFilter).TotalMinutes / 3);
-            count = 100 + playsToGet;
+            count = 120 + playsToGet;
             pages = 1;
             timeFrom = null;
             totalPlaycountCorrect = true;

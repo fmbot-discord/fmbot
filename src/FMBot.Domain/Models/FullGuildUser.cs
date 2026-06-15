@@ -17,6 +17,7 @@ public class FullGuildUser
 
     public bool BlockedFromCrowns { get; set; }
     public bool BlockedFromWhoKnows { get; set; }
+    public bool SelfBlockFromWhoKnows { get; set; }
 
     public ulong[] Roles { get; set; }
 }

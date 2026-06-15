@@ -343,31 +343,31 @@ public class ImportService(
 
         var existingPlays = await PlayRepository.GetAllUserPlays(userId, connection);
 
-        var timestamps = existingPlays
+        var importTimesByTrack = existingPlays
             .Where(w => w.PlaySource == PlaySource.SpotifyImport || w.PlaySource == PlaySource.AppleMusicImport)
-            .GroupBy(g => g.TimePlayed)
-            .ToDictionary(d => d.Key, d => d.ToList());
+            .GroupBy(g => (g.ArtistName, g.TrackName))
+            .ToDictionary(d => d.Key, d => d.Select(s => s.TimePlayed).ToList());
+
+        var duplicateTolerance = TimeSpan.FromSeconds(10);
 
         var playsToReturn = new List<UserPlay>();
         foreach (var userPlay in userPlays)
         {
-            if (!timestamps.ContainsKey(userPlay.TimePlayed))
-            {
-                playsToReturn.Add(userPlay);
-                timestamps.Add(userPlay.TimePlayed, [userPlay]);
-            }
-            else
-            {
-                var playsWithTimestamp = timestamps[userPlay.TimePlayed];
+            var key = (userPlay.ArtistName, userPlay.TrackName);
 
-                if (!playsWithTimestamp.Any(a => a.TrackName == userPlay.TrackName &&
-                                                 a.AlbumName == userPlay.AlbumName &&
-                                                 a.ArtistName == userPlay.ArtistName))
-                {
-                    playsToReturn.Add(userPlay);
-                    playsWithTimestamp.Add(userPlay);
-                }
+            if (!importTimesByTrack.TryGetValue(key, out var existingTimes))
+            {
+                existingTimes = [];
+                importTimesByTrack[key] = existingTimes;
             }
+
+            if (existingTimes.Any(t => (t - userPlay.TimePlayed).Duration() <= duplicateTolerance))
+            {
+                continue;
+            }
+
+            playsToReturn.Add(userPlay);
+            existingTimes.Add(userPlay.TimePlayed);
         }
 
         return playsToReturn;

@@ -4,6 +4,23 @@ using FMBot.Domain.Models;
 
 namespace FMBot.Bot.Models;
 
+public class GlobalFilterCandidate
+{
+    public int UserId { get; set; }
+
+    public ulong DiscordUserId { get; set; }
+
+    public string UserNameLastFm { get; set; }
+
+    public int PlayCount { get; set; }
+
+    public long TotalMsPlayed { get; set; }
+
+    public DateTime FirstPlay { get; set; }
+
+    public DateTime LastPlay { get; set; }
+}
+
 public class WhoKnowsSettings
 {
     public WhoKnowsSettings()

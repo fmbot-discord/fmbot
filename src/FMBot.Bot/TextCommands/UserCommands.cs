@@ -333,7 +333,12 @@ public class UserCommands(
         catch (Exception e)
         {
             await this.Context.HandleCommandException(e, userService, sendReply: false);
-            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Unable to show the featured avatar on FMBot due to an internal error. \nThe bot might not have changed its avatar since its last startup. Please wait until a new featured user is chosen." });
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
+                new MessageProperties
+                {
+                    Content =
+                        "Unable to show the featured avatar on FMBot due to an internal error. \nThe bot might not have changed its avatar since its last startup. Please wait until a new featured user is chosen."
+                });
         }
     }
 
@@ -457,19 +462,25 @@ public class UserCommands(
             }
             else
             {
-                await dmChannel.SendMessageAsync(new MessageProperties().AddEmbeds(response.Embed).WithComponents(response.Components?.Any() == true ? [response.Components] : null));
+                await dmChannel.SendMessageAsync(new MessageProperties().AddEmbeds(response.Embed)
+                    .WithComponents(response.Components?.Any() == true ? [response.Components] : null));
             }
 
             if (this.Context.Guild != null)
             {
-                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Check your DMs to configure your `fm` settings!" });
+                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
+                    new MessageProperties { Content = "Check your DMs to configure your `fm` settings!" });
             }
 
             await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "An error occurred while trying to send a DM. You may have DMs disabled. \nTry using the slash command version `/fmmode` instead." });
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
+                new MessageProperties
+                {
+                    Content = "An error occurred while trying to send a DM. You may have DMs disabled. \nTry using the slash command version `/fmmode` instead."
+                });
             await this.Context.HandleCommandException(e, userService, sendReply: false);
         }
     }
@@ -523,6 +534,67 @@ public class UserCommands(
         await this.Context.LogCommandUsedAsync(response, userService);
     }
 
+    [Command("selfblock", "hidefromserver")]
+    [Summary("Hides you from WhoKnows and server-wide charts in the current server")]
+    [Examples("selfblock")]
+    [GuildOnly]
+    [UsernameSetRequired]
+    [CommandCategories(CommandCategory.UserSettings, CommandCategory.WhoKnows)]
+    public async Task SelfBlockAsync([CommandParameter(Remainder = true)] string _ = null)
+    {
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+
+        var selfBlocked = await guildService.SelfBlockGuildUserAsync(this.Context.Guild, contextUser.UserId);
+
+        if (selfBlocked)
+        {
+            this._embed.WithTitle("Selfblocked on this server");
+            this._embed.WithDescription("You will no longer appear in WhoKnows and server-wide charts in this server.\n" +
+                                        $"Run `{prfx}selfunblock` here to undo this.");
+            this._embed.WithColor(DiscordConstants.InformationColorBlue);
+
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Embeds = [this._embed] });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
+        }
+        else
+        {
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
+                new MessageProperties { Content = "Something went wrong while attempting to add a selfblock, please contact .fmbot staff." });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Error }, userService);
+        }
+    }
+
+    [Command("selfunblock", "unhidefromserver")]
+    [Summary("Removes a block you added to yourself with selfblock in the current server")]
+    [Examples("selfunblock")]
+    [GuildOnly]
+    [UsernameSetRequired]
+    [CommandCategories(CommandCategory.UserSettings, CommandCategory.WhoKnows)]
+    public async Task SelfUnblockAsync([CommandParameter(Remainder = true)] string _ = null)
+    {
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+
+        var selfUnblocked = await guildService.SelfUnblockGuildUserAsync(this.Context.Guild, contextUser.UserId);
+
+        if (selfUnblocked)
+        {
+            this._embed.WithTitle("No longer selfblocked on this server");
+            this._embed.WithDescription("You will appear in WhoKnows and server-wide charts in this server again.");
+            this._embed.WithColor(DiscordConstants.InformationColorBlue);
+
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Embeds = [this._embed] });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
+        }
+        else
+        {
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
+                new MessageProperties
+                    { Content = "You haven't blocked yourself on this server. If server staff blocked you, only they can remove that block." });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
+        }
+    }
+
     [Command("templates")]
     [Summary("Configure your fm templates.")]
     [Examples("templates")]
@@ -566,7 +638,11 @@ public class UserCommands(
         }
         catch (Exception e)
         {
-            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "An error occurred while trying to send a DM. You may have DMs disabled. \nTry using the slash command version `/fmmode` instead." });
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
+                new MessageProperties
+                {
+                    Content = "An error occurred while trying to send a DM. You may have DMs disabled. \nTry using the slash command version `/fmmode` instead."
+                });
             await this.Context.HandleCommandException(e, userService, sendReply: false);
         }
     }
@@ -595,7 +671,8 @@ public class UserCommands(
 
         if (contextUser == null)
         {
-            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Sorry, but we don't have any data from you in our database." });
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
+                new MessageProperties { Content = "Sorry, but we don't have any data from you in our database." });
             await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
             return;
         }
@@ -611,7 +688,8 @@ public class UserCommands(
 
         var response = UserBuilder.RemoveDataResponse(new ContextModel(this.Context, prfx, contextUser));
         var dmChannel = await this.Context.User.GetDMChannelAsync();
-        await dmChannel.SendMessageAsync(new MessageProperties().AddEmbeds(response.Embed).WithComponents(response.Components?.Any() == true ? [response.Components] : null));
+        await dmChannel.SendMessageAsync(new MessageProperties().AddEmbeds(response.Embed)
+            .WithComponents(response.Components?.Any() == true ? [response.Components] : null));
         await this.Context.LogCommandUsedAsync(response, userService);
     }
 

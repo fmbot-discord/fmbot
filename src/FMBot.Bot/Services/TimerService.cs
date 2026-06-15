@@ -91,7 +91,6 @@ public class TimerService : IDisposable
         this._updateService = updateService;
         this._botSettings = botSettings.Value;
 
-        this.CurrentFeatured = this._featuredService.GetFeaturedForDateTime(DateTime.UtcNow).Result;
         this._updateQueueHandler = new UpdateQueueHandler(this._updateService, TimeSpan.FromMilliseconds(200));
     }
 
@@ -221,9 +220,6 @@ public class TimerService : IDisposable
 
         Log.Information($"RecurringJob: Adding {nameof(EnrichMissingMetadata)}");
         RecurringJob.AddOrUpdate(nameof(EnrichMissingMetadata), () => EnrichMissingMetadata(), "*/20 * * * *");
-
-        Log.Information($"RecurringJob: Adding {nameof(BackfillInactiveUserIds)}");
-        RecurringJob.AddOrUpdate(nameof(BackfillInactiveUserIds), () => BackfillInactiveUserIds(), "*/10 * * * *");
     }
 
     public async Task UpdateStatus()
@@ -504,6 +500,11 @@ public class TimerService : IDisposable
         return _updateQueueHandler.ProcessQueueAsync();
     }
 
+    public async Task LoadCurrentFeatured()
+    {
+        this.CurrentFeatured = await this._featuredService.GetFeaturedForDateTime(DateTime.UtcNow);
+    }
+
     public async Task CheckForNewFeatured()
     {
         var newFeatured = await this._featuredService.GetFeaturedForDateTime(DateTime.UtcNow);
@@ -746,22 +747,6 @@ public class TimerService : IDisposable
         catch (Exception e)
         {
             Log.Error(e, nameof(EnrichMissingMetadata));
-            throw;
-        }
-    }
-
-    public async Task BackfillInactiveUserIds()
-    {
-        Log.Information($"Running {nameof(BackfillInactiveUserIds)}");
-
-        try
-        {
-            var idResolutionService = this._serviceProvider.GetRequiredService<IdResolutionService>();
-            await idResolutionService.BackfillInactiveUserIds();
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, nameof(BackfillInactiveUserIds));
             throw;
         }
     }

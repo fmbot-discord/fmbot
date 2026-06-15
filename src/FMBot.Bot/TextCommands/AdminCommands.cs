@@ -2816,6 +2816,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                 {
                     case DataSource.FullImportThenLastFm:
                     case DataSource.ImportThenFullLastFm:
+                    case DataSource.MergedDeduplicated:
                         description.AppendLine($"Imported: {name}");
                         break;
                     case DataSource.LastFm:

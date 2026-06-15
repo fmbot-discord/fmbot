@@ -280,6 +280,19 @@ ORDER BY time_played DESC;";
                 "((play_source = 1 OR play_source = 2) AND time_played < ( " +
                 "SELECT MIN(time_played) FROM public.user_plays WHERE user_id = @userId AND play_source = 0 " +
                 "))) ",
+            DataSource.MergedDeduplicated =>
+                " FROM public.user_plays up WHERE up.user_id = @userId AND up.artist_name IS NOT NULL AND ( " +
+                "up.play_source = 0 OR " +
+                "((up.play_source = 1 OR up.play_source = 2) AND NOT EXISTS ( " +
+                "SELECT 1 FROM public.user_plays lfm " +
+                "WHERE lfm.user_id = @userId AND lfm.play_source = 0 " +
+                "AND lfm.artist_name = up.artist_name AND lfm.track_name = up.track_name " +
+                "AND lfm.time_played BETWEEN " +
+                "(CASE WHEN COALESCE(up.ms_played, 0) > 0 " +
+                "THEN up.time_played - (up.ms_played::float8 * INTERVAL '1 millisecond') - INTERVAL '2 hours' " +
+                "ELSE up.time_played - INTERVAL '2 hours' END) " +
+                "AND up.time_played + INTERVAL '2 hours' " +
+                "))) ",
             _ => " FROM public.user_plays WHERE user_id = @userId "
         };
 

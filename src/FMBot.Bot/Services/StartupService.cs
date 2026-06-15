@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FMBot.Bot.Configurations;
@@ -33,7 +34,7 @@ public class StartupService
     private readonly GuildDisabledCommandService _guildDisabledCommands;
     private readonly ChannelToggledCommandService _channelToggledCommands;
     private readonly DisabledChannelService _disabledChannelService;
-    private readonly ShardedGatewayClient  _client;
+    private readonly ShardedGatewayClient _client;
     private readonly IPrefixService _prefixService;
     private readonly IServiceProvider _provider;
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
@@ -85,18 +86,6 @@ public class StartupService
 
     public async Task StartAsync()
     {
-        await using var context = await this._contextFactory.CreateDbContextAsync();
-        try
-        {
-            Log.Information("Ensuring database is up to date");
-            await context.Database.MigrateAsync();
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "Something went wrong while creating/updating the database!");
-            throw;
-        }
-
         Log.Information("Starting bot");
 
         var discordToken = this._botSettings.Discord.Token; // Get the discord token from the config file
@@ -105,19 +94,8 @@ public class StartupService
             throw new Exception("Please enter your bots token into the `/configs/config.json` file.");
         }
 
-        await TestLastFmApi();
-
-        Log.Information("Loading all prefixes");
-        await this._prefixService.LoadAllPrefixes();
-
-        Log.Information("Loading all server disabled commands");
-        await this._guildDisabledCommands.LoadAllDisabledCommands();
-
-        Log.Information("Loading all channel disabled commands");
-        await this._channelToggledCommands.LoadAllToggledCommands();
-
-        Log.Information("Loading all disabled channels");
-        await this._disabledChannelService.LoadAllDisabledChannels();
+        var databaseTask = Task.Run(EnsureDatabaseUpdated);
+        var lastFmTask = TestLastFmApi();
 
         Log.Information("Loading interaction modules");
         this._appCommands.AddModules(typeof(Program).Assembly);
@@ -128,17 +106,13 @@ public class StartupService
         Log.Information("Loading command modules");
         this._textCommands.AddModules(typeof(Program).Assembly);
 
+        var cachesTask = LoadInitialCaches(databaseTask);
+
         Log.Information("Logging into Discord");
         await this._client.StartAsync();
 
-        Log.Information("Preparing cache folder");
-        PrepareCacheFolder();
-
-        Log.Information("Downloading chart files");
-        await this._chartService.DownloadChartFilesAsync();
-
-        Log.Information("Loading shortcuts");
-        await this._shortcutService.LoadAllShortcuts();
+        await cachesTask;
+        await lastFmTask;
 
         var gateway = await this._client.Rest.GetGatewayBotAsync();
         Log.Information("Gateway: connects left {connectsLeft} - reset after {resetAfter} - recommended shards {shardCount}",
@@ -166,6 +140,64 @@ public class StartupService
         await Task.WhenAll(
             this.CachePremiumGuilds(),
             this.CacheDiscordUserIds());
+    }
+
+    private async Task LoadInitialCaches(Task databaseTask)
+    {
+        await databaseTask;
+
+        Log.Information("Loading all prefixes");
+        var prefixTask = this._prefixService.LoadAllPrefixes();
+
+        Log.Information("Loading all server disabled commands");
+        var guildDisabledCommandsTask = this._guildDisabledCommands.LoadAllDisabledCommands();
+
+        Log.Information("Loading all channel disabled commands");
+        var channelToggledCommandsTask = this._channelToggledCommands.LoadAllToggledCommands();
+
+        Log.Information("Loading all disabled channels");
+        var disabledChannelsTask = this._disabledChannelService.LoadAllDisabledChannels();
+
+        Log.Information("Loading shortcuts");
+        var shortcutsTask = this._shortcutService.LoadAllShortcuts();
+
+        Log.Information("Loading featured");
+        var featuredTask = this._timerService.LoadCurrentFeatured();
+
+        Log.Information("Preparing cache folder");
+        PrepareCacheFolder();
+
+        Log.Information("Downloading chart files");
+        var chartFilesTask = this._chartService.DownloadChartFilesAsync();
+
+        await Task.WhenAll(
+            prefixTask,
+            guildDisabledCommandsTask,
+            channelToggledCommandsTask,
+            disabledChannelsTask,
+            shortcutsTask,
+            featuredTask,
+            chartFilesTask);
+    }
+
+    private async Task EnsureDatabaseUpdated()
+    {
+        await using var context = await this._contextFactory.CreateDbContextAsync();
+        try
+        {
+            Log.Information("Ensuring database is up to date");
+            var pendingMigrations = (await context.Database.GetPendingMigrationsAsync()).ToList();
+            if (pendingMigrations.Count != 0)
+            {
+                Log.Information("Applying {count} pending migration(s)", pendingMigrations.Count);
+                await context.Database.MigrateAsync();
+            }
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Something went wrong while creating/updating the database!");
+            throw;
+        }
     }
 
     private void InitializeHangfireConfig()
