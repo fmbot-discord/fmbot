@@ -15,9 +15,9 @@ services:
     environment:
       - INSTANCE_NAME=prod-1
       - SHARDS_MAIN_INSTANCE=true
-      - SHARDS_TOTAL_SHARDS=640
+      - SHARDS_TOTAL_SHARDS=768
       - SHARDS_FIRST_SHARD=0
-      - SHARDS_LAST_SHARD=53
+      - SHARDS_LAST_SHARD=63
 
   prod-2:
     <<: *instance-defaults
@@ -26,9 +26,9 @@ services:
         condition: service_healthy
     environment:
       - INSTANCE_NAME=prod-2
-      - SHARDS_TOTAL_SHARDS=640
-      - SHARDS_FIRST_SHARD=54
-      - SHARDS_LAST_SHARD=107
+      - SHARDS_TOTAL_SHARDS=768
+      - SHARDS_FIRST_SHARD=64
+      - SHARDS_LAST_SHARD=127
 
   prod-3:
     <<: *instance-defaults
@@ -37,9 +37,9 @@ services:
         condition: service_healthy
     environment:
       - INSTANCE_NAME=prod-3
-      - SHARDS_TOTAL_SHARDS=640
-      - SHARDS_FIRST_SHARD=108
-      - SHARDS_LAST_SHARD=161
+      - SHARDS_TOTAL_SHARDS=768
+      - SHARDS_FIRST_SHARD=128
+      - SHARDS_LAST_SHARD=191
 
   prod-4:
     <<: *instance-defaults
@@ -48,9 +48,9 @@ services:
         condition: service_healthy
     environment:
       - INSTANCE_NAME=prod-4
-      - SHARDS_TOTAL_SHARDS=640
-      - SHARDS_FIRST_SHARD=162
-      - SHARDS_LAST_SHARD=215
+      - SHARDS_TOTAL_SHARDS=768
+      - SHARDS_FIRST_SHARD=192
+      - SHARDS_LAST_SHARD=255
 
   prod-5:
     <<: *instance-defaults
@@ -59,9 +59,9 @@ services:
         condition: service_healthy
     environment:
       - INSTANCE_NAME=prod-5
-      - SHARDS_TOTAL_SHARDS=640
-      - SHARDS_FIRST_SHARD=216
-      - SHARDS_LAST_SHARD=268
+      - SHARDS_TOTAL_SHARDS=768
+      - SHARDS_FIRST_SHARD=256
+      - SHARDS_LAST_SHARD=319
 
   prod-6:
     <<: *instance-defaults
@@ -70,9 +70,9 @@ services:
         condition: service_healthy
     environment:
       - INSTANCE_NAME=prod-6
-      - SHARDS_TOTAL_SHARDS=640
-      - SHARDS_FIRST_SHARD=269
-      - SHARDS_LAST_SHARD=321
+      - SHARDS_TOTAL_SHARDS=768
+      - SHARDS_FIRST_SHARD=320
+      - SHARDS_LAST_SHARD=383
 
   prod-7:
     <<: *instance-defaults
@@ -81,9 +81,9 @@ services:
         condition: service_healthy
     environment:
       - INSTANCE_NAME=prod-7
-      - SHARDS_TOTAL_SHARDS=640
-      - SHARDS_FIRST_SHARD=322
-      - SHARDS_LAST_SHARD=374
+      - SHARDS_TOTAL_SHARDS=768
+      - SHARDS_FIRST_SHARD=384
+      - SHARDS_LAST_SHARD=447
 
   prod-8:
     <<: *instance-defaults
@@ -92,9 +92,9 @@ services:
         condition: service_healthy
     environment:
       - INSTANCE_NAME=prod-8
-      - SHARDS_TOTAL_SHARDS=640
-      - SHARDS_FIRST_SHARD=375
-      - SHARDS_LAST_SHARD=427
+      - SHARDS_TOTAL_SHARDS=768
+      - SHARDS_FIRST_SHARD=448
+      - SHARDS_LAST_SHARD=511
 
   prod-9:
     <<: *instance-defaults
@@ -103,9 +103,9 @@ services:
         condition: service_healthy
     environment:
       - INSTANCE_NAME=prod-9
-      - SHARDS_TOTAL_SHARDS=640
-      - SHARDS_FIRST_SHARD=428
-      - SHARDS_LAST_SHARD=480
+      - SHARDS_TOTAL_SHARDS=768
+      - SHARDS_FIRST_SHARD=512
+      - SHARDS_LAST_SHARD=575
 
   prod-10:
     <<: *instance-defaults
@@ -114,9 +114,9 @@ services:
         condition: service_healthy
     environment:
       - INSTANCE_NAME=prod-10
-      - SHARDS_TOTAL_SHARDS=640
-      - SHARDS_FIRST_SHARD=481
-      - SHARDS_LAST_SHARD=533
+      - SHARDS_TOTAL_SHARDS=768
+      - SHARDS_FIRST_SHARD=576
+      - SHARDS_LAST_SHARD=639
 
   prod-11:
     <<: *instance-defaults
@@ -125,9 +125,9 @@ services:
         condition: service_healthy
     environment:
       - INSTANCE_NAME=prod-11
-      - SHARDS_TOTAL_SHARDS=640
-      - SHARDS_FIRST_SHARD=534
-      - SHARDS_LAST_SHARD=586
+      - SHARDS_TOTAL_SHARDS=768
+      - SHARDS_FIRST_SHARD=640
+      - SHARDS_LAST_SHARD=703
 
   prod-12:
     <<: *instance-defaults
@@ -136,9 +136,9 @@ services:
         condition: service_healthy
     environment:
       - INSTANCE_NAME=prod-12
-      - SHARDS_TOTAL_SHARDS=640
-      - SHARDS_FIRST_SHARD=587
-      - SHARDS_LAST_SHARD=639
+      - SHARDS_TOTAL_SHARDS=768
+      - SHARDS_FIRST_SHARD=704
+      - SHARDS_LAST_SHARD=767
 
   autoheal:
     image: willfarrell/autoheal
