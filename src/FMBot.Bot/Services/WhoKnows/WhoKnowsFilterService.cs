@@ -43,9 +43,9 @@ public class WhoKnowsFilterService
             var highestUserId = await GetHighestUserId();
             var newFilteredUsers = new List<GlobalFilteredUser>();
 
-            for (var i = highestUserId; i >= 0; i -= 10000)
+            for (var i = highestUserId; i >= 0; i -= 20000)
             {
-                var candidates = await GetGlobalFilterCandidates(i, i - 10000);
+                var candidates = await GetGlobalFilterCandidates(i, i - 20000);
 
                 foreach (var candidate in candidates)
                 {
@@ -53,8 +53,9 @@ public class WhoKnowsFilterService
 
                     if (totalPlayTime.TotalHours >= MaxAmountOfHoursPerPeriod)
                     {
-                        Log.Information("GWKFilter: Found user {userId} with too much playtime - {totalHours}",
-                            candidate.UserId, (int)totalPlayTime.TotalHours);
+                        Log.Information(
+                            "GWKFilter: Found user {userId} - {discordUserId} - {userNameLastFm} with too much playtime - {totalHours} hours",
+                            candidate.UserId, candidate.DiscordUserId, candidate.UserNameLastFm, (int)totalPlayTime.TotalHours);
 
                         newFilteredUsers.Add(new GlobalFilteredUser
                         {
@@ -70,8 +71,8 @@ public class WhoKnowsFilterService
                     else if ((candidate.PlayCount / PeriodAmountOfDays) >= MaxAmountOfPlaysPerDay)
                     {
                         Log.Information(
-                            "GWKFilter: Found user {userId} with too much plays - {totalPlays} in {totalDays}",
-                            candidate.UserId, candidate.PlayCount, MaxAmountOfPlaysPerDay);
+                            "GWKFilter: Found user {userId} - {discordUserId} - {userNameLastFm} with too much plays - {totalPlays} over {periodDays} days",
+                            candidate.UserId, candidate.DiscordUserId, candidate.UserNameLastFm, candidate.PlayCount, PeriodAmountOfDays);
 
                         newFilteredUsers.Add(new GlobalFilteredUser
                         {
@@ -264,15 +265,26 @@ public class WhoKnowsFilterService
                                   60000) AS ms_played
                        FROM track_plays AS tp
                        LEFT JOIN artist_avgs AS aa ON aa.artist_id = tp.artist_id
+                   ),
+                   agg AS (
+                       SELECT user_id,
+                              SUM(plays)::int AS play_count,
+                              SUM(ms_played)::bigint AS total_ms_played,
+                              MIN(first_play) AS first_play,
+                              MAX(last_play) AS last_play
+                       FROM enriched
+                       GROUP BY user_id
+                       HAVING SUM(ms_played) >= @maxMsPerPeriod OR SUM(plays) >= @maxPlaysPerPeriod
                    )
-                   SELECT user_id,
-                          SUM(plays)::int AS play_count,
-                          SUM(ms_played)::bigint AS total_ms_played,
-                          MIN(first_play) AS first_play,
-                          MAX(last_play) AS last_play
-                   FROM enriched
-                   GROUP BY user_id
-                   HAVING SUM(ms_played) >= @maxMsPerPeriod OR SUM(plays) >= @maxPlaysPerPeriod
+                   SELECT agg.user_id,
+                          agg.play_count,
+                          agg.total_ms_played,
+                          agg.first_play,
+                          agg.last_play,
+                          u.discord_user_id,
+                          u.user_name_last_fm
+                   FROM agg
+                   JOIN users AS u ON u.user_id = agg.user_id
                    """;
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;

@@ -8,6 +8,10 @@ public class GlobalFilterCandidate
 {
     public int UserId { get; set; }
 
+    public ulong DiscordUserId { get; set; }
+
+    public string UserNameLastFm { get; set; }
+
     public int PlayCount { get; set; }
 
     public long TotalMsPlayed { get; set; }
