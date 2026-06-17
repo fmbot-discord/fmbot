@@ -1343,7 +1343,7 @@ public class PlayBuilder
         var targetUser = await this._userService.GetUserForIdAsync(userSettings.UserId);
         await this._updateService.UpdateUser(targetUser);
 
-        var timeZone = TimeZoneInfo.FindSystemTimeZoneById(userSettings.TimeZone ?? "Eastern Standard Time");
+        var timeZone = SettingService.ResolveTimeZone(userSettings.TimeZone ?? "Eastern Standard Time");
 
         var limit = SupporterService.IsSupporter(userSettings.UserType) ? 99999 : 30;
         var dailyOverview = await this._playService.GetDailyOverview(userSettings.UserId, timeZone, limit);
