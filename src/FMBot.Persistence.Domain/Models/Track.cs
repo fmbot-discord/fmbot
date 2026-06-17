@@ -14,6 +14,8 @@ public class Track
     public int? AlbumId { get; set; }
     public Guid? Mbid { get; set; }
     public string Isrc { get; set; }
+    public string Disambiguation { get; set; }
+    public string Language { get; set; }
     public string SpotifyId { get; set; }
     public long? AppleMusicId { get; set; }
 
@@ -48,6 +50,7 @@ public class Track
 
     public DateTime? AppleMusicDate { get; set; }
     public DateTime? SpotifyLastUpdated { get; set; }
+    public DateTime? MusicBrainzDate { get; set; }
 
 
     public DateTime? LyricsDate { get; set; }
