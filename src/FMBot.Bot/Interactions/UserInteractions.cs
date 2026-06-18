@@ -1070,6 +1070,30 @@ public class UserInteractions(
         }
     }
 
+    [ComponentInteraction(InteractionConstants.CoverTypeSetting)]
+    [UsernameSetRequired]
+    public async Task SetCoverTypeAsync()
+    {
+        var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
+
+        var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
+        var selectedValue = stringMenuInteraction.Data.SelectedValues[0];
+
+        if (Enum.TryParse(selectedValue, out CoverType coverType))
+        {
+            await userService.SetCoverType(userSettings, coverType);
+
+            var embed = new EmbedProperties();
+            embed.WithColor(DiscordConstants.InformationColorBlue);
+            embed.WithDescription($"Your default album cover type has been set to **{coverType}**.");
+
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithEmbeds([embed])
+                .WithFlags(MessageFlags.Ephemeral)));
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
+        }
+    }
+
     [ComponentInteraction(InteractionConstants.TopListModeSetting)]
     [UsernameSetRequired]
     public async Task SetTopListModeAsync()

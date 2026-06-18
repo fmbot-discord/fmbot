@@ -35,6 +35,8 @@ public class User
 
     public WhoKnowsResponseMode? WhoKnowsMode { get; set; }
 
+    public CoverType? CoverType { get; set; }
+
     public PrivacyLevel PrivacyLevel { get; set; }
 
     public DateTime? LastIndexed { get; set; }

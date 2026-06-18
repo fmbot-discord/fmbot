@@ -1557,6 +1557,21 @@ public class UserService
         RemoveUserFromCache(user);
     }
 
+    public async Task SetCoverType(User userToUpdate, CoverType coverType)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var user = await db.Users.FirstAsync(f => f.UserId == userToUpdate.UserId);
+
+        user.CoverType = coverType;
+
+        db.Update(user);
+        db.Entry(user).State = EntityState.Modified;
+
+        await db.SaveChangesAsync();
+
+        RemoveUserFromCache(user);
+    }
+
     public async Task SetTopListMode(User userToUpdate, ResponseMode mode)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();

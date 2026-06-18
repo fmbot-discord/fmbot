@@ -39,6 +39,7 @@ public static class InteractionConstants
 
     public const string WhoKnowsModeSetting = "wk-mode-set";
     public const string TopListModeSetting = "toplist-mode-set";
+    public const string CoverTypeSetting = "cover-type-set";
     public const string ResponseModeChange = "response-mode-pick";
 
     public const string RemoveFmbotAccount = "remove-account-confirm";

@@ -704,6 +704,33 @@ public class UserBuilder
         container.WithSeparator();
         container.WithTextDisplay("You can also override this on any command by adding `image` / `img` or `embed`.");
 
+        container.WithSeparator();
+        container.WithTextDisplay(
+            "**Album cover type**\n" +
+            "Choose whether the `cover` command shows animated covers when available or always the still image. You can still toggle per-cover with the buttons.");
+
+        var coverMenu = new StringMenuProperties(InteractionConstants.CoverTypeSetting)
+            .WithPlaceholder("Select album cover type")
+            .WithMinValues(1)
+            .WithMaxValues(1);
+
+        foreach (var option in Enum.GetValues<CoverType>())
+        {
+            var name = option.GetAttribute<OptionAttribute>().Name;
+            var optionDescription = option.GetAttribute<OptionAttribute>().Description;
+
+            var picked = context.SlashCommand && context.ContextUser.CoverType.HasValue &&
+                         context.ContextUser.CoverType.Value == option;
+
+            coverMenu.AddOption(new StringMenuSelectOptionProperties(name, Enum.GetName(option))
+            {
+                Description = optionDescription,
+                Default = picked
+            });
+        }
+
+        container.AddComponents(coverMenu);
+
         return response;
     }
 
