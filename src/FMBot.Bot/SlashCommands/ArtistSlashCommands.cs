@@ -158,13 +158,15 @@ public class ArtistSlashCommands(
         [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
         string user = null,
         [SlashCommandParameter(Name = "redirects", Description = "Toggle Last.fm artist name redirects (defaults to enabled)")]
-        bool redirectsEnabled = true)
+        bool redirectsEnabled = true,
+        [SlashCommandParameter(Name = "hide-singles", Description = "Hide singles from results")]
+        bool hideSingles = false)
     {
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
 
         var response = await artistBuilders.ArtistAlbumsAsync(new ContextModel(this.Context, contextUser),
-            userSettings, name, redirectsEnabled);
+            userSettings, name, redirectsEnabled, hideSingles);
 
         await this.Context.SendResponse(this.Interactivity, response, userService);
         await this.Context.LogCommandUsedAsync(response, userService);

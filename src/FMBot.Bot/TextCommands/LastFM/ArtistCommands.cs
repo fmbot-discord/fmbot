@@ -140,10 +140,12 @@ public class ArtistCommands(
     [Command("artistalbums", "aa", "aab", "atab", "artistalbum", "artistopalbum", "artisttopalbums",
         "artisttab")]
     [Summary("Top albums for an artist.")]
+    [Options("Hide singles: `ns`, `nosingles`")]
     [Examples(
         "aa",
         "artistalbums",
-        "artistalbums The Prodigy")]
+        "artistalbums The Prodigy",
+        "artistalbums The Prodigy nosingles")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Artists)]
     [SupporterEnhanced("Supporters have their complete Last.fm history cached in the bot, so the artistalbums command always contains all their albums")]
@@ -155,10 +157,11 @@ public class ArtistCommands(
         var userSettings = await settingService.GetUser(artistValues, contextUser, this.Context);
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        var redirectsEnabled = SettingService.RedirectsEnabled(userSettings.NewSearchValue);
+        var hideSingles = SettingService.HideSingles(userSettings.NewSearchValue);
+        var redirectsEnabled = SettingService.RedirectsEnabled(hideSingles.NewSearchValue);
 
         var response = await artistBuilders.ArtistAlbumsAsync(new ContextModel(this.Context, prfx, contextUser),
-            userSettings, redirectsEnabled.NewSearchValue, redirectsEnabled.Enabled);
+            userSettings, redirectsEnabled.NewSearchValue, redirectsEnabled.Enabled, hideSingles.Enabled);
 
         await this.Context.SendResponse(this.Interactivity, response, userService);
         await this.Context.LogCommandUsedAsync(response, userService);
