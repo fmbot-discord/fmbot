@@ -18,7 +18,6 @@ namespace FMBot.Bot.SlashCommands;
 [SlashCommand("server", "Server billboard commands",
     Contexts = [InteractionContextType.Guild],
     IntegrationTypes = [ApplicationIntegrationType.GuildInstall])]
-[UsernameSetRequired]
 [RequiresIndex]
 public class ServerSlashCommands(
     ArtistBuilders artistBuilders,

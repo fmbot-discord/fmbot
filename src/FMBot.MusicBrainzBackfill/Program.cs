@@ -1276,6 +1276,26 @@ static async Task RunTrackBackfill(NpgsqlConnection db, string dumpPath)
         Console.WriteLine("    language:        skipped (layout check failed)");
     }
 
+    Console.WriteLine("  Pass C: stamp music_brainz_date on every matched track (MB freshness marker)");
+
+    var dateSpotify = await Execute(db, """
+        UPDATE tracks t SET music_brainz_date = now()
+        FROM musicbrainz.track_spotify_lookup sl
+        WHERE t.spotify_id = sl.spotify_id
+          AND t.music_brainz_date IS NULL
+        """);
+    Console.WriteLine($"    via spotify:     {dateSpotify,10:N0} stamped");
+
+    var dateName = await Execute(db, """
+        UPDATE tracks t SET music_brainz_date = now()
+        FROM musicbrainz.track_name_lookup nl
+        WHERE t.artist_name = nl.artist_name
+          AND t.album_name  = nl.album_name
+          AND t.name        = nl.track_name
+          AND t.music_brainz_date IS NULL
+        """);
+    Console.WriteLine($"    via name:        {dateName,10:N0} stamped");
+
     totalSw.Stop();
     Console.WriteLine();
     Console.WriteLine($"Backfill complete in {totalSw.Elapsed:hh\\:mm\\:ss}");
