@@ -781,9 +781,17 @@ public class MusicDataFactory
                         Duration = trackInfo.Duration?.ToString() ?? ""
                     });
 
+                var musicBrainzTask = this._musicBrainzService.AddMusicBrainzDataToTrackAsync(trackToAdd);
+
                 var spotifyTrack = await spotifyTrackTask;
                 var amSong = await amSongTask;
                 var lyrics = await lyricsTask;
+                var musicBrainzUpdated = await musicBrainzTask;
+
+                if (musicBrainzUpdated.Updated)
+                {
+                    trackToAdd = musicBrainzUpdated.Track;
+                }
 
                 if (spotifyTrack != null)
                 {
@@ -896,6 +904,7 @@ public class MusicDataFactory
             Task<FullTrack> updateSpotify = null;
             Task<AmData<AmSongAttributes>> updateAppleMusic = null;
             AsyncUnaryCall<LyricsReply> updateLyrics = null;
+            Task<TrackUpdated> updateMusicBrainz = null;
 
             if (dbTrack.SpotifyLastUpdated == null || dbTrack.SpotifyLastUpdated < DateTime.UtcNow.AddDays(-180))
             {
@@ -920,6 +929,22 @@ public class MusicDataFactory
                         ArtistName = trackInfo.ArtistName,
                         Duration = trackInfo.Duration?.ToString() ?? ""
                     });
+            }
+
+            if (dbTrack.MusicBrainzDate == null || dbTrack.MusicBrainzDate < DateTime.UtcNow.AddDays(-120))
+            {
+                updateMusicBrainz = this._musicBrainzService.AddMusicBrainzDataToTrackAsync(dbTrack);
+            }
+
+            if (updateMusicBrainz != null)
+            {
+                var musicBrainzUpdate = await updateMusicBrainz;
+
+                if (musicBrainzUpdate.Updated)
+                {
+                    dbTrack = musicBrainzUpdate.Track;
+                    db.Entry(dbTrack).State = EntityState.Modified;
+                }
             }
 
             if (updateSpotify != null)

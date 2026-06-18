@@ -29,6 +29,29 @@ public class SettingService
         this._contextFactory = contextFactory;
     }
 
+    private static bool TryResolveTimeZone(string timeZone, out TimeZoneInfo timeZoneInfo)
+    {
+        timeZoneInfo = null;
+        if (string.IsNullOrWhiteSpace(timeZone))
+        {
+            return false;
+        }
+
+        if (TimeZoneInfo.TryFindSystemTimeZoneById(timeZone, out timeZoneInfo))
+        {
+            return true;
+        }
+
+        timeZoneInfo = TimeZoneInfo.GetSystemTimeZones()
+            .FirstOrDefault(w => string.Equals(w.Id, timeZone, StringComparison.OrdinalIgnoreCase));
+        return timeZoneInfo != null;
+    }
+
+    public static TimeZoneInfo ResolveTimeZone(string timeZone, TimeZoneInfo fallback = null)
+    {
+        return TryResolveTimeZone(timeZone, out var timeZoneInfo) ? timeZoneInfo : fallback ?? TimeZoneInfo.Utc;
+    }
+
     public static TimeSettingsModel GetTimePeriod(string options,
         TimePeriod defaultTimePeriod = TimePeriod.Weekly,
         DateTime? registeredLastFm = null,
@@ -46,7 +69,7 @@ public class SettingService
         settingsModel.EndDateTime = DateTime.UtcNow;
         settingsModel.DefaultPicked = false;
 
-        var timeZoneInfo = timeZone != null ? TimeZoneInfo.FindSystemTimeZoneById(timeZone) : TimeZoneInfo.Utc;
+        var timeZoneInfo = ResolveTimeZone(timeZone);
         var localTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc), timeZoneInfo);
         var localMidnightInUtc = TimeZoneInfo.ConvertTimeToUtc(localTime.Date, timeZoneInfo);
 

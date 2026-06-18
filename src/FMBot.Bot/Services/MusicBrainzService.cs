@@ -26,8 +26,6 @@ public class MusicBrainzService
     {
         try
         {
-            var updated = false;
-
             if (artist.MusicBrainzDate.HasValue && artist.MusicBrainzDate > DateTime.UtcNow.AddDays(-120))
             {
                 return new ArtistUpdated(artist);
@@ -39,7 +37,9 @@ public class MusicBrainzService
             var musicBrainzArtist =
                 musicBrainzResults.Results
                     .OrderByDescending(o => o.Score)
-                    .Select(s => s.Item).FirstOrDefault(f => f.Name != null && f.Name.Equals(artist.Name, StringComparison.OrdinalIgnoreCase));
+                    .Select(s => s.Item).FirstOrDefault(f => f.Name.Equals(artist.Name, StringComparison.OrdinalIgnoreCase));
+
+            artist.MusicBrainzDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
 
             if (musicBrainzArtist != null)
             {
@@ -58,7 +58,6 @@ public class MusicBrainzService
                     endDate = null;
                 }
 
-                artist.MusicBrainzDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
                 artist.Location = musicBrainzArtist.Area?.Name;
                 artist.CountryCode = GetArtistCountryCode(musicBrainzArtist);
                 artist.Type = musicBrainzArtist.Type;
@@ -68,7 +67,7 @@ public class MusicBrainzService
                 artist.EndDate = endDate.HasValue ? DateTime.SpecifyKind(endDate.Value, DateTimeKind.Utc) : null;
                 artist.Mbid = musicBrainzArtist.Id;
 
-                if (musicBrainzArtist.Relationships != null && musicBrainzArtist.Relationships.Any())
+                if (musicBrainzArtist.Relationships.Any())
                 {
                     var links = new List<ArtistLink>();
                     foreach (var relationship in musicBrainzArtist.Relationships.Where(w => w.Url?.Resource != null))
@@ -82,7 +81,7 @@ public class MusicBrainzService
                                 ManuallyAdded = false,
                                 ArtistId = artist.Id,
                                 Type = typeAndUsername.LinkType,
-                                Url = relationship.Url.Resource.ToString(),
+                                Url = relationship.Url?.Resource?.ToString(),
                                 Username = typeAndUsername.UserName
                             });
                         }
@@ -94,10 +93,9 @@ public class MusicBrainzService
                     }
                 }
 
-                updated = true;
             }
 
-            return new ArtistUpdated(artist, updated);
+            return new ArtistUpdated(artist, true);
         }
         catch (Exception e)
         {
@@ -106,9 +104,111 @@ public class MusicBrainzService
         }
     }
 
+    public async Task<TrackUpdated> AddMusicBrainzDataToTrackAsync(Track track)
+    {
+        try
+        {
+            if (track.MusicBrainzDate.HasValue && track.MusicBrainzDate > DateTime.UtcNow.AddDays(-120))
+            {
+                return new TrackUpdated(track);
+            }
+
+            var query = $"recording:\"{EscapeLucenePhrase(track.Name)}\" AND artist:\"{EscapeLucenePhrase(track.ArtistName)}\"";
+
+            var musicBrainzResults = await this._query.FindRecordingsAsync(query, limit: 100);
+            Statistics.MusicBrainzApiCalls.Inc();
+
+            var musicBrainzRecording =
+                musicBrainzResults.Results
+                    .Select(s => s.Item)
+                    .Where(f => f.Title.Equals(track.Name, StringComparison.OrdinalIgnoreCase) &&
+                                RecordingMatchesArtist(f, track.ArtistName))
+                    .OrderBy(f => f.Video ? 1 : 0)
+                    .ThenByDescending(f => f.Releases?.Count ?? 0)
+                    .ThenBy(f => f.FirstReleaseDate?.Year ?? int.MaxValue)
+                    .FirstOrDefault();
+
+            track.MusicBrainzDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+
+            if (musicBrainzRecording != null)
+            {
+                musicBrainzRecording = await this._query.LookupRecordingAsync(musicBrainzRecording.Id,
+                    Include.Isrcs | Include.WorkRelationships);
+                Statistics.MusicBrainzApiCalls.Inc();
+
+                track.Mbid = musicBrainzRecording.Id;
+
+                if (!string.IsNullOrWhiteSpace(musicBrainzRecording.Disambiguation))
+                {
+                    track.Disambiguation = musicBrainzRecording.Disambiguation;
+                }
+
+                if (string.IsNullOrWhiteSpace(track.Isrc) && musicBrainzRecording.Isrcs is { Count: > 0 })
+                {
+                    track.Isrc = musicBrainzRecording.Isrcs[0];
+                }
+
+                if (!track.DurationMs.HasValue && musicBrainzRecording.Length.HasValue)
+                {
+                    track.DurationMs = (int)musicBrainzRecording.Length.Value.TotalMilliseconds;
+                }
+
+                var language = GetRecordingLanguage(musicBrainzRecording);
+                if (language != null)
+                {
+                    track.Language = language;
+                }
+            }
+
+            return new TrackUpdated(track, true);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "error in musicbrainzservice");
+            return new TrackUpdated(track);
+        }
+    }
+
+    private static bool RecordingMatchesArtist(IRecording recording, string artistName)
+    {
+        return recording.ArtistCredit.Any(c =>
+            (c.Name != null && c.Name.Equals(artistName, StringComparison.OrdinalIgnoreCase)) ||
+            (c.Artist?.Name != null && c.Artist.Name.Equals(artistName, StringComparison.OrdinalIgnoreCase)));
+    }
+
+    private static string GetRecordingLanguage(IRecording recording)
+    {
+        foreach (var relationship in recording.Relationships)
+        {
+            var work = relationship.Work;
+            if (work == null)
+            {
+                continue;
+            }
+
+            var language = work.Languages?.FirstOrDefault() ?? work.Language;
+            if (!string.IsNullOrWhiteSpace(language))
+            {
+                return language;
+            }
+        }
+
+        return null;
+    }
+
+    private static string EscapeLucenePhrase(string value)
+    {
+        return value?.Replace("\\", "\\\\").Replace("\"", "\\\"");
+    }
+
     private static LinkTypeAndUsername RelationshipToLinkTypeAndUsername(IRelationship relationship)
     {
-        var url = relationship.Url.Resource.ToString();
+        var url = relationship.Url?.Resource?.ToString();
+
+        if (url == null)
+        {
+            return null;
+        }
 
         if (url.EndsWith("/"))
         {
@@ -232,5 +332,6 @@ public class MusicBrainzService
     }
 
     public record ArtistUpdated(Artist Artist, bool Updated = false);
+    public record TrackUpdated(Track Track, bool Updated = false);
     private record LinkTypeAndUsername(LinkType LinkType, string UserName = null);
 }

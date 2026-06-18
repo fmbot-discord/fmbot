@@ -438,7 +438,7 @@ public class RecapBuilders
                     response.Embed.WithAuthor(
                         $"Listening time for {userSettings.DisplayName} - {timeSettings.Description}");
                     var timeZone =
-                        TimeZoneInfo.FindSystemTimeZoneById(userSettings.TimeZone ?? "Eastern Standard Time");
+                        SettingService.ResolveTimeZone(userSettings.TimeZone ?? "Eastern Standard Time");
 
                     var plays = await this._playService.GetAllUserPlays(userSettings.UserId);
                     var filteredPlays = plays
