@@ -23,6 +23,7 @@ namespace FMBot.Bot.SlashCommands;
 [SlashCommand("import", "Manage your data imports",
     Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild],
     IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
+[UsernameSetRequired]
 public class ImportGroupSlashCommands(
     UserService userService,
     ImportService importService,

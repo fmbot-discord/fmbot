@@ -17,6 +17,7 @@ namespace FMBot.Bot.SlashCommands;
 [SlashCommand("top", "Top lists - Artist/Albums/Tracks/Genres/Countries",
     Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild],
     IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
+[UsernameSetRequired]
 public class TopSlashCommands(
     UserService userService,
     ArtistBuilders artistBuilders,

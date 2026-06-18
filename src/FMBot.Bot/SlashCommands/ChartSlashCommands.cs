@@ -18,6 +18,7 @@ namespace FMBot.Bot.SlashCommands;
 [SlashCommand("chart", "Generate charts with album covers or artist images",
     Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild],
     IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
+[UsernameSetRequired]
 public class ChartSlashCommands(
     UserService userService,
     SettingService settingService,
