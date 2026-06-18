@@ -350,6 +350,13 @@ public class UserInteractions(
                         await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
                         break;
                     }
+                    case UserSetting.CoverType:
+                    {
+                        response = UserBuilder.CoverMode(new ContextModel(this.Context, contextUser));
+
+                        await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
+                        break;
+                    }
                     case UserSetting.BotScrobbling:
                     {
                         response = UserBuilder.BotScrobblingAsync(new ContextModel(this.Context, contextUser));
@@ -1041,6 +1048,18 @@ public class UserInteractions(
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
         var response = UserBuilder.ResponseMode(new ContextModel(this.Context, contextUser));
+
+        await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
+        await this.Context.LogCommandUsedAsync(response, userService);
+    }
+
+    [ComponentInteraction(InteractionConstants.CoverTypeChange)]
+    [UsernameSetRequired]
+    public async Task CoverTypePickAsync()
+    {
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+
+        var response = UserBuilder.CoverMode(new ContextModel(this.Context, contextUser));
 
         await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
         await this.Context.LogCommandUsedAsync(response, userService);

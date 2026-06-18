@@ -41,6 +41,7 @@ public static class InteractionConstants
     public const string TopListModeSetting = "toplist-mode-set";
     public const string CoverTypeSetting = "cover-type-set";
     public const string ResponseModeChange = "response-mode-pick";
+    public const string CoverTypeChange = "cover-type-pick";
 
     public const string RemoveFmbotAccount = "remove-account-confirm";
     public const string RemoveFmbotAccountModal = "remove-account-confirm-modal";

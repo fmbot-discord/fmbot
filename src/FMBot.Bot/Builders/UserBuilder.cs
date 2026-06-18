@@ -704,13 +704,27 @@ public class UserBuilder
         container.WithSeparator();
         container.WithTextDisplay("You can also override this on any command by adding `image` / `img` or `embed`.");
 
+        return response;
+    }
+
+    public static ResponseModel CoverMode(ContextModel context)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.ComponentsV2,
+        };
+
+        var container = response.ComponentsContainer;
+        container.WithAccentColor(DiscordConstants.InformationColorBlue);
+
+        container.WithTextDisplay("### Set your preferred album cover type");
+
         container.WithSeparator();
         container.WithTextDisplay(
-            "**Album cover type**\n" +
             "Choose whether the `cover` command shows animated covers when available or always the still image. You can still toggle per-cover with the buttons.");
 
         var coverMenu = new StringMenuProperties(InteractionConstants.CoverTypeSetting)
-            .WithPlaceholder("Select album cover type")
+            .WithPlaceholder("Set your preferred album cover type")
             .WithMinValues(1)
             .WithMaxValues(1);
 
@@ -761,6 +775,15 @@ public class UserBuilder
             Components =
             [
                 new TextDisplayProperties("**Response mode**\nChanges default response modes for `WhoKnows` and top list commands")
+            ]
+        });
+        container.WithSeparator();
+        container.AddComponent(new ComponentSectionProperties(
+            new ButtonProperties(InteractionConstants.CoverTypeChange, "Customize", ButtonStyle.Primary))
+        {
+            Components =
+            [
+                new TextDisplayProperties("**Album cover type**\nChanges whether album covers animate or always show as still")
             ]
         });
 
