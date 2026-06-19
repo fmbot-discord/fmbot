@@ -389,6 +389,22 @@ public class CommandHandler
                 }
             }
 
+            if (HasAttribute<SpotifyConnectedRequired>())
+            {
+                var spotifyConnected = await this._userService.UserHasSpotifyConnectedAsync(context.User.Id);
+                if (!spotifyConnected)
+                {
+                    var notConnected = SpotifyRemoteBuilders.NotConnectedResponse();
+                    await context.Client.Rest.SendMessageAsync(context.Message.ChannelId, new MessageProperties
+                    {
+                        Flags = MessageFlags.IsComponentsV2,
+                        Components = notConnected.GetComponentsV2()
+                    });
+                    await context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.UsernameNotSet }, this._userService, commandName);
+                    return;
+                }
+            }
+
             if (HasAttribute<GuildOnly>())
             {
                 if (context.Guild == null)

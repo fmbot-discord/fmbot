@@ -392,6 +392,23 @@ public class InteractionHandler
             }
         }
 
+        if (HasAttribute<SpotifyConnectedRequired>())
+        {
+            var spotifyConnected = await this._userService.UserHasSpotifyConnectedAsync(user.Id);
+
+            if (!spotifyConnected)
+            {
+                var notConnected = SpotifyRemoteBuilders.NotConnectedResponse();
+                await interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties
+                {
+                    Flags = MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
+                    Components = notConnected.GetComponentsV2()
+                }));
+                await logCommandUsed(new ResponseModel { CommandResponse = CommandResponse.UsernameNotSet });
+                return false;
+            }
+        }
+
         if (HasAttribute<GuildOnly>())
         {
             if (guild == null)

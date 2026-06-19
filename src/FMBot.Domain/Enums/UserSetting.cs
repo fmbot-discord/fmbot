@@ -8,8 +8,10 @@ public enum UserSetting
     Privacy = 2,
     [Option("Change your .fm", "Customize your .fm command")]
     FmMode = 3,
-    [Option("WhoKnows mode", "Set your default WhoKnows and top list response modes")]
+    [Option("WhoKnows mode", "Set your default WhoKnows and top list modes")]
     WkMode = 4,
+    [Option("Album cover type", "Set your preferred album cover type (animated or still)")]
+    CoverType = 5,
     [Option("Out of sync", "Info on what to do when Spotify and Last.fm are out of sync")]
     OutOfSync = 6,
     [Option("⭐ Spotify & Apple Music imports", "Add and manage your Spotify & Apple Music imports")]

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FMBot.Persistence.EntityFrameWork.Migrations
 {
     [DbContext(typeof(FMBotDbContext))]
-    partial class FMBotDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260618201651_AddPreferredCoverType")]
+    partial class AddPreferredCoverType
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2732,10 +2735,6 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .HasColumnType("text")
                         .HasColumnName("scope");
 
-                    b.Property<int>("Service")
-                        .HasColumnType("integer")
-                        .HasColumnName("service");
-
                     b.Property<DateTime>("TokenExpiresAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("token_expires_at");
@@ -2745,10 +2744,6 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
 
                     b.HasIndex("DiscordUserId")
                         .HasDatabaseName("ix_user_tokens_discord_user_id");
-
-                    b.HasIndex("DiscordUserId", "BotType", "Service")
-                        .IsUnique()
-                        .HasDatabaseName("ix_user_tokens_discord_user_id_bot_type_service");
 
                     b.ToTable("user_tokens", (string)null);
                 });

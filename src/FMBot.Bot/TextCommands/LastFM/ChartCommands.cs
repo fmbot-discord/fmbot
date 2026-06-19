@@ -40,6 +40,7 @@ public class ChartCommands(
         Constants.CompactTimePeriodList,
         "Albums released in year: `r:2023`, `released:2023`",
         "Albums released in decade: `d:80s`, `decade:1990`",
+        "Hide singles: `ns`, `nosingles`",
         "Disable titles: `notitles` / `nt`",
         "Skip albums with no image: `skipemptyimages` / `s`",
         "Skip NSFW albums: `sfw`",

@@ -1289,7 +1289,7 @@ public class AlbumBuilders
         ContextModel context,
         UserSettingsModel userSettings,
         string searchValue,
-        bool motionCover = true)
+        bool? motionCover = null)
     {
         var response = new ResponseModel
         {
@@ -1334,8 +1334,10 @@ public class AlbumBuilders
                 style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("🎲"));
         }
 
+        var showMotionCover = motionCover ?? context.ContextUser.CoverType != CoverType.Still;
+
         var gifResult = false;
-        if (motionCover && albumImages.Any(a => a.ImageType == ImageType.VideoSquare))
+        if (showMotionCover && albumImages.Any(a => a.ImageType == ImageType.VideoSquare))
         {
             albumCoverUrl = albumImages.First(f => f.ImageType == ImageType.VideoSquare).Url;
             gifResult = true;

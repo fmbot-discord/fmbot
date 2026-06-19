@@ -1557,6 +1557,21 @@ public class UserService
         RemoveUserFromCache(user);
     }
 
+    public async Task SetCoverType(User userToUpdate, CoverType coverType)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var user = await db.Users.FirstAsync(f => f.UserId == userToUpdate.UserId);
+
+        user.CoverType = coverType;
+
+        db.Update(user);
+        db.Entry(user).State = EntityState.Modified;
+
+        await db.SaveChangesAsync();
+
+        RemoveUserFromCache(user);
+    }
+
     public async Task SetTopListMode(User userToUpdate, ResponseMode mode)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -1849,9 +1864,15 @@ public class UserService
     public async Task<bool> HasLinkedRole(ulong discordUserId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
-        var userToken = await db.UserTokens.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
+        return await db.UserTokens.AnyAsync(f =>
+            f.DiscordUserId == discordUserId && f.Service == Shared.Domain.Enums.TokenService.Discord);
+    }
 
-        return userToken != null;
+    public async Task<bool> UserHasSpotifyConnectedAsync(ulong discordUserId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        return await db.UserTokens.AnyAsync(f =>
+            f.DiscordUserId == discordUserId && f.Service == Shared.Domain.Enums.TokenService.Spotify);
     }
 
     public async Task UpdateLinkedRole(ulong discordUserId)
@@ -1859,7 +1880,9 @@ public class UserService
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var botType = BotTypeExtension.GetBotType(this._client.GetCurrentUser()!.Id);
         var userToken =
-            await db.UserTokens.FirstOrDefaultAsync(f => f.BotType == botType && f.DiscordUserId == discordUserId);
+            await db.UserTokens.FirstOrDefaultAsync(f =>
+                f.BotType == botType && f.DiscordUserId == discordUserId &&
+                f.Service == Shared.Domain.Enums.TokenService.Discord);
 
         if (userToken == null)
         {

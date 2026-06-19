@@ -501,6 +501,22 @@ public class UserCommands(
         await this.Context.LogCommandUsedAsync(response, userService);
     }
 
+    [Command("covermode", "covertype")]
+    [Summary("Set whether album covers animate or always show as still.")]
+    [Examples("covermode")]
+    [UsernameSetRequired]
+    [CommandCategories(CommandCategory.UserSettings)]
+    public async Task CoverModeAsync([CommandParameter(Remainder = true)] string _ = null)
+    {
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+
+        var response = UserBuilder.CoverMode(new ContextModel(this.Context, prfx, contextUser));
+
+        await this.Context.SendResponse(this.Interactivity, response, userService);
+        await this.Context.LogCommandUsedAsync(response, userService);
+    }
+
     [Command("mode", "md")]
     [UsernameSetRequired]
     [ExcludeFromHelp]

@@ -233,7 +233,7 @@ public class PlayCommands(
         }
     }
 
-    [Command("recent", "recenttracks", "recents", "r", "rc")]
+    [Command("recent", "recenttracks", "recents", "r")]
     [Summary("Shows you or someone else's recent tracks")]
     [Options(Constants.UserMentionExample, "Artist name")]
     [Examples("recent", "r", "recent @user", "recent lfm:fm-bot")]

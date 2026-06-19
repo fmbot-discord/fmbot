@@ -679,6 +679,18 @@ public class SupporterService
 
                 break;
             }
+            case 39:
+            {
+                message =
+                    $"*<:spotify:882221219334725662> Control your Spotify playback from Discord with the new `{prfx}rc` command*";
+                break;
+            }
+            case 40:
+            {
+                message =
+                    $"*<:spotify:882221219334725662> Add a track to your Spotify queue with `{prfx}queue`, or reply to a song to queue it*";
+                break;
+            }
         }
 
         return (message, showUpgradeButton, supporterSource);

@@ -214,6 +214,18 @@ public class UserSlashCommands(
         await this.Context.LogCommandUsedAsync(response, userService);
     }
 
+    [SlashCommand("covermode", "Set whether album covers animate or always show as still")]
+    [UsernameSetRequired]
+    public async Task CoverModeSlashAsync()
+    {
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+
+        var response = UserBuilder.CoverMode(new ContextModel(this.Context, contextUser));
+
+        await this.Context.SendResponse(this.Interactivity, response, userService, ephemeral: true);
+        await this.Context.LogCommandUsedAsync(response, userService);
+    }
+
     [SlashCommand("localization", "Configure your timezone and number format in .fmbot", Contexts =
     [
         InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,

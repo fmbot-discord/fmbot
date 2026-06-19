@@ -937,7 +937,8 @@ public class ArtistBuilders
     public async Task<ResponseModel> ArtistAlbumsAsync(ContextModel context,
         UserSettingsModel userSettings,
         string searchValue,
-        bool redirectsEnabled)
+        bool redirectsEnabled,
+        bool hideSingles = false)
     {
         var response = new ResponseModel
         {
@@ -987,6 +988,20 @@ public class ArtistBuilders
             return response;
         }
 
+        if (hideSingles)
+        {
+            topAlbums = await this._artistsService.FilterSinglesFromUserAlbums(topAlbums);
+
+            if (topAlbums.Count == 0)
+            {
+                response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
+                response.ComponentsContainer.WithTextDisplay(
+                    $"{StringExtensions.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()} has no albums for this artist after hiding singles.");
+                response.CommandResponse = CommandResponse.NoScrobbles;
+                return response;
+            }
+        }
+
         var maybeMissingResults = !SupporterService.IsSupporter(userSettings.UserType) &&
                                   !userSettings.DifferentUser &&
                                   (await this._artistsService.GetUserAlbumCount(userSettings.UserId)) >= 5000 &&
@@ -1001,6 +1016,11 @@ public class ArtistBuilders
         if (maybeMissingResults)
         {
             footer.AppendLine("Some albums outside of top 5000 might not be visible");
+        }
+
+        if (hideSingles)
+        {
+            footer.AppendLine("Filtering out singles");
         }
 
         if (userSettings.DifferentUser)

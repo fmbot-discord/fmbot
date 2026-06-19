@@ -35,6 +35,9 @@ public static class DiscordConstants
     public const ulong PagesLast = 883825508482183258;
     public const ulong PagesGoTo = 1138849626234036264;
 
+    public const ulong Pause = 1517493964880609310;
+    public const ulong Refresh = 1517501604167811093;
+
     public const int PaginationTimeoutInSeconds = 120;
 
     public const ulong FiveOrMoreUp = 912380324841918504;

@@ -364,7 +364,7 @@ public class AdminService
         userNameLastFM = userNameLastFM.ToLower();
 
         return await db.BottedUserReport.AnyAsync(a => a.ReportStatus == ReportStatus.Pending &&
-                                                       a.UserNameLastFM == userNameLastFM);
+                                                       a.UserNameLastFM.ToLower() == userNameLastFM);
     }
 
     public async Task PostReport(BottedUserReport report)

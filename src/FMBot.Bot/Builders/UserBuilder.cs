@@ -707,6 +707,47 @@ public class UserBuilder
         return response;
     }
 
+    public static ResponseModel CoverMode(ContextModel context)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.ComponentsV2,
+        };
+
+        var container = response.ComponentsContainer;
+        container.WithAccentColor(DiscordConstants.InformationColorBlue);
+
+        container.WithTextDisplay("### Set your preferred album cover type");
+
+        container.WithSeparator();
+        container.WithTextDisplay(
+            "Choose whether the `cover` command shows animated covers when available or always the still image. You can still toggle per-cover with the buttons.");
+
+        var coverMenu = new StringMenuProperties(InteractionConstants.CoverTypeSetting)
+            .WithPlaceholder("Set your preferred album cover type")
+            .WithMinValues(1)
+            .WithMaxValues(1);
+
+        foreach (var option in Enum.GetValues<CoverType>())
+        {
+            var name = option.GetAttribute<OptionAttribute>().Name;
+            var optionDescription = option.GetAttribute<OptionAttribute>().Description;
+
+            var picked = context.SlashCommand && context.ContextUser.CoverType.HasValue &&
+                         context.ContextUser.CoverType.Value == option;
+
+            coverMenu.AddOption(new StringMenuSelectOptionProperties(name, Enum.GetName(option))
+            {
+                Description = optionDescription,
+                Default = picked
+            });
+        }
+
+        container.AddComponents(coverMenu);
+
+        return response;
+    }
+
     public static ResponseModel ModePick(ContextModel context)
     {
         var response = new ResponseModel
@@ -734,6 +775,15 @@ public class UserBuilder
             Components =
             [
                 new TextDisplayProperties("**Response mode**\nChanges default response modes for `WhoKnows` and top list commands")
+            ]
+        });
+        container.WithSeparator();
+        container.AddComponent(new ComponentSectionProperties(
+            new ButtonProperties(InteractionConstants.CoverTypeChange, "Customize", ButtonStyle.Primary))
+        {
+            Components =
+            [
+                new TextDisplayProperties("**Album cover type**\nChanges whether album covers animate or always show as still")
             ]
         });
 

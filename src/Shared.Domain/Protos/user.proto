@@ -8,6 +8,7 @@ package user;
 
 service UserOAuthService {
   rpc StoreDiscordOAuthToken (StoreDiscordOAuthTokenRequest) returns (StoreDiscordOAuthTokenReply);
+  rpc StoreSpotifyOAuthToken (StoreSpotifyOAuthTokenRequest) returns (StoreSpotifyOAuthTokenReply);
 }
 
 message StoreDiscordOAuthTokenRequest {
@@ -21,6 +22,18 @@ message StoreDiscordOAuthTokenRequest {
 }
 
 message StoreDiscordOAuthTokenReply {
+  bool success = 1;
+}
+
+message StoreSpotifyOAuthTokenRequest {
+  int64 discordUserId = 1;
+  string accessToken = 2;
+  string refreshToken = 3;
+  google.protobuf.Timestamp expiresAt = 4;
+  string scope = 5;
+}
+
+message StoreSpotifyOAuthTokenReply {
   bool success = 1;
 }
 

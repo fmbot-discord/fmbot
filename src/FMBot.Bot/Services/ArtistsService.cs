@@ -639,6 +639,37 @@ public class ArtistsService
             .ToListAsync();
     }
 
+    public async Task<List<UserAlbum>> FilterSinglesFromUserAlbums(List<UserAlbum> userAlbums)
+    {
+        if (userAlbums.Count == 0)
+        {
+            return userAlbums;
+        }
+
+        var artistNames = userAlbums.Select(s => s.ArtistName).ToArray();
+        var albumNames = userAlbums.Select(s => s.Name).ToArray();
+
+        const string sql = "SELECT a.name AS album_name " +
+                           "FROM albums a " +
+                           "INNER JOIN unnest(@artistNames::citext[], @albumNames::citext[]) AS q(artist_name, album_name) " +
+                           "  ON a.artist_name = q.artist_name AND a.name = q.album_name " +
+                           "WHERE lower(a.type) = 'single'";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        var singleNames = (await connection.QueryAsync<string>(sql, new { artistNames, albumNames }))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        if (singleNames.Count == 0)
+        {
+            return userAlbums;
+        }
+
+        return userAlbums.Where(w => !singleNames.Contains(w.Name)).ToList();
+    }
+
     public async Task<int> GetUserAlbumCount(int userId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();

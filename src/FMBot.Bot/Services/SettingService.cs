@@ -743,6 +743,17 @@ public class SettingService
         return (true, extraOptions);
     }
 
+    public static (bool Enabled, string NewSearchValue) HideSingles(string extraOptions)
+    {
+        var noSingles = new[] { "ns", "nosingles", "hidesingles", "filtersingles" };
+        if (Contains(extraOptions, noSingles))
+        {
+            return (true, ContainsAndRemove(extraOptions, noSingles));
+        }
+
+        return (false, extraOptions);
+    }
+
     public static (bool User, string NewSearchValue) IsUserView(string extraOptions)
     {
         var guild = new[] { "server", "guild" };

@@ -514,6 +514,8 @@ namespace FMBot.Persistence.EntityFrameWork
                 entity.HasKey(a => a.Id);
 
                 entity.HasIndex(i => i.DiscordUserId);
+
+                entity.HasIndex(i => new { i.DiscordUserId, i.BotType, i.Service }).IsUnique();
             });
 
             modelBuilder.Entity<UserDiscogs>(entity =>

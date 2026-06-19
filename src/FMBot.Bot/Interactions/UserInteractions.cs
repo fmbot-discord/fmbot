@@ -350,6 +350,13 @@ public class UserInteractions(
                         await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
                         break;
                     }
+                    case UserSetting.CoverType:
+                    {
+                        response = UserBuilder.CoverMode(new ContextModel(this.Context, contextUser));
+
+                        await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
+                        break;
+                    }
                     case UserSetting.BotScrobbling:
                     {
                         response = UserBuilder.BotScrobblingAsync(new ContextModel(this.Context, contextUser));
@@ -1046,6 +1053,18 @@ public class UserInteractions(
         await this.Context.LogCommandUsedAsync(response, userService);
     }
 
+    [ComponentInteraction(InteractionConstants.CoverTypeChange)]
+    [UsernameSetRequired]
+    public async Task CoverTypePickAsync()
+    {
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+
+        var response = UserBuilder.CoverMode(new ContextModel(this.Context, contextUser));
+
+        await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
+        await this.Context.LogCommandUsedAsync(response, userService);
+    }
+
     [ComponentInteraction(InteractionConstants.WhoKnowsModeSetting)]
     [UsernameSetRequired]
     public async Task SetWhoKnowsModeAsync()
@@ -1062,6 +1081,30 @@ public class UserInteractions(
             var embed = new EmbedProperties();
             embed.WithColor(DiscordConstants.InformationColorBlue);
             embed.WithDescription($"Your default WhoKnows mode has been set to **{mode}**.");
+
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithEmbeds([embed])
+                .WithFlags(MessageFlags.Ephemeral)));
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.CoverTypeSetting)]
+    [UsernameSetRequired]
+    public async Task SetCoverTypeAsync()
+    {
+        var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
+
+        var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
+        var selectedValue = stringMenuInteraction.Data.SelectedValues[0];
+
+        if (Enum.TryParse(selectedValue, out CoverType coverType))
+        {
+            await userService.SetCoverType(userSettings, coverType);
+
+            var embed = new EmbedProperties();
+            embed.WithColor(DiscordConstants.InformationColorBlue);
+            embed.WithDescription($"Your default album cover type has been set to **{coverType}**.");
 
             await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
                 .WithEmbeds([embed])
