@@ -214,42 +214,18 @@ public class SpotifyRemoteBuilders(SpotifyRemoteService spotifyRemoteService)
 
     public static ResponseModel QueueResult(RemoteActionResult result, RemoteTrack track)
     {
-        if (result != RemoteActionResult.Ok)
-        {
-            return ErrorResponse(result);
-        }
-
-        var recentTrack = new RecentTrack
-        {
-            TrackName = track.Name,
-            TrackUrl = $"https://open.spotify.com/track/{track.Id}",
-            ArtistName = track.ArtistName,
-            AlbumName = track.AlbumName
-        };
-
-        return SuccessMessage(
-            $"Added to Spotify queue:\n{StringService.TrackToLinkedString(recentTrack).TrimEnd()}",
-            track.AlbumImageUrl);
+        return result != RemoteActionResult.Ok
+            ? ErrorResponse(result)
+            : TrackResultMessage("Added to Spotify queue:", track);
     }
 
     public static ResponseModel PlayResult(RemoteActionResult result, RemoteTrack track)
     {
-        if (result != RemoteActionResult.Ok)
-        {
-            return ErrorResponse(result);
-        }
-
-        var recentTrack = new RecentTrack
-        {
-            TrackName = track.Name,
-            TrackUrl = $"https://open.spotify.com/track/{track.Id}",
-            ArtistName = track.ArtistName,
-            AlbumName = track.AlbumName
-        };
-
-        return SuccessMessage(
-            $"{EmojiProperties.Custom(DiscordConstants.PagesNext).ToDiscordString("play")} Started playing on Spotify:\n{StringService.TrackToLinkedString(recentTrack).TrimEnd()}",
-            track.AlbumImageUrl);
+        return result != RemoteActionResult.Ok
+            ? ErrorResponse(result)
+            : TrackResultMessage(
+                $"{EmojiProperties.Custom(DiscordConstants.PagesNext).ToDiscordString("play")} Started playing on Spotify:",
+                track);
     }
 
     public static ResponseModel SkipResult(RemoteActionResult result)
@@ -289,24 +265,39 @@ public class SpotifyRemoteBuilders(SpotifyRemoteService spotifyRemoteService)
             return ErrorResponse(result);
         }
 
-        var name = StringExtensions.Sanitize(track.Name);
-        var artist = StringExtensions.Sanitize(track.ArtistName);
-
-        string description;
-        if (unlike)
+        var label = (unlike, wasInLibrary) switch
         {
-            description = wasInLibrary
-                ? $"💔 Removed **{name}** by {artist} from your liked songs in Spotify."
-                : $"**{name}** by {artist} wasn't in your liked songs.";
-        }
-        else
-        {
-            description = wasInLibrary
-                ? $"❤️ **{name}** by {artist} is already in your liked songs in Spotify."
-                : $"❤️ Added **{name}** by {artist} to your liked songs.";
-        }
+            (true, true) => "💔 Removed from your liked songs on Spotify:",
+            (true, false) => "Wasn't in your liked songs on Spotify:",
+            (false, true) => "❤️ Already in your liked songs on Spotify:",
+            (false, false) => "❤️ Added to your liked songs on Spotify:"
+        };
 
-        return SuccessMessage(description, track.AlbumImageUrl);
+        return TrackResultMessage(label, track);
+    }
+
+    private static ResponseModel TrackResultMessage(string label, RemoteTrack track)
+    {
+        var recentTrack = new RecentTrack
+        {
+            TrackName = track.Name,
+            TrackUrl = $"https://open.spotify.com/track/{track.Id}",
+            ArtistName = track.ArtistName,
+            AlbumName = track.AlbumName
+        };
+
+        var response = SuccessMessage(
+            $"{label}\n{StringService.TrackToLinkedString(recentTrack).TrimEnd()}",
+            track.AlbumImageUrl);
+
+        response.ReferencedMusic = new ReferencedMusic
+        {
+            Artist = track.ArtistName,
+            Album = track.AlbumName,
+            Track = track.Name
+        };
+
+        return response;
     }
 
     public static ResponseModel TrackNotFoundResponse()
