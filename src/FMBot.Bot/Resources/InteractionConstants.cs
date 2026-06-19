@@ -37,6 +37,20 @@ public static class InteractionConstants
         public const string RemoveAccount = "discogs-remove";
     }
 
+    public static class Remote
+    {
+        public const string Connect = "remote-connect";
+        public const string Disconnect = "remote-disconnect";
+
+        public const string Panel = "remote-panel";
+        public const string PlayPause = "remote-playpause";
+        public const string Skip = "remote-skip";
+        public const string Previous = "remote-previous";
+        public const string Like = "remote-like";
+        public const string QueueCurrent = "remote-queuecurrent";
+        public const string DevicePicker = "remote-devicepicker";
+    }
+
     public const string WhoKnowsModeSetting = "wk-mode-set";
     public const string TopListModeSetting = "toplist-mode-set";
     public const string CoverTypeSetting = "cover-type-set";

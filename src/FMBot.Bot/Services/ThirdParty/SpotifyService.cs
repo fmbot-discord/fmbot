@@ -135,7 +135,6 @@ public class SpotifyService
 
     public async Task<FullTrack> GetTrackById(string spotifyId)
     {
-        //Create the auth object
         var spotify = GetSpotifyWebApi();
 
         Statistics.SpotifyApiCalls.Inc();
@@ -144,7 +143,6 @@ public class SpotifyService
 
     public async Task<FullAlbum> GetAlbumById(string spotifyId)
     {
-        //Create the auth object
         var spotify = GetSpotifyWebApi();
 
         Statistics.SpotifyApiCalls.Inc();

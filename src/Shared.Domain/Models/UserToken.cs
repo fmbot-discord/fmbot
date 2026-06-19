@@ -11,6 +11,8 @@ public class UserToken
 
     public BotType BotType { get; set; }
 
+    public TokenService Service { get; set; }
+
     public string Scope { get; set; }
     public string AccessToken { get; set; }
     public string RefreshToken { get; set; }

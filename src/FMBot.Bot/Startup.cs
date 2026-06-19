@@ -242,6 +242,7 @@ public class Startup
             .AddSingleton<PlayBuilder>()
             .AddSingleton<PremiumSettingBuilder>()
             .AddSingleton<RecapBuilders>()
+            .AddSingleton<SpotifyRemoteBuilders>()
             .AddSingleton<StaticBuilders>()
             .AddSingleton<TemplateBuilders>()
             .AddSingleton<TrackBuilders>()
@@ -344,6 +345,7 @@ public class Startup
         services.AddHttpClient<AppleMusicVideoService>();
 
         services.AddHttpClient<SpotifyService>(client => { client.Timeout = TimeSpan.FromSeconds(10); });
+        services.AddHttpClient<SpotifyRemoteService>(client => { client.Timeout = TimeSpan.FromSeconds(10); });
 
         MetaBrainz.MusicBrainz.Query.DelayBetweenRequests = 1.5;
         MetaBrainz.MusicBrainz.Query.DefaultUserAgent.Add(new ProductInfoHeaderValue("fmbot", "1.0"));
