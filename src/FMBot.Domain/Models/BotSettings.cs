@@ -116,6 +116,8 @@ public class SpotifyConfig
     public string Secret { get; set; }
 
     public string RedirectUri { get; set; }
+
+    public string StateSecret { get; set; }
 }
 
 public class AppleMusicConfig

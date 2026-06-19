@@ -81,7 +81,8 @@ public class SpotifyRemoteService
 
     public bool IsConfigured =>
         !string.IsNullOrWhiteSpace(this._botSettings.Spotify?.Key) &&
-        !string.IsNullOrWhiteSpace(this._botSettings.Spotify?.RedirectUri);
+        !string.IsNullOrWhiteSpace(this._botSettings.Spotify?.RedirectUri) &&
+        !string.IsNullOrWhiteSpace(this._botSettings.Spotify?.StateSecret);
 
     public async Task<UserToken> GetActiveTokenAsync(ulong discordUserId)
     {
@@ -352,7 +353,7 @@ public class SpotifyRemoteService
 
     private string SignState(string payload)
     {
-        using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(this._botSettings.ApiConfig.InternalSecretKey));
+        using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(this._botSettings.Spotify.StateSecret));
         var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(payload));
         var signature = Convert.ToBase64String(hash).TrimEnd('=').Replace('+', '-').Replace('/', '_');
         return $"{payload}.{signature}";
