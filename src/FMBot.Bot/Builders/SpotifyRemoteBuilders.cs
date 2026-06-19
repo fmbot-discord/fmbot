@@ -228,7 +228,7 @@ public class SpotifyRemoteBuilders(SpotifyRemoteService spotifyRemoteService)
         };
 
         return SuccessMessage(
-            $"✅ Queued\n{StringService.TrackToLinkedString(recentTrack).TrimEnd()}",
+            $"Added to Spotify queue:\n{StringService.TrackToLinkedString(recentTrack).TrimEnd()}",
             track.AlbumImageUrl);
     }
 
@@ -239,8 +239,16 @@ public class SpotifyRemoteBuilders(SpotifyRemoteService spotifyRemoteService)
             return ErrorResponse(result);
         }
 
+        var recentTrack = new RecentTrack
+        {
+            TrackName = track.Name,
+            TrackUrl = $"https://open.spotify.com/track/{track.Id}",
+            ArtistName = track.ArtistName,
+            AlbumName = track.AlbumName
+        };
+
         return SuccessMessage(
-            $"{EmojiProperties.Custom(DiscordConstants.PagesNext).ToDiscordString("play")} Now playing **{StringExtensions.Sanitize(track.Name)}** by {StringExtensions.Sanitize(track.ArtistName)}",
+            $"{EmojiProperties.Custom(DiscordConstants.PagesNext).ToDiscordString("play")} Started playing on Spotify:\n{StringService.TrackToLinkedString(recentTrack).TrimEnd()}",
             track.AlbumImageUrl);
     }
 
