@@ -95,14 +95,14 @@ public class SpotifyRemoteBuilders(SpotifyRemoteService spotifyRemoteService)
         container.WithAccentColor(DiscordConstants.SpotifyColorGreen);
 
         var title = new StringBuilder();
-        title.AppendLine(playback.IsPlaying
+        title.AppendLine(playback?.IsPlaying == true
             ? $"Now playing"
             : $"Paused");
         container.WithTextDisplay($"{EmojiProperties.Custom(DiscordConstants.Spotify).ToDiscordString("spotify")} Spotify remote - {title}");
 
         container.WithSeparator();
 
-        var repeatLabel = playback.RepeatState switch
+        var repeatLabel = playback?.RepeatState switch
         {
             "track" => "Playing track on repeat",
             _ => null
