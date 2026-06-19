@@ -180,7 +180,7 @@ public class SpotifyRemoteCommands(
         }
     }
 
-    [Command("like", "rl", "rclike", "rcl", "spotifylike")]
+    [Command("rl", "rclike", "rcl", "spotifylike")]
     [Summary("Adds a track to your Spotify liked songs")]
     [UsernameSetRequired]
     [SpotifyConnectedRequired]
@@ -190,7 +190,7 @@ public class SpotifyRemoteCommands(
         await LikeOrUnlike(searchValue, false);
     }
 
-    [Command("unlike", "rul", "rcunlike", "rcul", "spotifyunlike")]
+    [Command("rul", "rcunlike", "rcul", "spotifyunlike")]
     [Summary("Removes a track from your Spotify liked songs")]
     [UsernameSetRequired]
     [SpotifyConnectedRequired]

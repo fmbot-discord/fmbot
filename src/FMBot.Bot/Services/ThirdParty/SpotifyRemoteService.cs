@@ -29,6 +29,7 @@ public enum RemoteActionResult
     PremiumRequired,
     NoActiveDevice,
     NotFound,
+    Restriction,
     Error
 }
 
@@ -198,6 +199,26 @@ public class SpotifyRemoteService
         }
     }
 
+    public async Task<List<RemoteTrack>> GetQueueAsync(UserToken token, int limit = 5)
+    {
+        try
+        {
+            Statistics.SpotifyApiCalls.Inc();
+            var queue = await GetClient(token).Player.GetQueue();
+
+            return queue.Queue
+                .OfType<FullTrack>()
+                .Take(limit)
+                .Select(RemoteTrack.From)
+                .ToList();
+        }
+        catch (Exception e)
+        {
+            Log.Warning(e, "SpotifyRemote: Failed to get queue for {discordUserId}", token.DiscordUserId);
+            return [];
+        }
+    }
+
     public async Task<List<Device>> GetDevicesAsync(UserToken token)
     {
         try
@@ -266,7 +287,8 @@ public class SpotifyRemoteService
             return status switch
             {
                 HttpStatusCode.NotFound => RemoteActionResult.NoActiveDevice,
-                HttpStatusCode.Forbidden => RemoteActionResult.PremiumRequired,
+                HttpStatusCode.Forbidden when IsPremiumRequired(e) => RemoteActionResult.PremiumRequired,
+                HttpStatusCode.Forbidden => RemoteActionResult.Restriction,
                 _ => LogAndError(e, token.DiscordUserId, status)
             };
         }
@@ -276,6 +298,9 @@ public class SpotifyRemoteService
             return RemoteActionResult.Error;
         }
     }
+
+    private static bool IsPremiumRequired(APIException e) =>
+        e.Message?.Contains("premium", StringComparison.OrdinalIgnoreCase) == true;
 
     private static RemoteActionResult LogAndError(APIException e, ulong discordUserId, HttpStatusCode? status)
     {

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using FMBot.Bot.Extensions;
@@ -102,22 +103,49 @@ public class SpotifyRemoteBuilders(SpotifyRemoteService spotifyRemoteService)
         container.WithSeparator();
 
         var isLiked = false;
+        List<RemoteTrack> queue = [];
 
         if (playback?.Item is FullTrack fullTrack)
         {
             var current = RemoteTrack.From(fullTrack);
             isLiked = await spotifyRemoteService.IsLikedAsync(token, fullTrack.Id);
+            queue = await spotifyRemoteService.GetQueueAsync(token);
 
-            var status = new StringBuilder();
+            var currentTrack = new RecentTrack
+            {
+                TrackName = current.Name,
+                TrackUrl = $"https://open.spotify.com/track/{current.Id}",
+                ArtistName = current.ArtistName,
+                AlbumName = fullTrack.Album?.Name
+            };
 
-            status.AppendLine($"**{StringExtensions.Sanitize(current.Name)}**");
-            status.AppendLine($"by {StringExtensions.Sanitize(current.ArtistName)}");
+            container.WithTextDisplay(StringService.TrackToLinkedString(currentTrack).TrimEnd());
 
-            container.WithTextDisplay(status.ToString().TrimEnd());
+            response.ReferencedMusic = new ReferencedMusic
+            {
+                Artist = current.ArtistName,
+                Album = fullTrack.Album?.Name,
+                Track = current.Name
+            };
         }
         else
         {
-            container.WithTextDisplay("Nothing is playing on Spotify right now.\nStart a song, then hit 🔄 to refresh.");
+            container.WithTextDisplay("Nothing is playing on Spotify right now.\nStart a song, then hit <:refresh:1517501604167811093> to refresh.");
+        }
+
+        if (queue.Count > 0)
+        {
+            var upNext = new StringBuilder();
+            upNext.AppendLine("-# Up next");
+            for (var i = 0; i < Math.Min(queue.Count, 4); i++)
+            {
+                var queued = queue[i];
+                upNext.AppendLine(
+                    $"{i + 1}. [{StringExtensions.Sanitize(queued.Name)}](https://open.spotify.com/track/{queued.Id}) by {StringExtensions.Sanitize(queued.ArtistName)}");
+            }
+
+            container.WithSeparator();
+            container.WithTextDisplay(upNext.ToString().TrimEnd());
         }
 
         container.WithSeparator();
@@ -196,6 +224,13 @@ public class SpotifyRemoteBuilders(SpotifyRemoteService spotifyRemoteService)
 
     public static ResponseModel PlayPauseResult(RemoteActionResult result, bool resumed)
     {
+        if (result == RemoteActionResult.Restriction)
+        {
+            return SuccessMessage(resumed
+                ? $"{EmojiProperties.Custom(DiscordConstants.PagesNext).ToDiscordString("play")} Already playing."
+                : $"{EmojiProperties.Custom(DiscordConstants.Pause).ToDiscordString("pause")} Already paused.");
+        }
+
         return result != RemoteActionResult.Ok
             ? ErrorResponse(result)
             : SuccessMessage(resumed
@@ -313,6 +348,14 @@ public class SpotifyRemoteBuilders(SpotifyRemoteService spotifyRemoteService)
             {
                 var response = NotConnectedResponse();
                 response.CommandResponse = CommandResponse.UsernameNotSet;
+                return response;
+            }
+            case RemoteActionResult.Restriction:
+            {
+                var response = Cv2Message(DiscordConstants.WarningColorOrange,
+                    "⚠️ Spotify couldn't do that right now.\n\n" +
+                    "The current playback doesn't allow it - for example, there may be no track to skip to.");
+                response.CommandResponse = CommandResponse.NotFound;
                 return response;
             }
             default:
