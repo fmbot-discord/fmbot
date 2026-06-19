@@ -123,11 +123,11 @@ public class SpotifyRemoteCommands(
     }
 
     [Command("play", "resume", "rcplay")]
-    [Summary("Resumes playback on your Spotify")]
+    [Summary("Plays a track on your Spotify, or resumes playback when no track is given")]
     [UsernameSetRequired]
     [SpotifyConnectedRequired]
     [CommandCategories(CommandCategory.ThirdParty)]
-    public async Task PlayAsync()
+    public async Task PlayAsync([CommandParameter(Remainder = true)] string searchValue = null)
     {
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
@@ -142,8 +142,23 @@ public class SpotifyRemoteCommands(
                 return;
             }
 
-            var result = await spotifyRemoteService.ResumeAsync(token);
-            await SendResponse(SpotifyRemoteBuilders.PlayPauseResult(result, true));
+            if (string.IsNullOrWhiteSpace(searchValue) && this.Context.Message.ReferencedMessage == null)
+            {
+                var resumeResult = await spotifyRemoteService.ResumeAsync(token);
+                await SendResponse(SpotifyRemoteBuilders.PlayPauseResult(resumeResult, true));
+                return;
+            }
+
+            var track = await ResolveTrackAsync(contextUser.UserNameLastFM, contextUser.SessionKeyLastFm,
+                contextUser.UserId, searchValue);
+            if (track == null)
+            {
+                await SendResponse(SpotifyRemoteBuilders.TrackNotFoundResponse());
+                return;
+            }
+
+            var result = await spotifyRemoteService.PlayTrackAsync(token, track.Uri);
+            await SendResponse(SpotifyRemoteBuilders.PlayResult(result, track));
         }
         catch (Exception e)
         {
@@ -180,7 +195,7 @@ public class SpotifyRemoteCommands(
         }
     }
 
-    [Command("rl", "rclike", "rcl", "spotifylike")]
+    [Command("rl", "rclike", "rcl", "spotifylike", "rclove", "spotifylove")]
     [Summary("Adds a track to your Spotify liked songs")]
     [UsernameSetRequired]
     [SpotifyConnectedRequired]
@@ -190,7 +205,7 @@ public class SpotifyRemoteCommands(
         await LikeOrUnlike(searchValue, false);
     }
 
-    [Command("rul", "rcunlike", "rcul", "spotifyunlike")]
+    [Command("rul", "rcunlike", "rcul", "spotifyunlike", "rclove", "spotifylove")]
     [Summary("Removes a track from your Spotify liked songs")]
     [UsernameSetRequired]
     [SpotifyConnectedRequired]

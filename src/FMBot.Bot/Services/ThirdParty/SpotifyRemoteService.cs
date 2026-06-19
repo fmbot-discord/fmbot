@@ -39,6 +39,7 @@ public class RemoteTrack
     public string Uri { get; set; }
     public string Name { get; set; }
     public string ArtistName { get; set; }
+    public string AlbumName { get; set; }
     public string AlbumImageUrl { get; set; }
 
     public static RemoteTrack From(FullTrack track)
@@ -54,6 +55,7 @@ public class RemoteTrack
             Uri = track.Uri,
             Name = track.Name,
             ArtistName = track.Artists?.FirstOrDefault()?.Name,
+            AlbumName = track.Album?.Name,
             AlbumImageUrl = track.Album?.Images?.FirstOrDefault()?.Url
         };
     }
@@ -177,7 +179,8 @@ public class SpotifyRemoteService
                 Id = spotifyId,
                 Uri = $"spotify:track:{spotifyId}",
                 Name = dbTrack.Name,
-                ArtistName = dbTrack.ArtistName
+                ArtistName = dbTrack.ArtistName,
+                AlbumName = dbTrack.AlbumName
             };
         }
 
@@ -239,7 +242,8 @@ public class SpotifyRemoteService
         try
         {
             Statistics.SpotifyApiCalls.Inc();
-            var result = await GetClient(token).Library.CheckItems(new LibraryCheckItemsRequest([$"spotify:track:{trackId}"]));
+            var result = await GetClient(token).Library
+                .CheckItems(new LibraryCheckItemsRequest([$"spotify:track:{trackId}"]));
             return result.FirstOrDefault();
         }
         catch (Exception e)
@@ -261,6 +265,9 @@ public class SpotifyRemoteService
     public Task<RemoteActionResult> ResumeAsync(UserToken token) =>
         Execute(token, c => c.Player.ResumePlayback());
 
+    public Task<RemoteActionResult> PlayTrackAsync(UserToken token, string trackUri) =>
+        Execute(token, c => c.Player.ResumePlayback(new PlayerResumePlaybackRequest { Uris = [trackUri] }));
+
     public Task<RemoteActionResult> PauseAsync(UserToken token) =>
         Execute(token, c => c.Player.PausePlayback());
 
@@ -268,10 +275,38 @@ public class SpotifyRemoteService
         Execute(token, c => c.Player.TransferPlayback(new PlayerTransferPlaybackRequest([deviceId]) { Play = true }));
 
     public Task<RemoteActionResult> LikeAsync(UserToken token, string trackId) =>
-        Execute(token, c => c.Library.SaveItems(new LibrarySaveItemsRequest([$"spotify:track:{trackId}"])));
+        ExecuteLibraryWrite(token, trackId,
+            (connector, uri, parameters) => connector.Put(uri, parameters, null, default));
 
     public Task<RemoteActionResult> UnlikeAsync(UserToken token, string trackId) =>
-        Execute(token, c => c.Library.RemoveItems(new LibraryRemoveItemsRequest([$"spotify:track:{trackId}"])));
+        ExecuteLibraryWrite(token, trackId,
+            (connector, uri, parameters) => connector.Delete(uri, parameters, null, default));
+
+    private async Task<RemoteActionResult> ExecuteLibraryWrite(UserToken token, string trackId,
+        Func<IAPIConnector, Uri, IDictionary<string, string>, Task> action)
+    {
+        try
+        {
+            Statistics.SpotifyApiCalls.Inc();
+
+            var uri = new Uri("me/library", UriKind.Relative);
+            var parameters = new Dictionary<string, string> { ["uris"] = $"spotify:track:{trackId}" };
+            await action(GetConnector(token), uri, parameters);
+            return RemoteActionResult.Ok;
+        }
+        catch (APIException e)
+        {
+            var status = e.Response?.StatusCode;
+            return status == HttpStatusCode.Unauthorized
+                ? RemoteActionResult.NotConnected
+                : LogAndError(e, token.DiscordUserId, status);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "SpotifyRemote: Library action failed for {discordUserId}", token.DiscordUserId);
+            return RemoteActionResult.Error;
+        }
+    }
 
     private async Task<RemoteActionResult> Execute(UserToken token, Func<SpotifyClient, Task> action)
     {
@@ -310,12 +345,22 @@ public class SpotifyRemoteService
 
     private SpotifyClient GetClient(UserToken token)
     {
-        var config = SpotifyClientConfig
+        return new SpotifyClient(GetConfig(token));
+    }
+
+    private IAPIConnector GetConnector(UserToken token)
+    {
+        var config = GetConfig(token);
+        return new APIConnector(config.BaseAddress, config.Authenticator, config.JSONSerializer,
+            config.HTTPClient, config.RetryHandler, config.HTTPLogger);
+    }
+
+    private SpotifyClientConfig GetConfig(UserToken token)
+    {
+        return SpotifyClientConfig
             .CreateDefault()
             .WithHTTPClient(new NetHttpClient(this._httpClient))
             .WithAuthenticator(new TokenAuthenticator(token.AccessToken, "Bearer"));
-
-        return new SpotifyClient(config);
     }
 
     private async Task<bool> RefreshToken(UserToken token, FMBotDbContext db)

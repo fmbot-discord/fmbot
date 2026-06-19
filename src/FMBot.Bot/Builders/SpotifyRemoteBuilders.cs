@@ -102,6 +102,12 @@ public class SpotifyRemoteBuilders(SpotifyRemoteService spotifyRemoteService)
 
         container.WithSeparator();
 
+        var repeatLabel = playback.RepeatState switch
+        {
+            "track" => "Playing track on repeat",
+            _ => null
+        };
+
         var isLiked = false;
         List<RemoteTrack> queue = [];
 
@@ -109,7 +115,11 @@ public class SpotifyRemoteBuilders(SpotifyRemoteService spotifyRemoteService)
         {
             var current = RemoteTrack.From(fullTrack);
             isLiked = await spotifyRemoteService.IsLikedAsync(token, fullTrack.Id);
-            queue = await spotifyRemoteService.GetQueueAsync(token);
+
+            if (repeatLabel == null)
+            {
+                queue = await spotifyRemoteService.GetQueueAsync(token);
+            }
 
             var currentTrack = new RecentTrack
             {
@@ -133,7 +143,13 @@ public class SpotifyRemoteBuilders(SpotifyRemoteService spotifyRemoteService)
             container.WithTextDisplay("Nothing is playing on Spotify right now.\nStart a song, then hit <:refresh:1517501604167811093> to refresh.");
         }
 
-        if (queue.Count > 0)
+        if (repeatLabel != null)
+        {
+            container.WithSeparator();
+            container.WithTextDisplay($"-# Up next\n"+
+            $"🔁 {repeatLabel}");
+        }
+        else if (queue.Count > 0)
         {
             var upNext = new StringBuilder();
             upNext.AppendLine("-# Up next");
@@ -203,8 +219,28 @@ public class SpotifyRemoteBuilders(SpotifyRemoteService spotifyRemoteService)
             return ErrorResponse(result);
         }
 
+        var recentTrack = new RecentTrack
+        {
+            TrackName = track.Name,
+            TrackUrl = $"https://open.spotify.com/track/{track.Id}",
+            ArtistName = track.ArtistName,
+            AlbumName = track.AlbumName
+        };
+
         return SuccessMessage(
-            $"✅ Queued **{StringExtensions.Sanitize(track.Name)}** by {StringExtensions.Sanitize(track.ArtistName)}",
+            $"✅ Queued\n{StringService.TrackToLinkedString(recentTrack).TrimEnd()}",
+            track.AlbumImageUrl);
+    }
+
+    public static ResponseModel PlayResult(RemoteActionResult result, RemoteTrack track)
+    {
+        if (result != RemoteActionResult.Ok)
+        {
+            return ErrorResponse(result);
+        }
+
+        return SuccessMessage(
+            $"{EmojiProperties.Custom(DiscordConstants.PagesNext).ToDiscordString("play")} Now playing **{StringExtensions.Sanitize(track.Name)}** by {StringExtensions.Sanitize(track.ArtistName)}",
             track.AlbumImageUrl);
     }
 
