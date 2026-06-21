@@ -11,6 +11,7 @@ using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
 using NetCord.Services.Commands;
+using Shared.Domain.Models;
 
 namespace FMBot.Bot.TextCommands;
 
@@ -44,6 +45,11 @@ public class SpotifyRemoteCommands(
             if (token == null)
             {
                 await SendNotConnected();
+                return;
+            }
+
+            if (await TryHandleAlbumOrArtistAsync(token, searchValue, play: false))
+            {
                 return;
             }
 
@@ -149,6 +155,11 @@ public class SpotifyRemoteCommands(
                 return;
             }
 
+            if (await TryHandleAlbumOrArtistAsync(token, searchValue, play: true))
+            {
+                return;
+            }
+
             var track = await ResolveTrackAsync(contextUser.UserNameLastFM, contextUser.SessionKeyLastFm,
                 contextUser.UserId, searchValue);
             if (track == null)
@@ -157,7 +168,7 @@ public class SpotifyRemoteCommands(
                 return;
             }
 
-            var result = await spotifyRemoteService.PlayTrackAsync(token, track.Uri);
+            var result = await spotifyRemoteService.PlayTrackAsync(token, track.Uri, track.AlbumUri);
             await SendResponse(SpotifyRemoteBuilders.PlayResult(result, track));
         }
         catch (Exception e)
@@ -290,6 +301,32 @@ public class SpotifyRemoteCommands(
         {
             await this.Context.HandleCommandException(e, userService);
         }
+    }
+
+    private async Task<bool> TryHandleAlbumOrArtistAsync(UserToken token, string searchValue, bool play)
+    {
+        var referencedMessage = this.Context.Message.ReferencedMessage;
+        var content = !string.IsNullOrWhiteSpace(searchValue)
+            ? searchValue
+            : referencedMessage?.Content;
+
+        var link = MusicLinkExtensions.TryParseMusicLink(content);
+
+        ReferencedMusic referenced = null;
+        if (link == null && string.IsNullOrWhiteSpace(searchValue) && referencedMessage != null)
+        {
+            referenced = CommandContextExtensions.GetReferencedMusic(referencedMessage.Id)
+                         ?? await userService.GetReferencedMusic(referencedMessage.Id);
+        }
+
+        var response = await spotifyRemoteBuilders.TryQueueOrPlayAlbumOrArtistAsync(token, link, referenced, play);
+        if (response == null)
+        {
+            return false;
+        }
+
+        await SendResponse(response);
+        return true;
     }
 
     private async Task<RemoteTrack> ResolveTrackAsync(string userNameLastFm, string sessionKey, int userId,

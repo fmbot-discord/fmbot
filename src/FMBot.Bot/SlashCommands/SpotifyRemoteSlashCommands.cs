@@ -190,8 +190,22 @@ public class SpotifyRemoteSlashCommands(
                 return;
             }
 
+            var link = MusicLinkExtensions.TryParseMusicLink(message?.Content);
+            var referenced = link == null && message != null
+                ? CommandContextExtensions.GetReferencedMusic(message.Id)
+                  ?? await userService.GetReferencedMusic(message.Id)
+                : null;
+
+            var albumOrArtist =
+                await spotifyRemoteBuilders.TryQueueOrPlayAlbumOrArtistAsync(token, link, referenced, play);
+            if (albumOrArtist != null)
+            {
+                await SendFollowUp(albumOrArtist);
+                return;
+            }
+
             var track = await ResolveTrackFromMessageAsync(contextUser.UserNameLastFM, contextUser.SessionKeyLastFm,
-                contextUser.UserId, message);
+                contextUser.UserId, message, link);
             if (track == null)
             {
                 await SendFollowUp(SpotifyRemoteBuilders.TrackNotFoundResponse());
@@ -200,7 +214,7 @@ public class SpotifyRemoteSlashCommands(
 
             if (play)
             {
-                var result = await spotifyRemoteService.PlayTrackAsync(token, track.Uri);
+                var result = await spotifyRemoteService.PlayTrackAsync(token, track.Uri, track.AlbumUri);
                 await SendFollowUp(SpotifyRemoteBuilders.PlayResult(result, track));
             }
             else
@@ -231,13 +245,11 @@ public class SpotifyRemoteSlashCommands(
     }
 
     private async Task<RemoteTrack> ResolveTrackFromMessageAsync(string userNameLastFm, string sessionKey, int userId,
-        RestMessage message)
+        RestMessage message, MusicLinkExtensions.MusicLinkResult link)
     {
-        if (message != null &&
-            MusicLinkExtensions.TryParseMusicLink(message.Content) is
-                { Type: MusicLinkExtensions.MusicLinkType.SpotifyTrack } spotifyLink)
+        if (link is { Type: MusicLinkExtensions.MusicLinkType.SpotifyTrack })
         {
-            var linkedTrack = await spotifyRemoteService.ResolveTrackByIdAsync(spotifyLink.Id);
+            var linkedTrack = await spotifyRemoteService.ResolveTrackByIdAsync(link.Id);
             if (linkedTrack != null)
             {
                 return linkedTrack;
