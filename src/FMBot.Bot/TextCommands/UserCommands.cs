@@ -308,6 +308,12 @@ public class UserCommands(
                 PublicProperties.UsedCommandsResponseMessageId.TryAdd(this.Context.Message.Id, message.Id);
                 PublicProperties.UsedCommandsResponseContextId.TryAdd(message.Id, this.Context.Message.Id);
 
+                if (response.ReferencedMusic != null)
+                {
+                    PublicProperties.UsedCommandsReferencedMusic.TryAdd(this.Context.Message.Id,
+                        response.ReferencedMusic);
+                }
+
                 if (timerService.CurrentFeatured?.Reactions != null &&
                     timerService.CurrentFeatured.Reactions.Any())
                 {
@@ -329,6 +335,13 @@ public class UserCommands(
             }
 
             await this.Context.LogCommandUsedAsync(response, userService);
+
+            if (message != null && response.CommandResponse == CommandResponse.Ok)
+            {
+                await userService.UpdateCommandInteractionAsync(this.Context.Message.Id, responseId: message.Id,
+                    artist: response.ReferencedMusic?.Artist, album: response.ReferencedMusic?.Album,
+                    track: response.ReferencedMusic?.Track);
+            }
         }
         catch (Exception e)
         {
