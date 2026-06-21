@@ -785,7 +785,22 @@ public class MusicDataFactory
 
                 var spotifyTrack = await spotifyTrackTask;
                 var amSong = await amSongTask;
-                var lyrics = await lyricsTask;
+
+                var lyricsFailed = false;
+                LyricsReply lyrics;
+                try
+                {
+                    lyrics = await lyricsTask;
+                }
+                catch (Exception lyricsException)
+                {
+                    lyricsFailed = true;
+                    lyrics = new LyricsReply { Result = false };
+                    Log.Warning(lyricsException,
+                        "{Factory}: Lyrics API unavailable while storing new track {Artist} - {Track}, storing without lyrics",
+                        nameof(MusicDataFactory), trackInfo.ArtistName, trackInfo.TrackName);
+                }
+
                 var musicBrainzUpdated = await musicBrainzTask;
 
                 if (musicBrainzUpdated.Updated)
@@ -837,7 +852,10 @@ public class MusicDataFactory
                     trackToAdd.PlainLyrics = lyrics.PlainLyrics;
                 }
 
-                trackToAdd.LyricsDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+                if (!lyricsFailed)
+                {
+                    trackToAdd.LyricsDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+                }
                 trackToAdd.SpotifyLastUpdated = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
                 trackToAdd.AppleMusicDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
 
@@ -1005,40 +1023,49 @@ public class MusicDataFactory
 
             if (updateLyrics != null)
             {
-                var lyrics = await updateLyrics;
-
-                if (lyrics.Result)
+                try
                 {
-                    if (!string.IsNullOrWhiteSpace(lyrics.PlainLyrics))
-                    {
-                        dbTrack.PlainLyrics = lyrics.PlainLyrics;
-                    }
+                    var lyrics = await updateLyrics;
 
-                    if (lyrics.SyncedLyrics != null && lyrics.SyncedLyrics.Count != 0)
+                    if (lyrics.Result)
                     {
-                        var existingSyncedLyrics = await db.TrackSyncedLyrics
-                            .Where(w => w.TrackId == dbTrack.Id)
-                            .ToListAsync();
-
-                        if (existingSyncedLyrics.Count != 0)
+                        if (!string.IsNullOrWhiteSpace(lyrics.PlainLyrics))
                         {
-                            db.TrackSyncedLyrics.RemoveRange(existingSyncedLyrics);
+                            dbTrack.PlainLyrics = lyrics.PlainLyrics;
                         }
 
-                        var syncedLyrics = lyrics.SyncedLyrics.Select(s => new TrackSyncedLyrics
+                        if (lyrics.SyncedLyrics != null && lyrics.SyncedLyrics.Count != 0)
                         {
-                            TrackId = dbTrack.Id,
-                            Text = s.Text,
-                            Timestamp = s.Position.ToTimeSpan()
-                        }).ToList();
+                            var existingSyncedLyrics = await db.TrackSyncedLyrics
+                                .Where(w => w.TrackId == dbTrack.Id)
+                                .ToListAsync();
 
-                        await db.TrackSyncedLyrics.AddRangeAsync(syncedLyrics);
-                        dbTrack.SyncedLyrics = syncedLyrics;
+                            if (existingSyncedLyrics.Count != 0)
+                            {
+                                db.TrackSyncedLyrics.RemoveRange(existingSyncedLyrics);
+                            }
+
+                            var syncedLyrics = lyrics.SyncedLyrics.Select(s => new TrackSyncedLyrics
+                            {
+                                TrackId = dbTrack.Id,
+                                Text = s.Text,
+                                Timestamp = s.Position.ToTimeSpan()
+                            }).ToList();
+
+                            await db.TrackSyncedLyrics.AddRangeAsync(syncedLyrics);
+                            dbTrack.SyncedLyrics = syncedLyrics;
+                        }
                     }
-                }
 
-                dbTrack.LyricsDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
-                db.Entry(dbTrack).State = EntityState.Modified;
+                    dbTrack.LyricsDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+                    db.Entry(dbTrack).State = EntityState.Modified;
+                }
+                catch (Exception lyricsException)
+                {
+                    Log.Warning(lyricsException,
+                        "{Factory}: Lyrics API unavailable while refreshing {Artist} - {Track}, keeping stored lyrics",
+                        nameof(MusicDataFactory), trackInfo.ArtistName, trackInfo.TrackName);
+                }
             }
 
             await db.SaveChangesAsync();

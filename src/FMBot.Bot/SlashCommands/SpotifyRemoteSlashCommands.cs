@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
+using FMBot.Bot.AutoCompleteHandlers;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
@@ -54,7 +55,8 @@ public class SpotifyRemoteSlashCommands(
     [UsernameSetRequired]
     [SpotifyConnectedRequired]
     public async Task QueueAsync(
-        [SlashCommandParameter(Name = "search", Description = "Track to queue (defaults to what you're playing)")]
+        [SlashCommandParameter(Name = "search", Description = "Track to queue (defaults to what you're playing)",
+            AutocompleteProviderType = typeof(TrackAutoComplete))]
         string searchValue = null)
     {
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
@@ -121,7 +123,8 @@ public class SpotifyRemoteSlashCommands(
     [UsernameSetRequired]
     [SpotifyConnectedRequired]
     public async Task LikeAsync(
-        [SlashCommandParameter(Name = "search", Description = "Track to like (defaults to what you're playing)")]
+        [SlashCommandParameter(Name = "search", Description = "Track to like (defaults to what you're playing)",
+            AutocompleteProviderType = typeof(TrackAutoComplete))]
         string searchValue = null)
     {
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
@@ -154,11 +157,110 @@ public class SpotifyRemoteSlashCommands(
         }
     }
 
+    [MessageCommand("Queue on Spotify",
+        Contexts =
+            [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild],
+        IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
+    [UsernameSetRequired]
+    [SpotifyConnectedRequired]
+    public async Task QueueMessageAsync(RestMessage message)
+    {
+        await RemoteFromMessageAsync(message, play: false);
+    }
+
+    [MessageCommand("Play on Spotify",
+        Contexts =
+            [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild],
+        IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
+    [UsernameSetRequired]
+    [SpotifyConnectedRequired]
+    public async Task PlayMessageAsync(RestMessage message)
+    {
+        await RemoteFromMessageAsync(message, play: true);
+    }
+
+    private async Task RemoteFromMessageAsync(RestMessage message, bool play)
+    {
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        await RespondAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
+
+        try
+        {
+            var token = await spotifyRemoteService.GetActiveTokenAsync(this.Context.User.Id);
+            if (token == null)
+            {
+                await SendFollowUp(SpotifyRemoteBuilders.NotConnectedResponse());
+                return;
+            }
+
+            var link = MusicLinkExtensions.TryParseMusicLink(message?.Content);
+            var referenced = link == null && message != null
+                ? CommandContextExtensions.GetReferencedMusic(message.Id)
+                  ?? await userService.GetReferencedMusic(message.Id)
+                : null;
+
+            var albumOrArtist =
+                await spotifyRemoteBuilders.TryQueueOrPlayAlbumOrArtistAsync(token, link, referenced, play);
+            if (albumOrArtist != null)
+            {
+                await SendFollowUp(albumOrArtist);
+                return;
+            }
+
+            var track = await ResolveTrackFromMessageAsync(contextUser.UserNameLastFM, contextUser.SessionKeyLastFm,
+                contextUser.UserId, message, link);
+            if (track == null)
+            {
+                await SendFollowUp(SpotifyRemoteBuilders.TrackNotFoundResponse());
+                return;
+            }
+
+            if (play)
+            {
+                var result = await spotifyRemoteService.PlayTrackAsync(token, track.Uri, track.AlbumUri);
+                await SendFollowUp(SpotifyRemoteBuilders.PlayResult(result, track));
+            }
+            else
+            {
+                var result = await spotifyRemoteService.QueueAsync(token, track.Uri);
+                await SendFollowUp(SpotifyRemoteBuilders.QueueResult(result, track));
+            }
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
     private async Task<RemoteTrack> ResolveTrackAsync(string userNameLastFm, string sessionKey, int userId,
         string searchValue)
     {
         var trackSearch = await trackService.SearchTrack(new ResponseModel(), this.Context.User, searchValue,
             userNameLastFm, sessionKey, userId: userId, useCachedTracks: true);
+
+        if (trackSearch.Track == null)
+        {
+            return null;
+        }
+
+        return await spotifyRemoteService.ResolveSpotifyTrackAsync(trackSearch.Track.ArtistName,
+            trackSearch.Track.TrackName);
+    }
+
+    private async Task<RemoteTrack> ResolveTrackFromMessageAsync(string userNameLastFm, string sessionKey, int userId,
+        RestMessage message, MusicLinkExtensions.MusicLinkResult link)
+    {
+        if (link is { Type: MusicLinkExtensions.MusicLinkType.SpotifyTrack })
+        {
+            var linkedTrack = await spotifyRemoteService.ResolveTrackByIdAsync(link.Id);
+            if (linkedTrack != null)
+            {
+                return linkedTrack;
+            }
+        }
+
+        var trackSearch = await trackService.SearchTrack(new ResponseModel(), this.Context.User, null,
+            userNameLastFm, sessionKey, userId: userId, useCachedTracks: true, referencedMessage: message);
 
         if (trackSearch.Track == null)
         {

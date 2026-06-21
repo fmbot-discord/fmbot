@@ -157,6 +157,15 @@ public class SpotifyService
         return await spotify.Artists.Get(spotifyId);
     }
 
+    public async Task<List<FullTrack>> GetArtistTopTracks(string spotifyId, string market = "US")
+    {
+        var spotify = GetSpotifyWebApi();
+
+        Statistics.SpotifyApiCalls.Inc();
+        var result = await spotify.Artists.GetTopTracks(spotifyId, new ArtistsTopTracksRequest(market));
+        return result?.Tracks ?? [];
+    }
+
     public async Task<TrackAudioFeatures> GetAudioFeaturesFromSpotify(string spotifyId)
     {
         try
@@ -193,7 +202,7 @@ public class SpotifyService
         return new SpotifyClient(PublicProperties.SpotifyConfig);
     }
 
-    public void InitApiClientConfig()
+    private void InitApiClientConfig()
     {
         if (PublicProperties.SpotifyConfig == null)
         {

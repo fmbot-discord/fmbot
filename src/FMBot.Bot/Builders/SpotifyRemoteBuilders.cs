@@ -10,12 +10,86 @@ using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain.Models;
 using NetCord;
 using NetCord.Rest;
+using Shared.Domain.Models;
 using SpotifyAPI.Web;
 
 namespace FMBot.Bot.Builders;
 
 public class SpotifyRemoteBuilders(SpotifyRemoteService spotifyRemoteService)
 {
+    public async Task<ResponseModel> TryQueueOrPlayAlbumOrArtistAsync(UserToken token,
+        MusicLinkExtensions.MusicLinkResult link, ReferencedMusic referenced, bool play)
+    {
+        if (link is { Type: MusicLinkExtensions.MusicLinkType.SpotifyAlbum })
+        {
+            return await AlbumResponseAsync(token, await spotifyRemoteService.ResolveAlbumByIdAsync(link.Id), play);
+        }
+
+        if (link is { Type: MusicLinkExtensions.MusicLinkType.SpotifyArtist })
+        {
+            return play
+                ? await ArtistPlayResponseAsync(token, await spotifyRemoteService.ResolveArtistByIdAsync(link.Id))
+                : await ArtistQueueResponseAsync(token,
+                    await spotifyRemoteService.ResolveArtistTopTrackByIdAsync(link.Id));
+        }
+
+        if (referenced is { Track: null, Album: not null })
+        {
+            return await AlbumResponseAsync(token,
+                await spotifyRemoteService.ResolveAlbumByNameAsync(referenced.Artist, referenced.Album), play);
+        }
+
+        if (referenced is { Track: null, Album: null, Artist: not null })
+        {
+            return play
+                ? await ArtistPlayResponseAsync(token,
+                    await spotifyRemoteService.ResolveArtistByNameAsync(referenced.Artist))
+                : await ArtistQueueResponseAsync(token,
+                    await spotifyRemoteService.ResolveArtistTopTrackByNameAsync(referenced.Artist));
+        }
+
+        return null;
+    }
+
+    private async Task<ResponseModel> AlbumResponseAsync(UserToken token, RemoteAlbum album, bool play)
+    {
+        if (album == null)
+        {
+            return TrackNotFoundResponse();
+        }
+
+        if (play)
+        {
+            var result = await spotifyRemoteService.PlayContextAsync(token, album.Uri);
+            return PlayAlbumResult(result, album);
+        }
+
+        var queueResult = await spotifyRemoteService.QueueAlbumAsync(token, album);
+        return QueueAlbumResult(queueResult, album);
+    }
+
+    private async Task<ResponseModel> ArtistPlayResponseAsync(UserToken token, RemoteArtist artist)
+    {
+        if (artist == null)
+        {
+            return TrackNotFoundResponse();
+        }
+
+        var result = await spotifyRemoteService.PlayContextAsync(token, artist.Uri);
+        return PlayArtistResult(result, artist);
+    }
+
+    private async Task<ResponseModel> ArtistQueueResponseAsync(UserToken token, RemoteTrack track)
+    {
+        if (track == null)
+        {
+            return TrackNotFoundResponse();
+        }
+
+        var result = await spotifyRemoteService.QueueAsync(token, track.Uri);
+        return QueueResult(result, track);
+    }
+
     public static ResponseModel NotConnectedResponse()
     {
         var response = new ResponseModel
@@ -61,9 +135,9 @@ public class SpotifyRemoteBuilders(SpotifyRemoteService spotifyRemoteService)
     public static ResponseModel ConnectSuccessResponse()
     {
         return Cv2Message(DiscordConstants.SuccessColorGreen,
-            "✅ **Spotify connected!**\n\n" +
-            "You can now control your playback with `/remote`, `queue`, `skip` and `like`.\n\n" +
-            "Tip: Reply to any Spotify link or .fmbot command with a track with `queue` to add it to your queue.");
+            "✅ **Spotify remote connected!**\n\n" +
+            "You can now control your playback with `rc`, `play`,`queue`, `skip` and `like`.\n\n" +
+            "Reply to any message containing an artist, album or track and it will be used automatically as input.");
     }
 
     public static ResponseModel ConnectTimeoutResponse()
@@ -72,6 +146,30 @@ public class SpotifyRemoteBuilders(SpotifyRemoteService spotifyRemoteService)
             "❌ Spotify connection timed out.\n\n" +
             "Run the command again to retry connecting.");
         response.CommandResponse = CommandResponse.Cooldown;
+
+        return response;
+    }
+
+    public static ResponseModel ReplyContextDemoResponse()
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.ComponentsV2
+        };
+
+        var container = response.ComponentsContainer;
+        container.WithAccentColor(DiscordConstants.SpotifyColorGreen);
+        container.WithTextDisplay(
+            "Did you know you can reply to commands or messages to use them as input?\n\n" +
+            "This is especially useful for the new Spotify remote commands.\n\n" +
+            "Lets try it out with a demo: Reply to this message with `.play`.");
+
+        response.ReferencedMusic = new ReferencedMusic
+        {
+            Artist = "Rick Astley",
+            Album = "Whenever You Need Somebody",
+            Track = "Never Gonna Give You Up"
+        };
 
         return response;
     }
@@ -228,6 +326,43 @@ public class SpotifyRemoteBuilders(SpotifyRemoteService spotifyRemoteService)
                 track);
     }
 
+    public static ResponseModel QueueAlbumResult(RemoteActionResult result, RemoteAlbum album)
+    {
+        return result != RemoteActionResult.Ok
+            ? ErrorResponse(result)
+            : AlbumResultMessage($"Added album to your Spotify queue ({album.Tracks.Count} tracks):", album);
+    }
+
+    public static ResponseModel PlayAlbumResult(RemoteActionResult result, RemoteAlbum album)
+    {
+        return result != RemoteActionResult.Ok
+            ? ErrorResponse(result)
+            : AlbumResultMessage(
+                $"{EmojiProperties.Custom(DiscordConstants.PagesNext).ToDiscordString("play")} Started playing album on Spotify:",
+                album);
+    }
+
+    public static ResponseModel PlayArtistResult(RemoteActionResult result, RemoteArtist artist)
+    {
+        if (result != RemoteActionResult.Ok)
+        {
+            return ErrorResponse(result);
+        }
+
+        var artistLink = $"**[{StringExtensions.Sanitize(artist.Name)}](https://open.spotify.com/artist/{artist.Id})**";
+
+        var response = SuccessMessage(
+            $"{EmojiProperties.Custom(DiscordConstants.PagesNext).ToDiscordString("play")} Started playing artist on Spotify:\n{artistLink}",
+            artist.ImageUrl);
+
+        response.ReferencedMusic = new ReferencedMusic
+        {
+            Artist = artist.Name
+        };
+
+        return response;
+    }
+
     public static ResponseModel SkipResult(RemoteActionResult result)
     {
         return result != RemoteActionResult.Ok
@@ -295,6 +430,22 @@ public class SpotifyRemoteBuilders(SpotifyRemoteService spotifyRemoteService)
             Artist = track.ArtistName,
             Album = track.AlbumName,
             Track = track.Name
+        };
+
+        return response;
+    }
+
+    private static ResponseModel AlbumResultMessage(string label, RemoteAlbum album)
+    {
+        var albumLink =
+            $"**[{StringExtensions.Sanitize(album.Name)}](https://open.spotify.com/album/{album.Id})** by **{StringExtensions.Sanitize(album.ArtistName)}**";
+
+        var response = SuccessMessage($"{label}\n{albumLink}", album.AlbumImageUrl);
+
+        response.ReferencedMusic = new ReferencedMusic
+        {
+            Artist = album.ArtistName,
+            Album = album.Name
         };
 
         return response;

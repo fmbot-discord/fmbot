@@ -40,6 +40,7 @@ public class RemoteTrack
     public string Name { get; set; }
     public string ArtistName { get; set; }
     public string AlbumName { get; set; }
+    public string AlbumUri { get; set; }
     public string AlbumImageUrl { get; set; }
 
     public static RemoteTrack From(FullTrack track)
@@ -56,9 +57,28 @@ public class RemoteTrack
             Name = track.Name,
             ArtistName = track.Artists?.FirstOrDefault()?.Name,
             AlbumName = track.Album?.Name,
+            AlbumUri = track.Album?.Uri,
             AlbumImageUrl = track.Album?.Images?.FirstOrDefault()?.Url
         };
     }
+}
+
+public class RemoteAlbum
+{
+    public string Id { get; set; }
+    public string Uri { get; set; }
+    public string Name { get; set; }
+    public string ArtistName { get; set; }
+    public string AlbumImageUrl { get; set; }
+    public List<RemoteTrack> Tracks { get; set; } = [];
+}
+
+public class RemoteArtist
+{
+    public string Id { get; set; }
+    public string Uri { get; set; }
+    public string Name { get; set; }
+    public string ImageUrl { get; set; }
 }
 
 public class SpotifyRemoteService
@@ -170,7 +190,9 @@ public class SpotifyRemoteService
     public async Task<RemoteTrack> ResolveTrackByIdAsync(string spotifyId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
-        var dbTrack = await db.Tracks.FirstOrDefaultAsync(f => f.SpotifyId == spotifyId);
+        var dbTrack = await db.Tracks
+            .Include(f => f.Album)
+            .FirstOrDefaultAsync(f => f.SpotifyId == spotifyId);
 
         if (dbTrack != null)
         {
@@ -180,12 +202,118 @@ public class SpotifyRemoteService
                 Uri = $"spotify:track:{spotifyId}",
                 Name = dbTrack.Name,
                 ArtistName = dbTrack.ArtistName,
-                AlbumName = dbTrack.AlbumName
+                AlbumName = dbTrack.AlbumName,
+                AlbumUri = dbTrack.Album?.SpotifyId != null ? $"spotify:album:{dbTrack.Album.SpotifyId}" : null
             };
         }
 
         var track = await this._spotifyService.GetTrackById(spotifyId);
         return RemoteTrack.From(track);
+    }
+
+    public async Task<RemoteAlbum> ResolveAlbumByIdAsync(string spotifyId)
+    {
+        var album = await this._spotifyService.GetAlbumById(spotifyId);
+        return MapAlbum(album);
+    }
+
+    public async Task<RemoteAlbum> ResolveAlbumByNameAsync(string artistName, string albumName)
+    {
+        var album = await this._spotifyService.GetAlbumFromSpotify(albumName, artistName);
+        if (album == null)
+        {
+            var search = await this._spotifyService.GetSearchResultAsync($"{albumName} {artistName}",
+                SearchRequest.Types.Album);
+            var match = search.Albums?.Items?.FirstOrDefault();
+            if (match != null)
+            {
+                album = await this._spotifyService.GetAlbumById(match.Id);
+            }
+        }
+
+        return MapAlbum(album);
+    }
+
+    private static RemoteAlbum MapAlbum(FullAlbum album)
+    {
+        if (album == null)
+        {
+            return null;
+        }
+
+        var imageUrl = album.Images?.FirstOrDefault()?.Url;
+        var artistName = album.Artists?.FirstOrDefault()?.Name;
+
+        return new RemoteAlbum
+        {
+            Id = album.Id,
+            Uri = album.Uri,
+            Name = album.Name,
+            ArtistName = artistName,
+            AlbumImageUrl = imageUrl,
+            Tracks = album.Tracks?.Items?
+                .Select(t => new RemoteTrack
+                {
+                    Id = t.Id,
+                    Uri = t.Uri,
+                    Name = t.Name,
+                    ArtistName = t.Artists?.FirstOrDefault()?.Name ?? artistName,
+                    AlbumName = album.Name,
+                    AlbumUri = album.Uri,
+                    AlbumImageUrl = imageUrl
+                }).ToList() ?? []
+        };
+    }
+
+    public async Task<RemoteTrack> ResolveArtistTopTrackByIdAsync(string spotifyId)
+    {
+        var topTracks = await this._spotifyService.GetArtistTopTracks(spotifyId);
+        return RemoteTrack.From(topTracks.FirstOrDefault());
+    }
+
+    public async Task<RemoteTrack> ResolveArtistTopTrackByNameAsync(string artistName)
+    {
+        var artist = await ResolveArtistByNameAsync(artistName);
+        if (artist == null)
+        {
+            return null;
+        }
+
+        return await ResolveArtistTopTrackByIdAsync(artist.Id);
+    }
+
+    public async Task<RemoteArtist> ResolveArtistByIdAsync(string spotifyId)
+    {
+        var artist = await this._spotifyService.GetArtistById(spotifyId);
+        return MapArtist(artist);
+    }
+
+    public async Task<RemoteArtist> ResolveArtistByNameAsync(string artistName)
+    {
+        var artist = await this._spotifyService.GetArtistFromSpotify(artistName);
+        if (artist == null)
+        {
+            var search = await this._spotifyService.GetSearchResultAsync(artistName, SearchRequest.Types.Artist);
+            artist = search.Artists?.Items?.FirstOrDefault();
+        }
+
+        return MapArtist(artist);
+    }
+
+    private static RemoteArtist MapArtist(FullArtist artist)
+    {
+        if (artist == null)
+        {
+            return null;
+        }
+
+        return new RemoteArtist
+        {
+            Id = artist.Id,
+            Uri = artist.Uri,
+            Name = artist.Name,
+            ImageUrl = artist.Images?.FirstOrDefault()?.Url
+        };
     }
 
     public async Task<CurrentlyPlayingContext> GetPlaybackAsync(UserToken token)
@@ -256,6 +384,24 @@ public class SpotifyRemoteService
     public Task<RemoteActionResult> QueueAsync(UserToken token, string trackUri) =>
         Execute(token, c => c.Player.AddToQueue(new PlayerAddToQueueRequest(trackUri)));
 
+    public async Task<RemoteActionResult> QueueAlbumAsync(UserToken token, RemoteAlbum album)
+    {
+        var result = RemoteActionResult.Ok;
+        foreach (var track in album.Tracks)
+        {
+            result = await QueueAsync(token, track.Uri);
+            if (result != RemoteActionResult.Ok)
+            {
+                return result;
+            }
+        }
+
+        return result;
+    }
+
+    public Task<RemoteActionResult> PlayContextAsync(UserToken token, string contextUri) =>
+        Execute(token, c => c.Player.ResumePlayback(new PlayerResumePlaybackRequest { ContextUri = contextUri }));
+
     public Task<RemoteActionResult> SkipAsync(UserToken token) =>
         Execute(token, c => c.Player.SkipNext());
 
@@ -265,8 +411,28 @@ public class SpotifyRemoteService
     public Task<RemoteActionResult> ResumeAsync(UserToken token) =>
         Execute(token, c => c.Player.ResumePlayback());
 
-    public Task<RemoteActionResult> PlayTrackAsync(UserToken token, string trackUri) =>
-        Execute(token, c => c.Player.ResumePlayback(new PlayerResumePlaybackRequest { Uris = [trackUri] }));
+    public async Task<RemoteActionResult> PlayTrackAsync(UserToken token, string trackUri, string albumUri = null)
+    {
+        if (string.IsNullOrEmpty(albumUri))
+        {
+            return await Execute(token,
+                c => c.Player.ResumePlayback(new PlayerResumePlaybackRequest { Uris = [trackUri] }));
+        }
+
+        var result = await Execute(token, c => c.Player.ResumePlayback(new PlayerResumePlaybackRequest
+        {
+            ContextUri = albumUri,
+            OffsetParam = new PlayerResumePlaybackRequest.Offset { Uri = trackUri }
+        }));
+
+        if (result == RemoteActionResult.Error)
+        {
+            return await Execute(token,
+                c => c.Player.ResumePlayback(new PlayerResumePlaybackRequest { Uris = [trackUri] }));
+        }
+
+        return result;
+    }
 
     public Task<RemoteActionResult> PauseAsync(UserToken token) =>
         Execute(token, c => c.Player.PausePlayback());
