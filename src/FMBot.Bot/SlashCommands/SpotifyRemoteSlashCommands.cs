@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
+using FMBot.Bot.AutoCompleteHandlers;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
@@ -54,7 +55,8 @@ public class SpotifyRemoteSlashCommands(
     [UsernameSetRequired]
     [SpotifyConnectedRequired]
     public async Task QueueAsync(
-        [SlashCommandParameter(Name = "search", Description = "Track to queue (defaults to what you're playing)")]
+        [SlashCommandParameter(Name = "search", Description = "Track to queue (defaults to what you're playing)",
+            AutocompleteProviderType = typeof(TrackAutoComplete))]
         string searchValue = null)
     {
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
@@ -121,7 +123,8 @@ public class SpotifyRemoteSlashCommands(
     [UsernameSetRequired]
     [SpotifyConnectedRequired]
     public async Task LikeAsync(
-        [SlashCommandParameter(Name = "search", Description = "Track to like (defaults to what you're playing)")]
+        [SlashCommandParameter(Name = "search", Description = "Track to like (defaults to what you're playing)",
+            AutocompleteProviderType = typeof(TrackAutoComplete))]
         string searchValue = null)
     {
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
