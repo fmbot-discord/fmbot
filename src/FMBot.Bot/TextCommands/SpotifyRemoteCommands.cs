@@ -20,6 +20,7 @@ public class SpotifyRemoteCommands(
     IPrefixService prefixService,
     TrackService trackService,
     UserService userService,
+    AdminService adminService,
     SpotifyRemoteService spotifyRemoteService,
     SpotifyRemoteBuilders spotifyRemoteBuilders,
     IOptions<BotSettings> botSettings,
@@ -248,6 +249,29 @@ public class SpotifyRemoteCommands(
             var response =
                 await spotifyRemoteBuilders.BuildPanelAsync(new ContextModel(this.Context, prfx, contextUser));
             await SendResponse(response);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
+    [Command("remotedemo", "replydemo", "rcdemo")]
+    [Summary("Posts a Spotify remote reply-context demo")]
+    [ExcludeFromHelp]
+    [CommandCategories(CommandCategory.ThirdParty)]
+    public async Task RemoteDemoAsync()
+    {
+        if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        {
+            await this.Context.LogCommandUsedAsync(
+                new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
+            return;
+        }
+
+        try
+        {
+            await SendResponse(SpotifyRemoteBuilders.ReplyContextDemoResponse());
         }
         catch (Exception e)
         {

@@ -137,7 +137,7 @@ public class SpotifyRemoteBuilders(SpotifyRemoteService spotifyRemoteService)
         return Cv2Message(DiscordConstants.SuccessColorGreen,
             "✅ **Spotify remote connected!**\n\n" +
             "You can now control your playback with `rc`, `play`,`queue`, `skip` and `like`.\n\n" +
-            "Reply to any .fmbot response containing a track, or to a message with a Spotify track link, and that track is used automatically as input.");
+            "Reply to any message containing an artist, album or track and it will be used automatically as input.");
     }
 
     public static ResponseModel ConnectTimeoutResponse()
@@ -146,6 +146,30 @@ public class SpotifyRemoteBuilders(SpotifyRemoteService spotifyRemoteService)
             "❌ Spotify connection timed out.\n\n" +
             "Run the command again to retry connecting.");
         response.CommandResponse = CommandResponse.Cooldown;
+
+        return response;
+    }
+
+    public static ResponseModel ReplyContextDemoResponse()
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.ComponentsV2
+        };
+
+        var container = response.ComponentsContainer;
+        container.WithAccentColor(DiscordConstants.SpotifyColorGreen);
+        container.WithTextDisplay(
+            "Did you know you can reply to commands or messages to use them as input?\n\n" +
+            "This is especially useful for the new Spotify remote commands.\n\n" +
+            "Lets try it out with a demo: Reply to this message with `.play`.");
+
+        response.ReferencedMusic = new ReferencedMusic
+        {
+            Artist = "Rick Astley",
+            Album = "Whenever You Need Somebody",
+            Track = "Never Gonna Give You Up"
+        };
 
         return response;
     }
