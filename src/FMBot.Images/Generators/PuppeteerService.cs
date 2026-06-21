@@ -662,7 +662,7 @@ public class PuppeteerService : IDisposable
             bitmapCanvas.DrawRoundRect(colorRect, 8, 8, colorFillPaint);
             bitmapCanvas.DrawRoundRect(colorRect, 8, 8, colorBorderPaint);
 
-            var text = line.MinAmount == line.MaxAmount ? $"{line.MinAmount}" : $"{line.MaxAmount} - {line.MinAmount}";
+            var text = line.MinAmount == line.MaxAmount ? $"{line.MinAmount}" : $"{line.MinAmount} - {line.MaxAmount}";
             const int textX = legendLeft + colorBoxMargin + colorBoxSize + 30;
 
             bitmapCanvas.DrawShapedText(shaper, text, textX, currentY,
