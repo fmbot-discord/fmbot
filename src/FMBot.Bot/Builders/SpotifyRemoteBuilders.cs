@@ -61,9 +61,9 @@ public class SpotifyRemoteBuilders(SpotifyRemoteService spotifyRemoteService)
     public static ResponseModel ConnectSuccessResponse()
     {
         return Cv2Message(DiscordConstants.SuccessColorGreen,
-            "✅ **Spotify connected!**\n\n" +
-            "You can now control your playback with `/remote`, `queue`, `skip` and `like`.\n\n" +
-            "Tip: Reply to any Spotify link or .fmbot command with a track with `queue` to add it to your queue.");
+            "✅ **Spotify remote connected!**\n\n" +
+            "You can now control your playback with `rc`, `play`,`queue`, `skip` and `like`.\n\n" +
+            "Reply to any .fmbot response containing a track, or to a message with a Spotify track link, and that track is used automatically as input.");
     }
 
     public static ResponseModel ConnectTimeoutResponse()
