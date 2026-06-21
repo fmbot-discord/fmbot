@@ -155,24 +155,22 @@
 		*
 		*/
 
-		svg{ background-color: aliceblue;}
-
 		body{
             margin: 0;
         }
 
 
-        svg{ background-color: black;}
+        svg{ background-color: {{svgbg}}; }
 
         .oceanxx
         {
-            fill: black;
-            stroke: #000000;
+            fill: {{oceanfill}};
         }
 
         .landxx {
-            fill: #00000f;
-            stroke: #ddd;
+            fill: {{landfill}};
+            stroke: {{landstroke}};
+            stroke-width: {{landstrokewidth}};
         }
 
 

@@ -305,6 +305,7 @@ public static class InteractionConstants
     public const string GapView = "listeninggaps-view";
     public const string RecapAlltime = "user-recapalltime";
     public const string RecapPicker = "user-recap";
+    public const string CountryChartTheme = "countrychart-theme";
 
     public static class Chart
     {

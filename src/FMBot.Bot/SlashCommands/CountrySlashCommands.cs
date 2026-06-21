@@ -6,6 +6,7 @@ using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 using NetCord.Services.ApplicationCommands;
 using NetCord;
@@ -59,6 +60,8 @@ public class CountrySlashCommands(
         string timePeriod = null,
         [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
         string user = null,
+        [SlashCommandParameter(Name = "theme", Description = "Color theme for the map")]
+        CountryChartTheme theme = CountryChartTheme.Dark,
         [SlashCommandParameter(Name = "private", Description = "Only show response to you")]
         bool privateResponse = false)
     {
@@ -71,7 +74,7 @@ public class CountrySlashCommands(
             registeredLastFm: userSettings.RegisteredLastFm, timeZone: userSettings.TimeZone,
             defaultTimePeriod: TimePeriod.AllTime);
 
-        var response = await countryBuilders.GetTopCountryChart(new ContextModel(this.Context, contextUser), userSettings, timeSettings);
+        var response = await countryBuilders.GetTopCountryChart(new ContextModel(this.Context, contextUser), userSettings, timeSettings, theme);
 
         await this.Context.SendFollowUpResponse(this.Interactivity, response, userService, privateResponse);
         await this.Context.LogCommandUsedAsync(response, userService);
