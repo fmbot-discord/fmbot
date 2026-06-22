@@ -29,7 +29,7 @@ public static class TagRepository
         const string insertQuery =
             "INSERT INTO public.artist_tags (artist_id, tag_id) " +
             "SELECT @artistId, t.id FROM public.tags t " +
-            "WHERE t.name = ANY(@names::citext[]) " +
+            "WHERE t.normalized_name = ANY(SELECT tag_normalize(n) FROM unnest(@names::text[]) n) " +
             "ON CONFLICT DO NOTHING";
 
         await connection.ExecuteAsync(insertQuery, new { artistId, names });
@@ -55,7 +55,7 @@ public static class TagRepository
         const string insertQuery =
             "INSERT INTO public.album_tags (album_id, tag_id) " +
             "SELECT @albumId, t.id FROM public.tags t " +
-            "WHERE t.name = ANY(@names::citext[]) " +
+            "WHERE t.normalized_name = ANY(SELECT tag_normalize(n) FROM unnest(@names::text[]) n) " +
             "ON CONFLICT DO NOTHING";
 
         await connection.ExecuteAsync(insertQuery, new { albumId, names });
@@ -81,7 +81,7 @@ public static class TagRepository
         const string insertQuery =
             "INSERT INTO public.track_tags (track_id, tag_id) " +
             "SELECT @trackId, t.id FROM public.tags t " +
-            "WHERE t.name = ANY(@names::citext[]) " +
+            "WHERE t.normalized_name = ANY(SELECT tag_normalize(n) FROM unnest(@names::text[]) n) " +
             "ON CONFLICT DO NOTHING";
 
         await connection.ExecuteAsync(insertQuery, new { trackId, names });
@@ -89,9 +89,10 @@ public static class TagRepository
 
     private static async Task UpsertTags(string[] names, NpgsqlConnection connection)
     {
-        const string insertQuery = "INSERT INTO public.tags (name) " +
-                                   "SELECT unnest(@names::citext[]) " +
-                                   "ON CONFLICT (name) DO NOTHING";
+        const string insertQuery =
+            "INSERT INTO public.tags (name) " +
+            "SELECT n FROM unnest(@names::text[]) AS n " +
+            "ON CONFLICT (normalized_name) DO NOTHING";
 
         await connection.ExecuteAsync(insertQuery, new { names });
     }
@@ -114,7 +115,7 @@ public static class TagRepository
     public static async Task SetTagBanned(string name, bool banned, NpgsqlConnection connection)
     {
         const string upsertQuery = "INSERT INTO public.tags (name, banned) VALUES (@name, @banned) " +
-                                   "ON CONFLICT (name) DO UPDATE SET banned = @banned";
+                                   "ON CONFLICT (normalized_name) DO UPDATE SET banned = @banned";
 
         await connection.ExecuteAsync(upsertQuery, new { name, banned });
     }

@@ -522,10 +522,13 @@ namespace FMBot.Persistence.EntityFrameWork
                 entity.Property(e => e.Name)
                     .HasColumnType("citext");
 
+                entity.Property(e => e.NormalizedName)
+                    .HasComputedColumnSql("tag_normalize(name::text)", stored: true);
+
                 entity.Property(e => e.Banned)
                     .HasDefaultValue(false);
 
-                entity.HasIndex(i => i.Name)
+                entity.HasIndex(i => i.NormalizedName)
                     .IsUnique();
             });
 
