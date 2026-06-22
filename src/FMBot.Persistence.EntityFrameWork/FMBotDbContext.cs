@@ -71,18 +71,18 @@ namespace FMBot.Persistence.EntityFrameWork
         public virtual DbSet<AlbumTag> AlbumTags { get; set; }
         public virtual DbSet<TrackTag> TrackTags { get; set; }
 
-        // private readonly IConfiguration _configuration;
-        //
-        // public FMBotDbContext(IConfiguration configuration)
-        // {
-        //     this._configuration = configuration;
-        // }
+        private readonly IConfiguration _configuration;
+
+        public FMBotDbContext(IConfiguration configuration)
+        {
+            this._configuration = configuration;
+        }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (!optionsBuilder.IsConfigured)
             {
-                // optionsBuilder.UseNpgsql(this._configuration["Database:ConnectionString"]);
+                optionsBuilder.UseNpgsql(this._configuration["Database:ConnectionString"]);
 
                 /* How to create migrations:
                 1. Uncomment the hardcoded connection string below
@@ -93,7 +93,7 @@ namespace FMBot.Persistence.EntityFrameWork
                 6. Before committing or running, revert the changes in this file
                 */
 
-                optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Username=postgres;Password=password;Database=fmbot-local;Command Timeout=60;Timeout=60;Persist Security Info=True");
+                // optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Username=postgres;Password=password;Database=fmbot-local;Command Timeout=60;Timeout=60;Persist Security Info=True");
 
                 optionsBuilder.UseSnakeCaseNamingConvention();
             }
