@@ -8,6 +8,8 @@ public class Tag
 
     public string Name { get; set; }
 
+    public string NormalizedName { get; set; }
+
     public bool Banned { get; set; }
 
     public ICollection<ArtistTag> ArtistTags { get; set; }
