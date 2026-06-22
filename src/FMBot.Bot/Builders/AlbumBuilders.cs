@@ -936,8 +936,8 @@ public class AlbumBuilders
             foreach (var album in page)
             {
                 var albumName = string.IsNullOrWhiteSpace(guildListSettings.NewSearchValue)
-                    ? $"**{album.ArtistName}** - **{album.AlbumName}**"
-                    : $"**{album.AlbumName}**";
+                    ? $"**{StringExtensions.Sanitize(album.ArtistName)}** - **{StringExtensions.Sanitize(album.AlbumName)}**"
+                    : $"**{StringExtensions.Sanitize(album.AlbumName)}**";
                 var name = guildListSettings.OrderType == OrderType.Listeners
                     ? $"`{album.ListenerCount.Format(context.NumberFormat)}` · {albumName} · *{album.TotalPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(album.TotalPlaycount)}*"
                     : $"`{album.TotalPlaycount.Format(context.NumberFormat)}` · {albumName} · *{album.ListenerCount.Format(context.NumberFormat)} {StringExtensions.GetListenersString(album.ListenerCount)}*";

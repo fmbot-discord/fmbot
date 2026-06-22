@@ -73,6 +73,8 @@ public class CountryCommands(
 
         try
         {
+            var theme = SettingService.GetWorldMapTheme(extraOptions);
+
             var userSettings = await settingService.GetUser(extraOptions, contextUser, this.Context);
 
             userSettings.RegisteredLastFm ??= await indexService.AddUserRegisteredLfmDate(userSettings.UserId);
@@ -81,7 +83,7 @@ public class CountryCommands(
                 timeZone: userSettings.TimeZone);
 
             var response = await countryBuilders.GetTopCountryChart(new ContextModel(this.Context, prfx, contextUser),
-                userSettings, timeSettings);
+                userSettings, timeSettings, theme);
 
             await this.Context.SendResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);

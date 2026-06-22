@@ -4,6 +4,7 @@ using FMBot.Persistence.Domain.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Shared.Domain.Models;
+using Tag = FMBot.Persistence.Domain.Models.Tag;
 
 namespace FMBot.Persistence.EntityFrameWork
 {
@@ -64,6 +65,11 @@ namespace FMBot.Persistence.EntityFrameWork
         public virtual DbSet<ArtistGenre> ArtistGenres { get; set; }
         public virtual DbSet<ArtistAlias> ArtistAliases { get; set; }
         public virtual DbSet<ArtistLink> ArtistLinks { get; set; }
+
+        public virtual DbSet<Tag> Tags { get; set; }
+        public virtual DbSet<ArtistTag> ArtistTags { get; set; }
+        public virtual DbSet<AlbumTag> AlbumTags { get; set; }
+        public virtual DbSet<TrackTag> TrackTags { get; set; }
 
         private readonly IConfiguration _configuration;
 
@@ -506,6 +512,71 @@ namespace FMBot.Persistence.EntityFrameWork
                 entity.HasOne(d => d.Artist)
                     .WithMany(p => p.ArtistGenres)
                     .HasForeignKey(d => d.ArtistId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<Tag>(entity =>
+            {
+                entity.HasKey(a => a.Id);
+
+                entity.Property(e => e.Name)
+                    .HasColumnType("citext");
+
+                entity.Property(e => e.Banned)
+                    .HasDefaultValue(false);
+
+                entity.HasIndex(i => i.Name)
+                    .IsUnique();
+            });
+
+            modelBuilder.Entity<ArtistTag>(entity =>
+            {
+                entity.HasKey(a => new { a.ArtistId, a.TagId });
+
+                entity.HasIndex(i => i.TagId);
+
+                entity.HasOne(d => d.Artist)
+                    .WithMany(p => p.ArtistTags)
+                    .HasForeignKey(d => d.ArtistId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(d => d.Tag)
+                    .WithMany(p => p.ArtistTags)
+                    .HasForeignKey(d => d.TagId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<AlbumTag>(entity =>
+            {
+                entity.HasKey(a => new { a.AlbumId, a.TagId });
+
+                entity.HasIndex(i => i.TagId);
+
+                entity.HasOne(d => d.Album)
+                    .WithMany(p => p.AlbumTags)
+                    .HasForeignKey(d => d.AlbumId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(d => d.Tag)
+                    .WithMany(p => p.AlbumTags)
+                    .HasForeignKey(d => d.TagId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<TrackTag>(entity =>
+            {
+                entity.HasKey(a => new { a.TrackId, a.TagId });
+
+                entity.HasIndex(i => i.TagId);
+
+                entity.HasOne(d => d.Track)
+                    .WithMany(p => p.TrackTags)
+                    .HasForeignKey(d => d.TrackId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(d => d.Tag)
+                    .WithMany(p => p.TrackTags)
+                    .HasForeignKey(d => d.TagId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
 

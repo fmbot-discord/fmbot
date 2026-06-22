@@ -60,4 +60,6 @@ public class Track
     public Artist Artist { get; set; }
     public Album Album { get; set; }
 
+    public ICollection<TrackTag> TrackTags { get; set; }
+
 }

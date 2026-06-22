@@ -1394,8 +1394,8 @@ public class TrackBuilders
             foreach (var track in page)
             {
                 var trackName = string.IsNullOrWhiteSpace(guildListSettings.NewSearchValue)
-                    ? $"**{track.ArtistName}** - **{track.TrackName}**"
-                    : $"**{track.TrackName}**";
+                    ? $"**{StringExtensions.Sanitize(track.ArtistName)}** - **{StringExtensions.Sanitize(track.TrackName)}**"
+                    : $"**{StringExtensions.Sanitize(track.TrackName)}**";
                 var name = guildListSettings.OrderType == OrderType.Listeners
                     ? $"`{track.ListenerCount.Format(context.NumberFormat)}` · {trackName} · *{track.TotalPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(track.TotalPlaycount)}*"
                     : $"`{track.TotalPlaycount.Format(context.NumberFormat)}` · {trackName} · *{track.ListenerCount.Format(context.NumberFormat)} {StringExtensions.GetListenersString(track.ListenerCount)}*";

@@ -638,6 +638,26 @@ public class SettingService
         return (userMode.Value, newSearchValue);
     }
 
+    public static CountryChartTheme GetWorldMapTheme(string extraOptions)
+    {
+        if (Contains(extraOptions, ["light"]))
+        {
+            return CountryChartTheme.Light;
+        }
+
+        if (Contains(extraOptions, ["ocean", "atlas"]))
+        {
+            return CountryChartTheme.Ocean;
+        }
+
+        if (Contains(extraOptions, ["synthwave", "synth", "neon"]))
+        {
+            return CountryChartTheme.Synthwave;
+        }
+
+        return CountryChartTheme.Dark;
+    }
+
     private static (WhoKnowsResponseMode mode, string newSearchValue) SetWhoKnowsMode(string extraOptions, WhoKnowsResponseMode? userMode, bool supportImageMode)
     {
         var newSearchValue = extraOptions;

@@ -283,6 +283,7 @@ public class Startup
             .AddSingleton<FriendsService>()
             .AddSingleton<GameService>()
             .AddSingleton<GenreService>()
+            .AddSingleton<TagService>()
             .AddSingleton<IndexService, IndexService>()
             .AddSingleton<ImportService>()
             .AddSingleton<MusicBotService>()

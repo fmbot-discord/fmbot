@@ -20,7 +20,7 @@ public class PuppeteerService : IDisposable
     private readonly Task _initializationTask;
     private int _orderNr;
 
-    private static string cachedAppleMusicAuthToken;
+    private static string _cachedAppleMusicAuthToken;
 
     // Cache typeface to avoid repeated file loads and ensure proper disposal
     private readonly Lazy<SKTypeface> _cachedTypeface = new(() =>
@@ -57,7 +57,8 @@ public class PuppeteerService : IDisposable
         });
     }
 
-    public async Task<SKBitmap> GetWorldArtistMap(IEnumerable<TopCountry> artists)
+    public async Task<SKBitmap> GetWorldArtistMap(IEnumerable<TopCountry> artists,
+        CountryChartTheme theme = CountryChartTheme.Dark)
     {
         await this._initializationTask;
 
@@ -73,19 +74,26 @@ public class PuppeteerService : IDisposable
 
         var content = await File.ReadAllTextAsync(localPath);
 
+        var palette = WorldMapThemes.Get(theme);
         var groupedCountries = GetGroupedCountries(artists);
 
         var cssToAdd = new StringBuilder();
         foreach (var groupedCountry in groupedCountries)
         {
+            var fill = palette.CountryRamp[Math.Min(groupedCountry.Tier, palette.CountryRamp.Length - 1)];
             foreach (var country in groupedCountry.CountryCodes)
             {
-                cssToAdd.Append(
-                    $".{country.ToLower()}{{fill:#497dff; fill-opacity: {groupedCountry.Opacity.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)}}} ");
+                cssToAdd.Append($".{country.ToLower()}{{fill:{fill}}} ");
             }
         }
 
-        content = content.Replace("{{customcss}}", cssToAdd.ToString());
+        content = content
+            .Replace("{{svgbg}}", palette.SvgBackground)
+            .Replace("{{oceanfill}}", palette.OceanFill)
+            .Replace("{{landfill}}", palette.LandFill)
+            .Replace("{{landstroke}}", palette.LandStroke)
+            .Replace("{{landstrokewidth}}", palette.LandStrokeWidth)
+            .Replace("{{customcss}}", cssToAdd.ToString());
 
         await page.SetContentAsync(content);
 
@@ -95,7 +103,7 @@ public class PuppeteerService : IDisposable
 
         using var skImage = SKImage.FromEncodedData(img);
         var skImg = SKBitmap.FromImage(skImage);
-        AddCountryListToMap(skImg, groupedCountries);
+        AddCountryListToMap(skImg, groupedCountries, palette);
 
         return skImg;
     }
@@ -545,24 +553,24 @@ public class PuppeteerService : IDisposable
         var list = new List<GroupedCountries>();
 
         var ceilings = new[] { 5, 30, 80, 200, 500, 10000 };
-        var groupings = artists.GroupBy(item => ceilings.FirstOrDefault(ceiling => ceiling >= item.Artists.Count));
+        var groupings = artists.GroupBy(item => ceilings.FirstOrDefault(ceiling => ceiling >= item.Artists.Count, int.MaxValue));
 
-        double alpha = 1;
+        var tier = 0;
         foreach (var artistGroup in groupings.OrderByDescending(o => o.Key))
         {
             list.Add(new GroupedCountries(artistGroup.Select(s => s.CountryCode).ToList(),
                 artistGroup.Min(m => m.Artists.Count),
                 artistGroup.Max(m => m.Artists.Count),
-                alpha));
-            alpha -= 0.16;
+                tier));
+            tier++;
         }
 
         return list;
     }
 
-    private record GroupedCountries(List<string> CountryCodes, int MinAmount, int MaxAmount, double Opacity);
+    private record GroupedCountries(List<string> CountryCodes, int MinAmount, int MaxAmount, int Tier);
 
-    private void AddCountryListToMap(SKBitmap chartImage, List<GroupedCountries> lines)
+    private void AddCountryListToMap(SKBitmap chartImage, List<GroupedCountries> lines, WorldMapTheme palette)
     {
         var typeface = _cachedTypeface.Value;
 
@@ -570,7 +578,7 @@ public class PuppeteerService : IDisposable
         using var titlePaint = new SKPaint
         {
             IsAntialias = true,
-            Color = SKColors.White,
+            Color = palette.LegendTitleColor,
             Style = SKPaintStyle.Fill
         };
 
@@ -578,7 +586,7 @@ public class PuppeteerService : IDisposable
         using var subtitlePaint = new SKPaint
         {
             IsAntialias = true,
-            Color = new SKColor(220, 220, 220), // Slightly muted white
+            Color = palette.LegendSubtitleColor,
             Style = SKPaintStyle.Fill
         };
 
@@ -586,22 +594,14 @@ public class PuppeteerService : IDisposable
         using var legendTextPaint = new SKPaint
         {
             IsAntialias = true,
-            Color = SKColors.White,
+            Color = palette.LegendTitleColor,
             Style = SKPaintStyle.Fill
-        };
-
-        using var legendStrokePaint = new SKPaint
-        {
-            IsAntialias = true,
-            Style = SKPaintStyle.Stroke,
-            StrokeWidth = 4,
-            Color = new SKColor(0, 0, 0, 180) // Semi-transparent black stroke
         };
 
         using var backgroundPaint = new SKPaint
         {
             IsAntialias = true,
-            Color = new SKColor(20, 20, 30, 240), // Dark with transparency
+            Color = palette.LegendBoxFill,
             Style = SKPaintStyle.Fill
         };
 
@@ -610,7 +610,7 @@ public class PuppeteerService : IDisposable
             IsAntialias = true,
             Style = SKPaintStyle.Stroke,
             StrokeWidth = 2,
-            Color = new SKColor(80, 80, 100, 200)
+            Color = palette.LegendBoxBorder
         };
 
         using var bitmapCanvas = new SKCanvas(chartImage);
@@ -644,7 +644,7 @@ public class PuppeteerService : IDisposable
             using var colorFillPaint = new SKPaint
             {
                 IsAntialias = true,
-                Color = new SKColor(73, 125, 255, (byte)(line.Opacity * 255)),
+                Color = SKColor.Parse(palette.CountryRamp[Math.Min(line.Tier, palette.CountryRamp.Length - 1)]),
                 Style = SKPaintStyle.Fill
             };
 
@@ -653,7 +653,7 @@ public class PuppeteerService : IDisposable
                 IsAntialias = true,
                 Style = SKPaintStyle.Stroke,
                 StrokeWidth = 2,
-                Color = SKColors.White
+                Color = palette.LegendSwatchBorder
             };
 
             var colorRect = new SKRect(legendLeft + colorBoxMargin, currentY - colorBoxSize + 12,
@@ -662,11 +662,9 @@ public class PuppeteerService : IDisposable
             bitmapCanvas.DrawRoundRect(colorRect, 8, 8, colorFillPaint);
             bitmapCanvas.DrawRoundRect(colorRect, 8, 8, colorBorderPaint);
 
-            var text = line.MinAmount == line.MaxAmount ? $"{line.MinAmount}" : $"{line.MaxAmount} - {line.MinAmount}";
+            var text = line.MinAmount == line.MaxAmount ? $"{line.MinAmount}" : $"{line.MinAmount} - {line.MaxAmount}";
             const int textX = legendLeft + colorBoxMargin + colorBoxSize + 30;
 
-            bitmapCanvas.DrawShapedText(shaper, text, textX, currentY,
-                SKTextAlign.Left, legendFont, legendStrokePaint);
             bitmapCanvas.DrawShapedText(shaper, text, textX, currentY,
                 SKTextAlign.Left, legendFont, legendTextPaint);
 
@@ -695,7 +693,7 @@ public class PuppeteerService : IDisposable
 
     private record ArtistNamePosition(int Order, float X, float Y);
 
-    private List<ArtistNamePosition> GenerateArtistNamePositions(float sectionY, int sectionArtistsCount)
+    private static List<ArtistNamePosition> GenerateArtistNamePositions(float sectionY, int sectionArtistsCount)
     {
         float margin = 240;
         var topY = sectionY + 35;
@@ -812,9 +810,9 @@ public class PuppeteerService : IDisposable
 
     public async Task<string> GetAppleToken()
     {
-        if (!string.IsNullOrEmpty(cachedAppleMusicAuthToken))
+        if (!string.IsNullOrEmpty(_cachedAppleMusicAuthToken))
         {
-            return cachedAppleMusicAuthToken;
+            return _cachedAppleMusicAuthToken;
         }
 
         await this._initializationTask;
@@ -841,7 +839,7 @@ public class PuppeteerService : IDisposable
             return null;
         }
 
-        cachedAppleMusicAuthToken = $"Bearer {match.Value}";
+        _cachedAppleMusicAuthToken = $"Bearer {match.Value}";
         return $"Bearer {match.Value}";
     }
 

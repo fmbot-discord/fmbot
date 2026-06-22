@@ -9,7 +9,7 @@ using FMBot.Bot.Factories;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
-using FMBot.Domain;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
@@ -21,33 +21,15 @@ using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 
 namespace FMBot.Bot.Builders;
 
-public class CountryBuilders
+public class CountryBuilders(
+    CountryService countryService,
+    UserService userService,
+    IDataSourceFactory dataSourceFactory,
+    ArtistsService artistsService,
+    PlayService playService,
+    PuppeteerService puppeteerService,
+    MusicDataFactory musicDataFactory)
 {
-    private readonly CountryService _countryService;
-    private readonly UserService _userService;
-    private readonly IDataSourceFactory _dataSourceFactory;
-    private readonly ArtistsService _artistsService;
-    private readonly PlayService _playService;
-    private readonly PuppeteerService _puppeteerService;
-    private readonly MusicDataFactory _musicDataFactory;
-
-    public CountryBuilders(CountryService countryService,
-        UserService userService,
-        IDataSourceFactory dataSourceFactory,
-        ArtistsService artistsService,
-        PlayService playService,
-        PuppeteerService puppeteerService,
-        MusicDataFactory musicDataFactory)
-    {
-        this._countryService = countryService;
-        this._userService = userService;
-        this._dataSourceFactory = dataSourceFactory;
-        this._artistsService = artistsService;
-        this._playService = playService;
-        this._puppeteerService = puppeteerService;
-        this._musicDataFactory = musicDataFactory;
-    }
-
     public async Task<ResponseModel> CountryAsync(
         ContextModel context,
         string countryOptions)
@@ -61,7 +43,7 @@ public class CountryBuilders
         {
             var internalLookup = CommandContextExtensions.GetReferencedMusic(context.ReferencedMessage.Id)
                                  ??
-                                 await this._userService.GetReferencedMusic(context.ReferencedMessage.Id);
+                                 await userService.GetReferencedMusic(context.ReferencedMessage.Id);
 
             if (internalLookup?.Artist != null)
             {
@@ -72,7 +54,7 @@ public class CountryBuilders
         CountryInfo country = null;
         if (string.IsNullOrWhiteSpace(countryOptions))
         {
-            var recentTracks = await this._dataSourceFactory.GetRecentTracksAsync(context.ContextUser.UserNameLastFM, 1,
+            var recentTracks = await dataSourceFactory.GetRecentTracksAsync(context.ContextUser.UserNameLastFM, 1,
                 true, context.ContextUser.SessionKeyLastFm);
 
             if (GenericEmbedService.RecentScrobbleCallFailed(recentTracks))
@@ -83,15 +65,15 @@ public class CountryBuilders
 
             var artistName = recentTracks.Content.RecentTracks.First().ArtistName;
 
-            var foundCountry = this._countryService.GetValidCountry(artistName);
+            var foundCountry = countryService.GetValidCountry(artistName);
 
             if (foundCountry == null)
             {
                 var artistCall =
-                    await this._dataSourceFactory.GetArtistInfoAsync(artistName, context.ContextUser.UserNameLastFM);
+                    await dataSourceFactory.GetArtistInfoAsync(artistName, context.ContextUser.UserNameLastFM);
                 if (artistCall.Success)
                 {
-                    var cachedArtist = await this._musicDataFactory.GetOrStoreArtistAsync(artistCall.Content);
+                    var cachedArtist = await musicDataFactory.GetOrStoreArtistAsync(artistCall.Content);
 
                     switch (cachedArtist)
                     {
@@ -107,7 +89,7 @@ public class CountryBuilders
                             return response;
                     }
 
-                    country = this._countryService.GetValidCountry(cachedArtist.CountryCode);
+                    country = countryService.GetValidCountry(cachedArtist.CountryCode);
                 }
             }
             else
@@ -117,7 +99,7 @@ public class CountryBuilders
 
             if (country != null)
             {
-                var artist = await this._artistsService.GetArtistFromDatabase(artistName);
+                var artist = await artistsService.GetArtistFromDatabase(artistName);
 
                 if (artist?.CountryCode == null)
                 {
@@ -135,7 +117,7 @@ public class CountryBuilders
                 {
                     response.Embed.WithThumbnail(artist.SpotifyImageUrl);
 
-                    var accentColor = await this._artistsService.GetArtistAccentColorAsync(
+                    var accentColor = await artistsService.GetArtistAccentColorAsync(
                         artist.SpotifyImageUrl, artist.Id, artist.Name);
                     response.Embed.WithColor(accentColor);
                 }
@@ -143,7 +125,7 @@ public class CountryBuilders
                 response.ReferencedMusic = new ReferencedMusic { Artist = artist.Name };
 
                 var description = new StringBuilder();
-                foundCountry = this._countryService.GetValidCountry(artist.CountryCode);
+                foundCountry = countryService.GetValidCountry(artist.CountryCode);
 
                 if (foundCountry == null)
                 {
@@ -177,20 +159,20 @@ public class CountryBuilders
         }
         else
         {
-            var foundCountry = this._countryService.GetValidCountry(countryOptions);
+            var foundCountry = countryService.GetValidCountry(countryOptions);
 
             if (foundCountry == null)
             {
-                var artist = await this._artistsService.GetArtistFromDatabase(countryOptions);
+                var artist = await artistsService.GetArtistFromDatabase(countryOptions);
 
                 if (artist is { CountryCode: null })
                 {
                     var artistCall =
-                        await this._dataSourceFactory.GetArtistInfoAsync(artist.Name,
+                        await dataSourceFactory.GetArtistInfoAsync(artist.Name,
                             context.ContextUser.UserNameLastFM);
                     if (artistCall.Success)
                     {
-                        artist = await this._musicDataFactory.GetOrStoreArtistAsync(artistCall.Content);
+                        artist = await musicDataFactory.GetOrStoreArtistAsync(artistCall.Content);
                     }
                 }
 
@@ -202,12 +184,12 @@ public class CountryBuilders
                     {
                         response.Embed.WithThumbnail(artist.SpotifyImageUrl);
 
-                        var accentColor = await this._artistsService.GetArtistAccentColorAsync(
+                        var accentColor = await artistsService.GetArtistAccentColorAsync(
                             artist.SpotifyImageUrl, artist.Id, artist.Name);
                         response.Embed.WithColor(accentColor);
                     }
 
-                    foundCountry = this._countryService.GetValidCountry(artist.CountryCode);
+                    foundCountry = countryService.GetValidCountry(artist.CountryCode);
 
                     if (foundCountry == null)
                     {
@@ -262,7 +244,7 @@ public class CountryBuilders
             return response;
         }
 
-        var countryArtists = await this._countryService.GetUserArtistsForCountry(context.ContextUser.UserId, country.Code);
+        var countryArtists = await countryService.GetUserArtistsForCountry(context.ContextUser.UserId, country.Code);
 
         if (!countryArtists.Any())
         {
@@ -272,7 +254,7 @@ public class CountryBuilders
             return response;
         }
 
-        var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
+        var userTitle = await userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
         var pages = new List<PageBuilder>();
 
         var title = $":flag_{country.Code.ToLower()}: Top artists from {country.Name} for {userTitle}";
@@ -329,12 +311,12 @@ public class CountryBuilders
 
         var pages = new List<PageBuilder>();
 
-        var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
+        var userTitle = await userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
 
         if (userSettings.DifferentUser)
         {
             userTitle =
-                $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}";
+                $"{userSettings.UserNameLastFm}, requested by {await userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}";
         }
 
         response.EmbedAuthor.WithName($"Top {timeSettings.Description.ToLower()} artist countries for {userTitle}");
@@ -346,7 +328,7 @@ public class CountryBuilders
 
         if (!timeSettings.UsePlays && timeSettings.TimePeriod != TimePeriod.AllTime)
         {
-            artists = await this._dataSourceFactory.GetTopArtistsAsync(userSettings.UserNameLastFm,
+            artists = await dataSourceFactory.GetTopArtistsAsync(userSettings.UserNameLastFm,
                 timeSettings, 1000, useCache: true);
 
             if (!artists.Success || artists.Content == null)
@@ -362,7 +344,7 @@ public class CountryBuilders
             {
                 Content = new TopArtistList
                 {
-                    TopArtists = await this._artistsService.GetUserAllTimeTopArtists(userSettings.UserId, true)
+                    TopArtists = await artistsService.GetUserAllTimeTopArtists(userSettings.UserId, true)
                 }
             };
         }
@@ -370,7 +352,7 @@ public class CountryBuilders
         {
             artists = new Response<TopArtistList>
             {
-                Content = await this._playService.GetUserTopArtists(userSettings.UserId,
+                Content = await playService.GetUserTopArtists(userSettings.UserId,
                     timeSettings.PlayDays.GetValueOrDefault())
             };
         }
@@ -389,7 +371,7 @@ public class CountryBuilders
         if (topListSettings.Billboard && timeSettings.BillboardStartDateTime.HasValue &&
             timeSettings.BillboardEndDateTime.HasValue)
         {
-            var previousArtistsCall = await this._dataSourceFactory
+            var previousArtistsCall = await dataSourceFactory
                 .GetTopArtistsForCustomTimePeriodAsync(userSettings.UserNameLastFm,
                     timeSettings.BillboardStartDateTime.Value, timeSettings.BillboardEndDateTime.Value, 200);
 
@@ -399,15 +381,15 @@ public class CountryBuilders
             }
         }
 
-        var countries = await this._countryService.GetTopCountriesForTopArtists(artists.Content.TopArtists, true);
-        var previousTopCountries = await this._countryService.GetTopCountriesForTopArtists(previousTopArtists, true);
+        var countries = await countryService.GetTopCountriesForTopArtists(artists.Content.TopArtists, true);
+        var previousTopCountries = await countryService.GetTopCountriesForTopArtists(previousTopArtists, true);
 
         if (mode == ResponseMode.Image && countries.Any())
         {
-            var totalPlays = await this._dataSourceFactory.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm,
+            var totalPlays = await dataSourceFactory.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm,
                 timeSettings.TimeFrom,
                 userSettings.SessionKeyLastFm, timeSettings.TimeUntil);
-            artists.Content.TopArtists = await this._artistsService.FillArtistImages(artists.Content.TopArtists);
+            artists.Content.TopArtists = await artistsService.FillArtistImages(artists.Content.TopArtists);
 
             var validArtists = countries.First().Artists.Select(s => s.ArtistName.ToLower()).ToArray();
             var firstArtistImage =
@@ -415,10 +397,10 @@ public class CountryBuilders
                     .FirstOrDefault(f => validArtists.Contains(f.ArtistName.ToLower()) && f.ArtistImageUrl != null)
                     ?.ArtistImageUrl;
 
-            using var image = await this._puppeteerService.GetTopList(userTitle, "Top Countries", "countries",
+            using var image = await puppeteerService.GetTopList(userTitle, "Top Countries", "countries",
                 timeSettings.Description,
                 countries.Count, totalPlays.GetValueOrDefault(), firstArtistImage,
-                this._countryService.GetTopListForTopCountries(countries), context.NumberFormat);
+                countryService.GetTopListForTopCountries(countries), context.NumberFormat);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
             response.Stream = encoded.AsStream(true);
@@ -492,7 +474,8 @@ public class CountryBuilders
     public async Task<ResponseModel> GetTopCountryChart(
         ContextModel context,
         UserSettingsModel userSettings,
-        TimeSettingsModel timeSettings)
+        TimeSettingsModel timeSettings,
+        CountryChartTheme theme = CountryChartTheme.Dark)
     {
         var response = new ResponseModel
         {
@@ -509,7 +492,7 @@ public class CountryBuilders
 
         if (!timeSettings.UsePlays && timeSettings.TimePeriod != TimePeriod.AllTime)
         {
-            artists = await this._dataSourceFactory.GetTopArtistsAsync(userSettings.UserNameLastFm,
+            artists = await dataSourceFactory.GetTopArtistsAsync(userSettings.UserNameLastFm,
                 timeSettings, 1000);
 
             if (!artists.Success || artists.Content == null)
@@ -526,7 +509,7 @@ public class CountryBuilders
             {
                 Content = new TopArtistList
                 {
-                    TopArtists = await this._artistsService.GetUserAllTimeTopArtists(userSettings.UserId, true)
+                    TopArtists = await artistsService.GetUserAllTimeTopArtists(userSettings.UserId, true)
                 }
             };
         }
@@ -534,12 +517,12 @@ public class CountryBuilders
         {
             artists = new Response<TopArtistList>
             {
-                Content = await this._playService.GetUserTopArtists(userSettings.UserId,
+                Content = await playService.GetUserTopArtists(userSettings.UserId,
                     timeSettings.PlayDays.GetValueOrDefault())
             };
         }
 
-        if (artists.Content.TopArtists == null || !artists.Content.TopArtists.Any())
+        if (artists.Content.TopArtists == null || artists.Content.TopArtists.Count == 0)
         {
             response.Embed.WithDescription(
                 $"Sorry, you or the user you're searching for don't have enough top artists in the selected time period.\n\n" +
@@ -550,9 +533,9 @@ public class CountryBuilders
             return response;
         }
 
-        var countries = await this._countryService.GetTopCountriesForTopArtists(artists.Content.TopArtists, true);
+        var countries = await countryService.GetTopCountriesForTopArtists(artists.Content.TopArtists, true);
 
-        using var image = await this._puppeteerService.GetWorldArtistMap(countries);
+        using var image = await puppeteerService.GetWorldArtistMap(countries, theme);
         var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
         response.Stream = encoded.AsStream(true);
         response.FileName = "artist-map.png";
@@ -567,8 +550,23 @@ public class CountryBuilders
             mediaGallery
         });
 
-        response.ComponentsContainer.AddComponent(new TextDisplayProperties("-# Country source: Musicbrainz"));
+        var themeMenu = new StringMenuProperties(InteractionConstants.CountryChartTheme)
+            .WithPlaceholder("Change map theme")
+            .WithMinValues(1)
+            .WithMaxValues(1);
 
+        foreach (var themeOption in Enum.GetValues<CountryChartTheme>())
+        {
+            var value =
+                $"{Enum.GetName(themeOption)}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}-{timeSettings.Description}";
+
+            themeMenu.AddOptions(new StringMenuSelectOptionProperties(themeOption.ToString(), value)
+            {
+                Default = themeOption == theme
+            });
+        }
+
+        response.ComponentsContainer.AddComponent(themeMenu);
         response.ResponseType = ResponseType.ComponentsV2;
         response.ComponentsContainer.WithAccentColor(DiscordConstants.LastFmColorRed);
 
