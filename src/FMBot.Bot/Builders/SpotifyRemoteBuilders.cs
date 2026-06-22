@@ -326,14 +326,14 @@ public class SpotifyRemoteBuilders(SpotifyRemoteService spotifyRemoteService)
                 track);
     }
 
-    public static ResponseModel QueueAlbumResult(RemoteActionResult result, RemoteAlbum album)
+    private static ResponseModel QueueAlbumResult(RemoteActionResult result, RemoteAlbum album)
     {
         return result != RemoteActionResult.Ok
             ? ErrorResponse(result)
             : AlbumResultMessage($"Added album to your Spotify queue ({album.Tracks.Count} tracks):", album);
     }
 
-    public static ResponseModel PlayAlbumResult(RemoteActionResult result, RemoteAlbum album)
+    private static ResponseModel PlayAlbumResult(RemoteActionResult result, RemoteAlbum album)
     {
         return result != RemoteActionResult.Ok
             ? ErrorResponse(result)
@@ -342,7 +342,7 @@ public class SpotifyRemoteBuilders(SpotifyRemoteService spotifyRemoteService)
                 album);
     }
 
-    public static ResponseModel PlayArtistResult(RemoteActionResult result, RemoteArtist artist)
+    private static ResponseModel PlayArtistResult(RemoteActionResult result, RemoteArtist artist)
     {
         if (result != RemoteActionResult.Ok)
         {
@@ -454,7 +454,7 @@ public class SpotifyRemoteBuilders(SpotifyRemoteService spotifyRemoteService)
     public static ResponseModel TrackNotFoundResponse()
     {
         var response = Cv2Message(DiscordConstants.WarningColorOrange,
-            "Couldn't find a track to use. Search for one (e.g. `queue daft punk - one more time`), reply to a Spotify link, or start playing something on Spotify.");
+            "Couldn't find a track to use. Search for one (e.g. `queue daft punk - one more time`), reply to a message with a Spotify link or a message that contains any music, or start playing something on Spotify.");
         response.CommandResponse = CommandResponse.NotFound;
 
         return response;

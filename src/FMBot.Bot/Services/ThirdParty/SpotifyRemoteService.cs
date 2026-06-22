@@ -9,6 +9,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using FMBot.Bot.Models;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -22,85 +23,16 @@ using SpotifyAPI.Web.Http;
 
 namespace FMBot.Bot.Services.ThirdParty;
 
-public enum RemoteActionResult
+public class SpotifyRemoteService(
+    IDbContextFactory<FMBotDbContext> contextFactory,
+    IOptions<BotSettings> botSettings,
+    HttpClient httpClient,
+    SpotifyService spotifyService)
 {
-    Ok,
-    NotConnected,
-    PremiumRequired,
-    NoActiveDevice,
-    NotFound,
-    Restriction,
-    Error
-}
-
-public class RemoteTrack
-{
-    public string Id { get; set; }
-    public string Uri { get; set; }
-    public string Name { get; set; }
-    public string ArtistName { get; set; }
-    public string AlbumName { get; set; }
-    public string AlbumUri { get; set; }
-    public string AlbumImageUrl { get; set; }
-
-    public static RemoteTrack From(FullTrack track)
-    {
-        if (track == null)
-        {
-            return null;
-        }
-
-        return new RemoteTrack
-        {
-            Id = track.Id,
-            Uri = track.Uri,
-            Name = track.Name,
-            ArtistName = track.Artists?.FirstOrDefault()?.Name,
-            AlbumName = track.Album?.Name,
-            AlbumUri = track.Album?.Uri,
-            AlbumImageUrl = track.Album?.Images?.FirstOrDefault()?.Url
-        };
-    }
-}
-
-public class RemoteAlbum
-{
-    public string Id { get; set; }
-    public string Uri { get; set; }
-    public string Name { get; set; }
-    public string ArtistName { get; set; }
-    public string AlbumImageUrl { get; set; }
-    public List<RemoteTrack> Tracks { get; set; } = [];
-}
-
-public class RemoteArtist
-{
-    public string Id { get; set; }
-    public string Uri { get; set; }
-    public string Name { get; set; }
-    public string ImageUrl { get; set; }
-}
-
-public class SpotifyRemoteService
-{
-    private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
-    private readonly BotSettings _botSettings;
-    private readonly HttpClient _httpClient;
-    private readonly SpotifyService _spotifyService;
+    private readonly BotSettings _botSettings = botSettings.Value;
 
     private const string Scopes =
         "user-modify-playback-state user-read-playback-state user-read-currently-playing user-read-recently-played user-library-modify user-library-read";
-
-    public SpotifyRemoteService(IDbContextFactory<FMBotDbContext> contextFactory,
-        IOptions<BotSettings> botSettings,
-        HttpClient httpClient,
-        SpotifyService spotifyService)
-    {
-        this._contextFactory = contextFactory;
-        this._botSettings = botSettings.Value;
-        this._httpClient = httpClient;
-        this._spotifyService = spotifyService;
-    }
 
     public bool IsConfigured =>
         !string.IsNullOrWhiteSpace(this._botSettings.Spotify?.Key) &&
@@ -109,7 +41,7 @@ public class SpotifyRemoteService
 
     public async Task<UserToken> GetActiveTokenAsync(ulong discordUserId)
     {
-        await using var db = await this._contextFactory.CreateDbContextAsync();
+        await using var db = await contextFactory.CreateDbContextAsync();
         var token = await db.UserTokens.FirstOrDefaultAsync(f =>
             f.DiscordUserId == discordUserId && f.Service == TokenService.Spotify);
 
@@ -132,7 +64,7 @@ public class SpotifyRemoteService
 
     public async Task RemoveTokenAsync(ulong discordUserId)
     {
-        await using var db = await this._contextFactory.CreateDbContextAsync();
+        await using var db = await contextFactory.CreateDbContextAsync();
         var token = await db.UserTokens.FirstOrDefaultAsync(f =>
             f.DiscordUserId == discordUserId && f.Service == TokenService.Spotify);
 
@@ -162,7 +94,7 @@ public class SpotifyRemoteService
         {
             await Task.Delay(6000);
 
-            await using var db = await this._contextFactory.CreateDbContextAsync();
+            await using var db = await contextFactory.CreateDbContextAsync();
             var connected = await db.UserTokens.AnyAsync(f =>
                 f.DiscordUserId == discordUserId && f.Service == TokenService.Spotify);
 
@@ -177,10 +109,10 @@ public class SpotifyRemoteService
 
     public async Task<RemoteTrack> ResolveSpotifyTrackAsync(string artistName, string trackName)
     {
-        var track = await this._spotifyService.GetTrackFromSpotify(trackName, artistName);
+        var track = await spotifyService.GetTrackFromSpotify(trackName, artistName);
         if (track == null)
         {
-            var search = await this._spotifyService.GetSearchResultAsync($"{trackName} {artistName}");
+            var search = await spotifyService.GetSearchResultAsync($"{trackName} {artistName}");
             track = search.Tracks?.Items?.FirstOrDefault();
         }
 
@@ -189,7 +121,7 @@ public class SpotifyRemoteService
 
     public async Task<RemoteTrack> ResolveTrackByIdAsync(string spotifyId)
     {
-        await using var db = await this._contextFactory.CreateDbContextAsync();
+        await using var db = await contextFactory.CreateDbContextAsync();
         var dbTrack = await db.Tracks
             .Include(f => f.Album)
             .FirstOrDefaultAsync(f => f.SpotifyId == spotifyId);
@@ -207,27 +139,27 @@ public class SpotifyRemoteService
             };
         }
 
-        var track = await this._spotifyService.GetTrackById(spotifyId);
+        var track = await spotifyService.GetTrackById(spotifyId);
         return RemoteTrack.From(track);
     }
 
     public async Task<RemoteAlbum> ResolveAlbumByIdAsync(string spotifyId)
     {
-        var album = await this._spotifyService.GetAlbumById(spotifyId);
+        var album = await spotifyService.GetAlbumById(spotifyId);
         return MapAlbum(album);
     }
 
     public async Task<RemoteAlbum> ResolveAlbumByNameAsync(string artistName, string albumName)
     {
-        var album = await this._spotifyService.GetAlbumFromSpotify(albumName, artistName);
+        var album = await spotifyService.GetAlbumFromSpotify(albumName, artistName);
         if (album == null)
         {
-            var search = await this._spotifyService.GetSearchResultAsync($"{albumName} {artistName}",
+            var search = await spotifyService.GetSearchResultAsync($"{albumName} {artistName}",
                 SearchRequest.Types.Album);
             var match = search.Albums?.Items?.FirstOrDefault();
             if (match != null)
             {
-                album = await this._spotifyService.GetAlbumById(match.Id);
+                album = await spotifyService.GetAlbumById(match.Id);
             }
         }
 
@@ -267,7 +199,7 @@ public class SpotifyRemoteService
 
     public async Task<RemoteTrack> ResolveArtistTopTrackByIdAsync(string spotifyId)
     {
-        var topTracks = await this._spotifyService.GetArtistTopTracks(spotifyId);
+        var topTracks = await spotifyService.GetArtistTopTracks(spotifyId);
         return RemoteTrack.From(topTracks.FirstOrDefault());
     }
 
@@ -284,16 +216,16 @@ public class SpotifyRemoteService
 
     public async Task<RemoteArtist> ResolveArtistByIdAsync(string spotifyId)
     {
-        var artist = await this._spotifyService.GetArtistById(spotifyId);
+        var artist = await spotifyService.GetArtistById(spotifyId);
         return MapArtist(artist);
     }
 
     public async Task<RemoteArtist> ResolveArtistByNameAsync(string artistName)
     {
-        var artist = await this._spotifyService.GetArtistFromSpotify(artistName);
+        var artist = await spotifyService.GetArtistFromSpotify(artistName);
         if (artist == null)
         {
-            var search = await this._spotifyService.GetSearchResultAsync(artistName, SearchRequest.Types.Artist);
+            var search = await spotifyService.GetSearchResultAsync(artistName, SearchRequest.Types.Artist);
             artist = search.Artists?.Items?.FirstOrDefault();
         }
 
@@ -382,25 +314,49 @@ public class SpotifyRemoteService
     }
 
     public Task<RemoteActionResult> QueueAsync(UserToken token, string trackUri) =>
-        Execute(token, c => c.Player.AddToQueue(new PlayerAddToQueueRequest(trackUri)));
+        ExecuteWithDeviceFallback(token,
+            (c, deviceId) => c.Player.AddToQueue(new PlayerAddToQueueRequest(trackUri) { DeviceId = deviceId }));
 
     public async Task<RemoteActionResult> QueueAlbumAsync(UserToken token, RemoteAlbum album)
     {
-        var result = RemoteActionResult.Ok;
+        var client = GetClient(token);
+        string deviceId = null;
+        var deviceResolved = false;
+
         foreach (var track in album.Tracks)
         {
-            result = await QueueAsync(token, track.Uri);
+            var result = await QueueTrack(track.Uri);
+
+            if (result == RemoteActionResult.NoActiveDevice && !deviceResolved)
+            {
+                deviceResolved = true;
+                deviceId = await GetFallbackDeviceIdAsync(client, token.DiscordUserId);
+                if (deviceId != null)
+                {
+                    result = await QueueTrack(track.Uri);
+                }
+            }
+
             if (result != RemoteActionResult.Ok)
             {
                 return result;
             }
         }
 
-        return result;
+        return RemoteActionResult.Ok;
+
+        Task<RemoteActionResult> QueueTrack(string uri) =>
+            TryAction(() => client.Player.AddToQueue(new PlayerAddToQueueRequest(uri) { DeviceId = deviceId }),
+                token.DiscordUserId);
     }
 
     public Task<RemoteActionResult> PlayContextAsync(UserToken token, string contextUri) =>
-        Execute(token, c => c.Player.ResumePlayback(new PlayerResumePlaybackRequest { ContextUri = contextUri }));
+        ExecuteWithDeviceFallback(token,
+            (c, deviceId) => c.Player.ResumePlayback(new PlayerResumePlaybackRequest
+            {
+                ContextUri = contextUri,
+                DeviceId = deviceId
+            }));
 
     public Task<RemoteActionResult> SkipAsync(UserToken token) =>
         Execute(token, c => c.Player.SkipNext());
@@ -409,26 +365,31 @@ public class SpotifyRemoteService
         Execute(token, c => c.Player.SkipPrevious());
 
     public Task<RemoteActionResult> ResumeAsync(UserToken token) =>
-        Execute(token, c => c.Player.ResumePlayback());
+        ExecuteWithDeviceFallback(token,
+            (c, deviceId) => c.Player.ResumePlayback(new PlayerResumePlaybackRequest { DeviceId = deviceId }));
 
     public async Task<RemoteActionResult> PlayTrackAsync(UserToken token, string trackUri, string albumUri = null)
     {
         if (string.IsNullOrEmpty(albumUri))
         {
-            return await Execute(token,
-                c => c.Player.ResumePlayback(new PlayerResumePlaybackRequest { Uris = [trackUri] }));
+            return await ExecuteWithDeviceFallback(token,
+                (c, deviceId) =>
+                    c.Player.ResumePlayback(new PlayerResumePlaybackRequest { Uris = [trackUri], DeviceId = deviceId }));
         }
 
-        var result = await Execute(token, c => c.Player.ResumePlayback(new PlayerResumePlaybackRequest
-        {
-            ContextUri = albumUri,
-            OffsetParam = new PlayerResumePlaybackRequest.Offset { Uri = trackUri }
-        }));
+        var result = await ExecuteWithDeviceFallback(token, (c, deviceId) => c.Player.ResumePlayback(
+            new PlayerResumePlaybackRequest
+            {
+                ContextUri = albumUri,
+                OffsetParam = new PlayerResumePlaybackRequest.Offset { Uri = trackUri },
+                DeviceId = deviceId
+            }));
 
         if (result == RemoteActionResult.Error)
         {
-            return await Execute(token,
-                c => c.Player.ResumePlayback(new PlayerResumePlaybackRequest { Uris = [trackUri] }));
+            return await ExecuteWithDeviceFallback(token,
+                (c, deviceId) =>
+                    c.Player.ResumePlayback(new PlayerResumePlaybackRequest { Uris = [trackUri], DeviceId = deviceId }));
         }
 
         return result;
@@ -474,12 +435,35 @@ public class SpotifyRemoteService
         }
     }
 
-    private async Task<RemoteActionResult> Execute(UserToken token, Func<SpotifyClient, Task> action)
+    private Task<RemoteActionResult> Execute(UserToken token, Func<SpotifyClient, Task> action) =>
+        TryAction(() => action(GetClient(token)), token.DiscordUserId);
+
+    private async Task<RemoteActionResult> ExecuteWithDeviceFallback(UserToken token,
+        Func<SpotifyClient, string, Task> action)
+    {
+        var client = GetClient(token);
+        var result = await TryAction(() => action(client, null), token.DiscordUserId);
+
+        if (result != RemoteActionResult.NoActiveDevice)
+        {
+            return result;
+        }
+
+        var deviceId = await GetFallbackDeviceIdAsync(client, token.DiscordUserId);
+        if (deviceId == null)
+        {
+            return RemoteActionResult.NoActiveDevice;
+        }
+
+        return await TryAction(() => action(client, deviceId), token.DiscordUserId);
+    }
+
+    private static async Task<RemoteActionResult> TryAction(Func<Task> action, ulong discordUserId)
     {
         try
         {
             Statistics.SpotifyApiCalls.Inc();
-            await action(GetClient(token));
+            await action();
             return RemoteActionResult.Ok;
         }
         catch (APIException e)
@@ -490,13 +474,43 @@ public class SpotifyRemoteService
                 HttpStatusCode.NotFound => RemoteActionResult.NoActiveDevice,
                 HttpStatusCode.Forbidden when IsPremiumRequired(e) => RemoteActionResult.PremiumRequired,
                 HttpStatusCode.Forbidden => RemoteActionResult.Restriction,
-                _ => LogAndError(e, token.DiscordUserId, status)
+                _ => LogAndError(e, discordUserId, status)
             };
         }
         catch (Exception e)
         {
-            Log.Error(e, "SpotifyRemote: Action failed for {discordUserId}", token.DiscordUserId);
+            Log.Error(e, "SpotifyRemote: Action failed for {discordUserId}", discordUserId);
             return RemoteActionResult.Error;
+        }
+    }
+
+    private static async Task<string> GetFallbackDeviceIdAsync(SpotifyClient client, ulong discordUserId)
+    {
+        try
+        {
+            Statistics.SpotifyApiCalls.Inc();
+            var devices = await client.Player.GetAvailableDevices();
+            var usable = devices.Devices
+                .Where(d => !d.IsRestricted && !string.IsNullOrEmpty(d.Id))
+                .ToList();
+
+            if (usable.Count == 0)
+            {
+                return null;
+            }
+
+            var active = usable.FirstOrDefault(d => d.IsActive);
+            if (active != null)
+            {
+                return active.Id;
+            }
+
+            return usable.Count == 1 ? usable[0].Id : null;
+        }
+        catch (Exception e)
+        {
+            Log.Warning(e, "SpotifyRemote: Failed to resolve fallback device for {discordUserId}", discordUserId);
+            return null;
         }
     }
 
@@ -525,7 +539,7 @@ public class SpotifyRemoteService
     {
         return SpotifyClientConfig
             .CreateDefault()
-            .WithHTTPClient(new NetHttpClient(this._httpClient))
+            .WithHTTPClient(new NetHttpClient(httpClient))
             .WithAuthenticator(new TokenAuthenticator(token.AccessToken, "Bearer"));
     }
 
@@ -545,7 +559,7 @@ public class SpotifyRemoteService
                 Convert.ToBase64String(
                     Encoding.UTF8.GetBytes($"{this._botSettings.Spotify.Key}:{this._botSettings.Spotify.Secret}")));
 
-            var response = await this._httpClient.SendAsync(request);
+            var response = await httpClient.SendAsync(request);
 
             if (response.IsSuccessStatusCode)
             {
