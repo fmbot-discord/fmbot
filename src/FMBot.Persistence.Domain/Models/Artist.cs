@@ -39,5 +39,6 @@ public class Artist
     public ICollection<ArtistGenre> ArtistGenres { get; set; }
     public ICollection<ArtistLink> ArtistLinks { get; set; }
     public ICollection<ArtistImage> Images { get; set; }
+    public ICollection<ArtistTag> ArtistTags { get; set; }
 
 }

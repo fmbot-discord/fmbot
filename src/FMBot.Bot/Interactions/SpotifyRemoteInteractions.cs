@@ -284,7 +284,7 @@ public class SpotifyRemoteInteractions(
         }
 
         await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
-            .WithContent("This isn't your remote — run `/remote` to open your own.")
+            .WithContent("This isn't your remote. Run `.rc` to open your own.")
             .WithFlags(MessageFlags.Ephemeral)));
         return false;
     }

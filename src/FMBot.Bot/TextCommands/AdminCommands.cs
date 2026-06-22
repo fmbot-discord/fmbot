@@ -63,6 +63,7 @@ public class AdminCommands(
     WebhookService webhookService,
     TrackService trackService,
     WhoKnowsTrackService whoKnowsTrackService,
+    TagService tagService,
     IDbContextFactory<FMBotDbContext> contextFactory)
     : BaseCommandModule(botSettings)
 {
@@ -1199,6 +1200,98 @@ public class AdminCommands(
                 await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
                 return;
             }
+        }
+        else
+        {
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = Constants.FmbotStaffOnly });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
+        }
+    }
+
+    [Command("bantag", "bantags")]
+    [Examples(".bantag seen live")]
+    public async Task BanTagAsync([CommandParameter(Remainder = true)] string tag = null)
+    {
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        {
+            if (string.IsNullOrWhiteSpace(tag))
+            {
+                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
+                {
+                    Content =
+                        "Enter a tag to ban. Banned tags stay stored but are excluded from tag results. Unbanning is instant.\n" +
+                        "Example: `.bantag seen live`"
+                });
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
+                return;
+            }
+
+            await tagService.BanTagAsync(tag.Trim());
+
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties()
+                .WithContent($"Tag `{tag.Trim()}` has been banned. It stays stored but will be excluded from tag results.")
+                .WithAllowedMentions(AllowedMentionsProperties.None));
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
+        }
+        else
+        {
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = Constants.FmbotStaffOnly });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
+        }
+    }
+
+    [Command("unbantag", "unbantags")]
+    [Examples(".unbantag seen live")]
+    public async Task UnbanTagAsync([CommandParameter(Remainder = true)] string tag = null)
+    {
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        {
+            if (string.IsNullOrWhiteSpace(tag))
+            {
+                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
+                {
+                    Content =
+                        "Enter a tag to unban. It will show up in tag results again immediately.\n" +
+                        "Example: `.unbantag seen live`"
+                });
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
+                return;
+            }
+
+            await tagService.UnbanTagAsync(tag.Trim());
+
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties()
+                .WithContent($"Tag `{tag.Trim()}` has been unbanned.")
+                .WithAllowedMentions(AllowedMentionsProperties.None));
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
+        }
+        else
+        {
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = Constants.FmbotStaffOnly });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
+        }
+    }
+
+    [Command("bannedtags", "listbannedtags")]
+    public async Task BannedTagsAsync()
+    {
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+        {
+            var bannedTags = await tagService.GetBannedTagsAsync();
+
+            var content = bannedTags.Count == 0
+                ? "No tags are currently banned."
+                : $"**Banned tags ({bannedTags.Count})**\n" + string.Join(", ", bannedTags.Select(t => $"`{t}`"));
+
+            if (content.Length > 2000)
+            {
+                content = content[..1997] + "...";
+            }
+
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties()
+                .WithContent(content)
+                .WithAllowedMentions(AllowedMentionsProperties.None));
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
         }
         else
         {

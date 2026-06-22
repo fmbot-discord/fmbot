@@ -24,32 +24,17 @@ using static FMBot.Bot.Services.MusicBrainzService;
 
 namespace FMBot.Bot.Factories;
 
-public class MusicDataFactory
+public class MusicDataFactory(
+    IOptions<BotSettings> botSettings,
+    SpotifyService spotifyService,
+    IDbContextFactory<FMBotDbContext> contextFactory,
+    MusicBrainzService musicBrainzService,
+    AppleMusicService appleMusicService,
+    AppleMusicVideoService appleMusicVideoService,
+    TrackEnrichment.TrackEnrichmentClient trackEnrichment,
+    IDataSourceFactory dataSourceFactory)
 {
-    private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
-    private readonly SpotifyService _spotifyService;
-    private readonly MusicBrainzService _musicBrainzService;
-    private readonly BotSettings _botSettings;
-    private readonly AppleMusicService _appleMusicService;
-    private readonly AppleMusicVideoService _appleMusicVideoService;
-    private readonly TrackEnrichment.TrackEnrichmentClient _trackEnrichment;
-    private readonly IDataSourceFactory _dataSourceFactory;
-
-    public MusicDataFactory(IOptions<BotSettings> botSettings, SpotifyService spotifyService,
-        IDbContextFactory<FMBotDbContext> contextFactory,
-        MusicBrainzService musicBrainzService, AppleMusicService appleMusicService,
-        AppleMusicVideoService appleMusicVideoService,
-        TrackEnrichment.TrackEnrichmentClient trackEnrichment, IDataSourceFactory dataSourceFactory)
-    {
-        this._spotifyService = spotifyService;
-        this._contextFactory = contextFactory;
-        this._musicBrainzService = musicBrainzService;
-        this._appleMusicService = appleMusicService;
-        this._appleMusicVideoService = appleMusicVideoService;
-        this._trackEnrichment = trackEnrichment;
-        this._dataSourceFactory = dataSourceFactory;
-        this._botSettings = botSettings.Value;
-    }
+    private readonly BotSettings _botSettings = botSettings.Value;
 
     public async Task<Artist> GetOrStoreArtistAsync(ArtistInfo artistInfo, string artistNameBeforeCorrect = null,
         bool redirectsEnabled = true)
@@ -63,7 +48,7 @@ public class MusicDataFactory
 
             if (dbArtist == null)
             {
-                await using var db = await this._contextFactory.CreateDbContextAsync();
+                await using var db = await contextFactory.CreateDbContextAsync();
 
                 var artistToAdd = new Artist
                 {
@@ -74,9 +59,9 @@ public class MusicDataFactory
                     LastfmDate = DateTime.UtcNow
                 };
 
-                var spotifyArtistTask = this._spotifyService.GetArtistFromSpotify(artistInfo.ArtistName);
-                var musicBrainzUpdatedTask = this._musicBrainzService.AddMusicBrainzDataToArtistAsync(artistToAdd);
-                var appleMusicArtistTask = this._appleMusicService.GetAppleMusicArtist(artistInfo.ArtistName);
+                var spotifyArtistTask = spotifyService.GetArtistFromSpotify(artistInfo.ArtistName);
+                var musicBrainzUpdatedTask = musicBrainzService.AddMusicBrainzDataToArtistAsync(artistToAdd);
+                var appleMusicArtistTask = appleMusicService.GetAppleMusicArtist(artistInfo.ArtistName);
 
                 var spotifyArtist = await spotifyArtistTask;
                 var musicBrainzUpdated = await musicBrainzUpdatedTask;
@@ -175,6 +160,12 @@ public class MusicDataFactory
                     await db.SaveChangesAsync();
                 }
 
+                if (artistInfo.Tags != null && artistInfo.Tags.Count != 0)
+                {
+                    await TagRepository.AddArtistTagsIfMissing(artistToAdd.Id,
+                        artistInfo.Tags.Select(t => t.Name), connection);
+                }
+
                 return artistToAdd;
             }
 
@@ -184,17 +175,17 @@ public class MusicDataFactory
 
             if (dbArtist.SpotifyImageUrl == null || dbArtist.SpotifyImageDate < DateTime.UtcNow.AddDays(-60))
             {
-                updateSpotify = this._spotifyService.GetArtistFromSpotify(artistInfo.ArtistName);
+                updateSpotify = spotifyService.GetArtistFromSpotify(artistInfo.ArtistName);
             }
 
             if (dbArtist.MusicBrainzDate == null || dbArtist.MusicBrainzDate < DateTime.UtcNow.AddDays(-120))
             {
-                updateMusicBrainz = this._musicBrainzService.AddMusicBrainzDataToArtistAsync(dbArtist);
+                updateMusicBrainz = musicBrainzService.AddMusicBrainzDataToArtistAsync(dbArtist);
             }
 
             if (dbArtist.AppleMusicDate == null || dbArtist.AppleMusicDate < DateTime.UtcNow.AddDays(-120))
             {
-                updateAppleMusic = this._appleMusicService.GetAppleMusicArtist(artistInfo.ArtistName);
+                updateAppleMusic = appleMusicService.GetAppleMusicArtist(artistInfo.ArtistName);
             }
 
             if (redirectsEnabled &&
@@ -206,7 +197,7 @@ public class MusicDataFactory
 
             if (artistInfo.Description != null && dbArtist.LastFmDescription != artistInfo.Description)
             {
-                await using var db = await this._contextFactory.CreateDbContextAsync();
+                await using var db = await contextFactory.CreateDbContextAsync();
 
                 dbArtist.LastFmDescription = artistInfo.Description;
                 dbArtist.LastfmDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
@@ -217,7 +208,7 @@ public class MusicDataFactory
 
             if (dbArtist.LastFmUrl == null && artistInfo.ArtistUrl != null)
             {
-                await using var db = await this._contextFactory.CreateDbContextAsync();
+                await using var db = await contextFactory.CreateDbContextAsync();
 
                 dbArtist.LastFmUrl = artistInfo.ArtistUrl;
                 dbArtist.LastfmDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
@@ -239,7 +230,7 @@ public class MusicDataFactory
                         await ArtistRepository.AddOrUpdateArtistLinks(dbArtist.Id, dbArtist.ArtistLinks, connection);
                     }
 
-                    await using var db = await this._contextFactory.CreateDbContextAsync();
+                    await using var db = await contextFactory.CreateDbContextAsync();
                     db.Entry(dbArtist).State = EntityState.Modified;
                     await db.SaveChangesAsync();
                 }
@@ -247,7 +238,7 @@ public class MusicDataFactory
 
             if (updateSpotify != null)
             {
-                await using var db = await this._contextFactory.CreateDbContextAsync();
+                await using var db = await contextFactory.CreateDbContextAsync();
 
                 var spotifyArtist = await updateSpotify;
 
@@ -290,7 +281,7 @@ public class MusicDataFactory
 
             if (updateAppleMusic != null)
             {
-                await using var db = await this._contextFactory.CreateDbContextAsync();
+                await using var db = await contextFactory.CreateDbContextAsync();
                 var amArtist = await updateAppleMusic;
 
                 if (amArtist != null)
@@ -310,6 +301,12 @@ public class MusicDataFactory
                 dbArtist.AppleMusicDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
                 db.Entry(dbArtist).State = EntityState.Modified;
                 await db.SaveChangesAsync();
+            }
+
+            if (artistInfo.Tags != null && artistInfo.Tags.Count != 0)
+            {
+                await TagRepository.AddArtistTagsIfMissing(dbArtist.Id,
+                    artistInfo.Tags.Select(t => t.Name), connection);
             }
 
             await connection.CloseAsync();
@@ -376,7 +373,7 @@ public class MusicDataFactory
 
     public async Task<Album> GetOrStoreAlbumAsync(AlbumInfo albumInfo)
     {
-        await using var db = await this._contextFactory.CreateDbContextAsync();
+        await using var db = await contextFactory.CreateDbContextAsync();
 
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
@@ -404,8 +401,8 @@ public class MusicDataFactory
             }
 
             var spotifyAlbumTask =
-                this._spotifyService.GetAlbumFromSpotify(albumInfo.AlbumName, albumInfo.ArtistName.ToLower());
-            var amAlbumTask = this._appleMusicService.GetAppleMusicAlbum(albumInfo.ArtistName, albumInfo.AlbumName);
+                spotifyService.GetAlbumFromSpotify(albumInfo.AlbumName, albumInfo.ArtistName.ToLower());
+            var amAlbumTask = appleMusicService.GetAppleMusicAlbum(albumInfo.ArtistName, albumInfo.AlbumName);
 
             var spotifyAlbum = await spotifyAlbumTask;
             var amAlbum = await amAlbumTask;
@@ -471,6 +468,12 @@ public class MusicDataFactory
                     amAlbum.Attributes.Artwork.Height, amAlbum.Attributes.Artwork.Width, amAlbum.Attributes.Artwork);
             }
 
+            if (albumInfo.Tags != null && albumInfo.Tags.Count != 0)
+            {
+                await TagRepository.AddAlbumTagsIfMissing(albumToAdd.Id,
+                    albumInfo.Tags.Select(t => t.Name), connection);
+            }
+
             await connection.CloseAsync();
 
             return albumToAdd;
@@ -519,13 +522,13 @@ public class MusicDataFactory
         if (dbAlbum.SpotifyImageDate == null || dbAlbum.SpotifyImageDate < DateTime.UtcNow.AddDays(-60))
         {
             updateSpotify =
-                this._spotifyService.GetAlbumFromSpotify(albumInfo.AlbumName, albumInfo.ArtistName.ToLower());
+                spotifyService.GetAlbumFromSpotify(albumInfo.AlbumName, albumInfo.ArtistName.ToLower());
         }
 
         if (dbAlbum.AppleMusicDate == null || dbAlbum.AppleMusicDate < DateTime.UtcNow.AddDays(-60))
         {
             updateAppleMusic =
-                this._appleMusicService.GetAppleMusicAlbum(albumInfo.ArtistName, albumInfo.AlbumName, true);
+                appleMusicService.GetAppleMusicAlbum(albumInfo.ArtistName, albumInfo.AlbumName, true);
         }
 
         if (updateSpotify != null)
@@ -593,6 +596,12 @@ public class MusicDataFactory
             await db.SaveChangesAsync();
         }
 
+        if (albumInfo.Tags != null && albumInfo.Tags.Count != 0)
+        {
+            await TagRepository.AddAlbumTagsIfMissing(dbAlbum.Id,
+                albumInfo.Tags.Select(t => t.Name), connection);
+        }
+
         await connection.CloseAsync();
 
         return dbAlbum;
@@ -601,7 +610,7 @@ public class MusicDataFactory
     private async Task GetOrStoreAlbumTracks(IEnumerable<SimpleTrack> simpleTracks, AlbumInfo albumInfo,
         int albumId, NpgsqlConnection connection)
     {
-        await using var db = await this._contextFactory.CreateDbContextAsync();
+        await using var db = await contextFactory.CreateDbContextAsync();
         foreach (var track in simpleTracks.OrderBy(o => o.TrackNumber))
         {
             var dbTrack = await TrackRepository.GetTrackForName(albumInfo.ArtistName, track.Name, connection);
@@ -738,7 +747,7 @@ public class MusicDataFactory
     {
         try
         {
-            await using var db = await this._contextFactory.CreateDbContextAsync();
+            await using var db = await contextFactory.CreateDbContextAsync();
 
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
@@ -767,13 +776,13 @@ public class MusicDataFactory
                 }
 
                 var spotifyTrackTask =
-                    this._spotifyService.GetTrackFromSpotify(trackInfo.TrackName, trackInfo.ArtistName.ToLower());
+                    spotifyService.GetTrackFromSpotify(trackInfo.TrackName, trackInfo.ArtistName.ToLower());
                 var amSongTask =
-                    this._appleMusicService.GetAppleMusicSong(trackInfo.ArtistName, trackInfo.TrackName);
+                    appleMusicService.GetAppleMusicSong(trackInfo.ArtistName, trackInfo.TrackName);
 
                 Statistics.LyricsApiCalls.Inc();
                 var lyricsTask =
-                    this._trackEnrichment.GetLyricsAsync(new LyricsRequest
+                    trackEnrichment.GetLyricsAsync(new LyricsRequest
                     {
                         AlbumName = trackInfo.AlbumName ?? "",
                         TrackName = trackInfo.TrackName,
@@ -781,7 +790,7 @@ public class MusicDataFactory
                         Duration = trackInfo.Duration?.ToString() ?? ""
                     });
 
-                var musicBrainzTask = this._musicBrainzService.AddMusicBrainzDataToTrackAsync(trackToAdd);
+                var musicBrainzTask = musicBrainzService.AddMusicBrainzDataToTrackAsync(trackToAdd);
 
                 var spotifyTrack = await spotifyTrackTask;
                 var amSong = await amSongTask;
@@ -815,7 +824,7 @@ public class MusicDataFactory
                     trackToAdd.Popularity = spotifyTrack.Popularity > 0 ? spotifyTrack.Popularity : null;
                     trackToAdd.SpotifyPreviewUrl = spotifyTrack.PreviewUrl;
 
-                    var audioFeatures = await this._spotifyService.GetAudioFeaturesFromSpotify(spotifyTrack.Id);
+                    var audioFeatures = await spotifyService.GetAudioFeaturesFromSpotify(spotifyTrack.Id);
 
                     if (audioFeatures != null)
                     {
@@ -884,6 +893,12 @@ public class MusicDataFactory
                     trackToAdd.SyncedLyrics = syncedLyrics;
                 }
 
+                if (trackInfo.Tags != null && trackInfo.Tags.Count != 0)
+                {
+                    await TagRepository.AddTrackTagsIfMissing(trackToAdd.Id,
+                        trackInfo.Tags.Select(t => t.Name), connection);
+                }
+
                 return trackToAdd;
             }
 
@@ -927,20 +942,20 @@ public class MusicDataFactory
             if (dbTrack.SpotifyLastUpdated == null || dbTrack.SpotifyLastUpdated < DateTime.UtcNow.AddDays(-180))
             {
                 updateSpotify =
-                    this._spotifyService.GetTrackFromSpotify(trackInfo.TrackName, trackInfo.ArtistName.ToLower());
+                    spotifyService.GetTrackFromSpotify(trackInfo.TrackName, trackInfo.ArtistName.ToLower());
             }
 
             if (dbTrack.AppleMusicDate == null || dbTrack.AppleMusicDate < DateTime.UtcNow.AddDays(-120))
             {
                 updateAppleMusic =
-                    this._appleMusicService.GetAppleMusicSong(trackInfo.ArtistName, trackInfo.TrackName);
+                    appleMusicService.GetAppleMusicSong(trackInfo.ArtistName, trackInfo.TrackName);
             }
 
             if (dbTrack.LyricsDate == null || dbTrack.LyricsDate < DateTime.UtcNow.AddDays(-240))
             {
                 Statistics.LyricsApiCalls.Inc();
                 updateLyrics =
-                    this._trackEnrichment.GetLyricsAsync(new LyricsRequest
+                    trackEnrichment.GetLyricsAsync(new LyricsRequest
                     {
                         AlbumName = trackInfo.AlbumName ?? "",
                         TrackName = trackInfo.TrackName,
@@ -951,7 +966,7 @@ public class MusicDataFactory
 
             if (dbTrack.MusicBrainzDate == null || dbTrack.MusicBrainzDate < DateTime.UtcNow.AddDays(-120))
             {
-                updateMusicBrainz = this._musicBrainzService.AddMusicBrainzDataToTrackAsync(dbTrack);
+                updateMusicBrainz = musicBrainzService.AddMusicBrainzDataToTrackAsync(dbTrack);
             }
 
             if (updateMusicBrainz != null)
@@ -976,7 +991,7 @@ public class MusicDataFactory
                     dbTrack.Popularity = spotifyTrack.Popularity > 0 ? spotifyTrack.Popularity : dbTrack.Popularity;
                     dbTrack.SpotifyPreviewUrl = spotifyTrack.PreviewUrl ?? dbTrack.SpotifyPreviewUrl;
 
-                    var audioFeatures = await this._spotifyService.GetAudioFeaturesFromSpotify(spotifyTrack.Id);
+                    var audioFeatures = await spotifyService.GetAudioFeaturesFromSpotify(spotifyTrack.Id);
 
                     if (audioFeatures != null)
                     {
@@ -1070,6 +1085,12 @@ public class MusicDataFactory
 
             await db.SaveChangesAsync();
 
+            if (trackInfo.Tags != null && trackInfo.Tags.Count != 0)
+            {
+                await TagRepository.AddTrackTagsIfMissing(dbTrack.Id,
+                    trackInfo.Tags.Select(t => t.Name), connection);
+            }
+
             await connection.CloseAsync();
 
             return dbTrack;
@@ -1085,7 +1106,7 @@ public class MusicDataFactory
     {
         Log.Information("EnrichMissingMetadata: Starting batch");
 
-        await using var db = await this._contextFactory.CreateDbContextAsync();
+        await using var db = await contextFactory.CreateDbContextAsync();
 
         var artists = await db.Artists
             .Where(a => a.SpotifyImageDate == null)
@@ -1127,7 +1148,7 @@ public class MusicDataFactory
             {
                 if (artist != null)
                 {
-                    var artistCall = await this._dataSourceFactory.GetArtistInfoAsync(artist.Name, null);
+                    var artistCall = await dataSourceFactory.GetArtistInfoAsync(artist.Name, null);
                     if (artistCall.Success && artistCall.Content != null)
                     {
                         await GetOrStoreArtistAsync(artistCall.Content);
@@ -1155,7 +1176,7 @@ public class MusicDataFactory
             {
                 if (album != null)
                 {
-                    var albumCall = await this._dataSourceFactory.GetAlbumInfoAsync(album.ArtistName, album.Name);
+                    var albumCall = await dataSourceFactory.GetAlbumInfoAsync(album.ArtistName, album.Name);
                     if (albumCall.Success && albumCall.Content != null)
                     {
                         await GetOrStoreAlbumAsync(albumCall.Content);
@@ -1183,7 +1204,7 @@ public class MusicDataFactory
             {
                 if (track != null)
                 {
-                    var trackCall = await this._dataSourceFactory.GetTrackInfoAsync(track.Name, track.ArtistName);
+                    var trackCall = await dataSourceFactory.GetTrackInfoAsync(track.Name, track.ArtistName);
                     if (trackCall.Success && trackCall.Content != null)
                     {
                         await GetOrStoreTrackAsync(trackCall.Content);
