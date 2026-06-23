@@ -7,7 +7,6 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using FMBot.Bot.Models;
 using FMBot.Domain;
@@ -39,6 +38,46 @@ public class SpotifyRemoteService(
         !string.IsNullOrWhiteSpace(this._botSettings.Spotify?.RedirectUri) &&
         !string.IsNullOrWhiteSpace(this._botSettings.Spotify?.StateSecret);
 
+    public string BuildAuthUrl(ulong discordUserId)
+    {
+        var nonce = Convert.ToHexString(RandomNumberGenerator.GetBytes(8));
+        var state = SignState($"{discordUserId}:{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}:{nonce}");
+
+        return "https://accounts.spotify.com/authorize" +
+               $"?client_id={this._botSettings.Spotify.Key}" +
+               "&response_type=code" +
+               $"&redirect_uri={Uri.EscapeDataString(this._botSettings.Spotify.RedirectUri)}" +
+               $"&scope={Uri.EscapeDataString(Scopes)}" +
+               $"&state={Uri.EscapeDataString(state)}";
+    }
+
+    private string SignState(string payload)
+    {
+        using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(this._botSettings.Spotify.StateSecret));
+        var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(payload));
+        var signature = Convert.ToBase64String(hash).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+        return $"{payload}.{signature}";
+    }
+
+    public async Task<bool> WaitForConnectionAsync(ulong discordUserId)
+    {
+        for (var i = 0; i < 20; i++)
+        {
+            await Task.Delay(6000);
+
+            await using var db = await contextFactory.CreateDbContextAsync();
+            var connected = await db.UserTokens.AnyAsync(f =>
+                f.DiscordUserId == discordUserId && f.Service == TokenService.Spotify);
+
+            if (connected)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public async Task<UserToken> GetActiveTokenAsync(ulong discordUserId)
     {
         await using var db = await contextFactory.CreateDbContextAsync();
@@ -62,6 +101,64 @@ public class SpotifyRemoteService(
         return token;
     }
 
+    private async Task<bool> RefreshToken(UserToken token, FMBotDbContext db)
+    {
+        try
+        {
+            var request = new HttpRequestMessage(HttpMethod.Post, "https://accounts.spotify.com/api/token")
+            {
+                Content = new FormUrlEncodedContent(new Dictionary<string, string>
+                {
+                    { "grant_type", "refresh_token" },
+                    { "refresh_token", token.RefreshToken }
+                })
+            };
+            request.Headers.Authorization = new AuthenticationHeaderValue("Basic",
+                Convert.ToBase64String(
+                    Encoding.UTF8.GetBytes($"{this._botSettings.Spotify.Key}:{this._botSettings.Spotify.Secret}")));
+
+            var response = await httpClient.SendAsync(request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadFromJsonAsync<SpotifyTokenResponse>();
+
+                token.AccessToken = json.AccessToken;
+                if (!string.IsNullOrEmpty(json.RefreshToken))
+                {
+                    token.RefreshToken = json.RefreshToken;
+                }
+
+                token.TokenExpiresAt = DateTime.UtcNow.AddSeconds(json.ExpiresIn);
+                token.LastUpdated = DateTime.UtcNow;
+
+                db.Update(token);
+                await db.SaveChangesAsync();
+                return true;
+            }
+
+            var errorContent = await response.Content.ReadAsStringAsync();
+            if (errorContent.Contains("invalid_grant", StringComparison.OrdinalIgnoreCase))
+            {
+                db.UserTokens.Remove(token);
+                await db.SaveChangesAsync();
+                Log.Information("SpotifyRemote: Removed invalid Spotify token for {discordUserId}",
+                    token.DiscordUserId);
+                return false;
+            }
+
+            Log.Error("SpotifyRemote: Failed to refresh Spotify token for {discordUserId}: {errorContent}",
+                token.DiscordUserId, errorContent);
+            return false;
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "SpotifyRemote: Exception while refreshing Spotify token for {discordUserId}",
+                token.DiscordUserId);
+            return false;
+        }
+    }
+
     public async Task RemoveTokenAsync(ulong discordUserId)
     {
         await using var db = await contextFactory.CreateDbContextAsync();
@@ -73,38 +170,6 @@ public class SpotifyRemoteService(
             db.UserTokens.Remove(token);
             await db.SaveChangesAsync();
         }
-    }
-
-    public string BuildAuthUrl(ulong discordUserId)
-    {
-        var nonce = Convert.ToHexString(RandomNumberGenerator.GetBytes(8));
-        var state = SignState($"{discordUserId}:{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}:{nonce}");
-
-        return "https://accounts.spotify.com/authorize" +
-               $"?client_id={this._botSettings.Spotify.Key}" +
-               "&response_type=code" +
-               $"&redirect_uri={Uri.EscapeDataString(this._botSettings.Spotify.RedirectUri)}" +
-               $"&scope={Uri.EscapeDataString(Scopes)}" +
-               $"&state={Uri.EscapeDataString(state)}";
-    }
-
-    public async Task<bool> WaitForConnectionAsync(ulong discordUserId)
-    {
-        for (var i = 0; i < 20; i++)
-        {
-            await Task.Delay(6000);
-
-            await using var db = await contextFactory.CreateDbContextAsync();
-            var connected = await db.UserTokens.AnyAsync(f =>
-                f.DiscordUserId == discordUserId && f.Service == TokenService.Spotify);
-
-            if (connected)
-            {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     public async Task<RemoteTrack> ResolveSpotifyTrackAsync(string artistName, string trackName)
@@ -146,7 +211,7 @@ public class SpotifyRemoteService(
     public async Task<RemoteAlbum> ResolveAlbumByIdAsync(string spotifyId)
     {
         var album = await spotifyService.GetAlbumById(spotifyId);
-        return MapAlbum(album);
+        return RemoteAlbum.From(album);
     }
 
     public async Task<RemoteAlbum> ResolveAlbumByNameAsync(string artistName, string albumName)
@@ -163,38 +228,25 @@ public class SpotifyRemoteService(
             }
         }
 
-        return MapAlbum(album);
+        return RemoteAlbum.From(album);
     }
 
-    private static RemoteAlbum MapAlbum(FullAlbum album)
+    public async Task<RemoteArtist> ResolveArtistByIdAsync(string spotifyId)
     {
-        if (album == null)
+        var artist = await spotifyService.GetArtistById(spotifyId);
+        return RemoteArtist.From(artist);
+    }
+
+    public async Task<RemoteArtist> ResolveArtistByNameAsync(string artistName)
+    {
+        var artist = await spotifyService.GetArtistFromSpotify(artistName);
+        if (artist == null)
         {
-            return null;
+            var search = await spotifyService.GetSearchResultAsync(artistName, SearchRequest.Types.Artist);
+            artist = search.Artists?.Items?.FirstOrDefault();
         }
 
-        var imageUrl = album.Images?.FirstOrDefault()?.Url;
-        var artistName = album.Artists?.FirstOrDefault()?.Name;
-
-        return new RemoteAlbum
-        {
-            Id = album.Id,
-            Uri = album.Uri,
-            Name = album.Name,
-            ArtistName = artistName,
-            AlbumImageUrl = imageUrl,
-            Tracks = album.Tracks?.Items?
-                .Select(t => new RemoteTrack
-                {
-                    Id = t.Id,
-                    Uri = t.Uri,
-                    Name = t.Name,
-                    ArtistName = t.Artists?.FirstOrDefault()?.Name ?? artistName,
-                    AlbumName = album.Name,
-                    AlbumUri = album.Uri,
-                    AlbumImageUrl = imageUrl
-                }).ToList() ?? []
-        };
+        return RemoteArtist.From(artist);
     }
 
     public async Task<RemoteTrack> ResolveArtistTopTrackByIdAsync(string spotifyId)
@@ -212,40 +264,6 @@ public class SpotifyRemoteService(
         }
 
         return await ResolveArtistTopTrackByIdAsync(artist.Id);
-    }
-
-    public async Task<RemoteArtist> ResolveArtistByIdAsync(string spotifyId)
-    {
-        var artist = await spotifyService.GetArtistById(spotifyId);
-        return MapArtist(artist);
-    }
-
-    public async Task<RemoteArtist> ResolveArtistByNameAsync(string artistName)
-    {
-        var artist = await spotifyService.GetArtistFromSpotify(artistName);
-        if (artist == null)
-        {
-            var search = await spotifyService.GetSearchResultAsync(artistName, SearchRequest.Types.Artist);
-            artist = search.Artists?.Items?.FirstOrDefault();
-        }
-
-        return MapArtist(artist);
-    }
-
-    private static RemoteArtist MapArtist(FullArtist artist)
-    {
-        if (artist == null)
-        {
-            return null;
-        }
-
-        return new RemoteArtist
-        {
-            Id = artist.Id,
-            Uri = artist.Uri,
-            Name = artist.Name,
-            ImageUrl = artist.Images?.FirstOrDefault()?.Url
-        };
     }
 
     public async Task<CurrentlyPlayingContext> GetPlaybackAsync(UserToken token)
@@ -358,16 +376,6 @@ public class SpotifyRemoteService(
                 DeviceId = deviceId
             }));
 
-    public Task<RemoteActionResult> SkipAsync(UserToken token) =>
-        Execute(token, c => c.Player.SkipNext());
-
-    public Task<RemoteActionResult> PreviousAsync(UserToken token) =>
-        Execute(token, c => c.Player.SkipPrevious());
-
-    public Task<RemoteActionResult> ResumeAsync(UserToken token) =>
-        ExecuteWithDeviceFallback(token,
-            (c, deviceId) => c.Player.ResumePlayback(new PlayerResumePlaybackRequest { DeviceId = deviceId }));
-
     public async Task<RemoteActionResult> PlayTrackAsync(UserToken token, string trackUri, string albumUri = null)
     {
         if (string.IsNullOrEmpty(albumUri))
@@ -395,8 +403,18 @@ public class SpotifyRemoteService(
         return result;
     }
 
+    public Task<RemoteActionResult> ResumeAsync(UserToken token) =>
+        ExecuteWithDeviceFallback(token,
+            (c, deviceId) => c.Player.ResumePlayback(new PlayerResumePlaybackRequest { DeviceId = deviceId }));
+
     public Task<RemoteActionResult> PauseAsync(UserToken token) =>
         Execute(token, c => c.Player.PausePlayback());
+
+    public Task<RemoteActionResult> SkipAsync(UserToken token) =>
+        Execute(token, c => c.Player.SkipNext());
+
+    public Task<RemoteActionResult> PreviousAsync(UserToken token) =>
+        Execute(token, c => c.Player.SkipPrevious());
 
     public Task<RemoteActionResult> TransferAsync(UserToken token, string deviceId) =>
         Execute(token, c => c.Player.TransferPlayback(new PlayerTransferPlaybackRequest([deviceId]) { Play = true }));
@@ -408,6 +426,29 @@ public class SpotifyRemoteService(
     public Task<RemoteActionResult> UnlikeAsync(UserToken token, string trackId) =>
         ExecuteLibraryWrite(token, trackId,
             (connector, uri, parameters) => connector.Delete(uri, parameters, null, default));
+
+    private Task<RemoteActionResult> Execute(UserToken token, Func<SpotifyClient, Task> action) =>
+        TryAction(() => action(GetClient(token)), token.DiscordUserId);
+
+    private async Task<RemoteActionResult> ExecuteWithDeviceFallback(UserToken token,
+        Func<SpotifyClient, string, Task> action)
+    {
+        var client = GetClient(token);
+        var result = await TryAction(() => action(client, null), token.DiscordUserId);
+
+        if (result != RemoteActionResult.NoActiveDevice)
+        {
+            return result;
+        }
+
+        var deviceId = await GetFallbackDeviceIdAsync(client, token.DiscordUserId);
+        if (deviceId == null)
+        {
+            return RemoteActionResult.NoActiveDevice;
+        }
+
+        return await TryAction(() => action(client, deviceId), token.DiscordUserId);
+    }
 
     private async Task<RemoteActionResult> ExecuteLibraryWrite(UserToken token, string trackId,
         Func<IAPIConnector, Uri, IDictionary<string, string>, Task> action)
@@ -433,29 +474,6 @@ public class SpotifyRemoteService(
             Log.Error(e, "SpotifyRemote: Library action failed for {discordUserId}", token.DiscordUserId);
             return RemoteActionResult.Error;
         }
-    }
-
-    private Task<RemoteActionResult> Execute(UserToken token, Func<SpotifyClient, Task> action) =>
-        TryAction(() => action(GetClient(token)), token.DiscordUserId);
-
-    private async Task<RemoteActionResult> ExecuteWithDeviceFallback(UserToken token,
-        Func<SpotifyClient, string, Task> action)
-    {
-        var client = GetClient(token);
-        var result = await TryAction(() => action(client, null), token.DiscordUserId);
-
-        if (result != RemoteActionResult.NoActiveDevice)
-        {
-            return result;
-        }
-
-        var deviceId = await GetFallbackDeviceIdAsync(client, token.DiscordUserId);
-        if (deviceId == null)
-        {
-            return RemoteActionResult.NoActiveDevice;
-        }
-
-        return await TryAction(() => action(client, deviceId), token.DiscordUserId);
     }
 
     private static async Task<RemoteActionResult> TryAction(Func<Task> action, ulong discordUserId)
@@ -541,86 +559,5 @@ public class SpotifyRemoteService(
             .CreateDefault()
             .WithHTTPClient(new NetHttpClient(httpClient))
             .WithAuthenticator(new TokenAuthenticator(token.AccessToken, "Bearer"));
-    }
-
-    private async Task<bool> RefreshToken(UserToken token, FMBotDbContext db)
-    {
-        try
-        {
-            var request = new HttpRequestMessage(HttpMethod.Post, "https://accounts.spotify.com/api/token")
-            {
-                Content = new FormUrlEncodedContent(new Dictionary<string, string>
-                {
-                    { "grant_type", "refresh_token" },
-                    { "refresh_token", token.RefreshToken }
-                })
-            };
-            request.Headers.Authorization = new AuthenticationHeaderValue("Basic",
-                Convert.ToBase64String(
-                    Encoding.UTF8.GetBytes($"{this._botSettings.Spotify.Key}:{this._botSettings.Spotify.Secret}")));
-
-            var response = await httpClient.SendAsync(request);
-
-            if (response.IsSuccessStatusCode)
-            {
-                var json = await response.Content.ReadFromJsonAsync<SpotifyTokenResponse>();
-
-                token.AccessToken = json.AccessToken;
-                if (!string.IsNullOrEmpty(json.RefreshToken))
-                {
-                    token.RefreshToken = json.RefreshToken;
-                }
-
-                token.TokenExpiresAt = DateTime.UtcNow.AddSeconds(json.ExpiresIn);
-                token.LastUpdated = DateTime.UtcNow;
-
-                db.Update(token);
-                await db.SaveChangesAsync();
-                return true;
-            }
-
-            var errorContent = await response.Content.ReadAsStringAsync();
-            if (errorContent.Contains("invalid_grant", StringComparison.OrdinalIgnoreCase))
-            {
-                db.UserTokens.Remove(token);
-                await db.SaveChangesAsync();
-                Log.Information("SpotifyRemote: Removed invalid Spotify token for {discordUserId}",
-                    token.DiscordUserId);
-                return false;
-            }
-
-            Log.Error("SpotifyRemote: Failed to refresh Spotify token for {discordUserId}: {errorContent}",
-                token.DiscordUserId, errorContent);
-            return false;
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "SpotifyRemote: Exception while refreshing Spotify token for {discordUserId}",
-                token.DiscordUserId);
-            return false;
-        }
-    }
-
-    private string SignState(string payload)
-    {
-        using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(this._botSettings.Spotify.StateSecret));
-        var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(payload));
-        var signature = Convert.ToBase64String(hash).TrimEnd('=').Replace('+', '-').Replace('/', '_');
-        return $"{payload}.{signature}";
-    }
-
-    private class SpotifyTokenResponse
-    {
-        [JsonPropertyName("access_token")]
-        public string AccessToken { get; set; }
-
-        [JsonPropertyName("refresh_token")]
-        public string RefreshToken { get; set; }
-
-        [JsonPropertyName("expires_in")]
-        public int ExpiresIn { get; set; }
-
-        [JsonPropertyName("scope")]
-        public string Scope { get; set; }
     }
 }
