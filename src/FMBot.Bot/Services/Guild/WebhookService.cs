@@ -202,6 +202,17 @@ public class WebhookService
             }
         }
 
+        Log.Information("Featured: Checking if album is offensive");
+
+        var albumPossiblyOffensive = await this._openAiService.CheckIfAlbumOffensive(featured.AlbumName,
+            featured.ArtistName, featured.ImageUrl);
+
+        if (albumPossiblyOffensive)
+        {
+            container.WithAccentColor(DiscordConstants.WarningColorOrange);
+            container.WithTextDisplay("⚠️ **Warning:** Possibly offensive or NSFW album detected");
+        }
+
         container.WithSeparator();
         container.WithTextDisplay($"-# {featured.ImageUrl}");
 
