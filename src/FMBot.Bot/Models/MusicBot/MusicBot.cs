@@ -16,7 +16,6 @@ public abstract class MusicBot
     public static IEnumerable<MusicBot> SupportedBots { get; } = new List<MusicBot>
     {
         new JockieMusicBot(),
-        new CakeyBotMusicBot(),
         new SoundCloudMusicBot(),
         new GreenBotMusicBot(),
         new TempoMusicBot(),
