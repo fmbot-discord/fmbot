@@ -25,24 +25,16 @@ using DiscordGuild = NetCord.Gateway.Guild;
 
 namespace FMBot.Bot.Services;
 
-public class OpenAiService
+public class OpenAiService(
+    HttpClient httpClient,
+    IOptions<BotSettings> botSettings,
+    IDbContextFactory<FMBotDbContext> contextFactory,
+    IMemoryCache cache)
 {
-    private readonly HttpClient _httpClient;
-    private readonly BotSettings _botSettings;
-    private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
-    private readonly IMemoryCache _cache;
-
-    public OpenAiService(HttpClient httpClient, IOptions<BotSettings> botSettings,
-        IDbContextFactory<FMBotDbContext> contextFactory, IMemoryCache cache)
-    {
-        this._httpClient = httpClient;
-        this._contextFactory = contextFactory;
-        this._cache = cache;
-        this._botSettings = botSettings.Value;
-    }
+    private readonly BotSettings _botSettings = botSettings.Value;
 
     private async Task<OpenAiResponse> SendRequest(string prompt, string model = "gpt-5.4-mini",
-        string userMessage = null)
+        string userMessage = null, string imageUrl = null)
     {
         var request = new HttpRequestMessage(HttpMethod.Post, "https://api.openai.com/v1/responses");
         request.Headers.Add("Authorization", $"Bearer {this._botSettings.OpenAi.Key}");
@@ -56,12 +48,29 @@ public class OpenAiService
             }
         };
 
-        if (userMessage != null)
+        if (userMessage != null || imageUrl != null)
         {
+            var userContent = new List<InputContent>();
+
+            if (userMessage != null)
+            {
+                userContent.Add(new InputContent { Type = "input_text", Text = userMessage });
+            }
+
+            if (imageUrl != null)
+            {
+                userContent.Add(new InputContent
+                {
+                    Type = "input_image",
+                    ImageUrl = imageUrl,
+                    Detail = "high"
+                });
+            }
+
             inputMessages.Add(new InputMessage
             {
                 Role = "user",
-                Content = [new InputContent { Type = "input_text", Text = userMessage }]
+                Content = userContent
             });
         }
 
@@ -82,7 +91,7 @@ public class OpenAiService
         };
 
         request.Content = new StringContent(JsonSerializer.Serialize(content), null, "application/json");
-        var response = await this._httpClient.SendAsync(request);
+        var response = await httpClient.SendAsync(request);
         Statistics.OpenAiCalls.Inc();
 
         var responseContent = await response.Content.ReadAsStringAsync();
@@ -100,7 +109,7 @@ public class OpenAiService
     public async Task<OpenAiResponse> GetJudgeResponse(List<TopArtist> artists, List<TopTrack> topTracks,
         PromptType promptType, int amountThisWeek, bool supporter = false, string language = "en-us")
     {
-        await using var db = await this._contextFactory.CreateDbContextAsync();
+        await using var db = await contextFactory.CreateDbContextAsync();
         var prompt = await db.AiPrompts
             .OrderByDescending(o => o.Version)
             .FirstAsync(f => f.Type == promptType &&
@@ -141,7 +150,7 @@ public class OpenAiService
             TargetedUserId = targetedUserId
         };
 
-        await using var db = await this._contextFactory.CreateDbContextAsync();
+        await using var db = await contextFactory.CreateDbContextAsync();
 
         await db.AiGenerations.AddAsync(generation);
 
@@ -152,7 +161,7 @@ public class OpenAiService
 
     public async Task<AiGeneration> UpdateAiGeneration(ulong contextId, OpenAiResponse response)
     {
-        await using var db = await this._contextFactory.CreateDbContextAsync();
+        await using var db = await contextFactory.CreateDbContextAsync();
         var existingGeneration = await db.AiGenerations.FirstAsync(f => f.DiscordId == contextId);
 
         existingGeneration.Model = response.Model;
@@ -169,7 +178,7 @@ public class OpenAiService
 
     public async Task<(int amount, bool show, int amountThisWeek)> GetJudgeUsesLeft(User user)
     {
-        await using var db = await this._contextFactory.CreateDbContextAsync();
+        await using var db = await contextFactory.CreateDbContextAsync();
 
         var filterDate = DateTime.UtcNow.Date;
         var generatedToday =
@@ -200,9 +209,42 @@ public class OpenAiService
         }
     }
 
+    public async Task<bool> CheckIfAlbumOffensive(string albumName, string artistName, string imageUrl)
+    {
+        try
+        {
+            Log.Information("Featured: Album offensive check for {Album} by {Artist}, image: {ImageUrl}",
+                albumName, artistName, imageUrl);
+
+            var description = new StringBuilder();
+            if (!string.IsNullOrWhiteSpace(albumName))
+            {
+                description.AppendLine($"Album: {albumName}");
+            }
+            if (!string.IsNullOrWhiteSpace(artistName))
+            {
+                description.AppendLine($"Artist: {artistName}");
+            }
+
+            var response = await SendRequest(
+                "Is this album offensive or NSFW? Consider the album name, the artist name and the cover image. " +
+                "Only reply with 'true' or 'false'.",
+                userMessage: description.Length > 0 ? description.ToString() : null,
+                imageUrl: string.IsNullOrWhiteSpace(imageUrl) ? null : imageUrl);
+
+            var output = response.Output;
+            return output != null && output.Contains("true", StringComparison.OrdinalIgnoreCase);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Feature: Error in OpenAI call");
+            return false;
+        }
+    }
+
     public bool RecapCacheHot(string timePeriod, string lastFmUserName)
     {
-        return this._cache.TryGetValue($"{lastFmUserName}-recap-{timePeriod}", out _);
+        return cache.TryGetValue($"{lastFmUserName}-recap-{timePeriod}", out _);
     }
 
     public async Task<string> GetPlayRecap(string timePeriod, List<UserPlay> userPlays, string lastFmUserName,
@@ -211,12 +253,12 @@ public class OpenAiService
         try
         {
             var cacheKey = $"{lastFmUserName}-recap-{timePeriod}";
-            if (this._cache.TryGetValue(cacheKey, out string cachedResponse))
+            if (cache.TryGetValue(cacheKey, out string cachedResponse))
             {
                 return cachedResponse;
             }
 
-            await using var db = await this._contextFactory.CreateDbContextAsync();
+            await using var db = await contextFactory.CreateDbContextAsync();
             var prompt = await db.AiPrompts
                 .OrderByDescending(o => o.Version)
                 .FirstAsync(f => f.Type == PromptType.Recap);
@@ -284,7 +326,7 @@ public class OpenAiService
                 return null;
             }
 
-            this._cache.Set(cacheKey, response.Output, TimeSpan.FromHours(2));
+            cache.Set(cacheKey, response.Output, TimeSpan.FromHours(2));
 
             return response.Output;
         }
