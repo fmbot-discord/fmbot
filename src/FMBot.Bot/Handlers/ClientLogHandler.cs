@@ -113,7 +113,8 @@ public class ClientLogHandler
     {
         if (!args.IsUnavailable)
         {
-            _ = Task.Run(() => ClientLeftGuild(args));
+            client.Cache.Guilds.TryGetValue(args.GuildId, out var cachedGuild);
+            _ = Task.Run(() => ClientLeftGuild(args, cachedGuild?.Name, cachedGuild?.UserCount));
         }
         return ValueTask.CompletedTask;
     }
@@ -121,7 +122,7 @@ public class ClientLogHandler
     private async Task ClientJoinedGuild(DiscordGuild guild)
     {
         Log.Information(
-            "JoinedGuild: {guildName} / {guildId} | {memberCount} members", guild.Name, guild.Id, guild.ApproximateUserCount);
+            "JoinedGuild: {guildName} / {guildId} | {memberCount} members", guild.Name, guild.Id, guild.UserCount);
 
         var dbGuild = await this._guildService.GetGuildAsync(guild.Id);
         if (dbGuild?.GuildFlags.HasValue == true && dbGuild.GuildFlags.Value.HasFlag(GuildFlags.Banned))
@@ -163,7 +164,7 @@ public class ClientLogHandler
         }
     }
 
-    private async Task ClientLeftGuild(GuildDeleteEventArgs args)
+    private async Task ClientLeftGuild(GuildDeleteEventArgs args, string? guildName, int? memberCount)
     {
         var keepData = false;
 
@@ -187,7 +188,7 @@ public class ClientLogHandler
         if (!keepData)
         {
             Log.Information(
-                "LeftGuild: {guildId}", args.GuildId);
+                "LeftGuild: {guildName} / {guildId} | {memberCount} members", guildName, args.GuildId, memberCount);
 
             ComponentInteractionTracker.RemoveGuild(args.GuildId);
             _ = this._channelToggledCommandService.RemoveToggledCommandsForGuild(args.GuildId);
@@ -197,7 +198,7 @@ public class ClientLogHandler
         else
         {
             Log.Information(
-                "LeftGuild: {guildId} (skipped delete)", args.GuildId);
+                "LeftGuild: {guildName} / {guildId} | {memberCount} members (skipped delete)", guildName, args.GuildId, memberCount);
         }
     }
 }
