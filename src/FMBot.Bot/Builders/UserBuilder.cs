@@ -1479,9 +1479,13 @@ public class UserBuilder
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed
+            ResponseType = ResponseType.ComponentsV2
         };
 
+        var container = response.ComponentsContainer;
+        container.WithAccentColor(DiscordConstants.LastFmColorRed);
+
+        var isSupporter = SupporterService.IsSupporter(userType);
         var hasUsesLeft = usesLeftToday.amount > 0;
 
         var description = new StringBuilder();
@@ -1500,7 +1504,23 @@ public class UserBuilder
             description.AppendLine("Pick using the buttons below..");
         }
 
-        if (!SupporterService.IsSupporter(userType))
+        if (isSupporter)
+        {
+            description.AppendLine();
+
+            if (usesLeftToday.amount is <= 30 and > 0 && usesLeftToday.show)
+            {
+                description.AppendLine($"You can use this command `{usesLeftToday.amount}` more times today.");
+            }
+
+            description.AppendLine("⭐ Supporter perk: Using premium AI model");
+
+            if (!hasUsesLeft)
+            {
+                description.AppendLine("You've run out of command uses for today.");
+            }
+        }
+        else
         {
             if (hasUsesLeft)
             {
@@ -1513,54 +1533,44 @@ public class UserBuilder
             else
             {
                 description.AppendLine();
-                description.Append(
-                    $"You've run out of command uses for today, unfortunately the service we use for this is not free. ");
                 description.AppendLine(
-                    $"[Become a supporter]({Constants.GetSupporterOverviewLink}) to raise your daily limit and to get access to better responses.");
-
-                response.Components = new ActionRowProperties()
-                    .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
-                        customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(
-                            source: "judge-dailylimit"));
-            }
-        }
-        else
-        {
-            description.AppendLine();
-
-            if (usesLeftToday.amount is <= 30 and > 0 && usesLeftToday.show)
-            {
-                description.AppendLine($"You can use this command `{usesLeftToday.amount}` more times today.");
-            }
-
-            description.AppendLine($"⭐ Supporter perk: Using premium AI model");
-
-            if (!hasUsesLeft)
-            {
-                description.AppendLine($"You've run out of command uses for today.");
+                    "You've run out of command uses for today, unfortunately the service we use for this is not free.");
             }
         }
 
         if (!timeSettings.DefaultPicked)
         {
-            response.Embed.WithFooter($"Time period: {timeSettings.Description}");
+            description.AppendLine();
+            description.AppendLine($"-# Time period: {timeSettings.Description}");
         }
 
-        description.AppendLine();
-        description.AppendLine(
-            "-# Keep in mind that music taste is subjective, and that no matter what this command or anyone else says you're free to like whatever artist you want.");
-
-        response.Embed.WithDescription(description.ToString());
+        container.WithTextDisplay(description.ToString());
 
         if (hasUsesLeft)
         {
-            response.Components = new ActionRowProperties()
+            container.AddComponents(new ActionRowProperties()
                 .WithButton("Compliment", emote: EmojiProperties.Standard("🙂"), style: ButtonStyle.Primary,
                     customId:
                     $"{InteractionConstants.Judge}:{timeSettings.Description}:compliment:{userSettings.DiscordUserId}:{context.DiscordUser.Id}")
                 .WithButton("Roast", emote: EmojiProperties.Standard("🔥"), style: ButtonStyle.Primary,
                     customId:
-                    $"{InteractionConstants.Judge}:{timeSettings.Description}:roast:{userSettings.DiscordUserId}:{context.DiscordUser.Id}");
+                    $"{InteractionConstants.Judge}:{timeSettings.Description}:roast:{userSettings.DiscordUserId}:{context.DiscordUser.Id}"));
+        }
+
+        if (!isSupporter)
+        {
+            container.WithSeparator();
+            container.AddComponents(new ComponentSectionProperties(new ButtonProperties(
+                InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "judge", expandWithPerks: true),
+                "Get supporter", ButtonStyle.Secondary))
+            {
+                Components =
+                [
+                    new TextDisplayProperties(
+                        "⭐ Become a supporter for better judgements\n" +
+                        "-# Unlocks an improved model with better output and a higher daily usage limit")
+                ]
+            });
         }
 
         return response;
@@ -1573,27 +1583,38 @@ public class UserBuilder
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed
+            ResponseType = ResponseType.ComponentsV2
         };
 
         var commandUsesLeft = await this._openAiService.GetJudgeUsesLeft(context.ContextUser);
 
         if (commandUsesLeft.amount <= 0)
         {
-            var description = new StringBuilder();
+            var container = response.ComponentsContainer;
+            container.WithAccentColor(DiscordConstants.LastFmColorRed);
+
             if (context.ContextUser.UserType == UserType.User)
             {
-                description.Append(
-                    $"You've run out of command uses for today, unfortunately the service we use for this is not free. ");
-                description.AppendLine(
-                    $"[Become a supporter]({Constants.GetSupporterDiscordLink}) to raise your daily limit and the possibility to use the command on others.");
+                container.WithTextDisplay(
+                    "You've run out of command uses for today, unfortunately the service we use for this is not free.");
+                container.WithSeparator();
+                container.AddComponents(new ComponentSectionProperties(new ButtonProperties(
+                    InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "judge-dailylimit"),
+                    Constants.GetSupporterButton, ButtonStyle.Primary))
+                {
+                    Components =
+                    [
+                        new TextDisplayProperties(
+                            "⭐ Become a supporter for better judgements\n" +
+                            "-# Unlocks an improved model with better output and a higher daily usage limit")
+                    ]
+                });
             }
             else
             {
-                description.Append($"You've run out of command uses for today. ");
+                container.WithTextDisplay("You've run out of command uses for today.");
             }
 
-            response.Embed.WithDescription(description.ToString());
             response.CommandResponse = CommandResponse.Cooldown;
             return response;
         }
@@ -1615,14 +1636,15 @@ public class UserBuilder
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed
+            ResponseType = ResponseType.ComponentsV2
         };
 
-        var supporter = context.ContextUser.UserType != UserType.User;
+        var container = response.ComponentsContainer;
+        container.WithAccentColor(new Color(186, 237, 169));
 
+        var supporter = context.ContextUser.UserType != UserType.User;
         var enhanced = supporter ? " - Premium model ⭐" : null;
-        response.Embed.WithAuthor($"{userSettings.DisplayName}'s .fmbot AI judgement - Compliment 🙂{enhanced}");
-        response.Embed.WithColor(new Color(186, 237, 169));
+        container.WithTextDisplay($"### {userSettings.DisplayName}'s .fmbot judgement - Compliment 🙂{enhanced}");
 
         await this._openAiService.StoreAiGeneration(context.InteractionId, context.ContextUser.UserId,
             userSettings.DifferentUser ? userSettings.UserId : null);
@@ -1633,14 +1655,14 @@ public class UserBuilder
 
         if (openAiResponse.Output == null)
         {
-            response.Embed.WithDescription($"<:404:882220605783560222> OpenAI API error - please try again");
+            container.WithTextDisplay("<:404:882220605783560222> OpenAI API error - please try again");
             return response;
         }
 
         var aiGeneration =
             await this._openAiService.UpdateAiGeneration(context.InteractionId, openAiResponse);
 
-        response.Embed.WithDescription(aiGeneration.Output);
+        container.WithTextDisplay(aiGeneration.Output);
 
         return response;
     }
@@ -1650,13 +1672,15 @@ public class UserBuilder
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed
+            ResponseType = ResponseType.ComponentsV2
         };
+
+        var container = response.ComponentsContainer;
+        container.WithAccentColor(new Color(255, 122, 1));
 
         var supporter = context.ContextUser.UserType != UserType.User;
         var enhanced = supporter ? " - Premium model ⭐" : null;
-        response.Embed.WithAuthor($"{userSettings.DisplayName}'s .fmbot AI judgement - Roast 🔥{enhanced}");
-        response.Embed.WithColor(new Color(255, 122, 1));
+        container.WithTextDisplay($"### {userSettings.DisplayName}'s .fmbot AI judgement - Roast 🔥{enhanced}");
 
         await this._openAiService.StoreAiGeneration(context.InteractionId, context.ContextUser.UserId,
             userSettings.DifferentUser ? userSettings.UserId : null);
@@ -1667,14 +1691,14 @@ public class UserBuilder
 
         if (openAiResponse.Output == null)
         {
-            response.Embed.WithDescription($"<:404:882220605783560222> OpenAI API error - please try again");
+            container.WithTextDisplay("<:404:882220605783560222> OpenAI API error - please try again");
             return response;
         }
 
         var aiGeneration =
             await this._openAiService.UpdateAiGeneration(context.InteractionId, openAiResponse);
 
-        response.Embed.WithDescription(aiGeneration.Output);
+        container.WithTextDisplay(aiGeneration.Output);
 
         return response;
     }

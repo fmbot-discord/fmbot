@@ -1156,32 +1156,31 @@ public class UserInteractions(
             }
 
             await RespondAsync(InteractionCallback.DeferredModifyMessage);
-            await this.Context.DisableInteractionButtons();
 
             var contextUser = await userService.GetFullUserAsync(requesterDiscordUserId);
             var userSettings = await settingService.GetOriginalContextUser(
                 discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
 
             var descriptor = userSettings.DifferentUser ? $"**{userSettings.DisplayName}**'s" : "your";
-            EmbedProperties loaderEmbed;
+            var loaderContainer = new ComponentContainerProperties();
             if (result == "compliment")
             {
-                loaderEmbed = new EmbedProperties()
-                    .WithDescription($"<a:loading:821676038102056991> Loading {descriptor} compliment...")
-                    .WithColor(new Color(186, 237, 169));
+                loaderContainer.WithAccentColor(new Color(186, 237, 169));
+                loaderContainer.WithTextDisplay(
+                    $"<a:loading:821676038102056991> Loading {descriptor} compliment...");
             }
             else
             {
-                loaderEmbed = new EmbedProperties()
-                    .WithDescription(
-                        $"<a:loading:821676038102056991> Loading {descriptor} roast (don't take it personally)...")
-                    .WithColor(new Color(255, 122, 1));
+                loaderContainer.WithAccentColor(new Color(255, 122, 1));
+                loaderContainer.WithTextDisplay(
+                    $"<a:loading:821676038102056991> Loading {descriptor} roast (don't take it personally)...");
             }
 
             await this.Context.Interaction.ModifyResponseAsync(e =>
             {
-                e.Embeds = [loaderEmbed];
-                e.Components = [];
+                e.Flags = MessageFlags.IsComponentsV2;
+                e.Components = [loaderContainer];
+                e.Embeds = [];
             });
 
             var timeSettings = SettingService.GetTimePeriod(timeOption, TimePeriod.AllTime);
@@ -1214,15 +1213,16 @@ public class UserInteractions(
 
             if (topArtists == null || !topArtists.Any() || topTracks == null || !topTracks.Any())
             {
-                var embed = new EmbedProperties();
-                embed.WithColor(DiscordConstants.LastFmColorRed);
-                embed.WithDescription(
-                    $"Sorry, you or the user you're searching for don't have any top artists or top tracks in the selected time period.");
+                var errorContainer = new ComponentContainerProperties();
+                errorContainer.WithAccentColor(DiscordConstants.LastFmColorRed);
+                errorContainer.WithTextDisplay(
+                    "Sorry, you or the user you're searching for don't have any top artists or top tracks in the selected time period.");
                 await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoScrobbles }, userService);
                 await this.Context.Interaction.ModifyResponseAsync(e =>
                 {
-                    e.Embeds = [embed];
-                    e.Components = [];
+                    e.Flags = MessageFlags.IsComponentsV2;
+                    e.Components = [errorContainer];
+                    e.Embeds = [];
                 });
                 return;
             }
@@ -1233,8 +1233,9 @@ public class UserInteractions(
 
             await this.Context.Interaction.ModifyResponseAsync(e =>
             {
-                e.Embeds = [response.Embed];
-                e.Components = [];
+                e.Flags = MessageFlags.IsComponentsV2;
+                e.Components = response.GetComponentsV2() ?? [];
+                e.Embeds = [];
             });
 
             await this.Context.LogCommandUsedAsync(response, userService);
