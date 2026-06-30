@@ -294,7 +294,7 @@ public class AdminInteractions(
 
         var userInfo = await dataSourceFactory.GetLfmUserInfoAsync(report.UserNameLastFM);
         DateTimeOffset? age = null;
-        if (userInfo != null && userInfo.Subscriber)
+        if (userInfo is { Subscriber: true })
         {
             age = DateTimeOffset.FromUnixTimeSeconds(userInfo.RegisteredUnix);
         }
@@ -339,7 +339,7 @@ public class AdminInteractions(
 
         var userInfo = await dataSourceFactory.GetLfmUserInfoAsync(filteredUser.UserNameLastFm);
         DateTimeOffset? age = null;
-        if (userInfo != null && userInfo.Subscriber)
+        if (userInfo is { Subscriber: true })
         {
             age = DateTimeOffset.FromUnixTimeSeconds(userInfo.RegisteredUnix);
         }
@@ -551,6 +551,7 @@ public class AdminInteractions(
         var components =
             new ActionRowProperties().WithButton($"Marked NSFW by {this.Context.Interaction.User.Username}", customId: "1",
                 url: null, disabled: true, style: ButtonStyle.Success);
+        CensorService.AddReportImageButtons(components, report);
         await message.ModifyAsync(m => m.Components = [components]);
     }
 
@@ -619,6 +620,7 @@ public class AdminInteractions(
         var components =
             new ActionRowProperties().WithButton($"Marked Censored by {this.Context.Interaction.User.Username}",
                 customId: "1", url: null, disabled: true, style: ButtonStyle.Success);
+        CensorService.AddReportImageButtons(components, report);
         await message.ModifyAsync(m => m.Components = [components]);
     }
 
@@ -660,6 +662,7 @@ public class AdminInteractions(
         var components =
             new ActionRowProperties().WithButton($"Denied by {this.Context.Interaction.User.Username}", customId: "1",
                 url: null, disabled: true, style: ButtonStyle.Danger);
+        CensorService.AddReportImageButtons(components, report);
         await message.ModifyAsync(m => m.Components = [components]);
     }
 

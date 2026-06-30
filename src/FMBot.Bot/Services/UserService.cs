@@ -1195,6 +1195,11 @@ public class UserService
         {
             var option = options[index];
 
+            if (string.IsNullOrWhiteSpace(option))
+            {
+                continue;
+            }
+
             if (lineLength == 0)
             {
                 footer.Append(prefix);

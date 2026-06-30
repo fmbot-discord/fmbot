@@ -242,6 +242,8 @@ public class CensorService
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
         return await db.CensoredMusicReport
+            .Include(f => f.Album)
+            .Include(f => f.Artist)
             .FirstOrDefaultAsync(f => f.Id == id);
     }
 
@@ -396,25 +398,7 @@ public class CensorService
                 .WithButton("Censor", $"censor-report-mark-censored:{report.Id}", style: ButtonStyle.Success)
                 .WithButton("Deny", $"censor-report-deny:{report.Id}", style: ButtonStyle.Danger);
 
-            if (!report.IsArtist)
-            {
-                embed.AddField("Album", $"`{report.AlbumName}`");
-                if (report.Album?.LastfmImageUrl != null)
-                {
-                    components.WithButton("Last.fm image", url: report.Album.LastfmImageUrl, row: 1);
-                }
-                if (report.Album?.SpotifyImageUrl != null)
-                {
-                    components.WithButton("Spotify image", url: report.Album.SpotifyImageUrl, row: 1);
-                }
-            }
-            else
-            {
-                if (report.Artist?.SpotifyImageUrl != null)
-                {
-                    components.WithButton("Spotify image", url: report.Artist.SpotifyImageUrl, row: 1);
-                }
-            }
+            AddReportImageButtons(components, report, embed);
 
             if (!string.IsNullOrWhiteSpace(report.ProvidedNote))
             {
@@ -435,6 +419,29 @@ public class CensorService
         {
             Log.Error(e, "Error posting censored music report {ReportId}", report.Id);
             throw;
+        }
+    }
+
+    public static void AddReportImageButtons(ActionRowProperties components, CensoredMusicReport report, EmbedProperties embed = null)
+    {
+        if (!report.IsArtist)
+        {
+            embed?.AddField("Album", $"`{report.AlbumName}`");
+            if (report.Album?.LastfmImageUrl != null)
+            {
+                components.WithButton("Last.fm image", url: report.Album.LastfmImageUrl, row: 1);
+            }
+            if (report.Album?.SpotifyImageUrl != null)
+            {
+                components.WithButton("Spotify image", url: report.Album.SpotifyImageUrl, row: 1);
+            }
+        }
+        else
+        {
+            if (report.Artist?.SpotifyImageUrl != null)
+            {
+                components.WithButton("Spotify image", url: report.Artist.SpotifyImageUrl, row: 1);
+            }
         }
     }
 
