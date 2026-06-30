@@ -120,6 +120,8 @@ public class PlayCommands(
     [Summary("Shows you or someone else's current track")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks)]
+    [SupporterEnhanced(
+        "Supporters can customize their fm with custom embed colors, extra buttons and more footer options. Use the `fmmode` command to configure it.")]
     public async Task NowPlayingAsync([CommandParameter(Remainder = true)] string options = null)
     {
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
