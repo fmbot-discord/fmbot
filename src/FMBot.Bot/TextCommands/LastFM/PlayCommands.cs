@@ -513,7 +513,7 @@ public class PlayCommands(
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Albums, CommandCategory.Artists, CommandCategory.Tracks)]
     [SupporterEnhanced(
-        "Streaks for non-supporters are limited to 25k plays, due to the bot not caching plays beyond this limit for free users")]
+        "Streaks for non-supporters are limited to 15k plays, due to the bot not caching plays beyond this limit for free users")]
     public async Task StreakAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         _ = this.Context.Channel?.TriggerTypingAsync()!;

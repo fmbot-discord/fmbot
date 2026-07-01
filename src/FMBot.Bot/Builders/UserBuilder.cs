@@ -1568,7 +1568,7 @@ public class UserBuilder
                 [
                     new TextDisplayProperties(
                         "⭐ Become a supporter for better judgements\n" +
-                        "-# Unlocks an improved model with better output and a higher daily usage limit")
+                        "-# Unlocks a better model and other perks for more insights into your music taste")
                 ]
             });
         }
