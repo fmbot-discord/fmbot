@@ -295,33 +295,47 @@ public class SupporterService
     {
         try
         {
-            var goodbyeEmbed = new EmbedProperties();
-            goodbyeEmbed.WithColor(DiscordConstants.InformationColorBlue);
+            var container = new ComponentContainerProperties
+            {
+                AccentColor = DiscordConstants.InformationColorBlue
+            };
 
-            goodbyeEmbed.AddField("⭐ .fmbot supporter expired",
-                "Your .fmbot supporter subscription has expired. Sorry to see you go!\n\n" +
-                "Thanks for having supported the bot! Feel free to open a thread in #help on [our server](https://discord.gg/fmbot) if you have any feedback.");
+            var intro = new StringBuilder();
+            intro.AppendLine("### ⭐ .fmbot supporter expired");
+            intro.AppendLine("Your .fmbot supporter has ended. Thanks for supporting the bot and helping keep it running.");
+            intro.AppendLine();
+            intro.Append("Have any feedback? Feel free to open a thread in #help on [our server](https://discord.gg/fmbot).");
+            container.AddComponent(new TextDisplayProperties(intro.ToString()));
 
             if (hadImported)
             {
-                goodbyeEmbed.AddField($"{EmojiProperties.Custom(DiscordConstants.Imports).ToDiscordString("imports")} Importing service deactivated",
-                    "The import service is no longer active, so the bot will now only use your Last.fm stats without imported .fmbot data. Your imports are, however, saved and will be available again if you resubscribe in the future.");
+                container.AddComponent(new ComponentSeparatorProperties());
+                var imports = new StringBuilder();
+                imports.AppendLine($"### {EmojiProperties.Custom(DiscordConstants.Imports).ToDiscordString("imports")} Importing service deactivated");
+                imports.Append("The importing service is no longer active, so the bot will now only use your Last.fm stats without imported .fmbot data. Your imports are, however, saved and will be available again if you resubscribe in the future.");
+                container.AddComponent(new TextDisplayProperties(imports.ToString()));
             }
 
-            var buttons = new ActionRowProperties()
-                .WithButton("Resubscribe", style: ButtonStyle.Secondary,
-                    customId: InteractionConstants.SupporterLinks
-                        .GeneratePurchaseButtons(source: "goodbye-resubscribe"))
-                .WithButton("Support server", url: "https://discord.gg/fmbot");
+            container.AddComponent(new ComponentSeparatorProperties());
+            var yearly = new StringBuilder();
+            yearly.AppendLine("### 🏷️ Save 50% with yearly");
+            yearly.Append("Resubscribe on the yearly plan and save 50% compared to paying monthly.");
+            container.AddComponent(new TextDisplayProperties(yearly.ToString()));
 
-            goodbyeEmbed.AddField("🏷️ Annual deal",
-                "Resubscribe and save 50% on .fmbot supporter with our new yearly option.");
+            container.AddComponent(new ComponentSeparatorProperties());
+            container.AddComponent(new ActionRowProperties()
+                .AddComponents(new ButtonProperties(
+                    InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "goodbye-resubscribe"),
+                    "Resubscribe", ButtonStyle.Primary))
+                .AddComponents(new LinkButtonProperties(
+                    "https://discord.gg/fmbot", "Support server")));
 
             var dmChannel = await discordUser.GetDMChannelAsync();
             await dmChannel.SendMessageAsync(new MessageProperties
             {
-                Embeds = [goodbyeEmbed],
-                Components = [buttons]
+                Components = [container],
+                Flags = MessageFlags.IsComponentsV2,
+                AllowedMentions = AllowedMentionsProperties.None
             });
         }
         catch (Exception e)
