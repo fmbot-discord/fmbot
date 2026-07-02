@@ -120,14 +120,12 @@ public static partial class StringExtensions
         "\\",
         "*",
         "_",
-        "~",
         "`",
-        ":",
-        "/",
         ">",
-        "|",
-        "#",
     };
+
+    [GeneratedRegex(@"^(#{1,3}|-#)(?= )", RegexOptions.Multiline)]
+    private static partial Regex LineStartMarkdownRegex();
 
     public static string Sanitize(string text)
     {
@@ -137,6 +135,10 @@ public static partial class StringExtensions
             {
                 text = text.Replace(sensitiveCharacter, "\\" + sensitiveCharacter);
             }
+
+            text = text.Replace("~~", "\\~\\~");
+            text = text.Replace("||", "\\|\\|");
+            text = LineStartMarkdownRegex().Replace(text, @"\$1");
         }
 
         return text;
