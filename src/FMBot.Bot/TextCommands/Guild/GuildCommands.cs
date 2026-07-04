@@ -49,8 +49,12 @@ public class GuildCommands(
         try
         {
             var channelPermissions = await GuildService.GetChannelPermissionsAsync(this.Context);
+
+            var context = new ContextModel(this.Context, prfx, contextUser);
+            var availableTabs = await guildSettingBuilder.GetAvailableSettingsTabs(context);
+
             var response =
-                await guildSettingBuilder.GetGuildSettings(new ContextModel(this.Context, prfx, contextUser), channelPermissions);
+                await guildSettingBuilder.GetGuildSettings(context, channelPermissions, availableTabs);
 
             await this.Context.SendResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);

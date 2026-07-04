@@ -299,11 +299,6 @@ public class GuildService
         return guildPermissions;
     }
 
-    public static Permissions GetChannelPermissions(ApplicationCommandContext context)
-    {
-        return context.Interaction.AppPermissions;
-    }
-
     public async Task ChangeGuildAllowedRoles(NetCord.Gateway.Guild discordGuild, ulong[] allowedRoles)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();

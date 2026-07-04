@@ -29,6 +29,7 @@ public class UserCommands(
     FmSettingService fmSettingService,
     IOptions<BotSettings> botSettings,
     UserBuilder userBuilder,
+    GuildSettingBuilder guildSettingBuilder,
     InteractiveService interactivity,
     OpenAiService openAiService,
     TimerService timerService,
@@ -38,7 +39,7 @@ public class UserCommands(
     private InteractiveService Interactivity { get; } = interactivity;
 
     [Command("settings", "userconfig", "usersettings", "usersetting", "setting")]
-    [Summary("Your user settings in .fmbot")]
+    [Summary("Your user settings and server configuration in .fmbot")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.UserSettings)]
     public async Task UserSettingsAsync([CommandParameter(Remainder = true)] string searchValues = null)
@@ -50,7 +51,10 @@ public class UserCommands(
 
         try
         {
-            var response = UserBuilder.GetUserSettings(new ContextModel(this.Context, prfx, contextUser));
+            var context = new ContextModel(this.Context, prfx, contextUser);
+            var availableTabs = await guildSettingBuilder.GetAvailableSettingsTabs(context);
+
+            var response = UserBuilder.GetUserSettings(context, availableTabs);
 
             await this.Context.SendResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);

@@ -19,38 +19,64 @@ using NetCord;
 using NetCord.Gateway;
 using NetCord.Rest;
 using NetCord.Services;
-using FMBot.Bot.Extensions;
 
 namespace FMBot.Bot.Builders;
 
-public class GuildSettingBuilder
+public class GuildSettingBuilder(GuildService guildService, IOptions<BotSettings> botSettings, AdminService adminService, ShardedGatewayClient client)
 {
-    private readonly GuildService _guildService;
-    private readonly BotSettings _botSettings;
-    private readonly AdminService _adminService;
-    private readonly ShardedGatewayClient _client;
+    private readonly BotSettings _botSettings = botSettings.Value;
 
-    public GuildSettingBuilder(GuildService guildService, IOptions<BotSettings> botSettings, AdminService adminService, ShardedGatewayClient client)
+    public async Task<List<SettingsTab>> GetAvailableSettingsTabs(ContextModel context)
     {
-        this._guildService = guildService;
-        this._adminService = adminService;
-        this._botSettings = botSettings.Value;
-        this._client = client;
+        var tabs = new List<SettingsTab> { SettingsTab.User };
+
+        if (context.DiscordGuild != null &&
+            context.DiscordUser is PartialGuildUser &&
+            await guildService.GetGuildAsync(context.DiscordGuild.Id) != null &&
+            await UserIsAllowed(context))
+        {
+            tabs.Add(SettingsTab.Server);
+        }
+
+        return tabs;
     }
 
-    public async Task<ResponseModel> GetGuildSettings(ContextModel context, Permissions channelPermissions)
+    public static ActionRowProperties BuildSettingsTabRow(List<SettingsTab> availableTabs, SettingsTab activeTab,
+        ulong discordUserId)
+    {
+        var tabRow = new ActionRowProperties();
+        foreach (var tab in availableTabs)
+        {
+            var isActive = tab == activeTab;
+            tabRow.WithButton(
+                tab.GetAttribute<OptionAttribute>().Name,
+                customId: $"{InteractionConstants.Settings.Tab}:{(int)tab}:{discordUserId}",
+                style: isActive ? ButtonStyle.Primary : ButtonStyle.Secondary,
+                disabled: isActive);
+        }
+
+        return tabRow;
+    }
+
+    public async Task<ResponseModel> GetGuildSettings(ContextModel context, Permissions channelPermissions,
+        List<SettingsTab> availableTabs = null)
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed
+            ResponseType = ResponseType.ComponentsV2
         };
 
-        var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
-        var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
+        var guild = await guildService.GetGuildAsync(context.DiscordGuild.Id);
+        var guildUsers = await guildService.GetGuildUsers(context.DiscordGuild.Id);
 
-        response.Embed.WithTitle($".fmbot server configuration - {guild.Name}");
-        response.Embed.WithFooter($"{guild.DiscordGuildId}\n" +
-                                  $"Use '{context.Prefix}settings' for personal .fmbot settings");
+        var showTabRow = availableTabs is { Count: > 1 };
+
+        var container = response.ComponentsContainer;
+        container.WithAccentColor(DiscordConstants.InformationColorBlue);
+
+        container.WithTextDisplay($"## .fmbot server settings — {guild.Name}");
+
+        container.WithSeparator();
 
         var settings = new StringBuilder();
 
@@ -64,7 +90,7 @@ public class GuildSettingBuilder
             settings.Append($"`{this._botSettings.Bot.Prefix}` (default)");
         }
 
-        settings.AppendLine();
+        container.WithTextDisplay(settings.ToString());
 
         var whoKnowsSettings = new StringBuilder();
 
@@ -80,7 +106,7 @@ public class GuildSettingBuilder
             whoKnowsSettings.AppendLine("There is no activity requirement set for being visible.");
         }
 
-        response.Embed.AddField("WhoKnows settings", whoKnowsSettings.ToString());
+        container.WithTextDisplay($"**WhoKnows settings**\n{whoKnowsSettings}");
 
         var crownSettings = new StringBuilder();
         if (guild.CrownsDisabled == true)
@@ -118,7 +144,7 @@ public class GuildSettingBuilder
             }
         }
 
-        response.Embed.AddField("Crown settings", crownSettings.ToString());
+        container.WithTextDisplay($"**Crown settings**\n{crownSettings}");
 
         var emoteReactions = new StringBuilder();
         if (guild.EmoteReactions == null || !guild.EmoteReactions.Any())
@@ -134,7 +160,7 @@ public class GuildSettingBuilder
             }
         }
 
-        response.Embed.AddField("Emote reactions", emoteReactions.ToString());
+        container.WithTextDisplay($"**Emote reactions**\n{emoteReactions}");
 
         if (guild.DisabledCommands != null && guild.DisabledCommands.Any())
         {
@@ -145,10 +171,8 @@ public class GuildSettingBuilder
                 disabledCommands.Append($"`{disabledCommand}` ");
             }
 
-            response.Embed.AddField("Server-wide disabled commands", disabledCommands.ToString());
+            container.WithTextDisplay($"**Server-wide disabled commands**\n{disabledCommands}");
         }
-
-        response.Embed.WithDescription(settings.ToString());
 
         var missingPermissions = new StringBuilder();
         if (!channelPermissions.HasFlag(Permissions.SendMessages))
@@ -180,8 +204,17 @@ public class GuildSettingBuilder
         {
             missingPermissions.AppendLine();
             missingPermissions.AppendLine("These are missing in this channel. We recommend granting them server-wide via `Server Settings` > `Roles` so all .fmbot commands work everywhere.");
-            response.Embed.AddField("Missing permissions in this channel", missingPermissions.ToString());
+            container.WithTextDisplay($"**Missing permissions in this channel**\n{missingPermissions}");
         }
+
+        var footer = new StringBuilder();
+        footer.Append($"-# {guild.DiscordGuildId}");
+        if (!showTabRow)
+        {
+            footer.Append($"\n-# Use '{context.Prefix}settings' for personal .fmbot settings");
+        }
+
+        container.WithTextDisplay(footer.ToString());
 
         var guildSettings = new StringMenuProperties(InteractionConstants.GuildSetting)
             .WithPlaceholder("Select setting you want to change")
@@ -196,9 +229,12 @@ public class GuildSettingBuilder
             guildSettings.AddOption(name, $"gs-view-{value}", description: description);
         }
 
-        response.StringMenus.Add(guildSettings);
+        container.AddComponents(guildSettings);
 
-        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+        if (showTabRow)
+        {
+            container.WithActionRow(BuildSettingsTabRow(availableTabs, SettingsTab.Server, context.DiscordUser.Id));
+        }
 
         return response;
     }
@@ -214,7 +250,7 @@ public class GuildSettingBuilder
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
         var description = new StringBuilder();
-        var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
+        var guild = await guildService.GetGuildAsync(context.DiscordGuild.Id);
 
         var prefix = guild.Prefix ?? this._botSettings.Bot.Prefix;
 
@@ -272,7 +308,7 @@ public class GuildSettingBuilder
         description.AppendLine("This filtering applies to all server-wide commands.");
         description.AppendLine();
 
-        var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
+        var guild = await guildService.GetGuildAsync(context.DiscordGuild.Id);
 
         var components = new ActionRowProperties();
 
@@ -318,7 +354,7 @@ public class GuildSettingBuilder
             $"A user counts as active as soon as they use the bot anywhere.");
         description.AppendLine();
 
-        var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
+        var guild = await guildService.GetGuildAsync(context.DiscordGuild.Id);
         var crownsDisabled = guild.CrownsDisabled == true;
 
         var components = new ActionRowProperties();
@@ -374,7 +410,7 @@ public class GuildSettingBuilder
                                $"but you can customize that amount in this command.");
         description.AppendLine();
 
-        var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
+        var guild = await guildService.GetGuildAsync(context.DiscordGuild.Id);
         var crownsDisabled = guild.CrownsDisabled == true;
 
         var components = new ActionRowProperties();
@@ -422,7 +458,7 @@ public class GuildSettingBuilder
         response.Embed.WithTitle("Crownseeder");
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
-        var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
+        var guild = await guildService.GetGuildAsync(context.DiscordGuild.Id);
         var crownsDisabled = guild.CrownsDisabled == true;
 
         var description = new StringBuilder();
@@ -477,7 +513,7 @@ public class GuildSettingBuilder
         response.Embed.WithTitle("Crownseeder");
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
-        var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
+        var guild = await guildService.GetGuildAsync(context.DiscordGuild.Id);
         var prefix = guild.Prefix ?? this._botSettings.Bot.Prefix;
 
         var description = new StringBuilder();
@@ -511,14 +547,14 @@ public class GuildSettingBuilder
             return true;
         }
 
-        if (await this._adminService.HasCommandAccessAsync(context.DiscordUser, UserType.Admin))
+        if (await adminService.HasCommandAccessAsync(context.DiscordUser, UserType.Admin))
         {
             return true;
         }
 
         if (managersAllowed)
         {
-            var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
+            var guild = await guildService.GetGuildAsync(context.DiscordGuild.Id);
             if (guild.BotManagementRoles != null &&
                 guild.BotManagementRoles.Any() &&
                 guildUser.RoleIds.Any(a => guild.BotManagementRoles.Contains(a)))
@@ -564,9 +600,9 @@ public class GuildSettingBuilder
             ResponseType = ResponseType.Paginator,
         };
 
-        var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
+        var guild = await guildService.GetGuildAsync(context.DiscordGuild.Id);
         var prefix = guild.Prefix ?? this._botSettings.Bot.Prefix;
-        var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
+        var guildUsers = await guildService.GetGuildUsers(context.DiscordGuild.Id);
 
         var footer = new StringBuilder();
 
@@ -660,7 +696,7 @@ public class GuildSettingBuilder
             ResponseType = ResponseType.Embed,
         };
 
-        var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
+        var guild = await guildService.GetGuildAsync(context.DiscordGuild.Id);
 
         var fmType = new StringMenuProperties(InteractionConstants.FmGuildSettingType)
             .WithPlaceholder("Forced server 'fm' mode")
@@ -745,7 +781,7 @@ public class GuildSettingBuilder
         response.Embed.WithTitle($"Toggle server commands - {context.DiscordGuild.Name}");
         response.Embed.WithFooter("Commands disabled here will be disabled throughout the whole server");
 
-        var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
+        var guild = await guildService.GetGuildAsync(context.DiscordGuild.Id);
         var currentlyDisabled = new StringBuilder();
 
         var currentDisabledCommands = guild?.DisabledCommands?.ToList();
@@ -811,7 +847,7 @@ public class GuildSettingBuilder
         ulong nextChannelId = 0;
         ulong nextCategoryId = 0;
 
-        var channel = await this._guildService.GetChannel(selectedChannel.Id);
+        var channel = await guildService.GetChannel(selectedChannel.Id);
         var botDisabled = channel?.BotDisabled == true;
 
         for (var i = 0; i < categories.Count; i++)
@@ -1022,10 +1058,10 @@ public class GuildSettingBuilder
 
         if (disabled.HasValue)
         {
-            await this._guildService.ToggleCrownsAsync(context.DiscordGuild, disabled.Value);
+            await guildService.ToggleCrownsAsync(context.DiscordGuild, disabled.Value);
         }
 
-        var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
+        var guild = await guildService.GetGuildAsync(context.DiscordGuild.Id);
         var crownsDisabled = guild.CrownsDisabled == true;
 
         var description = new StringBuilder();
@@ -1065,7 +1101,7 @@ public class GuildSettingBuilder
             return missing;
         }
 
-        var botUserId = this._client.GetCurrentUser()?.Id;
+        var botUserId = client.GetCurrentUser()?.Id;
         if (!botUserId.HasValue || !guild.Users.TryGetValue(botUserId.Value, out var botUser))
         {
             return missing;

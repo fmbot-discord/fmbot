@@ -24,6 +24,11 @@ public static class InteractionConstants
     public const string GuildSetting = "guild-setting-picker";
     public const string UserSetting = "user-setting-picker";
 
+    public static class Settings
+    {
+        public const string Tab = "settings-tab";
+    }
+
     public const string FmPrivacySetting = "fm-gwk-privacy";
 
     public static class Discogs
