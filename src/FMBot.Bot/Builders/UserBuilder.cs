@@ -93,12 +93,14 @@ public class UserBuilder
         this._botSettings = botSettings.Value;
     }
 
-    public static ResponseModel GetUserSettings(ContextModel context)
+    public static ResponseModel GetUserSettings(ContextModel context, List<SettingsTab> availableTabs = null)
     {
         var response = new ResponseModel
         {
             ResponseType = ResponseType.ComponentsV2,
         };
+
+        var showTabRow = availableTabs is { Count: > 1 };
 
         var container = response.ComponentsContainer;
         container.WithAccentColor(DiscordConstants.InformationColorBlue);
@@ -108,8 +110,6 @@ public class UserBuilder
         container.WithSeparator();
         container.WithTextDisplay(
             $"Connected with Last.fm account [{context.ContextUser.UserNameLastFM}]({LastfmUrlExtensions.GetUserUrl(context.ContextUser.UserNameLastFM)}). Use `/login` to change.");
-        container.WithTextDisplay($"For server-wide settings, use `{context.Prefix}configuration`.");
-
 
         var settingsMenu = new StringMenuProperties(InteractionConstants.UserSetting)
             .WithPlaceholder("Select setting to view or change")
@@ -128,6 +128,12 @@ public class UserBuilder
         }
 
         container.AddComponents(settingsMenu);
+
+        if (showTabRow)
+        {
+            container.WithActionRow(
+                GuildSettingBuilder.BuildSettingsTabRow(availableTabs, SettingsTab.User, context.DiscordUser.Id));
+        }
 
         return response;
     }

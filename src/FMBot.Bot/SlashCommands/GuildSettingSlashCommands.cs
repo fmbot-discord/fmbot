@@ -25,30 +25,6 @@ public class GuildSettingSlashCommands(
 {
     private InteractiveService Interactivity { get; } = interactivity;
 
-    [SlashCommand("configuration", "Server configuration for .fmbot",
-        Contexts = [InteractionContextType.Guild],
-        IntegrationTypes = [ApplicationIntegrationType.GuildInstall])]
-    [RequiresIndex]
-    public async Task ServerSettingsAsync()
-    {
-        try
-        {
-            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
-            var channelPermissions = GuildService.GetChannelPermissions(this.Context);
-
-            var response =
-                await guildSettingBuilder.GetGuildSettings(new ContextModel(this.Context, contextUser),
-                    channelPermissions);
-
-            await this.Context.SendResponse(this.Interactivity, response, userService);
-            await this.Context.LogCommandUsedAsync(response, userService);
-        }
-        catch (Exception e)
-        {
-            await this.Context.HandleCommandException(e, userService);
-        }
-    }
-
     [SlashCommand("members", "Members in this server that use .fmbot",
         Contexts = [InteractionContextType.Guild],
         IntegrationTypes = [ApplicationIntegrationType.GuildInstall])]

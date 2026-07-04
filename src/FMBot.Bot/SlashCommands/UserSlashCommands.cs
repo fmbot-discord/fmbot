@@ -26,6 +26,7 @@ public class UserSlashCommands(
     UserService userService,
     GuildService guildService,
     UserBuilder userBuilder,
+    GuildSettingBuilder guildSettingBuilder,
     SettingService settingService,
     OpenAiService openAiService,
     TimerService timerService,
@@ -35,7 +36,7 @@ public class UserSlashCommands(
 {
     private InteractiveService Interactivity { get; } = interactivity;
 
-    [SlashCommand("settings", "Your user settings in .fmbot", Contexts =
+    [SlashCommand("settings", "Your user settings and server configuration in .fmbot", Contexts =
     [
         InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,
         InteractionContextType.Guild
@@ -51,7 +52,10 @@ public class UserSlashCommands(
         {
             var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
-            var response = UserBuilder.GetUserSettings(new ContextModel(this.Context, contextUser));
+            var context = new ContextModel(this.Context, contextUser);
+            var availableTabs = await guildSettingBuilder.GetAvailableSettingsTabs(context);
+
+            var response = UserBuilder.GetUserSettings(context, availableTabs);
 
             await this.Context.SendResponse(this.Interactivity, response, userService, ephemeral: true);
             await this.Context.LogCommandUsedAsync(response, userService);

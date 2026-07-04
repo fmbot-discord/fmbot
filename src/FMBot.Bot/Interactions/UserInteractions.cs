@@ -35,6 +35,7 @@ public class UserInteractions(
     FmSettingService fmSettingService,
     FriendsService friendsService,
     UserBuilder userBuilder,
+    GuildSettingBuilder guildSettingBuilder,
     InteractiveService interactivity,
     SettingService settingService,
     GuildService guildService,
@@ -300,7 +301,10 @@ public class UserInteractions(
         {
             var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
-            var response = UserBuilder.GetUserSettings(new ContextModel(this.Context, contextUser));
+            var context = new ContextModel(this.Context, contextUser);
+            var availableTabs = await guildSettingBuilder.GetAvailableSettingsTabs(context);
+
+            var response = UserBuilder.GetUserSettings(context, availableTabs);
 
             await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
             await this.Context.LogCommandUsedAsync(response, userService);
