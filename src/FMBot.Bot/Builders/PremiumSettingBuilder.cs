@@ -125,6 +125,8 @@ public class PremiumSettingBuilder(
             AppendPerkPitchList(description);
             description.AppendLine();
             description.AppendLine("Anyone can purchase Premium for this server. Configuring features requires server management permissions.");
+            description.AppendLine();
+            description.AppendLine("⚠️ Premium server is currently in public beta. During this beta you might encounter bugs or issues, please report these in [our server](https://discord.gg/fmbot).");
 
             container.WithTextDisplay(description.ToString());
 
