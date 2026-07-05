@@ -491,7 +491,7 @@ public class GuildSettingBuilder(GuildService guildService, IOptions<BotSettings
         else
         {
             description.AppendLine();
-            description.AppendLine("-# ✨ Automate the crownseeder with Premium server.");
+            description.AppendLine("✨ Automate the crownseeder with Premium server.");
             components.WithButton("Premium server", style: ButtonStyle.Secondary,
                 customId: $"{InteractionConstants.PremiumServer.GetOverview}:crownseeder");
         }
@@ -573,9 +573,9 @@ public class GuildSettingBuilder(GuildService guildService, IOptions<BotSettings
         else
         {
             description.AppendLine();
-            description.AppendLine("-# ✨ Running this manually every time? Premium server can seed crowns automatically, daily, weekly or monthly.");
+            description.AppendLine("✨ Running this manually every time? Premium server can seed crowns automatically, daily, weekly or monthly.");
 
-            components = new ActionRowProperties();
+            components = [];
             components.WithButton("Automate crownseeder", style: ButtonStyle.Secondary,
                 customId: $"{InteractionConstants.PremiumServer.GetOverview}:crownseeder-run");
         }
@@ -693,7 +693,7 @@ public class GuildSettingBuilder(GuildService guildService, IOptions<BotSettings
         }
         else
         {
-            description.AppendLine("-# ✨ Schedule automatic server recaps with Premium server.");
+            description.AppendLine("✨ Schedule automatic server recaps with Premium server.");
             components.WithButton("Premium server", style: ButtonStyle.Secondary,
                 customId: $"{InteractionConstants.PremiumServer.GetOverview}:serverrecap");
 

@@ -193,20 +193,38 @@ public class GuildService(
             return;
         }
 
+        await using var db = await contextFactory.CreateDbContextAsync();
+
+        var changedGuildIds = addedGuildIds.Concat(removedGuildIds).ToList();
+        var subscriptions = await db.PremiumGuildSubscriptions
+            .AsNoTracking()
+            .Where(w => changedGuildIds.Contains(w.DiscordGuildId))
+            .ToListAsync();
+
         var auditLogChannel = WebhookService.CreateWebhookClientFromUrl(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
 
         foreach (var addedGuildId in addedGuildIds)
         {
             var guildName = premiumServers.First(f => f.DiscordGuildId == addedGuildId).Name;
-            var embed = new EmbedProperties().WithDescription(
-                $"Premium server activated for **{StringExtensions.Sanitize(guildName)}** — `{addedGuildId}`");
+            var subscription = subscriptions.FirstOrDefault(w => w.DiscordGuildId == addedGuildId);
+
+            var embed = new EmbedProperties()
+                .WithTitle("Premium server activated")
+                .WithDescription($"Server: `{StringExtensions.Sanitize(guildName)}` — `{addedGuildId}`\n" +
+                                 $"Purchaser: {(subscription?.PurchaserDiscordUserId != null ? $"<@{subscription.PurchaserDiscordUserId}>" : "`none`")}\n" +
+                                 $"Source: `{subscription?.PurchaseSource ?? "manual / flag"}`");
             await auditLogChannel.ExecuteAsync(new WebhookMessageProperties { Embeds = [embed] });
         }
 
         foreach (var removedGuildId in removedGuildIds)
         {
-            var embed = new EmbedProperties().WithDescription(
-                $"Premium server deactivated for `{removedGuildId}`");
+            var subscription = subscriptions.FirstOrDefault(w => w.DiscordGuildId == removedGuildId);
+
+            var embed = new EmbedProperties()
+                .WithTitle("Premium server deactivated")
+                .WithDescription($"Server: `{removedGuildId}`\n" +
+                                 $"Purchaser: {(subscription?.PurchaserDiscordUserId != null ? $"<@{subscription.PurchaserDiscordUserId}>" : "`none`")}\n" +
+                                 $"Source: `{subscription?.PurchaseSource ?? "manual / flag"}`");
             await auditLogChannel.ExecuteAsync(new WebhookMessageProperties { Embeds = [embed] });
         }
     }
