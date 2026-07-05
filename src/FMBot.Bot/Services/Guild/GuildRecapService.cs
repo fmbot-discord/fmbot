@@ -239,22 +239,6 @@ public class GuildRecapService(
             container.AddComponent(new TextDisplayProperties(albums.ToString()));
         }
 
-        if (topTracks.Count > 0)
-        {
-            container.AddComponent(new ComponentSeparatorProperties());
-
-            var tracks = new StringBuilder();
-            tracks.AppendLine("**Top tracks**");
-            foreach (var (track, index) in topTracks.Take(5).Select((value, index) => (value, index)))
-            {
-                tracks.AppendLine($"{index + 1}. **{StringExtensions.Sanitize(StringExtensions.TruncateLongString(track.TrackName, 60))}** " +
-                                  $"by {StringExtensions.Sanitize(StringExtensions.TruncateLongString(track.ArtistName, 40))} · " +
-                                  $"*{track.ListenerCount:n0} {StringExtensions.GetListenersString(track.ListenerCount)}*");
-            }
-
-            container.AddComponent(new TextDisplayProperties(tracks.ToString()));
-        }
-
         if (newReleases.Count > 0)
         {
             container.AddComponent(new ComponentSeparatorProperties());
@@ -269,6 +253,22 @@ public class GuildRecapService(
             }
 
             container.AddComponent(new TextDisplayProperties(releases.ToString()));
+        }
+
+        if (topTracks.Count > 0)
+        {
+            container.AddComponent(new ComponentSeparatorProperties());
+
+            var tracks = new StringBuilder();
+            tracks.AppendLine("**Top tracks**");
+            foreach (var (track, index) in topTracks.Take(5).Select((value, index) => (value, index)))
+            {
+                tracks.AppendLine($"{index + 1}. **{StringExtensions.Sanitize(StringExtensions.TruncateLongString(track.TrackName, 60))}** " +
+                                  $"by {StringExtensions.Sanitize(StringExtensions.TruncateLongString(track.ArtistName, 40))} · " +
+                                  $"*{track.ListenerCount:n0} {StringExtensions.GetListenersString(track.ListenerCount)}*");
+            }
+
+            container.AddComponent(new TextDisplayProperties(tracks.ToString()));
         }
 
         if (nextRecap.HasValue)

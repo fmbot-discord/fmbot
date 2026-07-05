@@ -240,7 +240,6 @@ public class Startup
             .AddSingleton<GuildSettingBuilder>()
             .AddSingleton<ImportBuilders>()
             .AddSingleton<PlayBuilder>()
-            .AddSingleton<PremiumSettingBuilder>()
             .AddSingleton<RecapBuilders>()
             .AddSingleton<SpotifyRemoteBuilders>()
             .AddSingleton<StaticBuilders>()
@@ -343,6 +342,7 @@ public class Startup
         services.AddHttpClient<DiscordSkuService>();
         services.AddHttpClient<OpenAiService>();
         services.AddHttpClient<WebhookService>();
+        services.AddHttpClient<PremiumSettingBuilder>();
         services.AddHttpClient<UserService>();
         services.AddHttpClient<AppleMusicVideoService>();
 
