@@ -44,8 +44,14 @@ public class Guild
 
     public string CustomLogo { get; set; }
 
+    public GuildFeaturedMode? FeaturedMode { get; set; }
+
     public DateTime? LastCrownSeed { get; set; }
     public AutomaticCrownSeeder? AutomaticCrownSeeder { get; set; }
+
+    public DateTime? LastRecap { get; set; }
+    public ServerRecapSchedule? RecapSchedule { get; set; }
+    public ulong? RecapChannelId { get; set; }
 
     public GuildFlags? GuildFlags { get; set; }
 

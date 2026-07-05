@@ -36,6 +36,7 @@ public class GuildSettingBuilder(GuildService guildService, IOptions<BotSettings
             await UserIsAllowed(context))
         {
             tabs.Add(SettingsTab.Server);
+            tabs.Add(SettingsTab.Premium);
         }
 
         return tabs;
@@ -452,14 +453,17 @@ public class GuildSettingBuilder(GuildService guildService, IOptions<BotSettings
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed,
+            ResponseType = ResponseType.ComponentsV2
         };
-
-        response.Embed.WithTitle("Crownseeder");
-        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
         var guild = await guildService.GetGuildAsync(context.DiscordGuild.Id);
         var crownsDisabled = guild.CrownsDisabled == true;
+
+        var container = response.ComponentsContainer;
+        container.WithAccentColor(DiscordConstants.InformationColorBlue);
+
+        container.WithTextDisplay("## Crownseeder");
+        container.WithSeparator();
 
         var description = new StringBuilder();
 
@@ -474,15 +478,36 @@ public class GuildSettingBuilder(GuildService guildService, IOptions<BotSettings
         var components = new ActionRowProperties();
         components.WithButton("Run crownseeder", $"{InteractionConstants.RunCrownseeder}", style: ButtonStyle.Secondary, disabled: crownsDisabled);
 
+        StringMenuProperties scheduleMenu = null;
+        if (PublicProperties.PremiumServers.ContainsKey(context.DiscordGuild.Id))
+        {
+            description.AppendLine();
+            description.AppendLine(guild.AutomaticCrownSeeder.HasValue
+                ? $"✨ Automatic crownseeder is enabled and runs **{guild.AutomaticCrownSeeder.Value.ToString().ToLower()}**."
+                : "✨ You can also let the crownseeder run automatically on a schedule.");
+
+            scheduleMenu = BuildCrownSeederScheduleMenu(guild);
+        }
+        else
+        {
+            description.AppendLine();
+            description.AppendLine("-# ✨ Automate the crownseeder with Premium server.");
+            components.WithButton("Premium server", style: ButtonStyle.Secondary,
+                customId: $"{InteractionConstants.PremiumServer.GetOverview}:crownseeder");
+        }
+
         if (crownsDisabled)
         {
             description.AppendLine();
             description.AppendLine("⚠️ Note: Crown functionality is disabled in this server.");
         }
 
-        response.Embed.WithDescription(description.ToString());
-
-        response.Components = components;
+        container.WithTextDisplay(description.ToString());
+        if (scheduleMenu != null)
+        {
+            container.AddComponent(scheduleMenu);
+        }
+        container.WithActionRow(components);
 
         return response;
     }
@@ -491,14 +516,17 @@ public class GuildSettingBuilder(GuildService guildService, IOptions<BotSettings
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed,
+            ResponseType = ResponseType.ComponentsV2
         };
 
-        response.Embed.WithTitle("Crownseeder");
-        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
-        response.Embed.WithDescription($"<a:loading:821676038102056991> Seeding crowns... ");
+        var container = response.ComponentsContainer;
+        container.WithAccentColor(DiscordConstants.InformationColorBlue);
 
-        response.Embed.WithFooter($"Crownseeder initiated by {context.DiscordUser.Username}");
+        container.WithTextDisplay("## Crownseeder");
+        container.WithSeparator();
+        container.WithTextDisplay($"<a:loading:821676038102056991> Seeding crowns... ");
+        container.WithSeparator();
+        container.WithTextDisplay($"-# Crownseeder initiated by {context.DiscordUser.Username}");
 
         return response;
     }
@@ -507,14 +535,17 @@ public class GuildSettingBuilder(GuildService guildService, IOptions<BotSettings
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed,
+            ResponseType = ResponseType.ComponentsV2
         };
-
-        response.Embed.WithTitle("Crownseeder");
-        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
         var guild = await guildService.GetGuildAsync(context.DiscordGuild.Id);
         var prefix = guild.Prefix ?? this._botSettings.Bot.Prefix;
+
+        var container = response.ComponentsContainer;
+        container.WithAccentColor(DiscordConstants.InformationColorBlue);
+
+        container.WithTextDisplay("## Crownseeder");
+        container.WithSeparator();
 
         var description = new StringBuilder();
         description.AppendLine($"✅ Seeded **{amountSeeded}** crowns for your server.");
@@ -523,9 +554,152 @@ public class GuildSettingBuilder(GuildService guildService, IOptions<BotSettings
         description.AppendLine($"- `{prefix}killallcrowns` (All crowns)");
         description.AppendLine($"- `{prefix}killallseededcrowns` (Only seeded crowns)");
 
-        response.Embed.WithFooter($"Crownseeder initiated by {context.DiscordUser.Username}");
+        StringMenuProperties scheduleMenu = null;
+        ActionRowProperties components = null;
+        if (PublicProperties.PremiumServers.ContainsKey(context.DiscordGuild.Id))
+        {
+            if (guild.AutomaticCrownSeeder.HasValue)
+            {
+                description.AppendLine();
+                description.AppendLine($"✨ Automatic crownseeder is enabled and runs **{guild.AutomaticCrownSeeder.Value.ToString().ToLower()}**.");
+            }
+            else
+            {
+                description.AppendLine();
+                description.AppendLine("✨ You can also let the crownseeder run automatically on a schedule.");
+                scheduleMenu = BuildCrownSeederScheduleMenu(guild);
+            }
+        }
+        else
+        {
+            description.AppendLine();
+            description.AppendLine("-# ✨ Running this manually every time? Premium server can seed crowns automatically, daily, weekly or monthly.");
 
-        response.Embed.WithDescription(description.ToString());
+            components = new ActionRowProperties();
+            components.WithButton("Automate crownseeder", style: ButtonStyle.Secondary,
+                customId: $"{InteractionConstants.PremiumServer.GetOverview}:crownseeder-run");
+        }
+
+        container.WithTextDisplay(description.ToString());
+        if (scheduleMenu != null)
+        {
+            container.AddComponent(scheduleMenu);
+        }
+        if (components != null)
+        {
+            container.WithActionRow(components);
+        }
+
+        container.WithSeparator();
+        container.WithTextDisplay($"-# Crownseeder initiated by {context.DiscordUser.Username}");
+
+        return response;
+    }
+
+    private static StringMenuProperties BuildCrownSeederScheduleMenu(Persistence.Domain.Models.Guild guild)
+    {
+        var scheduleMenu = new StringMenuProperties(InteractionConstants.SetCrownSeederSchedule)
+            .WithPlaceholder("Automatic crownseeder schedule")
+            .WithMinValues(0)
+            .WithMaxValues(1);
+
+        foreach (var schedule in Enum.GetValues<AutomaticCrownSeeder>())
+        {
+            scheduleMenu.AddOption(schedule.ToString(), Enum.GetName(schedule),
+                description: $"Automatically seed crowns {schedule.ToString().ToLower()}",
+                isDefault: guild.AutomaticCrownSeeder == schedule);
+        }
+
+        return scheduleMenu;
+    }
+
+    public async Task<ResponseModel> ServerRecap(ContextModel context)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.ComponentsV2
+        };
+
+        var guild = await guildService.GetGuildAsync(context.DiscordGuild.Id);
+
+        var container = response.ComponentsContainer;
+        container.WithAccentColor(DiscordConstants.InformationColorBlue);
+
+        container.WithTextDisplay("## Scheduled server recap");
+        container.WithSeparator();
+
+        var description = new StringBuilder();
+
+        description.AppendLine(
+            "Automatically posts a recap of your server's listening: top artists, albums and tracks, together with total plays and listeners.");
+        description.AppendLine();
+
+        var components = new ActionRowProperties();
+
+        if (PublicProperties.PremiumServers.ContainsKey(context.DiscordGuild.Id))
+        {
+            if (guild.RecapSchedule.HasValue)
+            {
+                description.AppendLine(guild.RecapSchedule == ServerRecapSchedule.Weekly
+                    ? "✨ Weekly recaps are enabled. They cover the previous week and post every Monday."
+                    : "✨ Monthly recaps are enabled. They cover the previous month and post on the 1st.");
+            }
+            else
+            {
+                description.AppendLine("✨ Pick a schedule below to enable automatic recaps.");
+            }
+
+            description.AppendLine(guild.RecapChannelId.HasValue
+                ? $"Recaps are posted in <#{guild.RecapChannelId.Value}>."
+                : "⚠️ Select the channel that recaps should be posted in.");
+
+            var scheduleMenu = new StringMenuProperties(InteractionConstants.SetServerRecapSchedule)
+                .WithPlaceholder("Server recap schedule")
+                .WithMinValues(0)
+                .WithMaxValues(1);
+
+            foreach (var schedule in Enum.GetValues<ServerRecapSchedule>())
+            {
+                scheduleMenu.AddOption(schedule.ToString(), Enum.GetName(schedule),
+                    description: schedule == ServerRecapSchedule.Weekly
+                        ? "Post a recap of the previous week every Monday"
+                        : "Post a recap of the previous month on the 1st",
+                    isDefault: guild.RecapSchedule == schedule);
+            }
+
+            var channelMenu = new ChannelMenuProperties(InteractionConstants.SetServerRecapChannel)
+                .WithPlaceholder("Channel to post recaps in")
+                .WithMinValues(0)
+                .WithMaxValues(1)
+                .WithChannelTypes([ChannelType.TextGuildChannel, ChannelType.AnnouncementGuildChannel]);
+
+            if (guild.RecapChannelId.HasValue)
+            {
+                channelMenu.WithDefaultValues([guild.RecapChannelId.Value]);
+            }
+
+            components.WithButton("Post recap now", InteractionConstants.PostServerRecapNow,
+                style: ButtonStyle.Secondary, disabled: !guild.RecapChannelId.HasValue);
+
+            var recapPostTime = DateTime.UtcNow.Date.AddHours(GuildRecapService.PostDelayHours);
+
+            description.AppendLine();
+            description.AppendLine($"-# Scheduled recaps post shortly after <t:{((DateTimeOffset)recapPostTime).ToUnixTimeSeconds()}:t>, when most listening data has come in. Use the button below to post one for the previous period right away.");
+
+            container.WithTextDisplay(description.ToString());
+            container.AddComponent(scheduleMenu);
+            container.AddComponent(channelMenu);
+            container.WithActionRow(components);
+        }
+        else
+        {
+            description.AppendLine("-# ✨ Schedule automatic server recaps with Premium server.");
+            components.WithButton("Premium server", style: ButtonStyle.Secondary,
+                customId: $"{InteractionConstants.PremiumServer.GetOverview}:serverrecap");
+
+            container.WithTextDisplay(description.ToString());
+            container.WithActionRow(components);
+        }
 
         return response;
     }
@@ -552,7 +726,7 @@ public class GuildSettingBuilder(GuildService guildService, IOptions<BotSettings
             return true;
         }
 
-        if (managersAllowed)
+        if (managersAllowed && PublicProperties.PremiumServers.ContainsKey(context.DiscordGuild.Id))
         {
             var guild = await guildService.GetGuildAsync(context.DiscordGuild.Id);
             if (guild.BotManagementRoles != null &&

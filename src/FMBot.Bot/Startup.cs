@@ -307,6 +307,7 @@ public class Startup
         services
             .AddSingleton<GuildService>()
             .AddSingleton<GuildDisabledCommandService>()
+            .AddSingleton<GuildRecapService>()
             .AddSingleton<ChannelToggledCommandService>()
             .AddSingleton<DisabledChannelService>()
             .AddSingleton<WebhookService>();

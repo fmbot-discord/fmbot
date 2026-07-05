@@ -70,11 +70,15 @@ public static class Constants
     public const int NonSupporterMaxSavedAlbums = 5000;
     public const int NonSupporterMaxSavedArtists = 4000;
 
-    public const string GetPremiumServer = "This feature is not quite ready yet. Stay tuned!";
+    public const string GetPremiumServer = "✨ This feature requires .fmbot Premium Server. Use `/premiumserver` to learn more and unlock it for everyone in this server.";
+
+    public const int JumbleDailyLimit = 30;
+    public const int PremiumServerJumbleDailyLimit = 100;
 
     public const int MaxAlts = 8;
 
-    public static readonly int[] PlayCountBreakPoints = {
+    public static readonly int[] PlayCountBreakPoints =
+    [
         50,
         100,
         250,
@@ -105,5 +109,5 @@ public static class Constants
         3000000,
         4000000,
         5000000
-    };
+    ];
 }

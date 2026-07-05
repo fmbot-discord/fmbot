@@ -16,6 +16,10 @@ service SupporterLinkService {
   rpc AddGiftedSupporter (AddGiftedSupporterRequest) returns (AddGiftedSupporterReply);
 
   rpc MigrateDiscordForStripeSupporter (MigrateDiscordForStripeSupporterRequest) returns (MigrateDiscordForStripeSupporterReply);
+
+  rpc AddOrUpdatePremiumGuildSubscription (AddOrUpdatePremiumGuildSubscriptionRequest) returns (AddOrUpdatePremiumGuildSubscriptionReply);
+
+  rpc GetPremiumGuildManageLink (GetPremiumGuildManageLinkOptions) returns (GetManageLinkReply);
 }
 
 message CreateLinkOptions {
@@ -27,14 +31,42 @@ message CreateLinkOptions {
   string source = 6;
   int64 giftReceiverDiscordUserId = 7;
   string giftReceiverLastFmUserName = 8;
+  int64 discordGuildId = 9;
+  string guildName = 10;
 }
 
 message CreateLinkReply {
   string checkoutLink = 1;
+  bool guildAlreadySubscribed = 2;
 }
 
 message GetManageLinkOptions {
   string stripeCustomerId = 1;
+}
+
+message GetPremiumGuildManageLinkOptions {
+  string stripeCustomerId = 1;
+  string stripeSubscriptionId = 2;
+  string flowType = 3;
+}
+
+message AddOrUpdatePremiumGuildSubscriptionRequest {
+  int64 discordGuildId = 1;
+  int64 purchaserDiscordUserId = 2;
+  string purchaserLastFmUserName = 3;
+  string stripeCustomerId = 4;
+  string stripeSubscriptionId = 5;
+  google.protobuf.Timestamp created = 6;
+  google.protobuf.Timestamp endsAt = 7;
+  bool active = 8;
+  string currency = 9;
+  string source = 10;
+  string guildName = 11;
+}
+
+message AddOrUpdatePremiumGuildSubscriptionReply {
+  bool success = 1;
+  bool duplicateSubscription = 2;
 }
 
 message GetManageLinkReply {

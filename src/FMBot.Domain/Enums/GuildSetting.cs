@@ -32,4 +32,7 @@ public enum GuildSetting
 
     [Option("Disabled server commands", "Toggle commands server-wide")]
     DisabledGuildCommands = 31,
+
+    [Option("Scheduled server recap", "Automatically post a weekly or monthly recap of your server")]
+    ServerRecap = 40,
 }

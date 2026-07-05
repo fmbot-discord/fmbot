@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using FMBot.Bot.Resources;
+using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using NetCord;
@@ -65,6 +66,7 @@ namespace FMBot.Bot.Services
                 .ToListAsync();
 
             var shortcutsByGuildId = allShortcuts
+                .Where(w => PublicProperties.PremiumServers.ContainsKey(w.Guild.DiscordGuildId))
                 .GroupBy(u => u.Guild.DiscordGuildId)
                 .ToDictionary(g => g.Key, g => g.Select(s => new Shortcut { Input = s.Input, Output = s.Output }).ToList());
 
@@ -141,6 +143,13 @@ namespace FMBot.Bot.Services
             return await db.GuildShortcuts
                 .Where(w => w.GuildId == guild.GuildId)
                 .ToListAsync();
+        }
+
+        public async Task<GuildShortcut> GetGuildShortcut(int id)
+        {
+            await using var db = await _contextFactory.CreateDbContextAsync();
+            return await db.GuildShortcuts
+                .FirstOrDefaultAsync(w => w.Id == id);
         }
 
         public async Task AddOrUpdateGuildShortcut(Persistence.Domain.Models.Guild guild, int id, string input, string output)

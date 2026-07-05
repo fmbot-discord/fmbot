@@ -242,6 +242,34 @@ public static class InteractionConstants
         public const string LifetimePromoGbpPriceId = "price_1Tg4zbDmwlsh3IxTgTYcK8M4";
     }
 
+    public static class PremiumServer
+    {
+        public const string GetOverview = "premium-server-overview";
+        public const string GetPurchaseLink = "premium-server-purchase-link";
+        public const string ManageSubscription = "premium-server-manage";
+        public const string MyServers = "premium-server-my-servers";
+        public const string MyServersManage = "premium-server-my-servers-manage";
+        public const string MyServersManageFlow = "premium-server-my-servers-flow";
+        public const string MyServersBillingPortal = "premium-server-my-servers-portal";
+    }
+
+    public static class BotBranding
+    {
+        public const string RemoveAvatar = "remove-bot-branding-avatar";
+        public const string SetFeaturedMode = "set-bot-featured-mode";
+    }
+
+    public static class GuildShortcuts
+    {
+        public const string ViewAll = "guild-shortcuts-view";
+        public const string Manage = "guild-shortcut-manage";
+        public const string Delete = "guild-shortcut-delete";
+        public const string Modify = "guild-shortcut-modify";
+        public const string ModifyModal = "guild-shortcut-modifymodal";
+        public const string Create = "guild-shortcut-create";
+        public const string CreateModal = "guild-shortcut-createmodal";
+    }
+
     public const string BotScrobblingEnable = "user-setting-botscrobbling-enable";
     public const string BotScrobblingDisable = "user-setting-botscrobbling-disable";
     public const string BotScrobblingManage = "user-setting-botscrobbling-manage";
@@ -263,6 +291,11 @@ public static class InteractionConstants
     public const string RemoveCrownMinPlaycount = "remove-crown-min-playcount";
 
     public const string RunCrownseeder = "run-crownseeder";
+    public const string SetCrownSeederSchedule = "set-crownseeder-schedule";
+
+    public const string SetServerRecapSchedule = "set-server-recap-schedule";
+    public const string SetServerRecapChannel = "set-server-recap-channel";
+    public const string PostServerRecapNow = "post-server-recap-now";
 
     public static class ToggleCrowns
     {

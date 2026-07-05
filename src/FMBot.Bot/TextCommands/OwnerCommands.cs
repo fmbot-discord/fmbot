@@ -28,7 +28,8 @@ public class OwnerCommands(
     UserService userService,
     IOptions<BotSettings> botSettings,
     IMemoryCache cache,
-    ShardedGatewayClient client)
+    ShardedGatewayClient client,
+    SupporterService supporterService)
     : BaseCommandModule(botSettings)
 {
     [Command("say"), Summary("Says something")]
@@ -269,6 +270,78 @@ public class OwnerCommands(
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Only .fmbot owners can execute this command." });
             await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
+        }
+    }
+
+    [Command("premiumserverstatus", "premiumguildstatus")]
+    [Summary("Shows premium server subscription status for a server")]
+    public async Task PremiumServerStatusAsync([CommandParameter(Remainder = true)] string guildId = null)
+    {
+        if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        {
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Only .fmbot staff can execute this command." });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
+            return;
+        }
+
+        try
+        {
+            var discordGuildId = guildId != null && ulong.TryParse(guildId, out var parsedGuildId)
+                ? parsedGuildId
+                : this.Context.Guild?.Id;
+
+            if (discordGuildId == null)
+            {
+                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Use this in a server or pass a guild id." });
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
+                return;
+            }
+
+            var embed = new EmbedProperties()
+                .WithColor(DiscordConstants.InformationColorBlue)
+                .WithTitle("Premium server status");
+
+            var description = new StringBuilder();
+            description.AppendLine($"**Guild:** `{discordGuildId}`");
+            description.AppendLine(PublicProperties.PremiumServers.ContainsKey(discordGuildId.Value)
+                ? "**Premium:** ✅ Active in cache"
+                : "**Premium:** ❌ Not in cache");
+
+            var subscription = await supporterService.GetPremiumGuildSubscription(discordGuildId.Value);
+            if (subscription != null)
+            {
+                description.AppendLine();
+                description.AppendLine(!string.IsNullOrWhiteSpace(subscription.StripeSubscriptionId)
+                    ? "**Rail:** Stripe"
+                    : "**Rail:** Discord SKU");
+                if (subscription.PurchaserDiscordUserId.HasValue)
+                {
+                    description.AppendLine($"**Purchaser:** `{subscription.PurchaserDiscordUserId}` — <@{subscription.PurchaserDiscordUserId}>");
+                }
+                description.AppendLine($"**Started:** <t:{((DateTimeOffset)subscription.DateStarted).ToUnixTimeSeconds()}:f>");
+                if (subscription.DateEnding.HasValue)
+                {
+                    description.AppendLine($"**Ends:** <t:{((DateTimeOffset)subscription.DateEnding.Value).ToUnixTimeSeconds()}:f>");
+                }
+                if (!string.IsNullOrWhiteSpace(subscription.PurchaseSource))
+                {
+                    description.AppendLine($"**Source:** {subscription.PurchaseSource}");
+                }
+            }
+            else
+            {
+                description.AppendLine();
+                description.AppendLine("No active paid subscription. Premium can also come from special guild status, legacy whitelist or the tester flag.");
+            }
+
+            embed.WithDescription(description.ToString());
+
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Embeds = [embed] });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
         }
     }
 

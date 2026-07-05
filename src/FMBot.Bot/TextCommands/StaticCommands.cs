@@ -507,7 +507,7 @@ public class StaticCommands(
     [ExcludeFromHelp]
     public async Task CountdownAsync(int countdown = 3)
     {
-        if (guildService.CheckIfDM(this.Context))
+        if (guildService.CheckIfDm(this.Context))
         {
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
                 new MessageProperties { Content = "Command is not supported in DMs." });

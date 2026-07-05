@@ -17,6 +17,7 @@ namespace FMBot.Bot.Interactions;
 public class SettingsInteractions(
     UserService userService,
     GuildSettingBuilder guildSettingBuilder,
+    PremiumSettingBuilder premiumSettingBuilder,
     InteractiveService interactivity)
     : ComponentInteractionModule<ComponentInteractionContext>
 {
@@ -57,6 +58,7 @@ public class SettingsInteractions(
             {
                 SettingsTab.Server => await guildSettingBuilder.GetGuildSettings(context,
                     this.Context.Interaction.AppPermissions, availableTabs),
+                SettingsTab.Premium => await premiumSettingBuilder.GetPremiumServerSettings(context, availableTabs),
                 _ => UserBuilder.GetUserSettings(context, availableTabs)
             };
 

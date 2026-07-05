@@ -7,6 +7,7 @@ using Fergun.Interactive;
 using Fergun.Interactive.Pagination;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
+using FMBot.Domain;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
@@ -118,6 +119,8 @@ public class WhoKnowsService
             Roles = roles
         };
 
+        var premiumGuild = PublicProperties.PremiumServers.ContainsKey(guild.DiscordGuildId);
+
         if (users.Select(s => s.UserId).Contains(contextUserId))
         {
             stats.RequesterFiltered = false;
@@ -135,7 +138,7 @@ public class WhoKnowsService
             stats.ActivityThresholdFiltered = preFilterCount - users.Count;
         }
 
-        if (guild.UserActivityThresholdDays.HasValue)
+        if (premiumGuild && guild.UserActivityThresholdDays.HasValue)
         {
             var preFilterCount = users.Count;
 
@@ -174,7 +177,7 @@ public class WhoKnowsService
             stats.BlockedFiltered = preFilterCount - users.Count;
         }
 
-        if (guild.AllowedRoles != null && guild.AllowedRoles.Any())
+        if (premiumGuild && guild.AllowedRoles != null && guild.AllowedRoles.Any())
         {
             var preFilterCount = users.Count;
 
@@ -185,7 +188,7 @@ public class WhoKnowsService
             stats.AllowedRolesFiltered = preFilterCount - users.Count;
         }
 
-        if (guild.BlockedRoles != null && guild.BlockedRoles.Any())
+        if (premiumGuild && guild.BlockedRoles != null && guild.BlockedRoles.Any())
         {
             var preFilterCount = users.Count;
 
