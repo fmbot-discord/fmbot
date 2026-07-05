@@ -28,6 +28,7 @@ public class PremiumSettingInteractions(
     PremiumSettingBuilder premiumSettingBuilder,
     GuildSettingBuilder guildSettingBuilder,
     SupporterService supporterService,
+    TimerService timerService,
     InteractiveService interactivity)
     : ComponentInteractionModule<ComponentInteractionContext>
 {
@@ -77,6 +78,14 @@ public class PremiumSettingInteractions(
             {
                 await this.Context.Client.Rest.ModifyCurrentGuildUserAsync(this.Context.Guild.Id,
                     o => o.Bio = "");
+            }
+            else if (featuredMode == GuildFeaturedMode.GuildFeatured)
+            {
+                var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
+                if (guild != null)
+                {
+                    _ = timerService.ApplyGuildFeatured(guild);
+                }
             }
 
             var response = await premiumSettingBuilder.BotBranding(new ContextModel(this.Context), this.Context.User);

@@ -330,6 +330,7 @@ public class PremiumSettingBuilder(
         description.AppendLine("📜 **Lyrics unlocked** for every member");
         description.AppendLine("⌨️ **Server-wide shortcuts** — `.servershortcuts`");
         description.AppendLine("⚙️ **Role filters** — `.allowedroles`, `.blockedroles`, `.serveractivitythreshold`");
+        description.AppendLine("🛡️ **Bot management roles** — `.botmanagementroles`");
     }
 
     private static string BuildPremiumFooter(NetCord.User lastModifier, string firstLine = "-# ✨ Premium server")

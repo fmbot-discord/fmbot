@@ -658,54 +658,57 @@ public class TimerService : IDisposable
             return;
         }
 
-        AlbumService albumService = null;
-
         foreach (var guild in customFeaturedGuilds)
         {
-            try
+            await ApplyGuildFeatured(guild);
+        }
+    }
+
+    public async Task ApplyGuildFeatured(Persistence.Domain.Models.Guild guild)
+    {
+        try
+        {
+            var existingFeatured =
+                await this._featuredService.GetGuildFeaturedForDateTime(guild.GuildId, DateTime.UtcNow);
+
+            if (existingFeatured is { HasFeatured: true })
             {
-                var existingFeatured =
-                    await this._featuredService.GetGuildFeaturedForDateTime(guild.GuildId, DateTime.UtcNow);
-
-                if (existingFeatured is { HasFeatured: true })
-                {
-                    continue;
-                }
-
-                var guildFeatured = existingFeatured ??
-                                    await this._featuredService.NewGuildFeatured(guild, DateTime.UtcNow);
-
-                if (guildFeatured == null)
-                {
-                    Log.Information("GuildFeatured: No featured could be picked for guild {guildId}", guild.GuildId);
-                    continue;
-                }
-
-                if (existingFeatured == null)
-                {
-                    await this._featuredService.AddGuildFeatured(guildFeatured);
-                }
-
-                await this._webhookService.ChangeToNewGuildAvatar(this._client, guild.DiscordGuildId,
-                    guildFeatured.ImageUrl, guildFeatured.AlbumName, guildFeatured.ArtistName,
-                    BuildGuildFeaturedBio(guildFeatured.Description));
-
-                var featuredView = FeaturedService.GuildFeaturedToFeaturedLog(guildFeatured);
-
-                albumService ??= this._serviceProvider.GetRequiredService<AlbumService>();
-                var accentColor = await albumService.GetAlbumAccentColor(
-                    guildFeatured.ImageUrl, guildFeatured.AlbumName, guildFeatured.ArtistName);
-
-                await this._webhookService.SendGuildFeaturedWebhooks(guild.GuildId, featuredView, accentColor);
-
-                await this._featuredService.SetGuildFeatured(guildFeatured);
-
-                Log.Information("GuildFeatured: Applied new featured for guild {guildId}", guild.GuildId);
+                return;
             }
-            catch (Exception e)
+
+            var guildFeatured = existingFeatured ??
+                                await this._featuredService.NewGuildFeatured(guild, DateTime.UtcNow);
+
+            if (guildFeatured == null)
             {
-                Log.Error(e, "GuildFeatured: Error applying featured for guild {guildId}", guild.GuildId);
+                Log.Information("GuildFeatured: No featured could be picked for guild {guildId}", guild.GuildId);
+                return;
             }
+
+            if (existingFeatured == null)
+            {
+                await this._featuredService.AddGuildFeatured(guildFeatured);
+            }
+
+            await this._webhookService.ChangeToNewGuildAvatar(this._client, guild.DiscordGuildId,
+                guildFeatured.ImageUrl, guildFeatured.AlbumName, guildFeatured.ArtistName,
+                BuildGuildFeaturedBio(guildFeatured.Description));
+
+            var featuredView = FeaturedService.GuildFeaturedToFeaturedLog(guildFeatured);
+
+            var albumService = this._serviceProvider.GetRequiredService<AlbumService>();
+            var accentColor = await albumService.GetAlbumAccentColor(
+                guildFeatured.ImageUrl, guildFeatured.AlbumName, guildFeatured.ArtistName);
+
+            await this._webhookService.SendGuildFeaturedWebhooks(guild.GuildId, featuredView, accentColor);
+
+            await this._featuredService.SetGuildFeatured(guildFeatured);
+
+            Log.Information("GuildFeatured: Applied new featured for guild {guildId}", guild.GuildId);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "GuildFeatured: Error applying featured for guild {guildId}", guild.GuildId);
         }
     }
 

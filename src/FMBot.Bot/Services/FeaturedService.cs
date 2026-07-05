@@ -657,7 +657,7 @@ public class FeaturedService
         return description.ToString();
     }
 
-    public string GetStringForFeaturedMode(FeaturedMode featuredMode)
+    public static string GetStringForFeaturedMode(FeaturedMode featuredMode)
     {
         return featuredMode switch
         {
