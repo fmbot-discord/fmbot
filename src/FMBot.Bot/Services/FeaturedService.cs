@@ -392,7 +392,7 @@ public class FeaturedService
                         {
                             guildFeaturedLog.Description = $"[{track.AlbumName}]({track.TrackUrl}) \n" +
                                                            $"by [{track.ArtistName}]({track.ArtistUrl}) \n\n" +
-                                                           $"{randomAvatarModeDesc} from {user.UserNameLastFM}";
+                                                           $"{randomAvatarModeDesc} from <@{user.DiscordUserId}>";
                             guildFeaturedLog.UserId = user.UserId;
                             guildFeaturedLog.ArtistName = track.ArtistName;
                             guildFeaturedLog.TrackName = track.TrackName;
@@ -434,7 +434,7 @@ public class FeaturedService
                             var artistLink = LastfmUrlExtensions.GetArtistUrl(album.ArtistName);
                             guildFeaturedLog.Description = $"[{album.AlbumName}]({album.AlbumUrl}) \n" +
                                                            $"by [{album.ArtistName}]({artistLink}) \n\n" +
-                                                           $"{randomAvatarModeDesc} from {user.UserNameLastFM}";
+                                                           $"{randomAvatarModeDesc} from <@{user.DiscordUserId}>";
                             guildFeaturedLog.UserId = user.UserId;
                             guildFeaturedLog.AlbumName = album.AlbumName;
                             guildFeaturedLog.ImageUrl = album.AlbumCoverUrl;

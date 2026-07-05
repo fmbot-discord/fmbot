@@ -1348,7 +1348,7 @@ public class SupporterService
 
         var memberPerks = new StringBuilder();
         memberPerks.AppendLine("### 🎮 Perks for every member");
-        memberPerks.AppendLine("- Everyone can now play 100 daily Jumble and Pixel Jumble games");
+        memberPerks.AppendLine("- Everyone can now play 60 daily Jumble and Pixel Jumble games");
         memberPerks.AppendLine("- Everyone can use `.lyrics`");
         memberPerks.AppendLine($"- `.servershortcuts` — Create text command shortcuts that work for the whole server");
         container.AddComponent(new TextDisplayProperties(memberPerks.ToString()));

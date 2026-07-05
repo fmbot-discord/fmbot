@@ -157,6 +157,7 @@ public class UserBuilder
 
         var featured = this._timer.CurrentFeatured;
 
+        var isGuildFeatured = false;
         if (context.DiscordGuild != null && PublicProperties.PremiumServers.ContainsKey(context.DiscordGuild.Id))
         {
             var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
@@ -168,11 +169,12 @@ public class UserBuilder
                 if (guildFeatured is { HasFeatured: true })
                 {
                     featured = FeaturedService.GuildFeaturedToFeaturedLog(guildFeatured);
+                    isGuildFeatured = true;
                 }
             }
         }
 
-        var container = WebhookService.BuildFeaturedContainer(featured);
+        var container = WebhookService.BuildFeaturedContainer(featured, guildFeatured: isGuildFeatured);
 
         var accentColor = await this._albumService.GetAccentColorWithAlbum(context,
             featured.ImageUrl, null, featured.AlbumName, featured.ArtistName,
@@ -183,7 +185,7 @@ public class UserBuilder
             container.WithAccentColor(accentColor);
         }
 
-        if (context.DiscordGuild != null && guildUsers.Any() && featured.UserId.HasValue &&
+        if (!isGuildFeatured && context.DiscordGuild != null && guildUsers.Any() && featured.UserId.HasValue &&
             featured.UserId.Value != 0)
         {
             guildUsers.TryGetValue(featured.UserId.Value, out var guildUser);

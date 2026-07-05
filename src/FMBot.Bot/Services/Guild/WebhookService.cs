@@ -182,7 +182,7 @@ public class WebhookService
 
         foreach (var webhook in webhooks)
         {
-            await SendWebhookMessage(webhook, featured, accentColor);
+            await SendWebhookMessage(webhook, featured, accentColor, guildFeatured: true);
         }
     }
 
@@ -321,7 +321,8 @@ public class WebhookService
         }
     }
 
-    public static ComponentContainerProperties BuildFeaturedContainer(FeaturedLog featured, Color? accentColor = null)
+    public static ComponentContainerProperties BuildFeaturedContainer(FeaturedLog featured, Color? accentColor = null,
+        bool guildFeatured = false)
     {
         var container = new ComponentContainerProperties();
 
@@ -330,9 +331,11 @@ public class WebhookService
             container.WithAccentColor(accentColor.Value);
         }
 
+        var header = guildFeatured ? "**Server featured:**" : "**Featured:**";
+
         if (featured.FullSizeImage != null)
         {
-            container.WithTextDisplay($"**Featured:**\n{featured.Description}");
+            container.WithTextDisplay($"{header}\n{featured.Description}");
             container.AddComponent(new MediaGalleryProperties
             {
                 new MediaGalleryItemProperties(new ComponentMediaProperties(featured.FullSizeImage))
@@ -341,26 +344,27 @@ public class WebhookService
         else if (featured.ImageUrl != null)
         {
             container.WithSection([
-                new TextDisplayProperties($"**Featured:**\n{featured.Description}")
+                new TextDisplayProperties($"{header}\n{featured.Description}")
             ], featured.ImageUrl);
         }
         else
         {
-            container.WithTextDisplay($"**Featured:**\n{featured.Description}");
+            container.WithTextDisplay($"{header}\n{featured.Description}");
         }
 
         return container;
     }
 
-    private async Task SendWebhookMessage(Webhook webhook, FeaturedLog featured, Color? accentColor)
+    private async Task SendWebhookMessage(Webhook webhook, FeaturedLog featured, Color? accentColor,
+        bool guildFeatured = false)
     {
         var webhookClient = new WebhookClient(webhook.DiscordWebhookId, webhook.Token);
 
         try
         {
-            var container = BuildFeaturedContainer(featured, accentColor);
+            var container = BuildFeaturedContainer(featured, accentColor, guildFeatured);
 
-            if (featured.UserId.HasValue)
+            if (!guildFeatured && featured.UserId.HasValue)
             {
                 await using var db = await this._contextFactory.CreateDbContextAsync();
                 var guild = await db.Guilds

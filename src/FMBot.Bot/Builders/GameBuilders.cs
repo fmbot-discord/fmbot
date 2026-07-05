@@ -94,7 +94,7 @@ public class GameBuilders
                 if (!premiumGuild)
                 {
                     limitDescription.AppendLine(
-                        "-# Or unlock 100 daily games for everyone in this server with Premium server.");
+                        "-# Or unlock 60 daily games for everyone in this server with Premium server.");
                     response.Components.WithButton("Premium server", style: ButtonStyle.Secondary,
                         customId: $"{InteractionConstants.PremiumServer.GetOverview}:jumble-dailylimit");
                 }
@@ -203,7 +203,7 @@ public class GameBuilders
                 if (!premiumGuild)
                 {
                     limitDescription.AppendLine(
-                        "-# Or unlock 100 daily games for everyone in this server with Premium server.");
+                        "-# Or unlock 60 daily games for everyone in this server with Premium server.");
                     response.Components.WithButton("Premium server", style: ButtonStyle.Secondary,
                         customId: $"{InteractionConstants.PremiumServer.GetOverview}:pixel-dailylimit");
                 }

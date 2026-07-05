@@ -315,7 +315,7 @@ public class PremiumSettingBuilder(
         description.AppendLine("👑 **Automatic crownseeder** — seed crowns daily, weekly or monthly");
         description.AppendLine("📊 **Scheduled server recaps** — your server's weekly or monthly top charts, posted automatically");
         description.AppendLine("🤖 **Custom bot branding** and no sponsored messages");
-        description.AppendLine("🎮 **100 daily Jumble and Pixel games** for every member");
+        description.AppendLine("🎮 **60 daily Jumble and Pixel games** for every member");
         description.AppendLine("📜 **Lyrics unlocked** for every member");
         description.AppendLine("⌨️ **Server-wide shortcuts**");
         description.AppendLine("⚙️ **Role filters** and server activity threshold");
@@ -326,7 +326,8 @@ public class PremiumSettingBuilder(
         description.AppendLine("👑 **Automatic crownseeder** — crownseeder setting in `/configuration`");
         description.AppendLine("📊 **Scheduled server recaps** — `.serverrecap`");
         description.AppendLine("🤖 **Custom bot branding** — `.botbranding`");
-        description.AppendLine("🎮 **100 daily Jumble and Pixel games** for every member");
+        description.AppendLine("⭐ **Server featured** — member-based avatar rotation, set in `.botbranding`");
+        description.AppendLine("🎮 **60 daily Jumble and Pixel games** for every member");
         description.AppendLine("📜 **Lyrics unlocked** for every member");
         description.AppendLine("⌨️ **Server-wide shortcuts** — `.servershortcuts`");
         description.AppendLine("⚙️ **Role filters** — `.allowedroles`, `.blockedroles`, `.serveractivitythreshold`");
@@ -374,7 +375,7 @@ public class PremiumSettingBuilder(
             var featuredMode = guild.FeaturedMode ?? GuildFeaturedMode.GlobalFeatured;
             container.WithTextDisplay($"**🤖 Custom bot branding**\nCurrent mode: {GetFeaturedModeName(featuredMode)}.\n-# `.botbranding`");
 
-            container.WithTextDisplay("**🎮 Games and 📜 lyrics**\nEvery member gets 100 daily Jumble and Pixel games and access to `.lyrics`.");
+            container.WithTextDisplay("**🎮 Games and 📜 lyrics**\nEvery member gets 60 daily Jumble and Pixel games and access to `.lyrics`.");
 
             container.WithTextDisplay($"**⌨️ Server-wide shortcuts**\n{shortcuts.Count}/10 shortcut slots used.\n-# `.servershortcuts`");
 
