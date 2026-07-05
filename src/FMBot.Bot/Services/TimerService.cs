@@ -613,7 +613,7 @@ public class TimerService : IDisposable
     {
         var currentUser = this._client.GetCurrentUser();
         var sendActivationUpdates = currentUser != null &&
-                                    currentUser.Id != Constants.BotBetaId &&
+                                    // currentUser.Id != Constants.BotBetaId &&
                                     (ConfigData.Data.Shards == null ||
                                      ConfigData.Data.Shards.MainInstance == true);
 
