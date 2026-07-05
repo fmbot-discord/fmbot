@@ -11,6 +11,7 @@ using FMBot.Domain;
 using FMBot.Domain.Enums;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using NetCord;
 using NetCord.Gateway;
 using NetCord.Rest;
@@ -21,6 +22,7 @@ namespace FMBot.Bot.Services.Guild;
 public class GuildRecapService(
     IDbContextFactory<FMBotDbContext> contextFactory,
     PlayService playService,
+    IServiceProvider serviceProvider,
     ShardedGatewayClient client)
 {
     public const int PostDelayHours = 18;
@@ -142,6 +144,8 @@ public class GuildRecapService(
             OrderType.Listeners, null, periodEnd);
         var topTracks = await playService.GetGuildTopTracksPlays(guild.GuildId, periodStart,
             OrderType.Listeners, null, periodEnd);
+        var albumService = serviceProvider.GetRequiredService<AlbumService>();
+        var newReleases = await albumService.FilterAlbumsToReleasePeriod(topAlbums, periodStart, periodEnd);
 
         if (topArtists.Count == 0)
         {
@@ -154,7 +158,7 @@ public class GuildRecapService(
             : null;
 
         var container = BuildRecapContainer(guild.Name, schedule, periodStart, periodEnd, stats,
-            topArtists, topAlbums, topTracks, nextRecap);
+            topArtists, topAlbums, topTracks, newReleases, nextRecap);
 
         try
         {
@@ -187,7 +191,7 @@ public class GuildRecapService(
 
     private static ComponentContainerProperties BuildRecapContainer(string guildName, ServerRecapSchedule schedule,
         DateTime periodStart, DateTime periodEnd, GuildPlayStats stats, List<GuildArtist> topArtists,
-        List<GuildAlbum> topAlbums, List<GuildTrack> topTracks, DateTime? nextRecap)
+        List<GuildAlbum> topAlbums, List<GuildTrack> topTracks, List<GuildAlbum> newReleases, DateTime? nextRecap)
     {
         var container = new ComponentContainerProperties
         {
@@ -202,7 +206,7 @@ public class GuildRecapService(
         header.AppendLine(schedule == ServerRecapSchedule.Weekly
             ? $"## 📊 Weekly recap for {StringExtensions.Sanitize(guildName)}"
             : $"## 📊 Monthly recap for {StringExtensions.Sanitize(guildName)}");
-        header.Append($"-# {periodDisplay} · **{stats.TotalPlaycount:n0}** {StringExtensions.GetPlaysString(stats.TotalPlaycount)} " +
+        header.Append($"{periodDisplay} · **{stats.TotalPlaycount:n0}** {StringExtensions.GetPlaysString(stats.TotalPlaycount)} " +
                       $"from **{stats.ListenerCount:n0}** {StringExtensions.GetListenersString(stats.ListenerCount)}");
 
         container.AddComponent(new TextDisplayProperties(header.ToString()));
@@ -249,6 +253,22 @@ public class GuildRecapService(
             }
 
             container.AddComponent(new TextDisplayProperties(tracks.ToString()));
+        }
+
+        if (newReleases.Count > 0)
+        {
+            container.AddComponent(new ComponentSeparatorProperties());
+
+            var releases = new StringBuilder();
+            releases.AppendLine("**Popular new releases**");
+            foreach (var (album, index) in newReleases.Take(5).Select((value, index) => (value, index)))
+            {
+                releases.AppendLine($"{index + 1}. **{StringExtensions.Sanitize(StringExtensions.TruncateLongString(album.AlbumName, 60))}** " +
+                                    $"by {StringExtensions.Sanitize(StringExtensions.TruncateLongString(album.ArtistName, 40))} · " +
+                                    $"*{album.ListenerCount:n0} {StringExtensions.GetListenersString(album.ListenerCount)}*");
+            }
+
+            container.AddComponent(new TextDisplayProperties(releases.ToString()));
         }
 
         if (nextRecap.HasValue)

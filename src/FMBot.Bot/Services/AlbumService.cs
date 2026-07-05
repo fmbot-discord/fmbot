@@ -412,6 +412,41 @@ public class AlbumService
         return albums;
     }
 
+    public async Task<List<GuildAlbum>> FilterAlbumsToReleasePeriod(List<GuildAlbum> albums, DateTime periodStart,
+        DateTime periodEnd)
+    {
+        if (albums.Count == 0)
+        {
+            return albums;
+        }
+
+        var lookup = await GetAlbumEnrichmentLookup(
+            albums.Select(s => s.ArtistName).ToArray(),
+            albums.Select(s => s.AlbumName).ToArray());
+
+        var newReleases = new List<GuildAlbum>();
+        foreach (var album in albums)
+        {
+            if (!lookup.TryGetValue((album.AlbumName.ToLower(), album.ArtistName.ToLower()), out var row))
+            {
+                continue;
+            }
+
+            if (string.Equals(row.AlbumType, "single", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            var releaseDate = ParseReleaseDate(row.ReleaseDate, row.ReleaseDatePrecision);
+            if (releaseDate.HasValue && releaseDate.Value >= periodStart && releaseDate.Value < periodEnd)
+            {
+                newReleases.Add(album);
+            }
+        }
+
+        return newReleases;
+    }
+
     private async Task EnrichTopAlbums(IReadOnlyCollection<TopAlbum> list)
     {
         var albumsToEnrich = list.Where(w => w.ReleaseDate == null || w.AlbumType == null).ToList();
@@ -420,24 +455,9 @@ public class AlbumService
             return;
         }
 
-        var artistNames = albumsToEnrich.Select(s => s.ArtistName).ToArray();
-        var albumNames = albumsToEnrich.Select(s => s.AlbumName).ToArray();
-
-        const string sql = "SELECT a.name AS album_name, a.artist_name, a.release_date, a.release_date_precision, a.type AS album_type " +
-                           "FROM albums a " +
-                           "INNER JOIN unnest(@artistNames::citext[], @albumNames::citext[]) AS q(artist_name, album_name) " +
-                           "  ON a.artist_name = q.artist_name AND a.name = q.album_name " +
-                           "WHERE a.release_date IS NOT NULL AND a.release_date <> '0000'";
-
-        DefaultTypeMap.MatchNamesWithUnderscores = true;
-        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
-        await connection.OpenAsync();
-
-        var rows = (await connection.QueryAsync<AlbumEnrichmentRow>(sql, new { artistNames, albumNames })).ToList();
-
-        var lookup = rows
-            .GroupBy(g => (g.AlbumName.ToLower(), g.ArtistName.ToLower()))
-            .ToDictionary(g => g.Key, g => g.First());
+        var lookup = await GetAlbumEnrichmentLookup(
+            albumsToEnrich.Select(s => s.ArtistName).ToArray(),
+            albumsToEnrich.Select(s => s.AlbumName).ToArray());
 
         foreach (var topAlbum in albumsToEnrich)
         {
@@ -450,6 +470,26 @@ public class AlbumService
                 topAlbum.AlbumType ??= !string.IsNullOrEmpty(row.AlbumType) ? row.AlbumType : null;
             }
         }
+    }
+
+    private async Task<Dictionary<(string AlbumName, string ArtistName), AlbumEnrichmentRow>> GetAlbumEnrichmentLookup(
+        string[] artistNames, string[] albumNames)
+    {
+        const string sql = "SELECT a.name AS album_name, a.artist_name, a.release_date, a.release_date_precision, a.type AS album_type " +
+                           "FROM albums a " +
+                           "INNER JOIN unnest(@artistNames::citext[], @albumNames::citext[]) AS q(artist_name, album_name) " +
+                           "  ON a.artist_name = q.artist_name AND a.name = q.album_name " +
+                           "WHERE a.release_date IS NOT NULL AND a.release_date <> '0000'";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        var rows = (await connection.QueryAsync<AlbumEnrichmentRow>(sql, new { artistNames, albumNames })).ToList();
+
+        return rows
+            .GroupBy(g => (g.AlbumName.ToLower(), g.ArtistName.ToLower()))
+            .ToDictionary(g => g.Key, g => g.First());
     }
 
     private static DateTime? ParseReleaseDate(string releaseDate, string precision)

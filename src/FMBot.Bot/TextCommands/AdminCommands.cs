@@ -2779,7 +2779,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
         }
     }
 
-    [Command("runtoplistupdate")]
+    [Command("runtoplistupdate","updatetoplists ")]
     [Summary("Runs a toplist update for someone else")]
     public async Task RunTopListUpdate([CommandParameter(Remainder = true)] string user = null)
     {
