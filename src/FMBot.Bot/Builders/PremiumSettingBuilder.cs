@@ -36,19 +36,20 @@ public class PremiumSettingBuilder(
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed,
+            ResponseType = ResponseType.ComponentsV2,
         };
 
-        response.Embed.WithTitle("✨ Premium server");
-        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+        var container = response.ComponentsContainer;
+        container.WithAccentColor(DiscordConstants.InformationColorBlue);
 
-        var description = new StringBuilder();
-        var components = new ActionRowProperties();
+        container.WithTextDisplay("## ✨ Premium server");
+        container.WithSeparator();
 
         var subscription = await supporterService.GetPremiumGuildSubscription(context.DiscordGuild.Id);
 
         if (subscription != null)
         {
+            var description = new StringBuilder();
             description.AppendLine("✅ **This server has Premium.**");
             description.AppendLine();
 
@@ -60,23 +61,24 @@ public class PremiumSettingBuilder(
             if (subscription.DateEnding.HasValue)
             {
                 description.AppendLine(
-                    $"Active until <t:{((DateTimeOffset)subscription.DateEnding.Value).ToUnixTimeSeconds()}:D>.");
+                    $"Active until at least <t:{((DateTimeOffset)subscription.DateEnding.Value).ToUnixTimeSeconds()}:D>.");
             }
 
             description.AppendLine();
             AppendPerkListWithCommands(description);
 
+            var buttons = new ActionRowProperties();
+
             if (!string.IsNullOrWhiteSpace(subscription.StripeSubscriptionId))
             {
                 if (subscription.PurchaserDiscordUserId == context.DiscordUser.Id)
                 {
-                    components.WithButton("Change plan",
-                        $"{InteractionConstants.PremiumServer.ManageSubscription}:update",
-                        style: ButtonStyle.Secondary);
-                    components.WithButton("Cancel subscription",
+                    // buttons.AddComponents(new ButtonProperties(
+                    //     $"{InteractionConstants.PremiumServer.ManageSubscription}:update",
+                    //     "Change plan", ButtonStyle.Secondary));
+                    buttons.AddComponents(new ButtonProperties(
                         $"{InteractionConstants.PremiumServer.ManageSubscription}:cancel",
-                        style: ButtonStyle.Secondary);
-                    response.Components = components;
+                        "Manage subscription", ButtonStyle.Secondary));
                 }
                 else
                 {
@@ -94,26 +96,38 @@ public class PremiumSettingBuilder(
                 await supporterService.GetPremiumGuildSubscriptionsForPurchaser(context.DiscordUser.Id);
             if (purchaserSubscriptions.Any(a => a.DiscordGuildId != context.DiscordGuild.Id))
             {
-                components.WithButton("My Premium servers",
+                buttons.AddComponents(new ButtonProperties(
                     InteractionConstants.PremiumServer.MyServers,
-                    style: ButtonStyle.Secondary);
-                response.Components = components;
+                    "My Premium servers", ButtonStyle.Secondary));
+            }
+
+            container.WithTextDisplay(description.ToString());
+
+            if (buttons.Any())
+            {
+                container.WithActionRow(buttons);
             }
         }
         else if (PublicProperties.PremiumServers.ContainsKey(context.DiscordGuild.Id))
         {
+            var description = new StringBuilder();
             description.AppendLine("✅ **This server has Premium access.**");
             description.AppendLine("-# Access was granted to this server, so there is no subscription to manage.");
             description.AppendLine();
             AppendPerkListWithCommands(description);
+
+            container.WithTextDisplay(description.ToString());
         }
         else
         {
-            description.AppendLine("Put your server's music scene on autopilot and unlock perks for everyone:");
+            var description = new StringBuilder();
+            description.AppendLine("Improve the .fmbot experience in your community and unlock perks for everyone:");
             description.AppendLine();
             AppendPerkPitchList(description);
             description.AppendLine();
             description.AppendLine("Anyone can purchase Premium for this server. Configuring features requires server management permissions.");
+
+            container.WithTextDisplay(description.ToString());
 
             var stripeSupporter = await supporterService.GetStripeSupporter(context.DiscordUser.Id);
             var pricing = await supporterService.GetPricing(userLocale, stripeSupporter?.Currency,
@@ -121,40 +135,54 @@ public class PremiumSettingBuilder(
 
             if (pricing != null)
             {
-                response.Embed.AddField($"Monthly - {pricing.MonthlyPriceString}",
-                    $"-# {pricing.MonthlySubText}", true);
-                response.Embed.AddField($"Yearly - {pricing.YearlyPriceString}",
-                    $"-# {pricing.YearlySubText}", true);
-
-                components.WithButton("Get monthly",
-                    $"{InteractionConstants.PremiumServer.GetPurchaseLink}:monthly:{source}");
-                components.WithButton("Get yearly",
-                    $"{InteractionConstants.PremiumServer.GetPurchaseLink}:yearly:{source}");
-                response.Components = components;
+                container.WithSeparator();
+                container.AddComponent(new ComponentSectionProperties(
+                    new ButtonProperties($"{InteractionConstants.PremiumServer.GetPurchaseLink}:monthly:{source}",
+                        "Get monthly", ButtonStyle.Primary))
+                {
+                    Components =
+                    [
+                        new TextDisplayProperties(
+                            $"**Monthly - {pricing.MonthlyPriceString}**\n-# {pricing.MonthlySubText}")
+                    ]
+                });
+                container.WithSeparator();
+                container.AddComponent(new ComponentSectionProperties(
+                    new ButtonProperties($"{InteractionConstants.PremiumServer.GetPurchaseLink}:yearly:{source}",
+                        "Get yearly", ButtonStyle.Primary))
+                {
+                    Components =
+                    [
+                        new TextDisplayProperties(
+                            $"**Yearly - {pricing.YearlyPriceString}**\n-# {pricing.YearlySubText}")
+                    ]
+                });
             }
             else
             {
-                description.AppendLine();
-                description.AppendLine("Premium server is not available for purchase yet. Stay tuned!");
+                container.WithTextDisplay("Premium server is not available for purchase yet. Stay tuned!");
             }
 
             var existingSubscriptions =
                 await supporterService.GetPremiumGuildSubscriptionsForPurchaser(context.DiscordUser.Id);
             if (existingSubscriptions.Count > 0)
             {
-                description.AppendLine();
-                description.AppendLine(
-                    $"-# You currently have Premium Server subscriptions for {existingSubscriptions.Count} other {(existingSubscriptions.Count == 1 ? "server" : "servers")}.");
-                components.WithButton("My Premium servers",
-                    InteractionConstants.PremiumServer.MyServers,
-                    style: ButtonStyle.Secondary);
-                response.Components = components;
+                container.AddComponent(new ComponentSectionProperties(
+                    new ButtonProperties(InteractionConstants.PremiumServer.MyServers,
+                        "My Premium servers", ButtonStyle.Secondary))
+                {
+                    Components =
+                    [
+                        new TextDisplayProperties(
+                            $"-# You currently have Premium Server subscriptions for {existingSubscriptions.Count} other {(existingSubscriptions.Count == 1 ? "server" : "servers")}.")
+                    ]
+                });
             }
         }
 
-        response.Embed.WithDescription(description.ToString());
-        response.Embed.WithFooter("Premium server unlocks perks for this whole server\n" +
-                                  "Looking for personal perks? Check out /getsupporter");
+        // container.WithSeparator();
+        // container.WithTextDisplay("-# Premium server unlocks perks for this whole server\n" +
+        //                           "-# Looking for personal perks? Check out /getsupporter");
 
         return response;
     }
@@ -272,9 +300,9 @@ public class PremiumSettingBuilder(
         response.Embed.WithDescription(description.ToString());
 
         var components = new ActionRowProperties();
-        components.WithButton("Change plan",
-            $"{InteractionConstants.PremiumServer.MyServersManageFlow}:{subscription.Id}:update",
-            style: ButtonStyle.Secondary);
+        // components.WithButton("Change plan",
+        //     $"{InteractionConstants.PremiumServer.MyServersManageFlow}:{subscription.Id}:update",
+        //     style: ButtonStyle.Secondary);
         components.WithButton("Cancel subscription",
             $"{InteractionConstants.PremiumServer.MyServersManageFlow}:{subscription.Id}:cancel",
             style: ButtonStyle.Secondary);
@@ -366,7 +394,7 @@ public class PremiumSettingBuilder(
         else
         {
             var pitch = new StringBuilder();
-            pitch.AppendLine("Put your server's music scene on autopilot and unlock perks for everyone:");
+            pitch.AppendLine("Improve the .fmbot experience in your community and unlock perks for everyone:");
             pitch.AppendLine();
             AppendPerkPitchList(pitch);
             container.WithTextDisplay(pitch.ToString());
@@ -617,7 +645,7 @@ public class PremiumSettingBuilder(
         var container = response.ComponentsContainer;
         container.WithAccentColor(DiscordConstants.InformationColorBlue);
 
-        container.WithTextDisplay("## Custom bot branding");
+        container.WithTextDisplay("## Custom bot branding and featured");
         container.WithSeparator();
 
         var description = new StringBuilder();
@@ -625,8 +653,8 @@ public class PremiumSettingBuilder(
         description.AppendLine();
         description.AppendLine("**Branding modes:**");
         description.AppendLine("- **Global featured** — The default look, with the avatar following the global hourly featured");
-        description.AppendLine("- **Custom bot & global featured** — Your own custom avatar");
-        description.AppendLine("- **Custom bot & custom featured** — The avatar follows an hourly featured based on the members of this server");
+        description.AppendLine("- **Custom avatar** — Your own fixed logo or image, which never rotates");
+        description.AppendLine("- **Server featured** — The avatar follows an hourly featured based on the members of this server");
         description.AppendLine();
         description.AppendLine($"**Current mode:** {GetFeaturedModeName(featuredMode)}");
 
@@ -634,17 +662,14 @@ public class PremiumSettingBuilder(
         {
             description.AppendLine(!string.IsNullOrWhiteSpace(guild.CustomLogo)
                 ? $"**Custom avatar:** [image]({guild.CustomLogo})"
-                : "**Custom avatar:** None yet. Set one by running `.botbranding` with an image attached.");
+                : "**Custom avatar:** None yet. Set one by running `.botbranding` with an image attached. Please note that custom avatars may be viewed by .fmbot staff to prevent abuse.");
         }
 
-        if (featuredMode == GuildFeaturedMode.CustomBotCustomFeatured)
+        if (featuredMode == GuildFeaturedMode.GuildFeatured)
         {
             description.AppendLine(
-                "-# Custom featured posts to the same channel as your featured notifications. Set those up with `.addwebhook`.");
+                "Server featured posts to the same channel as your featured notifications. Set those up with `.addwebhook`.");
         }
-
-        description.AppendLine();
-        description.AppendLine("-# Please note that custom avatars may be viewed by .fmbot staff to prevent abuse.");
 
         var modeMenu = new StringMenuProperties(InteractionConstants.BotBranding.SetFeaturedMode)
             .WithPlaceholder("Set branding mode")
@@ -654,12 +679,12 @@ public class PremiumSettingBuilder(
         modeMenu.AddOption("Global featured", Enum.GetName(GuildFeaturedMode.GlobalFeatured),
             description: "Default bot branding and global featured",
             isDefault: featuredMode == GuildFeaturedMode.GlobalFeatured);
-        modeMenu.AddOption("Custom bot & global featured", Enum.GetName(GuildFeaturedMode.CustomBotGlobalFeatured),
-            description: "Your custom avatar and description",
+        modeMenu.AddOption("Custom avatar", Enum.GetName(GuildFeaturedMode.CustomBotGlobalFeatured),
+            description: "Your own fixed logo or image",
             isDefault: featuredMode == GuildFeaturedMode.CustomBotGlobalFeatured);
-        modeMenu.AddOption("Custom bot & custom featured", Enum.GetName(GuildFeaturedMode.CustomBotCustomFeatured),
+        modeMenu.AddOption("Server featured", Enum.GetName(GuildFeaturedMode.GuildFeatured),
             description: "Featured rotation based on this server's members",
-            isDefault: featuredMode == GuildFeaturedMode.CustomBotCustomFeatured);
+            isDefault: featuredMode == GuildFeaturedMode.GuildFeatured);
 
         var components = new ActionRowProperties();
         components.WithButton("Remove custom avatar", InteractionConstants.BotBranding.RemoveAvatar,
@@ -681,8 +706,8 @@ public class PremiumSettingBuilder(
     {
         return featuredMode switch
         {
-            GuildFeaturedMode.CustomBotGlobalFeatured => "Custom bot & global featured",
-            GuildFeaturedMode.CustomBotCustomFeatured => "Custom bot & custom featured",
+            GuildFeaturedMode.CustomBotGlobalFeatured => "Custom avatar",
+            GuildFeaturedMode.GuildFeatured => "Server featured",
             _ => "Global featured"
         };
     }
@@ -690,9 +715,9 @@ public class PremiumSettingBuilder(
     public async Task<string> SetGuildBotAvatar(RestClient rest, NetCord.Gateway.Guild discordGuild,
         string attachmentUrl, long attachmentSize)
     {
-        if (attachmentSize > 8 * 1024 * 1024)
+        if (attachmentSize > 10 * 1024 * 1024)
         {
-            return "❌ The attached image is too large. Please use an image under 8MB.";
+            return "❌ The attached image is too large. Please use an image under 10MB.";
         }
 
         byte[] imageBytes;

@@ -1375,10 +1375,16 @@ public class SettingService
             featuredView = FeaturedView.Friends;
         }
 
-        var guild = new[] { "server", "guild", "s" };
+        var guild = new[] { "server", "guild", "members", "s" };
         if (Contains(extraOptions, guild))
         {
             featuredView = FeaturedView.Server;
+        }
+
+        var guildFeatured = new[] { "serverfeatured", "customfeatured", "sf" };
+        if (Contains(extraOptions, guildFeatured))
+        {
+            featuredView = FeaturedView.GuildFeatured;
         }
 
         return featuredView;

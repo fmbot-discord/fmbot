@@ -121,6 +121,9 @@ public class TimerService : IDisposable
         Log.Information($"RecurringJob: Adding {nameof(ClearUserCache)}");
         RecurringJob.AddOrUpdate(nameof(ClearUserCache), () => ClearUserCache(), "30 */2 * * *");
 
+        Log.Information($"RecurringJob: Adding {nameof(RefreshPremiumGuilds)}");
+        RecurringJob.AddOrUpdate(nameof(RefreshPremiumGuilds), () => RefreshPremiumGuilds(), "* * * * *");
+
         Log.Information($"RecurringJob: Adding {nameof(ClearInternalLogs)}");
         RecurringJob.AddOrUpdate(nameof(ClearInternalLogs), () => ClearInternalLogs(), "0 8 * * *");
 
@@ -209,9 +212,6 @@ public class TimerService : IDisposable
 
         Log.Information($"RecurringJob: Adding {nameof(CheckExpiredStripeSupporters)}");
         RecurringJob.AddOrUpdate(nameof(CheckExpiredStripeSupporters), () => CheckExpiredStripeSupporters(), "30 */3 * * *");
-
-        Log.Information($"RecurringJob: Adding {nameof(RefreshPremiumGuilds)}");
-        RecurringJob.AddOrUpdate(nameof(RefreshPremiumGuilds), () => RefreshPremiumGuilds(), "* * * * *");
 
         Log.Information($"RecurringJob: Adding {nameof(SyncDiscordPremiumGuilds)}");
         RecurringJob.AddOrUpdate(nameof(SyncDiscordPremiumGuilds), () => SyncDiscordPremiumGuilds(), "*/30 * * * *");
@@ -611,8 +611,18 @@ public class TimerService : IDisposable
 
     public async Task RefreshPremiumGuilds()
     {
-        await this._guildService.RefreshPremiumGuilds();
-        await this._supporterService.SendPremiumGuildWelcomeMessages();
+        var currentUser = this._client.GetCurrentUser();
+        var sendActivationUpdates = currentUser != null &&
+                                    currentUser.Id != Constants.BotBetaId &&
+                                    (ConfigData.Data.Shards == null ||
+                                     ConfigData.Data.Shards.MainInstance == true);
+
+        await this._guildService.RefreshPremiumGuilds(sendActivationUpdates);
+
+        if (sendActivationUpdates)
+        {
+            await this._supporterService.SendPremiumGuildWelcomeMessages();
+        }
     }
 
     public async Task SyncDiscordPremiumGuilds()
@@ -680,17 +690,7 @@ public class TimerService : IDisposable
                     guildFeatured.ImageUrl, guildFeatured.AlbumName, guildFeatured.ArtistName,
                     BuildGuildFeaturedBio(guildFeatured.Description));
 
-                var featuredView = new FeaturedLog
-                {
-                    FeaturedMode = guildFeatured.FeaturedMode,
-                    DateTime = guildFeatured.DateTime,
-                    Description = guildFeatured.Description,
-                    ImageUrl = guildFeatured.ImageUrl,
-                    ArtistName = guildFeatured.ArtistName,
-                    AlbumName = guildFeatured.AlbumName,
-                    TrackName = guildFeatured.TrackName,
-                    UserId = guildFeatured.UserId
-                };
+                var featuredView = FeaturedService.GuildFeaturedToFeaturedLog(guildFeatured);
 
                 albumService ??= this._serviceProvider.GetRequiredService<AlbumService>();
                 var accentColor = await albumService.GetAlbumAccentColor(

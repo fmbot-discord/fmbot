@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Services;
@@ -25,19 +24,15 @@ public class UserEventHandler
     private readonly BotSettings _botSettings;
     private readonly UserService _userService;
     private readonly SupporterService _supporterService;
-    private readonly CensorService _censorService;
     private readonly GuildService _guildService;
 
-    private static readonly ConcurrentDictionary<ulong, string> BotGuildNicknames = new();
-
-    public UserEventHandler(ShardedGatewayClient client, IndexService indexService, CrownService crownService, IOptions<BotSettings> botSettings, UserService userService, SupporterService supporterService, CensorService censorService, GuildService guildService)
+    public UserEventHandler(ShardedGatewayClient client, IndexService indexService, CrownService crownService, IOptions<BotSettings> botSettings, UserService userService, SupporterService supporterService, GuildService guildService)
     {
         this._client = client;
         this._indexService = indexService;
         this._crownService = crownService;
         this._userService = userService;
         this._supporterService = supporterService;
-        this._censorService = censorService;
         this._guildService = guildService;
         this._client.GuildUserAdd += UserJoined;
         this._client.GuildUserRemove += UserLeft;
@@ -53,89 +48,12 @@ public class UserEventHandler
     {
         Statistics.DiscordEvents.WithLabels(nameof(GuildMemberUpdated)).Inc();
 
-        if (newGuildUser.Id == Constants.BotProductionId || newGuildUser.Id == Constants.BotBetaId)
-        {
-            await HandleBotMemberUpdated(client, newGuildUser);
-            return;
-        }
-
         if (!PublicProperties.RegisteredUsers.ContainsKey(newGuildUser.Id))
         {
             return;
         }
 
         _ = this._indexService.AddOrUpdateGuildUser(newGuildUser);
-    }
-
-    private async ValueTask HandleBotMemberUpdated(GatewayClient client, DiscordGuildUser botGuildUser)
-    {
-        var guildId = botGuildUser.GuildId;
-
-        if (!PublicProperties.PremiumServers.ContainsKey(guildId))
-        {
-            return;
-        }
-
-        var nickname = botGuildUser.Nickname;
-
-        if (BotGuildNicknames.TryGetValue(guildId, out var previousNickname) &&
-            string.Equals(previousNickname, nickname, StringComparison.Ordinal))
-        {
-            return;
-        }
-
-        if (string.IsNullOrWhiteSpace(nickname))
-        {
-            BotGuildNicknames[guildId] = nickname;
-            return;
-        }
-
-        bool offensive;
-        try
-        {
-            offensive = await this._censorService.ContainsBadWords(nickname);
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "BotBranding: Failed to check custom bot nickname for guild {guildId}", guildId);
-            return;
-        }
-
-        var guild = await this._guildService.GetGuildAsync(guildId);
-        var guildName = guild?.Name != null ? StringExtensions.Sanitize(guild.Name) : guildId.ToString();
-
-        if (offensive)
-        {
-            try
-            {
-                await client.Rest.ModifyCurrentGuildUserAsync(guildId, o => o.Nickname = "");
-            }
-            catch (Exception e)
-            {
-                Log.Error(e, "BotBranding: Failed to reset offensive bot nickname in guild {guildId}", guildId);
-                return;
-            }
-
-            BotGuildNicknames[guildId] = null;
-
-            Log.Information("BotBranding: Blocked offensive custom bot nickname in guild {guildId} - {nickname}",
-                guildId, nickname);
-
-            await this._guildService.SendBotBrandingAuditLog(
-                $"🚫 **Blocked offensive custom bot nickname**\n" +
-                $"Server: **{guildName}** — `{guildId}`\n" +
-                $"Attempted name: `{StringExtensions.Sanitize(nickname)}`",
-                warning: true);
-
-            return;
-        }
-
-        BotGuildNicknames[guildId] = nickname;
-
-        await this._guildService.SendBotBrandingAuditLog(
-            $"✏️ **Custom bot nickname set**\n" +
-            $"Server: **{guildName}** — `{guildId}`\n" +
-            $"Name: **{StringExtensions.Sanitize(nickname)}**");
     }
 
     private async ValueTask UserJoined(GatewayClient client, DiscordGuildUser socketGuildUser)
@@ -225,8 +143,7 @@ public class UserEventHandler
     private async Task ProcessGuildEntitlement(ulong discordGuildId)
     {
         await this._supporterService.UpdateSingleDiscordPremiumGuild(discordGuildId);
-        await this._guildService.RefreshPremiumGuilds();
-        await this._supporterService.SendPremiumGuildWelcomeMessages();
+        await this._guildService.RefreshPremiumGuilds(postAuditLog: false);
     }
 
     private async ValueTask UserLeft(GatewayClient client, GuildUserRemoveEventArgs args)

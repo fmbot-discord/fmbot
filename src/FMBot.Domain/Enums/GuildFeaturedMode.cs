@@ -4,5 +4,5 @@ public enum GuildFeaturedMode
 {
     GlobalFeatured = 0,
     CustomBotGlobalFeatured = 1,
-    CustomBotCustomFeatured = 2
+    GuildFeatured = 2
 }

@@ -147,7 +147,7 @@ public class DiscordSkuService
         IEnumerable<DiscordEntitlementResponseModel> discordEntitlements, ulong skuId)
     {
         return discordEntitlements
-            .Where(w => w.GuildId.HasValue && w.SkuId == skuId)
+            .Where(w => w.GuildId.HasValue && w.SkuId == skuId && w.StartsAt.HasValue)
             .GroupBy(g => g.GuildId.Value)
             .Select(s =>
             {

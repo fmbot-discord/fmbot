@@ -1273,8 +1273,14 @@ public class SupporterService
                 continue;
             }
 
-            subscription.WelcomeMessageSent = true;
-            db.Update(subscription);
+            var claimed = await db.PremiumGuildSubscriptions
+                .Where(w => w.Id == subscription.Id && !w.WelcomeMessageSent)
+                .ExecuteUpdateAsync(s => s.SetProperty(p => p.WelcomeMessageSent, true));
+
+            if (claimed == 0)
+            {
+                continue;
+            }
 
             if (!subscription.PurchaserDiscordUserId.HasValue)
             {
@@ -1320,7 +1326,7 @@ public class SupporterService
         container.AddComponent(new ComponentSeparatorProperties());
 
         var automation = new StringBuilder();
-        automation.AppendLine("### 👑 Put crowns on autopilot");
+        automation.AppendLine("### 👑 Generate crowns automatically");
         automation.AppendLine("- `/configuration` — Open the crownseeder setting and pick a daily, weekly or monthly schedule");
         automation.AppendLine("- Running the crownseeder manually stays available too");
         container.AddComponent(new TextDisplayProperties(automation.ToString()));
@@ -1342,9 +1348,9 @@ public class SupporterService
 
         var memberPerks = new StringBuilder();
         memberPerks.AppendLine("### 🎮 Perks for every member");
-        memberPerks.AppendLine("- Everyone now has 100 daily Jumble and Pixel Jumble games");
+        memberPerks.AppendLine("- Everyone can now play 100 daily Jumble and Pixel Jumble games");
         memberPerks.AppendLine("- Everyone can use `.lyrics`");
-        memberPerks.AppendLine($"- `.servershortcuts` — Create command shortcuts that work for the whole server");
+        memberPerks.AppendLine($"- `.servershortcuts` — Create text command shortcuts that work for the whole server");
         container.AddComponent(new TextDisplayProperties(memberPerks.ToString()));
         container.AddComponent(new ComponentSeparatorProperties());
 
@@ -1352,7 +1358,7 @@ public class SupporterService
         filtering.AppendLine("### ⚙️ Fine-tune WhoKnows");
         filtering.AppendLine("- `.allowedroles` & `.blockedroles` — Control which roles show in server-wide charts");
         filtering.AppendLine("- `.serveractivitythreshold` — Filter out inactive members");
-        filtering.AppendLine("- `.botmanagementroles` — Let specific roles manage .fmbot");
+        filtering.AppendLine("- `.botmanagementroles` — Let specific roles manage and configure .fmbot");
         container.AddComponent(new TextDisplayProperties(filtering.ToString()));
         container.AddComponent(new ComponentSeparatorProperties());
 

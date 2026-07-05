@@ -318,10 +318,9 @@ public class UserCommands(
                         response.ReferencedMusic);
                 }
 
-                if (timerService.CurrentFeatured?.Reactions != null &&
-                    timerService.CurrentFeatured.Reactions.Any())
+                if (response.EmoteReactions != null && response.EmoteReactions.Any())
                 {
-                    await GuildService.AddReactionsAsync(message, timerService.CurrentFeatured.Reactions);
+                    await GuildService.AddReactionsAsync(message, response.EmoteReactions);
                 }
                 else
                 {
@@ -361,7 +360,7 @@ public class UserCommands(
 
     [Command("featuredlog", "featuredhistory", "recentfeatured", "rf", "recentlyfeatured", "fl", "flog", "ɓolpǝɹnʇɐǝɟ")]
     [Summary("Shows featured history")]
-    [Options("global/server/friends/self")]
+    [Options("global/members/serverfeatured/friends/self")]
     [CommandCategories(CommandCategory.Other)]
     [UsernameSetRequired]
     public async Task FeaturedLogAsync([CommandParameter(Remainder = true)] string options = null)

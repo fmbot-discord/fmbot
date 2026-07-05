@@ -163,7 +163,7 @@ public class GuildService(
             .ToListAsync();
     }
 
-    public async Task RefreshPremiumGuilds()
+    public async Task RefreshPremiumGuilds(bool postAuditLog = true)
     {
         var premiumServers = await GetPremiumGuilds();
         var updatedPremiumServers = premiumServers.ToDictionary(d => d.DiscordGuildId, d => d.GuildId);
@@ -180,7 +180,7 @@ public class GuildService(
             PublicProperties.PremiumServers.TryRemove(removedGuild);
         }
 
-        if (previousGuildIds.Count == 0)
+        if (!postAuditLog || previousGuildIds.Count == 0)
         {
             return;
         }
@@ -216,7 +216,7 @@ public class GuildService(
         await using var db = await contextFactory.CreateDbContextAsync();
         var guilds = await db.Guilds
             .AsNoTracking()
-            .Where(w => w.FeaturedMode == GuildFeaturedMode.CustomBotCustomFeatured)
+            .Where(w => w.FeaturedMode == GuildFeaturedMode.GuildFeatured)
             .ToListAsync();
 
         return guilds

@@ -158,7 +158,7 @@ public class WebhookService
             .ToListAsync();
 
         webhooks = webhooks
-            .Where(w => w.Guild.FeaturedMode != GuildFeaturedMode.CustomBotCustomFeatured ||
+            .Where(w => w.Guild.FeaturedMode != GuildFeaturedMode.GuildFeatured ||
                         !PublicProperties.PremiumServers.ContainsKey(w.Guild.DiscordGuildId))
             .ToList();
 

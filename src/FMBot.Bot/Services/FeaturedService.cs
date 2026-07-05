@@ -303,6 +303,36 @@ public class FeaturedService
         await db.SaveChangesAsync();
     }
 
+    public static FeaturedLog GuildFeaturedToFeaturedLog(GuildFeaturedLog guildFeatured)
+    {
+        return new FeaturedLog
+        {
+            FeaturedMode = guildFeatured.FeaturedMode,
+            DateTime = guildFeatured.DateTime,
+            Description = guildFeatured.Description,
+            ImageUrl = guildFeatured.ImageUrl,
+            ArtistName = guildFeatured.ArtistName,
+            AlbumName = guildFeatured.AlbumName,
+            TrackName = guildFeatured.TrackName,
+            UserId = guildFeatured.UserId,
+            HasFeatured = guildFeatured.HasFeatured
+        };
+    }
+
+    public async Task<List<FeaturedLog>> GetGuildFeaturedHistory(int guildId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        var guildFeatureds = await db.GuildFeaturedLogs
+            .AsQueryable()
+            .Where(w => w.GuildId == guildId && w.HasFeatured)
+            .OrderByDescending(o => o.DateTime)
+            .Take(240)
+            .ToListAsync();
+
+        return guildFeatureds.Select(GuildFeaturedToFeaturedLog).ToList();
+    }
+
     public async Task<GuildFeaturedLog> NewGuildFeatured(Persistence.Domain.Models.Guild guild,
         DateTime featuredDateTime)
     {

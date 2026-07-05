@@ -684,7 +684,7 @@ public class GuildSettingBuilder(GuildService guildService, IOptions<BotSettings
             var recapPostTime = DateTime.UtcNow.Date.AddHours(GuildRecapService.PostDelayHours);
 
             description.AppendLine();
-            description.AppendLine($"-# Scheduled recaps post shortly after <t:{((DateTimeOffset)recapPostTime).ToUnixTimeSeconds()}:t>, when most listening data has come in. Use the button below to post one for the previous period right away.");
+            description.AppendLine($"Scheduled recaps post shortly after <t:{((DateTimeOffset)recapPostTime).ToUnixTimeSeconds()}:t>, when most listening data has come in. Use the button below to post one for the previous period right away.");
 
             container.WithTextDisplay(description.ToString());
             container.AddComponent(scheduleMenu);
