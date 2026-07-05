@@ -1221,7 +1221,7 @@ public class UserService
             }
         }
 
-        if (options.Count > 0)
+        if (footer.Length > 0)
         {
             footer.AppendLine();
         }
