@@ -10,6 +10,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Caching.Memory;
@@ -29,7 +30,8 @@ public class OwnerCommands(
     IOptions<BotSettings> botSettings,
     IMemoryCache cache,
     ShardedGatewayClient client,
-    SupporterService supporterService)
+    SupporterService supporterService,
+    GuildService guildService)
     : BaseCommandModule(botSettings)
 {
     [Command("say"), Summary("Says something")]
@@ -301,8 +303,14 @@ public class OwnerCommands(
                 .WithColor(DiscordConstants.InformationColorBlue)
                 .WithTitle("Premium server status");
 
+            var guild = await guildService.GetGuildAsync(discordGuildId.Value);
+
             var description = new StringBuilder();
             description.AppendLine($"**Guild:** `{discordGuildId}`");
+            if (!string.IsNullOrWhiteSpace(guild?.Name))
+            {
+                description.AppendLine($"**Name:** {StringExtensions.Sanitize(guild.Name)}");
+            }
             description.AppendLine(PublicProperties.PremiumServers.ContainsKey(discordGuildId.Value)
                 ? "**Premium:** ✅ Active in cache"
                 : "**Premium:** ❌ Not in cache");
