@@ -277,6 +277,254 @@ public class FeaturedService
             .FirstOrDefaultAsync(w => w.DateTime == date);
     }
 
+    public async Task<GuildFeaturedLog> GetGuildFeaturedForDateTime(int guildId, DateTime dateTime)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        var date = new DateTime(dateTime.Year, dateTime.Month, dateTime.Day, dateTime.Hour, Constants.FeaturedMinute, 0,
+            kind: DateTimeKind.Utc);
+        return await db.GuildFeaturedLogs
+            .AsQueryable()
+            .FirstOrDefaultAsync(w => w.GuildId == guildId && w.DateTime == date);
+    }
+
+    public async Task AddGuildFeatured(GuildFeaturedLog guildFeaturedLog)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        await db.GuildFeaturedLogs.AddAsync(guildFeaturedLog);
+        await db.SaveChangesAsync();
+    }
+
+    public async Task SetGuildFeatured(GuildFeaturedLog guildFeaturedLog)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        guildFeaturedLog.HasFeatured = true;
+        db.Update(guildFeaturedLog);
+        await db.SaveChangesAsync();
+    }
+
+    public static FeaturedLog GuildFeaturedToFeaturedLog(GuildFeaturedLog guildFeatured)
+    {
+        return new FeaturedLog
+        {
+            FeaturedMode = guildFeatured.FeaturedMode,
+            DateTime = guildFeatured.DateTime,
+            Description = guildFeatured.Description,
+            ImageUrl = guildFeatured.ImageUrl,
+            ArtistName = guildFeatured.ArtistName,
+            AlbumName = guildFeatured.AlbumName,
+            TrackName = guildFeatured.TrackName,
+            UserId = guildFeatured.UserId,
+            HasFeatured = guildFeatured.HasFeatured
+        };
+    }
+
+    public async Task<List<FeaturedLog>> GetGuildFeaturedHistory(int guildId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        var guildFeatureds = await db.GuildFeaturedLogs
+            .AsQueryable()
+            .Where(w => w.GuildId == guildId && w.HasFeatured)
+            .OrderByDescending(o => o.DateTime)
+            .Take(240)
+            .ToListAsync();
+
+        return guildFeatureds.Select(GuildFeaturedToFeaturedLog).ToList();
+    }
+
+    public async Task<GuildFeaturedLog> NewGuildFeatured(Persistence.Domain.Models.Guild guild,
+        DateTime featuredDateTime)
+    {
+        var randomAvatarMode = RandomNumberGenerator.GetInt32(1, 5);
+        if (!Enum.TryParse(randomAvatarMode.ToString(), out FeaturedMode featuredMode))
+        {
+            return null;
+        }
+
+        var randomAvatarModeDesc = featuredMode switch
+        {
+            FeaturedMode.RecentPlays => "Recent listens",
+            FeaturedMode.TopAlbumsWeekly => "Weekly albums",
+            FeaturedMode.TopAlbumsMonthly => "Monthly albums",
+            FeaturedMode.TopAlbumsAllTime => "Overall albums",
+            _ => ""
+        };
+
+        var guildFeaturedLog = new GuildFeaturedLog
+        {
+            GuildId = guild.GuildId,
+            FeaturedMode = featuredMode,
+            DateTime = new DateTime(featuredDateTime.Year, featuredDateTime.Month, featuredDateTime.Day,
+                featuredDateTime.Hour, Constants.FeaturedMinute, 0, kind: DateTimeKind.Utc),
+            HasFeatured = false
+        };
+
+        try
+        {
+            var user = await GetGuildUserToFeatureAsync(guild.GuildId);
+            if (user == null)
+            {
+                return null;
+            }
+
+            Log.Information("GuildFeatured: Picked user {userId} / {userNameLastFm} for guild {guildId}",
+                user.UserId, user.UserNameLastFM, guild.GuildId);
+
+            switch (featuredMode)
+            {
+                case FeaturedMode.RecentPlays:
+                    var tracks = await this._lastfmRepository.GetRecentTracksAsync(user.UserNameLastFM, 50,
+                        sessionKey: user.SessionKeyLastFm);
+
+                    if (!tracks.Success || tracks.Content?.RecentTracks == null)
+                    {
+                        goto case FeaturedMode.TopAlbumsWeekly;
+                    }
+
+                    foreach (var track in tracks.Content.RecentTracks.Where(w =>
+                                 w.AlbumName != null && w.AlbumCoverUrl != null))
+                    {
+                        if (await this._censorService.AlbumResult(track.AlbumName, track.ArtistName, true) ==
+                            CensorService.CensorResult.Safe &&
+                            await GuildAlbumNotFeaturedRecently(guild.GuildId, track.AlbumName, track.ArtistName) &&
+                            await AlbumPopularEnough(track.AlbumName, track.ArtistName))
+                        {
+                            guildFeaturedLog.Description = $"[{track.AlbumName}]({track.TrackUrl}) \n" +
+                                                           $"by [{track.ArtistName}]({track.ArtistUrl}) \n\n" +
+                                                           $"{randomAvatarModeDesc} from <@{user.DiscordUserId}>";
+                            guildFeaturedLog.UserId = user.UserId;
+                            guildFeaturedLog.ArtistName = track.ArtistName;
+                            guildFeaturedLog.TrackName = track.TrackName;
+                            guildFeaturedLog.AlbumName = track.AlbumName;
+                            guildFeaturedLog.ImageUrl = track.AlbumCoverUrl;
+
+                            return guildFeaturedLog;
+                        }
+
+                        await Task.Delay(400);
+                    }
+
+                    goto case FeaturedMode.TopAlbumsMonthly;
+                case FeaturedMode.TopAlbumsWeekly:
+                case FeaturedMode.TopAlbumsMonthly:
+                case FeaturedMode.TopAlbumsAllTime:
+                    var timespan = featuredMode switch
+                    {
+                        FeaturedMode.TopAlbumsMonthly => TimePeriod.Monthly,
+                        FeaturedMode.TopAlbumsAllTime => TimePeriod.AllTime,
+                        _ => TimePeriod.Weekly
+                    };
+
+                    var albums = await this._lastfmRepository.GetTopAlbumsAsync(user.UserNameLastFM, timespan, 50);
+
+                    if (!albums.Success || albums.Content?.TopAlbums == null || !albums.Content.TopAlbums.Any())
+                    {
+                        return null;
+                    }
+
+                    foreach (var album in albums.Content.TopAlbums.Where(w =>
+                                 w.AlbumName != null && w.AlbumCoverUrl != null))
+                    {
+                        if (await this._censorService.AlbumResult(album.AlbumName, album.ArtistName, true) ==
+                            CensorService.CensorResult.Safe &&
+                            await GuildAlbumNotFeaturedRecently(guild.GuildId, album.AlbumName, album.ArtistName) &&
+                            await AlbumPopularEnough(album.AlbumName, album.ArtistName))
+                        {
+                            var artistLink = LastfmUrlExtensions.GetArtistUrl(album.ArtistName);
+                            guildFeaturedLog.Description = $"[{album.AlbumName}]({album.AlbumUrl}) \n" +
+                                                           $"by [{album.ArtistName}]({artistLink}) \n\n" +
+                                                           $"{randomAvatarModeDesc} from <@{user.DiscordUserId}>";
+                            guildFeaturedLog.UserId = user.UserId;
+                            guildFeaturedLog.AlbumName = album.AlbumName;
+                            guildFeaturedLog.ImageUrl = album.AlbumCoverUrl;
+                            guildFeaturedLog.ArtistName = album.ArtistName;
+
+                            return guildFeaturedLog;
+                        }
+
+                        await Task.Delay(400);
+                    }
+
+                    return null;
+            }
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "GuildFeatured: Error picking featured for guild {guildId}", guild.GuildId);
+        }
+
+        return null;
+    }
+
+    private async Task<User> GetGuildUserToFeatureAsync(int guildId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var lastFmUsersToFilter = await db.BottedUsers
+            .AsQueryable()
+            .Where(w => w.BanActive)
+            .Select(s => s.UserNameLastFM.ToLower()).ToListAsync();
+
+        var recentlyFeaturedUserIds = await db.GuildFeaturedLogs
+            .AsQueryable()
+            .Where(w => w.GuildId == guildId &&
+                        w.DateTime > DateTime.UtcNow.AddHours(-6) &&
+                        w.UserId != null)
+            .Select(s => s.UserId.Value)
+            .ToListAsync();
+
+        var filterDate = DateTime.UtcNow.AddDays(-Constants.DaysLastUsedForFeatured);
+        var eligibleUsers = await db.GuildUsers
+            .AsNoTracking()
+            .Where(w => w.GuildId == guildId &&
+                        w.User.Blocked != true &&
+                        w.User.LastUsed != null &&
+                        w.User.LastUsed > filterDate)
+            .Select(s => s.User)
+            .ToListAsync();
+
+        eligibleUsers = eligibleUsers
+            .Where(w => !lastFmUsersToFilter.Contains(w.UserNameLastFM.ToLower()))
+            .ToList();
+
+        if (eligibleUsers.Count == 0)
+        {
+            return null;
+        }
+
+        var users = eligibleUsers
+            .Where(w => !recentlyFeaturedUserIds.Contains(w.UserId))
+            .ToList();
+
+        if (users.Count == 0)
+        {
+            users = eligibleUsers;
+        }
+
+        return users[RandomNumberGenerator.GetInt32(0, users.Count)];
+    }
+
+    private async Task<bool> GuildAlbumNotFeaturedRecently(int guildId, string albumName, string artistName)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        var filterDate = DateTime.UtcNow.AddDays(-14);
+        var recentlyFeaturedAlbums = await db.GuildFeaturedLogs
+            .AsQueryable()
+            .Where(w => w.GuildId == guildId && w.DateTime > filterDate)
+            .ToListAsync();
+
+        if (recentlyFeaturedAlbums.Count == 0)
+        {
+            return true;
+        }
+
+        return !recentlyFeaturedAlbums
+            .Where(w => w.AlbumName != null && w.ArtistName != null)
+            .Select(s => $"{s.ArtistName.ToLower()}{s.AlbumName.ToLower()}")
+            .Contains($"{artistName.ToLower()}{albumName.ToLower()}");
+    }
+
     public async Task<FeaturedLog> GetFeaturedForId(int id)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -409,7 +657,7 @@ public class FeaturedService
         return description.ToString();
     }
 
-    public string GetStringForFeaturedMode(FeaturedMode featuredMode)
+    public static string GetStringForFeaturedMode(FeaturedMode featuredMode)
     {
         return featuredMode switch
         {

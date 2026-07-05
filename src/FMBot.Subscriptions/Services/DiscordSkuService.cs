@@ -18,11 +18,17 @@ public class DiscordSkuService
 
     private readonly string _token;
     private readonly string _appId;
+    private readonly ulong? _premiumServerSkuId;
 
     public DiscordSkuService(IConfiguration configuration, HttpClient client)
     {
         this._token = configuration.GetSection("Discord:Token").Value;
         this._appId = configuration.GetSection("Discord:ApplicationId").Value;
+
+        this._premiumServerSkuId =
+            ulong.TryParse(configuration.GetSection("Discord:PremiumServerSkuId").Value, out var skuId)
+                ? skuId
+                : null;
 
         this._baseUrl = "https://discord.com/api/v10/";
 
@@ -30,7 +36,7 @@ public class DiscordSkuService
     }
 
     public async Task<List<DiscordEntitlementResponseModel>> GetRawEntitlementsFromDiscord(ulong? discordUserId = null,
-        ulong? after = null, ulong? before = null)
+        ulong? after = null, ulong? before = null, ulong? skuId = null, ulong? discordGuildId = null)
     {
         var fetchEntitlements = this._baseUrl + $"applications/{this._appId}/entitlements";
 
@@ -44,9 +50,7 @@ public class DiscordSkuService
 
         try
         {
-            var queryParams = new Dictionary<string, string>();
-
-            queryParams.Add("exclude_deleted", "false");
+            var queryParams = new Dictionary<string, string> { { "exclude_deleted", "false" } };
 
             if (discordUserId != null)
             {
@@ -61,6 +65,16 @@ public class DiscordSkuService
             if (before != null)
             {
                 queryParams.Add("before", before.ToString());
+            }
+
+            if (skuId != null)
+            {
+                queryParams.Add("sku_ids", skuId.ToString());
+            }
+
+            if (discordGuildId != null)
+            {
+                queryParams.Add("guild_id", discordGuildId.ToString());
             }
 
             request.RequestUri = new Uri(QueryHelpers.AddQueryString(fetchEntitlements, queryParams));
@@ -90,9 +104,74 @@ public class DiscordSkuService
         IEnumerable<DiscordEntitlementResponseModel> discordEntitlements)
     {
         return discordEntitlements
-            .Where(w => w.UserId.HasValue)
+            .Where(w => w.UserId.HasValue && !w.GuildId.HasValue)
             .GroupBy(g => g.UserId.Value)
             .Select(DiscordEntitlement)
+            .ToList();
+    }
+
+    public async Task<List<DiscordGuildEntitlement>> GetGuildEntitlements(ulong? discordGuildId = null)
+    {
+        if (this._premiumServerSkuId == null)
+        {
+            return [];
+        }
+
+        var allEntitlements = new List<DiscordEntitlementResponseModel>();
+        ulong? after = null;
+
+        for (var page = 0; page < 50; page++)
+        {
+            var batch = await GetRawEntitlementsFromDiscord(after: after, skuId: this._premiumServerSkuId,
+                discordGuildId: discordGuildId);
+
+            if (batch == null || batch.Count == 0)
+            {
+                break;
+            }
+
+            allEntitlements.AddRange(batch);
+
+            if (batch.Count < 100)
+            {
+                break;
+            }
+
+            after = batch.Max(m => m.Id);
+        }
+
+        return DiscordEntitlementsToGuildGrouped(allEntitlements, this._premiumServerSkuId.Value);
+    }
+
+    public static List<DiscordGuildEntitlement> DiscordEntitlementsToGuildGrouped(
+        IEnumerable<DiscordEntitlementResponseModel> discordEntitlements, ulong skuId)
+    {
+        return discordEntitlements
+            .Where(w => w.GuildId.HasValue && w.SkuId == skuId && w.StartsAt.HasValue)
+            .GroupBy(g => g.GuildId.Value)
+            .Select(s =>
+            {
+                var latest = s.OrderByDescending(o => o.EndsAt).First();
+                var noEndDate = s.Where(w => w.Deleted != true).Any(a => !a.EndsAt.HasValue);
+
+                return new DiscordGuildEntitlement
+                {
+                    DiscordGuildId = s.Key,
+                    EntitlementId = latest.Id,
+                    PurchaserDiscordUserId = latest.UserId,
+                    Active = s.All(a => a.Deleted)
+                        ? false
+                        : noEndDate
+                            ? true
+                            : !latest.EndsAt.HasValue || latest.EndsAt.Value > DateTime.UtcNow.AddDays(-2),
+                    StartsAt = latest.StartsAt.HasValue
+                        ? DateTime.SpecifyKind(latest.StartsAt.Value, DateTimeKind.Utc)
+                        : null,
+                    EndsAt = noEndDate || !latest.EndsAt.HasValue
+                        ? null
+                        : DateTime.SpecifyKind(latest.EndsAt.Value, DateTimeKind.Utc)
+                };
+            })
             .ToList();
     }
 

@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using FMBot.Bot.Configurations;
@@ -51,6 +52,8 @@ public class TimerService : IDisposable
     private readonly EurovisionService _eurovisionService;
     private readonly UpdateQueueHandler _updateQueueHandler;
     private readonly ShortcutService _shortcutService;
+    private readonly CrownService _crownService;
+    private readonly GuildRecapService _guildRecapService;
     private readonly IServiceProvider _serviceProvider;
 
     public FeaturedLog CurrentFeatured;
@@ -70,9 +73,13 @@ public class TimerService : IDisposable
         StatusHandler.StatusHandlerClient statusHandler,
         HttpClient httpClient,
         BotListService botListService,
-        EurovisionService eurovisionService, ShortcutService shortcutService, IServiceProvider serviceProvider)
+        EurovisionService eurovisionService, ShortcutService shortcutService, CrownService crownService,
+        GuildRecapService guildRecapService,
+        IServiceProvider serviceProvider)
     {
         this._serviceProvider = serviceProvider;
+        this._crownService = crownService;
+        this._guildRecapService = guildRecapService;
         this._client = client;
         this._userService = userService;
         this._indexService = indexService;
@@ -113,6 +120,9 @@ public class TimerService : IDisposable
 
         Log.Information($"RecurringJob: Adding {nameof(ClearUserCache)}");
         RecurringJob.AddOrUpdate(nameof(ClearUserCache), () => ClearUserCache(), "30 */2 * * *");
+
+        Log.Information($"RecurringJob: Adding {nameof(RefreshPremiumGuilds)}");
+        RecurringJob.AddOrUpdate(nameof(RefreshPremiumGuilds), () => RefreshPremiumGuilds(), "* * * * *");
 
         Log.Information($"RecurringJob: Adding {nameof(ClearInternalLogs)}");
         RecurringJob.AddOrUpdate(nameof(ClearInternalLogs), () => ClearInternalLogs(), "0 8 * * *");
@@ -202,6 +212,21 @@ public class TimerService : IDisposable
 
         Log.Information($"RecurringJob: Adding {nameof(CheckExpiredStripeSupporters)}");
         RecurringJob.AddOrUpdate(nameof(CheckExpiredStripeSupporters), () => CheckExpiredStripeSupporters(), "30 */3 * * *");
+
+        Log.Information($"RecurringJob: Adding {nameof(SyncDiscordPremiumGuilds)}");
+        RecurringJob.AddOrUpdate(nameof(SyncDiscordPremiumGuilds), () => SyncDiscordPremiumGuilds(), "*/30 * * * *");
+
+        Log.Information($"RecurringJob: Adding {nameof(RunAutomaticCrownSeeder)}");
+        RecurringJob.AddOrUpdate(nameof(RunAutomaticCrownSeeder), () => RunAutomaticCrownSeeder(), "15 * * * *");
+
+        Log.Information($"RecurringJob: Adding {nameof(RunScheduledServerRecaps)}");
+        RecurringJob.AddOrUpdate(nameof(RunScheduledServerRecaps), () => RunScheduledServerRecaps(), "35 * * * *");
+
+        Log.Information($"RecurringJob: Adding {nameof(RemoveLapsedPremiumSettings)}");
+        RecurringJob.AddOrUpdate(nameof(RemoveLapsedPremiumSettings), () => RemoveLapsedPremiumSettings(), "45 * * * *");
+
+        Log.Information($"RecurringJob: Adding {nameof(CheckForNewGuildFeatureds)}");
+        RecurringJob.AddOrUpdate(nameof(CheckForNewGuildFeatureds), () => CheckForNewGuildFeatureds(), "*/5 * * * *");
 
         Log.Information($"RecurringJob: Adding {nameof(PickNewFeatureds)}");
         RecurringJob.AddOrUpdate(nameof(PickNewFeatureds), () => PickNewFeatureds(), "0 12 * * *");
@@ -582,6 +607,121 @@ public class TimerService : IDisposable
     public async Task CheckExpiredStripeSupporters()
     {
         await this._supporterService.CheckExpiredStripeSupporters();
+    }
+
+    public async Task RefreshPremiumGuilds()
+    {
+        var currentUser = this._client.GetCurrentUser();
+        var sendActivationUpdates = currentUser != null &&
+                                    currentUser.Id != Constants.BotBetaId &&
+                                    (ConfigData.Data.Shards == null ||
+                                     ConfigData.Data.Shards.MainInstance == true);
+
+        await this._guildService.RefreshPremiumGuilds(sendActivationUpdates);
+
+        if (sendActivationUpdates)
+        {
+            await this._supporterService.SendPremiumGuildWelcomeMessages();
+        }
+    }
+
+    public async Task SyncDiscordPremiumGuilds()
+    {
+        await this._supporterService.SyncDiscordPremiumGuilds();
+    }
+
+    public async Task RunAutomaticCrownSeeder()
+    {
+        await this._crownService.RunAutomaticCrownSeeder();
+    }
+
+    public async Task RunScheduledServerRecaps()
+    {
+        await this._guildRecapService.RunScheduledServerRecaps();
+    }
+
+    public async Task RemoveLapsedPremiumSettings()
+    {
+        await this._guildService.RemoveLapsedPremiumSettings(this._client);
+    }
+
+    public async Task CheckForNewGuildFeatureds()
+    {
+        if (PublicProperties.PremiumServers.IsEmpty || this._client.GetCurrentUser() == null)
+        {
+            return;
+        }
+
+        var customFeaturedGuilds = await this._guildService.GetCustomFeaturedGuilds();
+        if (customFeaturedGuilds.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var guild in customFeaturedGuilds)
+        {
+            await ApplyGuildFeatured(guild);
+        }
+    }
+
+    public async Task ApplyGuildFeatured(Persistence.Domain.Models.Guild guild)
+    {
+        try
+        {
+            var existingFeatured =
+                await this._featuredService.GetGuildFeaturedForDateTime(guild.GuildId, DateTime.UtcNow);
+
+            if (existingFeatured is { HasFeatured: true })
+            {
+                return;
+            }
+
+            var guildFeatured = existingFeatured ??
+                                await this._featuredService.NewGuildFeatured(guild, DateTime.UtcNow);
+
+            if (guildFeatured == null)
+            {
+                Log.Information("GuildFeatured: No featured could be picked for guild {guildId}", guild.GuildId);
+                return;
+            }
+
+            if (existingFeatured == null)
+            {
+                await this._featuredService.AddGuildFeatured(guildFeatured);
+            }
+
+            await this._webhookService.ChangeToNewGuildAvatar(this._client, guild.DiscordGuildId,
+                guildFeatured.ImageUrl, guildFeatured.AlbumName, guildFeatured.ArtistName,
+                BuildGuildFeaturedBio(guildFeatured.Description));
+
+            var featuredView = FeaturedService.GuildFeaturedToFeaturedLog(guildFeatured);
+
+            var albumService = this._serviceProvider.GetRequiredService<AlbumService>();
+            var accentColor = await albumService.GetAlbumAccentColor(
+                guildFeatured.ImageUrl, guildFeatured.AlbumName, guildFeatured.ArtistName);
+
+            await this._webhookService.SendGuildFeaturedWebhooks(guild.GuildId, featuredView, accentColor);
+
+            await this._featuredService.SetGuildFeatured(guildFeatured);
+
+            Log.Information("GuildFeatured: Applied new featured for guild {guildId}", guild.GuildId);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "GuildFeatured: Error applying featured for guild {guildId}", guild.GuildId);
+        }
+    }
+
+    private static string BuildGuildFeaturedBio(string description)
+    {
+        if (description == null)
+        {
+            return null;
+        }
+
+        var plainText = Regex.Replace(description, @"\[([^\]]+)\]\([^)]+\)", "$1");
+
+        return plainText.Length > 190 ? plainText[..190] : plainText;
     }
 
     public async Task CheckDiscordSupportersUserType()

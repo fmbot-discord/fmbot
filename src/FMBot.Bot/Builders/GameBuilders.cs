@@ -78,15 +78,28 @@ public class GameBuilders
         {
             var recentJumbles = await this._gameService.GetRecentJumbles(context.ContextUser.UserId, JumbleType.Artist);
             var jumblesPlayedToday = recentJumbles.Count(c => c.DateStarted.Date == DateTime.Today);
-            const int jumbleLimit = 30;
+            var premiumGuild = context.DiscordGuild != null &&
+                               PublicProperties.PremiumServers.ContainsKey(context.DiscordGuild.Id);
+            var jumbleLimit = premiumGuild ? Constants.PremiumServerJumbleDailyLimit : Constants.JumbleDailyLimit;
             if (!SupporterService.IsSupporter(context.ContextUser.UserType) && jumblesPlayedToday > jumbleLimit)
             {
                 response.Embed.WithColor(DiscordConstants.InformationColorBlue);
-                response.Embed.WithDescription(
+                var limitDescription = new StringBuilder();
+                limitDescription.AppendLine(
                     $"You've used up all your {jumbleLimit} jumbles of today. Get supporter to play unlimited jumble games and much more.");
                 response.Components = new ActionRowProperties()
                     .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
                         customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "jumble-dailylimit"));
+
+                if (!premiumGuild)
+                {
+                    limitDescription.AppendLine(
+                        "-# Or unlock 60 daily games for everyone in this server with Premium server.");
+                    response.Components.WithButton("Premium server", style: ButtonStyle.Secondary,
+                        customId: $"{InteractionConstants.PremiumServer.GetOverview}:jumble-dailylimit");
+                }
+
+                response.Embed.WithDescription(limitDescription.ToString());
                 response.CommandResponse = CommandResponse.SupporterRequired;
                 return response;
             }
@@ -173,16 +186,29 @@ public class GameBuilders
         {
             var recentJumbles = await this._gameService.GetRecentJumbles(context.ContextUser.UserId, JumbleType.Pixelation);
             var jumblesPlayedToday = recentJumbles.Count(c => c.DateStarted.Date == DateTime.Today);
-            const int jumbleLimit = 30;
+            var premiumGuild = context.DiscordGuild != null &&
+                               PublicProperties.PremiumServers.ContainsKey(context.DiscordGuild.Id);
+            var jumbleLimit = premiumGuild ? Constants.PremiumServerJumbleDailyLimit : Constants.JumbleDailyLimit;
             if (!SupporterService.IsSupporter(context.ContextUser.UserType) && jumblesPlayedToday > jumbleLimit)
             {
                 response.ResponseType = ResponseType.Embed;
                 response.Embed.WithColor(DiscordConstants.InformationColorBlue);
-                response.Embed.WithDescription(
+                var limitDescription = new StringBuilder();
+                limitDescription.AppendLine(
                     $"You've used up all your {jumbleLimit} pixel jumbles of today. Get supporter to play unlimited jumble games and much more.");
                 response.Components = new ActionRowProperties()
                     .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
                         customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "pixel-dailylimit"));
+
+                if (!premiumGuild)
+                {
+                    limitDescription.AppendLine(
+                        "-# Or unlock 60 daily games for everyone in this server with Premium server.");
+                    response.Components.WithButton("Premium server", style: ButtonStyle.Secondary,
+                        customId: $"{InteractionConstants.PremiumServer.GetOverview}:pixel-dailylimit");
+                }
+
+                response.Embed.WithDescription(limitDescription.ToString());
                 response.CommandResponse = CommandResponse.SupporterRequired;
                 return response;
             }

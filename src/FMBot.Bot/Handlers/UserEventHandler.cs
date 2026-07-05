@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Services;
+using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
@@ -23,39 +24,36 @@ public class UserEventHandler
     private readonly BotSettings _botSettings;
     private readonly UserService _userService;
     private readonly SupporterService _supporterService;
+    private readonly GuildService _guildService;
 
-    public UserEventHandler(ShardedGatewayClient client, IndexService indexService, CrownService crownService, IOptions<BotSettings> botSettings, UserService userService, SupporterService supporterService)
+    public UserEventHandler(ShardedGatewayClient client, IndexService indexService, CrownService crownService, IOptions<BotSettings> botSettings, UserService userService, SupporterService supporterService, GuildService guildService)
     {
         this._client = client;
         this._indexService = indexService;
         this._crownService = crownService;
         this._userService = userService;
         this._supporterService = supporterService;
+        this._guildService = guildService;
         this._client.GuildUserAdd += UserJoined;
         this._client.GuildUserRemove += UserLeft;
         this._client.GuildBanAdd += UserBanned;
         this._client.GuildUserUpdate += GuildMemberUpdated;
         this._client.EntitlementCreate += EntitlementCreated;
         this._client.EntitlementUpdate += EntitlementUpdated;
+        this._client.EntitlementDelete += EntitlementDeleted;
         this._botSettings = botSettings.Value;
     }
 
-    private ValueTask GuildMemberUpdated(GatewayClient client, DiscordGuildUser newGuildUser)
+    private async ValueTask GuildMemberUpdated(GatewayClient client, DiscordGuildUser newGuildUser)
     {
         Statistics.DiscordEvents.WithLabels(nameof(GuildMemberUpdated)).Inc();
 
-        if (newGuildUser.Id == Constants.BotProductionId || newGuildUser.Id == Constants.BotBetaId)
-        {
-            return ValueTask.CompletedTask;
-        }
-
         if (!PublicProperties.RegisteredUsers.ContainsKey(newGuildUser.Id))
         {
-            return ValueTask.CompletedTask;
+            return;
         }
 
         _ = this._indexService.AddOrUpdateGuildUser(newGuildUser);
-        return ValueTask.CompletedTask;
     }
 
     private async ValueTask UserJoined(GatewayClient client, DiscordGuildUser socketGuildUser)
@@ -94,6 +92,14 @@ public class UserEventHandler
     {
         Statistics.DiscordEvents.WithLabels(nameof(EntitlementCreated)).Inc();
 
+        if (entitlement.GuildId.HasValue)
+        {
+            Log.Information("EntitlementCreated - guild {guildId} - received event", entitlement.GuildId.Value);
+
+            await ProcessGuildEntitlement(entitlement.GuildId.Value);
+            return;
+        }
+
         if (entitlement.UserId.HasValue)
         {
             Log.Information("EntitlementCreated - {userId} - received event", entitlement.UserId.Value);
@@ -106,12 +112,38 @@ public class UserEventHandler
     {
         Statistics.DiscordEvents.WithLabels(nameof(EntitlementUpdated)).Inc();
 
+        if (entitlement.GuildId.HasValue)
+        {
+            Log.Information("EntitlementUpdated - guild {guildId} - received event", entitlement.GuildId.Value);
+
+            await ProcessGuildEntitlement(entitlement.GuildId.Value);
+            return;
+        }
+
         if (entitlement.UserId.HasValue)
         {
             Log.Information("EntitlementUpdated - {userId} - received event", entitlement.UserId.Value);
 
             await this._supporterService.UpdateSingleDiscordSupporter(entitlement.UserId.Value);
         }
+    }
+
+    private async ValueTask EntitlementDeleted(GatewayClient client, Entitlement entitlement)
+    {
+        Statistics.DiscordEvents.WithLabels(nameof(EntitlementDeleted)).Inc();
+
+        if (entitlement.GuildId.HasValue)
+        {
+            Log.Information("EntitlementDeleted - guild {guildId} - received event", entitlement.GuildId.Value);
+
+            await ProcessGuildEntitlement(entitlement.GuildId.Value);
+        }
+    }
+
+    private async Task ProcessGuildEntitlement(ulong discordGuildId)
+    {
+        await this._supporterService.UpdateSingleDiscordPremiumGuild(discordGuildId);
+        await this._guildService.RefreshPremiumGuilds(postAuditLog: false);
     }
 
     private async ValueTask UserLeft(GatewayClient client, GuildUserRemoveEventArgs args)

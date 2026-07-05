@@ -23,6 +23,7 @@ namespace FMBot.Persistence.EntityFrameWork
 
         public virtual DbSet<StripeSupporter> StripeSupporters { get; set; }
         public virtual DbSet<StripePricing> StripePricing { get; set; }
+        public virtual DbSet<PremiumGuildSubscription> PremiumGuildSubscriptions { get; set; }
 
         public virtual DbSet<DiscogsRelease> DiscogsReleases { get; set; }
         public virtual DbSet<UserDiscogsReleases> UserDiscogsReleases { get; set; }
@@ -57,6 +58,7 @@ namespace FMBot.Persistence.EntityFrameWork
 
         public virtual DbSet<CensoredMusic> CensoredMusic { get; set; }
         public virtual DbSet<FeaturedLog> FeaturedLogs { get; set; }
+        public virtual DbSet<GuildFeaturedLog> GuildFeaturedLogs { get; set; }
         public virtual DbSet<AiPrompt> AiPrompts { get; set; }
 
         public virtual DbSet<JumbleSession> JumbleSessions { get; set; }
@@ -208,6 +210,19 @@ namespace FMBot.Persistence.EntityFrameWork
                     .HasConversion(
                         v => string.Join(',', v),
                         v => v.Split(',', StringSplitOptions.RemoveEmptyEntries));
+            });
+
+            modelBuilder.Entity<PremiumGuildSubscription>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                entity.HasIndex(i => i.DiscordGuildId);
+
+                entity.HasIndex(i => i.StripeSubscriptionId)
+                    .IsUnique();
+
+                entity.HasIndex(i => i.DiscordEntitlementId)
+                    .IsUnique();
             });
 
             modelBuilder.Entity<BottedUser>(entity => { entity.HasKey(e => e.BottedUserId); });
@@ -696,6 +711,17 @@ namespace FMBot.Persistence.EntityFrameWork
 
                 entity.HasOne(sc => sc.Guild)
                     .WithMany(s => s.Webhooks)
+                    .HasForeignKey(sc => sc.GuildId);
+            });
+
+            modelBuilder.Entity<GuildFeaturedLog>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                entity.HasIndex(i => new { i.GuildId, i.DateTime });
+
+                entity.HasOne(sc => sc.Guild)
+                    .WithMany()
                     .HasForeignKey(sc => sc.GuildId);
             });
         }

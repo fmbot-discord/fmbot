@@ -65,6 +65,27 @@ public class GuildCommands(
         }
     }
 
+    [Command("serverrecap", "recapschedule", "serverrecaps")]
+    [Summary("Automatically post a weekly or monthly recap of your server")]
+    [GuildOnly]
+    [RequiresIndex]
+    [CommandCategories(CommandCategory.ServerSettings)]
+    public async Task ServerRecapAsync([CommandParameter(Remainder = true)] string _ = null)
+    {
+        try
+        {
+            var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+            var response = await guildSettingBuilder.ServerRecap(new ContextModel(this.Context, prfx));
+
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
     [Command("members", "mb", "users", "memberoverview", "mo")]
     [Summary("view members in your server that have an .fmbot account")]
     [UsernameSetRequired]

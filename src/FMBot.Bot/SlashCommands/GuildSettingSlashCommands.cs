@@ -20,10 +20,33 @@ public class GuildSettingSlashCommands(
     InteractiveService interactivity,
     UserService userService,
     GuildService guildService,
-    GuildBuilders guildBuilders)
+    GuildBuilders guildBuilders,
+    PremiumSettingBuilder premiumSettingBuilder)
     : ApplicationCommandModule<ApplicationCommandContext>
 {
     private InteractiveService Interactivity { get; } = interactivity;
+
+    [SlashCommand("premiumserver", "✨ Unlock server-wide perks and automation for this server",
+        Contexts = [InteractionContextType.Guild],
+        IntegrationTypes = [ApplicationIntegrationType.GuildInstall])]
+    public async Task PremiumServerAsync()
+    {
+        try
+        {
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+
+            var response = await premiumSettingBuilder.PremiumServerOverview(
+                new ContextModel(this.Context, contextUser), this.Context.Interaction.UserLocale,
+                "premiumserver-slash");
+
+            await this.Context.SendResponse(this.Interactivity, response, userService, ephemeral: true);
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
 
     [SlashCommand("members", "Members in this server that use .fmbot",
         Contexts = [InteractionContextType.Guild],

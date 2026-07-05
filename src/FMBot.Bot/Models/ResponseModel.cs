@@ -32,6 +32,7 @@ public class ResponseModel
     public ActionRowProperties Components { get; set; }
     public Dictionary<int, ActionRowProperties> ButtonRows { get; set; }
     public RoleMenuProperties RoleMenu { get; set; }
+    public ChannelMenuProperties ChannelMenu { get; set; }
     public List<StringMenuProperties> StringMenus { get; set; }
 
     public List<ActionRowProperties> ComponentsV2 { get; set; }
@@ -119,6 +120,12 @@ public class ResponseModel
         if (RoleMenu != null)
         {
             components.Add(RoleMenu);
+        }
+
+        // Add channel menu if present
+        if (ChannelMenu != null)
+        {
+            components.Add(ChannelMenu);
         }
 
         return components.Count > 0 ? components.ToArray() : null;

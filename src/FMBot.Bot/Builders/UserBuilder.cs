@@ -156,7 +156,25 @@ public class UserBuilder
         }
 
         var featured = this._timer.CurrentFeatured;
-        var container = WebhookService.BuildFeaturedContainer(featured);
+
+        var isGuildFeatured = false;
+        if (context.DiscordGuild != null && PublicProperties.PremiumServers.ContainsKey(context.DiscordGuild.Id))
+        {
+            var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
+            if (guild?.FeaturedMode == GuildFeaturedMode.GuildFeatured)
+            {
+                var guildFeatured =
+                    await this._featuredService.GetGuildFeaturedForDateTime(guild.GuildId, DateTime.UtcNow);
+
+                if (guildFeatured is { HasFeatured: true })
+                {
+                    featured = FeaturedService.GuildFeaturedToFeaturedLog(guildFeatured);
+                    isGuildFeatured = true;
+                }
+            }
+        }
+
+        var container = WebhookService.BuildFeaturedContainer(featured, guildFeatured: isGuildFeatured);
 
         var accentColor = await this._albumService.GetAccentColorWithAlbum(context,
             featured.ImageUrl, null, featured.AlbumName, featured.ArtistName,
@@ -167,16 +185,16 @@ public class UserBuilder
             container.WithAccentColor(accentColor);
         }
 
-        if (context.DiscordGuild != null && guildUsers.Any() && this._timer.CurrentFeatured.UserId.HasValue &&
-            this._timer.CurrentFeatured.UserId.Value != 0)
+        if (!isGuildFeatured && context.DiscordGuild != null && guildUsers.Any() && featured.UserId.HasValue &&
+            featured.UserId.Value != 0)
         {
-            guildUsers.TryGetValue(this._timer.CurrentFeatured.UserId.Value, out var guildUser);
+            guildUsers.TryGetValue(featured.UserId.Value, out var guildUser);
 
             if (guildUser != null)
             {
                 response.Text = "in-server";
 
-                var dateValue = ((DateTimeOffset)this._timer.CurrentFeatured.DateTime.AddHours(1)).ToUnixTimeSeconds();
+                var dateValue = ((DateTimeOffset)featured.DateTime.AddHours(1)).ToUnixTimeSeconds();
 
                 container.WithSeparator();
                 container.WithTextDisplay(guildUser.DiscordUserId == context.DiscordUser.Id
@@ -192,12 +210,14 @@ public class UserBuilder
 
         response.ReferencedMusic = new ReferencedMusic
         {
-            Artist = this._timer.CurrentFeatured.ArtistName,
-            Album = this._timer.CurrentFeatured.AlbumName,
-            Track = this._timer.CurrentFeatured.TrackName
+            Artist = featured.ArtistName,
+            Album = featured.AlbumName,
+            Track = featured.TrackName
         };
 
-        if (this._timer.CurrentFeatured.SupporterDay && context.ContextUser.UserType == UserType.User)
+        response.EmoteReactions = featured.Reactions;
+
+        if (featured.SupporterDay && context.ContextUser.UserType == UserType.User)
         {
             container.WithActionRow(new ActionRowProperties().WithButton(Constants.GetSupporterButton,
                 style: ButtonStyle.Secondary,
@@ -850,6 +870,7 @@ public class UserBuilder
         var footer = new StringBuilder();
 
         var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild?.Id);
+        var dbGuild = await this._guildService.GetGuildAsync(context.DiscordGuild?.Id);
 
         string title;
 
@@ -861,13 +882,21 @@ public class UserBuilder
                 break;
             case FeaturedView.Server:
                 title = context.DiscordGuild != null
-                    ? $"{StringExtensions.Sanitize(context.DiscordGuild.Name)}'s server featured history"
-                    : "Server featured history";
+                    ? $"Members of {StringExtensions.Sanitize(context.DiscordGuild.Name)} featured globally"
+                    : "Members featured globally";
                 featuredHistory = await this._featuredService.GetFeaturedHistoryForGuild(guildUsers);
                 break;
             case FeaturedView.Friends:
                 featuredHistory = await this._featuredService.GetFeaturedHistoryForFriends(context.ContextUser.UserId);
                 title = $"{userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}'s friends featured history";
+                break;
+            case FeaturedView.GuildFeatured:
+                title = context.DiscordGuild != null
+                    ? $"{StringExtensions.Sanitize(context.DiscordGuild.Name)}'s server featured history"
+                    : "Server featured history";
+                featuredHistory = dbGuild != null
+                    ? await this._featuredService.GetGuildFeaturedHistory(dbGuild.GuildId)
+                    : [];
                 break;
             case FeaturedView.User:
                 featuredHistory =
@@ -891,7 +920,7 @@ public class UserBuilder
 
         var nextSupporterSunday = FeaturedService.GetDaysUntilNextSupporterSunday();
 
-        if (featuredHistory.Any())
+        if (featuredHistory.Any() && view != FeaturedView.GuildFeatured)
         {
             if (SupporterService.IsSupporter(context.ContextUser.UserType))
             {
@@ -922,6 +951,14 @@ public class UserBuilder
             var active = option == view;
 
             if (option == FeaturedView.Server && context.DiscordGuild == null)
+            {
+                continue;
+            }
+
+            if (option == FeaturedView.GuildFeatured &&
+                (context.DiscordGuild == null ||
+                 dbGuild?.FeaturedMode != GuildFeaturedMode.GuildFeatured ||
+                 !PublicProperties.PremiumServers.ContainsKey(context.DiscordGuild.Id)))
             {
                 continue;
             }
@@ -961,6 +998,12 @@ public class UserBuilder
                         break;
                     case FeaturedView.Friends:
                         description.AppendLine("Sorry, none of your friends have been featured yet..");
+                        break;
+                    case FeaturedView.GuildFeatured:
+                        description.AppendLine("This server doesn't have any custom featureds yet..");
+                        description.AppendLine();
+                        description.AppendLine(
+                            "Server featured is a premium server feature where the bot features someone from this server every hour. Server admins can configure it with `.botbranding`.");
                         break;
                     case FeaturedView.User:
                     {

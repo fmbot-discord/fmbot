@@ -1090,6 +1090,42 @@ public class PlayService
         return albums;
     }
 
+    public async Task<GuildPlayStats> GetGuildPlayStats(int guildId, DateTime startDateTime, DateTime endDateTime)
+    {
+        var cacheKey = $"guild-play-stats-{guildId}-{startDateTime:yyyyMMddHH}-{endDateTime:yyyyMMddHH}";
+
+        if (this._cache.TryGetValue(cacheKey, out GuildPlayStats cachedStats))
+        {
+            return cachedStats;
+        }
+
+        var sql = "SELECT COUNT(*)::int AS TotalPlaycount, " +
+                  "       COUNT(DISTINCT up.user_id)::int AS ListenerCount " +
+                  "FROM user_plays up " +
+                  "INNER JOIN guild_users gu ON gu.user_id = up.user_id " +
+                  "WHERE gu.guild_id = @guildId " +
+                  "  AND gu.bot != true " +
+                  "  AND up.time_played > @startDateTime " +
+                  "  AND up.time_played < @endDateTime " +
+                  "  AND NOT up.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
+                  "  AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL) ";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        var stats = await connection.QuerySingleAsync<GuildPlayStats>(sql, new
+        {
+            guildId,
+            startDateTime,
+            endDateTime
+        });
+
+        this._cache.Set(cacheKey, stats, TimeSpan.FromMinutes(10));
+
+        return stats;
+    }
+
     public async Task<List<GuildGenre>> GetGuildTopGenresPlays(int guildId, DateTime startDateTime,
         OrderType orderType, DateTime? endDateTime = null, int limit = 240)
     {

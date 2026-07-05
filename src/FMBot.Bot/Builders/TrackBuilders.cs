@@ -2136,26 +2136,34 @@ public class TrackBuilders
 
     public static ResponseModel LyricsSupporterRequired(ContextModel context)
     {
+        if (SupporterService.IsSupporter(context.ContextUser.UserType))
+        {
+            return null;
+        }
+
+        if (context.DiscordGuild != null && PublicProperties.PremiumServers.ContainsKey(context.DiscordGuild.Id))
+        {
+            return null;
+        }
+
         var response = new ResponseModel
         {
             ResponseType = ResponseType.Embed
         };
 
-        if (!SupporterService.IsSupporter(context.ContextUser.UserType))
-        {
-            response.Embed.WithDescription(
-                "Viewing track lyrics in .fmbot is only available for .fmbot supporters.");
+        response.Embed.WithDescription(
+            "Viewing track lyrics in .fmbot is only available for .fmbot supporters.\n" +
+            "-# Also included for everyone in servers with Premium server.");
 
-            response.Components = new ActionRowProperties()
-                .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
-                    customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "lyrics"));
-            response.Embed.WithColor(DiscordConstants.InformationColorBlue);
-            response.CommandResponse = CommandResponse.SupporterRequired;
+        response.Components = new ActionRowProperties()
+            .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
+                customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "lyrics"))
+            .WithButton("Premium server", style: ButtonStyle.Secondary,
+                customId: $"{InteractionConstants.PremiumServer.GetOverview}:lyrics");
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+        response.CommandResponse = CommandResponse.SupporterRequired;
 
-            return response;
-        }
-
-        return null;
+        return response;
     }
 
     public Task<ResponseModel> ScrobbleFromUserAsync(

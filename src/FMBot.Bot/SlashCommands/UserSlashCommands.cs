@@ -497,10 +497,9 @@ public class UserSlashCommands(
             PublicProperties.UsedCommandsResponseMessageId.TryAdd(this.Context.Interaction.Id, message.Id);
             PublicProperties.UsedCommandsResponseContextId.TryAdd(message.Id, this.Context.Interaction.Id);
 
-            if (timerService.CurrentFeatured?.Reactions != null &&
-                timerService.CurrentFeatured.Reactions.Length != 0)
+            if (response.EmoteReactions != null && response.EmoteReactions.Length != 0)
             {
-                await GuildService.AddReactionsAsync(message, timerService.CurrentFeatured.Reactions);
+                await GuildService.AddReactionsAsync(message, response.EmoteReactions);
             }
             else
             {

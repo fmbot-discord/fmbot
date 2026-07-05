@@ -6,6 +6,8 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Resources;
+using FMBot.Domain;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -152,7 +154,13 @@ public class WebhookService
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var webhooks = await db.Webhooks
             .AsQueryable()
+            .Include(i => i.Guild)
             .ToListAsync();
+
+        webhooks = webhooks
+            .Where(w => w.Guild.FeaturedMode != GuildFeaturedMode.GuildFeatured ||
+                        !PublicProperties.PremiumServers.ContainsKey(w.Guild.DiscordGuildId))
+            .ToList();
 
         var tasks = new List<Task>();
         foreach (var webhook in webhooks)
@@ -162,6 +170,20 @@ public class WebhookService
 
         Log.Information("SendFeaturedWebhooks: Sending {webhookCount} featured webhooks", webhooks.Count);
         await Task.WhenAll(tasks);
+    }
+
+    public async Task SendGuildFeaturedWebhooks(int guildId, FeaturedLog featured, Color? accentColor)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var webhooks = await db.Webhooks
+            .AsQueryable()
+            .Where(w => w.GuildId == guildId)
+            .ToListAsync();
+
+        foreach (var webhook in webhooks)
+        {
+            await SendWebhookMessage(webhook, featured, accentColor, guildFeatured: true);
+        }
     }
 
     public async Task SendFeaturedPreview(FeaturedLog featured, string webhook)
@@ -299,7 +321,8 @@ public class WebhookService
         }
     }
 
-    public static ComponentContainerProperties BuildFeaturedContainer(FeaturedLog featured, Color? accentColor = null)
+    public static ComponentContainerProperties BuildFeaturedContainer(FeaturedLog featured, Color? accentColor = null,
+        bool guildFeatured = false)
     {
         var container = new ComponentContainerProperties();
 
@@ -308,9 +331,11 @@ public class WebhookService
             container.WithAccentColor(accentColor.Value);
         }
 
+        var header = guildFeatured ? "**Server featured:**" : "**Featured:**";
+
         if (featured.FullSizeImage != null)
         {
-            container.WithTextDisplay($"**Featured:**\n{featured.Description}");
+            container.WithTextDisplay($"{header}\n{featured.Description}");
             container.AddComponent(new MediaGalleryProperties
             {
                 new MediaGalleryItemProperties(new ComponentMediaProperties(featured.FullSizeImage))
@@ -319,26 +344,27 @@ public class WebhookService
         else if (featured.ImageUrl != null)
         {
             container.WithSection([
-                new TextDisplayProperties($"**Featured:**\n{featured.Description}")
+                new TextDisplayProperties($"{header}\n{featured.Description}")
             ], featured.ImageUrl);
         }
         else
         {
-            container.WithTextDisplay($"**Featured:**\n{featured.Description}");
+            container.WithTextDisplay($"{header}\n{featured.Description}");
         }
 
         return container;
     }
 
-    private async Task SendWebhookMessage(Webhook webhook, FeaturedLog featured, Color? accentColor)
+    private async Task SendWebhookMessage(Webhook webhook, FeaturedLog featured, Color? accentColor,
+        bool guildFeatured = false)
     {
         var webhookClient = new WebhookClient(webhook.DiscordWebhookId, webhook.Token);
 
         try
         {
-            var container = BuildFeaturedContainer(featured, accentColor);
+            var container = BuildFeaturedContainer(featured, accentColor, guildFeatured);
 
-            if (featured.UserId.HasValue)
+            if (!guildFeatured && featured.UserId.HasValue)
             {
                 await using var db = await this._contextFactory.CreateDbContextAsync();
                 var guild = await db.Guilds
@@ -392,38 +418,7 @@ public class WebhookService
 
         try
         {
-            byte[] imageData = null;
-
-            if (albumName != null && artistName != null)
-            {
-                var localPath = ChartService.AlbumUrlToCacheFilePath(albumName, artistName);
-                if (File.Exists(localPath))
-                {
-                    imageData = await File.ReadAllBytesAsync(localPath);
-                    Log.Information("ChangeToNewAvatar: Loaded image from cache");
-                }
-            }
-
-            if (imageData == null)
-            {
-                if (imageUrl.Contains("lastfm.freetls.fastly.net"))
-                {
-                    imageUrl = imageUrl.Replace(".jpg", ".webp").Replace(".png", ".webp");
-                }
-
-                using var response = await this._httpClient.GetAsync(imageUrl);
-                response.EnsureSuccessStatusCode();
-                Log.Information("ChangeToNewAvatar: Got new avatar from URL");
-
-                var contentType = response.Content.Headers.ContentType?.MediaType;
-                imageData = await response.Content.ReadAsByteArrayAsync();
-
-                if (contentType?.ToLower() == "image/webp")
-                {
-                    imageData = ConvertWebPToPng(imageData);
-                    Log.Information("ChangeToNewAvatar: Converted WebP to PNG");
-                }
-            }
+            var imageData = await GetAvatarImageData(imageUrl, albumName, artistName);
 
             await client.Rest.ModifyCurrentUserAsync(o => o.Avatar = new ImageProperties(ImageFormat.Png, imageData));
             Log.Information("ChangeToNewAvatar: Avatar successfully changed");
@@ -434,6 +429,59 @@ public class WebhookService
         {
             Log.Error(exception, "ChangeToNewAvatar: Error while attempting to change avatar: {ErrorMessage}", exception.Message);
         }
+    }
+
+    public async Task ChangeToNewGuildAvatar(ShardedGatewayClient client, ulong discordGuildId, string imageUrl,
+        string albumName = null, string artistName = null, string bio = null)
+    {
+        Log.Information("ChangeToNewGuildAvatar: Updating avatar for guild {discordGuildId} to {imageUrl}",
+            discordGuildId, imageUrl);
+
+        var imageData = await GetAvatarImageData(imageUrl, albumName, artistName);
+
+        await client.Rest.ModifyCurrentGuildUserAsync(discordGuildId, o =>
+        {
+            o.Avatar = new ImageProperties(ImageFormat.Png, imageData);
+            if (bio != null)
+            {
+                o.Bio = bio;
+            }
+        });
+    }
+
+    private async Task<byte[]> GetAvatarImageData(string imageUrl, string albumName, string artistName)
+    {
+        byte[] imageData = null;
+
+        if (albumName != null && artistName != null)
+        {
+            var localPath = ChartService.AlbumUrlToCacheFilePath(albumName, artistName);
+            if (File.Exists(localPath))
+            {
+                imageData = await File.ReadAllBytesAsync(localPath);
+            }
+        }
+
+        if (imageData == null)
+        {
+            if (imageUrl.Contains("lastfm.freetls.fastly.net"))
+            {
+                imageUrl = imageUrl.Replace(".jpg", ".webp").Replace(".png", ".webp");
+            }
+
+            using var response = await this._httpClient.GetAsync(imageUrl);
+            response.EnsureSuccessStatusCode();
+
+            var contentType = response.Content.Headers.ContentType?.MediaType;
+            imageData = await response.Content.ReadAsByteArrayAsync();
+
+            if (contentType?.ToLower() == "image/webp")
+            {
+                imageData = ConvertWebPToPng(imageData);
+            }
+        }
+
+        return imageData;
     }
 
     private static byte[] ConvertWebPToPng(byte[] webpData)

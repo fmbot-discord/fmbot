@@ -52,7 +52,8 @@ public class StaticBuilders
         container.WithTextDisplay("### Using Spotify and tracking is out of sync?");
 
         var intro = new StringBuilder();
-        intro.AppendLine($".fmbot uses [your Last.fm account]({LastfmUrlExtensions.GetUserUrl(context.ContextUser?.UserNameLastFM) ?? "https://last.fm/user/_"}) for knowing what you listen to. ");
+        intro.AppendLine(
+            $".fmbot uses [your Last.fm account]({LastfmUrlExtensions.GetUserUrl(context.ContextUser?.UserNameLastFM) ?? "https://last.fm/user/_"}) for knowing what you listen to. ");
         intro.AppendLine(
             $"Last.fm and Spotify sometimes have issues keeping up with your current song, which can cause `{context.Prefix}fm` and other commands to lag behind the song you're currently listening to.");
         intro.AppendLine();
@@ -70,7 +71,8 @@ public class StaticBuilders
         thingsToTry.AppendLine(
             "- Disconnecting and **reconnecting Spotify in [your Last.fm settings](https://www.last.fm/settings/applications)**");
         thingsToTry.AppendLine();
-        thingsToTry.AppendLine("Still not working? Check **[the complete guide for this issue on the Last.fm support forums](https://support.last.fm/t/spotify-has-stopped-scrobbling-what-can-i-do/3184)**.");
+        thingsToTry.AppendLine(
+            "Still not working? Check **[the complete guide for this issue on the Last.fm support forums](https://support.last.fm/t/spotify-has-stopped-scrobbling-what-can-i-do/3184)**.");
 
         container.WithTextDisplay(thingsToTry.ToString());
 
@@ -95,35 +97,38 @@ public class StaticBuilders
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed,
+            ResponseType = ResponseType.ComponentsV2,
         };
 
-        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
-        response.Components = new ActionRowProperties();
+        var container = response.ComponentsContainer;
+        container.WithAccentColor(DiscordConstants.InformationColorBlue);
+
+        container.WithTextDisplay("## ⭐ .fmbot supporter");
+        container.WithSeparator();
 
         if (expandWithPerks)
         {
-            response.Embed.AddField("📈 Expanded commands & stats",
-                "-# Get expanded `.profile`, `.recap`, `.overview` and `.recent` commands, see all `.artistalbums` and `.artisttracks` results, and view lyrics right inside .fmbot.");
+            container.WithTextDisplay("**📈 Expanded commands & stats**\n" +
+                                      "-# Get expanded `.profile`, `.recap`, `.overview` and `.recent` commands, see all `.artistalbums` and `.artisttracks` results, and view lyrics right inside .fmbot.");
 
-            response.Embed.AddField("<:history:1131511469096312914> Import your history",
-                "-# Import and access your full Spotify and Apple Music history together with your Last.fm data for the most accurate playcounts, listening time, and insights.");
+            container.WithTextDisplay("**<:history:1131511469096312914> Import your history**\n" +
+                                      "-# Import and access your full Spotify and Apple Music history together with your Last.fm data for the most accurate playcounts, listening time, and insights.");
 
-            response.Embed.AddField("⚙️ More customization",
-                "-# Add close friends, configure shortcuts, customize your `fm` with exclusive options, and set your own global emoji reactions.");
+            container.WithTextDisplay("**⚙️ More customization**\n" +
+                                      "-# Add close friends, configure shortcuts, customize your `fm` with exclusive options, and set your own global emoji reactions.");
 
-            response.Embed.AddField("🎮 Higher limits",
-                "-# Play unlimited Jumble and Pixel Jumble games, get better quality output on `.judge`, and add more friends.");
+            container.WithTextDisplay("**🎮 Higher limits**\n" +
+                                      "-# Play unlimited Jumble and Pixel Jumble games, get better quality output on `.judge`, and add more friends.");
 
-            response.Embed.AddField("<:discoveries:1145740579284713512> Go back in time",
-                "-# See exactly when you discovered and re-discovered artists, albums, and tracks with the exclusive `.discoveries`, `.gaps`, `.discoverydate` and `.last` commands.");
+            container.WithTextDisplay("**<:discoveries:1145740579284713512> Go back in time**\n" +
+                                      "-# See exactly when you discovered and re-discovered artists, albums, and tracks with the exclusive `.discoveries`, `.gaps`, `.discoverydate` and `.last` commands.");
 
-            response.Embed.AddField("⭐ Exclusive supporter perks",
-                $"-# Show your support with a badge, gain access to a private [Discord role and channel](https://discord.gg/fmbot), and a higher chance to be featured on Supporter Sunday (next up in {FeaturedService.GetDaysUntilNextSupporterSunday()} {StringExtensions.GetDaysString(FeaturedService.GetDaysUntilNextSupporterSunday())}).");
+            container.WithTextDisplay("**⭐ Exclusive supporter perks**\n" +
+                                      $"-# Show your support with a badge, gain access to a private [Discord role and channel](https://discord.gg/fmbot), and a higher chance to be featured on Supporter Sunday (next up in {FeaturedService.GetDaysUntilNextSupporterSunday()} {StringExtensions.GetDaysString(FeaturedService.GetDaysUntilNextSupporterSunday())}).");
         }
         else
         {
-            response.Embed.WithDescription(
+            container.WithTextDisplay(
                 "⭐ Take your .fmbot experience to the next level with new features and benefits. " +
                 "Import and use your history, access extra statistics, play unlimited games, support development and much more. " +
                 "Please note that .fmbot is not affiliated with Last.fm.");
@@ -132,80 +137,116 @@ public class StaticBuilders
         var existingSupporter = await this._supporterService.GetSupporter(context.ContextUser.DiscordUserId);
         var stripeSupporter = await this._supporterService.GetStripeSupporter(context.ContextUser.DiscordUserId);
 
+        var bottomButtons = new ActionRowProperties();
+
         if (publicResponse)
         {
-            response.Components.WithButton(
+            bottomButtons.AddComponents(new ButtonProperties(
+                $"{InteractionConstants.SupporterLinks.GetPurchaseButtons}:true:false:false:{source}",
                 SupporterService.IsSupporter(context.ContextUser.UserType)
                     ? "Manage your supporter"
                     : "Get .fmbot supporter",
-                style: ButtonStyle.Secondary,
-                customId: $"{InteractionConstants.SupporterLinks.GetPurchaseButtons}:true:false:false:{source}");
+                ButtonStyle.Secondary));
         }
         else
         {
             if (SupporterService.IsSupporter(context.ContextUser.UserType) &&
                 existingSupporter != null && existingSupporter.Expired != true)
             {
+                container.WithSeparator();
+
                 if (stripeSupporter == null)
                 {
-                    response.Embed.AddField("Thank you for being a supporter",
-                        "Manage your subscription with the button below.");
-
-                    response.Components.WithButton("View current supporter status", style: ButtonStyle.Secondary,
-                        customId: InteractionConstants.SupporterLinks.ManageOverview);
+                    container.AddComponent(new ComponentSectionProperties(
+                        new ButtonProperties(InteractionConstants.SupporterLinks.ManageOverview,
+                            "View current supporter status", ButtonStyle.Secondary))
+                    {
+                        Components =
+                        [
+                            new TextDisplayProperties("**Thank you for being a supporter**\n" +
+                                                      "Use the button to manage your subscription.")
+                        ]
+                    });
                 }
                 else if (stripeSupporter.Type == StripeSupporterType.GiftedSupporter)
                 {
-                    response.Embed.AddField("Thank you for being a supporter",
-                        "You have been gifted supporter status! Since this was a gift, you cannot manage this subscription directly.");
+                    container.WithTextDisplay("**Thank you for being a supporter**\n" +
+                                              "You have been gifted supporter status! Since this was a gift, you cannot manage this subscription directly.");
                 }
                 else if (string.IsNullOrWhiteSpace(stripeSupporter.StripeSubscriptionId))
                 {
-                    response.Embed.AddField("Thank you for being a lifetime supporter",
-                        "You have lifetime supporter! If you still have an active subscription running, you can cancel it with the link below.");
-
                     var stripeManageLink = await this._supporterService.GetSupporterManageLink(stripeSupporter);
 
-                    response.Components.WithButton("Manage billing",
-                        url: stripeManageLink);
+                    container.AddComponent(new ComponentSectionProperties(
+                        new LinkButtonProperties(stripeManageLink, "Manage billing"))
+                    {
+                        Components =
+                        [
+                            new TextDisplayProperties("**Thank you for being a lifetime supporter**\n" +
+                                                      "You have lifetime supporter! If you still have an active subscription running, you can cancel it with the button.")
+                        ]
+                    });
                 }
                 else
                 {
-                    response.Embed.AddField("Thank you for being a supporter",
-                        "Manage your subscription with the link below.");
-
                     var stripeManageLink = await this._supporterService.GetSupporterManageLink(stripeSupporter);
 
-                    response.Components.WithButton("Manage subscription",
-                        url: stripeManageLink);
+                    container.AddComponent(new ComponentSectionProperties(
+                        new LinkButtonProperties(stripeManageLink, "Manage subscription"))
+                    {
+                        Components =
+                        [
+                            new TextDisplayProperties("**Thank you for being a supporter**\n" +
+                                                      "Use the button to manage your subscription.")
+                        ]
+                    });
                 }
             }
             else
             {
                 var pricing = await this._supporterService.GetPricing(userLocale, stripeSupporter?.Currency);
-                response.Embed.AddField($"Monthly - {pricing.MonthlyPriceString}",
-                    $"-# {pricing.MonthlySubText}", true);
-                response.Embed.AddField($"Yearly - {pricing.YearlyPriceString}",
-                    $"-# {pricing.YearlySubText}", true);
 
-                response.Components = new ActionRowProperties()
-                    .AddComponents(new ButtonProperties(
+                container.WithSeparator();
+                container.AddComponent(new ComponentSectionProperties(
+                    new ButtonProperties(
                         $"{InteractionConstants.SupporterLinks.GetPurchaseLink}:monthly:{source}", "Get monthly",
                         ButtonStyle.Primary))
-                    .AddComponents(new ButtonProperties(
+                {
+                    Components =
+                    [
+                        new TextDisplayProperties(
+                            $"**Monthly - {pricing.MonthlyPriceString}**\n-# {pricing.MonthlySubText}")
+                    ]
+                });
+                container.WithSeparator();
+                container.AddComponent(new ComponentSectionProperties(
+                    new ButtonProperties(
                         $"{InteractionConstants.SupporterLinks.GetPurchaseLink}:yearly:{source}", "Get yearly",
-                        ButtonStyle.Primary));
+                        ButtonStyle.Primary))
+                {
+                    Components =
+                    [
+                        new TextDisplayProperties(
+                            $"**Yearly - {pricing.YearlyPriceString}**\n-# {pricing.YearlySubText}")
+                    ]
+                });
 
                 if (pricing.LifetimePriceId != null &&
                     pricing.LifetimePriceString != null &&
                     pricing.LifetimeSubText != null)
                 {
-                    response.Embed.AddField($"Lifetime - {pricing.LifetimePriceString}",
-                        $"-# {pricing.LifetimeSubText}", true);
-
-                    response.Components.AddComponents(new ButtonProperties(
-                        $"{InteractionConstants.SupporterLinks.GetPurchaseLink}:lifetime:{source}", "Get lifetime",
-                        ButtonStyle.Primary));
+                    container.WithSeparator();
+                    container.AddComponent(new ComponentSectionProperties(
+                        new ButtonProperties(
+                            $"{InteractionConstants.SupporterLinks.GetPurchaseLink}:lifetime:{source}", "Get lifetime",
+                            ButtonStyle.Primary))
+                    {
+                        Components =
+                        [
+                            new TextDisplayProperties(
+                                $"**Lifetime - {pricing.LifetimePriceString}**\n-# {pricing.LifetimeSubText}")
+                        ]
+                    });
                 }
             }
         }
@@ -214,14 +255,22 @@ public class StaticBuilders
         {
             if (expandWithPerks)
             {
-                response.Components.WithButton("Hide all perks", style: ButtonStyle.Secondary,
-                    customId: $"{InteractionConstants.SupporterLinks.GetPurchaseButtons}:false:false:true:{source}");
+                bottomButtons.AddComponents(new ButtonProperties(
+                    $"{InteractionConstants.SupporterLinks.GetPurchaseButtons}:false:false:true:{source}",
+                    "Hide all perks", ButtonStyle.Secondary));
             }
             else
             {
-                response.Components.WithButton("View all perks", style: ButtonStyle.Secondary,
-                    customId: $"{InteractionConstants.SupporterLinks.GetPurchaseButtons}:false:true:true:{source}");
+                bottomButtons.AddComponents(new ButtonProperties(
+                    $"{InteractionConstants.SupporterLinks.GetPurchaseButtons}:false:true:true:{source}",
+                    "View all perks", ButtonStyle.Secondary));
             }
+        }
+
+        if (bottomButtons.Any())
+        {
+            container.WithSeparator();
+            container.WithActionRow(bottomButtons);
         }
 
         return response;
@@ -753,6 +802,7 @@ public class StaticBuilders
         {
             return nameAttr.Aliases[0];
         }
+
         return commandInfo.ToString() ?? "unknown";
     }
 

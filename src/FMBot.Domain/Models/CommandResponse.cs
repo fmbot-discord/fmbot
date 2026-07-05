@@ -39,4 +39,6 @@ public enum CommandResponse
     SupporterRequired = 17,
 
     OnlySupportedInDm = 18,
+
+    PremiumServerRequired = 19,
 }

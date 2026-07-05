@@ -71,6 +71,11 @@ public class SupporterService
             return null;
         }
 
+        if (PublicProperties.PremiumServers.ContainsKey(guild.Id))
+        {
+            return null;
+        }
+
         if (this._cache.TryGetValue(GetGuildPromoCacheKey(guild.Id), out _))
         {
             return null;
@@ -814,6 +819,54 @@ public class SupporterService
             .FirstOrDefaultAsync();
     }
 
+    public async Task<PremiumGuildSubscription> GetPremiumGuildSubscription(ulong discordGuildId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        return await db.PremiumGuildSubscriptions
+            .Where(w => w.DiscordGuildId == discordGuildId &&
+                        !w.EntitlementDeleted &&
+                        (w.DateEnding == null || w.DateEnding > DateTime.UtcNow))
+            .OrderByDescending(o => o.DateStarted)
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task<List<PremiumGuildSubscription>> GetPremiumGuildSubscriptionsForPurchaser(ulong discordUserId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        return await db.PremiumGuildSubscriptions
+            .Where(w => w.PurchaserDiscordUserId == discordUserId &&
+                        !w.EntitlementDeleted &&
+                        (w.DateEnding == null || w.DateEnding > DateTime.UtcNow))
+            .OrderByDescending(o => o.DateStarted)
+            .ToListAsync();
+    }
+
+    public async Task<PremiumGuildSubscription> GetPremiumGuildSubscriptionById(int subscriptionId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        return await db.PremiumGuildSubscriptions
+            .Where(w => w.Id == subscriptionId &&
+                        !w.EntitlementDeleted &&
+                        (w.DateEnding == null || w.DateEnding > DateTime.UtcNow))
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task<string> GetExistingStripeCustomerId(ulong discordUserId)
+    {
+        var stripeSupporter = await GetStripeSupporter(discordUserId);
+        if (!string.IsNullOrWhiteSpace(stripeSupporter?.StripeCustomerId))
+        {
+            return stripeSupporter.StripeCustomerId;
+        }
+
+        var guildSubscriptions = await GetPremiumGuildSubscriptionsForPurchaser(discordUserId);
+        return guildSubscriptions.FirstOrDefault(f => !string.IsNullOrWhiteSpace(f.StripeCustomerId))
+            ?.StripeCustomerId;
+    }
+
     public async Task<StripePricing> GetPricing(string userLocale, string existingUserCurrency,
         StripeSupporterType type = StripeSupporterType.Supporter)
     {
@@ -822,6 +875,11 @@ public class SupporterService
         var prices = await db.StripePricing
             .Where(w => w.Type == type)
             .ToListAsync();
+
+        if (prices.Count == 0)
+        {
+            return null;
+        }
 
         if (existingUserCurrency != null)
         {
@@ -1192,6 +1250,247 @@ public class SupporterService
                 after: DateTime.UtcNow.AddDays(-1).ToSnowflake());
 
         await UpdateDiscordSupporters(discordSupporters);
+    }
+
+    public async Task SendPremiumGuildWelcomeMessages()
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var pendingWelcomes = await db.PremiumGuildSubscriptions
+            .Where(w => !w.WelcomeMessageSent &&
+                        !w.EntitlementDeleted &&
+                        (w.DateEnding == null || w.DateEnding > DateTime.UtcNow))
+            .ToListAsync();
+
+        if (pendingWelcomes.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var subscription in pendingWelcomes)
+        {
+            if (!PublicProperties.PremiumServers.ContainsKey(subscription.DiscordGuildId))
+            {
+                continue;
+            }
+
+            var claimed = await db.PremiumGuildSubscriptions
+                .Where(w => w.Id == subscription.Id && !w.WelcomeMessageSent)
+                .ExecuteUpdateAsync(s => s.SetProperty(p => p.WelcomeMessageSent, true));
+
+            if (claimed == 0)
+            {
+                continue;
+            }
+
+            if (!subscription.PurchaserDiscordUserId.HasValue)
+            {
+                continue;
+            }
+
+            try
+            {
+                var guild = await db.Guilds
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(f => f.DiscordGuildId == subscription.DiscordGuildId);
+                var user = await this._client.Rest.GetUserAsync(subscription.PurchaserDiscordUserId.Value);
+
+                if (user != null)
+                {
+                    await SendPremiumGuildWelcomeMessage(user, guild?.Name);
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Error(e, "Could not send premium guild welcome dm to {discordUserId}",
+                    subscription.PurchaserDiscordUserId);
+            }
+        }
+
+        await db.SaveChangesAsync();
+    }
+
+    public static async Task SendPremiumGuildWelcomeMessage(NetCord.User discordUser, string guildName)
+    {
+        var container = new ComponentContainerProperties
+        {
+            AccentColor = DiscordConstants.InformationColorBlue
+        };
+
+        var intro = new StringBuilder();
+        intro.AppendLine("## ✨ Thank you for getting .fmbot Premium server!");
+        intro.Append(guildName != null
+            ? $"Premium is now active for **{StringExtensions.Sanitize(guildName)}**. Here's how to get the most out of it."
+            : "Premium is now active for your server. Here's how to get the most out of it.");
+
+        container.AddComponent(new TextDisplayProperties(intro.ToString()));
+        container.AddComponent(new ComponentSeparatorProperties());
+
+        var automation = new StringBuilder();
+        automation.AppendLine("### 👑 Generate crowns automatically");
+        automation.AppendLine("- `/configuration` — Open the crownseeder setting and pick a daily, weekly or monthly schedule");
+        automation.AppendLine("- Running the crownseeder manually stays available too");
+        container.AddComponent(new TextDisplayProperties(automation.ToString()));
+        container.AddComponent(new ComponentSeparatorProperties());
+
+        var recaps = new StringBuilder();
+        recaps.AppendLine("### 📊 Schedule server recaps");
+        recaps.AppendLine("- `.serverrecap` — Pick a channel and a weekly or monthly schedule");
+        recaps.AppendLine("- Your server's top artists, albums and tracks get posted automatically");
+        container.AddComponent(new TextDisplayProperties(recaps.ToString()));
+        container.AddComponent(new ComponentSeparatorProperties());
+
+        var branding = new StringBuilder();
+        branding.AppendLine("### 🤖 Give the bot your server's look");
+        branding.AppendLine("- `.botbranding` — Set a custom avatar by attaching an image, or let the featured rotation be based on your own members");
+        branding.AppendLine("- Sponsored messages under charts are now hidden automatically");
+        container.AddComponent(new TextDisplayProperties(branding.ToString()));
+        container.AddComponent(new ComponentSeparatorProperties());
+
+        var memberPerks = new StringBuilder();
+        memberPerks.AppendLine("### 🎮 Perks for every member");
+        memberPerks.AppendLine("- Everyone can now play 60 daily Jumble and Pixel Jumble games");
+        memberPerks.AppendLine("- Everyone can use `.lyrics`");
+        memberPerks.AppendLine($"- `.servershortcuts` — Create text command shortcuts that work for the whole server");
+        container.AddComponent(new TextDisplayProperties(memberPerks.ToString()));
+        container.AddComponent(new ComponentSeparatorProperties());
+
+        var filtering = new StringBuilder();
+        filtering.AppendLine("### ⚙️ Fine-tune WhoKnows");
+        filtering.AppendLine("- `.allowedroles` & `.blockedroles` — Control which roles show in server-wide charts");
+        filtering.AppendLine("- `.serveractivitythreshold` — Filter out inactive members");
+        filtering.AppendLine("- `.botmanagementroles` — Let specific roles manage and configure .fmbot");
+        container.AddComponent(new TextDisplayProperties(filtering.ToString()));
+        container.AddComponent(new ComponentSeparatorProperties());
+
+        container.AddComponent(new TextDisplayProperties(
+            "-# Manage or cancel your subscription anytime with the button below, even if you leave the server."));
+        container.WithActionRow(new ActionRowProperties()
+            .WithButton("My Premium servers", InteractionConstants.PremiumServer.MyServers,
+                style: ButtonStyle.Secondary));
+
+        var dmChannel = await discordUser.GetDMChannelAsync();
+        await dmChannel.SendMessageAsync(new MessageProperties
+        {
+            Components = [container],
+            Flags = MessageFlags.IsComponentsV2,
+            AllowedMentions = AllowedMentionsProperties.None
+        });
+
+        Log.Information("Sent premium guild welcome DM to {discordUserId}", discordUser.Id);
+    }
+
+    public async Task SyncDiscordPremiumGuilds()
+    {
+        var guildEntitlements = await this._discordSkuService.GetGuildEntitlements();
+
+        await UpdateDiscordPremiumGuilds(guildEntitlements);
+    }
+
+    public async Task UpdateSingleDiscordPremiumGuild(ulong discordGuildId)
+    {
+        var guildEntitlements = await this._discordSkuService.GetGuildEntitlements(discordGuildId);
+
+        await UpdateDiscordPremiumGuilds(guildEntitlements);
+    }
+
+    public async Task UpdateDiscordPremiumGuilds(List<DiscordGuildEntitlement> guildEntitlements)
+    {
+        if (guildEntitlements == null || guildEntitlements.Count == 0)
+        {
+            return;
+        }
+
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var existingSubscriptions = await db.PremiumGuildSubscriptions
+            .Where(w => w.DiscordEntitlementId != null)
+            .ToListAsync();
+
+        var entitlementGuildIds = guildEntitlements.Select(s => s.DiscordGuildId).ToList();
+        var activeNonDiscordGuildIds = await db.PremiumGuildSubscriptions
+            .Where(w => w.DiscordEntitlementId == null &&
+                        !w.EntitlementDeleted &&
+                        (w.DateEnding == null || w.DateEnding > DateTime.UtcNow) &&
+                        entitlementGuildIds.Contains(w.DiscordGuildId))
+            .Select(s => s.DiscordGuildId)
+            .ToListAsync();
+
+        var supporterAuditLogChannel =
+            WebhookService.CreateWebhookClientFromUrl(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
+
+        foreach (var entitlement in guildEntitlements)
+        {
+            var existingSubscription =
+                existingSubscriptions.FirstOrDefault(f => f.DiscordGuildId == entitlement.DiscordGuildId);
+
+            if (existingSubscription == null && entitlement.Active)
+            {
+                if (activeNonDiscordGuildIds.Contains(entitlement.DiscordGuildId))
+                {
+                    Log.Warning(
+                        "Skipped Discord premium guild subscription for {discordGuildId}: guild already has an active non-Discord subscription",
+                        entitlement.DiscordGuildId);
+
+                    var duplicateEmbed = new EmbedProperties().WithDescription(
+                        $"⚠️ Discord premium entitlement for {entitlement.DiscordGuildId} not added — guild already has an active subscription on another rail. Refund one to resolve the duplicate.");
+                    await supporterAuditLogChannel.ExecuteAsync(new WebhookMessageProperties { Embeds = [duplicateEmbed] });
+
+                    continue;
+                }
+
+                Log.Information("Adding Discord premium guild subscription for {discordGuildId}",
+                    entitlement.DiscordGuildId);
+
+                await db.PremiumGuildSubscriptions.AddAsync(new PremiumGuildSubscription
+                {
+                    DiscordGuildId = entitlement.DiscordGuildId,
+                    PurchaserDiscordUserId = entitlement.PurchaserDiscordUserId,
+                    DiscordEntitlementId = entitlement.EntitlementId,
+                    DateStarted = entitlement.StartsAt ?? DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
+                    DateEnding = entitlement.EndsAt,
+                    EntitlementDeleted = false,
+                    PurchaseSource = "discord-sku"
+                });
+
+                var purchaser = entitlement.PurchaserDiscordUserId.HasValue
+                    ? $"<@{entitlement.PurchaserDiscordUserId}>"
+                    : "unknown";
+                var endDate = entitlement.EndsAt.HasValue
+                    ? $"Ends <t:{((DateTimeOffset)entitlement.EndsAt.Value).ToUnixTimeSeconds()}:f>"
+                    : "No end date";
+
+                var embed = new EmbedProperties().WithDescription(
+                    $"Added Discord premium server {entitlement.DiscordGuildId}\n" +
+                    $"-# *Purchaser {purchaser} — {endDate}*");
+                await supporterAuditLogChannel.ExecuteAsync(new WebhookMessageProperties { Embeds = [embed] });
+
+                continue;
+            }
+
+            if (existingSubscription != null &&
+                (existingSubscription.DateEnding != entitlement.EndsAt ||
+                 existingSubscription.EntitlementDeleted == entitlement.Active))
+            {
+                Log.Information("Updating Discord premium guild subscription for {discordGuildId}",
+                    entitlement.DiscordGuildId);
+
+                existingSubscription.DiscordEntitlementId = entitlement.EntitlementId;
+                existingSubscription.DateEnding = entitlement.EndsAt;
+                existingSubscription.EntitlementDeleted = !entitlement.Active;
+
+                db.Update(existingSubscription);
+
+                var endDate = entitlement.EndsAt.HasValue
+                    ? $"end date <t:{((DateTimeOffset)entitlement.EndsAt.Value).ToUnixTimeSeconds()}:f>"
+                    : "no end date";
+
+                var embed = new EmbedProperties().WithDescription(
+                    $"Updated Discord premium server {entitlement.DiscordGuildId}\n" +
+                    $"-# *Active {entitlement.Active} — {endDate}*");
+                await supporterAuditLogChannel.ExecuteAsync(new WebhookMessageProperties { Embeds = [embed] });
+            }
+        }
+
+        await db.SaveChangesAsync();
     }
 
     public async Task UpdateDiscordSupporters(List<DiscordEntitlement> groupedEntitlements)
@@ -2291,6 +2590,49 @@ public class SupporterService
         var url = await this._supporterLinkService.GetManageLinkAsync(new GetManageLinkOptions
         {
             StripeCustomerId = stripeSupporter.StripeCustomerId
+        });
+
+        return url?.ManageLink;
+    }
+
+    public async Task<CreateLinkReply> GetPremiumGuildCheckoutLink(ulong discordUserId, string lastFmUserName,
+        string type, ulong discordGuildId, string guildName, StripePricing pricing, string existingCustomerId = null,
+        string source = "unknown")
+    {
+        var priceId = type.Equals("yearly", StringComparison.OrdinalIgnoreCase)
+            ? pricing.YearlyPriceId
+            : pricing.MonthlyPriceId;
+
+        return await this._supporterLinkService.GetCheckoutLinkAsync(new CreateLinkOptions
+        {
+            DiscordUserId = (long)discordUserId,
+            LastFmUserName = lastFmUserName ?? "",
+            Type = $"premiumserver-{type}",
+            ExistingCustomerId = existingCustomerId ?? "",
+            PriceId = priceId,
+            Source = source,
+            DiscordGuildId = (long)discordGuildId,
+            GuildName = guildName ?? ""
+        });
+    }
+
+    public async Task<string> GetPremiumGuildManageLink(PremiumGuildSubscription subscription, string flowType)
+    {
+        var url = await this._supporterLinkService.GetPremiumGuildManageLinkAsync(new GetPremiumGuildManageLinkOptions
+        {
+            StripeCustomerId = subscription.StripeCustomerId,
+            StripeSubscriptionId = subscription.StripeSubscriptionId,
+            FlowType = flowType
+        });
+
+        return url?.ManageLink;
+    }
+
+    public async Task<string> GetStripeCustomerPortalLink(string stripeCustomerId)
+    {
+        var url = await this._supporterLinkService.GetManageLinkAsync(new GetManageLinkOptions
+        {
+            StripeCustomerId = stripeCustomerId
         });
 
         return url?.ManageLink;
