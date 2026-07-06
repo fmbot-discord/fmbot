@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using System;
 using System.Linq;
 using Fergun.Interactive;
+using Hangfire;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Resources;
@@ -218,6 +219,11 @@ public class ImportGroupSlashCommands(
                 await indexService.RecalculateTopLists(contextUser);
                 await UpdateSpotifyImportEmbed(message.Id, this.Context.Interaction, embed, description,
                     $"- Refreshed top list cache");
+
+                BackgroundJob.Schedule(() => indexService.RecalculateTopLists(contextUser.UserId),
+                    TimeSpan.FromMinutes(1));
+                BackgroundJob.Schedule(() => indexService.RecalculateTopLists(contextUser.UserId),
+                    TimeSpan.FromMinutes(2));
             }
 
             await importService.UpdateExistingScrobbleSource(contextUser);
@@ -417,6 +423,9 @@ public class ImportGroupSlashCommands(
                 await indexService.RecalculateTopLists(contextUser);
                 await UpdateAppleMusicImportEmbed(message.Id, this.Context.Interaction, embed, description,
                     $"- Refreshed top list cache");
+
+                BackgroundJob.Schedule(() => indexService.RecalculateTopLists(contextUser.UserId),
+                    TimeSpan.FromMinutes(1));
             }
 
             await importService.UpdateExistingScrobbleSource(contextUser);

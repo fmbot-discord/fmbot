@@ -259,6 +259,19 @@ public class IndexService
         }
     }
 
+    public async Task RecalculateTopLists(int userId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var user = await db.Users.FindAsync(userId);
+
+        if (user == null)
+        {
+            return;
+        }
+
+        await this.RecalculateTopLists(user);
+    }
+
     private async Task<IReadOnlyList<UserArtist>> GetTopArtistsForUser(User user)
     {
         Log.Information("Index: {userId} / {discordUserId} / {UserNameLastFM} - Getting top artists",
