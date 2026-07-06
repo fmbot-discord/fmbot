@@ -468,6 +468,11 @@ public class MusicDataFactory(
                     amAlbum.Attributes.Artwork.Height, amAlbum.Attributes.Artwork.Width, amAlbum.Attributes.Artwork);
             }
 
+            if (amAlbum?.Attributes.GenreNames != null && amAlbum.Attributes.GenreNames.Count != 0)
+            {
+                await AlbumRepository.AddOrUpdateAlbumGenres(albumToAdd.Id, amAlbum.Attributes.GenreNames, connection);
+            }
+
             if (albumInfo.Tags != null && albumInfo.Tags.Count != 0)
             {
                 await TagRepository.AddAlbumTagsIfMissing(albumToAdd.Id,
@@ -589,6 +594,11 @@ public class MusicDataFactory(
                 {
                     dbAlbum.ReleaseDate = amAlbum.Attributes.ReleaseDate;
                     dbAlbum.ReleaseDatePrecision = amAlbum.Attributes.ReleaseDate.Length == 4 ? "year" : "day";
+                }
+
+                if (amAlbum.Attributes.GenreNames != null && amAlbum.Attributes.GenreNames.Count != 0)
+                {
+                    await AlbumRepository.AddOrUpdateAlbumGenres(dbAlbum.Id, amAlbum.Attributes.GenreNames, connection);
                 }
             }
 

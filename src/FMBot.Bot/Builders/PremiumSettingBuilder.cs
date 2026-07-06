@@ -320,7 +320,7 @@ public class PremiumSettingBuilder(
         description.AppendLine("⭐ **Server featured** — an hourly featured based on your own server's members");
         description.AppendLine("🎮 **60 daily Jumble and Pixel games** for every member");
         description.AppendLine("📜 **Lyrics unlocked** for every member");
-        description.AppendLine("⌨️ **Server-wide shortcuts** — shared command shortcuts for everyone");
+        description.AppendLine("⌨️ **Server-wide shortcuts** — shared text command shortcuts for everyone");
         description.AppendLine("⚙️ **Role filters and server activity threshold** — control who appears in server-wide charts");
         description.AppendLine("🛡️ **Bot management roles** — let trusted roles manage .fmbot");
     }

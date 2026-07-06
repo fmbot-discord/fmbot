@@ -45,4 +45,5 @@ public class Album
     public ICollection<Track> Tracks { get; set; }
     public ICollection<AlbumImage> Images { get; set; }
     public ICollection<AlbumTag> AlbumTags { get; set; }
+    public ICollection<AlbumGenre> AlbumGenres { get; set; }
 }

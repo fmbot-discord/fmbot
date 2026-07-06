@@ -54,6 +54,28 @@ public class AlbumRepository
         });
     }
 
+    public static async Task AddOrUpdateAlbumGenres(int albumId, IEnumerable<string> genreNames,
+        NpgsqlConnection connection)
+    {
+        const string deleteQuery = @"DELETE FROM public.album_genres WHERE album_id = @albumId";
+        await connection.ExecuteAsync(deleteQuery, new { albumId });
+
+        const string insertQuery = @"INSERT INTO public.album_genres(album_id, name) " +
+                                   "VALUES (@albumId, @name) " +
+                                   "ON CONFLICT (album_id, name) DO NOTHING";
+
+        foreach (var genreName in genreNames
+                     .Where(g => !string.Equals(g, "Music", StringComparison.OrdinalIgnoreCase))
+                     .GroupBy(g => g))
+        {
+            await connection.ExecuteAsync(insertQuery, new
+            {
+                albumId,
+                name = genreName.Key
+            });
+        }
+    }
+
     public static async Task<IReadOnlyCollection<UserAlbum>> GetUserAlbums(int userId, NpgsqlConnection connection)
     {
         const string sql = "SELECT * FROM public.user_albums where user_id = @userId";

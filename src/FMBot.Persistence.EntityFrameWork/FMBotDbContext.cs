@@ -67,6 +67,7 @@ namespace FMBot.Persistence.EntityFrameWork
         public virtual DbSet<ArtistGenre> ArtistGenres { get; set; }
         public virtual DbSet<ArtistAlias> ArtistAliases { get; set; }
         public virtual DbSet<ArtistLink> ArtistLinks { get; set; }
+        public virtual DbSet<AlbumGenre> AlbumGenres { get; set; }
 
         public virtual DbSet<Tag> Tags { get; set; }
         public virtual DbSet<ArtistTag> ArtistTags { get; set; }
@@ -527,6 +528,22 @@ namespace FMBot.Persistence.EntityFrameWork
                 entity.HasOne(d => d.Artist)
                     .WithMany(p => p.ArtistGenres)
                     .HasForeignKey(d => d.ArtistId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<AlbumGenre>(entity =>
+            {
+                entity.HasKey(a => a.Id);
+
+                entity.HasIndex(i => new { i.AlbumId, i.Name })
+                    .IsUnique();
+
+                entity.Property(e => e.Name)
+                    .HasColumnType("citext");
+
+                entity.HasOne(d => d.Album)
+                    .WithMany(p => p.AlbumGenres)
+                    .HasForeignKey(d => d.AlbumId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
 
