@@ -447,6 +447,23 @@ public class AlbumService
         return newReleases;
     }
 
+    public async Task<List<GuildAlbum>> FilterGuildAlbumsThatAreSingles(List<GuildAlbum> albums)
+    {
+        if (albums.Count == 0)
+        {
+            return albums;
+        }
+
+        var lookup = await GetAlbumEnrichmentLookup(
+            albums.Select(s => s.ArtistName).ToArray(),
+            albums.Select(s => s.AlbumName).ToArray());
+
+        return albums
+            .Where(w => !lookup.TryGetValue((w.AlbumName.ToLower(), w.ArtistName.ToLower()), out var row) ||
+                        !string.Equals(row.AlbumType, "single", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+    }
+
     private async Task EnrichTopAlbums(IReadOnlyCollection<TopAlbum> list)
     {
         var albumsToEnrich = list.Where(w => w.ReleaseDate == null || w.AlbumType == null).ToList();

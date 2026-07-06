@@ -146,11 +146,15 @@ public class GuildRecapService(
         var topArtists = await playService.GetGuildTopArtistsPlays(guild.GuildId, periodStart,
             OrderType.Listeners, periodEnd);
         var topAlbums = await playService.GetGuildTopAlbumsPlays(guild.GuildId, periodStart,
-            OrderType.Listeners, null, periodEnd);
+            OrderType.Listeners, null, periodEnd, 400);
         var topTracks = await playService.GetGuildTopTracksPlays(guild.GuildId, periodStart,
             OrderType.Listeners, null, periodEnd);
         var albumService = serviceProvider.GetRequiredService<AlbumService>();
-        var newReleases = await albumService.FilterAlbumsToReleasePeriod(topAlbums, periodStart, periodEnd);
+        var releaseWindowStart = schedule == ServerRecapSchedule.Weekly
+            ? periodEnd.AddDays(-28)
+            : periodStart;
+        var newReleases = await albumService.FilterAlbumsToReleasePeriod(topAlbums, releaseWindowStart, periodEnd);
+        topAlbums = await albumService.FilterGuildAlbumsThatAreSingles(topAlbums);
 
         if (topArtists.Count == 0)
         {
@@ -204,7 +208,7 @@ public class GuildRecapService(
         };
 
         var periodDisplay = schedule == ServerRecapSchedule.Weekly
-            ? $"{periodStart.ToString("MMMM d", CultureInfo.InvariantCulture)} to {periodEnd.AddDays(-1).ToString("MMMM d", CultureInfo.InvariantCulture)}"
+            ? $"<t:{((DateTimeOffset)periodStart).ToUnixTimeSeconds()}:D> to <t:{((DateTimeOffset)periodEnd).ToUnixTimeSeconds()}:D>"
             : periodStart.ToString("MMMM yyyy", CultureInfo.InvariantCulture);
 
         var header = new StringBuilder();

@@ -127,11 +127,8 @@ public class TimerService : IDisposable
         Log.Information($"RecurringJob: Adding {nameof(CheckForNewGuildFeatureds)}");
         RecurringJob.AddOrUpdate(nameof(CheckForNewGuildFeatureds), () => CheckForNewGuildFeatureds(), "*/5 * * * *");
 
-        Log.Information($"RecurringJob: Adding {nameof(RunAutomaticCrownSeeder)}");
-        RecurringJob.AddOrUpdate(nameof(RunAutomaticCrownSeeder), () => RunAutomaticCrownSeeder(), "15 * * * *");
-
         Log.Information($"RecurringJob: Adding {nameof(RunScheduledServerRecaps)}");
-        RecurringJob.AddOrUpdate(nameof(RunScheduledServerRecaps), () => RunScheduledServerRecaps(), "35 * * * *");
+        RecurringJob.AddOrUpdate(nameof(RunScheduledServerRecaps), () => RunScheduledServerRecaps(), "30 * * * *");
 
         Log.Information($"RecurringJob: Adding {nameof(ClearInternalLogs)}");
         RecurringJob.AddOrUpdate(nameof(ClearInternalLogs), () => ClearInternalLogs(), "0 8 * * *");
@@ -187,6 +184,9 @@ public class TimerService : IDisposable
         {
             return;
         }
+
+        Log.Information($"RecurringJob: Adding {nameof(RunAutomaticCrownSeeder)}");
+        RecurringJob.AddOrUpdate(nameof(RunAutomaticCrownSeeder), () => RunAutomaticCrownSeeder(), "15 * * * *");
 
         var mainGuildConnected = this._client.Any(shard => shard.Cache.Guilds.ContainsKey(ConfigData.Data.Bot.BaseServerId));
         if (mainGuildConnected)

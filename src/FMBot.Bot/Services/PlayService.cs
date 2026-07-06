@@ -1029,7 +1029,7 @@ public class PlayService
     public async Task<List<GuildAlbum>> GetGuildTopAlbumsPlays(int guildId, DateTime startDateTime,
         OrderType orderType, string searchValue, DateTime? endDateTime = null, int limit = 120)
     {
-        var cacheKey = $"guild-top-albums-{guildId}-{startDateTime:yyyyMMddHH}-{endDateTime:yyyyMMddHH}-{orderType}-{searchValue}";
+        var cacheKey = $"guild-top-albums-{guildId}-{startDateTime:yyyyMMddHH}-{endDateTime:yyyyMMddHH}-{orderType}-{searchValue}-{limit}";
 
         if (this._cache.TryGetValue(cacheKey, out List<GuildAlbum> cachedAlbums))
         {
