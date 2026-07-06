@@ -45,6 +45,11 @@ public class GuildRecapService(
 
         foreach (var guild in guilds.Where(w => PublicProperties.PremiumServers.ContainsKey(w.DiscordGuildId)))
         {
+            if (!client.Any(shard => shard.Cache.Guilds.ContainsKey(guild.DiscordGuildId)))
+            {
+                continue;
+            }
+
             var currentPeriodStart = GetCurrentPeriodStart(guild.RecapSchedule.Value, now);
 
             if (now < currentPeriodStart.AddHours(PostDelayHours))

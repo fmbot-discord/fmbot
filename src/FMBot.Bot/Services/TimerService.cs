@@ -127,6 +127,12 @@ public class TimerService : IDisposable
         Log.Information($"RecurringJob: Adding {nameof(CheckForNewGuildFeatureds)}");
         RecurringJob.AddOrUpdate(nameof(CheckForNewGuildFeatureds), () => CheckForNewGuildFeatureds(), "*/5 * * * *");
 
+        Log.Information($"RecurringJob: Adding {nameof(RunAutomaticCrownSeeder)}");
+        RecurringJob.AddOrUpdate(nameof(RunAutomaticCrownSeeder), () => RunAutomaticCrownSeeder(), "15 * * * *");
+
+        Log.Information($"RecurringJob: Adding {nameof(RunScheduledServerRecaps)}");
+        RecurringJob.AddOrUpdate(nameof(RunScheduledServerRecaps), () => RunScheduledServerRecaps(), "35 * * * *");
+
         Log.Information($"RecurringJob: Adding {nameof(ClearInternalLogs)}");
         RecurringJob.AddOrUpdate(nameof(ClearInternalLogs), () => ClearInternalLogs(), "0 8 * * *");
 
@@ -156,6 +162,11 @@ public class TimerService : IDisposable
             Log.Warning($"No {nameof(this._botSettings.LastFm.UserUpdateFrequencyInHours)} set in config, not queuing user update job");
         }
 
+        MakeSureMasterJobsAreQueued();
+    }
+
+    public void MakeSureMasterJobsAreQueued()
+    {
         var currentUser = this._client.GetCurrentUser();
         if (currentUser == null)
         {
@@ -172,31 +183,20 @@ public class TimerService : IDisposable
             RecurringJob.AddOrUpdate(nameof(UpdateGlobalWhoKnowsFilters), () => UpdateGlobalWhoKnowsFilters(), "0 10 * * *");
         }
 
+        if (currentUser.Id != Constants.BotProductionId)
+        {
+            return;
+        }
+
         var mainGuildConnected = this._client.Any(shard => shard.Cache.Guilds.ContainsKey(ConfigData.Data.Bot.BaseServerId));
-        if (currentUser.Id == Constants.BotProductionId && mainGuildConnected)
+        if (mainGuildConnected)
         {
             QueueMasterJobs();
         }
         else
         {
-            Log.Warning("Main guild not connected, not queuing master jobs");
+            Log.Information("Main guild not connected, scheduling master jobs check for later");
             BackgroundJob.Schedule(() => MakeSureMasterJobsAreQueued(), TimeSpan.FromMinutes(2));
-        }
-    }
-
-    public void MakeSureMasterJobsAreQueued()
-    {
-        var currentUser = this._client.GetCurrentUser();
-        if (currentUser == null)
-        {
-            Log.Warning("Current user still not available, skipping master jobs check");
-            return;
-        }
-
-        var mainGuildConnected = this._client.Any(shard => shard.Cache.Guilds.ContainsKey(ConfigData.Data.Bot.BaseServerId));
-        if (currentUser.Id == Constants.BotProductionId && mainGuildConnected)
-        {
-            QueueMasterJobs();
         }
     }
 
@@ -218,12 +218,6 @@ public class TimerService : IDisposable
 
         Log.Information($"RecurringJob: Adding {nameof(SyncDiscordPremiumGuilds)}");
         RecurringJob.AddOrUpdate(nameof(SyncDiscordPremiumGuilds), () => SyncDiscordPremiumGuilds(), "*/30 * * * *");
-
-        Log.Information($"RecurringJob: Adding {nameof(RunAutomaticCrownSeeder)}");
-        RecurringJob.AddOrUpdate(nameof(RunAutomaticCrownSeeder), () => RunAutomaticCrownSeeder(), "15 * * * *");
-
-        Log.Information($"RecurringJob: Adding {nameof(RunScheduledServerRecaps)}");
-        RecurringJob.AddOrUpdate(nameof(RunScheduledServerRecaps), () => RunScheduledServerRecaps(), "35 * * * *");
 
         Log.Information($"RecurringJob: Adding {nameof(RemoveLapsedPremiumSettings)}");
         RecurringJob.AddOrUpdate(nameof(RemoveLapsedPremiumSettings), () => RemoveLapsedPremiumSettings(), "45 * * * *");

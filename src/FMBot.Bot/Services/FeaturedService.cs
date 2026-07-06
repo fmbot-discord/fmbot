@@ -460,10 +460,6 @@ public class FeaturedService
     private async Task<User> GetGuildUserToFeatureAsync(int guildId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
-        var lastFmUsersToFilter = await db.BottedUsers
-            .AsQueryable()
-            .Where(w => w.BanActive)
-            .Select(s => s.UserNameLastFM.ToLower()).ToListAsync();
 
         var recentlyFeaturedUserIds = await db.GuildFeaturedLogs
             .AsQueryable()
@@ -473,19 +469,15 @@ public class FeaturedService
             .Select(s => s.UserId.Value)
             .ToListAsync();
 
-        var filterDate = DateTime.UtcNow.AddDays(-Constants.DaysLastUsedForFeatured);
+        var filterDate = DateTime.UtcNow.AddDays(-5);
         var eligibleUsers = await db.GuildUsers
             .AsNoTracking()
             .Where(w => w.GuildId == guildId &&
                         w.User.Blocked != true &&
-                        w.User.LastUsed != null &&
-                        w.User.LastUsed > filterDate)
+                        ((w.User.LastUsed != null && w.User.LastUsed > filterDate) ||
+                         (w.LastMessage != null && w.LastMessage > filterDate)))
             .Select(s => s.User)
             .ToListAsync();
-
-        eligibleUsers = eligibleUsers
-            .Where(w => !lastFmUsersToFilter.Contains(w.UserNameLastFM.ToLower()))
-            .ToList();
 
         if (eligibleUsers.Count == 0)
         {

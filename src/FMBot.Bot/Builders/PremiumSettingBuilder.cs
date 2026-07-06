@@ -661,17 +661,20 @@ public class PremiumSettingBuilder(
         description.AppendLine();
         description.AppendLine($"**Current mode:** {GetFeaturedModeName(featuredMode)}");
 
-        if (featuredMode == GuildFeaturedMode.CustomBotGlobalFeatured)
+        switch (featuredMode)
         {
-            description.AppendLine(!string.IsNullOrWhiteSpace(guild.CustomLogo)
-                ? $"**Custom avatar:** [image]({guild.CustomLogo})"
-                : "**Custom avatar:** None yet. Set one by running `.botbranding` with an image attached. Please note that custom avatars may be viewed by .fmbot staff to prevent abuse.");
-        }
-
-        if (featuredMode == GuildFeaturedMode.GuildFeatured)
-        {
-            description.AppendLine(
-                "Server featured posts to the same channel as your featured notifications. Set those up with `.addwebhook`.");
+            case GuildFeaturedMode.CustomBotGlobalFeatured:
+                description.AppendLine(!string.IsNullOrWhiteSpace(guild.CustomLogo)
+                    ? $"**Custom avatar:** [image]({guild.CustomLogo})"
+                    : "**Custom avatar:** None yet. Set one by running `.botbranding` with an image attached. Please note that custom avatars may be viewed by .fmbot staff to prevent abuse.");
+                break;
+            case GuildFeaturedMode.GuildFeatured:
+                description.AppendLine(
+                    "Server featured picks an album cover based on top albums or recent listeners from someone who has recently been active in your server.");
+                description.AppendLine();
+                description.AppendLine(
+                    "To set up a channel where featured is automatically posted every hour, use `.addwebhook`.");
+                break;
         }
 
         var modeMenu = new StringMenuProperties(InteractionConstants.BotBranding.SetFeaturedMode)

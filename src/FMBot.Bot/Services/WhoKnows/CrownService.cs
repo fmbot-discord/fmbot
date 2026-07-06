@@ -468,12 +468,18 @@ public class CrownService(
 
             try
             {
+                var lastCrownSeed = guild.LastCrownSeed;
+                var claimed = await db.Guilds
+                    .Where(w => w.GuildId == guild.GuildId && w.LastCrownSeed == lastCrownSeed)
+                    .ExecuteUpdateAsync(s => s.SetProperty(p => p.LastCrownSeed, now));
+
+                if (claimed == 0)
+                {
+                    continue;
+                }
+
                 var existingCrowns = await GetAllCrownsForGuild(guild.GuildId);
                 var amountSeeded = await SeedCrownsForGuild(guild, existingCrowns);
-
-                await db.Guilds
-                    .Where(w => w.GuildId == guild.GuildId)
-                    .ExecuteUpdateAsync(s => s.SetProperty(p => p.LastCrownSeed, now));
 
                 Log.Information(
                     "AutomaticCrownSeeder: Seeded {amountSeeded} crowns for guild {guildId} - {schedule}",
@@ -482,6 +488,18 @@ public class CrownService(
             catch (Exception e)
             {
                 Log.Error(e, "AutomaticCrownSeeder: Failed to seed crowns for guild {guildId}", guild.GuildId);
+
+                try
+                {
+                    await db.Guilds
+                        .Where(w => w.GuildId == guild.GuildId && w.LastCrownSeed == now)
+                        .ExecuteUpdateAsync(s => s.SetProperty(p => p.LastCrownSeed, guild.LastCrownSeed));
+                }
+                catch (Exception rollbackException)
+                {
+                    Log.Error(rollbackException,
+                        "AutomaticCrownSeeder: Failed to release seed claim for guild {guildId}", guild.GuildId);
+                }
             }
         }
     }
