@@ -204,7 +204,8 @@ public class GuildSettingBuilder(GuildService guildService, IOptions<BotSettings
         if (missingPermissions.Length > 0)
         {
             missingPermissions.AppendLine();
-            missingPermissions.AppendLine("These are missing in this channel. We recommend granting them server-wide via `Server Settings` > `Roles` so all .fmbot commands work everywhere.");
+            missingPermissions.AppendLine(
+                "These are missing in this channel. We recommend granting them server-wide via `Server Settings` > `Roles` so all .fmbot commands work everywhere.");
             container.WithTextDisplay($"**Missing permissions in this channel**\n{missingPermissions}");
         }
 
@@ -488,13 +489,6 @@ public class GuildSettingBuilder(GuildService guildService, IOptions<BotSettings
 
             scheduleMenu = BuildCrownSeederScheduleMenu(guild);
         }
-        else
-        {
-            description.AppendLine();
-            description.AppendLine("✨ Automate the crownseeder with Premium server.");
-            components.WithButton("Premium server", style: ButtonStyle.Secondary,
-                customId: $"{InteractionConstants.PremiumServer.GetOverview}:crownseeder");
-        }
 
         if (crownsDisabled)
         {
@@ -507,6 +501,7 @@ public class GuildSettingBuilder(GuildService guildService, IOptions<BotSettings
         {
             container.AddComponent(scheduleMenu);
         }
+
         container.WithActionRow(components);
 
         return response;
@@ -555,39 +550,42 @@ public class GuildSettingBuilder(GuildService guildService, IOptions<BotSettings
         description.AppendLine($"- `{prefix}killallseededcrowns` (Only seeded crowns)");
 
         StringMenuProperties scheduleMenu = null;
-        ActionRowProperties components = null;
+
+        container.WithTextDisplay(description.ToString());
+
         if (PublicProperties.PremiumServers.ContainsKey(context.DiscordGuild.Id))
         {
+            var automaticCrownseeder = new StringBuilder();
             if (guild.AutomaticCrownSeeder.HasValue)
             {
-                description.AppendLine();
-                description.AppendLine($"✨ Automatic crownseeder is enabled and runs **{guild.AutomaticCrownSeeder.Value.ToString().ToLower()}**.");
+                automaticCrownseeder.AppendLine($"✨ Automatic crownseeder is enabled and runs **{guild.AutomaticCrownSeeder.Value.ToString().ToLower()}**.");
             }
             else
             {
-                description.AppendLine();
-                description.AppendLine("✨ You can also let the crownseeder run automatically on a schedule.");
+                automaticCrownseeder.AppendLine("✨ You can also let the crownseeder run automatically on a schedule.");
                 scheduleMenu = BuildCrownSeederScheduleMenu(guild);
             }
+
+            container.WithSeparator();
+            container.WithTextDisplay(automaticCrownseeder.ToString());
         }
         else
         {
-            description.AppendLine();
-            description.AppendLine("✨ Running this manually every time? Premium server can seed crowns automatically, daily, weekly or monthly.");
-
-            components = [];
-            components.WithButton("Automate crownseeder", style: ButtonStyle.Secondary,
-                customId: $"{InteractionConstants.PremiumServer.GetOverview}:crownseeder-run");
+            container.WithSeparator();
+            container.AddComponent(new ComponentSectionProperties(
+                new ButtonProperties($"{InteractionConstants.PremiumServer.GetOverview}:crownseeder-run",
+                    "Premium server", ButtonStyle.Secondary))
+            {
+                Components =
+                [
+                    new TextDisplayProperties("✨ Running this manually every time? Premium server can seed crowns automatically, daily, weekly or monthly.")
+                ]
+            });
         }
 
-        container.WithTextDisplay(description.ToString());
         if (scheduleMenu != null)
         {
             container.AddComponent(scheduleMenu);
-        }
-        if (components != null)
-        {
-            container.WithActionRow(components);
         }
 
         container.WithSeparator();
@@ -615,6 +613,12 @@ public class GuildSettingBuilder(GuildService guildService, IOptions<BotSettings
 
     public async Task<ResponseModel> ServerRecap(ContextModel context)
     {
+        if (!PublicProperties.PremiumServers.ContainsKey(context.DiscordGuild.Id))
+        {
+            return PremiumSettingBuilder.PremiumServerRequired("serverrecap",
+                "**Scheduled server recaps** post your server's top charts weekly or monthly. Includes top artists, albums, recently released albums and tracks.");
+        }
+
         var response = new ResponseModel
         {
             ResponseType = ResponseType.ComponentsV2
@@ -636,70 +640,59 @@ public class GuildSettingBuilder(GuildService guildService, IOptions<BotSettings
 
         var components = new ActionRowProperties();
 
-        if (PublicProperties.PremiumServers.ContainsKey(context.DiscordGuild.Id))
+        if (guild.RecapSchedule.HasValue)
         {
-            if (guild.RecapSchedule.HasValue)
-            {
-                description.AppendLine(guild.RecapSchedule == ServerRecapSchedule.Weekly
-                    ? "✨ Weekly recaps are enabled. They cover the previous week and post every Monday."
-                    : "✨ Monthly recaps are enabled. They cover the previous month and post on the 1st.");
-            }
-            else
-            {
-                description.AppendLine("✨ Pick a schedule below to enable automatic recaps.");
-            }
-
-            description.AppendLine(guild.RecapChannelId.HasValue
-                ? $"Recaps are posted in <#{guild.RecapChannelId.Value}>."
-                : "⚠️ Select the channel that recaps should be posted in.");
-
-            var scheduleMenu = new StringMenuProperties(InteractionConstants.SetServerRecapSchedule)
-                .WithPlaceholder("Server recap schedule")
-                .WithMinValues(0)
-                .WithMaxValues(1);
-
-            foreach (var schedule in Enum.GetValues<ServerRecapSchedule>())
-            {
-                scheduleMenu.AddOption(schedule.ToString(), Enum.GetName(schedule),
-                    description: schedule == ServerRecapSchedule.Weekly
-                        ? "Post a recap of the previous week every Monday"
-                        : "Post a recap of the previous month on the 1st",
-                    isDefault: guild.RecapSchedule == schedule);
-            }
-
-            var channelMenu = new ChannelMenuProperties(InteractionConstants.SetServerRecapChannel)
-                .WithPlaceholder("Channel to post recaps in")
-                .WithMinValues(0)
-                .WithMaxValues(1)
-                .WithChannelTypes([ChannelType.TextGuildChannel, ChannelType.AnnouncementGuildChannel]);
-
-            if (guild.RecapChannelId.HasValue)
-            {
-                channelMenu.WithDefaultValues([guild.RecapChannelId.Value]);
-            }
-
-            components.WithButton("Post recap now", InteractionConstants.PostServerRecapNow,
-                style: ButtonStyle.Secondary, disabled: !guild.RecapChannelId.HasValue);
-
-            var recapPostTime = DateTime.UtcNow.Date.AddHours(GuildRecapService.PostDelayHours);
-
-            description.AppendLine();
-            description.AppendLine($"Scheduled recaps post shortly after <t:{((DateTimeOffset)recapPostTime).ToUnixTimeSeconds()}:t>, when most listening data has come in. Use the button below to post one for the previous period right away.");
-
-            container.WithTextDisplay(description.ToString());
-            container.AddComponent(scheduleMenu);
-            container.AddComponent(channelMenu);
-            container.WithActionRow(components);
+            description.AppendLine(guild.RecapSchedule == ServerRecapSchedule.Weekly
+                ? "✨ Weekly recaps are enabled. They cover the previous week and post every Monday."
+                : "✨ Monthly recaps are enabled. They cover the previous month and post on the 1st.");
         }
         else
         {
-            description.AppendLine("✨ Schedule automatic server recaps with Premium server.");
-            components.WithButton("Premium server", style: ButtonStyle.Secondary,
-                customId: $"{InteractionConstants.PremiumServer.GetOverview}:serverrecap");
-
-            container.WithTextDisplay(description.ToString());
-            container.WithActionRow(components);
+            description.AppendLine("✨ Pick a schedule below to enable automatic recaps.");
         }
+
+        description.AppendLine(guild.RecapChannelId.HasValue
+            ? $"Recaps are posted in <#{guild.RecapChannelId.Value}>."
+            : "⚠️ Select the channel that recaps should be posted in.");
+
+        var scheduleMenu = new StringMenuProperties(InteractionConstants.SetServerRecapSchedule)
+            .WithPlaceholder("Server recap schedule")
+            .WithMinValues(0)
+            .WithMaxValues(1);
+
+        foreach (var schedule in Enum.GetValues<ServerRecapSchedule>())
+        {
+            scheduleMenu.AddOption(schedule.ToString(), Enum.GetName(schedule),
+                description: schedule == ServerRecapSchedule.Weekly
+                    ? "Post a recap of the previous week every Monday"
+                    : "Post a recap of the previous month on the 1st",
+                isDefault: guild.RecapSchedule == schedule);
+        }
+
+        var channelMenu = new ChannelMenuProperties(InteractionConstants.SetServerRecapChannel)
+            .WithPlaceholder("Channel to post recaps in")
+            .WithMinValues(0)
+            .WithMaxValues(1)
+            .WithChannelTypes([ChannelType.TextGuildChannel, ChannelType.AnnouncementGuildChannel]);
+
+        if (guild.RecapChannelId.HasValue)
+        {
+            channelMenu.WithDefaultValues([guild.RecapChannelId.Value]);
+        }
+
+        components.WithButton("Post recap now", InteractionConstants.PostServerRecapNow,
+            style: ButtonStyle.Secondary, disabled: !guild.RecapChannelId.HasValue);
+
+        var recapPostTime = DateTime.UtcNow.Date.AddHours(GuildRecapService.PostDelayHours);
+
+        description.AppendLine();
+        description.AppendLine(
+            $"Scheduled recaps post shortly after <t:{((DateTimeOffset)recapPostTime).ToUnixTimeSeconds()}:t>, when most listening data has come in. Use the button below to post one for the previous period right away.");
+
+        container.WithTextDisplay(description.ToString());
+        container.AddComponent(scheduleMenu);
+        container.AddComponent(channelMenu);
+        container.WithActionRow(components);
 
         return response;
     }

@@ -315,12 +315,14 @@ public class PremiumSettingBuilder(
     private static void AppendPerkPitchList(StringBuilder description)
     {
         description.AppendLine("👑 **Automatic crownseeder** — seed crowns daily, weekly or monthly");
-        description.AppendLine("📊 **Scheduled server recaps** — your server's weekly or monthly top charts, posted automatically");
-        description.AppendLine("🤖 **Custom bot branding** and no sponsored messages");
+        description.AppendLine("📊 **Scheduled server recaps** — weekly or monthly top charts, posted automatically");
+        description.AppendLine("🤖 **Custom bot branding** — set a custom avatar for .fmbot");
+        description.AppendLine("⭐ **Server featured** — an hourly featured based on your own server's members");
         description.AppendLine("🎮 **60 daily Jumble and Pixel games** for every member");
         description.AppendLine("📜 **Lyrics unlocked** for every member");
-        description.AppendLine("⌨️ **Server-wide shortcuts**");
-        description.AppendLine("⚙️ **Role filters** and server activity threshold");
+        description.AppendLine("⌨️ **Server-wide shortcuts** — shared command shortcuts for everyone");
+        description.AppendLine("⚙️ **Role filters and server activity threshold** — control who appears in server-wide charts");
+        description.AppendLine("🛡️ **Bot management roles** — let trusted roles manage .fmbot");
     }
 
     private static void AppendPerkListWithCommands(StringBuilder description)
@@ -792,6 +794,41 @@ public class PremiumSettingBuilder(
         }
 
         return null;
+    }
+
+    public static ResponseModel PremiumServerRequired(string source, string featureDescription = null)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.ComponentsV2,
+            CommandResponse = CommandResponse.PremiumServerRequired
+        };
+
+        var container = response.ComponentsContainer;
+        container.WithAccentColor(DiscordConstants.InformationColorBlue);
+
+        container.WithTextDisplay("### ✨ Premium server feature");
+        container.WithSeparator();
+
+        var description = new StringBuilder();
+        if (featureDescription != null)
+        {
+            description.AppendLine(featureDescription);
+            description.AppendLine();
+        }
+
+        description.AppendLine("Improve the .fmbot experience for everyone in your community. Premium server unlocks server-wide perks and automation for everyone in one Discord server.");
+        container.WithTextDisplay(description.ToString());
+
+        container.WithSeparator();
+
+        var buttonRow = new ActionRowProperties();
+        buttonRow.AddComponents(new ButtonProperties(
+            $"{InteractionConstants.PremiumServer.GetOverview}:{source}",
+            "Get Premium server", ButtonStyle.Primary));
+        container.WithActionRow(buttonRow);
+
+        return response;
     }
 
     public static ResponseModel GuildShortcutsPremiumRequired(ContextModel context)

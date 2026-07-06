@@ -68,8 +68,10 @@ public class PremiumGuildCommands(
     {
         if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
         {
-            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = Constants.GetPremiumServer });
-            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.PremiumServerRequired }, userService);
+            var premiumRequiredResponse = PremiumSettingBuilder.PremiumServerRequired("botbranding-text",
+                "**Custom bot branding** gives .fmbot a custom avatar and look in this server. You can also enable **server featured**, an hourly featured based on your own server's members.");
+            await this.Context.SendResponse(this.Interactivity, premiumRequiredResponse, userService);
+            await this.Context.LogCommandUsedAsync(premiumRequiredResponse, userService);
             return;
         }
 
@@ -165,8 +167,10 @@ public class PremiumGuildCommands(
     {
         if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
         {
-            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = Constants.GetPremiumServer });
-            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.PremiumServerRequired }, userService);
+            var premiumRequiredResponse = PremiumSettingBuilder.PremiumServerRequired("allowedroles-text",
+                "**Role filters** let you choose which roles show up in .fmbot's server-wide charts.");
+            await this.Context.SendResponse(this.Interactivity, premiumRequiredResponse, userService);
+            await this.Context.LogCommandUsedAsync(premiumRequiredResponse, userService);
             return;
         }
 
@@ -194,8 +198,10 @@ public class PremiumGuildCommands(
     {
         if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
         {
-            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = Constants.GetPremiumServer });
-            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.PremiumServerRequired }, userService);
+            var premiumRequiredResponse = PremiumSettingBuilder.PremiumServerRequired("blockedroles-text",
+                "**Role filters** let you choose which roles show up in .fmbot's server-wide charts.");
+            await this.Context.SendResponse(this.Interactivity, premiumRequiredResponse, userService);
+            await this.Context.LogCommandUsedAsync(premiumRequiredResponse, userService);
             return;
         }
 
@@ -223,8 +229,10 @@ public class PremiumGuildCommands(
     {
         if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
         {
-            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = Constants.GetPremiumServer });
-            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.PremiumServerRequired }, userService);
+            var premiumRequiredResponse = PremiumSettingBuilder.PremiumServerRequired("botmanagementroles-text",
+                "**Bot management roles** let you choose who can manage and configure .fmbot in this server.");
+            await this.Context.SendResponse(this.Interactivity, premiumRequiredResponse, userService);
+            await this.Context.LogCommandUsedAsync(premiumRequiredResponse, userService);
             return;
         }
 
@@ -252,8 +260,10 @@ public class PremiumGuildCommands(
     {
         if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
         {
-            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = Constants.GetPremiumServer });
-            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.PremiumServerRequired }, userService);
+            var premiumRequiredResponse = PremiumSettingBuilder.PremiumServerRequired("serveractivitythreshold-text",
+                "**Server activity threshold** filters inactive members who haven't sent messages in a while out of server-wide commands.");
+            await this.Context.SendResponse(this.Interactivity, premiumRequiredResponse, userService);
+            await this.Context.LogCommandUsedAsync(premiumRequiredResponse, userService);
             return;
         }
 

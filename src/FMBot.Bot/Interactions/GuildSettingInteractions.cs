@@ -494,10 +494,10 @@ public class GuildSettingInteractions(
 
         if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
         {
-            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
-                .WithContent(Constants.GetPremiumServer)
-                .WithFlags(MessageFlags.Ephemeral)));
-            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.PremiumServerRequired }, userService);
+            var premiumRequiredResponse = PremiumSettingBuilder.PremiumServerRequired("crownseeder",
+                "**Automatic crownseeder** seeds server's crowns automatically on a schedule. Schedule it daily, weekly or monthly.");
+            await this.Context.SendResponse(interactivity, premiumRequiredResponse, userService, true);
+            await this.Context.LogCommandUsedAsync(premiumRequiredResponse, userService);
             return;
         }
 
@@ -537,10 +537,10 @@ public class GuildSettingInteractions(
 
         if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
         {
-            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
-                .WithContent(Constants.GetPremiumServer)
-                .WithFlags(MessageFlags.Ephemeral)));
-            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.PremiumServerRequired }, userService);
+            var premiumRequiredResponse = PremiumSettingBuilder.PremiumServerRequired("serverrecap",
+                "**Scheduled server recaps** post your server's top charts weekly or monthly. Includes top artists, albums, recently released albums and tracks.");
+            await this.Context.SendResponse(interactivity, premiumRequiredResponse, userService, true);
+            await this.Context.LogCommandUsedAsync(premiumRequiredResponse, userService);
             return;
         }
 
@@ -580,10 +580,10 @@ public class GuildSettingInteractions(
 
         if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
         {
-            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
-                .WithContent(Constants.GetPremiumServer)
-                .WithFlags(MessageFlags.Ephemeral)));
-            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.PremiumServerRequired }, userService);
+            var premiumRequiredResponse = PremiumSettingBuilder.PremiumServerRequired("serverrecap",
+                "**Scheduled server recaps** post your server's top charts weekly or monthly. Includes top artists, albums, recently released albums and tracks.");
+            await this.Context.SendResponse(interactivity, premiumRequiredResponse, userService, true);
+            await this.Context.LogCommandUsedAsync(premiumRequiredResponse, userService);
             return;
         }
 
@@ -617,10 +617,10 @@ public class GuildSettingInteractions(
 
         if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
         {
-            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
-                .WithContent(Constants.GetPremiumServer)
-                .WithFlags(MessageFlags.Ephemeral)));
-            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.PremiumServerRequired }, userService);
+            var premiumRequiredResponse = PremiumSettingBuilder.PremiumServerRequired("serverrecap",
+                "**Scheduled server recaps** post your server's top charts weekly or monthly. Includes top artists, albums, recently released albums and tracks.");
+            await this.Context.SendResponse(interactivity, premiumRequiredResponse, userService, true);
+            await this.Context.LogCommandUsedAsync(premiumRequiredResponse, userService);
             return;
         }
 

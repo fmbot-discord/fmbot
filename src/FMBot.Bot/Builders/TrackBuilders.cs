@@ -2153,7 +2153,7 @@ public class TrackBuilders
 
         response.Embed.WithDescription(
             "Viewing track lyrics in .fmbot is only available for .fmbot supporters.\n" +
-            "-# Also included for everyone in servers with Premium server.");
+            "-# Or unlock it for everyone in this server with Premium server.");
 
         response.Components = new ActionRowProperties()
             .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,

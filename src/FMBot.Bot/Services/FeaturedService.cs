@@ -371,6 +371,11 @@ public class FeaturedService
             Log.Information("GuildFeatured: Picked user {userId} / {userNameLastFm} for guild {guildId}",
                 user.UserId, user.UserNameLastFM, guild.GuildId);
 
+            var libraryUrl = GetFeaturedModeLibraryUrl(user.UserNameLastFM, featuredMode);
+            var randomAvatarModeDescLinked = libraryUrl != null
+                ? StringExtensions.MarkdownLink(randomAvatarModeDesc, libraryUrl)
+                : randomAvatarModeDesc;
+
             switch (featuredMode)
             {
                 case FeaturedMode.RecentPlays:
@@ -392,7 +397,7 @@ public class FeaturedService
                         {
                             guildFeaturedLog.Description = $"[{track.AlbumName}]({track.TrackUrl}) \n" +
                                                            $"by [{track.ArtistName}]({track.ArtistUrl}) \n\n" +
-                                                           $"{randomAvatarModeDesc} from <@{user.DiscordUserId}>";
+                                                           $"{randomAvatarModeDescLinked} from <@{user.DiscordUserId}>";
                             guildFeaturedLog.UserId = user.UserId;
                             guildFeaturedLog.ArtistName = track.ArtistName;
                             guildFeaturedLog.TrackName = track.TrackName;
@@ -434,7 +439,7 @@ public class FeaturedService
                             var artistLink = LastfmUrlExtensions.GetArtistUrl(album.ArtistName);
                             guildFeaturedLog.Description = $"[{album.AlbumName}]({album.AlbumUrl}) \n" +
                                                            $"by [{album.ArtistName}]({artistLink}) \n\n" +
-                                                           $"{randomAvatarModeDesc} from <@{user.DiscordUserId}>";
+                                                           $"{randomAvatarModeDescLinked} from <@{user.DiscordUserId}>";
                             guildFeaturedLog.UserId = user.UserId;
                             guildFeaturedLog.AlbumName = album.AlbumName;
                             guildFeaturedLog.ImageUrl = album.AlbumCoverUrl;
@@ -649,7 +654,21 @@ public class FeaturedService
         return description.ToString();
     }
 
-    public static string GetStringForFeaturedMode(FeaturedMode featuredMode)
+    private static string GetFeaturedModeLibraryUrl(string userName, FeaturedMode featuredMode)
+    {
+        var addOn = featuredMode switch
+        {
+            FeaturedMode.RecentPlays => "/library",
+            FeaturedMode.TopAlbumsWeekly => "/library/albums?date_preset=LAST_7_DAYS",
+            FeaturedMode.TopAlbumsMonthly => "/library/albums?date_preset=LAST_30_DAYS",
+            FeaturedMode.TopAlbumsAllTime => "/library/albums?date_preset=ALL",
+            _ => null
+        };
+
+        return addOn == null ? null : LastfmUrlExtensions.GetUserUrl(userName, addOn);
+    }
+
+    private static string GetStringForFeaturedMode(FeaturedMode featuredMode)
     {
         return featuredMode switch
         {

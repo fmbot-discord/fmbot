@@ -40,10 +40,10 @@ public class PremiumSettingInteractions(
         {
             if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
             {
-                await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
-                    .WithContent(Constants.GetPremiumServer)
-                    .WithFlags(MessageFlags.Ephemeral)));
-                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.PremiumServerRequired }, userService);
+                var premiumRequiredResponse = PremiumSettingBuilder.PremiumServerRequired("botbranding",
+                    "**Custom bot branding** gives .fmbot a custom avatar and look in this server. You can also enable **server featured**, an hourly featured based on your own server's members.");
+                await this.Context.SendResponse(interactivity, premiumRequiredResponse, userService, true);
+                await this.Context.LogCommandUsedAsync(premiumRequiredResponse, userService);
                 return;
             }
 
