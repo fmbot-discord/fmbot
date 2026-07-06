@@ -124,6 +124,9 @@ public class TimerService : IDisposable
         Log.Information($"RecurringJob: Adding {nameof(RefreshPremiumGuilds)}");
         RecurringJob.AddOrUpdate(nameof(RefreshPremiumGuilds), () => RefreshPremiumGuilds(), "* * * * *");
 
+        Log.Information($"RecurringJob: Adding {nameof(CheckForNewGuildFeatureds)}");
+        RecurringJob.AddOrUpdate(nameof(CheckForNewGuildFeatureds), () => CheckForNewGuildFeatureds(), "*/5 * * * *");
+
         Log.Information($"RecurringJob: Adding {nameof(ClearInternalLogs)}");
         RecurringJob.AddOrUpdate(nameof(ClearInternalLogs), () => ClearInternalLogs(), "0 8 * * *");
 
@@ -224,9 +227,6 @@ public class TimerService : IDisposable
 
         Log.Information($"RecurringJob: Adding {nameof(RemoveLapsedPremiumSettings)}");
         RecurringJob.AddOrUpdate(nameof(RemoveLapsedPremiumSettings), () => RemoveLapsedPremiumSettings(), "45 * * * *");
-
-        Log.Information($"RecurringJob: Adding {nameof(CheckForNewGuildFeatureds)}");
-        RecurringJob.AddOrUpdate(nameof(CheckForNewGuildFeatureds), () => CheckForNewGuildFeatureds(), "*/5 * * * *");
 
         Log.Information($"RecurringJob: Adding {nameof(PickNewFeatureds)}");
         RecurringJob.AddOrUpdate(nameof(PickNewFeatureds), () => PickNewFeatureds(), "0 12 * * *");
@@ -660,6 +660,11 @@ public class TimerService : IDisposable
 
         foreach (var guild in customFeaturedGuilds)
         {
+            if (!this._client.Any(shard => shard.Cache.Guilds.ContainsKey(guild.DiscordGuildId)))
+            {
+                continue;
+            }
+
             await ApplyGuildFeatured(guild);
         }
     }
