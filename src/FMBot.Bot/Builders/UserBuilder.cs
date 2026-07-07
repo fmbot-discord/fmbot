@@ -2168,6 +2168,9 @@ public class UserBuilder
         var upgradeButton = new ActionRowProperties().WithButton(Constants.GetSupporterButton,
             style: ButtonStyle.Secondary,
             customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: updatePromo.supporterSource));
+        var premiumServerButton = new ActionRowProperties().AddComponents(new ButtonProperties(
+            $"{InteractionConstants.PremiumServer.GetOverview}:{updatePromo.supporterSource}",
+            "Premium server", ButtonStyle.Secondary));
 
         if (GenericEmbedService.RecentScrobbleCallFailed(update))
         {
@@ -2212,6 +2215,10 @@ public class UserBuilder
                     {
                         response.Components = upgradeButton;
                     }
+                    else if (updatePromo.showPremiumServerButton)
+                    {
+                        response.Components = premiumServerButton;
+                    }
                 }
             }
 
@@ -2241,6 +2248,10 @@ public class UserBuilder
                 if (updatePromo.showUpgradeButton)
                 {
                     response.Components = upgradeButton;
+                }
+                else if (updatePromo.showPremiumServerButton)
+                {
+                    response.Components = premiumServerButton;
                 }
             }
 

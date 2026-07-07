@@ -350,13 +350,14 @@ public class SupporterService
         }
     }
 
-    public async Task<(string message, bool showUpgradeButton, string supporterSource)> GetPromotionalUpdateMessage(
+    public async Task<(string message, bool showUpgradeButton, bool showPremiumServerButton, string supporterSource)> GetPromotionalUpdateMessage(
         User user, string prfx,
         ulong? guildId = null)
     {
         var randomHintNumber = RandomNumberGenerator.GetInt32(1, 95);
         string message = null;
         var showUpgradeButton = false;
+        var showPremiumServerButton = false;
         var supporterSource = "updatepromo";
 
         if (!IsSupporter(user.UserType))
@@ -712,7 +713,50 @@ public class SupporterService
             }
         }
 
-        return (message, showUpgradeButton, supporterSource);
+        if (guildId != null && !PublicProperties.PremiumServers.ContainsKey(guildId.Value))
+        {
+            switch (randomHintNumber)
+            {
+                case 41:
+                {
+                    SetGuildSupporterPromoCache(guildId);
+                    message =
+                        $"*👑 Premium servers can seed WhoKnows crowns automatically, daily, weekly or monthly*";
+                    showPremiumServerButton = true;
+                    supporterSource = "updatepromo-premiumserver-crownseeder";
+                    break;
+                }
+                case 42:
+                {
+                    SetGuildSupporterPromoCache(guildId);
+                    message =
+                        $"*📊 Premium servers get weekly or monthly server recaps, posted automatically*";
+                    showPremiumServerButton = true;
+                    supporterSource = "updatepromo-premiumserver-recaps";
+                    break;
+                }
+                case 43:
+                {
+                    SetGuildSupporterPromoCache(guildId);
+                    message =
+                        $"*🤖 Give .fmbot a custom avatar, or a rotating featured based on what this server listens to, with Premium server*";
+                    showPremiumServerButton = true;
+                    supporterSource = "updatepromo-premiumserver-branding";
+                    break;
+                }
+                case 44:
+                {
+                    SetGuildSupporterPromoCache(guildId);
+                    message =
+                        $"*🎮 Premium servers unlock 60 daily Jumble and Pixel games and the `{prfx}lyrics` command for every member*";
+                    showPremiumServerButton = true;
+                    supporterSource = "updatepromo-premiumserver-perks";
+                    break;
+                }
+            }
+        }
+
+        return (message, showUpgradeButton, showPremiumServerButton, supporterSource);
     }
 
     private static string GetGuildPromoCacheKey(ulong? guildId = null)
