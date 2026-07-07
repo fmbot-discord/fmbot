@@ -46,6 +46,8 @@ public class Guild
 
     public GuildFeaturedMode? FeaturedMode { get; set; }
 
+    public GuildFeaturedFrequency? FeaturedFrequency { get; set; }
+
     public DateTime? LastCrownSeed { get; set; }
     public AutomaticCrownSeeder? AutomaticCrownSeeder { get; set; }
 

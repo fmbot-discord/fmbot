@@ -2442,7 +2442,13 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
         {
             try
             {
-                await guildService.RefreshPremiumGuilds();
+                var addedGuildIds = await guildService.RefreshPremiumGuilds();
+
+                if (addedGuildIds.Count > 0)
+                {
+                    await indexService.RefreshGuildUsers(client, addedGuildIds);
+                }
+
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
                     new MessageProperties { Content = "Refreshed premium server cache dictionary" });
             }

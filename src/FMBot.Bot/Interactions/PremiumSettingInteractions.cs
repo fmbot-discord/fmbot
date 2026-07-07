@@ -41,7 +41,7 @@ public class PremiumSettingInteractions(
             if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
             {
                 var premiumRequiredResponse = PremiumSettingBuilder.PremiumServerRequired("botbranding",
-                    "**Custom bot branding** gives .fmbot a custom avatar and look in this server. You can also enable **server featured**, an hourly featured based on your own server's members.");
+                    "**Custom bot branding** gives .fmbot a custom avatar and look in this server. You can also enable **server featured**, a rotating featured based on your own server's members.");
                 await this.Context.SendResponse(interactivity, premiumRequiredResponse, userService, true);
                 await this.Context.LogCommandUsedAsync(premiumRequiredResponse, userService);
                 return;
@@ -86,6 +86,54 @@ public class PremiumSettingInteractions(
                 {
                     _ = timerService.ApplyGuildFeatured(guild);
                 }
+            }
+
+            var response = await premiumSettingBuilder.BotBranding(new ContextModel(this.Context), this.Context.User);
+            await this.Context.UpdateInteractionEmbed(response);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.BotBranding.SetFeaturedFrequency)]
+    [ServerStaffOnly]
+    public async Task SetBotFeaturedFrequency()
+    {
+        try
+        {
+            if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
+            {
+                var premiumRequiredResponse = PremiumSettingBuilder.PremiumServerRequired("botbranding",
+                    "**Custom bot branding** gives .fmbot a custom avatar and look in this server. You can also enable **server featured**, a rotating featured based on your own server's members.");
+                await this.Context.SendResponse(interactivity, premiumRequiredResponse, userService, true);
+                await this.Context.LogCommandUsedAsync(premiumRequiredResponse, userService);
+                return;
+            }
+
+            if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
+            {
+                await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
+                return;
+            }
+
+            var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
+            var selectedValues = stringMenuInteraction.Data.SelectedValues;
+
+            if (selectedValues.Count == 0 ||
+                !Enum.TryParse(selectedValues[0], out GuildFeaturedFrequency featuredFrequency))
+            {
+                featuredFrequency = GuildFeaturedFrequency.Hourly;
+            }
+
+            await guildService.SetFeaturedFrequencyAsync(this.Context.Guild, featuredFrequency);
+
+            var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
+            if (guild?.FeaturedMode == GuildFeaturedMode.GuildFeatured)
+            {
+                _ = timerService.ApplyGuildFeatured(guild);
             }
 
             var response = await premiumSettingBuilder.BotBranding(new ContextModel(this.Context), this.Context.User);

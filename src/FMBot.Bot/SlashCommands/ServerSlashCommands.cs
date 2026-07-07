@@ -39,7 +39,9 @@ public class ServerSlashCommands(
             AutocompleteProviderType = typeof(RecentTimePeriodAutoComplete))]
         string timePeriod = null,
         [SlashCommandParameter(Name = "order", Description = "Order for chart (defaults to listeners)")]
-        OrderType orderType = OrderType.Listeners)
+        OrderType orderType = OrderType.Listeners,
+        [SlashCommandParameter(Name = "role-picker", Description = "Display a rolepicker to filter with roles")]
+        bool displayRoleFilter = false)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
 
@@ -51,6 +53,7 @@ public class ServerSlashCommands(
             TimeDescription = "weekly",
             OrderType = orderType,
             AmountOfDays = 7,
+            DisplayRoleFilter = displayRoleFilter
         };
 
         var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.Weekly, cachedOnly: true);
@@ -75,7 +78,9 @@ public class ServerSlashCommands(
         OrderType orderType = OrderType.Listeners,
         [SlashCommandParameter(Name = "artist", Description = "The artist you want to filter on",
             AutocompleteProviderType = typeof(ArtistAutoComplete))]
-        string artist = null)
+        string artist = null,
+        [SlashCommandParameter(Name = "role-picker", Description = "Display a rolepicker to filter with roles")]
+        bool displayRoleFilter = false)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
 
@@ -87,7 +92,8 @@ public class ServerSlashCommands(
             TimeDescription = "weekly",
             OrderType = orderType,
             AmountOfDays = 7,
-            NewSearchValue = artist
+            NewSearchValue = artist,
+            DisplayRoleFilter = displayRoleFilter
         };
 
         var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.Weekly, cachedOnly: true);
@@ -113,7 +119,9 @@ public class ServerSlashCommands(
         OrderType orderType = OrderType.Listeners,
         [SlashCommandParameter(Name = "artist", Description = "The artist you want to filter on",
             AutocompleteProviderType = typeof(ArtistAutoComplete))]
-        string artist = null)
+        string artist = null,
+        [SlashCommandParameter(Name = "role-picker", Description = "Display a rolepicker to filter with roles")]
+        bool displayRoleFilter = false)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
 
@@ -125,7 +133,8 @@ public class ServerSlashCommands(
             TimeDescription = "weekly",
             OrderType = orderType,
             AmountOfDays = 7,
-            NewSearchValue = artist
+            NewSearchValue = artist,
+            DisplayRoleFilter = displayRoleFilter
         };
 
         var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.Weekly, cachedOnly: true);

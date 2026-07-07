@@ -1351,6 +1351,13 @@ public class SettingService
             setGuildRankingSettings.OrderType = OrderType.Listeners;
         }
 
+        var roleFilter = new[] { "rf", "rolefilter", "rolepicker", "roleselector" };
+        if (Contains(extraOptions, roleFilter))
+        {
+            guildRankingSettings.NewSearchValue = ContainsAndRemove(guildRankingSettings.NewSearchValue, roleFilter);
+            setGuildRankingSettings.DisplayRoleFilter = true;
+        }
+
         if (string.IsNullOrWhiteSpace(extraOptions))
         {
             guildRankingSettings.NewSearchValue = null;

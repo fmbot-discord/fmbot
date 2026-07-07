@@ -8,6 +8,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Bot.Services.Guild;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using NetCord;
@@ -20,6 +21,7 @@ public class TrackInteractions(
     UserService userService,
     TrackBuilders trackBuilders,
     TrackService trackService,
+    GuildService guildService,
     InteractiveService interactivity,
     FmSettingService fmSettingService)
     : ComponentInteractionModule<ComponentInteractionContext>
@@ -42,6 +44,44 @@ public class TrackInteractions(
                 WhoKnowsResponseMode.Default, $"{track.ArtistName} | {track.Name}", true, roleIds);
 
             await this.Context.UpdateInteractionEmbed(response);
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.ServerTracksRolePicker)]
+    [UsernameSetRequired]
+    [RequiresIndex]
+    public async Task GuildTracksFilteringAsync(string orderType, string timePeriod, string searchValue)
+    {
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
+
+        var entityMenuInteraction = (EntityMenuInteraction)this.Context.Interaction;
+        var roleIds = entityMenuInteraction.Data.SelectedValues.ToList();
+
+        var guildListSettings = new GuildRankingSettings
+        {
+            ChartTimePeriod = TimePeriod.Weekly,
+            TimeDescription = "weekly",
+            OrderType = (OrderType)int.Parse(orderType),
+            AmountOfDays = 7,
+            DisplayRoleFilter = true
+        };
+
+        var timeSettings = SettingService.GetTimePeriod(timePeriod, guildListSettings.ChartTimePeriod, cachedOnly: true);
+        guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
+        guildListSettings.NewSearchValue = string.IsNullOrWhiteSpace(searchValue) ? null : searchValue;
+
+        try
+        {
+            var response = await trackBuilders.GuildTracksAsync(new ContextModel(this.Context, contextUser),
+                guild, guildListSettings, roleIds);
+
+            await this.Context.UpdateInteractionEmbed(response, interactivity);
             await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)

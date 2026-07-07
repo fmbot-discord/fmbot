@@ -66,7 +66,7 @@ public class GuildCommands(
         }
     }
 
-    [Command("autoposts", "autopost", "serverrecap", "recapschedule", "serverrecaps")]
+    [Command("autoposts", "autopost", "autoposter", "autoposting", "serverrecap", "recapschedule", "serverrecaps")]
     [Summary("Automatically post recaps and top charts of your server on a schedule")]
     [GuildOnly]
     [RequiresIndex]

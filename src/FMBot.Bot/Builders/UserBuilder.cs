@@ -164,7 +164,7 @@ public class UserBuilder
             if (guild?.FeaturedMode == GuildFeaturedMode.GuildFeatured)
             {
                 var guildFeatured =
-                    await this._featuredService.GetGuildFeaturedForDateTime(guild.GuildId, DateTime.UtcNow);
+                    await this._featuredService.GetGuildFeaturedForDateTime(guild, DateTime.UtcNow);
 
                 if (guildFeatured is { HasFeatured: true })
                 {
@@ -1003,7 +1003,7 @@ public class UserBuilder
                         description.AppendLine("This server doesn't have any custom featureds yet..");
                         description.AppendLine();
                         description.AppendLine(
-                            "Server featured is a premium server feature where the bot features someone from this server every hour. Server admins can configure it with `.botbranding`.");
+                            "Server featured is a premium server feature where the bot regularly features someone from this server. Server admins can configure it with `.botbranding`.");
                         break;
                     case FeaturedView.User:
                     {

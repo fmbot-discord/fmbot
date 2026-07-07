@@ -239,7 +239,7 @@ public class AutopostBuilders(AutopostService autopostService, GuildService guil
                 description: size switch
                 {
                     AutopostSize.Compact => "Top 5 per list",
-                    AutopostSize.Detailed => "Top 25 per list",
+                    AutopostSize.Detailed => "Top 20 per list",
                     _ => "Top 10 per list"
                 },
                 isDefault: autopost.ContentSize == size);

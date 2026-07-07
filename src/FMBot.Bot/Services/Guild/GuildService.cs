@@ -163,7 +163,7 @@ public class GuildService(
             .ToListAsync();
     }
 
-    public async Task RefreshPremiumGuilds(bool postAuditLog = true)
+    public async Task<List<ulong>> RefreshPremiumGuilds(bool postAuditLog = true)
     {
         var premiumServers = await GetPremiumGuilds();
         var updatedPremiumServers = premiumServers.ToDictionary(d => d.DiscordGuildId, d => d.GuildId);
@@ -180,17 +180,17 @@ public class GuildService(
             PublicProperties.PremiumServers.TryRemove(removedGuild);
         }
 
-        if (!postAuditLog || previousGuildIds.Count == 0)
+        if (previousGuildIds.Count == 0)
         {
-            return;
+            return [];
         }
 
         var addedGuildIds = updatedPremiumServers.Keys.Where(w => !previousGuildIds.Contains(w)).ToList();
         var removedGuildIds = previousGuildIds.Where(w => !updatedPremiumServers.ContainsKey(w)).ToList();
 
-        if (addedGuildIds.Count == 0 && removedGuildIds.Count == 0)
+        if (!postAuditLog || (addedGuildIds.Count == 0 && removedGuildIds.Count == 0))
         {
-            return;
+            return addedGuildIds;
         }
 
         await using var db = await contextFactory.CreateDbContextAsync();
@@ -227,6 +227,8 @@ public class GuildService(
                                  $"Source: `{subscription?.PurchaseSource ?? "manual / flag"}`");
             await auditLogChannel.ExecuteAsync(new WebhookMessageProperties { Embeds = [embed] });
         }
+
+        return addedGuildIds;
     }
 
     public async Task<List<Persistence.Domain.Models.Guild>> GetCustomFeaturedGuilds()
@@ -615,6 +617,30 @@ public class GuildService(
 
         existingGuild.Name = discordGuild.Name;
         existingGuild.FeaturedMode = featuredMode;
+
+        db.Entry(existingGuild).State = EntityState.Modified;
+
+        await db.SaveChangesAsync();
+
+        await RemoveGuildFromCache(discordGuild.Id);
+
+        return true;
+    }
+
+    public async Task<bool> SetFeaturedFrequencyAsync(NetCord.Gateway.Guild discordGuild, GuildFeaturedFrequency? featuredFrequency)
+    {
+        await using var db = await contextFactory.CreateDbContextAsync();
+        var existingGuild = await db.Guilds
+            .AsQueryable()
+            .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuild.Id);
+
+        if (existingGuild == null)
+        {
+            return false;
+        }
+
+        existingGuild.Name = discordGuild.Name;
+        existingGuild.FeaturedFrequency = featuredFrequency;
 
         db.Entry(existingGuild).State = EntityState.Modified;
 

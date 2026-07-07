@@ -1335,30 +1335,42 @@ public class TrackBuilders
     public async Task<ResponseModel> GuildTracksAsync(
         ContextModel context,
         Guild guild,
-        GuildRankingSettings guildListSettings)
+        GuildRankingSettings guildListSettings,
+        List<ulong> roles = null)
     {
         var response = new ResponseModel
         {
             ResponseType = ResponseType.Embed,
         };
 
+        int[] roleUserIds = null;
+        if (roles != null && roles.Any())
+        {
+            var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
+            roleUserIds = guildUsers.Values
+                .Where(w => w.Roles != null && w.Roles.Any(roles.Contains))
+                .Select(s => s.UserId)
+                .ToArray();
+        }
+
         ICollection<GuildTrack> topGuildTracks;
         List<GuildTrack> previousTopGuildTracks = null;
         if (guildListSettings.ChartTimePeriod == TimePeriod.AllTime)
         {
             topGuildTracks = await this._whoKnowsTrackService.GetTopAllTimeTracksForGuild(guild.GuildId,
-                guildListSettings.OrderType, guildListSettings.NewSearchValue);
+                guildListSettings.OrderType, guildListSettings.NewSearchValue, userIds: roleUserIds);
         }
         else
         {
             topGuildTracks = await this._playService.GetGuildTopTracksPlays(guild.GuildId,
-                guildListSettings.StartDateTime, guildListSettings.OrderType, guildListSettings.NewSearchValue, guildListSettings.EndDateTime);
+                guildListSettings.StartDateTime, guildListSettings.OrderType, guildListSettings.NewSearchValue, guildListSettings.EndDateTime,
+                userIds: roleUserIds);
             previousTopGuildTracks = (await this._playService.GetGuildTopTracksPlays(guild.GuildId,
                 guildListSettings.BillboardStartDateTime, guildListSettings.OrderType, guildListSettings.NewSearchValue,
-                guildListSettings.BillboardEndDateTime)).ToList();
+                guildListSettings.BillboardEndDateTime, userIds: roleUserIds)).ToList();
         }
 
-        if (topGuildTracks.Count == 0)
+        if (topGuildTracks.Count == 0 && (roles == null || !roles.Any()))
         {
             response.Embed.WithDescription(guildListSettings.NewSearchValue != null
                 ? $"Sorry, there are no registered top tracks for artist `{guildListSettings.NewSearchValue}` on this server in the time period you selected."
@@ -1422,6 +1434,22 @@ public class TrackBuilders
             pageDescriptions.Add(pageString.ToString());
         }
 
+        if (pageDescriptions.Count == 0)
+        {
+            pageDescriptions.Add("Sorry, there are no registered top tracks for the roles you selected in this time period.");
+        }
+
+        RoleMenuProperties roleMenu = null;
+        if (guildListSettings.DisplayRoleFilter &&
+            PublicProperties.PremiumServers.ContainsKey(context.DiscordGuild.Id))
+        {
+            roleMenu = new RoleMenuProperties(
+                    $"{InteractionConstants.ServerTracksRolePicker}:{(int)guildListSettings.OrderType}:{guildListSettings.TimeDescription}:{guildListSettings.NewSearchValue}")
+                .WithPlaceholder("Apply role filter..")
+                .WithMinValues(0)
+                .WithMaxValues(25);
+        }
+
         var paginator = new ComponentPaginatorBuilder()
             .WithPageFactory(GeneratePage)
             .WithPageCount(Math.Max(1, pageDescriptions.Count))
@@ -1447,6 +1475,10 @@ public class TrackBuilders
             container.WithSeparator();
 
             var pageFooter = $"-# {footerLabel} - Page {p.CurrentPageIndex + 1}/{pageDescriptions.Count}";
+            if (roles != null && roles.Any())
+            {
+                pageFooter += $"\n-# ✨ Role filter enabled with {roles.Count} {StringExtensions.GetRolesString(roles.Count)} picked";
+            }
             if (footerHint != null)
             {
                 pageFooter += $"\n-# {footerHint}";
@@ -1457,6 +1489,11 @@ public class TrackBuilders
             if (pageDescriptions.Count > 1)
             {
                 container.WithActionRow(StringService.GetPaginationActionRow(p));
+            }
+
+            if (roleMenu != null)
+            {
+                container.AddComponent(roleMenu);
             }
 
             return new PageBuilder()

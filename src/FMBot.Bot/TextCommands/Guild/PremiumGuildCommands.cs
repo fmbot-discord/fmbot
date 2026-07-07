@@ -60,7 +60,7 @@ public class PremiumGuildCommands(
         }
     }
 
-    [Command("botbranding", "custombranding", "botavatar", "customlogo")]
+    [Command("botbranding", "custombranding", "botavatar", "customlogo", "serverfeatured", "localfeatured")]
     [Summary("Give the bot a custom look in this server")]
     [GuildOnly]
     [ExcludeFromHelp]
@@ -69,7 +69,7 @@ public class PremiumGuildCommands(
         if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
         {
             var premiumRequiredResponse = PremiumSettingBuilder.PremiumServerRequired("botbranding-text",
-                "**Custom bot branding** gives .fmbot a custom avatar and look in this server. You can also enable **server featured**, an hourly featured based on your own server's members.");
+                "**Custom bot branding** gives .fmbot a custom avatar and look in this server. You can also enable **server featured**, a rotating featured based on your own server's members.");
             await this.Context.SendResponse(this.Interactivity, premiumRequiredResponse, userService);
             await this.Context.LogCommandUsedAsync(premiumRequiredResponse, userService);
             return;

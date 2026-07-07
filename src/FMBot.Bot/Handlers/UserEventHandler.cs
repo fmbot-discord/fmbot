@@ -144,7 +144,12 @@ public class UserEventHandler
     private async Task ProcessGuildEntitlement(ulong discordGuildId)
     {
         await this._supporterService.UpdateSingleDiscordPremiumGuild(discordGuildId);
-        await this._guildService.RefreshPremiumGuilds(postAuditLog: false);
+        var addedGuildIds = await this._guildService.RefreshPremiumGuilds(postAuditLog: false);
+
+        if (addedGuildIds.Count > 0)
+        {
+            await this._indexService.RefreshGuildUsers(this._client, addedGuildIds);
+        }
     }
 
     private async ValueTask UserLeft(GatewayClient client, GuildUserRemoveEventArgs args)

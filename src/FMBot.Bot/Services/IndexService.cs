@@ -482,6 +482,39 @@ public class IndexService
         return users.Count();
     }
 
+    public async Task RefreshGuildUsers(NetCord.Gateway.ShardedGatewayClient client, List<ulong> discordGuildIds)
+    {
+        foreach (var discordGuildId in discordGuildIds)
+        {
+            var discordGuild = client
+                .Select(shard => shard.Cache.Guilds.TryGetValue(discordGuildId, out var cachedGuild) ? cachedGuild : null)
+                .FirstOrDefault(f => f != null);
+
+            if (discordGuild == null)
+            {
+                continue;
+            }
+
+            try
+            {
+                var guildUsers = new List<NetCord.GuildUser>();
+                await foreach (var user in discordGuild.GetUsersAsync())
+                {
+                    guildUsers.Add(user);
+                }
+
+                Log.Information("RefreshGuildUsers: Downloaded {guildUserCount} users for guild {discordGuildId} / {guildName} from Discord",
+                    guildUsers.Count, discordGuild.Id, discordGuild.Name);
+
+                await StoreGuildUsers(discordGuild, guildUsers);
+            }
+            catch (Exception e)
+            {
+                Log.Error(e, "RefreshGuildUsers: Failed to refresh guild users for guild {discordGuildId}", discordGuildId);
+            }
+        }
+    }
+
     public async Task<GuildUser> GetOrAddUserToGuild(
         IDictionary<int, FullGuildUser> guildUsers,
         Persistence.Domain.Models.Guild guild,

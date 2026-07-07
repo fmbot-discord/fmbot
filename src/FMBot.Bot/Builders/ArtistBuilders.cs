@@ -1126,12 +1126,23 @@ public class ArtistBuilders
     public async Task<ResponseModel> GuildArtistsAsync(
         ContextModel context,
         Guild guild,
-        GuildRankingSettings guildListSettings)
+        GuildRankingSettings guildListSettings,
+        List<ulong> roles = null)
     {
         var response = new ResponseModel
         {
             ResponseType = ResponseType.Embed,
         };
+
+        int[] roleUserIds = null;
+        if (roles != null && roles.Any())
+        {
+            var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
+            roleUserIds = guildUsers.Values
+                .Where(w => w.Roles != null && w.Roles.Any(roles.Contains))
+                .Select(s => s.UserId)
+                .ToArray();
+        }
 
         ICollection<GuildArtist> topGuildArtists;
         IList<GuildArtist> previousTopGuildArtists = null;
@@ -1139,14 +1150,16 @@ public class ArtistBuilders
         {
             topGuildArtists =
                 await this._whoKnowsArtistService.GetTopAllTimeArtistsForGuild(guild.GuildId,
-                    guildListSettings.OrderType);
+                    guildListSettings.OrderType, userIds: roleUserIds);
         }
         else
         {
             topGuildArtists = await this._playService.GetGuildTopArtistsPlays(guild.GuildId,
-                guildListSettings.StartDateTime, guildListSettings.OrderType, guildListSettings.EndDateTime);
+                guildListSettings.StartDateTime, guildListSettings.OrderType, guildListSettings.EndDateTime,
+                userIds: roleUserIds);
             previousTopGuildArtists = (await this._playService.GetGuildTopArtistsPlays(guild.GuildId,
-                guildListSettings.BillboardStartDateTime, guildListSettings.OrderType, guildListSettings.BillboardEndDateTime)).ToList();
+                guildListSettings.BillboardStartDateTime, guildListSettings.OrderType, guildListSettings.BillboardEndDateTime,
+                userIds: roleUserIds)).ToList();
         }
 
         var title = $"Top {guildListSettings.TimeDescription.ToLower()} artists in {context.DiscordGuild.Name}";
@@ -1198,6 +1211,24 @@ public class ArtistBuilders
             pageDescriptions.Add(pageString.ToString());
         }
 
+        if (pageDescriptions.Count == 0)
+        {
+            pageDescriptions.Add(roles != null && roles.Any()
+                ? "Sorry, there are no registered top artists for the roles you selected in this time period."
+                : "Sorry, there are no registered top artists on this server in the time period you selected.");
+        }
+
+        RoleMenuProperties roleMenu = null;
+        if (guildListSettings.DisplayRoleFilter &&
+            PublicProperties.PremiumServers.ContainsKey(context.DiscordGuild.Id))
+        {
+            roleMenu = new RoleMenuProperties(
+                    $"{InteractionConstants.ServerArtistsRolePicker}:{(int)guildListSettings.OrderType}:{guildListSettings.TimeDescription}")
+                .WithPlaceholder("Apply role filter..")
+                .WithMinValues(0)
+                .WithMaxValues(25);
+        }
+
         var paginator = new ComponentPaginatorBuilder()
             .WithPageFactory(GeneratePage)
             .WithPageCount(Math.Max(1, pageDescriptions.Count))
@@ -1223,6 +1254,10 @@ public class ArtistBuilders
             container.WithSeparator();
 
             var pageFooter = $"-# {footerLabel} - Page {p.CurrentPageIndex + 1}/{pageDescriptions.Count}";
+            if (roles != null && roles.Any())
+            {
+                pageFooter += $"\n-# ✨ Role filter enabled with {roles.Count} {StringExtensions.GetRolesString(roles.Count)} picked";
+            }
             if (footerHint != null)
             {
                 pageFooter += $"\n-# {footerHint}";
@@ -1233,6 +1268,11 @@ public class ArtistBuilders
             if (pageDescriptions.Count > 1)
             {
                 container.WithActionRow(StringService.GetPaginationActionRow(p));
+            }
+
+            if (roleMenu != null)
+            {
+                container.AddComponent(roleMenu);
             }
 
             return new PageBuilder()

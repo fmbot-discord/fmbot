@@ -126,8 +126,6 @@ public class PremiumSettingBuilder(
             AppendPerkPitchList(description);
             description.AppendLine();
             description.AppendLine("Anyone can purchase Premium for this server. Configuring features requires server management permissions.");
-            description.AppendLine();
-            description.AppendLine("⚠️ Premium server is currently in public beta. During this beta you might encounter bugs or issues, please report these in [our server](https://discord.gg/fmbot).");
 
             container.WithTextDisplay(description.ToString());
 
@@ -318,7 +316,7 @@ public class PremiumSettingBuilder(
         description.AppendLine("👑 **Automatic crownseeder** — seed crowns daily, weekly or monthly");
         description.AppendLine("📊 **Scheduled server recaps** — weekly or monthly top charts, posted automatically");
         description.AppendLine("🤖 **Custom bot branding** — set a custom avatar for .fmbot");
-        description.AppendLine("⭐ **Server featured** — an hourly featured based on your own server's members");
+        description.AppendLine("⭐ **Server featured** — a rotating featured based on your own server's members");
         description.AppendLine("🎮 **60 daily Jumble and Pixel games** for every member");
         description.AppendLine("📜 **Lyrics unlocked** for every member");
         description.AppendLine("⌨️ **Server-wide shortcuts** — shared text command shortcuts for everyone");
@@ -648,6 +646,7 @@ public class PremiumSettingBuilder(
 
         var guild = await guildService.GetGuildAsync(context.DiscordGuild.Id);
         var featuredMode = guild.FeaturedMode ?? GuildFeaturedMode.GlobalFeatured;
+        var featuredFrequency = guild.FeaturedFrequency ?? GuildFeaturedFrequency.Hourly;
 
         var container = response.ComponentsContainer;
         container.WithAccentColor(DiscordConstants.InformationColorBlue);
@@ -661,7 +660,7 @@ public class PremiumSettingBuilder(
         description.AppendLine("**Branding modes:**");
         description.AppendLine("- **Global featured** — The default look, with the avatar following the global hourly featured");
         description.AppendLine("- **Custom avatar** — Your own fixed logo or image, which never rotates");
-        description.AppendLine("- **Server featured** — The avatar follows an hourly featured based on the members of this server");
+        description.AppendLine("- **Server featured** — The avatar follows a rotating featured based on the members of this server");
         description.AppendLine();
         description.AppendLine($"**Current mode:** {GetFeaturedModeName(featuredMode)}");
 
@@ -673,11 +672,13 @@ public class PremiumSettingBuilder(
                     : "**Custom avatar:** None yet. Set one by running `.botbranding` with an image attached. Please note that custom avatars may be viewed by .fmbot staff to prevent abuse.");
                 break;
             case GuildFeaturedMode.GuildFeatured:
+                description.AppendLine($"**Featured changes:** {GetFeaturedFrequencyName(featuredFrequency)}");
+                description.AppendLine();
                 description.AppendLine(
                     "Server featured picks an album cover based on top albums or recent listeners from someone who has recently been active in your server.");
                 description.AppendLine();
                 description.AppendLine(
-                    "To set up a channel where featured is automatically posted every hour, use `.addwebhook`.");
+                    "To set up a channel where each new featured is automatically posted, use `.addwebhook`.");
                 break;
         }
 
@@ -704,6 +705,23 @@ public class PremiumSettingBuilder(
 
         container.WithTextDisplay(description.ToString());
         container.AddComponent(modeMenu);
+
+        if (featuredMode == GuildFeaturedMode.GuildFeatured)
+        {
+            var frequencyMenu = new StringMenuProperties(InteractionConstants.BotBranding.SetFeaturedFrequency)
+                .WithPlaceholder("Set featured frequency")
+                .WithMinValues(1)
+                .WithMaxValues(1);
+
+            foreach (var frequency in Enum.GetValues<GuildFeaturedFrequency>())
+            {
+                frequencyMenu.AddOption(GetFeaturedFrequencyName(frequency), Enum.GetName(frequency),
+                    isDefault: frequency == featuredFrequency);
+            }
+
+            container.AddComponent(frequencyMenu);
+        }
+
         container.WithActionRow(components);
 
         container.WithSeparator();
@@ -719,6 +737,19 @@ public class PremiumSettingBuilder(
             GuildFeaturedMode.CustomBotGlobalFeatured => "Custom avatar",
             GuildFeaturedMode.GuildFeatured => "Server featured",
             _ => "Global featured"
+        };
+    }
+
+    private static string GetFeaturedFrequencyName(GuildFeaturedFrequency featuredFrequency)
+    {
+        return featuredFrequency switch
+        {
+            GuildFeaturedFrequency.EveryTwoHours => "Every 2 hours",
+            GuildFeaturedFrequency.EveryThreeHours => "Every 3 hours",
+            GuildFeaturedFrequency.EverySixHours => "Every 6 hours",
+            GuildFeaturedFrequency.EveryTwelveHours => "Every 12 hours",
+            GuildFeaturedFrequency.EveryTwentyFourHours => "Every 24 hours",
+            _ => "Every hour"
         };
     }
 

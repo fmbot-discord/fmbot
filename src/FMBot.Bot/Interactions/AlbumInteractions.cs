@@ -9,6 +9,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using NetCord;
@@ -22,6 +23,7 @@ public class AlbumInteractions(
     AlbumBuilders albumBuilders,
     SettingService settingService,
     AlbumService albumService,
+    GuildService guildService,
     InteractiveService interactivity,
     FmSettingService fmSettingService)
     : ComponentInteractionModule<ComponentInteractionContext>
@@ -74,6 +76,44 @@ public class AlbumInteractions(
             var response = await albumBuilders.WhoKnowsAlbumAsync(new ContextModel(this.Context, contextUser), WhoKnowsResponseMode.Default, $"{album.ArtistName} | {album.Name}", true, roleIds);
 
             await this.Context.UpdateInteractionEmbed(response);
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.ServerAlbumsRolePicker)]
+    [UsernameSetRequired]
+    [RequiresIndex]
+    public async Task GuildAlbumsFilteringAsync(string orderType, string timePeriod, string searchValue)
+    {
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
+
+        var entityMenuInteraction = (EntityMenuInteraction)this.Context.Interaction;
+        var roleIds = entityMenuInteraction.Data.SelectedValues.ToList();
+
+        var guildListSettings = new GuildRankingSettings
+        {
+            ChartTimePeriod = TimePeriod.Weekly,
+            TimeDescription = "weekly",
+            OrderType = (OrderType)int.Parse(orderType),
+            AmountOfDays = 7,
+            DisplayRoleFilter = true
+        };
+
+        var timeSettings = SettingService.GetTimePeriod(timePeriod, guildListSettings.ChartTimePeriod, cachedOnly: true);
+        guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
+        guildListSettings.NewSearchValue = string.IsNullOrWhiteSpace(searchValue) ? null : searchValue;
+
+        try
+        {
+            var response = await albumBuilders.GuildAlbumsAsync(new ContextModel(this.Context, contextUser),
+                guild, guildListSettings, roleIds);
+
+            await this.Context.UpdateInteractionEmbed(response, interactivity);
             await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)

@@ -21,7 +21,7 @@ public static class AutopostRendering
         return size switch
         {
             AutopostSize.Compact => 5,
-            AutopostSize.Detailed => 25,
+            AutopostSize.Detailed => 20,
             _ => 10
         };
     }

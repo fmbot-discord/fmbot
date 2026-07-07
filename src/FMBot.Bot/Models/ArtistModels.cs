@@ -24,6 +24,8 @@ public class GuildRankingSettings
     public int AmountOfDaysWithBillboard { get; set; }
 
     public string NewSearchValue { get; set; }
+
+    public bool DisplayRoleFilter { get; set; }
 }
 
 public enum OrderType

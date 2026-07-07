@@ -8,6 +8,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Bot.Services.Guild;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Caching.Memory;
 using NetCord;
@@ -21,6 +22,7 @@ public class ArtistInteractions(
     ArtistBuilders artistBuilders,
     SettingService settingService,
     ArtistsService artistsService,
+    GuildService guildService,
     InteractiveService interactivity,
     FmSettingService fmSettingService,
     IMemoryCache cache)
@@ -183,6 +185,43 @@ public class ArtistInteractions(
             var response = await artistBuilders.WhoKnowsArtistAsync(new ContextModel(this.Context, contextUser), WhoKnowsResponseMode.Default, artist.Name, true, roleIds);
 
             await this.Context.UpdateInteractionEmbed(response);
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.ServerArtistsRolePicker)]
+    [UsernameSetRequired]
+    [RequiresIndex]
+    public async Task GuildArtistsFilteringAsync(string orderType, string timePeriod)
+    {
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
+
+        var entityMenuInteraction = (EntityMenuInteraction)this.Context.Interaction;
+        var roleIds = entityMenuInteraction.Data.SelectedValues.ToList();
+
+        var guildListSettings = new GuildRankingSettings
+        {
+            ChartTimePeriod = TimePeriod.Weekly,
+            TimeDescription = "weekly",
+            OrderType = (OrderType)int.Parse(orderType),
+            AmountOfDays = 7,
+            DisplayRoleFilter = true
+        };
+
+        var timeSettings = SettingService.GetTimePeriod(timePeriod, guildListSettings.ChartTimePeriod, cachedOnly: true);
+        guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
+
+        try
+        {
+            var response = await artistBuilders.GuildArtistsAsync(new ContextModel(this.Context, contextUser),
+                guild, guildListSettings, roleIds);
+
+            await this.Context.UpdateInteractionEmbed(response, interactivity);
             await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)

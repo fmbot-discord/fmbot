@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Dapper;
 using FMBot.Bot.Extensions;
 using FMBot.Domain;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
@@ -277,15 +278,21 @@ public class FeaturedService
             .FirstOrDefaultAsync(w => w.DateTime == date);
     }
 
-    public async Task<GuildFeaturedLog> GetGuildFeaturedForDateTime(int guildId, DateTime dateTime)
+    public static DateTime GetGuildFeaturedDateTime(Persistence.Domain.Models.Guild guild, DateTime dateTime)
+    {
+        var frequencyHours = (int)(guild.FeaturedFrequency ?? GuildFeaturedFrequency.Hourly);
+        return new DateTime(dateTime.Year, dateTime.Month, dateTime.Day, dateTime.Hour - dateTime.Hour % frequencyHours,
+            Constants.FeaturedMinute, 0, kind: DateTimeKind.Utc);
+    }
+
+    public async Task<GuildFeaturedLog> GetGuildFeaturedForDateTime(Persistence.Domain.Models.Guild guild, DateTime dateTime)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
-        var date = new DateTime(dateTime.Year, dateTime.Month, dateTime.Day, dateTime.Hour, Constants.FeaturedMinute, 0,
-            kind: DateTimeKind.Utc);
+        var date = GetGuildFeaturedDateTime(guild, dateTime);
         return await db.GuildFeaturedLogs
             .AsQueryable()
-            .FirstOrDefaultAsync(w => w.GuildId == guildId && w.DateTime == date);
+            .FirstOrDefaultAsync(w => w.GuildId == guild.GuildId && w.DateTime == date);
     }
 
     public async Task AddGuildFeatured(GuildFeaturedLog guildFeaturedLog)
@@ -355,8 +362,7 @@ public class FeaturedService
         {
             GuildId = guild.GuildId,
             FeaturedMode = featuredMode,
-            DateTime = new DateTime(featuredDateTime.Year, featuredDateTime.Month, featuredDateTime.Day,
-                featuredDateTime.Hour, Constants.FeaturedMinute, 0, kind: DateTimeKind.Utc),
+            DateTime = GetGuildFeaturedDateTime(guild, featuredDateTime),
             HasFeatured = false
         };
 

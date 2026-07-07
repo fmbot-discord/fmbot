@@ -611,7 +611,12 @@ public class TimerService : IDisposable
                                     (ConfigData.Data.Shards == null ||
                                      ConfigData.Data.Shards.MainInstance == true);
 
-        await this._guildService.RefreshPremiumGuilds(sendActivationUpdates);
+        var addedGuildIds = await this._guildService.RefreshPremiumGuilds(sendActivationUpdates);
+
+        if (addedGuildIds.Count > 0)
+        {
+            await this._indexService.RefreshGuildUsers(this._client, addedGuildIds);
+        }
 
         if (sendActivationUpdates)
         {
@@ -668,7 +673,7 @@ public class TimerService : IDisposable
         try
         {
             var existingFeatured =
-                await this._featuredService.GetGuildFeaturedForDateTime(guild.GuildId, DateTime.UtcNow);
+                await this._featuredService.GetGuildFeaturedForDateTime(guild, DateTime.UtcNow);
 
             if (existingFeatured is { HasFeatured: true })
             {

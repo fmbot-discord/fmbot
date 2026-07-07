@@ -257,6 +257,7 @@ public static class InteractionConstants
     {
         public const string RemoveAvatar = "remove-bot-branding-avatar";
         public const string SetFeaturedMode = "set-bot-featured-mode";
+        public const string SetFeaturedFrequency = "set-bot-featured-frequency";
     }
 
     public static class GuildShortcuts
@@ -345,6 +346,10 @@ public static class InteractionConstants
     public const string WhoKnowsRolePicker = "whoknows-role-picker";
     public const string WhoKnowsAlbumRolePicker = "whoknows-album-role-picker";
     public const string WhoKnowsTrackRolePicker = "whoknows-track-role-picker";
+
+    public const string ServerArtistsRolePicker = "server-artists-role-picker";
+    public const string ServerAlbumsRolePicker = "server-albums-role-picker";
+    public const string ServerTracksRolePicker = "server-tracks-role-picker";
 
     public static class Genre
     {
