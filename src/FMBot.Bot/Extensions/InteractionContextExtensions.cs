@@ -909,6 +909,14 @@ public static class InteractionContextExtensions
                     TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
                     InteractionCallbackType.DeferredMessage);
             }
+            else if (message.Flags.HasFlag(MessageFlags.Ephemeral))
+            {
+                _ = interactiveService.SendPaginatorAsync(
+                    response.ComponentPaginator.Build(),
+                    context.Interaction,
+                    TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
+                    InteractionCallbackType.DeferredModifyMessage);
+            }
             else
             {
                 if (message.Attachments != null && message.Attachments.Any())

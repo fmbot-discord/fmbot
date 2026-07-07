@@ -91,15 +91,13 @@ namespace FMBot.Persistence.EntityFrameWork
                 optionsBuilder.UseNpgsql(this._configuration["Database:ConnectionString"]);
 
                 /* How to create migrations:
-                1. Uncomment the hardcoded connection string below
-                2. Comment out anything that uses the _configuration
-                3. Run 'dotnet ef migrations add MyMigrationName --project src/fmbot.persistence.entityframework'
-                4. Review your migration
-                5. Run 'dotnet tool run dotnet-ef database update --project src/fmbot.persistence.entityframework'
-                6. Before committing or running, revert the changes in this file
+                1. Run 'dotnet ef migrations add MyMigrationName --project src/FMBot.Persistence.EntityFrameWork'
+                2. Review your migration
+                3. Run 'dotnet ef database update --project src/FMBot.Persistence.EntityFrameWork'
+                FMBotDbContextFactory provides the design-time context: it reads the bot's own
+                configs/config.json (resolved relative to the source tree), falls back to fmbot-local,
+                override with the Database__ConnectionString env var or 'database update --connection'
                 */
-
-                // optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Username=postgres;Password=password;Database=fmbot-local;Command Timeout=60;Timeout=60;Persist Security Info=True");
 
                 optionsBuilder.UseSnakeCaseNamingConvention();
             }
@@ -148,7 +146,7 @@ namespace FMBot.Persistence.EntityFrameWork
             {
                 entity.HasKey(e => e.Id);
 
-                entity.HasIndex(i => i.ChannelId).IsUnique();
+                entity.HasIndex(i => i.ChannelId);
 
                 entity.HasIndex(i => i.GuildId);
 

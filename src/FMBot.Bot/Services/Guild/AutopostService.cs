@@ -363,21 +363,71 @@ public class AutopostService(
             .FirstOrDefaultAsync();
     }
 
+    public async Task<bool> ChannelHasDuplicateAsync(GuildAutopost autopost, AutopostType contentType,
+        AutopostSchedule schedule, TimePeriod? timePeriod, string artistFilter, ulong[] roleIds)
+    {
+        await using var db = await contextFactory.CreateDbContextAsync();
+        var others = await db.GuildAutoposts
+            .AsNoTracking()
+            .Where(w => w.ChannelId == autopost.ChannelId && w.Id != autopost.Id)
+            .ToListAsync();
+
+        return HasDuplicate(others, contentType, schedule, timePeriod, artistFilter, roleIds);
+    }
+
+    private static bool HasDuplicate(IEnumerable<GuildAutopost> autoposts, AutopostType contentType,
+        AutopostSchedule schedule, TimePeriod? timePeriod, string artistFilter, ulong[] roleIds)
+    {
+        return autoposts.Any(a => a.ContentType == contentType &&
+                                  (a.TimePeriod == TimePeriod.AllTime || timePeriod == TimePeriod.AllTime
+                                      ? a.TimePeriod == timePeriod
+                                      : a.Schedule == schedule) &&
+                                  SameArtistFilter(a.ArtistFilter, artistFilter) &&
+                                  SameRoles(a.RoleIds, roleIds));
+    }
+
+    private static bool SameArtistFilter(string left, string right)
+    {
+        if (string.IsNullOrWhiteSpace(left) || string.IsNullOrWhiteSpace(right))
+        {
+            return string.IsNullOrWhiteSpace(left) == string.IsNullOrWhiteSpace(right);
+        }
+
+        return string.Equals(left.Trim(), right.Trim(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool SameRoles(ulong[] left, ulong[] right)
+    {
+        return new HashSet<ulong>(left ?? []).SetEquals(right ?? []);
+    }
+
     public async Task<GuildAutopost> CreateAutopostAsync(int guildId, ulong channelId, ulong createdBy)
     {
         await using var db = await contextFactory.CreateDbContextAsync();
 
-        var existing = await db.GuildAutoposts
+        var channelAutoposts = await db.GuildAutoposts
             .AsNoTracking()
-            .FirstOrDefaultAsync(f => f.ChannelId == channelId);
+            .Where(w => w.ChannelId == channelId)
+            .ToListAsync();
 
-        if (existing != null)
+        if (channelAutoposts.Any(a => a.GuildId != guildId))
         {
-            return existing.GuildId == guildId ? existing : null;
+            return null;
         }
 
         var count = await db.GuildAutoposts.CountAsync(c => c.GuildId == guildId);
         if (count >= MaxAutopostsPerGuild)
+        {
+            return null;
+        }
+
+        var freeSlots = Enum.GetValues<AutopostType>()
+            .SelectMany(_ => new[] { AutopostSchedule.Weekly, AutopostSchedule.Monthly },
+                (contentType, schedule) => (contentType, schedule))
+            .Where(s => !HasDuplicate(channelAutoposts, s.contentType, s.schedule, null, null, null))
+            .ToList();
+
+        if (freeSlots.Count == 0)
         {
             return null;
         }
@@ -387,8 +437,8 @@ public class AutopostService(
         {
             GuildId = guildId,
             ChannelId = channelId,
-            ContentType = AutopostType.ServerRecap,
-            Schedule = AutopostSchedule.Weekly,
+            ContentType = freeSlots[0].contentType,
+            Schedule = freeSlots[0].schedule,
             ContentSize = AutopostSize.Standard,
             Enabled = true,
             CreatedBy = createdBy,

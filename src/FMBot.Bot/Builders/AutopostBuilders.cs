@@ -99,7 +99,7 @@ public class AutopostBuilders(AutopostService autopostService, GuildService guil
         container.WithTextDisplay("## Add autopost");
         container.WithSeparator();
         container.WithTextDisplay(
-            "Pick the channel or thread this autopost should post in. Each channel can have one autopost.\n" +
+            "Pick the channel or thread this autopost should post in.\n" +
             "After picking a channel you can configure the content type, schedule and filters.");
 
         var channelMenu = new ChannelMenuProperties(InteractionConstants.Autopost.AddChannel)
@@ -113,6 +113,7 @@ public class AutopostBuilders(AutopostService autopostService, GuildService guil
             ]);
 
         container.AddComponent(channelMenu);
+        container.WithSeparator();
 
         var buttons = new ActionRowProperties();
         buttons.AddComponents(new ButtonProperties(InteractionConstants.Autopost.Overview, "Back",

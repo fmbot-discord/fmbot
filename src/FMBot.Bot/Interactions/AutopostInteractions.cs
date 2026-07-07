@@ -98,7 +98,8 @@ public class AutopostInteractions(
             {
                 await this.Context.Interaction.SendResponseAsync(InteractionCallback.Message(
                     new InteractionMessageProperties()
-                        .WithContent("⚠️ Could not add an autopost for that channel.")
+                        .WithContent(
+                            "⚠️ Could not add an autopost for that channel. It may already use every content type and schedule combination, or your server may be at the autopost limit.")
                         .WithFlags(MessageFlags.Ephemeral)));
                 return;
             }
@@ -151,6 +152,18 @@ public class AutopostInteractions(
             if (autopost != null && selectedValues.Count > 0 &&
                 Enum.TryParse(selectedValues[0], out AutopostType contentType))
             {
+                TimePeriod? timePeriod = contentType == AutopostType.ServerRecap ? null : autopost.TimePeriod;
+                var artistFilter = contentType is AutopostType.ServerAlbums or AutopostType.ServerTracks
+                    ? autopost.ArtistFilter
+                    : null;
+                if (await autopostService.ChannelHasDuplicateAsync(autopost, contentType, autopost.Schedule,
+                        timePeriod, artistFilter, autopost.RoleIds))
+                {
+                    await UpdateEditView(autopost);
+                    await SendDuplicateWarning();
+                    return;
+                }
+
                 await autopostService.UpdateAutopostAsync(autopost.Id, a =>
                 {
                     a.ContentType = contentType;
@@ -195,6 +208,14 @@ public class AutopostInteractions(
                 Enum.TryParse(selectedValues[0], out AutopostSchedule schedule) &&
                 Enum.IsDefined(schedule))
             {
+                if (await autopostService.ChannelHasDuplicateAsync(autopost, autopost.ContentType, schedule,
+                        autopost.TimePeriod, autopost.ArtistFilter, autopost.RoleIds))
+                {
+                    await UpdateEditView(autopost);
+                    await SendDuplicateWarning();
+                    return;
+                }
+
                 await autopostService.UpdateAutopostAsync(autopost.Id, a => a.Schedule = schedule);
             }
 
@@ -224,8 +245,16 @@ public class AutopostInteractions(
 
             if (autopost != null && selectedValues.Count > 0 && autopost.ContentType != AutopostType.ServerRecap)
             {
-                await autopostService.UpdateAutopostAsync(autopost.Id,
-                    a => a.TimePeriod = selectedValues[0] == "alltime" ? TimePeriod.AllTime : null);
+                TimePeriod? timePeriod = selectedValues[0] == "alltime" ? TimePeriod.AllTime : null;
+                if (await autopostService.ChannelHasDuplicateAsync(autopost, autopost.ContentType, autopost.Schedule,
+                        timePeriod, autopost.ArtistFilter, autopost.RoleIds))
+                {
+                    await UpdateEditView(autopost);
+                    await SendDuplicateWarning();
+                    return;
+                }
+
+                await autopostService.UpdateAutopostAsync(autopost.Id, a => a.TimePeriod = timePeriod);
             }
 
             await UpdateEditView(autopost);
@@ -254,8 +283,16 @@ public class AutopostInteractions(
 
             if (autopost != null)
             {
-                await autopostService.UpdateAutopostAsync(autopost.Id,
-                    a => a.RoleIds = selectedRoleIds.Count > 0 ? selectedRoleIds.ToArray() : null);
+                var roleIds = selectedRoleIds.Count > 0 ? selectedRoleIds.ToArray() : null;
+                if (await autopostService.ChannelHasDuplicateAsync(autopost, autopost.ContentType, autopost.Schedule,
+                        autopost.TimePeriod, autopost.ArtistFilter, roleIds))
+                {
+                    await UpdateEditView(autopost);
+                    await SendDuplicateWarning();
+                    return;
+                }
+
+                await autopostService.UpdateAutopostAsync(autopost.Id, a => a.RoleIds = roleIds);
             }
 
             await UpdateEditView(autopost);
@@ -331,9 +368,17 @@ public class AutopostInteractions(
             if (autopost != null)
             {
                 var artistName = this.Context.GetModalValue("artist_name")?.Trim();
+                var artistFilter = string.IsNullOrWhiteSpace(artistName) ? null : artistName;
 
-                await autopostService.UpdateAutopostAsync(autopost.Id,
-                    a => a.ArtistFilter = string.IsNullOrWhiteSpace(artistName) ? null : artistName);
+                if (await autopostService.ChannelHasDuplicateAsync(autopost, autopost.ContentType, autopost.Schedule,
+                        autopost.TimePeriod, artistFilter, autopost.RoleIds))
+                {
+                    await UpdateEditView(autopost);
+                    await SendDuplicateWarning();
+                    return;
+                }
+
+                await autopostService.UpdateAutopostAsync(autopost.Id, a => a.ArtistFilter = artistFilter);
             }
 
             await UpdateEditView(autopost);
@@ -547,6 +592,14 @@ public class AutopostInteractions(
 
         var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
         return guild != null && autopost.GuildId == guild.GuildId ? autopost : null;
+    }
+
+    private async Task SendDuplicateWarning()
+    {
+        await this.Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
+            .WithContent(
+                "⚠️ This channel already has an identical autopost: same content type, time period, roles and artist filter.")
+            .WithFlags(MessageFlags.Ephemeral));
     }
 
     private async Task UpdateEditView(GuildAutopost autopost)
