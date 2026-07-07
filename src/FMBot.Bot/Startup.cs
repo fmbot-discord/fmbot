@@ -10,6 +10,7 @@ using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
+using FMBot.Bot.Services.Guild.Renderers;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Discogs.Apis;
@@ -228,6 +229,7 @@ public class Startup
         services
             .AddSingleton<AlbumBuilders>()
             .AddSingleton<ArtistBuilders>()
+            .AddSingleton<AutopostBuilders>()
             .AddSingleton<ChartBuilders>()
             .AddSingleton<CountryBuilders>()
             .AddSingleton<CrownBuilders>()
@@ -306,7 +308,12 @@ public class Startup
         services
             .AddSingleton<GuildService>()
             .AddSingleton<GuildDisabledCommandService>()
-            .AddSingleton<GuildRecapService>()
+            .AddSingleton<AutopostService>()
+            .AddSingleton<AutopostRendererRegistry>()
+            .AddSingleton<IAutopostRenderer, ServerRecapRenderer>()
+            .AddSingleton<IAutopostRenderer, ServerArtistsRenderer>()
+            .AddSingleton<IAutopostRenderer, ServerAlbumsRenderer>()
+            .AddSingleton<IAutopostRenderer, ServerTracksRenderer>()
             .AddSingleton<ChannelToggledCommandService>()
             .AddSingleton<DisabledChannelService>()
             .AddSingleton<WebhookService>();

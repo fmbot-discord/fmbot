@@ -207,45 +207,67 @@ public class WhoKnowsArtistService
     }
 
     public async Task<ICollection<GuildArtist>> GetTopAllTimeArtistsForGuild(int guildId,
-        OrderType orderType, int? limit = 120)
+        OrderType orderType, int? limit = 120, int[] userIds = null)
     {
         var cacheKey = $"guild-alltime-top-artists-{guildId}-{orderType}";
 
-        var cachedArtistsAvailable = this._cache.TryGetValue(cacheKey, out ICollection<GuildArtist> guildArtists);
-        if (cachedArtistsAvailable)
+        if (userIds == null)
         {
-            return guildArtists;
+            var cachedArtistsAvailable = this._cache.TryGetValue(cacheKey, out ICollection<GuildArtist> cachedArtists);
+            if (cachedArtistsAvailable)
+            {
+                return cachedArtists;
+            }
         }
 
-        var sql = "SELECT ua.name AS artist_name, " +
+        var userFilter = userIds != null
+            ? "AND ua.user_id = ANY(@userIds) "
+            : "";
+
+        var orderBy = orderType == OrderType.Playcount ?
+            "ORDER BY total_playcount DESC, listener_count DESC " :
+            "ORDER BY listener_count DESC, total_playcount DESC ";
+
+        var sql = "SELECT agg.artist_name, " +
+                  "agg.total_playcount, " +
+                  "agg.listener_count, " +
+                  "a.id AS artist_id " +
+                  "FROM ( " +
+                  "SELECT ua.name AS artist_name, " +
                   "SUM(ua.playcount) AS total_playcount, " +
                   "COUNT(ua.user_id) AS listener_count " +
                   "FROM user_artists AS ua   " +
                   "INNER JOIN guild_users AS gu ON gu.user_id = ua.user_id  " +
                   "WHERE gu.guild_id = @guildId  AND gu.bot != true " +
+                  userFilter +
                   "AND NOT ua.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
                   "AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL) " +
-                  "GROUP BY ua.name ";
-
-        sql += orderType == OrderType.Playcount ?
-            "ORDER BY total_playcount DESC, listener_count DESC " :
-            "ORDER BY listener_count DESC, total_playcount DESC ";
+                  "GROUP BY ua.name " +
+                  orderBy;
 
         if (limit.HasValue)
         {
-            sql += $"LIMIT {limit}";
+            sql += $"LIMIT {limit} ";
         }
+
+        sql += ") agg " +
+               "LEFT JOIN artists AS a ON a.name = agg.artist_name " +
+               orderBy;
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        guildArtists = (await connection.QueryAsync<GuildArtist>(sql, new
+        var guildArtists = (ICollection<GuildArtist>)(await connection.QueryAsync<GuildArtist>(sql, new
         {
-            guildId
+            guildId,
+            userIds
         })).ToList();
 
-        this._cache.Set(cacheKey, guildArtists, TimeSpan.FromMinutes(10));
+        if (userIds == null)
+        {
+            this._cache.Set(cacheKey, guildArtists, TimeSpan.FromMinutes(10));
+        }
 
         return guildArtists;
     }

@@ -231,11 +231,11 @@ public class WhoKnowsTrackService
     }
 
     public async Task<ICollection<GuildTrack>> GetTopAllTimeTracksForGuild(int guildId,
-        OrderType orderType, string artistName)
+        OrderType orderType, string artistName, int[] userIds = null)
     {
         var cacheKey = $"guild-alltime-top-tracks-{guildId}-{orderType}-{artistName}";
 
-        if (this._cache.TryGetValue(cacheKey, out ICollection<GuildTrack> cachedTracks))
+        if (userIds == null && this._cache.TryGetValue(cacheKey, out ICollection<GuildTrack> cachedTracks))
         {
             return cachedTracks;
         }
@@ -253,7 +253,15 @@ public class WhoKnowsTrackService
             dbArgs.Add("artistName", artistName);
         }
 
+        var userFilter = "";
+        if (userIds != null)
+        {
+            userFilter = "AND ut.user_id = ANY(@userIds) ";
+            dbArgs.Add("userIds", userIds);
+        }
+
         var sql = "SELECT t.name AS track_name, t.artist_name, " +
+                  "agg.track_id, " +
                   "agg.total_playcount, agg.listener_count " +
                   "FROM ( " +
                   "    SELECT ut.track_id, " +
@@ -264,6 +272,7 @@ public class WhoKnowsTrackService
                   "    WHERE gu.guild_id = @guildId AND gu.bot != true " +
                   "    AND ut.track_id IS NOT NULL " +
                   $"    {artistFilter}" +
+                  $"    {userFilter}" +
                   "    AND NOT ut.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
                   "    AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL) " +
                   "    GROUP BY ut.track_id " +
@@ -279,7 +288,10 @@ public class WhoKnowsTrackService
 
         var results = (await connection.QueryAsync<GuildTrack>(sql, dbArgs)).ToList();
 
-        this._cache.Set<ICollection<GuildTrack>>(cacheKey, results, TimeSpan.FromMinutes(10));
+        if (userIds == null)
+        {
+            this._cache.Set<ICollection<GuildTrack>>(cacheKey, results, TimeSpan.FromMinutes(10));
+        }
 
         return results;
     }

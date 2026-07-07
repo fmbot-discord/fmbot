@@ -47,6 +47,8 @@ public class GuildArtist
 {
     public string ArtistName { get; set; }
 
+    public int? ArtistId { get; set; }
+
     public int TotalPlaycount { get; set; }
 
     public int ListenerCount { get; set; }

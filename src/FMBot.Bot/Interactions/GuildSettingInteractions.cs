@@ -35,7 +35,7 @@ public class GuildSettingInteractions(
     CommandService<CommandContext> commandService,
     DisabledChannelService disabledChannelService,
     CrownService crownService,
-    GuildRecapService guildRecapService,
+    AutopostBuilders autopostBuilders,
     UserService userService,
     InteractiveService interactivity,
     IOptions<BotSettings> botSettings)
@@ -450,9 +450,9 @@ public class GuildSettingInteractions(
                     await this.Context.SendResponse(interactivity, response, userService, ephemeral: false);
                 }
                     break;
-                case GuildSetting.ServerRecap:
+                case GuildSetting.ServerAutoposts:
                 {
-                    response = await guildSettingBuilder.ServerRecap(new ContextModel(this.Context));
+                    response = await autopostBuilders.Overview(new ContextModel(this.Context));
                     await this.Context.SendResponse(interactivity, response, userService, ephemeral: false);
                 }
                     break;
@@ -521,142 +521,6 @@ public class GuildSettingInteractions(
         catch (Exception e)
         {
             await this.Context.HandleCommandException(e, userService);
-        }
-    }
-
-    [ComponentInteraction(InteractionConstants.SetServerRecapSchedule)]
-    [ServerStaffOnly]
-    public async Task SetServerRecapSchedule()
-    {
-        if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
-        {
-            await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
-            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
-            return;
-        }
-
-        if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
-        {
-            var premiumRequiredResponse = PremiumSettingBuilder.PremiumServerRequired("serverrecap",
-                "**Scheduled server recaps** post your server's top charts weekly or monthly. Includes top artists, albums, recently released albums and tracks.");
-            await this.Context.SendResponse(interactivity, premiumRequiredResponse, userService, true);
-            await this.Context.LogCommandUsedAsync(premiumRequiredResponse, userService);
-            return;
-        }
-
-        var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
-        var selectedValues = stringMenuInteraction.Data.SelectedValues;
-
-        try
-        {
-            if (selectedValues.Count > 0 && Enum.TryParse(selectedValues[0], out ServerRecapSchedule schedule))
-            {
-                await guildService.SetServerRecapScheduleAsync(this.Context.Guild, schedule);
-            }
-            else
-            {
-                await guildService.SetServerRecapScheduleAsync(this.Context.Guild, null);
-            }
-
-            var response = await guildSettingBuilder.ServerRecap(new ContextModel(this.Context));
-            await this.Context.UpdateInteractionEmbed(response);
-        }
-        catch (Exception e)
-        {
-            await this.Context.HandleCommandException(e, userService);
-        }
-    }
-
-    [ComponentInteraction(InteractionConstants.SetServerRecapChannel)]
-    [ServerStaffOnly]
-    public async Task SetServerRecapChannel()
-    {
-        if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
-        {
-            await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
-            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
-            return;
-        }
-
-        if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
-        {
-            var premiumRequiredResponse = PremiumSettingBuilder.PremiumServerRequired("serverrecap",
-                "**Scheduled server recaps** post your server's top charts weekly or monthly. Includes top artists, albums, recently released albums and tracks.");
-            await this.Context.SendResponse(interactivity, premiumRequiredResponse, userService, true);
-            await this.Context.LogCommandUsedAsync(premiumRequiredResponse, userService);
-            return;
-        }
-
-        var entityMenuInteraction = (EntityMenuInteraction)this.Context.Interaction;
-        var selectedChannelIds = entityMenuInteraction.Data.SelectedValues;
-
-        try
-        {
-            await guildService.SetServerRecapChannelAsync(this.Context.Guild,
-                selectedChannelIds.Count > 0 ? selectedChannelIds[0] : null);
-
-            var response = await guildSettingBuilder.ServerRecap(new ContextModel(this.Context));
-            await this.Context.UpdateInteractionEmbed(response);
-        }
-        catch (Exception e)
-        {
-            await this.Context.HandleCommandException(e, userService);
-        }
-    }
-
-    [ComponentInteraction(InteractionConstants.PostServerRecapNow)]
-    [ServerStaffOnly]
-    public async Task PostServerRecapNow()
-    {
-        if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
-        {
-            await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
-            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
-            return;
-        }
-
-        if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
-        {
-            var premiumRequiredResponse = PremiumSettingBuilder.PremiumServerRequired("serverrecap",
-                "**Scheduled server recaps** post your server's top charts weekly or monthly. Includes top artists, albums, recently released albums and tracks.");
-            await this.Context.SendResponse(interactivity, premiumRequiredResponse, userService, true);
-            await this.Context.LogCommandUsedAsync(premiumRequiredResponse, userService);
-            return;
-        }
-
-        try
-        {
-            await this.Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
-
-            var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
-            var result = await guildRecapService.PostServerRecapNow(guild);
-
-            var content = result switch
-            {
-                GuildRecapPostResult.Posted => $"✅ Server recap posted in <#{guild.RecapChannelId}>.",
-                GuildRecapPostResult.NoChannel => "⚠️ Select a channel to post recaps in first.",
-                GuildRecapPostResult.NoData => "⚠️ No listening data found for the previous period, so no recap was posted.",
-                _ => "❌ Could not post the recap. Make sure the bot can send messages in the configured channel."
-            };
-
-            await this.Context.Interaction.ModifyResponseAsync(m =>
-            {
-                m.Content = content;
-            });
-
-            var commandResponse = result switch
-            {
-                GuildRecapPostResult.Posted => CommandResponse.Ok,
-                GuildRecapPostResult.NoChannel => CommandResponse.WrongInput,
-                GuildRecapPostResult.NoData => CommandResponse.NoScrobbles,
-                _ => CommandResponse.Error
-            };
-
-            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = commandResponse }, userService);
-        }
-        catch (Exception e)
-        {
-            await this.Context.HandleCommandException(e, userService, deferFirst: false);
         }
     }
 

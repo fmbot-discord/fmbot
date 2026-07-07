@@ -31,7 +31,8 @@ public class GuildCommands(
     GuildSettingBuilder guildSettingBuilder,
     UserService userService,
     InteractiveService interactivity,
-    GuildBuilders guildBuilders)
+    GuildBuilders guildBuilders,
+    AutopostBuilders autopostBuilders)
     : BaseCommandModule(botSettings)
 {
     private InteractiveService Interactivity { get; } = interactivity;
@@ -65,17 +66,17 @@ public class GuildCommands(
         }
     }
 
-    [Command("serverrecap", "recapschedule", "serverrecaps")]
-    [Summary("Automatically post a weekly or monthly recap of your server")]
+    [Command("autoposts", "autopost", "serverrecap", "recapschedule", "serverrecaps")]
+    [Summary("Automatically post recaps and top charts of your server on a schedule")]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.ServerSettings)]
-    public async Task ServerRecapAsync([CommandParameter(Remainder = true)] string _ = null)
+    public async Task AutopostsAsync([CommandParameter(Remainder = true)] string _ = null)
     {
         try
         {
             var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
-            var response = await guildSettingBuilder.ServerRecap(new ContextModel(this.Context, prfx));
+            var response = await autopostBuilders.Overview(new ContextModel(this.Context, prfx));
 
             await this.Context.SendResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);

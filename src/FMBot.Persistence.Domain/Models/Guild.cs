@@ -67,5 +67,7 @@ public class Guild
 
     public ICollection<GuildShortcut> Shortcuts { get; set; }
 
+    public ICollection<GuildAutopost> Autoposts { get; set; }
+
     public ulong? WhoKnowsWhitelistRoleId { get; set; }
 }

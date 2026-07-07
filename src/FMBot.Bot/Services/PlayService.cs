@@ -906,11 +906,12 @@ public class PlayService
     }
 
     public async Task<List<GuildTrack>> GetGuildTopTracksPlays(int guildId, DateTime startDateTime,
-        OrderType orderType, string searchValue, DateTime? endDateTime = null, int limit = 120)
+        OrderType orderType, string searchValue, DateTime? endDateTime = null, int limit = 120,
+        int[] userIds = null)
     {
         var cacheKey = $"guild-top-tracks-{guildId}-{startDateTime:yyyyMMddHH}-{endDateTime:yyyyMMddHH}-{orderType}-{searchValue}";
 
-        if (this._cache.TryGetValue(cacheKey, out List<GuildTrack> cachedTracks))
+        if (userIds == null && this._cache.TryGetValue(cacheKey, out List<GuildTrack> cachedTracks))
         {
             return cachedTracks;
         }
@@ -923,11 +924,16 @@ public class PlayService
             ? "AND up.time_played < @endDateTime "
             : "";
 
+        var userFilter = userIds != null
+            ? "AND up.user_id = ANY(@userIds) "
+            : "";
+
         var orderColumn = orderType == OrderType.Listeners ? "ListenerCount" : "TotalPlaycount";
         var thenByColumn = orderType == OrderType.Listeners ? "TotalPlaycount" : "ListenerCount";
 
         var sql = "SELECT t.name AS TrackName, " +
                   "t.artist_name AS ArtistName, " +
+                  "agg.track_id AS TrackId, " +
                   "agg.TotalPlaycount, " +
                   "agg.ListenerCount " +
                   "FROM ( " +
@@ -942,6 +948,7 @@ public class PlayService
                   $"      {endDateFilter}" +
                   "      AND up.track_id IS NOT NULL " +
                   $"      {artistFilter}" +
+                  $"      {userFilter}" +
                   "      AND NOT up.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
                   "      AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL) " +
                   "    GROUP BY up.track_id " +
@@ -961,20 +968,24 @@ public class PlayService
             startDateTime,
             endDateTime,
             searchValue,
-            limit
+            limit,
+            userIds
         })).ToList();
 
-        this._cache.Set(cacheKey, tracks, TimeSpan.FromMinutes(10));
+        if (userIds == null)
+        {
+            this._cache.Set(cacheKey, tracks, TimeSpan.FromMinutes(10));
+        }
 
         return tracks;
     }
 
     public async Task<List<GuildArtist>> GetGuildTopArtistsPlays(int guildId, DateTime startDateTime,
-        OrderType orderType, DateTime? endDateTime = null, int limit = 120)
+        OrderType orderType, DateTime? endDateTime = null, int limit = 120, int[] userIds = null)
     {
         var cacheKey = $"guild-top-artists-{guildId}-{startDateTime:yyyyMMddHH}-{endDateTime:yyyyMMddHH}-{orderType}";
 
-        if (this._cache.TryGetValue(cacheKey, out List<GuildArtist> cachedArtists))
+        if (userIds == null && this._cache.TryGetValue(cacheKey, out List<GuildArtist> cachedArtists))
         {
             return cachedArtists;
         }
@@ -983,10 +994,15 @@ public class PlayService
             ? "AND up.time_played < @endDateTime "
             : "";
 
+        var userFilter = userIds != null
+            ? "AND up.user_id = ANY(@userIds) "
+            : "";
+
         var orderColumn = orderType == OrderType.Listeners ? "ListenerCount" : "TotalPlaycount";
         var thenByColumn = orderType == OrderType.Listeners ? "TotalPlaycount" : "ListenerCount";
 
         var sql = "SELECT a.name AS ArtistName, " +
+                  "agg.artist_id AS ArtistId, " +
                   "agg.TotalPlaycount, " +
                   "agg.ListenerCount " +
                   "FROM ( " +
@@ -1000,6 +1016,7 @@ public class PlayService
                   "      AND up.time_played > @startDateTime " +
                   $"      {endDateFilter}" +
                   "      AND up.artist_id IS NOT NULL " +
+                  $"      {userFilter}" +
                   "      AND NOT up.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
                   "      AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL) " +
                   "    GROUP BY up.artist_id " +
@@ -1018,20 +1035,25 @@ public class PlayService
             guildId,
             startDateTime,
             endDateTime,
-            limit
+            limit,
+            userIds
         })).ToList();
 
-        this._cache.Set(cacheKey, artists, TimeSpan.FromMinutes(10));
+        if (userIds == null)
+        {
+            this._cache.Set(cacheKey, artists, TimeSpan.FromMinutes(10));
+        }
 
         return artists;
     }
 
     public async Task<List<GuildAlbum>> GetGuildTopAlbumsPlays(int guildId, DateTime startDateTime,
-        OrderType orderType, string searchValue, DateTime? endDateTime = null, int limit = 120)
+        OrderType orderType, string searchValue, DateTime? endDateTime = null, int limit = 120,
+        int[] userIds = null)
     {
         var cacheKey = $"guild-top-albums-{guildId}-{startDateTime:yyyyMMddHH}-{endDateTime:yyyyMMddHH}-{orderType}-{searchValue}-{limit}";
 
-        if (this._cache.TryGetValue(cacheKey, out List<GuildAlbum> cachedAlbums))
+        if (userIds == null && this._cache.TryGetValue(cacheKey, out List<GuildAlbum> cachedAlbums))
         {
             return cachedAlbums;
         }
@@ -1044,11 +1066,16 @@ public class PlayService
             ? "AND up.time_played < @endDateTime "
             : "";
 
+        var userFilter = userIds != null
+            ? "AND up.user_id = ANY(@userIds) "
+            : "";
+
         var orderColumn = orderType == OrderType.Listeners ? "ListenerCount" : "TotalPlaycount";
         var thenByColumn = orderType == OrderType.Listeners ? "TotalPlaycount" : "ListenerCount";
 
         var sql = "SELECT al.name AS AlbumName, " +
                   "al.artist_name AS ArtistName, " +
+                  "agg.album_id AS AlbumId, " +
                   "agg.TotalPlaycount, " +
                   "agg.ListenerCount " +
                   "FROM ( " +
@@ -1063,6 +1090,7 @@ public class PlayService
                   $"      {endDateFilter}" +
                   "      AND up.album_id IS NOT NULL " +
                   $"      {artistFilter}" +
+                  $"      {userFilter}" +
                   "      AND NOT up.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
                   "      AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL) " +
                   "    GROUP BY up.album_id " +
@@ -1082,22 +1110,31 @@ public class PlayService
             startDateTime,
             endDateTime,
             searchValue,
-            limit
+            limit,
+            userIds
         })).ToList();
 
-        this._cache.Set(cacheKey, albums, TimeSpan.FromMinutes(10));
+        if (userIds == null)
+        {
+            this._cache.Set(cacheKey, albums, TimeSpan.FromMinutes(10));
+        }
 
         return albums;
     }
 
-    public async Task<GuildPlayStats> GetGuildPlayStats(int guildId, DateTime startDateTime, DateTime endDateTime)
+    public async Task<GuildPlayStats> GetGuildPlayStats(int guildId, DateTime startDateTime, DateTime endDateTime,
+        int[] userIds = null)
     {
         var cacheKey = $"guild-play-stats-{guildId}-{startDateTime:yyyyMMddHH}-{endDateTime:yyyyMMddHH}";
 
-        if (this._cache.TryGetValue(cacheKey, out GuildPlayStats cachedStats))
+        if (userIds == null && this._cache.TryGetValue(cacheKey, out GuildPlayStats cachedStats))
         {
             return cachedStats;
         }
+
+        var userFilter = userIds != null
+            ? "AND up.user_id = ANY(@userIds) "
+            : "";
 
         var sql = "SELECT COUNT(*)::int AS TotalPlaycount, " +
                   "       COUNT(DISTINCT up.user_id)::int AS ListenerCount " +
@@ -1107,6 +1144,7 @@ public class PlayService
                   "  AND gu.bot != true " +
                   "  AND up.time_played > @startDateTime " +
                   "  AND up.time_played < @endDateTime " +
+                  $"  {userFilter}" +
                   "  AND NOT up.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
                   "  AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL) ";
 
@@ -1118,10 +1156,14 @@ public class PlayService
         {
             guildId,
             startDateTime,
-            endDateTime
+            endDateTime,
+            userIds
         });
 
-        this._cache.Set(cacheKey, stats, TimeSpan.FromMinutes(10));
+        if (userIds == null)
+        {
+            this._cache.Set(cacheKey, stats, TimeSpan.FromMinutes(10));
+        }
 
         return stats;
     }

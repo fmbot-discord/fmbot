@@ -12,6 +12,24 @@ namespace FMBot.Bot.Factories;
 
 public static class ModalFactory
 {
+    public static ModalProperties CreateAutopostArtistFilterModal(string customId, string currentArtist) =>
+        new(customId, "Autopost artist filter")
+        {
+            Components =
+            [
+                new LabelProperties("Artist name",
+                    new TextInputProperties("artist_name", TextInputStyle.Short)
+                    {
+                        Placeholder = "The Beatles",
+                        Required = false,
+                        Value = currentArtist
+                    })
+                {
+                    Description = "Leave empty to remove the filter"
+                }
+            ]
+        };
+
     // Import Modals
     public static ModalProperties CreateModifyArtistModal(string customId) =>
         new(customId, "Select artist")

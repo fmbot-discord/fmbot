@@ -293,9 +293,25 @@ public static class InteractionConstants
     public const string RunCrownseeder = "run-crownseeder";
     public const string SetCrownSeederSchedule = "set-crownseeder-schedule";
 
-    public const string SetServerRecapSchedule = "set-server-recap-schedule";
-    public const string SetServerRecapChannel = "set-server-recap-channel";
-    public const string PostServerRecapNow = "post-server-recap-now";
+    public static class Autopost
+    {
+        public const string Overview = "autopost-overview";
+        public const string Add = "autopost-add";
+        public const string AddChannel = "autopost-add-channel";
+        public const string Edit = "autopost-edit";
+        public const string SetType = "autopost-set-type";
+        public const string SetSchedule = "autopost-set-schedule";
+        public const string SetTimePeriod = "autopost-set-timeperiod";
+        public const string SetRole = "autopost-set-role";
+        public const string SetSize = "autopost-set-size";
+        public const string SetArtist = "autopost-set-artist";
+        public const string SetArtistModal = "autopost-set-artist-modal";
+        public const string Toggle = "autopost-toggle";
+        public const string Remove = "autopost-remove";
+        public const string PostNow = "autopost-post-now";
+        public const string DeepDive = "autopost-deepdive";
+        public const string DeepDiveSection = "autopost-deepdive-section";
+    }
 
     public static class ToggleCrowns
     {

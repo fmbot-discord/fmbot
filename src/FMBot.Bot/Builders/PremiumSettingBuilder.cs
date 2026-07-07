@@ -27,6 +27,7 @@ public class PremiumSettingBuilder(
     SupporterService supporterService,
     ShortcutService shortcutService,
     CensorService censorService,
+    AutopostService autopostService,
     CommandService<CommandContext> commands,
     HttpClient httpClient)
 {
@@ -371,10 +372,11 @@ public class PremiumSettingBuilder(
                 : "Not scheduled yet.";
             container.WithTextDisplay($"**👑 Automatic crownseeder**\n{crownSeeder}\n-# Crownseeder setting in `/configuration`");
 
-            var recap = guild.RecapSchedule.HasValue && guild.RecapChannelId.HasValue
-                ? $"{(guild.RecapSchedule == ServerRecapSchedule.Weekly ? "Weekly" : "Monthly")} recaps are posted in <#{guild.RecapChannelId.Value}>."
+            var autoposts = await autopostService.GetAutopostsForGuild(guild.GuildId);
+            var autopostDisplay = autoposts.Count > 0
+                ? $"{autoposts.Count} {(autoposts.Count == 1 ? "autopost" : "autoposts")} configured."
                 : "Not set up yet.";
-            container.WithTextDisplay($"**📊 Scheduled server recaps**\n{recap}\n-# `.serverrecap`");
+            container.WithTextDisplay($"**📊 Server autoposts**\n{autopostDisplay}\n-# `.autoposts`");
 
             var featuredMode = guild.FeaturedMode ?? GuildFeaturedMode.GlobalFeatured;
             container.WithTextDisplay($"**🤖 Custom bot branding**\nCurrent mode: {GetFeaturedModeName(featuredMode)}.\n-# `.botbranding`");

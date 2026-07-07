@@ -1,4 +1,5 @@
 using System;
+using System.Text.Json;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.EntityFrameworkCore;
@@ -18,6 +19,8 @@ namespace FMBot.Persistence.EntityFrameWork
         public virtual DbSet<GuildBlockedUser> GuildBlockedUsers { get; set; }
         public virtual DbSet<GuildUser> GuildUsers { get; set; }
         public virtual DbSet<GuildShortcut> GuildShortcuts { get; set; }
+        public virtual DbSet<GuildAutopost> GuildAutoposts { get; set; }
+        public virtual DbSet<GuildAutopostRun> GuildAutopostRuns { get; set; }
         public virtual DbSet<User> Users { get; set; }
         public virtual DbSet<Supporter> Supporters { get; set; }
 
@@ -74,18 +77,18 @@ namespace FMBot.Persistence.EntityFrameWork
         public virtual DbSet<AlbumTag> AlbumTags { get; set; }
         public virtual DbSet<TrackTag> TrackTags { get; set; }
 
-        private readonly IConfiguration _configuration;
-
-        public FMBotDbContext(IConfiguration configuration)
-        {
-            this._configuration = configuration;
-        }
+        // private readonly IConfiguration _configuration;
+        //
+        // public FMBotDbContext(IConfiguration configuration)
+        // {
+        //     this._configuration = configuration;
+        // }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (!optionsBuilder.IsConfigured)
             {
-                optionsBuilder.UseNpgsql(this._configuration["Database:ConnectionString"]);
+                // optionsBuilder.UseNpgsql(this._configuration["Database:ConnectionString"]);
 
                 /* How to create migrations:
                 1. Uncomment the hardcoded connection string below
@@ -96,7 +99,7 @@ namespace FMBot.Persistence.EntityFrameWork
                 6. Before committing or running, revert the changes in this file
                 */
 
-                // optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Username=postgres;Password=password;Database=fmbot-local;Command Timeout=60;Timeout=60;Persist Security Info=True");
+                optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Username=postgres;Password=password;Database=fmbot-local;Command Timeout=60;Timeout=60;Persist Security Info=True");
 
                 optionsBuilder.UseSnakeCaseNamingConvention();
             }
@@ -139,6 +142,38 @@ namespace FMBot.Persistence.EntityFrameWork
                     .HasConversion(
                         v => string.Join(',', v),
                         v => v.Split(',', StringSplitOptions.RemoveEmptyEntries));
+            });
+
+            modelBuilder.Entity<GuildAutopost>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                entity.HasIndex(i => i.ChannelId).IsUnique();
+
+                entity.HasIndex(i => i.GuildId);
+
+                entity.HasOne(d => d.Guild)
+                    .WithMany(p => p.Autoposts)
+                    .HasForeignKey(d => d.GuildId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<GuildAutopostRun>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                entity.HasIndex(i => i.AutopostId);
+
+                entity.HasOne(d => d.Autopost)
+                    .WithMany(p => p.Runs)
+                    .HasForeignKey(d => d.AutopostId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.Property(e => e.Snapshot)
+                    .HasColumnType("jsonb")
+                    .HasConversion(
+                        v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null),
+                        v => JsonSerializer.Deserialize<AutopostSnapshot>(v, (JsonSerializerOptions)null));
             });
 
             modelBuilder.Entity<Channel>(entity =>

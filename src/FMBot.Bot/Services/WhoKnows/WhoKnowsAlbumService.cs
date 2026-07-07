@@ -206,11 +206,11 @@ public class WhoKnowsAlbumService
     }
 
     public async Task<ICollection<GuildAlbum>> GetTopAllTimeAlbumsForGuild(int guildId,
-        OrderType orderType, string artistName)
+        OrderType orderType, string artistName, int[] userIds = null)
     {
         var cacheKey = $"guild-alltime-top-albums-{guildId}-{orderType}-{artistName}";
 
-        if (this._cache.TryGetValue(cacheKey, out ICollection<GuildAlbum> cachedAlbums))
+        if (userIds == null && this._cache.TryGetValue(cacheKey, out ICollection<GuildAlbum> cachedAlbums))
         {
             return cachedAlbums;
         }
@@ -228,7 +228,15 @@ public class WhoKnowsAlbumService
             dbArgs.Add("artistName", artistName);
         }
 
+        var userFilter = "";
+        if (userIds != null)
+        {
+            userFilter = "AND ub.user_id = ANY(@userIds) ";
+            dbArgs.Add("userIds", userIds);
+        }
+
         var sql = "SELECT a.name AS album_name, a.artist_name, " +
+                  "agg.album_id, " +
                   "agg.total_playcount, agg.listener_count " +
                   "FROM ( " +
                   "    SELECT ub.album_id, " +
@@ -239,6 +247,7 @@ public class WhoKnowsAlbumService
                   "    WHERE gu.guild_id = @guildId AND gu.bot != true " +
                   "    AND ub.album_id IS NOT NULL " +
                   $"    {artistFilter}" +
+                  $"    {userFilter}" +
                   "    AND NOT ub.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
                   "    AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL) " +
                   "    GROUP BY ub.album_id " +
@@ -254,7 +263,10 @@ public class WhoKnowsAlbumService
 
         var results = (await connection.QueryAsync<GuildAlbum>(sql, dbArgs)).ToList();
 
-        this._cache.Set<ICollection<GuildAlbum>>(cacheKey, results, TimeSpan.FromMinutes(10));
+        if (userIds == null)
+        {
+            this._cache.Set<ICollection<GuildAlbum>>(cacheKey, results, TimeSpan.FromMinutes(10));
+        }
 
         return results;
     }

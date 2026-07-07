@@ -9,6 +9,8 @@ public class GuildTrack
 
     public string TrackName { get; set; }
 
+    public int? TrackId { get; set; }
+
     public int TotalPlaycount { get; set; }
 
     public int ListenerCount { get; set; }

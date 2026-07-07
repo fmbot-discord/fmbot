@@ -704,55 +704,6 @@ public class GuildService(
         return true;
     }
 
-    public async Task<bool> SetServerRecapScheduleAsync(NetCord.Gateway.Guild discordGuild,
-        ServerRecapSchedule? schedule)
-    {
-        await using var db = await contextFactory.CreateDbContextAsync();
-        var existingGuild = await db.Guilds
-            .AsQueryable()
-            .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuild.Id);
-
-        if (existingGuild == null)
-        {
-            return false;
-        }
-
-        existingGuild.Name = discordGuild.Name;
-        existingGuild.RecapSchedule = schedule;
-
-        db.Entry(existingGuild).State = EntityState.Modified;
-
-        await db.SaveChangesAsync();
-
-        await RemoveGuildFromCache(discordGuild.Id);
-
-        return true;
-    }
-
-    public async Task<bool> SetServerRecapChannelAsync(NetCord.Gateway.Guild discordGuild, ulong? channelId)
-    {
-        await using var db = await contextFactory.CreateDbContextAsync();
-        var existingGuild = await db.Guilds
-            .AsQueryable()
-            .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuild.Id);
-
-        if (existingGuild == null)
-        {
-            return false;
-        }
-
-        existingGuild.Name = discordGuild.Name;
-        existingGuild.RecapChannelId = channelId;
-
-        db.Entry(existingGuild).State = EntityState.Modified;
-
-        await db.SaveChangesAsync();
-
-        await RemoveGuildFromCache(discordGuild.Id);
-
-        return true;
-    }
-
     public async Task<bool> SetCrownActivityThresholdDaysAsync(NetCord.Gateway.Guild discordGuild, int? days)
     {
         await using var db = await contextFactory.CreateDbContextAsync();

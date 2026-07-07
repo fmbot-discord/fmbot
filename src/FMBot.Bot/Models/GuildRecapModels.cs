@@ -7,10 +7,9 @@ public class GuildPlayStats
     public int ListenerCount { get; set; }
 }
 
-public enum GuildRecapPostResult
+public enum AutopostPostResult
 {
     Posted = 1,
-    NoChannel = 2,
     NoData = 3,
     Failed = 4
 }

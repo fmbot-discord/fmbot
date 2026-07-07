@@ -36,6 +36,8 @@ public class GuildAlbum
 
     public string AlbumName { get; set; }
 
+    public int? AlbumId { get; set; }
+
     public int TotalPlaycount { get; set; }
 
     public int ListenerCount { get; set; }

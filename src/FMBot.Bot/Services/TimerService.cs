@@ -53,7 +53,7 @@ public class TimerService : IDisposable
     private readonly UpdateQueueHandler _updateQueueHandler;
     private readonly ShortcutService _shortcutService;
     private readonly CrownService _crownService;
-    private readonly GuildRecapService _guildRecapService;
+    private readonly AutopostService _autopostService;
     private readonly IServiceProvider _serviceProvider;
 
     public FeaturedLog CurrentFeatured;
@@ -74,12 +74,12 @@ public class TimerService : IDisposable
         HttpClient httpClient,
         BotListService botListService,
         EurovisionService eurovisionService, ShortcutService shortcutService, CrownService crownService,
-        GuildRecapService guildRecapService,
+        AutopostService autopostService,
         IServiceProvider serviceProvider)
     {
         this._serviceProvider = serviceProvider;
         this._crownService = crownService;
-        this._guildRecapService = guildRecapService;
+        this._autopostService = autopostService;
         this._client = client;
         this._userService = userService;
         this._indexService = indexService;
@@ -127,8 +127,8 @@ public class TimerService : IDisposable
         Log.Information($"RecurringJob: Adding {nameof(CheckForNewGuildFeatureds)}");
         RecurringJob.AddOrUpdate(nameof(CheckForNewGuildFeatureds), () => CheckForNewGuildFeatureds(), "*/5 * * * *");
 
-        Log.Information($"RecurringJob: Adding {nameof(RunScheduledServerRecaps)}");
-        RecurringJob.AddOrUpdate(nameof(RunScheduledServerRecaps), () => RunScheduledServerRecaps(), "30 * * * *");
+        Log.Information($"RecurringJob: Adding {nameof(RunScheduledAutoposts)}");
+        RecurringJob.AddOrUpdate(nameof(RunScheduledAutoposts), () => RunScheduledAutoposts(), "30 * * * *");
 
         Log.Information($"RecurringJob: Adding {nameof(ClearInternalLogs)}");
         RecurringJob.AddOrUpdate(nameof(ClearInternalLogs), () => ClearInternalLogs(), "0 8 * * *");
@@ -629,9 +629,9 @@ public class TimerService : IDisposable
         await this._crownService.RunAutomaticCrownSeeder();
     }
 
-    public async Task RunScheduledServerRecaps()
+    public async Task RunScheduledAutoposts()
     {
-        await this._guildRecapService.RunScheduledServerRecaps();
+        await this._autopostService.RunScheduledAutoposts();
     }
 
     public async Task RemoveLapsedPremiumSettings()
