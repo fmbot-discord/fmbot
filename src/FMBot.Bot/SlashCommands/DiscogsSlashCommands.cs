@@ -39,22 +39,22 @@ public class DiscogsSlashCommands(
             {
                 if (this.Context.Guild != null)
                 {
-                    var serverEmbed = new EmbedProperties()
-                        .WithColor(DiscordConstants.InformationColorBlue);
+                    var serverContainer = new ComponentContainerProperties();
+                    serverContainer.WithAccentColor(DiscordConstants.InformationColorBlue);
+                    serverContainer.WithTextDisplay("Check your DMs for a link to connect your Discogs account to .fmbot!");
 
-                    serverEmbed.WithDescription("Check your DMs for a link to connect your Discogs account to .fmbot!");
                     await this.Context.Interaction.SendResponseAsync(InteractionCallback.Message(
                         new InteractionMessageProperties()
-                            .WithEmbeds([serverEmbed])
-                            .WithFlags(MessageFlags.Ephemeral)));
+                            .WithComponents([serverContainer])
+                            .WithFlags(MessageFlags.Ephemeral | MessageFlags.IsComponentsV2)));
                 }
 
                 var response = discogsBuilder.DiscogsLoginGetLinkAsync(new ContextModel(this.Context, contextUser));
                 var dmChannel = await this.Context.User.GetDMChannelAsync();
                 await dmChannel.SendMessageAsync(new MessageProperties
                 {
-                    Embeds = [response.Embed],
-                    Components = [response.Components]
+                    Components = response.GetComponentsV2(),
+                    Flags = MessageFlags.IsComponentsV2
                 });
                 await this.Context.LogCommandUsedAsync(response, userService);
             }
@@ -62,23 +62,23 @@ public class DiscogsSlashCommands(
             {
                 if (this.Context.Guild != null)
                 {
-                    var serverEmbed = new EmbedProperties()
-                        .WithColor(DiscordConstants.InformationColorBlue);
-
-                    serverEmbed.WithDescription(
+                    var serverContainer = new ComponentContainerProperties();
+                    serverContainer.WithAccentColor(DiscordConstants.InformationColorBlue);
+                    serverContainer.WithTextDisplay(
                         "Check your DMs for a message to manage your connected Discogs account!");
+
                     await this.Context.Interaction.SendResponseAsync(InteractionCallback.Message(
                         new InteractionMessageProperties()
-                            .WithEmbeds([serverEmbed])
-                            .WithFlags(MessageFlags.Ephemeral)));
+                            .WithComponents([serverContainer])
+                            .WithFlags(MessageFlags.Ephemeral | MessageFlags.IsComponentsV2)));
                 }
 
                 var response = DiscogsBuilder.DiscogsManage(new ContextModel(this.Context, contextUser));
                 var manageDmChannel = await this.Context.User.GetDMChannelAsync();
                 await manageDmChannel.SendMessageAsync(new MessageProperties
                 {
-                    Embeds = [response.Embed],
-                    Components = [response.Components]
+                    Components = response.GetComponentsV2(),
+                    Flags = MessageFlags.IsComponentsV2
                 });
                 await this.Context.LogCommandUsedAsync(response, userService);
             }

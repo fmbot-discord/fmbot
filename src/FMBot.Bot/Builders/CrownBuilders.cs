@@ -14,6 +14,7 @@ using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using System.Collections.Generic;
 using Fergun.Interactive;
+using Fergun.Interactive.Pagination;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Factories;
@@ -206,6 +207,18 @@ public class CrownBuilders
             ? $"{crownType} for {userSettings.UserNameLastFm}, requested by {userTitle}"
             : $"{crownType} for {userTitle}";
 
+        string noResults;
+        if (crownViewType == CrownViewType.Stolen)
+        {
+            noResults = $"You or the user you're searching for don't have any crowns that got stolen yet.";
+        }
+        else
+        {
+            noResults = $"You or the user you're searching for don't have any crowns yet. \n\n" +
+                        $"Use `{context.Prefix}whoknows` to start getting crowns!\n\n" +
+                        $"Crowns are rewarded to the #1 listener for an artist with at least {guild.CrownsMinimumPlaycountThreshold ?? Constants.DefaultPlaysForCrown} plays.";
+        }
+
         var viewType =  new StringMenuProperties(InteractionConstants.User.CrownSelectMenu)
             .WithPlaceholder("Select crown view")
             .WithMinValues(1)
@@ -224,31 +237,11 @@ public class CrownBuilders
             });
         }
 
-        if (!userCrowns.Any())
-        {
-            if (crownViewType == CrownViewType.Stolen)
-            {
-                response.Embed.WithDescription($"You or the user you're searching for don't have any crowns that got stolen yet.");
-            }
-            else
-            {
-                response.Embed.WithDescription($"You or the user you're searching for don't have any crowns yet. \n\n" +
-                                               $"Use `{context.Prefix}whoknows` to start getting crowns!\n\n" +
-                                               $"Crowns are rewarded to the #1 listener for an artist with at least {guild.CrownsMinimumPlaycountThreshold ?? Constants.DefaultPlaysForCrown} plays.");
-            }
-
-            response.ResponseType = ResponseType.Embed;
-            response.CommandResponse = CommandResponse.NotFound;
-            response.StringMenus.Add(viewType);
-            return response;
-        }
-
-        var pages = new List<PageBuilder>();
+        var pageDescriptions = new List<string>();
 
         var crownPages = userCrowns.ChunkBy(10);
 
         var counter = 1;
-        var pageCounter = 1;
         foreach (var crownPage in crownPages)
         {
             var crownPageString = new StringBuilder();
@@ -270,20 +263,56 @@ public class CrownBuilders
                 counter++;
             }
 
-            var footer = new StringBuilder();
-
-            footer.AppendLine($"Page {pageCounter}/{crownPages.Count} - {userCrowns.Count.Format(context.NumberFormat)} total crowns");
-
-            pages.Add(new PageBuilder()
-                .WithDescription(crownPageString.ToString())
-                .WithColor(DiscordConstants.LastFmColorRed)
-                .WithTitle(title)
-                .WithFooter(footer.ToString()));
-            pageCounter++;
+            pageDescriptions.Add(crownPageString.ToString());
         }
 
-        response.ComponentPaginator = StringService.BuildComponentPaginatorWithSelectMenu(pages, viewType);
+        if (!userCrowns.Any())
+        {
+            response.CommandResponse = CommandResponse.NotFound;
+        }
+
+        var paginator = new ComponentPaginatorBuilder()
+            .WithPageFactory(GeneratePage)
+            .WithPageCount(Math.Max(1, pageDescriptions.Count))
+            .WithActionOnTimeout(ActionOnStop.DisableInput);
+
+        response.ComponentPaginator = paginator;
 
         return response;
+
+        IPage GeneratePage(IComponentPaginator p)
+        {
+            var container = new ComponentContainerProperties();
+
+            container.WithAccentColor(DiscordConstants.LastFmColorRed);
+            container.WithTextDisplay($"### {title}");
+            container.WithSeparator();
+
+            var currentPage = pageDescriptions.ElementAtOrDefault(p.CurrentPageIndex);
+            if (currentPage != null)
+            {
+                container.WithTextDisplay(currentPage.TrimEnd());
+                container.WithSeparator();
+                container.WithTextDisplay(
+                    $"-# Page {p.CurrentPageIndex + 1}/{pageDescriptions.Count} - {userCrowns.Count.Format(context.NumberFormat)} total crowns");
+            }
+            else
+            {
+                container.WithTextDisplay(noResults);
+            }
+
+            container.AddComponents(viewType);
+
+            if (pageDescriptions.Count > 1)
+            {
+                container.WithActionRow(StringService.GetPaginationActionRow(p));
+            }
+
+            return new PageBuilder()
+                .WithAllowedMentions(AllowedMentionsProperties.None)
+                .WithMessageFlags(MessageFlags.IsComponentsV2)
+                .WithComponents([container])
+                .Build();
+        }
     }
 }

@@ -57,8 +57,9 @@ public class DiscogsInteractions(
             var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
             await message.ModifyAsync(m =>
             {
-                m.Components = updatedMsg.GetMessageComponents();
-                m.Embeds = [updatedMsg.Embed];
+                m.Components = updatedMsg.GetComponentsV2();
+                m.Embeds = [];
+                m.Flags = MessageFlags.IsComponentsV2;
             });
         }
         catch (Exception e)
@@ -76,7 +77,7 @@ public class DiscogsInteractions(
             var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
             await message.ModifyAsync(m =>
             {
-                m.Components = [];
+                m.Components = message.Components.WithDisabled();
             });
 
             var contextUser = await userService.GetUserWithDiscogs(this.Context.User.Id);
@@ -103,13 +104,14 @@ public class DiscogsInteractions(
             return;
         }
 
-        var embed = new EmbedProperties();
-        embed.WithDescription("Fetching login link...");
-        embed.WithColor(DiscordConstants.InformationColorBlue);
+        var fetchingContainer = new ComponentContainerProperties();
+        fetchingContainer.WithAccentColor(DiscordConstants.InformationColorBlue);
+        fetchingContainer.WithTextDisplay("Fetching login link...");
         await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
-            .WithEmbeds([embed])));
+            .WithComponents([fetchingContainer])
+            .WithFlags(MessageFlags.IsComponentsV2)));
 
-        await message.ModifyAsync(m => m.Components = []);
+        await message.ModifyAsync(m => m.Components = message.Components.WithDisabled());
 
         try
         {

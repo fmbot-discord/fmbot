@@ -10,10 +10,12 @@ using System.Linq;
 using FMBot.Bot.Extensions;
 using System.Text;
 using Fergun.Interactive;
+using Fergun.Interactive.Pagination;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain.Attributes;
 using FMBot.Domain.Extensions;
+using NetCord;
 using NetCord.Rest;
 
 namespace FMBot.Bot.Builders;
@@ -53,16 +55,19 @@ public class GuildBuilders
 
         var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
 
-        var pages = new List<PageBuilder>();
+        var pageDescriptions = new List<string>();
+        var pageFooters = new List<string>();
         var counter = 1;
         var pageCounter = 1;
 
+        string title;
         string noResults;
 
         switch (guildViewType)
         {
             case GuildViewType.Overview:
                 {
+                    title = $".fmbot users in {context.DiscordGuild.Name}";
                     noResults = $"No .fmbot users in this server. \n\n" +
                                 $"Use `{context.Prefix}login` to get started, or try `{context.Prefix}refreshmembers` to refresh the cached memberlist.";
 
@@ -86,17 +91,15 @@ public class GuildBuilders
 
                         var footer = new StringBuilder();
                         footer.AppendLine(
-                            $"Page {pageCounter}/{userPages.Count} - {guildUsers.Count.Format(context.NumberFormat)} total .fmbot users in this server");
+                            $"-# Page {pageCounter}/{userPages.Count} - {guildUsers.Count.Format(context.NumberFormat)} total .fmbot users in this server");
 
                         if (filterStats.FullDescription != null)
                         {
-                            footer.AppendLine(filterStats.FullDescription);
+                            footer.AppendLine($"-# {filterStats.FullDescription}");
                         }
 
-                        pages.Add(new PageBuilder()
-                            .WithDescription(crownPageString.ToString())
-                            .WithTitle($".fmbot users in {context.DiscordGuild.Name}")
-                            .WithFooter(footer.ToString()));
+                        pageDescriptions.Add(crownPageString.ToString());
+                        pageFooters.Add(footer.ToString());
                         pageCounter++;
                     }
                 }
@@ -106,6 +109,7 @@ public class GuildBuilders
                     var topCrownUsers = await this._crownService.GetTopCrownUsersForGuild(guild.GuildId);
                     var guildCrownCount = await this._crownService.GetTotalCrownCountForGuild(guild.GuildId);
 
+                    title = $"Users with most crowns in {context.DiscordGuild.Name}";
                     noResults = $"No top crown users in this server. Use `{context.Prefix}whoknows` to start getting crowns!";
 
                     var crownPages = topCrownUsers.Chunk(10).ToList();
@@ -135,22 +139,21 @@ public class GuildBuilders
                         var footer = new StringBuilder();
                         if (location >= 0)
                         {
-                            footer.AppendLine($"Your ranking: #{location + 1}");
+                            footer.AppendLine($"-# Your ranking: #{location + 1}");
                         }
 
                         footer.AppendLine(
-                            $"Page {pageCounter}/{crownPages.Count} - {guildCrownCount.Format(context.NumberFormat)} total active crowns in this server");
+                            $"-# Page {pageCounter}/{crownPages.Count} - {guildCrownCount.Format(context.NumberFormat)} total active crowns in this server");
 
-                        pages.Add(new PageBuilder()
-                            .WithDescription(crownPageString.ToString())
-                            .WithTitle($"Users with most crowns in {context.DiscordGuild.Name}")
-                            .WithFooter(footer.ToString()));
+                        pageDescriptions.Add(crownPageString.ToString());
+                        pageFooters.Add(footer.ToString());
                         pageCounter++;
                     }
                 }
                 break;
             case GuildViewType.ListeningTime:
                 {
+                    title = $"Users with most listening time in {context.DiscordGuild.Name}";
                     noResults = $"No .fmbot users in this server, or nobody listened to music recently. \n\n" +
                                 $"Maybe try `{context.Prefix}refreshmembers` to refresh the cached memberlist.";
 
@@ -178,32 +181,31 @@ public class GuildBuilders
                         var footer = new StringBuilder();
                         if (requestedUser != null && location >= 0)
                         {
-                            footer.AppendLine($"Your ranking: #{location + 1} ({requestedUser.DiscordName})");
+                            footer.AppendLine($"-# Your ranking: #{location + 1} ({requestedUser.DiscordName})");
                         }
 
                         footer.AppendLine(
-                            $"7 days - From {DateTime.UtcNow.AddDays(-9):MMM dd} to {DateTime.UtcNow.AddDays(-2):MMM dd}");
+                            $"-# 7 days - From {DateTime.UtcNow.AddDays(-9):MMM dd} to {DateTime.UtcNow.AddDays(-2):MMM dd}");
 
-                        footer.Append($"Page {pageCounter}/{ltPages.Count} - ");
+                        footer.Append($"-# Page {pageCounter}/{ltPages.Count} - ");
                         footer.Append($"{filteredTopListeningTimeUsers.Count.Format(context.NumberFormat)} users - ");
                         footer.Append($"{filteredTopListeningTimeUsers.Sum(s => s.Playcount).Format(context.NumberFormat)} total minutes");
 
                         if (filterStats.FullDescription != null)
                         {
                             footer.AppendLine();
-                            footer.AppendLine(filterStats.FullDescription);
+                            footer.Append($"-# {filterStats.FullDescription}");
                         }
 
-                        pages.Add(new PageBuilder()
-                            .WithDescription(ltPageString.ToString())
-                            .WithTitle($"Users with most listening time in {context.DiscordGuild.Name}")
-                            .WithFooter(footer.ToString()));
+                        pageDescriptions.Add(ltPageString.ToString());
+                        pageFooters.Add(footer.ToString());
                         pageCounter++;
                     }
                 }
                 break;
             case GuildViewType.Plays:
                 {
+                    title = $"Users with highest total playcount in {context.DiscordGuild.Name}";
                     noResults = $"No .fmbot users in this server that we have a total playcount for. \n\n" +
                                 $"Maybe try `{context.Prefix}refreshmembers` to refresh the cached memberlist.";
 
@@ -228,23 +230,21 @@ public class GuildBuilders
                         var footer = new StringBuilder();
                         if (requestedUser != null && location >= 0)
                         {
-                            footer.AppendLine($"Your ranking: #{location + 1} ({requestedUser.DiscordName})");
+                            footer.AppendLine($"-# Your ranking: #{location + 1} ({requestedUser.DiscordName})");
                         }
 
-                        footer.Append($"Page {pageCounter}/{playcountPages.Count} - ");
+                        footer.Append($"-# Page {pageCounter}/{playcountPages.Count} - ");
                         footer.Append($"{filteredPlaycountUsers.Count.Format(context.NumberFormat)} users - ");
                         footer.Append($"{filteredPlaycountUsers.Sum(s => s.Playcount).Format(context.NumberFormat)} total plays");
 
                         if (filterStats.FullDescription != null)
                         {
                             footer.AppendLine();
-                            footer.AppendLine(filterStats.FullDescription);
+                            footer.Append($"-# {filterStats.FullDescription}");
                         }
 
-                        pages.Add(new PageBuilder()
-                            .WithDescription(playcountPageString.ToString())
-                            .WithTitle($"Users with highest total playcount in {context.DiscordGuild.Name}")
-                            .WithFooter(footer.ToString()));
+                        pageDescriptions.Add(playcountPageString.ToString());
+                        pageFooters.Add(footer.ToString());
                         pageCounter++;
                     }
                 }
@@ -268,16 +268,56 @@ public class GuildBuilders
             viewType.AddOption(name, value, isDefault: active);
         }
 
-        if (!pages.Any())
+        if (!pageDescriptions.Any())
         {
-            response.Embed.WithDescription(noResults);
-            response.ResponseType = ResponseType.Embed;
             response.CommandResponse = CommandResponse.NotFound;
-            return response;
         }
 
-        response.ComponentPaginator = StringService.BuildComponentPaginatorWithSelectMenu(pages, viewType);
+        var paginator = new ComponentPaginatorBuilder()
+            .WithPageFactory(GeneratePage)
+            .WithPageCount(Math.Max(1, pageDescriptions.Count))
+            .WithActionOnTimeout(ActionOnStop.DisableInput);
+
+        response.ComponentPaginator = paginator;
 
         return response;
+
+        IPage GeneratePage(IComponentPaginator p)
+        {
+            var container = new ComponentContainerProperties();
+
+            container.WithTextDisplay($"### {title}");
+            container.WithSeparator();
+
+            var currentPage = pageDescriptions.ElementAtOrDefault(p.CurrentPageIndex);
+            if (currentPage != null)
+            {
+                container.WithTextDisplay(currentPage.TrimEnd());
+
+                var pageFooter = pageFooters.ElementAtOrDefault(p.CurrentPageIndex);
+                if (pageFooter != null)
+                {
+                    container.WithSeparator();
+                    container.WithTextDisplay(pageFooter.TrimEnd());
+                }
+            }
+            else
+            {
+                container.WithTextDisplay(noResults);
+            }
+
+            container.AddComponents(viewType);
+
+            if (pageDescriptions.Count > 1)
+            {
+                container.WithActionRow(StringService.GetPaginationActionRow(p));
+            }
+
+            return new PageBuilder()
+                .WithAllowedMentions(AllowedMentionsProperties.None)
+                .WithMessageFlags(MessageFlags.IsComponentsV2)
+                .WithComponents([container])
+                .Build();
+        }
     }
 }

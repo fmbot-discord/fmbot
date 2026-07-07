@@ -313,8 +313,6 @@ public class GuildSettingInteractions(
     {
         try
         {
-            await RespondAsync(InteractionCallback.DeferredModifyMessage);
-
             var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
             var selectedValue = stringMenuInteraction.Data.SelectedValues[0];
 
@@ -329,12 +327,8 @@ public class GuildSettingInteractions(
                 return;
             }
 
-            var name = viewType.GetAttribute<OptionAttribute>().Name;
-
-            var components =
-                new ActionRowProperties().WithButton($"Loading {name.ToLower()} view...", customId: "1",
-                    emote: EmojiProperties.Custom(DiscordConstants.Loading), disabled: true, style: ButtonStyle.Secondary);
-            await message.ModifyAsync(m => m.Components = [components]);
+            await RespondAsync(InteractionCallback.DeferredModifyMessage);
+            await this.Context.DisableButtonsAndMenus();
 
             var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
             var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);

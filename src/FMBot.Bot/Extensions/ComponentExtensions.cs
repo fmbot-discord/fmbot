@@ -28,6 +28,20 @@ public static class ComponentExtensions
             ActionRow row => new ActionRowProperties(
                 row.Components.Select(c => ToRowComponentProperties(c, specificButtonOnly))),
 
+            StringMenu menu => new StringMenuProperties(menu.CustomId,
+                menu.Options.Select(o => new StringMenuSelectOptionProperties(o.Label, o.Value)
+                {
+                    Description = o.Description,
+                    Emoji = ToEmojiProperties(o.Emoji),
+                    Default = o.Default
+                }))
+            {
+                Placeholder = menu.Placeholder,
+                MinValues = menu.MinValues,
+                MaxValues = menu.MaxValues,
+                Disabled = specificButtonOnly == null || menu.Disabled == true
+            },
+
             _ => throw new NotSupportedException($"Unknown component: {component.GetType().Name}")
         };
     }

@@ -63,9 +63,10 @@ public class CrownInteractions(
     public async Task CrownSelectMenu(params string[] inputs)
     {
         await RespondAsync(InteractionCallback.DeferredModifyMessage);
+        await this.Context.DisableButtonsAndMenus();
 
         var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
-        var options = stringMenuInteraction.Data.SelectedValues.First().Split("-");
+        var options = stringMenuInteraction.Data.SelectedValues[0].Split("-");
 
         var discordUserId = ulong.Parse(options[0]);
         var requesterDiscordUserId = ulong.Parse(options[1]);

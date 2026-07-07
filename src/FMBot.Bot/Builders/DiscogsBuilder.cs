@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Fergun.Interactive;
+using Fergun.Interactive.Pagination;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
@@ -37,14 +38,13 @@ public class DiscogsBuilder
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed,
+            ResponseType = ResponseType.ComponentsV2,
         };
 
-        response.Embed.WithDescription($"Click the button below to get your Discogs login link.");
-        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
-
-        response.Components = new ActionRowProperties()
-            .WithButton("Get login link", style: ButtonStyle.Primary, customId: InteractionConstants.Discogs.StartAuth);
+        response.ComponentsContainer.WithAccentColor(DiscordConstants.InformationColorBlue);
+        response.ComponentsContainer.WithTextDisplay($"Click the button below to get your Discogs login link.");
+        response.ComponentsContainer.WithActionRow(new ActionRowProperties().AddComponents(
+            new ButtonProperties(InteractionConstants.Discogs.StartAuth, "Get login link", ButtonStyle.Primary)));
 
         return response;
     }
@@ -53,21 +53,21 @@ public class DiscogsBuilder
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed,
+            ResponseType = ResponseType.ComponentsV2,
         };
 
         var result = await this._discogsService.ToggleCollectionValueHidden(context.ContextUser.UserId);
 
         if (result == true)
         {
-            response.Embed.WithDescription($"Your Discogs collection value is now hidden from all .fmbot commands.");
+            response.ComponentsContainer.WithTextDisplay($"Your Discogs collection value is now hidden from all .fmbot commands.");
         }
         else
         {
-            response.Embed.WithDescription($"Your Discogs collection value is now visible in all .fmbot commands.");
+            response.ComponentsContainer.WithTextDisplay($"Your Discogs collection value is now visible in all .fmbot commands.");
         }
 
-        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+        response.ComponentsContainer.WithAccentColor(DiscordConstants.InformationColorBlue);
 
         return response;
     }
@@ -76,14 +76,14 @@ public class DiscogsBuilder
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed,
+            ResponseType = ResponseType.ComponentsV2,
         };
 
         await this._discogsService.RemoveDiscogs(context.ContextUser.UserId);
 
-        response.Embed.WithDescription($"Your Discogs has been unlinked from your .fmbot account.");
+        response.ComponentsContainer.WithTextDisplay($"Your Discogs has been unlinked from your .fmbot account.");
 
-        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+        response.ComponentsContainer.WithAccentColor(DiscordConstants.InformationColorBlue);
 
         return response;
     }
@@ -92,27 +92,26 @@ public class DiscogsBuilder
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed,
+            ResponseType = ResponseType.ComponentsV2,
         };
 
         var discogsAuth = await this._discogsService.GetDiscogsAuthLink();
 
-        response.Embed.WithDescription($"Login to Discogs with the button below and authorize .fmbot. \n" +
+        var loginContainer = new ComponentContainerProperties();
+        loginContainer.WithAccentColor(DiscordConstants.InformationColorBlue);
+        loginContainer.WithTextDisplay($"Login to Discogs with the button below and authorize .fmbot. \n" +
                                        $"After authorizing a code will be shown.\n\n" +
-                                       $"**Copy the code and send it in this chat.**");
-        response.Embed.WithFooter($"Do not share the code outside of this DM conversation");
-        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
-
-        response.Components = new ActionRowProperties()
-            .WithButton("Login to Discogs", url: discogsAuth.LoginUrl);
+                                       $"**Copy the code and send it in this chat.**\n\n" +
+                                       $"-# Do not share the code outside of this DM conversation");
+        loginContainer.WithActionRow(new ActionRowProperties().AddComponents(
+            new LinkButtonProperties(discogsAuth.LoginUrl, "Login to Discogs")));
 
         var dmChannel = await context.DiscordUser.GetDMChannelAsync();
         var dm = await dmChannel.SendMessageAsync(new MessageProperties
         {
-            Embeds = [response.Embed],
-            Components = [response.Components]
+            Components = [loginContainer],
+            Flags = MessageFlags.IsComponentsV2
         });
-        response.Embed.Footer = null;
 
         var result =
             await this._interactivity.NextMessageAsync(x => x.ChannelId == dmChannel.Id, timeout: TimeSpan.FromMinutes(15));
@@ -129,12 +128,14 @@ public class DiscogsBuilder
 
         if (result.IsTimeout)
         {
+            var timeoutContainer = new ComponentContainerProperties();
+            timeoutContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
+            timeoutContainer.WithTextDisplay($"❌ Login failed.. link timed out.\n\n" +
+                                             $"Re-run the `{context.Prefix}discogs` command to try again.");
+
             await dm.ModifyAsync(m =>
             {
-                m.Embeds = [new EmbedProperties()
-                    .WithDescription($"❌ Login failed.. link timed out.\n\n" +
-                                     $"Re-run the `{context.Prefix}discogs` command to try again.")
-                    .WithColor(DiscordConstants.WarningColorOrange)];
+                m.Components = [timeoutContainer];
             });
             response.CommandResponse = CommandResponse.Cooldown;
             return response;
@@ -143,13 +144,16 @@ public class DiscogsBuilder
         if (result.Value?.Content == null || !Regex.IsMatch(result.Value.Content, @"^[a-zA-Z]+$") ||
             result.Value.Content.Length != 10)
         {
-            response.Embed.WithDescription($"Login failed, incorrect input.\n\n" +
-                                           $"Re-run the `{context.Prefix}discogs` command to try again.");
-            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+            var wrongInputContainer = new ComponentContainerProperties();
+            wrongInputContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
+            wrongInputContainer.WithTextDisplay($"Login failed, incorrect input.\n\n" +
+                                                $"Re-run the `{context.Prefix}discogs` command to try again.");
+
             response.CommandResponse = CommandResponse.WrongInput;
             await dmChannel.SendMessageAsync(new MessageProperties
             {
-                Embeds = [response.Embed]
+                Components = [wrongInputContainer],
+                Flags = MessageFlags.IsComponentsV2
             });
             return response;
         }
@@ -157,26 +161,29 @@ public class DiscogsBuilder
         var user = await this._discogsService.ConfirmDiscogsAuth(context.ContextUser.UserId, discogsAuth,
             result.Value.Content);
 
+        var resultContainer = new ComponentContainerProperties();
         if (user.Identity != null)
         {
             await this._discogsService.StoreDiscogsAuth(context.ContextUser.UserId, user.Auth, user.Identity);
 
-            response.Embed.WithDescription(
+            resultContainer.WithAccentColor(DiscordConstants.InformationColorBlue);
+            resultContainer.WithTextDisplay(
                 $"✅ Your Discogs account '[{user.Identity.Username}]({Constants.DiscogsUserUrl}{user.Identity.Username})' has been connected.\n" +
                 $"Run the `{context.Prefix}collection` command to view your collection.");
             response.CommandResponse = CommandResponse.Ok;
         }
         else
         {
-            response.Embed.WithDescription($"Could not connect a Discogs account with provided code.\n\n" +
-                                           $"Re-run the `{context.Prefix}discogs` command to try again.");
-            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+            resultContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
+            resultContainer.WithTextDisplay($"Could not connect a Discogs account with provided code.\n\n" +
+                                            $"Re-run the `{context.Prefix}discogs` command to try again.");
             response.CommandResponse = CommandResponse.WrongInput;
         }
 
         await dmChannel.SendMessageAsync(new MessageProperties
         {
-            Embeds = [response.Embed]
+            Components = [resultContainer],
+            Flags = MessageFlags.IsComponentsV2
         });
 
         return response;
@@ -189,7 +196,7 @@ public class DiscogsBuilder
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed
+            ResponseType = ResponseType.ComponentsV2
         };
 
         var user = await this._userService.GetUserWithDiscogs(userSettings.DiscordUserId);
@@ -198,18 +205,18 @@ public class DiscogsBuilder
         {
             if (!userSettings.DifferentUser)
             {
-                response.Embed.WithDescription(
+                response.ComponentsContainer.WithTextDisplay(
                     "To use the Discogs commands you have to connect a Discogs account.\n\n" +
                     $"Use the `{context.Prefix}discogs` command to get started.");
             }
             else
             {
-                response.Embed.WithDescription(
+                response.ComponentsContainer.WithTextDisplay(
                     "The user you're trying to look up has not set up their Discogs account yet.");
             }
 
             response.CommandResponse = CommandResponse.UsernameNotSet;
-            response.Embed.Color = DiscordConstants.WarningColorOrange;
+            response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
             return response;
         }
 
@@ -241,16 +248,15 @@ public class DiscogsBuilder
 
         var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
 
-        response.EmbedAuthor.WithName(!userSettings.DifferentUser
-            ? $"Discogs collection for {userTitle}"
-            : $"Discogs collection for {userSettings.DisplayName}, requested by {userTitle}");
+        var title = StringExtensions.MarkdownLink(!userSettings.DifferentUser
+                ? $"Discogs collection for {userTitle}"
+                : $"Discogs collection for {userSettings.DisplayName}, requested by {userTitle}",
+            $"{Constants.DiscogsUserUrl}{user.UserDiscogs.Username}/collection");
 
-        response.EmbedAuthor.WithUrl($"{Constants.DiscogsUserUrl}{user.UserDiscogs.Username}/collection");
-        response.Embed.WithAuthor(response.EmbedAuthor);
-
-        var pages = new List<PageBuilder>();
+        var pageDescriptions = new List<string>();
+        var pageFooters = new List<string>();
         var pageCounter = 1;
-        var collectionPages = releases.Chunk(6);
+        var collectionPages = releases.Chunk(6).ToList();
 
         foreach (var page in collectionPages)
         {
@@ -262,11 +268,11 @@ public class DiscogsBuilder
 
             var footer = new StringBuilder();
 
-            footer.AppendLine($"Page {pageCounter}/{collectionPages.Count()} - {releases.Count} total");
+            footer.AppendLine($"-# Page {pageCounter}/{collectionPages.Count} - {releases.Count} total");
 
             if (collectionSettings.Formats.Any())
             {
-                footer.Append("Format filter: ");
+                footer.Append("-# Format filter: ");
                 for (var index = 0; index < collectionSettings.Formats.Count; index++)
                 {
                     if (index > 0)
@@ -283,12 +289,12 @@ public class DiscogsBuilder
 
             if (!string.IsNullOrWhiteSpace(searchValues))
             {
-                footer.AppendLine($"Searching for '{StringExtensions.Sanitize(searchValues)}'");
+                footer.AppendLine($"-# Searching for '{StringExtensions.Sanitize(searchValues)}'");
             }
 
             if (string.IsNullOrWhiteSpace(searchValues) && user.UserDiscogs.HideValue != true)
             {
-                footer.AppendLine($"{user.UserDiscogs.MinimumValue} min " +
+                footer.AppendLine($"-# {user.UserDiscogs.MinimumValue} min " +
                                   $"- {user.UserDiscogs.MedianValue} med" +
                                   $"- {user.UserDiscogs.MaximumValue} max");
             }
@@ -301,7 +307,7 @@ public class DiscogsBuilder
             {
                 var diff = DateTime.UtcNow - user.UserDiscogs.ReleasesLastUpdated;
 
-                footer.AppendLine($"Last update {(int)diff.Value.TotalSeconds}s ago - " +
+                footer.AppendLine($"-# Last update {(int)diff.Value.TotalSeconds}s ago - " +
                                   $"Updates max once every two minutes");
             }
 
@@ -313,25 +319,57 @@ public class DiscogsBuilder
                                        $"Want to see your whole collection? [Get .fmbot supporter here.]({Constants.GetSupporterOverviewLink})");
             }
 
-            pages.Add(new PageBuilder()
-                .WithDescription(description.ToString())
-                .WithAuthor(response.EmbedAuthor)
-                .WithFooter(footer.ToString()));
+            pageDescriptions.Add(description.ToString());
+            pageFooters.Add(footer.ToString());
 
             pageCounter++;
         }
 
-        if (!pages.Any())
-        {
-            pages.Add(new PageBuilder()
-                .WithDescription("No collection could be found or there are no results.")
-                .WithAuthor(response.EmbedAuthor));
-        }
+        var paginator = new ComponentPaginatorBuilder()
+            .WithPageFactory(GeneratePage)
+            .WithPageCount(Math.Max(1, pageDescriptions.Count))
+            .WithActionOnTimeout(ActionOnStop.DisableInput);
 
-        response.ComponentPaginator = StringService.BuildComponentPaginator(pages);
+        response.ComponentPaginator = paginator;
 
         response.ResponseType = ResponseType.Paginator;
         return response;
+
+        IPage GeneratePage(IComponentPaginator p)
+        {
+            var container = new ComponentContainerProperties();
+
+            container.WithTextDisplay($"### {title}");
+            container.WithSeparator();
+
+            var currentPage = pageDescriptions.ElementAtOrDefault(p.CurrentPageIndex);
+            if (currentPage != null)
+            {
+                container.WithTextDisplay(currentPage.TrimEnd());
+
+                var pageFooter = pageFooters.ElementAtOrDefault(p.CurrentPageIndex);
+                if (pageFooter != null)
+                {
+                    container.WithSeparator();
+                    container.WithTextDisplay(pageFooter.TrimEnd());
+                }
+            }
+            else
+            {
+                container.WithTextDisplay("No collection could be found or there are no results.");
+            }
+
+            if (pageDescriptions.Count > 1)
+            {
+                container.WithActionRow(StringService.GetPaginationActionRow(p));
+            }
+
+            return new PageBuilder()
+                .WithAllowedMentions(AllowedMentionsProperties.None)
+                .WithMessageFlags(MessageFlags.IsComponentsV2)
+                .WithComponents([container])
+                .Build();
+        }
     }
 
     public async Task<ResponseModel> DiscogsTopArtistsAsync(
@@ -351,17 +389,19 @@ public class DiscogsBuilder
         {
             if (!userSettings.DifferentUser)
             {
-                response.Embed.WithDescription(
+                response.ComponentsContainer.WithTextDisplay(
                     "To use the top artists commands with Discogs you have to connect a Discogs account.\n\n" +
                     $"Use the `{context.Prefix}discogs` command to get started.");
             }
             else
             {
-                response.Embed.WithDescription(
+                response.ComponentsContainer.WithTextDisplay(
                     "The user you're trying to look up has not set up their Discogs account yet.");
             }
 
             response.CommandResponse = CommandResponse.UsernameNotSet;
+            response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
+            response.ResponseType = ResponseType.ComponentsV2;
             return response;
         }
 
@@ -374,16 +414,9 @@ public class DiscogsBuilder
 
         user.DiscogsReleases = await this._discogsService.GetUserCollection(user.UserId);
 
-        var pages = new List<PageBuilder>();
-
         string userTitle;
         if (!userSettings.DifferentUser)
         {
-            if (!context.SlashCommand)
-            {
-                response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl()?.ToString());
-            }
-
             userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
         }
         else
@@ -395,8 +428,8 @@ public class DiscogsBuilder
         var userUrl =
             $"{Constants.DiscogsUserUrl}{user.UserDiscogs.Username}/collection";
 
-        response.EmbedAuthor.WithName($"Top {timeSettings.Description.ToLower()} Discogs artists for {userTitle}");
-        response.EmbedAuthor.WithUrl(userUrl);
+        var title = StringExtensions.MarkdownLink(
+            $"Top {timeSettings.Description.ToLower()} Discogs artists for {userTitle}", userUrl);
         var topArtists = new List<TopDiscogsArtist>();
 
         foreach (var item in user.DiscogsReleases
@@ -417,7 +450,7 @@ public class DiscogsBuilder
             .ChunkBy((int)topListSettings.EmbedSize);
 
         var counter = 1;
-        var pageCounter = 1;
+        var pageDescriptions = new List<string>();
 
         foreach (var artistPage in artistPages)
         {
@@ -434,38 +467,56 @@ public class DiscogsBuilder
                 counter++;
             }
 
-            var footer = new StringBuilder();
-            footer.Append($"Page {pageCounter}/{artistPages.Count}");
-            footer.Append($" - {topArtists.Count} different artists added to collection in this time period");
-            pages.Add(new PageBuilder()
-                .WithDescription(artistPageString.ToString())
-                .WithAuthor(response.EmbedAuthor)
-                .WithFooter(footer.ToString()));
-            pageCounter++;
+            pageDescriptions.Add(artistPageString.ToString());
         }
 
-        if (!pages.Any())
-        {
-            pages.Add(new PageBuilder()
-                .WithDescription("No Discogs artists added in this time period.")
-                .WithAuthor(response.EmbedAuthor));
-        }
+        var paginator = new ComponentPaginatorBuilder()
+            .WithPageFactory(GeneratePage)
+            .WithPageCount(Math.Max(1, pageDescriptions.Count))
+            .WithActionOnTimeout(ActionOnStop.DisableInput);
 
-        response.ComponentPaginator = StringService.BuildComponentPaginator(pages);
+        response.ComponentPaginator = paginator;
         response.ResponseType = ResponseType.Paginator;
         return response;
+
+        IPage GeneratePage(IComponentPaginator p)
+        {
+            var container = new ComponentContainerProperties();
+
+            container.WithTextDisplay($"### {title}");
+            container.WithSeparator();
+
+            var currentPage = pageDescriptions.ElementAtOrDefault(p.CurrentPageIndex);
+            if (currentPage != null)
+            {
+                container.WithTextDisplay(currentPage.TrimEnd());
+                container.WithSeparator();
+                container.WithTextDisplay(
+                    $"-# Page {p.CurrentPageIndex + 1}/{pageDescriptions.Count} - {topArtists.Count} different artists added to collection in this time period");
+            }
+            else
+            {
+                container.WithTextDisplay("No Discogs artists added in this time period.");
+            }
+
+            if (pageDescriptions.Count > 1)
+            {
+                container.WithActionRow(StringService.GetPaginationActionRow(p));
+            }
+
+            return new PageBuilder()
+                .WithAllowedMentions(AllowedMentionsProperties.None)
+                .WithMessageFlags(MessageFlags.IsComponentsV2)
+                .WithComponents([container])
+                .Build();
+        }
     }
 
     public static ResponseModel DiscogsManage(ContextModel context)
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed,
-            Components = new ActionRowProperties()
-                .WithButton(context.ContextUser.UserDiscogs.HideValue == true ? "Show value" : "Hide value",
-                    InteractionConstants.Discogs.ToggleCollectionValue, ButtonStyle.Secondary)
-                .WithButton("Re-login", InteractionConstants.Discogs.StartAuth, ButtonStyle.Secondary)
-                .WithButton("Remove connection", InteractionConstants.Discogs.RemoveAccount, ButtonStyle.Danger)
+            ResponseType = ResponseType.ComponentsV2
         };
 
         var description = new StringBuilder();
@@ -485,9 +536,16 @@ public class DiscogsBuilder
         description.AppendLine("- Re-login - Re-authorize .fmbot");
         description.AppendLine("- Remove connection - Remove Discogs from your .fmbot account");
 
-        response.Embed.WithDescription(description.ToString());
-        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
-        response.Embed.WithTitle("Manage Discogs connection");
+        response.ComponentsContainer.WithAccentColor(DiscordConstants.InformationColorBlue);
+        response.ComponentsContainer.WithTextDisplay("### Manage Discogs connection");
+        response.ComponentsContainer.WithSeparator();
+        response.ComponentsContainer.WithTextDisplay(description.ToString().TrimEnd());
+        response.ComponentsContainer.WithActionRow(new ActionRowProperties().AddComponents(
+            new ButtonProperties(InteractionConstants.Discogs.ToggleCollectionValue,
+                context.ContextUser.UserDiscogs.HideValue == true ? "Show value" : "Hide value",
+                ButtonStyle.Secondary),
+            new ButtonProperties(InteractionConstants.Discogs.StartAuth, "Re-login", ButtonStyle.Secondary),
+            new ButtonProperties(InteractionConstants.Discogs.RemoveAccount, "Remove connection", ButtonStyle.Danger)));
 
         return response;
     }
