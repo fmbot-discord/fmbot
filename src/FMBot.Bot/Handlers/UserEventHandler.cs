@@ -97,6 +97,7 @@ public class UserEventHandler
             Log.Information("EntitlementCreated - guild {guildId} - received event", entitlement.GuildId.Value);
 
             await ProcessGuildEntitlement(entitlement.GuildId.Value);
+            await this._supporterService.TrySendPremiumGuildWelcomeMessage(entitlement.GuildId.Value);
             return;
         }
 

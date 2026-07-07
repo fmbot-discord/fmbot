@@ -2155,11 +2155,17 @@ public class TrackBuilders
             "Viewing track lyrics in .fmbot is only available for .fmbot supporters.\n" +
             "-# Or unlock it for everyone in this server with Premium server.");
 
-        response.Components = new ActionRowProperties()
+        var components = new ActionRowProperties()
             .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
-                customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "lyrics"))
-            .WithButton("Premium server", style: ButtonStyle.Secondary,
+                customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "lyrics"));
+
+        if (context.DiscordGuild != null)
+        {
+            components = components.WithButton("Premium server", style: ButtonStyle.Secondary,
                 customId: $"{InteractionConstants.PremiumServer.GetOverview}:lyrics");
+        }
+
+        response.Components = components;
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
         response.CommandResponse = CommandResponse.SupporterRequired;
 

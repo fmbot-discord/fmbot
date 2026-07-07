@@ -1273,40 +1273,94 @@ public class SupporterService
                 continue;
             }
 
-            var claimed = await db.PremiumGuildSubscriptions
-                .Where(w => w.Id == subscription.Id && !w.WelcomeMessageSent)
-                .ExecuteUpdateAsync(s => s.SetProperty(p => p.WelcomeMessageSent, true));
+            await SendClaimedPremiumGuildWelcome(db, subscription, "timer-job");
+        }
+    }
 
-            if (claimed == 0)
-            {
-                continue;
-            }
-
-            if (!subscription.PurchaserDiscordUserId.HasValue)
-            {
-                continue;
-            }
-
-            try
-            {
-                var guild = await db.Guilds
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(f => f.DiscordGuildId == subscription.DiscordGuildId);
-                var user = await this._client.Rest.GetUserAsync(subscription.PurchaserDiscordUserId.Value);
-
-                if (user != null)
-                {
-                    await SendPremiumGuildWelcomeMessage(user, guild?.Name);
-                }
-            }
-            catch (Exception e)
-            {
-                Log.Error(e, "Could not send premium guild welcome dm to {discordUserId}",
-                    subscription.PurchaserDiscordUserId);
-            }
+    public async Task TrySendPremiumGuildWelcomeMessage(ulong discordGuildId)
+    {
+        var currentUser = this._client.GetCurrentUser();
+        if (currentUser == null || currentUser.Id == Constants.BotBetaId)
+        {
+            return;
         }
 
-        await db.SaveChangesAsync();
+        if (!PublicProperties.PremiumServers.ContainsKey(discordGuildId))
+        {
+            Log.Debug(
+                "PremiumGuildWelcome: guild {discordGuildId} not premium-cached yet, deferring welcome DM to timer job",
+                discordGuildId);
+            return;
+        }
+
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var subscription = await db.PremiumGuildSubscriptions
+            .Where(w => w.DiscordGuildId == discordGuildId &&
+                        !w.WelcomeMessageSent &&
+                        !w.EntitlementDeleted &&
+                        (w.DateEnding == null || w.DateEnding > DateTime.UtcNow))
+            .OrderByDescending(w => w.DateStarted)
+            .FirstOrDefaultAsync();
+
+        if (subscription == null)
+        {
+            Log.Debug("PremiumGuildWelcome: no pending welcome for guild {discordGuildId}", discordGuildId);
+            return;
+        }
+
+        await SendClaimedPremiumGuildWelcome(db, subscription, "entitlement-event");
+    }
+
+    private async Task SendClaimedPremiumGuildWelcome(FMBotDbContext db, PremiumGuildSubscription subscription,
+        string source)
+    {
+        var claimed = await db.PremiumGuildSubscriptions
+            .Where(w => w.Id == subscription.Id && !w.WelcomeMessageSent)
+            .ExecuteUpdateAsync(s => s.SetProperty(p => p.WelcomeMessageSent, true));
+
+        if (claimed == 0)
+        {
+            Log.Information(
+                "PremiumGuildWelcome: guild {discordGuildId} subscription {subscriptionId} already claimed elsewhere, not sending again (source {source})",
+                subscription.DiscordGuildId, subscription.Id, source);
+            return;
+        }
+
+        if (!subscription.PurchaserDiscordUserId.HasValue)
+        {
+            Log.Warning(
+                "PremiumGuildWelcome: guild {discordGuildId} subscription {subscriptionId} has no purchaser, cannot send welcome DM (source {source})",
+                subscription.DiscordGuildId, subscription.Id, source);
+            return;
+        }
+
+        try
+        {
+            var guild = await db.Guilds
+                .AsNoTracking()
+                .FirstOrDefaultAsync(f => f.DiscordGuildId == subscription.DiscordGuildId);
+            var user = await this._client.Rest.GetUserAsync(subscription.PurchaserDiscordUserId.Value);
+
+            if (user == null)
+            {
+                Log.Warning(
+                    "PremiumGuildWelcome: purchaser {discordUserId} for guild {discordGuildId} could not be resolved, welcome DM not sent (subscription {subscriptionId}, source {source})",
+                    subscription.PurchaserDiscordUserId, subscription.DiscordGuildId, subscription.Id, source);
+                return;
+            }
+
+            await SendPremiumGuildWelcomeMessage(user, guild?.Name);
+
+            Log.Information(
+                "PremiumGuildWelcome: sent welcome DM to {discordUserId} for guild {discordGuildId} (subscription {subscriptionId}, source {source})",
+                subscription.PurchaserDiscordUserId, subscription.DiscordGuildId, subscription.Id, source);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e,
+                "PremiumGuildWelcome: failed to send welcome DM to {discordUserId} for guild {discordGuildId} (subscription {subscriptionId}, source {source})",
+                subscription.PurchaserDiscordUserId, subscription.DiscordGuildId, subscription.Id, source);
+        }
     }
 
     public static async Task SendPremiumGuildWelcomeMessage(NetCord.User discordUser, string guildName)
@@ -1375,8 +1429,6 @@ public class SupporterService
             Flags = MessageFlags.IsComponentsV2,
             AllowedMentions = AllowedMentionsProperties.None
         });
-
-        Log.Information("Sent premium guild welcome DM to {discordUserId}", discordUser.Id);
     }
 
     public async Task SyncDiscordPremiumGuilds()
