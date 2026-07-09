@@ -27,7 +27,7 @@ public class AutopostService(
 {
     public const int PostDelayHours = 18;
     public const int MaxAutopostsPerGuild = 10;
-    public const int RunsToKeep = 52;
+    private const ulong CommunityServerId = 821660544581763093;
 
     public async Task RunScheduledAutoposts()
     {
@@ -45,10 +45,17 @@ public class AutopostService(
 
         var now = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
 
+        var isBeta = client.GetCurrentUser()?.Id == Constants.BotBetaId;
+
         foreach (var autopost in autoposts.Where(w =>
                      PublicProperties.PremiumServers.ContainsKey(w.Guild.DiscordGuildId)))
         {
             if (!client.Any(shard => shard.Cache.Guilds.ContainsKey(autopost.Guild.DiscordGuildId)))
+            {
+                continue;
+            }
+
+            if (isBeta && autopost.Guild.DiscordGuildId == CommunityServerId)
             {
                 continue;
             }
@@ -240,8 +247,6 @@ public class AutopostService(
                 .Where(w => w.Id == autopost.Id)
                 .ExecuteUpdateAsync(s => s.SetProperty(p => p.LastMessageId, message.Id));
 
-            await PruneRuns(db, autopost.Id);
-
             return AutopostPostResult.Posted;
         }
         catch (Exception e)
@@ -269,32 +274,14 @@ public class AutopostService(
         }
     }
 
-    private static async Task PruneRuns(FMBotDbContext db, int autopostId)
-    {
-        var cutoff = await db.GuildAutopostRuns
-            .AsNoTracking()
-            .Where(w => w.AutopostId == autopostId)
-            .OrderByDescending(o => o.PostedAt)
-            .Select(s => s.PostedAt)
-            .Skip(RunsToKeep - 1)
-            .FirstOrDefaultAsync();
-
-        if (cutoff != default)
-        {
-            await db.GuildAutopostRuns
-                .Where(w => w.AutopostId == autopostId && w.PostedAt < cutoff)
-                .ExecuteDeleteAsync();
-        }
-    }
-
-    public static DateTime GetCurrentPeriodStart(AutopostSchedule schedule, DateTime now)
+    private static DateTime GetCurrentPeriodStart(AutopostSchedule schedule, DateTime now)
     {
         return schedule == AutopostSchedule.Monthly
             ? new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc)
             : now.Date.AddDays(-(((int)now.DayOfWeek + 6) % 7));
     }
 
-    public static DateTime GetNextPost(AutopostSchedule schedule, DateTime periodEnd)
+    private static DateTime GetNextPost(AutopostSchedule schedule, DateTime periodEnd)
     {
         var nextPeriodEnd = schedule == AutopostSchedule.Monthly
             ? periodEnd.AddMonths(1)
