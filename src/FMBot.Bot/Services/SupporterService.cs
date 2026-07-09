@@ -1393,7 +1393,7 @@ public class SupporterService
                 return;
             }
 
-            await SendPremiumGuildWelcomeMessage(user, guild?.Name);
+            await SendPremiumGuildWelcomeMessage(user, guild?.Name, subscription.DiscordGuildId);
 
             Log.Information(
                 "PremiumGuildWelcome: sent welcome DM to {discordUserId} for guild {discordGuildId} (subscription {subscriptionId}, source {source})",
@@ -1407,18 +1407,20 @@ public class SupporterService
         }
     }
 
-    public static async Task SendPremiumGuildWelcomeMessage(NetCord.User discordUser, string guildName)
+    public static async Task SendPremiumGuildWelcomeMessage(NetCord.User discordUser, string guildName,
+        ulong discordGuildId)
     {
         var container = new ComponentContainerProperties
         {
             AccentColor = DiscordConstants.InformationColorBlue
         };
 
+        var serverLink = $"https://discord.com/channels/{discordGuildId}";
         var intro = new StringBuilder();
         intro.AppendLine("## ✨ Thank you for getting .fmbot Premium server!");
         intro.Append(guildName != null
-            ? $"Premium is now active for **{StringExtensions.Sanitize(guildName)}**. Here's how to get the most out of it."
-            : "Premium is now active for your server. Here's how to get the most out of it.");
+            ? $"Premium is now active for **[{StringExtensions.Sanitize(guildName)}]({serverLink})**. Here's how to get the most out of it."
+            : $"Premium is now active for [your server]({serverLink}). Here's how to get the most out of it.");
 
         container.AddComponent(new TextDisplayProperties(intro.ToString()));
         container.AddComponent(new ComponentSeparatorProperties());
@@ -1430,11 +1432,11 @@ public class SupporterService
         container.AddComponent(new TextDisplayProperties(automation.ToString()));
         container.AddComponent(new ComponentSeparatorProperties());
 
-        var recaps = new StringBuilder();
-        recaps.AppendLine("### 📊 Schedule server recaps");
-        recaps.AppendLine("- `.serverrecap` — Pick a channel and a weekly or monthly schedule");
-        recaps.AppendLine("- Your server's top artists, albums and tracks get posted automatically");
-        container.AddComponent(new TextDisplayProperties(recaps.ToString()));
+        var autoposts = new StringBuilder();
+        autoposts.AppendLine("### 📊 Set up autoposts");
+        autoposts.AppendLine("- `.autoposts` — Pick a channel and a weekly or monthly schedule");
+        autoposts.AppendLine("- Server recaps and your server's top artists, albums and tracks get posted automatically");
+        container.AddComponent(new TextDisplayProperties(autoposts.ToString()));
         container.AddComponent(new ComponentSeparatorProperties());
 
         var branding = new StringBuilder();
@@ -1456,15 +1458,21 @@ public class SupporterService
         filtering.AppendLine("### ⚙️ Fine-tune WhoKnows");
         filtering.AppendLine("- `.allowedroles` & `.blockedroles` — Control which roles show in server-wide charts");
         filtering.AppendLine("- `.serveractivitythreshold` — Filter out inactive members");
-        filtering.AppendLine("- `.botmanagementroles` — Let specific roles manage and configure .fmbot");
+        filtering.AppendLine("- `.botmanagementroles` — Let trusted roles manage and configure .fmbot");
         container.AddComponent(new TextDisplayProperties(filtering.ToString()));
         container.AddComponent(new ComponentSeparatorProperties());
 
-        container.AddComponent(new TextDisplayProperties(
-            "-# Manage or cancel your subscription anytime with the button below, even if you leave the server."));
-        container.WithActionRow(new ActionRowProperties()
-            .WithButton("My Premium servers", InteractionConstants.PremiumServer.MyServers,
-                style: ButtonStyle.Secondary));
+        container.AddComponent(new ComponentSectionProperties(
+            new ButtonProperties(InteractionConstants.PremiumServer.MyServers, "My Premium servers",
+                ButtonStyle.Secondary))
+        {
+            Components =
+            [
+                new TextDisplayProperties(
+                    $"**[Click here to go back to the server]({serverLink})** \n" +
+                    $"-# View all your Premium servers with the button on the right.")
+            ]
+        });
 
         var dmChannel = await discordUser.GetDMChannelAsync();
         await dmChannel.SendMessageAsync(new MessageProperties

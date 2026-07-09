@@ -2465,6 +2465,41 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
         }
     }
 
+    [Command("sendpremiumwelcome")]
+    [Summary("Sends the premium server welcome DM to yourself for testing")]
+    public async Task SendPremiumWelcome([CommandParameter(Remainder = true)] string guildId = null)
+    {
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        {
+            try
+            {
+                if (!ulong.TryParse(guildId, out var discordGuildId))
+                {
+                    await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
+                        new MessageProperties { Content = "Enter a valid guild id. Usage: `.sendpremiumwelcome 821660544581763093`" });
+                    return;
+                }
+
+                var guild = await guildService.GetGuildAsync(discordGuildId);
+
+                await SupporterService.SendPremiumGuildWelcomeMessage(this.Context.User, guild?.Name, discordGuildId);
+
+                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
+                    new MessageProperties { Content = $"Sent premium welcome DM for guild `{discordGuildId}` ({guild?.Name ?? "not in db"})" });
+            }
+            catch (Exception e)
+            {
+                await this.Context.HandleCommandException(e, userService);
+            }
+        }
+        else
+        {
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
+                new MessageProperties { Content = "Error: Insufficient rights. Only .fmbot admins can use this command." });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
+        }
+    }
+
     [Command("runtimer", "triggerjob", "runjob")]
     [Summary("Run a timer manually (only works if it exists)")]
     public async Task RunTimerAsync([CommandParameter(Remainder = true)] string job = null)
