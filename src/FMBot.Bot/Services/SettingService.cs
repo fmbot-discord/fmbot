@@ -763,6 +763,17 @@ public class SettingService
         return (true, extraOptions);
     }
 
+    public static (bool Enabled, string NewSearchValue) EditModeEnabled(string extraOptions)
+    {
+        var editMode = new[] { "edit", "editmode" };
+        if (Contains(extraOptions, editMode))
+        {
+            return (true, ContainsAndRemove(extraOptions, editMode));
+        }
+
+        return (false, extraOptions);
+    }
+
     public static (bool Enabled, string NewSearchValue) HideSingles(string extraOptions)
     {
         var noSingles = new[] { "ns", "nosingles", "hidesingles", "filtersingles" };

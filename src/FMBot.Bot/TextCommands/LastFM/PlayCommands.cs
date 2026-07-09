@@ -547,6 +547,8 @@ public class PlayCommands(
     [Summary("Shows you your past streaks")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Albums, CommandCategory.Artists, CommandCategory.Tracks)]
+    [SupporterEnhanced(
+        "Supporters can scan their full listening history to find and save streaks they got in the past")]
     public async Task StreakHistoryAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         _ = this.Context.Channel?.TriggerTypingAsync()!;
@@ -558,8 +560,10 @@ public class PlayCommands(
             var userSettings = await settingService.GetUser(extraOptions, contextUser, this.Context);
             var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
+            var (editMode, artist) = SettingService.EditModeEnabled(userSettings.NewSearchValue);
+
             var response = await playBuilder.StreakHistoryAsync(new ContextModel(this.Context, prfx, contextUser),
-                userSettings, artist: userSettings.NewSearchValue);
+                userSettings, editMode, artist);
 
             await this.Context.SendResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);

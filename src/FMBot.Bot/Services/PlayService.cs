@@ -383,6 +383,14 @@ public class PlayService
         await db.SaveChangesAsync();
     }
 
+    public async Task<int> DeleteAllStreaks(int userId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        return await db.UserStreaks
+            .Where(w => w.UserId == userId)
+            .ExecuteDeleteAsync();
+    }
+
     public static UserStreak GetCurrentStreak(int userId, RecentTrack lastPlay,
         ICollection<UserPlay> lastPlays)
     {
@@ -451,7 +459,7 @@ public class PlayService
         {
             var currentPlay = lastPlaysList[i];
 
-            if (lastPlay.TrackName.ToLower() == currentPlay.TrackName.ToLower() &&
+            if (string.Equals(lastPlay.TrackName.ToLower(), currentPlay.TrackName.ToLower(), StringComparison.Ordinal) &&
                 lastPlay.ArtistName.ToLower() == currentPlay.ArtistName.ToLower())
             {
                 streak.TrackPlaycount++;
@@ -777,6 +785,238 @@ public class PlayService
         await db.SaveChangesAsync();
 
         return "Saved streak has been updated!";
+    }
+
+    public static List<UserStreak> GetHistoricalStreaks(int userId, ICollection<UserPlay> plays,
+        IReadOnlyDictionary<int, List<string>> genreMap = null)
+    {
+        var orderedPlays = plays
+            .Where(w => w.ArtistName != null && w.TrackName != null)
+            .OrderBy(o => o.TimePlayed)
+            .ToList();
+
+        if (orderedPlays.Count == 0)
+        {
+            return [];
+        }
+
+        var streaks = new Dictionary<DateTime, UserStreak>();
+
+        WalkRuns(p => p.ArtistName, (streak, firstPlay, count) =>
+        {
+            streak.ArtistName = firstPlay.ArtistName;
+            streak.ArtistPlaycount = count;
+        });
+
+        WalkRuns(p => p.AlbumName, (streak, firstPlay, count) =>
+        {
+            streak.AlbumName = firstPlay.AlbumName;
+            streak.AlbumPlaycount = count;
+            streak.ArtistName ??= firstPlay.ArtistName;
+        });
+
+        WalkRuns(p => $"{p.ArtistName}\n{p.TrackName}", (streak, firstPlay, count) =>
+        {
+            streak.TrackName = firstPlay.TrackName;
+            streak.TrackPlaycount = count;
+            streak.ArtistName ??= firstPlay.ArtistName;
+        });
+
+        if (genreMap != null && genreMap.Count != 0)
+        {
+            WalkGenreRuns();
+        }
+
+        return streaks.Values.OrderBy(o => o.StreakStarted).ToList();
+
+        void WalkGenreRuns()
+        {
+            var activeRuns =
+                new Dictionary<string, (int Count, UserPlay FirstPlay, DateTime End)>(StringComparer
+                    .OrdinalIgnoreCase);
+
+            foreach (var play in orderedPlays)
+            {
+                HashSet<string> playGenres = null;
+                if (play.ArtistId.HasValue && genreMap.TryGetValue(play.ArtistId.Value, out var genres))
+                {
+                    playGenres = new HashSet<string>(genres, StringComparer.OrdinalIgnoreCase);
+                }
+
+                if (activeRuns.Count != 0)
+                {
+                    List<string> endedRuns = null;
+                    foreach (var genre in activeRuns.Keys)
+                    {
+                        if (playGenres == null || !playGenres.Contains(genre))
+                        {
+                            (endedRuns ??= []).Add(genre);
+                        }
+                    }
+
+                    if (endedRuns != null)
+                    {
+                        foreach (var genre in endedRuns)
+                        {
+                            FinalizeGenreRun(genre, activeRuns[genre]);
+                            activeRuns.Remove(genre);
+                        }
+                    }
+                }
+
+                if (playGenres == null)
+                {
+                    continue;
+                }
+
+                foreach (var genre in playGenres)
+                {
+                    activeRuns[genre] = activeRuns.TryGetValue(genre, out var run)
+                        ? (run.Count + 1, run.FirstPlay, play.TimePlayed)
+                        : (1, play, play.TimePlayed);
+                }
+            }
+
+            foreach (var (genre, run) in activeRuns)
+            {
+                FinalizeGenreRun(genre, run);
+            }
+
+            return;
+
+            void FinalizeGenreRun(string genre, (int Count, UserPlay FirstPlay, DateTime End) run)
+            {
+                if (run.Count < Constants.StreakSaveThreshold)
+                {
+                    return;
+                }
+
+                if (!streaks.TryGetValue(run.FirstPlay.TimePlayed, out var streak))
+                {
+                    streak = new UserStreak
+                    {
+                        UserId = userId,
+                        StreakStarted = run.FirstPlay.TimePlayed,
+                        StreakEnded = run.End
+                    };
+                    streaks.Add(run.FirstPlay.TimePlayed, streak);
+                }
+
+                if (run.End > streak.StreakEnded)
+                {
+                    streak.StreakEnded = run.End;
+                }
+
+                streak.GenreStreaks ??= [];
+                streak.GenreStreaks.Add(new UserGenreStreak { GenreName = genre, Playcount = run.Count });
+            }
+        }
+
+        void WalkRuns(Func<UserPlay, string> keySelector, Action<UserStreak, UserPlay, int> applyRun)
+        {
+            string currentKey = null;
+            UserPlay runFirstPlay = null;
+            var count = 0;
+            var runEnd = DateTime.MinValue;
+
+            foreach (var play in orderedPlays)
+            {
+                var key = keySelector(play);
+                if (key != null && currentKey != null &&
+                    key.Equals(currentKey, StringComparison.OrdinalIgnoreCase))
+                {
+                    count++;
+                    runEnd = play.TimePlayed;
+                    continue;
+                }
+
+                FinalizeRun();
+                currentKey = key;
+                runFirstPlay = key != null ? play : null;
+                count = 1;
+                runEnd = play.TimePlayed;
+            }
+
+            FinalizeRun();
+            return;
+
+            void FinalizeRun()
+            {
+                if (runFirstPlay == null || count < Constants.StreakSaveThreshold)
+                {
+                    return;
+                }
+
+                if (!streaks.TryGetValue(runFirstPlay.TimePlayed, out var streak))
+                {
+                    streak = new UserStreak
+                    {
+                        UserId = userId,
+                        StreakStarted = runFirstPlay.TimePlayed,
+                        StreakEnded = runEnd
+                    };
+                    streaks.Add(runFirstPlay.TimePlayed, streak);
+                }
+
+                if (runEnd > streak.StreakEnded)
+                {
+                    streak.StreakEnded = runEnd;
+                }
+
+                applyRun(streak, runFirstPlay, count);
+            }
+        }
+    }
+
+    public async Task<int?> RestoreStreakHistory(int userId)
+    {
+        var concurrencyCacheKey = $"streak-restore-{userId}";
+        if (this._cache.TryGetValue(concurrencyCacheKey, out bool _))
+        {
+            return null;
+        }
+
+        this._cache.Set(concurrencyCacheKey, true, TimeSpan.FromMinutes(10));
+
+        try
+        {
+            var plays = await this.GetAllUserPlays(userId);
+            var artistIds = plays
+                .Where(w => w.ArtistId.HasValue)
+                .Select(s => s.ArtistId.Value);
+            var genreMap = await this._genreService.GetGenresByArtistIds(artistIds);
+
+            var historicalStreaks = GetHistoricalStreaks(userId, plays, genreMap);
+
+            if (historicalStreaks.Count == 0)
+            {
+                return 0;
+            }
+
+            await using var db = await this._contextFactory.CreateDbContextAsync();
+            var existingStreaks = await db.UserStreaks
+                .Where(w => w.UserId == userId)
+                .ToListAsync();
+
+            var missingStreaks = historicalStreaks
+                .Where(c => !existingStreaks.Any(e =>
+                    e.StreakStarted <= c.StreakEnded && e.StreakEnded >= c.StreakStarted))
+                .ToList();
+
+            if (missingStreaks.Count == 0)
+            {
+                return 0;
+            }
+
+            await db.UserStreaks.AddRangeAsync(missingStreaks);
+            await db.SaveChangesAsync();
+
+            return missingStreaks.Count;
+        }
+        finally
+        {
+            this._cache.Remove(concurrencyCacheKey);
+        }
     }
 
     public static string GetEmojiForStreakCount(int count)

@@ -1210,13 +1210,39 @@ public class PlayBuilder
                 .ToList();
         }
 
+        ButtonProperties restoreButton = null;
+        ButtonProperties deleteAllButton = null;
+        if (!userSettings.DifferentUser)
+        {
+            var restoreLabel = SupporterService.IsSupporter(context.ContextUser.UserType)
+                ? "Restore past streaks"
+                : "Restore past streaks ⭐";
+            restoreButton = new ButtonProperties(
+                $"{InteractionConstants.RestoreStreakHistory}:{context.ContextUser.DiscordUserId}",
+                restoreLabel, EmojiProperties.Custom(DiscordConstants.Refresh), ButtonStyle.Secondary);
+
+            if (editMode)
+            {
+                deleteAllButton = new ButtonProperties(
+                    $"{InteractionConstants.DeleteAllStreaks}:{context.ContextUser.DiscordUserId}",
+                    "Delete all streaks", ButtonStyle.Danger);
+            }
+        }
+
         if (!streaks.Any())
         {
             response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
             response.ComponentsContainer.WithTextDisplay("No saved streaks found for this user.");
-            if (artist != null)
+            if (!string.IsNullOrWhiteSpace(artist))
             {
                 response.ComponentsContainer.WithTextDisplay($"-# Filtering to artist '{artist}'");
+            }
+
+            if (restoreButton != null)
+            {
+                var restoreRow = new ActionRowProperties();
+                restoreRow.AddComponents(restoreButton);
+                response.ComponentsContainer.WithActionRow(restoreRow);
             }
 
             response.CommandResponse = CommandResponse.NotFound;
@@ -1273,12 +1299,26 @@ public class PlayBuilder
                 response.ComponentsContainer.WithTextDisplay(footer);
             }
 
-            if (editMode)
+            if (editMode || restoreButton != null)
             {
-                var deleteRow = new ActionRowProperties();
-                deleteRow.AddComponents(new ButtonProperties(InteractionConstants.DeleteStreak,
-                    EmojiProperties.Standard("🗑️"), ButtonStyle.Secondary));
-                response.ComponentsContainer.WithActionRow(deleteRow);
+                var buttonRow = new ActionRowProperties();
+                if (editMode)
+                {
+                    buttonRow.AddComponents(new ButtonProperties(InteractionConstants.DeleteStreak,
+                        EmojiProperties.Standard("🗑️"), ButtonStyle.Secondary));
+                }
+
+                if (restoreButton != null)
+                {
+                    buttonRow.AddComponents(restoreButton);
+                }
+
+                if (deleteAllButton != null)
+                {
+                    buttonRow.AddComponents(deleteAllButton);
+                }
+
+                response.ComponentsContainer.WithActionRow(buttonRow);
             }
 
             return response;
@@ -1346,12 +1386,29 @@ public class PlayBuilder
                 paginationRow.AddComponents(new ButtonProperties(InteractionConstants.DeleteStreak,
                     EmojiProperties.Standard("🗑️"), ButtonStyle.Secondary));
             }
+            else if (restoreButton != null)
+            {
+                paginationRow.AddComponents(new ButtonProperties(restoreButton.CustomId,
+                    EmojiProperties.Custom(DiscordConstants.Refresh), ButtonStyle.Secondary));
+            }
             else if (streakPages.Count >= 10)
             {
                 paginationRow.AddJumpButton(p, style: ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.PagesGoTo));
             }
 
             container.WithActionRow(paginationRow);
+
+            if (editMode && restoreButton != null)
+            {
+                var restoreRow = new ActionRowProperties();
+                restoreRow.AddComponents(restoreButton);
+                if (deleteAllButton != null)
+                {
+                    restoreRow.AddComponents(deleteAllButton);
+                }
+
+                container.WithActionRow(restoreRow);
+            }
 
             return new PageBuilder()
                 .WithAllowedMentions(AllowedMentionsProperties.None)
