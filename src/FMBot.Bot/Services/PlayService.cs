@@ -1404,7 +1404,7 @@ public class PlayService
             searchValue,
             limit,
             userIds
-        })).ToList();
+        }, commandTimeout: 180)).ToList();
 
         if (userIds == null)
         {
@@ -1471,7 +1471,7 @@ public class PlayService
             endDateTime,
             limit,
             userIds
-        })).ToList();
+        }, commandTimeout: 180)).ToList();
 
         if (userIds == null)
         {
@@ -1546,7 +1546,7 @@ public class PlayService
             searchValue,
             limit,
             userIds
-        })).ToList();
+        }, commandTimeout: 180)).ToList();
 
         if (userIds == null)
         {
@@ -1592,7 +1592,7 @@ public class PlayService
             startDateTime,
             endDateTime,
             userIds
-        });
+        }, commandTimeout: 180);
 
         if (userIds == null)
         {
@@ -1654,7 +1654,7 @@ public class PlayService
             startDateTime,
             endDateTime,
             limit
-        })).ToList();
+        }, commandTimeout: 180)).ToList();
 
         this._cache.Set(cacheKey, genres, TimeSpan.FromMinutes(10));
 
