@@ -116,16 +116,44 @@ public class WebhookService
         return webhook;
     }
 
-    public async Task<bool> TestWebhook(Webhook webhook, string text)
+    public async Task<bool> TestWebhook(Webhook webhook, string text, RestClient client)
     {
         var webhookClient = new WebhookClient(webhook.DiscordWebhookId, webhook.Token);
 
         try
         {
-            await webhookClient.ExecuteAsync(new WebhookMessageProperties
+            string[] guildReactions;
+            await using (var db = await this._contextFactory.CreateDbContextAsync())
             {
-                Content = text
-            }, threadId: webhook.DiscordThreadId);
+                guildReactions = await db.Guilds
+                    .AsQueryable()
+                    .Where(w => w.GuildId == webhook.GuildId)
+                    .Select(s => s.EmoteReactions)
+                    .FirstOrDefaultAsync();
+            }
+
+            var addReactions = client != null && guildReactions != null && guildReactions.Any();
+
+            var container = new ComponentContainerProperties();
+            container.WithAccentColor(DiscordConstants.SuccessColorGreen);
+            container.WithTextDisplay(text);
+
+            var message = await webhookClient.ExecuteAsync(new WebhookMessageProperties()
+                .WithComponents([container])
+                .WithFlags(MessageFlags.IsComponentsV2)
+                .WithAllowedMentions(AllowedMentionsProperties.None), wait: addReactions, threadId: webhook.DiscordThreadId);
+
+            if (addReactions && message != null)
+            {
+                try
+                {
+                    await GuildService.AddReactionsAsync(client, message.ChannelId, message.Id, guildReactions);
+                }
+                catch (Exception e)
+                {
+                    Log.Debug(e, "Could not add guild reactions to test webhook message for {guildId}", webhook.GuildId);
+                }
+            }
 
             return true;
         }
@@ -149,7 +177,7 @@ public class WebhookService
         }
     }
 
-    public async Task SendFeaturedWebhooks(FeaturedLog featured, Color? accentColor)
+    public async Task SendFeaturedWebhooks(FeaturedLog featured, Color? accentColor, RestClient client)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var webhooks = await db.Webhooks
@@ -165,24 +193,25 @@ public class WebhookService
         var tasks = new List<Task>();
         foreach (var webhook in webhooks)
         {
-            tasks.Add(SendWebhookMessage(webhook, featured, accentColor));
+            tasks.Add(SendWebhookMessage(webhook, featured, accentColor, client));
         }
 
         Log.Information("SendFeaturedWebhooks: Sending {webhookCount} featured webhooks", webhooks.Count);
         await Task.WhenAll(tasks);
     }
 
-    public async Task SendGuildFeaturedWebhooks(int guildId, FeaturedLog featured, Color? accentColor)
+    public async Task SendGuildFeaturedWebhooks(int guildId, FeaturedLog featured, Color? accentColor, RestClient client)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var webhooks = await db.Webhooks
             .AsQueryable()
+            .Include(i => i.Guild)
             .Where(w => w.GuildId == guildId)
             .ToListAsync();
 
         foreach (var webhook in webhooks)
         {
-            await SendWebhookMessage(webhook, featured, accentColor, guildFeatured: true);
+            await SendWebhookMessage(webhook, featured, accentColor, client, guildFeatured: true);
         }
     }
 
@@ -356,7 +385,7 @@ public class WebhookService
     }
 
     private async Task SendWebhookMessage(Webhook webhook, FeaturedLog featured, Color? accentColor,
-        bool guildFeatured = false)
+        RestClient client, bool guildFeatured = false)
     {
         var webhookClient = new WebhookClient(webhook.DiscordWebhookId, webhook.Token);
 
@@ -385,10 +414,25 @@ public class WebhookService
                 }
             }
 
-            await webhookClient.ExecuteAsync(new WebhookMessageProperties()
-                .WithComponents(new IMessageComponentProperties[] { container })
+            var guildReactions = webhook.Guild?.EmoteReactions;
+            var addReactions = client != null && guildReactions != null && guildReactions.Any();
+
+            var message = await webhookClient.ExecuteAsync(new WebhookMessageProperties()
+                .WithComponents([container])
                 .WithFlags(MessageFlags.IsComponentsV2)
-                .WithAllowedMentions(AllowedMentionsProperties.None), threadId: webhook.DiscordThreadId);
+                .WithAllowedMentions(AllowedMentionsProperties.None), wait: addReactions, threadId: webhook.DiscordThreadId);
+
+            if (addReactions && message != null)
+            {
+                try
+                {
+                    await GuildService.AddReactionsAsync(client, message.ChannelId, message.Id, guildReactions);
+                }
+                catch (Exception e)
+                {
+                    Log.Debug(e, "Could not add guild reactions to featured webhook message for {guildId}", webhook.GuildId);
+                }
+            }
         }
         catch (Exception e)
         {
