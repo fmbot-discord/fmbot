@@ -1096,7 +1096,7 @@ public class PlayBuilder
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed,
+            ResponseType = ResponseType.ComponentsV2,
         };
 
         var recentTracks = await this._updateService.UpdateUserAndGetRecentTracks(userWithStreak);
@@ -1109,15 +1109,32 @@ public class PlayBuilder
         var lastPlays = await this._playService.GetAllUserPlays(userSettings.UserId);
         var streak = PlayService.GetCurrentStreak(userSettings.UserId,
             recentTracks.Content.RecentTracks.FirstOrDefault(), lastPlays);
+        await this._playService.ApplyGenreStreaks(streak,
+            recentTracks.Content.RecentTracks.FirstOrDefault(), lastPlays);
 
-        response.EmbedAuthor.WithName(
-            $"{userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}'s streak overview");
+        response.ComponentsContainer.WithAccentColor(DiscordConstants.LastFmColorRed);
+        response.ComponentsContainer.WithTextDisplay(
+            $"### Streak overview for {StringExtensions.MarkdownLink(StringExtensions.Sanitize(userSettings.DisplayName), $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library")}{userSettings.UserType.UserTypeToIcon()}");
 
         string emoji = null;
         if (PlayService.StreakExists(streak))
         {
-            var streakText = PlayService.StreakToText(streak, context.NumberFormat);
-            response.Embed.WithDescription(streakText);
+            var musicStreaks = PlayService.MusicStreaksToText(streak, context.NumberFormat);
+            if (musicStreaks != null)
+            {
+                response.ComponentsContainer.WithSeparator();
+                response.ComponentsContainer.WithTextDisplay(musicStreaks);
+            }
+
+            var genreStreaks = PlayService.GenreStreaksToText(streak, context.NumberFormat);
+            if (genreStreaks != null)
+            {
+                response.ComponentsContainer.WithSeparator();
+                response.ComponentsContainer.WithTextDisplay(genreStreaks);
+            }
+
+            response.ComponentsContainer.WithSeparator();
+            response.ComponentsContainer.WithTextDisplay(PlayService.StreakStartedToText(streak));
 
             if (!userSettings.DifferentUser)
             {
@@ -1126,44 +1143,41 @@ public class PlayBuilder
                     var saved = await this._playService.UpdateOrInsertStreak(streak);
                     if (saved != null)
                     {
-                        response.Embed.WithFooter(saved);
+                        response.ComponentsContainer.WithSeparator();
+                        response.ComponentsContainer.WithTextDisplay($"-# {saved}");
                     }
                 }
                 else
                 {
-                    response.Embed.WithFooter(
-                        $"Only streaks with {Constants.StreakSaveThreshold} plays or higher are saved.");
+                    response.ComponentsContainer.WithSeparator();
+                    response.ComponentsContainer.WithTextDisplay(
+                        $"-# Only streaks with {Constants.StreakSaveThreshold} plays or higher are saved.");
                 }
             }
 
-            response.ReferencedMusic = new ReferencedMusic
+            if (streak.ArtistName != null || streak.AlbumName != null || streak.TrackName != null)
             {
-                Artist = streak.ArtistName,
-                Album = streak.AlbumName,
-                Track = streak.TrackName
-            };
+                response.ReferencedMusic = new ReferencedMusic
+                {
+                    Artist = streak.ArtistName,
+                    Album = streak.AlbumName,
+                    Track = streak.TrackName
+                };
+            }
 
             emoji = PlayService.GetEmojiForStreakCount(streak.ArtistPlaycount.GetValueOrDefault());
         }
         else
         {
-            response.Embed.WithDescription("No active streak found.\n" +
-                                           "Try scrobbling multiple of the same artist, album or track in a row to get started.");
+            response.ComponentsContainer.WithSeparator();
+            response.ComponentsContainer.WithTextDisplay("No active streak found.\n" +
+                                                         "Try scrobbling multiple of the same artist, album, track or genre in a row to get started.");
         }
-
-        if (!userSettings.DifferentUser)
-        {
-            response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl()?.ToString());
-        }
-
-        response.EmbedAuthor.WithUrl($"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library");
-        response.Embed.WithAuthor(response.EmbedAuthor);
 
         if (emoji != null)
         {
             response.EmoteReactions = [emoji.Trim()];
         }
-
 
         return response;
     }
@@ -1176,17 +1190,16 @@ public class PlayBuilder
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Paginator,
+            ResponseType = ResponseType.ComponentsV2,
         };
 
         var streaks = await this._playService.GetStreaks(userSettings.UserId);
 
-        response.EmbedAuthor.WithName(
-            !userSettings.DifferentUser
-                ? $"Streak history for {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}"
-                : $"Streak history for {userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}");
-
-        response.EmbedAuthor.WithUrl($"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library");
+        var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
+        var libraryUrl = $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library";
+        var title = !userSettings.DifferentUser
+            ? $"### Streak history for {StringExtensions.MarkdownLink(StringExtensions.Sanitize(userTitle), libraryUrl)}"
+            : $"### Streak history for {StringExtensions.MarkdownLink(userSettings.UserNameLastFm, libraryUrl)}, requested by {StringExtensions.Sanitize(userTitle)}";
 
         if (!string.IsNullOrWhiteSpace(artist))
         {
@@ -1199,13 +1212,13 @@ public class PlayBuilder
 
         if (!streaks.Any())
         {
-            response.Embed.WithDescription("No saved streaks found for this user.");
+            response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
+            response.ComponentsContainer.WithTextDisplay("No saved streaks found for this user.");
             if (artist != null)
             {
-                response.Embed.WithFooter($"Filtering to artist '{artist}'");
+                response.ComponentsContainer.WithTextDisplay($"-# Filtering to artist '{artist}'");
             }
 
-            response.ResponseType = ResponseType.Embed;
             response.CommandResponse = CommandResponse.NotFound;
             return response;
         }
@@ -1213,82 +1226,139 @@ public class PlayBuilder
         var streakPages = streaks.Chunk(4).ToList();
 
         var counter = 1;
-        var pageCounter = 1;
-        var pages = new List<PageBuilder>();
+        var pages = new List<List<string>>();
         foreach (var page in streakPages)
         {
-            var pageString = new StringBuilder();
+            var pageEntries = new List<string>();
             foreach (var streak in page)
             {
-                pageString.Append($"**{counter}. **");
-
-                if ((streak.StreakEnded - streak.StreakStarted).TotalHours <= 20)
-                {
-                    pageString.Append($"<t:{((DateTimeOffset)streak.StreakStarted).ToUnixTimeSeconds()}:f>");
-                    pageString.Append($" until ");
-                    pageString.Append($"<t:{((DateTimeOffset)streak.StreakEnded).ToUnixTimeSeconds()}:t>");
-                }
-                else
-                {
-                    pageString.Append($"<t:{((DateTimeOffset)streak.StreakStarted).ToUnixTimeSeconds()}:f>");
-                    pageString.Append($" until ");
-                    pageString.Append($"<t:{((DateTimeOffset)streak.StreakEnded).ToUnixTimeSeconds()}:f>");
-                }
+                var entry = new StringBuilder();
+                entry.Append($"**{counter}. **");
+                entry.Append($"<t:{((DateTimeOffset)streak.StreakStarted).ToUnixTimeSeconds()}:f>");
+                entry.Append(" until ");
+                entry.Append((streak.StreakEnded - streak.StreakStarted).TotalHours <= 20
+                    ? $"<t:{((DateTimeOffset)streak.StreakEnded).ToUnixTimeSeconds()}:t>"
+                    : $"<t:{((DateTimeOffset)streak.StreakEnded).ToUnixTimeSeconds()}:f>");
 
                 if (editMode && !userSettings.DifferentUser)
                 {
-                    pageString.Append($" · Deletion ID: `{streak.UserStreakId}`");
+                    entry.Append($" · Deletion ID: `{streak.UserStreakId}`");
                 }
 
-                pageString.AppendLine();
+                entry.AppendLine();
+                entry.Append(PlayService.StreakToText(streak, context.NumberFormat, false));
 
-                var streakText = PlayService.StreakToText(streak, context.NumberFormat, false);
-                pageString.AppendLine(streakText);
-
+                pageEntries.Add(entry.ToString());
                 counter++;
             }
 
-            var pageFooter = new StringBuilder();
-            pageFooter.Append($"Page {pageCounter}/{streakPages.Count}");
-
-            if (!string.IsNullOrWhiteSpace(artist))
-            {
-                pageFooter.Append($" - Filtering to artist '{artist}'");
-            }
-
-            if (editMode)
-            {
-                pageFooter.AppendLine();
-                pageFooter.Append($"Editmode enabled - Use the trash button to delete streaks");
-            }
-
-            pages.Add(new PageBuilder()
-                .WithDescription(pageString.ToString())
-                .WithAuthor(response.EmbedAuthor)
-                .WithFooter(pageFooter.ToString()));
-            pageCounter++;
+            pages.Add(pageEntries);
         }
 
-        if (pages.Count == 1)
+        if (streakPages.Count == 1)
         {
-            response.ResponseType = ResponseType.Embed;
-            response.Embed.Description = pages[0].Description;
-            response.EmbedAuthor = response.EmbedAuthor;
-            response.EmbedFooter = response.EmbedFooter;
+            response.ComponentsContainer.WithAccentColor(DiscordConstants.LastFmColorRed);
+            response.ComponentsContainer.WithTextDisplay(title);
+
+            foreach (var entry in pages[0])
+            {
+                response.ComponentsContainer.WithSeparator();
+                response.ComponentsContainer.WithTextDisplay(entry);
+            }
+
+            var footer = PageFooter(1);
+            if (footer != null)
+            {
+                response.ComponentsContainer.WithSeparator();
+                response.ComponentsContainer.WithTextDisplay(footer);
+            }
 
             if (editMode)
             {
-                response.Components = new ActionRowProperties()
-                    .WithButton(null, InteractionConstants.DeleteStreak, ButtonStyle.Secondary, EmojiProperties.Standard("🗑️"));
+                var deleteRow = new ActionRowProperties();
+                deleteRow.AddComponents(new ButtonProperties(InteractionConstants.DeleteStreak,
+                    EmojiProperties.Standard("🗑️"), ButtonStyle.Secondary));
+                response.ComponentsContainer.WithActionRow(deleteRow);
             }
 
             return response;
         }
 
-        response.ComponentPaginator = StringService.BuildComponentPaginator(pages,
-            editMode ? InteractionConstants.DeleteStreak : null, editMode ? EmojiProperties.Standard("🗑️") : null);
+        response.ResponseType = ResponseType.Paginator;
+        response.ComponentPaginator = new ComponentPaginatorBuilder()
+            .WithPageFactory(GeneratePage)
+            .WithPageCount(streakPages.Count)
+            .WithActionOnTimeout(ActionOnStop.DisableInput);
 
         return response;
+
+        string PageFooter(int pageNumber)
+        {
+            var pageFooter = new StringBuilder();
+            if (streakPages.Count > 1)
+            {
+                pageFooter.Append($"-# Page {pageNumber}/{streakPages.Count}");
+            }
+
+            if (!string.IsNullOrWhiteSpace(artist))
+            {
+                pageFooter.Append(pageFooter.Length > 0 ? " - " : "-# ");
+                pageFooter.Append($"Filtering to artist '{artist}'");
+            }
+
+            if (editMode)
+            {
+                if (pageFooter.Length > 0)
+                {
+                    pageFooter.AppendLine();
+                }
+
+                pageFooter.Append("-# Editmode enabled - Use the trash button to delete streaks");
+            }
+
+            return pageFooter.Length > 0 ? pageFooter.ToString() : null;
+        }
+
+        IPage GeneratePage(IComponentPaginator p)
+        {
+            var container = new ComponentContainerProperties();
+
+            container.WithAccentColor(DiscordConstants.LastFmColorRed);
+            container.WithTextDisplay(title);
+
+            foreach (var entry in pages[p.CurrentPageIndex])
+            {
+                container.WithSeparator();
+                container.WithTextDisplay(entry);
+            }
+
+            container.WithSeparator();
+            container.WithTextDisplay(PageFooter(p.CurrentPageIndex + 1));
+
+            var paginationRow = new ActionRowProperties()
+                .AddFirstButton(p, style: ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.PagesFirst))
+                .AddPreviousButton(p, style: ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.PagesPrevious))
+                .AddNextButton(p, style: ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.PagesNext))
+                .AddLastButton(p, style: ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.PagesLast));
+
+            if (editMode)
+            {
+                paginationRow.AddComponents(new ButtonProperties(InteractionConstants.DeleteStreak,
+                    EmojiProperties.Standard("🗑️"), ButtonStyle.Secondary));
+            }
+            else if (streakPages.Count >= 10)
+            {
+                paginationRow.AddJumpButton(p, style: ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.PagesGoTo));
+            }
+
+            container.WithActionRow(paginationRow);
+
+            return new PageBuilder()
+                .WithAllowedMentions(AllowedMentionsProperties.None)
+                .WithMessageFlags(MessageFlags.IsComponentsV2)
+                .WithComponents([container])
+                .Build();
+        }
     }
 
     public async Task<ResponseModel> DeleteStreakAsync(
@@ -2303,6 +2373,7 @@ public class PlayBuilder
             page = (totalMatches - 1) / pageSize;
             pageStart = page * pageSize;
         }
+
         var rows = fullResults.Skip(pageStart).Take(pageSize).ToList();
         var hasNext = pageStart + pageSize < totalMatches;
 
@@ -2469,6 +2540,7 @@ public class PlayBuilder
                 };
                 container.WithTextDisplay(StringService.TrackToLinkedStringWithTimestamp(recent).TrimEnd());
             }
+
             return;
         }
 

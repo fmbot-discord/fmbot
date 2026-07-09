@@ -17,6 +17,7 @@ using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using FMBot.Persistence.Repositories;
+using Humanizer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
@@ -365,7 +366,7 @@ public class PlayService
         await using var db = await this._contextFactory.CreateDbContextAsync();
         return await db.UserStreaks
             .Where(w => w.UserId == userId)
-            .Where(w => w.ArtistName != null || w.AlbumName != null || w.TrackName != null)
+            .Where(w => w.ArtistName != null || w.AlbumName != null || w.TrackName != null || w.GenreStreaks != null)
             .OrderByDescending(o => o.ArtistPlaycount.HasValue)
             .ThenByDescending(o => o.ArtistPlaycount)
             .ToListAsync();
@@ -469,11 +470,156 @@ public class PlayService
         return streak;
     }
 
+    private const int GenreStreakChunkSize = 1000;
+
+    public static List<GenreStreakCandidate> SeedGenreStreakCandidates(List<string> seedGenres, DateTime streakStarted)
+    {
+        if (seedGenres == null || seedGenres.Count == 0)
+        {
+            return [];
+        }
+
+        return seedGenres
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Select(s => new GenreStreakCandidate
+            {
+                GenreName = s,
+                Playcount = 1,
+                Alive = true,
+                StreakStarted = streakStarted
+            })
+            .ToList();
+    }
+
+    public static bool WalkGenreStreak(IReadOnlyList<UserPlay> plays, List<GenreStreakCandidate> candidates,
+        IReadOnlyDictionary<int, List<string>> genreMap)
+    {
+        if (candidates.Count == 0)
+        {
+            return false;
+        }
+
+        foreach (var play in plays)
+        {
+            HashSet<string> playGenres = null;
+            if (play.ArtistId.HasValue && genreMap.TryGetValue(play.ArtistId.Value, out var genres))
+            {
+                playGenres = new HashSet<string>(genres, StringComparer.OrdinalIgnoreCase);
+            }
+
+            var anyAlive = false;
+            foreach (var candidate in candidates)
+            {
+                if (!candidate.Alive)
+                {
+                    continue;
+                }
+
+                if (playGenres != null && playGenres.Contains(candidate.GenreName))
+                {
+                    candidate.Playcount++;
+                    if (play.TimePlayed < candidate.StreakStarted)
+                    {
+                        candidate.StreakStarted = play.TimePlayed;
+                    }
+
+                    anyAlive = true;
+                }
+                else
+                {
+                    candidate.Alive = false;
+                }
+            }
+
+            if (!anyAlive)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public async Task ApplyGenreStreaks(UserStreak streak, RecentTrack lastPlay, ICollection<UserPlay> lastPlays)
+    {
+        if (streak == null || lastPlay?.ArtistName == null || lastPlays.Count == 0)
+        {
+            return;
+        }
+
+        var seedGenres = await this._genreService.GetGenresForArtist(lastPlay.ArtistName);
+        var candidates = SeedGenreStreakCandidates(seedGenres,
+            lastPlay.TimePlayed ?? DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc));
+
+        if (candidates.Count == 0)
+        {
+            return;
+        }
+
+        var lastPlaysList = lastPlays
+            .OrderByDescending(o => o.TimePlayed)
+            .Where(w => !lastPlay.TimePlayed.HasValue || w.TimePlayed < lastPlay.TimePlayed.Value)
+            .ToList();
+
+        var startIndex = lastPlay.NowPlaying ? 1 : 0;
+        var genreMap = new Dictionary<int, List<string>>();
+
+        for (var i = startIndex; i < lastPlaysList.Count; i += GenreStreakChunkSize)
+        {
+            var chunk = lastPlaysList.GetRange(i, Math.Min(GenreStreakChunkSize, lastPlaysList.Count - i));
+
+            var newArtistIds = chunk
+                .Where(w => w.ArtistId.HasValue && !genreMap.ContainsKey(w.ArtistId.Value))
+                .Select(s => s.ArtistId.Value)
+                .Distinct()
+                .ToList();
+
+            if (newArtistIds.Count != 0)
+            {
+                var newGenres = await this._genreService.GetGenresByArtistIds(newArtistIds);
+                foreach (var (artistId, artistGenres) in newGenres)
+                {
+                    genreMap[artistId] = artistGenres;
+                }
+            }
+
+            if (!WalkGenreStreak(chunk, candidates, genreMap))
+            {
+                break;
+            }
+        }
+
+        var qualifying = candidates
+            .Where(w => w.Playcount >= 2)
+            .OrderByDescending(o => o.Playcount)
+            .ToList();
+
+        if (qualifying.Count == 0)
+        {
+            return;
+        }
+
+        streak.GenreStreaks = qualifying
+            .Select(s => new UserGenreStreak
+            {
+                GenreName = s.GenreName,
+                Playcount = s.Playcount
+            })
+            .ToList();
+
+        var earliestStart = qualifying.Min(m => m.StreakStarted);
+        if (earliestStart < streak.StreakStarted)
+        {
+            streak.StreakStarted = earliestStart;
+        }
+    }
+
     public static bool StreakExists(UserStreak streak)
     {
         if (streak.ArtistName == null &&
             streak.AlbumName == null &&
-            streak.TrackName == null)
+            streak.TrackName == null &&
+            (streak.GenreStreaks == null || streak.GenreStreaks.Count == 0))
         {
             return false;
         }
@@ -488,6 +634,11 @@ public class PlayService
             return false;
         }
 
+        if (streak.GenreStreaks?.Any(a => a.Playcount >= Constants.StreakSaveThreshold) == true)
+        {
+            return true;
+        }
+
         if (streak.ArtistPlaycount is < Constants.StreakSaveThreshold &&
             streak.AlbumPlaycount is < Constants.StreakSaveThreshold &&
             streak.TrackPlaycount is < Constants.StreakSaveThreshold)
@@ -499,6 +650,36 @@ public class PlayService
     }
 
     public static string StreakToText(UserStreak streak, NumberFormat numberFormat, bool includeStart = true)
+    {
+        var description = new StringBuilder();
+
+        var musicStreaks = MusicStreaksToText(streak, numberFormat);
+        if (musicStreaks != null)
+        {
+            description.Append(musicStreaks);
+        }
+
+        var genreStreaks = GenreStreaksToText(streak, numberFormat);
+        if (genreStreaks != null)
+        {
+            description.Append(genreStreaks);
+        }
+
+        if (description.Length == 0)
+        {
+            return "No active streak found.";
+        }
+
+        if (includeStart)
+        {
+            description.AppendLine();
+            description.AppendLine(StreakStartedToText(streak));
+        }
+
+        return description.ToString();
+    }
+
+    public static string MusicStreaksToText(UserStreak streak, NumberFormat numberFormat)
     {
         var description = new StringBuilder();
         if (streak.ArtistName != null && streak.ArtistPlaycount.HasValue)
@@ -534,21 +715,33 @@ public class PlayService
                 $"{GetEmojiForStreakCount(streak.TrackPlaycount.Value)} {streak.TrackPlaycount.Format(numberFormat)} {StringExtensions.GetPlaysString(streak.TrackPlaycount)}");
         }
 
-        if (description.Length == 0)
+        return description.Length > 0 ? description.ToString() : null;
+    }
+
+    public static string GenreStreaksToText(UserStreak streak, NumberFormat numberFormat)
+    {
+        if (streak.GenreStreaks == null || streak.GenreStreaks.Count == 0)
         {
-            return "No active streak found.";
+            return null;
         }
 
-        if (includeStart)
+        var description = new StringBuilder();
+        foreach (var genreStreak in streak.GenreStreaks.OrderByDescending(o => o.Playcount).Take(3))
         {
-            var specifiedDateTime = DateTime.SpecifyKind(streak.StreakStarted, DateTimeKind.Utc);
-            var dateValue = ((DateTimeOffset)specifiedDateTime).ToUnixTimeSeconds();
-
-            description.AppendLine();
-            description.AppendLine($"Streak started <t:{dateValue}:R>.");
+            description.AppendLine(
+                $"` Genre:` **{genreStreak.GenreName.Transform(To.TitleCase)}** - " +
+                $"{GetEmojiForStreakCount(genreStreak.Playcount)} {genreStreak.Playcount.Format(numberFormat)} {StringExtensions.GetPlaysString(genreStreak.Playcount)}");
         }
 
         return description.ToString();
+    }
+
+    public static string StreakStartedToText(UserStreak streak)
+    {
+        var specifiedDateTime = DateTime.SpecifyKind(streak.StreakStarted, DateTimeKind.Utc);
+        var dateValue = ((DateTimeOffset)specifiedDateTime).ToUnixTimeSeconds();
+
+        return $"Streak started <t:{dateValue}:R>.";
     }
 
     public async Task<string> UpdateOrInsertStreak(UserStreak currentStreak)
@@ -562,7 +755,7 @@ public class PlayService
         var existingStreak = await db.UserStreaks.FirstOrDefaultAsync(f =>
             f.UserId == currentStreak.UserId &&
             f.StreakStarted == currentStreak.StreakStarted &&
-            (f.ArtistName != null || f.AlbumName != null || f.TrackName != null));
+            (f.ArtistName != null || f.AlbumName != null || f.TrackName != null || f.GenreStreaks != null));
 
         if (existingStreak == null)
         {
@@ -577,6 +770,7 @@ public class PlayService
         existingStreak.AlbumPlaycount = currentStreak.AlbumPlaycount;
         existingStreak.TrackName = currentStreak.TrackName;
         existingStreak.TrackPlaycount = currentStreak.TrackPlaycount;
+        existingStreak.GenreStreaks = currentStreak.GenreStreaks;
         existingStreak.StreakEnded = currentStreak.StreakEnded;
 
         db.Entry(existingStreak).State = EntityState.Modified;

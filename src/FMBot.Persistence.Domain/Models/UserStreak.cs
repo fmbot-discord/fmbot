@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using FMBot.Domain.Models;
 
 namespace FMBot.Persistence.Domain.Models;
 
@@ -18,6 +20,8 @@ public class UserStreak
 
     public string ArtistName { get; set; }
     public int? ArtistPlaycount { get; set; }
+
+    public List<UserGenreStreak> GenreStreaks { get; set; }
 
     public DateTime StreakStarted { get; set; }
     public DateTime StreakEnded { get; set; }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Text.Json;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
@@ -371,6 +372,12 @@ namespace FMBot.Persistence.EntityFrameWork
 
                 entity.Property(e => e.TrackName)
                     .HasColumnType("citext");
+
+                entity.Property(e => e.GenreStreaks)
+                    .HasColumnType("jsonb")
+                    .HasConversion(
+                        v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null),
+                        v => JsonSerializer.Deserialize<List<UserGenreStreak>>(v, (JsonSerializerOptions)null));
 
                 entity.HasOne(u => u.User)
                     .WithMany(a => a.Streaks)
