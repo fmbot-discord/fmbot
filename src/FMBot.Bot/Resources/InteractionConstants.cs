@@ -115,6 +115,10 @@ public static class InteractionConstants
 
     public const string DeleteStreak = "user-streak-delete";
     public const string DeleteStreakModal = "user-streak-delete-modal";
+    public const string DeleteAllStreaks = "user-streak-delete-all";
+    public const string DeleteAllStreaksConfirmed = "user-streak-delete-all-confirmed";
+    public const string RestoreStreakHistory = "user-streak-restore";
+    public const string RestoreStreakHistoryConfirmed = "user-streak-restore-confirmed";
 
     public const string TrackPreview = "track-preview";
     public const string TrackLyrics = "track-lyrics";

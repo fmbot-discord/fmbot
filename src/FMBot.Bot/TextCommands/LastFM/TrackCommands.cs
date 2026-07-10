@@ -103,7 +103,7 @@ public class TrackCommands(
     [Command("trackdetails", "td", "trackdata", "trackmetadata", "tds")]
     [Summary("Shows metadata for current track or the one you're searching for.")]
     [Examples(
-        "tp",
+        "td",
         "trackdetails",
         "td Mac DeMarco Here Comes The Cowboy")]
     [UsernameSetRequired]
@@ -476,6 +476,9 @@ public class TrackCommands(
     }
 
     [Command("eurovision", "ev", "esc", "eurovisie", "eurovisionsongcontest", "songcontest")]
+    [Summary("Shows Eurovision Song Contest results for a year, or a specific country.")]
+    [Examples("eurovision", "ev", "eurovision 2023", "eurovision netherlands 2024")]
+    [CommandCategories(CommandCategory.Tracks)]
     public async Task EurovisionAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -570,7 +573,7 @@ public class TrackCommands(
     [Summary("Lyrics for a track you're currently listening to or searching for")]
     [Examples(
         "lyrics",
-        "l",
+        "lyr",
         "lyrics The Beatles Let It Be",
         "lyrics Daft Punk | Get Lucky")]
     [UsernameSetRequired]

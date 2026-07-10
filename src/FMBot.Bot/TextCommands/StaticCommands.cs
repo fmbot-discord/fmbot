@@ -729,6 +729,7 @@ public class StaticCommands(
 
     [Command("fullhelp")]
     [Summary("Displays all available commands.")]
+    [CommandCategories(CommandCategory.Other)]
     public async Task FullHelpAsync()
     {
         try

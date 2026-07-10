@@ -125,9 +125,10 @@ public class GuildCommands(
     }
 
     [Command("servermode", "guildmode")]
-    [Summary("Sets the forced .fm mode for the server.\n\n" +
-             "To view current settings, use `{{prfx}}servermode info`")]
+    [Summary("Sets the forced .fm mode for your server.\n\n" +
+             "To view current settings, use `servermode info`")]
     [Options("Modes: embedtiny/embedmini/embedfull/textmini/textfull")]
+    [Examples("servermode", "servermode info", "servermode embedfull", "servermode textmini")]
     [GuildOnly]
     [CommandCategories(CommandCategory.ServerSettings)]
     public async Task SetServerModeAsync([CommandParameter(Remainder = true)] string unused = null)

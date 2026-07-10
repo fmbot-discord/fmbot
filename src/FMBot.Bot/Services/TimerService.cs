@@ -571,7 +571,7 @@ public class TimerService : IDisposable
                 await this._featuredService.ScrobbleTrack(this._client.GetCurrentUser()!.Id, newFeatured);
             }
 
-            _ = this._webhookService.SendFeaturedWebhooks(newFeatured, accentColor);
+            _ = this._webhookService.SendFeaturedWebhooks(newFeatured, accentColor, this._client.Rest);
         }
 
         Log.Information($"{nameof(CheckForNewFeatured)}: Setting new featured in bot");
@@ -704,7 +704,7 @@ public class TimerService : IDisposable
             var accentColor = await albumService.GetAlbumAccentColor(
                 guildFeatured.ImageUrl, guildFeatured.AlbumName, guildFeatured.ArtistName);
 
-            await this._webhookService.SendGuildFeaturedWebhooks(guild.GuildId, featuredView, accentColor);
+            await this._webhookService.SendGuildFeaturedWebhooks(guild.GuildId, featuredView, accentColor, this._client.Rest);
 
             await this._featuredService.SetGuildFeatured(guildFeatured);
 

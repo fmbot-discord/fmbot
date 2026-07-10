@@ -63,7 +63,10 @@ public class CountryCommands(
 
     [Command("countrychart", "cc", "worldmap", "artistmap")]
     [Summary("Generates a map of the location from your top artists.")]
+    [Options("Themes: `dark` (default), `light`, `ocean`, `synthwave`", Constants.CompactTimePeriodList, Constants.UserMentionExample)]
+    [Examples("cc", "countrychart", "cc synthwave", "worldmap ocean monthly", "cc light @user")]
     [UsernameSetRequired]
+    [CommandCategories(CommandCategory.Charts, CommandCategory.Genres)]
     public async Task CountryChartAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         _ = this.Context.Channel?.TriggerTypingAsync()!;
@@ -94,10 +97,12 @@ public class CountryCommands(
         }
     }
 
-    [Command("country", "countries", "from")]
+    [Command("country", "from")]
     [Summary("Shows country information for an artist, or top artists for a specific country")]
+    [Examples("country", "country Japan", "from", "from Radiohead")]
     [UsernameSetRequired]
     [SupportsPagination]
+    [CommandCategories(CommandCategory.Genres)]
     public async Task CountryInfoAsync([CommandParameter(Remainder = true)] string countryOptions = null)
     {
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);

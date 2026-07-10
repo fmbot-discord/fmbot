@@ -24,6 +24,7 @@ public class PlayInteractions(
     UserService userService,
     SettingService settingService,
     PlayBuilder playBuilder,
+    PlayService playService,
     RecapBuilders recapBuilders,
     InteractiveService interactivity,
     IMemoryCache cache)
@@ -54,6 +55,259 @@ public class PlayInteractions(
 
         await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
         await this.Context.LogCommandUsedAsync(response, userService);
+    }
+
+    [ComponentInteraction(InteractionConstants.RestoreStreakHistory)]
+    [UsernameSetRequired]
+    public async Task RestoreStreakHistoryAsync(string discordUserId)
+    {
+        try
+        {
+            var ownerDiscordUserId = ulong.Parse(discordUserId);
+            if (this.Context.User.Id != ownerDiscordUserId)
+            {
+                await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                    .WithContent("Only the user this streak history belongs to can restore their past streaks.")
+                    .WithFlags(MessageFlags.Ephemeral)));
+                return;
+            }
+
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+            if (!SupporterService.IsSupporter(contextUser.UserType))
+            {
+                var supporterRow = new ActionRowProperties();
+                supporterRow.AddComponents(new ButtonProperties(
+                    InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "streak-restore"),
+                    Constants.GetSupporterButton, ButtonStyle.Primary));
+
+                await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                    .WithEmbeds([
+                        new EmbedProperties()
+                            .WithDescription(
+                                "To restore your past streaks, we need to scan your lifetime Last.fm history. Your lifetime history and more are only available for supporters.")
+                            .WithColor(DiscordConstants.WarningColorOrange)
+                    ])
+                    .WithComponents([supporterRow])
+                    .WithFlags(MessageFlags.Ephemeral)));
+                return;
+            }
+
+            var existingStreaks = await playService.GetStreaks(contextUser.UserId);
+            if (existingStreaks.Count > 0)
+            {
+                var confirmRow = new ActionRowProperties();
+                confirmRow.AddComponents(new ButtonProperties(
+                    $"{InteractionConstants.RestoreStreakHistoryConfirmed}:{discordUserId}",
+                    "Confirm restore", ButtonStyle.Primary));
+
+                await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                    .WithEmbeds([
+                        new EmbedProperties()
+                            .WithDescription(
+                                $"You currently have {existingStreaks.Count} saved {(existingStreaks.Count == 1 ? "streak" : "streaks")}. " +
+                                "Restoring will scan your lifetime listening history and add streaks that were never saved. Your existing streaks won't be changed.")
+                            .WithColor(DiscordConstants.InformationColorBlue)
+                    ])
+                    .WithComponents([confirmRow])
+                    .WithFlags(MessageFlags.Ephemeral)));
+                return;
+            }
+
+            await RespondAsync(InteractionCallback.DeferredModifyMessage);
+            _ = this.Context.DisableInteractionButtons(
+                specificButtonOnly: $"{InteractionConstants.RestoreStreakHistory}:{discordUserId}",
+                addLoaderToSpecificButton: true);
+
+            var restoredStreaks = await playService.RestoreStreakHistory(contextUser.UserId);
+
+            var userSettings =
+                await settingService.GetUser(null, contextUser, this.Context.Guild, this.Context.User, true);
+
+            var response =
+                await playBuilder.StreakHistoryAsync(new ContextModel(this.Context, contextUser), userSettings);
+
+            await this.Context.UpdateInteractionEmbed(response, interactivity, false);
+            await this.Context.LogCommandUsedAsync(response, userService);
+
+            var followUp = new ResponseModel
+            {
+                ResponseType = ResponseType.Text,
+                Text = GetRestoreResultText(restoredStreaks)
+            };
+
+            await this.Context.SendFollowUpResponse(interactivity, followUp, userService, ephemeral: true);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.RestoreStreakHistoryConfirmed)]
+    [UsernameSetRequired]
+    public async Task RestoreStreakHistoryConfirmedAsync(string discordUserId)
+    {
+        try
+        {
+            var ownerDiscordUserId = ulong.Parse(discordUserId);
+            if (this.Context.User.Id != ownerDiscordUserId)
+            {
+                await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                    .WithContent("Only the user this streak history belongs to can restore their past streaks.")
+                    .WithFlags(MessageFlags.Ephemeral)));
+                return;
+            }
+
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+            if (!SupporterService.IsSupporter(contextUser.UserType))
+            {
+                return;
+            }
+
+            await RespondAsync(InteractionCallback.DeferredModifyMessage);
+            _ = this.Context.DisableInteractionButtons(
+                specificButtonOnly: $"{InteractionConstants.RestoreStreakHistoryConfirmed}:{discordUserId}",
+                addLoaderToSpecificButton: true);
+
+            var restoredStreaks = await playService.RestoreStreakHistory(contextUser.UserId);
+
+            await this.Context.Interaction.ModifyResponseAsync(e =>
+            {
+                e.Embeds =
+                [
+                    new EmbedProperties()
+                        .WithDescription(GetRestoreResultText(restoredStreaks))
+                        .WithColor(restoredStreaks == null
+                            ? DiscordConstants.WarningColorOrange
+                            : DiscordConstants.SuccessColorGreen)
+                ];
+                e.Components = [];
+            });
+
+            var response = new ResponseModel
+            {
+                ResponseType = ResponseType.Text,
+                Text = GetRestoreResultText(restoredStreaks)
+            };
+
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
+    private static string GetRestoreResultText(int? restoredStreaks)
+    {
+        return restoredStreaks switch
+        {
+            null => "A streak restore is already running for your account. Please wait for it to complete.",
+            0 => "No missing streaks found in your listening history.\n" +
+                 "-# Enable editmode on your streak history to delete streaks you don't want. For example: `.streaks edit`",
+            _ =>
+                $"Restored {restoredStreaks} {(restoredStreaks == 1 ? "streak" : "streaks")} from your listening history.\n" +
+                "-# Enable editmode on your streak history to delete streaks you don't want. For example: `.streaks edit`"
+        };
+    }
+
+    [ComponentInteraction(InteractionConstants.DeleteAllStreaks)]
+    [UsernameSetRequired]
+    public async Task DeleteAllStreaksAsync(string discordUserId)
+    {
+        try
+        {
+            var ownerDiscordUserId = ulong.Parse(discordUserId);
+            if (this.Context.User.Id != ownerDiscordUserId)
+            {
+                await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                    .WithContent("Only the user this streak history belongs to can delete their streaks.")
+                    .WithFlags(MessageFlags.Ephemeral)));
+                return;
+            }
+
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+            var existingStreaks = await playService.GetStreaks(contextUser.UserId);
+
+            if (existingStreaks.Count == 0)
+            {
+                await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                    .WithContent("You have no saved streaks to delete.")
+                    .WithFlags(MessageFlags.Ephemeral)));
+                return;
+            }
+
+            var confirmRow = new ActionRowProperties();
+            confirmRow.AddComponents(new ButtonProperties(
+                $"{InteractionConstants.DeleteAllStreaksConfirmed}:{discordUserId}",
+                "Confirm deletion", ButtonStyle.Danger));
+
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithEmbeds([
+                    new EmbedProperties()
+                        .WithDescription(
+                            $"This will permanently delete all {existingStreaks.Count} of your saved {(existingStreaks.Count == 1 ? "streak" : "streaks")}. This cannot be undone.")
+                        .WithColor(DiscordConstants.WarningColorOrange)
+                ])
+                .WithComponents([confirmRow])
+                .WithFlags(MessageFlags.Ephemeral)));
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.DeleteAllStreaksConfirmed)]
+    [UsernameSetRequired]
+    public async Task DeleteAllStreaksConfirmedAsync(string discordUserId)
+    {
+        try
+        {
+            var ownerDiscordUserId = ulong.Parse(discordUserId);
+            if (this.Context.User.Id != ownerDiscordUserId)
+            {
+                await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                    .WithContent("Only the user this streak history belongs to can delete their streaks.")
+                    .WithFlags(MessageFlags.Ephemeral)));
+                return;
+            }
+
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+
+            await RespondAsync(InteractionCallback.DeferredModifyMessage);
+            _ = this.Context.DisableInteractionButtons(
+                specificButtonOnly: $"{InteractionConstants.DeleteAllStreaksConfirmed}:{discordUserId}",
+                addLoaderToSpecificButton: true);
+
+            var deletedStreaks = await playService.DeleteAllStreaks(contextUser.UserId);
+
+            var resultText =
+                $"🗑 Deleted {deletedStreaks} saved {(deletedStreaks == 1 ? "streak" : "streaks")}.";
+
+            await this.Context.Interaction.ModifyResponseAsync(e =>
+            {
+                e.Embeds =
+                [
+                    new EmbedProperties()
+                        .WithDescription(resultText)
+                        .WithColor(DiscordConstants.SuccessColorGreen)
+                ];
+                e.Components = [];
+            });
+
+            var response = new ResponseModel
+            {
+                ResponseType = ResponseType.Text,
+                Text = resultText
+            };
+
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
     }
 
     [ComponentInteraction(InteractionConstants.RandomMilestone)]

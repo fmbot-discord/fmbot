@@ -31,6 +31,7 @@ public class SpotifyRemoteCommands(
 
     [Command("queue", "rq", "q")]
     [Summary("Queues a track on your Spotify")]
+    [Examples("queue", "rq", "queue Tame Impala Borderline")]
     [UsernameSetRequired]
     [SpotifyConnectedRequired]
     [CommandCategories(CommandCategory.ThirdParty)]
@@ -131,6 +132,7 @@ public class SpotifyRemoteCommands(
 
     [Command("play", "resume", "rcplay")]
     [Summary("Plays a track on your Spotify, or resumes playback when no track is given")]
+    [Examples("play", "play Tame Impala Borderline")]
     [UsernameSetRequired]
     [SpotifyConnectedRequired]
     [CommandCategories(CommandCategory.ThirdParty)]
@@ -209,6 +211,7 @@ public class SpotifyRemoteCommands(
 
     [Command("rl", "rclike", "rcl", "spotifylike", "rclove", "spotifylove")]
     [Summary("Adds a track to your Spotify liked songs")]
+    [Examples("rl", "rl Tame Impala Borderline")]
     [UsernameSetRequired]
     [SpotifyConnectedRequired]
     [CommandCategories(CommandCategory.ThirdParty)]
@@ -217,8 +220,9 @@ public class SpotifyRemoteCommands(
         await LikeOrUnlike(searchValue, false);
     }
 
-    [Command("rul", "rcunlike", "rcul", "spotifyunlike", "rclove", "spotifylove")]
+    [Command("rul", "rcunlike", "rcul", "spotifyunlike", "rcunlove", "spotifyunlove")]
     [Summary("Removes a track from your Spotify liked songs")]
+    [Examples("rul", "rul Tame Impala Borderline")]
     [UsernameSetRequired]
     [SpotifyConnectedRequired]
     [CommandCategories(CommandCategory.ThirdParty)]
@@ -229,6 +233,7 @@ public class SpotifyRemoteCommands(
 
     [Command("remote", "rc", "spotifyconnect")]
     [Summary("Opens the Spotify remote, or use `remote disconnect` to unlink your Spotify. This is a remote only — it does not scrobble or track your listening.")]
+    [Examples("remote", "remote disconnect")]
     [UsernameSetRequired]
     [SpotifyConnectedRequired]
     [CommandCategories(CommandCategory.ThirdParty)]

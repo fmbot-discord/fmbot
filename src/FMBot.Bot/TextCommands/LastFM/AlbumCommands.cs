@@ -256,7 +256,7 @@ public class AlbumCommands(
 
     [Command("friendwhoknowsalbum", "fwa", "fwka", "fwkab", "fwab")]
     [Summary("Who of your friends listen to an album")]
-    [Examples("fwa", "fwka COMA", "friendwhoknows", "friendwhoknowsalbum the beatles abbey road",
+    [Examples("fwa", "fwka COMA", "friendwhoknowsalbum", "friendwhoknowsalbum the beatles abbey road",
         "friendwhoknowsalbum Metallica & Lou Reed | Lulu")]
     [UsernameSetRequired]
     [RequiresIndex]

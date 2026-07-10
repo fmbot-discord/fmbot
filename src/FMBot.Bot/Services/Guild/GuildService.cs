@@ -1551,21 +1551,30 @@ public class GuildService(
     {
         foreach (var emoteString in reactions)
         {
-            if (emoteString.Length is 1 or 2 or 3)
-            {
-                var emote = new ReactionEmojiProperties(emoteString);
-                await message.AddReactionAsync(emote);
-            }
-            else
-            {
-                // Custom emote format: <:name:id> or <a:name:id>
-                var parts = emoteString.Trim('<', '>').Split(':');
-                var name = parts[^2];
-                var id = ulong.Parse(parts[^1]);
-                var emote = new ReactionEmojiProperties(name, id);
-                await message.AddReactionAsync(emote);
-            }
+            await message.AddReactionAsync(ToReactionEmoji(emoteString));
         }
+    }
+
+    public static async Task AddReactionsAsync(RestClient client, ulong channelId, ulong messageId, IEnumerable<string> reactions)
+    {
+        foreach (var emoteString in reactions)
+        {
+            await client.AddMessageReactionAsync(channelId, messageId, ToReactionEmoji(emoteString));
+        }
+    }
+
+    private static ReactionEmojiProperties ToReactionEmoji(string emoteString)
+    {
+        if (emoteString.Length is 1 or 2 or 3)
+        {
+            return new ReactionEmojiProperties(emoteString);
+        }
+
+        // Custom emote format: <:name:id> or <a:name:id>
+        var parts = emoteString.Trim('<', '>').Split(':');
+        var name = parts[^2];
+        var id = ulong.Parse(parts[^1]);
+        return new ReactionEmojiProperties(name, id);
     }
 
 

@@ -169,6 +169,7 @@ public class UserCommands(
     [Examples("userreactions :PagChomp: :PensiveBlob:", "userreactions 😀 😯 🥵", "userreactions 😀 😯 :PensiveBlob:",
         "userreactions")]
     [UsernameSetRequired]
+    [CommandCategories(CommandCategory.UserSettings)]
     [SupporterExclusive("Supporters can set their own emote reactions used globally")]
     public async Task SetUserReactionsAsync([CommandParameter(Remainder = true)] string emojis = null)
     {
@@ -453,9 +454,9 @@ public class UserCommands(
     }
 
     [Command("fmmode")]
-    [Summary("Sends you a dm so you can configure your `fm` command.\n\n" +
-             "Servers can override your mode with `{{prfx}}servermode`.")]
-    [Examples("mode")]
+    [Summary("Sends you a DM so you can configure your `fm` command.\n\n" +
+             "Servers can override your mode with `servermode`.")]
+    [Examples("fmmode")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.UserSettings)]
     public async Task ModeAsync([CommandParameter(Remainder = true)] string _ = null)
@@ -727,7 +728,9 @@ public class UserCommands(
 
 
     [Command("linkedroles", "linkedrole", "updatelinkedroles", "updatelinkedrole")]
+    [Summary("Updates your Discord linked roles connection with .fmbot.")]
     [UsernameSetRequired]
+    [CommandCategories(CommandCategory.UserSettings)]
     public async Task UpdateLinkedRoles([CommandParameter(Remainder = true)] string trackValues = null)
     {
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -745,6 +748,7 @@ public class UserCommands(
         "Shortcuts are a feature exclusive to Supporters. Shortcuts are stored in-memory across all bot instances to ensure command handling remains fast, so there is limited availability.")]
     [Examples("yo` > `fm textoneline", "progress` > `chart 5x5 2025 skip")]
     [UsernameSetRequired]
+    [CommandCategories(CommandCategory.UserSettings)]
     public async Task ShortcutsAsync([CommandParameter(Remainder = true)] string _ = null)
     {
         try
