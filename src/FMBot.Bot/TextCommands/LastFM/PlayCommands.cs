@@ -43,8 +43,9 @@ public class PlayCommands(
 
     [Command("discoverydate", "dd", "datediscovered", "datediscovery", "first", "firstlistened")]
     [Summary("Shows the date you discovered the artist, album, and track")]
+    [Examples("dd", "discoverydate", "dd @user", "discoverydate lfm:fm-bot")]
     [UsernameSetRequired]
-    [CommandCategories(CommandCategory.Tracks)]
+    [CommandCategories(CommandCategory.Tracks, CommandCategory.Albums, CommandCategory.Artists)]
     [SupporterExclusive(
         "To see when you've discovered this artist, album and track we need to store your lifetime Last.fm history. Your lifetime history and more are only available for supporters")]
     public async Task DateDiscoveredAsync([CommandParameter(Remainder = true)] string options = null)
@@ -80,8 +81,9 @@ public class PlayCommands(
 
     [Command("lastlistened", "last", "ll", "lastlisten", "lastplayed", "lastheard")]
     [Summary("Shows the date you last listened to the artist, album, and track")]
+    [Examples("last", "lastlistened", "last @user", "lastlistened lfm:fm-bot")]
     [UsernameSetRequired]
-    [CommandCategories(CommandCategory.Tracks)]
+    [CommandCategories(CommandCategory.Tracks, CommandCategory.Albums, CommandCategory.Artists)]
     [SupporterExclusive(
         "To see when you last listened to this artist, album and track we need to store your lifetime Last.fm history. Your lifetime history and more are only available for supporters")]
     public async Task LastListenedAsync([CommandParameter(Remainder = true)] string options = null)
@@ -118,6 +120,7 @@ public class PlayCommands(
     [Command("fm", "np", "qm", "wm", "em", "rm", "tm", "ym", "om", "pm", "gm", "sm", "hm", "jm", "km",
         "lm", "zm", "xm", "cm", "vm", "bm", "nm", "mm", "nowplaying", "ɯɟ")]
     [Summary("Shows you or someone else's current track")]
+    [Examples("fm", "np", "fm @user", "fm lfm:fm-bot")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks)]
     [SupporterEnhanced(
@@ -545,6 +548,8 @@ public class PlayCommands(
 
     [Command("streaks", "strs", "combos", "cbs", "streakhistory", "combohistory", "combolist", "streaklist")]
     [Summary("Shows you your past streaks")]
+    [Options("Artist name to filter to", "`edit` - Enable editmode to delete streaks", Constants.UserMentionExample)]
+    [Examples("streaks", "strs", "streaks radiohead", "streakhistory edit", "streaks @user")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Albums, CommandCategory.Artists, CommandCategory.Tracks)]
     [SupporterEnhanced(
@@ -576,11 +581,12 @@ public class PlayCommands(
 
     [Command("playleaderboard", "sblb", "scrobblelb", "scrobbleleaderboard")]
     [Summary("Shows users with the most plays in your server")]
+    [Examples("playleaderboard", "sblb")]
     [UsernameSetRequired]
     [GuildOnly]
     [SupportsPagination]
     [RequiresIndex]
-    [CommandCategories(CommandCategory.Crowns)]
+    [CommandCategories(CommandCategory.WhoKnows)]
     public async Task PlayLeaderboardAsync([CommandParameter(Remainder = true)] string options = null)
     {
         try
@@ -606,11 +612,12 @@ public class PlayCommands(
 
     [Command("timeleaderboard", "playtimeleaderboard", "listeningtimeleaderboard", "ptlb", "ltlb", "tlb", "sleepscrobblers")]
     [Summary("Shows users with the most playtime in your server")]
+    [Examples("timeleaderboard", "tlb")]
     [UsernameSetRequired]
     [GuildOnly]
     [SupportsPagination]
     [RequiresIndex]
-    [CommandCategories(CommandCategory.Crowns)]
+    [CommandCategories(CommandCategory.WhoKnows)]
     public async Task TimeLeaderboardAsync([CommandParameter(Remainder = true)] string options = null)
     {
         try

@@ -121,7 +121,7 @@ public class StaticBuilders
                                       "-# Play unlimited Jumble and Pixel Jumble games, get better quality output on `.judge`, and add more friends.");
 
             container.WithTextDisplay("**<:discoveries:1145740579284713512> Go back in time**\n" +
-                                      "-# See exactly when you discovered and re-discovered artists, albums, and tracks with the exclusive `.discoveries`, `.gaps`, `.discoverydate` and `.last` commands.");
+                                      "-# See exactly when you discovered and re-discovered artists, albums, and tracks with the exclusive `.discoveries`, `.gaps`, `.discoverydate` and `.last` commands, and restore past streaks in `.streaks`.");
 
             container.WithTextDisplay("**⭐ Exclusive supporter perks**\n" +
                                       $"-# Show your support with a badge, gain access to a private [Discord role and channel](https://discord.gg/fmbot), and a higher chance to be featured on Supporter Sunday (next up in {FeaturedService.GetDaysUntilNextSupporterSunday()} {StringExtensions.GetDaysString(FeaturedService.GetDaysUntilNextSupporterSunday())}).");

@@ -30,6 +30,7 @@ public class AppleMusicCommands(
 
     [Command("applemusic", "am", "apple")]
     [Summary("Shares a link to an Apple Music track based on what a user is listening to or searching for")]
+    [Examples("applemusic", "am", "applemusic Deftones Change")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.ThirdParty)]
     public async Task AppleMusicAsync([CommandParameter(Remainder = true)] string searchValue = null)

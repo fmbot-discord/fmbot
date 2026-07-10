@@ -31,7 +31,8 @@ public class GeniusCommands(
     private InteractiveService Interactivity { get; } = interactivity;
 
     [Command("genius", "gen")]
-    [Summary("Shares a link to the Genius lyrics based on what a user is listening to or what the user is searching for.")]
+    [Summary("Shares a link to Genius lyrics based on what a user is listening to or searching for")]
+    [Examples("genius", "gen", "genius Tame Impala The Less I Know The Better")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.ThirdParty)]
     public async Task GeniusAsync([CommandParameter(Remainder = true)] string searchValue = null)

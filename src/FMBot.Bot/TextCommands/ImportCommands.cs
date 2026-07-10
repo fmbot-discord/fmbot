@@ -65,7 +65,7 @@ public class ImportCommands(
 
     [Command("importmodify", "modifyimport", "importsmodify", "modifyimports")]
     [Summary("Allows you to modify your .fmbot imports")]
-    [CommandCategories(CommandCategory.UserSettings)]
+    [CommandCategories(CommandCategory.Importing)]
     [UsernameSetRequired]
     [SupporterExclusive("Only supporters can import and access their Spotify or Apple Music history")]
     public async Task ModifyImportAsync([CommandParameter(Remainder = true)] string confirmation = null)

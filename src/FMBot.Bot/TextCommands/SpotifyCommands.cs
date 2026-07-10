@@ -32,6 +32,7 @@ public class SpotifyCommands(
 
     [Command("spotify", "sp", "s", "spotifyfind", "spotifysearch")]
     [Summary("Shares a link to a Spotify track based on what a user is listening to or searching for")]
+    [Examples("spotify", "sp", "spotify Tame Impala The Less I Know The Better")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.ThirdParty)]
     public async Task SpotifyAsync([CommandParameter(Remainder = true)] string searchValue = null)
@@ -139,6 +140,7 @@ public class SpotifyCommands(
 
     [Command("spotifyalbum", "spab")]
     [Summary("Shares a link to a Spotify album based on what a user is listening to or searching for")]
+    [Examples("spotifyalbum", "spab", "spotifyalbum Deftones White Pony")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.ThirdParty)]
     public async Task SpotifyAlbumAsync([CommandParameter(Remainder = true)] string searchValue = null)
@@ -229,6 +231,7 @@ public class SpotifyCommands(
 
     [Command("spotifyartist", "spa")]
     [Summary("Shares a link to a Spotify artist based on what a user is listening to or searching for")]
+    [Examples("spotifyartist", "spa", "spotifyartist Fleetwood Mac")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.ThirdParty)]
     public async Task SpotifyArtistAsync([CommandParameter(Remainder = true)] string searchValue = null)

@@ -27,6 +27,7 @@ public class YoutubeCommands(
 
     [Command("youtube", "yt", "y", "youtubesearch", "ytsearch", "yts")]
     [Summary("Shares a link to a YouTube video based on what a user is listening to or searching for")]
+    [Examples("youtube", "yt", "yt The Beatles Yesterday")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.ThirdParty)]
     public async Task YoutubeAsync([CommandParameter(Remainder = true)] string searchValue = null)

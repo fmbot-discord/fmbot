@@ -64,9 +64,9 @@ public class GenreCommands(
         }
     }
 
-    [Command("genre", "genreinfo", "genres", "gi", "g")]
+    [Command("genre", "genreinfo", "gi", "g")]
     [Summary("Shows genre information for an artist, or top artist for a specific genre")]
-    [Examples("genre", "genres hip hop, electronic", "g", "genre Indie Soul", "genre The Beatles")]
+    [Examples("genre", "genre hip hop, electronic", "g", "genre Indie Soul", "genre The Beatles")]
     [UsernameSetRequired]
     [SupportsPagination]
     [CommandCategories(CommandCategory.Genres)]
@@ -185,7 +185,7 @@ public class GenreCommands(
     [Examples("fwg", "fwg pop", "friendwhoknowgenre", "friendwhoknowgenre pov: indie")]
     [UsernameSetRequired]
     [RequiresIndex]
-    [CommandCategories(CommandCategory.Artists, CommandCategory.WhoKnows, CommandCategory.Friends)]
+    [CommandCategories(CommandCategory.Genres, CommandCategory.WhoKnows, CommandCategory.Friends)]
     public async Task FriendWhoKnowsAsync([CommandParameter(Remainder = true)] string genreValues = null)
     {
         _ = this.Context.Channel?.TriggerTypingAsync()!;

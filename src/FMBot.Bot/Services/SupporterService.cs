@@ -205,6 +205,7 @@ public class SupporterService
         backInTime.AppendLine("- `.discoveries` & `.gaps` — View your recently (re-)discovered artists");
         backInTime.AppendLine("- `.discoverydate` / `.dd` — View when you discovered an artist, album, and track");
         backInTime.AppendLine("- `.last` — View when you last listened to an artist, album, and track");
+        backInTime.AppendLine("- `.streaks` — Restore past streaks from your lifetime listening history");
         backInTime.AppendLine("- `.artist`, `.album`, `.track` — See discovery dates");
         container.AddComponent(new TextDisplayProperties(backInTime.ToString()));
         container.AddComponent(new ComponentSeparatorProperties());

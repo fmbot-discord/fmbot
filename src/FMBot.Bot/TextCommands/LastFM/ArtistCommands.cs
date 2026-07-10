@@ -173,7 +173,7 @@ public class ArtistCommands(
     [Examples(
         "ap",
         "artistplays",
-        "albumplays @user",
+        "artistplays @user",
         "ap lfm:fm-bot",
         "artistplays Mall Grab @user")]
     [UsernameSetRequired]
@@ -284,7 +284,7 @@ public class ArtistCommands(
     [Command("discoveries", "d", "discovered", "discovery", "artistdiscoveries")]
     [Summary("Artists you've recently discovered")]
     [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample, Constants.EmbedSizeExample)]
-    [Examples("d", "discovered", "ta a lfm:fm-bot", "topartists weekly @user", "ta bb xl")]
+    [Examples("d", "discovered", "d lfm:fm-bot", "discoveries monthly @user", "d xl")]
     [UsernameSetRequired]
     [SupportsPagination]
     [CommandCategories(CommandCategory.Artists)]
