@@ -7,6 +7,8 @@ using System.Text;
 using System.Threading.Tasks;
 using Dapper;
 using FMBot.Bot.Extensions;
+using FMBot.Bot.Services.Guild;
+using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
@@ -30,6 +32,7 @@ public class FeaturedService
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
     private readonly CensorService _censorService;
     private readonly UserService _userService;
+    private readonly GuildService _guildService;
     private readonly IMemoryCache _cache;
     private readonly BotSettings _botSettings;
 
@@ -37,6 +40,7 @@ public class FeaturedService
         IDbContextFactory<FMBotDbContext> contextFactory,
         CensorService censorService,
         UserService userService,
+        GuildService guildService,
         IMemoryCache cache,
         ILastfmRepository lastfmRepository,
         IOptions<BotSettings> botSettings
@@ -46,6 +50,7 @@ public class FeaturedService
         this._contextFactory = contextFactory;
         this._censorService = censorService;
         this._userService = userService;
+        this._guildService = guildService;
         this._cache = cache;
         this._lastfmRepository = lastfmRepository;
         this._botSettings = botSettings.Value;
@@ -368,7 +373,7 @@ public class FeaturedService
 
         try
         {
-            var user = await GetGuildUserToFeatureAsync(guild.GuildId);
+            var user = await GetGuildUserToFeatureAsync(guild);
             if (user == null)
             {
                 return null;
@@ -468,32 +473,48 @@ public class FeaturedService
         return null;
     }
 
-    private async Task<User> GetGuildUserToFeatureAsync(int guildId)
+    private async Task<User> GetGuildUserToFeatureAsync(Persistence.Domain.Models.Guild guild)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
-        var recentlyFeaturedUserIds = await db.GuildFeaturedLogs
-            .AsQueryable()
-            .Where(w => w.GuildId == guildId &&
-                        w.DateTime > DateTime.UtcNow.AddHours(-6) &&
-                        w.UserId != null)
-            .Select(s => s.UserId.Value)
-            .ToListAsync();
+        var guildUsers = await this._guildService.GetGuildUsers(guild.DiscordGuildId);
+        var (_, filteredGuildUsers) = WhoKnowsService.FilterGuildUsers(guildUsers, guild, 0);
 
+        var hasActivityThreshold = guild.ActivityThresholdDays.HasValue || guild.UserActivityThresholdDays.HasValue;
         var filterDate = DateTime.UtcNow.AddDays(-5);
-        var eligibleUsers = await db.GuildUsers
-            .AsNoTracking()
-            .Where(w => w.GuildId == guildId &&
-                        w.User.Blocked != true &&
-                        ((w.User.LastUsed != null && w.User.LastUsed > filterDate) ||
+        var eligibleUserIds = filteredGuildUsers.Values
+            .Where(w => w.Bot != true &&
+                        (hasActivityThreshold ||
+                         (w.LastUsed != null && w.LastUsed > filterDate) ||
                          (w.LastMessage != null && w.LastMessage > filterDate)))
-            .Select(s => s.User)
+            .Select(s => s.UserId)
+            .ToList();
+
+        if (eligibleUserIds.Count == 0)
+        {
+            return null;
+        }
+
+        var eligibleUsers = await db.Users
+            .AsNoTracking()
+            .Where(w => eligibleUserIds.Contains(w.UserId) &&
+                        w.Blocked != true)
             .ToListAsync();
 
         if (eligibleUsers.Count == 0)
         {
             return null;
         }
+
+        var featuredsToExclude = Math.Min(20, eligibleUsers.Count / 2);
+        var recentlyFeaturedUserIds = await db.GuildFeaturedLogs
+            .AsQueryable()
+            .Where(w => w.GuildId == guild.GuildId &&
+                        w.UserId != null)
+            .OrderByDescending(o => o.DateTime)
+            .Select(s => s.UserId.Value)
+            .Take(featuredsToExclude)
+            .ToListAsync();
 
         var users = eligibleUsers
             .Where(w => !recentlyFeaturedUserIds.Contains(w.UserId))

@@ -2185,7 +2185,7 @@ public class UserBuilder
             var previousUpdateValue = ((DateTimeOffset)previousUpdate).ToUnixTimeSeconds();
 
             updatedDescription.AppendLine(
-                $"Nothing new found on [your Last.fm profile]({LastfmUrlExtensions.GetUserUrl(context.ContextUser.UserNameLastFM)}) since the last check <t:{previousUpdateValue}:R>.");
+                $"Nothing new found on [your Last.fm profile]({LastfmUrlExtensions.GetUserUrl(context.ContextUser.UserNameLastFM)}) since the last time we checked <t:{previousUpdateValue}:R>.");
 
             if (update.Content?.RecentTracks != null && update.Content.RecentTracks.Any())
             {
@@ -2201,8 +2201,17 @@ public class UserBuilder
                     }
 
                     updatedDescription.AppendLine();
-                    updatedDescription.AppendLine(
-                        $"Last.fm not keeping track of your Spotify properly? Try the instructions in `{context.Prefix}outofsync` for help.");
+                    if (latestScrobble?.TimePlayed < DateTime.UtcNow.AddHours(-3))
+                    {
+                        updatedDescription.AppendLine(
+                            "Using Spotify? Your connection to Last.fm might have expired, which stops scrobbling completely. " +
+                            "Reconnect by pressing **Disconnect** and then **Connect** next to 'Spotify Scrobbling' in [your Last.fm settings](https://www.last.fm/settings/applications).");
+                    }
+                    else
+                    {
+                        updatedDescription.AppendLine(
+                            $"Last.fm not keeping track of your Spotify properly? Try the instructions in `{context.Prefix}outofsync` for help.");
+                    }
                 }
             }
             else

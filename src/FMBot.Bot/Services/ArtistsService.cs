@@ -223,7 +223,7 @@ public class ArtistsService
                 return new ArtistSearch(null, response);
             }
 
-            return new ArtistSearch(artistCall.Content, response);
+            return new ArtistSearch(artistCall.Content, response, latestScrobble: lastPlayedTrack);
         }
     }
 

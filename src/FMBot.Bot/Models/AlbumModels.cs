@@ -69,13 +69,14 @@ public class WhoKnowsGlobalAlbumDto
 
 public class AlbumSearch
 {
-    public AlbumSearch(AlbumInfo album, ResponseModel response, int? randomAlbumPosition = null, long? randomAlbumPlaycount = null)
+    public AlbumSearch(AlbumInfo album, ResponseModel response, int? randomAlbumPosition = null, long? randomAlbumPlaycount = null, RecentTrack latestScrobble = null)
     {
         this.Album = album;
         this.Response = response;
         this.IsRandom = randomAlbumPosition.HasValue && randomAlbumPlaycount.HasValue;
         this.RandomAlbumPosition = randomAlbumPosition + 1;
         this.RandomAlbumPlaycount = randomAlbumPlaycount;
+        this.LatestScrobble = latestScrobble;
     }
 
     public AlbumInfo Album { get; set; }
@@ -84,6 +85,7 @@ public class AlbumSearch
     public bool IsRandom { get; set; }
     public int? RandomAlbumPosition { get; set; }
     public long? RandomAlbumPlaycount { get; set; }
+    public RecentTrack LatestScrobble { get; set; }
 }
 
 public class AlbumEnrichmentRow

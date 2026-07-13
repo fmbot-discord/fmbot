@@ -11,6 +11,7 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain;
 using FMBot.Domain.Extensions;
+using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
@@ -28,18 +29,20 @@ public class StaticBuilders
     private readonly UserService _userService;
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
     private readonly FaqService _faqService;
+    private readonly IDataSourceFactory _dataSourceFactory;
 
 
     public StaticBuilders(SupporterService supporterService, UserService userService,
-        IDbContextFactory<FMBotDbContext> contextFactory, FaqService faqService)
+        IDbContextFactory<FMBotDbContext> contextFactory, FaqService faqService, IDataSourceFactory dataSourceFactory)
     {
         this._supporterService = supporterService;
         this._userService = userService;
         this._contextFactory = contextFactory;
         this._faqService = faqService;
+        this._dataSourceFactory = dataSourceFactory;
     }
 
-    public static ResponseModel OutOfSync(
+    public async Task<ResponseModel> OutOfSync(
         ContextModel context)
     {
         var response = new ResponseModel
@@ -52,27 +55,59 @@ public class StaticBuilders
         container.WithTextDisplay("### Using Spotify and tracking is out of sync?");
 
         var intro = new StringBuilder();
-        intro.AppendLine(
-            $".fmbot uses [your Last.fm account]({LastfmUrlExtensions.GetUserUrl(context.ContextUser?.UserNameLastFM) ?? "https://last.fm/user/_"}) for knowing what you listen to. ");
-        intro.AppendLine(
-            $"Last.fm and Spotify sometimes have issues keeping up with your current song, which can cause `{context.Prefix}fm` and other commands to lag behind the song you're currently listening to.");
-        intro.AppendLine();
         intro.Append(
-            "**.fmbot is not affiliated with Last.fm**. Your music is tracked by Last.fm, and not by .fmbot. ");
+            $".fmbot uses [your Last.fm account]({LastfmUrlExtensions.GetUserUrl(context.ContextUser?.UserNameLastFM) ?? "https://last.fm/user/_"}) for knowing what you listen to.");
+
+        if (context.ContextUser?.UserNameLastFM != null)
+        {
+            var recentTracks = await this._dataSourceFactory.GetRecentTracksAsync(
+                context.ContextUser.UserNameLastFM, useCache: false, sessionKey: context.ContextUser.SessionKeyLastFm);
+
+            if (recentTracks.Success && recentTracks.Content?.RecentTracks != null &&
+                recentTracks.Content.RecentTracks.Any(a => a.NowPlaying))
+            {
+                intro.Append(
+                    " The last scrobble on your profile is **currently playing**, so it looks like everything is working well.");
+            }
+            else
+            {
+                var lastScrobble = recentTracks.Success
+                    ? recentTracks.Content?.RecentTracks?
+                        .Where(w => w.TimePlayed.HasValue)
+                        .MaxBy(o => o.TimePlayed)
+                    : null;
+
+                if (lastScrobble is { TimePlayed: not null })
+                {
+                    var timePlayed = DateTime.SpecifyKind(lastScrobble.TimePlayed.Value, DateTimeKind.Utc);
+                    var unixTime = ((DateTimeOffset)timePlayed).ToUnixTimeSeconds();
+                    var style = timePlayed > DateTime.UtcNow.AddHours(-12) ? "t" : "f";
+                    intro.Append($" The last scrobble on your profile was <t:{unixTime}:{style}>, about <t:{unixTime}:R>.");
+                }
+            }
+        }
+
+        intro.AppendLine();
+        intro.AppendLine();
         intro.AppendLine(
-            "This means that this is a Last.fm issue and **not an .fmbot issue**. __We can't fix it for you__, but we can give you tips that worked for others.");
+            "**.fmbot is not affiliated with Last.fm**. Sync and scrobbling issues are Last.fm issues and **not .fmbot issues**, so __we can't fix them for you__.");
 
         container.WithTextDisplay(intro.ToString());
         container.WithSeparator();
 
+        var expiredConnection = new StringBuilder();
+        expiredConnection.AppendLine("**Spotify stopped scrobbling completely?**");
+        expiredConnection.AppendLine(
+            "Spotify expires the Last.fm connection every 6 months. Press **Disconnect** and then **Connect** next to 'Spotify Scrobbling' in [your Last.fm settings](https://www.last.fm/settings/applications).");
+
+        container.WithTextDisplay(expiredConnection.ToString());
+        container.WithSeparator();
+
         var thingsToTry = new StringBuilder();
-        thingsToTry.AppendLine("Things you can try:");
-        thingsToTry.AppendLine("- Restarting your Spotify application");
+        thingsToTry.AppendLine("**Still not working after reconnecting?**");
         thingsToTry.AppendLine(
-            "- Disconnecting and **reconnecting Spotify in [your Last.fm settings](https://www.last.fm/settings/applications)**");
-        thingsToTry.AppendLine();
-        thingsToTry.AppendLine(
-            "Still not working? Check **[the complete guide for this issue on the Last.fm support forums](https://support.last.fm/t/spotify-has-stopped-scrobbling-what-can-i-do/3184)**.");
+            "Try restarting your Spotify client. Sometimes there's also other issues with Last.fm or Spotify that can cause this. " +
+            "For a comprehensive list of all solutions, please check **[the guide on the Last.fm support forums](https://support.last.fm/t/spotify-has-stopped-scrobbling-what-can-i-do/3184)**.");
 
         container.WithTextDisplay(thingsToTry.ToString());
 

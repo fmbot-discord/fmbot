@@ -373,7 +373,106 @@ public class AdminInteractions(
         var components =
             new ActionRowProperties().WithButton($"Converted to ban by {this.Context.Interaction.User.Username}",
                 customId: "1", url: null, disabled: true, style: ButtonStyle.Success);
-        await message.ModifyAsync(m => m.Components = [components]);
+        await message.ModifyAsync(m => m.Components = BuildBanStatusComponents(message, components));
+    }
+
+    [ComponentInteraction("gwk-ban-user")]
+    public async Task GwkBanUser(string userNameLastFm)
+    {
+        if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        {
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("You don't have permission to do this.")
+                .WithFlags(MessageFlags.Ephemeral)));
+            return;
+        }
+
+        var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
+
+        await RespondAsync(InteractionCallback.Modal(ModalFactory.CreateReportGlobalWhoKnowsBanModal(
+            $"gwk-ban-user-confirmed:{message?.Id ?? 0}:{userNameLastFm}")));
+    }
+
+    [ComponentInteraction("gwk-ban-user-confirmed")]
+    public async Task GwkBanUserConfirmed(string messageId, string userNameLastFm)
+    {
+        if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        {
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("You don't have permission to do this.")
+                .WithFlags(MessageFlags.Ephemeral)));
+            return;
+        }
+
+        var note = this.Context.GetModalValue("note");
+
+        var userInfo = await dataSourceFactory.GetLfmUserInfoAsync(userNameLastFm);
+        DateTimeOffset? age = null;
+        if (userInfo is { Subscriber: true })
+        {
+            age = DateTimeOffset.FromUnixTimeSeconds(userInfo.RegisteredUnix);
+        }
+
+        var bottedUser = await adminService.GetBottedUserAsync(userNameLastFm);
+        var result = bottedUser == null
+            ? await adminService.AddBottedUserAsync(userNameLastFm, note, age?.DateTime)
+            : await adminService.EnableBottedUserBanAsync(userNameLastFm, note, age?.DateTime);
+
+        if (result)
+        {
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent($"User `{userNameLastFm}` has been banned from GlobalWhoKnows.")
+                .WithFlags(MessageFlags.Ephemeral)));
+        }
+        else
+        {
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent($"Something went wrong. Try checking with `.checkbotted {userNameLastFm}`")
+                .WithFlags(MessageFlags.Ephemeral)));
+            return;
+        }
+
+        var parsedMessageId = ulong.Parse(messageId);
+        var msg = await this.Context.Channel.GetMessageAsync(parsedMessageId);
+
+        var components = new ActionRowProperties().AddComponents(new ButtonProperties("1",
+            $"Banned by {this.Context.Interaction.User.Username}", ButtonStyle.Success)
+        {
+            Disabled = true
+        });
+        await msg.ModifyAsync(m => m.Components = BuildBanStatusComponents(msg, components));
+    }
+
+    private static IMessageComponentProperties[] BuildBanStatusComponents(RestMessage message,
+        ActionRowProperties statusRow)
+    {
+        if (message.Components.OfType<ComponentContainer>().FirstOrDefault() is not { } container)
+        {
+            return [statusRow];
+        }
+
+        var rebuiltContainer = new ComponentContainerProperties
+        {
+            AccentColor = container.AccentColor
+        };
+
+        foreach (var component in container.Components)
+        {
+            switch (component)
+            {
+                case TextDisplay textDisplay:
+                    rebuiltContainer.AddComponents(new TextDisplayProperties(textDisplay.Content));
+                    break;
+                case ComponentSeparator:
+                    rebuiltContainer.AddComponents(new ComponentSeparatorProperties());
+                    break;
+                case ActionRow:
+                    rebuiltContainer.AddComponents(statusRow);
+                    break;
+            }
+        }
+
+        return [rebuiltContainer];
     }
 
     [ComponentInteraction(InteractionConstants.ModerationCommands.ReportAlbum)]

@@ -427,11 +427,10 @@ public class PlayBuilder
         if (!userSettings.DifferentUser &&
             !currentTrack.NowPlaying &&
             currentTrack.TimePlayed.HasValue &&
-            currentTrack.TimePlayed < DateTime.UtcNow.AddHours(-1) &&
-            currentTrack.TimePlayed > DateTime.UtcNow.AddDays(-5))
+            currentTrack.TimePlayed < DateTime.UtcNow.AddHours(-2))
         {
             var oosPrefix = useSmallText ? "-# " : "";
-            footerText.Append($"{oosPrefix}Using Spotify and lagging behind? Check '{context.Prefix}outofsync'");
+            footerText.Append($"{oosPrefix}Spotify not tracking properly? Check '{context.Prefix}outofsync'");
         }
 
         List<IActionRowComponentProperties> fmButtonComponents = null;

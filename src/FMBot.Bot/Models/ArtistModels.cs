@@ -106,13 +106,14 @@ public class AffinityUser
 
 public class ArtistSearch
 {
-    public ArtistSearch(ArtistInfo artist, ResponseModel response, int? randomArtistPosition = null, long? randomArtistPlaycount = null)
+    public ArtistSearch(ArtistInfo artist, ResponseModel response, int? randomArtistPosition = null, long? randomArtistPlaycount = null, RecentTrack latestScrobble = null)
     {
         this.Artist = artist;
         this.Response = response;
         this.IsRandom = randomArtistPosition.HasValue && randomArtistPlaycount.HasValue;
         this.RandomArtistPosition = randomArtistPosition + 1;
         this.RandomArtistPlaycount = randomArtistPlaycount;
+        this.LatestScrobble = latestScrobble;
     }
 
     public ArtistInfo Artist { get; set; }
@@ -121,6 +122,7 @@ public class ArtistSearch
     public bool IsRandom { get; set; }
     public int? RandomArtistPosition { get; set; }
     public long? RandomArtistPlaycount { get; set; }
+    public RecentTrack LatestScrobble { get; set; }
 }
 
 public class ArtistImageRow

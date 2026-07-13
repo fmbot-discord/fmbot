@@ -78,13 +78,14 @@ public class TrackSearchResult
 
 public class TrackSearch
 {
-    public TrackSearch(TrackInfo track, ResponseModel response, int? randomTrackPosition = null, long? randomTrackPlaycount = null)
+    public TrackSearch(TrackInfo track, ResponseModel response, int? randomTrackPosition = null, long? randomTrackPlaycount = null, RecentTrack latestScrobble = null)
     {
         this.Track = track;
         this.Response = response;
         this.IsRandom = randomTrackPosition.HasValue && randomTrackPlaycount.HasValue;
         this.RandomTrackPosition = randomTrackPosition + 1;
         this.RandomTrackPlaycount = randomTrackPlaycount;
+        this.LatestScrobble = latestScrobble;
     }
 
     public TrackInfo Track { get; set; }
@@ -93,4 +94,5 @@ public class TrackSearch
     public bool IsRandom { get; set; }
     public int? RandomTrackPosition { get; set; }
     public long? RandomTrackPlaycount { get; set; }
+    public RecentTrack LatestScrobble { get; set; }
 }

@@ -213,6 +213,104 @@ public class WhoKnowsFilterService
         return filterInfo.ToString();
     }
 
+    public async Task<BottedCheckStats> GetBottedCheckStats(int userId)
+    {
+        const string windowSql = """
+                                 WITH plays AS (
+                                     SELECT up.time_played, up.track_name, up.artist_id, NULLIF(t.duration_ms, 0)::bigint AS duration_ms
+                                     FROM user_plays AS up
+                                     LEFT JOIN tracks AS t ON t.id = up.track_id
+                                     WHERE up.user_id = @userId
+                                       AND up.play_source = 0
+                                       AND up.time_played >= now() - interval '30 days'
+                                 ),
+                                 artist_avgs AS (
+                                     SELECT t.artist_id, AVG(t.duration_ms)::bigint AS avg_duration_ms
+                                     FROM tracks AS t
+                                     WHERE t.duration_ms IS NOT NULL AND t.duration_ms != 0
+                                       AND t.artist_id IN (SELECT DISTINCT p.artist_id
+                                                           FROM plays AS p
+                                                           WHERE p.artist_id IS NOT NULL AND p.duration_ms IS NULL)
+                                     GROUP BY t.artist_id
+                                 ),
+                                 enriched AS (
+                                     SELECT p.time_played, p.track_name, p.duration_ms,
+                                            COALESCE(
+                                                p.duration_ms,
+                                                CASE
+                                                    WHEN aa.avg_duration_ms > 360000 THEN aa.avg_duration_ms - 120000
+                                                    WHEN aa.avg_duration_ms > 240000 THEN aa.avg_duration_ms - 90000
+                                                    WHEN aa.avg_duration_ms > 120000 THEN aa.avg_duration_ms - 60000
+                                                    ELSE aa.avg_duration_ms
+                                                END,
+                                                60000) AS est_duration_ms,
+                                            LAG(p.time_played) OVER (ORDER BY p.time_played) AS prev_time_played,
+                                            LAG(p.track_name) OVER (ORDER BY p.time_played) AS prev_track_name
+                                     FROM plays AS p
+                                     LEFT JOIN artist_avgs AS aa ON aa.artist_id = p.artist_id
+                                 ),
+                                 daily AS (
+                                     SELECT date_trunc('day', time_played) AS day, COUNT(*) AS day_plays
+                                     FROM plays
+                                     GROUP BY 1
+                                 )
+                                 SELECT
+                                     COUNT(*)::int AS plays_month,
+                                     COUNT(*) FILTER (WHERE time_played >= now() - interval '7 days')::int AS plays_week,
+                                     COALESCE(SUM(est_duration_ms), 0)::bigint AS ms_month,
+                                     COALESCE(SUM(est_duration_ms) FILTER (WHERE time_played >= now() - interval '7 days'), 0)::bigint AS ms_week,
+                                     COUNT(*) FILTER (WHERE duration_ms IS NULL)::int AS unknown_duration_plays,
+                                     COUNT(*) FILTER (WHERE track_name = prev_track_name AND time_played - prev_time_played <= interval '10 seconds')::int AS duplicate_plays,
+                                     COUNT(*) FILTER (WHERE duration_ms < 90000)::int AS short_track_plays,
+                                     COALESCE((SELECT MAX(day_plays) FROM daily), 0)::int AS max_plays_in_day,
+                                     (SELECT day FROM daily ORDER BY day_plays DESC LIMIT 1) AS max_plays_day,
+                                     (SELECT COUNT(*) FROM daily WHERE day_plays >= @maxPlaysPerDay)::int AS days_over_play_limit
+                                 FROM enriched
+                                 """;
+
+        const string topTracksSql = """
+                                    SELECT ut.name, ut.artist_name, ut.playcount, t.duration_ms
+                                    FROM user_tracks AS ut
+                                    LEFT JOIN tracks AS t ON t.id = ut.track_id
+                                    WHERE ut.user_id = @userId
+                                    ORDER BY ut.playcount DESC
+                                    LIMIT 3
+                                    """;
+
+        const string topShortTrackSql = """
+                                        SELECT ut.name, ut.artist_name, ut.playcount, t.duration_ms
+                                        FROM user_tracks AS ut
+                                        JOIN tracks AS t ON t.id = ut.track_id
+                                        WHERE ut.user_id = @userId AND t.duration_ms > 0 AND t.duration_ms < 90000
+                                        ORDER BY ut.playcount DESC
+                                        LIMIT 1
+                                        """;
+
+        const string topArtistSql = """
+                                    SELECT ua.name, ua.playcount
+                                    FROM user_artists AS ua
+                                    WHERE ua.user_id = @userId
+                                    ORDER BY ua.playcount DESC
+                                    LIMIT 1
+                                    """;
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        var stats = await connection.QueryFirstAsync<BottedCheckStats>(windowSql,
+            new { userId, maxPlaysPerDay = MaxAmountOfPlaysPerDay });
+
+        stats.TopTracks = (await connection.QueryAsync<BottedCheckTopTrack>(topTracksSql, new { userId })).ToList();
+        stats.TopShortTrack = await connection.QueryFirstOrDefaultAsync<BottedCheckTopTrack>(topShortTrackSql, new { userId });
+
+        var topArtist = await connection.QueryFirstOrDefaultAsync<BottedCheckTopTrack>(topArtistSql, new { userId });
+        stats.TopArtistName = topArtist?.Name;
+        stats.TopArtistPlaycount = topArtist?.Playcount ?? 0;
+
+        return stats;
+    }
+
     private async Task<List<GlobalFilterCandidate>> GetGlobalFilterCandidates(int topUserId, int botUserId)
     {
         Log.Information("GWKFilter: Getting filter candidates from userIds {topUserId} to {botUserId}", topUserId, botUserId);

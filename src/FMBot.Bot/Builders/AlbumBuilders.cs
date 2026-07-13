@@ -524,6 +524,12 @@ public class AlbumBuilders
             footer.AppendLine(guildAlsoPlaying);
         }
 
+        if (albumSearch.LatestScrobble is { NowPlaying: false, TimePlayed: not null } &&
+            albumSearch.LatestScrobble.TimePlayed < DateTime.UtcNow.AddHours(-2))
+        {
+            footer.AppendLine($"Spotify not tracking properly? Check '{context.Prefix}outofsync'");
+        }
+
         var closeFriendUserIds = await this._friendsService.GetCloseFriendUserIdsAsync(context.ContextUser);
 
         if (mode == WhoKnowsResponseMode.Pagination)

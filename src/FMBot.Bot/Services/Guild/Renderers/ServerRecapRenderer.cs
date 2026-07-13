@@ -20,20 +20,25 @@ public class ServerRecapRenderer(PlayService playService, IServiceProvider servi
     {
         var guildId = context.Autopost.GuildId;
 
-        var stats = await playService.GetGuildPlayStats(guildId, context.PeriodStart, context.PeriodEnd,
+        var statsTask = playService.GetGuildPlayStats(guildId, context.PeriodStart, context.PeriodEnd,
             context.RoleUserIds);
+        var topArtistsTask = playService.GetGuildTopArtistsPlays(guildId, context.PeriodStart,
+            OrderType.Listeners, context.PeriodEnd, userIds: context.RoleUserIds);
+        var topAlbumsTask = playService.GetGuildTopAlbumsPlays(guildId, context.PeriodStart,
+            OrderType.Listeners, null, context.PeriodEnd, 400, context.RoleUserIds);
+        var topTracksTask = playService.GetGuildTopTracksPlays(guildId, context.PeriodStart,
+            OrderType.Listeners, null, context.PeriodEnd, userIds: context.RoleUserIds);
+
+        var stats = await statsTask;
 
         if (stats == null || stats.TotalPlaycount == 0)
         {
             return null;
         }
 
-        var topArtists = await playService.GetGuildTopArtistsPlays(guildId, context.PeriodStart,
-            OrderType.Listeners, context.PeriodEnd, userIds: context.RoleUserIds);
-        var topAlbums = await playService.GetGuildTopAlbumsPlays(guildId, context.PeriodStart,
-            OrderType.Listeners, null, context.PeriodEnd, 400, context.RoleUserIds);
-        var topTracks = await playService.GetGuildTopTracksPlays(guildId, context.PeriodStart,
-            OrderType.Listeners, null, context.PeriodEnd, userIds: context.RoleUserIds);
+        var topArtists = await topArtistsTask;
+        var topAlbums = await topAlbumsTask;
+        var topTracks = await topTracksTask;
 
         var albumService = serviceProvider.GetRequiredService<AlbumService>();
         var releaseWindowStart = context.Autopost.Schedule == AutopostSchedule.Weekly

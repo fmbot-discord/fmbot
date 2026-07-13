@@ -248,7 +248,7 @@ public class AlbumService
                 return new AlbumSearch(null, response);
             }
 
-            return new AlbumSearch(albumInfo.Content, response);
+            return new AlbumSearch(albumInfo.Content, response, latestScrobble: lastPlayedTrack);
         }
 
         var albumSearch = await this.SearchAlbumInDatabase(searchValue);
