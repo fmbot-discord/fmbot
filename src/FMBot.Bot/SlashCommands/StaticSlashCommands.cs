@@ -34,7 +34,7 @@ public class StaticSlashCommands(
         bool privateResponse = true)
     {
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
-        var response = StaticBuilders.OutOfSync(new ContextModel(this.Context, contextUser));
+        var response = await staticBuilders.OutOfSync(new ContextModel(this.Context, contextUser));
 
         await this.Context.SendResponse(this.Interactivity, response, userService, ephemeral: privateResponse);
         await this.Context.LogCommandUsedAsync(response, userService);

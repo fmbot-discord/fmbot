@@ -36,6 +36,7 @@ public class UserInteractions(
     FriendsService friendsService,
     UserBuilder userBuilder,
     GuildSettingBuilder guildSettingBuilder,
+    StaticBuilders staticBuilders,
     InteractiveService interactivity,
     SettingService settingService,
     GuildService guildService,
@@ -439,7 +440,7 @@ public class UserInteractions(
                     }
                     case UserSetting.OutOfSync:
                     {
-                        response = StaticBuilders.OutOfSync(new ContextModel(this.Context, contextUser));
+                        response = await staticBuilders.OutOfSync(new ContextModel(this.Context, contextUser));
 
                         await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
                         break;

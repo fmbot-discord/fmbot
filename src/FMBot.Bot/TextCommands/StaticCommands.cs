@@ -148,7 +148,7 @@ public class StaticCommands(
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
         var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
 
-        var response = StaticBuilders.OutOfSync(new ContextModel(this.Context, prfx, userSettings));
+        var response = await staticBuilders.OutOfSync(new ContextModel(this.Context, prfx, userSettings));
 
         await this.Context.SendResponse(this.Interactivity, response, userService);
         await this.Context.LogCommandUsedAsync(response, userService);
