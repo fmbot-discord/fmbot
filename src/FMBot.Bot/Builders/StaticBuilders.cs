@@ -67,7 +67,7 @@ public class StaticBuilders
                 recentTracks.Content.RecentTracks.Any(a => a.NowPlaying))
             {
                 intro.Append(
-                    " The last scrobble on your profile is **currently playing**, so it seems like everything is working well.");
+                    " The last scrobble on your profile is **currently playing**, so it looks like everything is working well.");
             }
             else
             {

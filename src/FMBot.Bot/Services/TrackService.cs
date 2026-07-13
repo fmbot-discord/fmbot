@@ -295,10 +295,10 @@ public class TrackService
                     Loved = lastPlayedTrack.Loved,
                     AlbumCoverUrl = lastPlayedTrack.AlbumCoverUrl,
                     UserPlaycount = userPlaycount
-                }, response);
+                }, response, latestScrobble: lastPlayedTrack);
             }
 
-            return new TrackSearch(trackInfo.Content, response);
+            return new TrackSearch(trackInfo.Content, response, latestScrobble: lastPlayedTrack);
         }
 
         var trackSearch = await this.SearchTrackInDatabase(searchValue);
