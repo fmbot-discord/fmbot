@@ -319,17 +319,17 @@ public class WhoKnowsService
 
         if (settings.QualityFilterDisabled)
         {
-            footer.AppendLine($"Globally botted and filtered users are visible");
+            footer.AppendLine(context.Localize("whoknows.globalFilterDisabled"));
         }
 
         if (context.ContextUser.PrivacyLevel != PrivacyLevel.Global)
         {
-            footer.AppendLine($"You're currently not globally visible - use '{context.Prefix}privacy' to enable.");
+            footer.AppendLine(context.Localize("whoknows.notGloballyVisible", ("prefix", context.Prefix)));
         }
 
         if (settings.HidePrivateUsers)
         {
-            footer.AppendLine($"All private users are hidden from results");
+            footer.AppendLine(context.Localize("whoknows.privateUsersHidden"));
         }
 
         return footer;

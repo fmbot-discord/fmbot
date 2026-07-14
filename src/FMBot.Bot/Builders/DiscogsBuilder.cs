@@ -563,7 +563,7 @@ public class DiscogsBuilder
             ResponseType = ResponseType.Paginator,
         };
 
-        var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, artistValues,
+        var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, context.Localizer, artistValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedArtists: true,
             userId: context.ContextUser.UserId, redirectsEnabled: redirectsEnabled,
             interactionId: context.InteractionId,

@@ -50,7 +50,7 @@ public class YoutubeBuilders
             if (GenericEmbedService.RecentScrobbleCallFailed(recentTracks))
             {
                 return GenericEmbedService.RecentScrobbleCallFailedResponse(recentTracks,
-                    context.ContextUser.UserNameLastFM);
+                    context.ContextUser.UserNameLastFM, context.Localizer);
             }
 
             var currentTrack = recentTracks.Content.RecentTracks[0];

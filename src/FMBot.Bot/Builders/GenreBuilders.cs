@@ -429,7 +429,7 @@ public class GenreBuilders
             if (GenericEmbedService.RecentScrobbleCallFailed(recentTracks))
             {
                 var errorResponse = GenericEmbedService.RecentScrobbleCallFailedResponse(recentTracks,
-                    userSettings.UserNameLastFM);
+                    userSettings.UserNameLastFM, context.Localizer);
                 response.ComponentsContainer = errorResponse.ComponentsContainer;
                 response.CommandResponse = errorResponse.CommandResponse;
                 if (errorResponse.Components?.Any() == true)
@@ -1021,7 +1021,7 @@ public class GenreBuilders
         var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(context.DiscordGuild);
         if (rnd.Next(0, 10) == 1 && lastIndex < DateTime.UtcNow.AddDays(-180))
         {
-            footer.AppendLine($"Missing members? Update with {context.Prefix}refreshmembers");
+            footer.AppendLine(context.Localize("whoknows.missingMembersHint", ("prefix", context.Prefix)));
         }
 
         if (filteredUsersWithGenre.Any() && filteredUsersWithGenre.Count > 1)
@@ -1037,9 +1037,10 @@ public class GenreBuilders
             footer.AppendLine();
         }
 
-        if (filterStats.FullDescription != null)
+        var filterDescription = filterStats.GetFullDescription(context.Localizer);
+        if (filterDescription != null)
         {
-            footer.AppendLine(filterStats.FullDescription);
+            footer.AppendLine(filterDescription);
         }
 
         var closeFriendUserIds = await this._friendsService.GetCloseFriendUserIdsAsync(context.ContextUser);

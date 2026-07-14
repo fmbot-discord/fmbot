@@ -406,7 +406,7 @@ public class UserBuilder
                 "Use the buttons below to sign up or connect your existing Last.fm account.");
         }
 
-        response.Components = GenericEmbedService.UsernameNotSetErrorComponents();
+        response.Components = GenericEmbedService.UsernameNotSetErrorComponents(Localizer.ForGuild(null));
 
         return response;
     }
@@ -2067,7 +2067,7 @@ public class UserBuilder
 
         if (context.ContextUser.SessionKeyLastFm == null)
         {
-            response.Embed.SessionRequiredResponse(context.Prefix);
+            response.Embed.SessionRequiredResponse(context.Localizer);
             response.CommandResponse = CommandResponse.UsernameNotSet;
             return response;
         }
@@ -2203,7 +2203,7 @@ public class UserBuilder
 
         if (GenericEmbedService.RecentScrobbleCallFailed(update))
         {
-            return GenericEmbedService.RecentScrobbleCallFailedResponse(update, context.ContextUser.UserNameLastFM);
+            return GenericEmbedService.RecentScrobbleCallFailedResponse(update, context.ContextUser.UserNameLastFM, context.Localizer);
         }
 
         var updatedDescription = new StringBuilder();
@@ -2383,7 +2383,7 @@ public class UserBuilder
 
             if (GenericEmbedService.RecentScrobbleCallFailed(update))
             {
-                return GenericEmbedService.RecentScrobbleCallFailedResponse(update, context.ContextUser.UserNameLastFM);
+                return GenericEmbedService.RecentScrobbleCallFailedResponse(update, context.ContextUser.UserNameLastFM, context.Localizer);
             }
         }
 

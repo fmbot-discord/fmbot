@@ -137,6 +137,39 @@ Primary services: Last.fm (core), Spotify (features), Apple Music (metadata), Yo
 - Focus on service layer and business logic testing
 - Minimal integration tests due to external API dependencies
 
+## Localization
+
+User-facing strings are localized via JSON files, managed in Weblate. Weblate/glossary/rollout details live in `../LOCALIZATION_NOTES.md`. When adding or migrating user-facing strings, follow ALL of these rules:
+
+### Code API
+- In builders (with `ContextModel context`): `context.Localize("key", ("name", value))` and `context.LocalizeCount("key", count, ("name", value))`. All interpolation arg values are **strings**, pre-formatted in C#: numbers via `.Format(context.NumberFormat)`, timestamps pre-rendered as `<t:unix:D>`, names already `Sanitize`d.
+- Without a ContextModel (handlers, static helpers, background sends): `Localizer.ForGuild(guildId)` — guild id from `context.Guild?.Id` (text) or `context.Interaction.GuildId` (interactions).
+- Helpers on `Localizer`: `TimeAgo(dateTime)`, `LongListeningTime(timeSpan)`, `Ordinal(n)` (returns "5th" complete), `FormatMonthDay(date)`/`FormatMonthDayYear(date)` (culture-aware month names AND day/month order). Use these instead of `StringExtensions.GetTimeAgo`/`GetLongListeningTimeString`/`GetAmountEnd` — the English statics remain only for locale-less callers.
+- Locale resolution: explicit guild setting → `UseDiscordGuildLocale` config flag (Discord guild locale) → English. DMs are always English. Any cache that stores rendered text MUST include the locale in its key.
+
+### Key + file conventions
+- Files: `src/FMBot.Bot/Resources/Locales/{code}.json` — flat i18next v4 JSON. `en.json` is the source of truth and code-owned (changes via PRs only); other languages are Weblate-owned. Locale codes: en, pt-BR, es-ES, hi, de, pl, nl, fr, it, tr, sv-SE (Discord-supported locales only, ever).
+- Keys: flat dotted camelCase, namespaced per domain (`shared.*`, `errors.*`, `fm.*`, `artist.whoknows.*`, `footer.*`, ...). Full-sentence keys — NEVER concatenate translated fragments into a sentence (word order differs per language). Conditional sentence variants get their own keys (`titleSelf`/`titleOther`).
+- Plurals: code references the base key via `LocalizeCount`; JSON carries `key_one`/`key_other` (other languages may add `_few`/`_many` per CLDR). `{{count}}` is reserved for the plural driver and auto-formatted with the user's NumberFormat. Reuse `shared.*` plural units (plays, scrobbles, listeners, ...) when the English matches exactly.
+- Markdown stays inside JSON values (`###`, `**`, `-#`, backticks, complete links `[label]({{url}})` so labels translate). Custom emote tags (`<:name:id>`) must NEVER appear in JSON — concatenate them in C# or pass as an `{{emote}}` arg.
+- When migrating existing hardcoded strings: rendered English output must stay byte-for-byte identical (grammar fixes like "1 plays"→"1 play" only when explicitly flagged in the report).
+
+### Protected terms (never translated, stay verbatim in every language)
+Command names, WhoKnows, GlobalWhoKnows, scrobble/scrobbles/scrobbling, plays (loanword), Top (as feature prefix), .fmbot, Last.fm, Spotify and other brand names, supporter, Jumble.
+
+### Never localize
+Log messages, exception text, SQL, custom ids, cache keys, admin/censor-only strings, featured descriptions (rendered once, broadcast to all guilds), user-authored template content, autocomplete option VALUES (labels may localize later; values round-trip into English parsing), period/time input parsing.
+
+### Translation content style (for agents writing translations)
+- Informal address (du/tu/je/jij), concise natural phrasing; preserve every `{{placeholder}}` exactly.
+- Dutch specifics (reference: `nl.json`): plays/scrobbles stay English; "track" in compact stat lines but "nummer" in prose; luisteraars/artiesten/kronen; "Pagina" for page; "Aangevraagd door" for requested by; ordinals are `{{count}}e`; "uur" is uninflected in plural.
+
+### Slash command descriptions
+`src/FMBot.Bot/Resources/SlashCommandLocalizations/{locale}.json` (NetCord nested schema: `commands` → `description`/`parameters`/`subcommands`). NEVER add `name` keys — command names stay identical in every locale, and the test suite fails if one appears. `en.json` there is generated from the `[SlashCommand]` attributes: regenerate with `FMBOT_REGEN_SLASH_LOCALIZATIONS=1 dotnet test --filter EnglishBaseFileMatchesSlashCommandAttributes`. Its `CopyToOutputDirectory=Never` csproj entry must stay (bare `en` is an invalid Discord locale and breaks command registration).
+
+### Verification
+After touching locale files or adding `Localize` calls, always run `dotnet test ./src/FMBot.Tests/FMBot.Tests.csproj` — `LocalizationTests` enforce key completeness (every referenced key exists in en.json, `_one`+`_other` for count keys), per-locale placeholder subsets, plural rules, and the no-`name`-keys guard.
+
 ## Common Gotchas
 - Always check `userSettings` for null - user may not be registered with Last.fm
 - Guild-specific features require `GuildId` from context

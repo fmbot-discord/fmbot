@@ -77,7 +77,7 @@ public class SpotifySlashCommands(
                 {
                     var errorResponse =
                         GenericEmbedService.RecentScrobbleCallFailedResponse(recentScrobbles,
-                            contextUser.UserNameLastFM);
+                            contextUser.UserNameLastFM, Localizer.ForGuild(this.Context.Interaction.GuildId, discordLocale: this.Context.Interaction.GuildLocale));
 
                     await this.Context.SendFollowUpResponse(this.Interactivity, errorResponse, userService);
                     await this.Context.LogCommandUsedAsync(errorResponse, userService);

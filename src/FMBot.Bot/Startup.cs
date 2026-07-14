@@ -210,7 +210,14 @@ public class Startup
         {
             // ParameterSeparators = [] // Remove space from separators to allow multi-word aliases like "login discogs"
         }));
-        services.AddSingleton<ApplicationCommandService<ApplicationCommandContext, AutocompleteInteractionContext>>();
+        services.AddSingleton(new ApplicationCommandService<ApplicationCommandContext, AutocompleteInteractionContext>(
+            ApplicationCommandServiceConfiguration<ApplicationCommandContext>.Default with
+            {
+                LocalizationsProvider = new JsonLocalizationsProvider(new JsonLocalizationsProviderConfiguration
+                {
+                    DirectoryPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "SlashCommandLocalizations")
+                })
+            }));
         services.AddSingleton<ComponentInteractionService<ComponentInteractionContext>>();
         services.AddSingleton<ComponentInteractionService<ModalInteractionContext>>();
     }
@@ -287,6 +294,7 @@ public class Startup
             .AddSingleton<TagService>()
             .AddSingleton<IndexService, IndexService>()
             .AddSingleton<ImportService>()
+            .AddSingleton<LocalizationService>()
             .AddSingleton<MusicBotService>()
             .AddSingleton<MusicDataFactory>()
             .AddSingleton<PlayService>()

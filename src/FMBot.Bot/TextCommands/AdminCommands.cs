@@ -627,7 +627,7 @@ public class AdminCommands(
             }
 
             var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
-            var albumSearch = await albumService.SearchAlbum(new ResponseModel(), this.Context.User, albumValues,
+            var albumSearch = await albumService.SearchAlbum(new ResponseModel(), this.Context.User, Localizer.ForGuild(this.Context.Guild?.Id, discordLocale: this.Context.Guild?.PreferredLocale), albumValues,
                 userSettings.UserNameLastFM, referencedMessage: this.Context.Message.ReferencedMessage);
             if (albumSearch.Album == null)
             {
@@ -3566,7 +3566,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
 
                 var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
-                var shortTrack = await trackService.SearchTrack(response, this.Context.User, trackValues,
+                var shortTrack = await trackService.SearchTrack(response, this.Context.User, Localizer.ForGuild(this.Context.Guild?.Id, discordLocale: this.Context.Guild?.PreferredLocale), trackValues,
                     contextUser.UserNameLastFM);
                 if (shortTrack.Track == null)
                 {

@@ -133,11 +133,11 @@ public class PlayCommands(
         if (contextUser?.UserNameLastFM == null)
         {
             var discordGuildUser = this.Context.User as NetCord.GuildUser;
-            this._embed.UsernameNotSetErrorResponse(prfx,
+            this._embed.UsernameNotSetErrorResponse(Localizer.ForGuild(this.Context.Guild?.Id, discordLocale: this.Context.Guild?.PreferredLocale),
                 discordGuildUser?.GetDisplayName() ?? this.Context.User.GetDisplayName());
 
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
-                new() { Embeds = [this._embed], Components = [GenericEmbedService.UsernameNotSetErrorComponents()] });
+                new() { Embeds = [this._embed], Components = [GenericEmbedService.UsernameNotSetErrorComponents(Localizer.ForGuild(this.Context.Guild?.Id, discordLocale: this.Context.Guild?.PreferredLocale))] });
             await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.UsernameNotSet }, userService);
             return;
         }

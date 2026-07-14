@@ -76,8 +76,8 @@ public class AlbumService
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<AlbumSearch> SearchAlbum(ResponseModel response, NetCord.User discordUser, string albumValues,
-        string lastFmUserName, string sessionKey = null,
+    public async Task<AlbumSearch> SearchAlbum(ResponseModel response, NetCord.User discordUser, Localizer localizer,
+        string albumValues, string lastFmUserName, string sessionKey = null,
         string otherUserUsername = null, bool useCachedAlbums = false, int? userId = null, ulong? interactionId = null,
         RestMessage referencedMessage = null, bool redirectsEnabled = true)
     {
@@ -156,7 +156,8 @@ public class AlbumService
 
                 if (!albumInfo.Success && albumInfo.Error == ResponseStatus.MissingParameters)
                 {
-                    var desc = $"Album `{searchAlbumName}` by `{searchArtistName}` could not be found, please check your search values and try again.";
+                    var desc = localizer.Translate("album.notFoundWithValues",
+                        ("album", searchAlbumName), ("artist", searchArtistName));
                     response.Embed.WithDescription(desc);
                     response.ComponentsContainer.WithTextDisplay(desc);
                     response.CommandResponse = CommandResponse.NotFound;
@@ -166,8 +167,8 @@ public class AlbumService
 
                 if (!albumInfo.Success || albumInfo.Content == null)
                 {
-                    response.Embed.ErrorResponse(albumInfo.Error, albumInfo.Message, null, discordUser, "album");
-                    response.ComponentsContainer.WithTextDisplay(response.Embed.Description ?? "Something went wrong while trying to get album info.");
+                    response.Embed.ErrorResponse(albumInfo.Error, albumInfo.Message, null, localizer, discordUser, "album");
+                    response.ComponentsContainer.WithTextDisplay(response.Embed.Description ?? localizer.Translate("album.infoFailed"));
                     response.CommandResponse = CommandResponse.LastFmError;
                     response.ResponseType = ResponseType.Embed;
                     return new AlbumSearch(null, response);
@@ -193,7 +194,7 @@ public class AlbumService
             if (GenericEmbedService.RecentScrobbleCallFailed(recentScrobbles))
             {
                 var errorResponse =
-                    GenericEmbedService.RecentScrobbleCallFailedResponse(recentScrobbles, lastFmUserName);
+                    GenericEmbedService.RecentScrobbleCallFailedResponse(recentScrobbles, lastFmUserName, localizer);
                 return new AlbumSearch(null, errorResponse);
             }
 
@@ -206,8 +207,8 @@ public class AlbumService
 
             if (string.IsNullOrWhiteSpace(lastPlayedTrack.AlbumName))
             {
-                var desc = $"The track you're scrobbling (**{lastPlayedTrack.TrackName}** by **{lastPlayedTrack.ArtistName}**) does not have an album associated with it according to Last.fm.\n" +
-                    $"Please note that .fmbot is not associated with Last.fm.";
+                var desc = localizer.Translate("album.noAlbumOnTrack",
+                    ("track", lastPlayedTrack.TrackName), ("artist", lastPlayedTrack.ArtistName));
                 response.Embed.WithDescription(desc);
                 response.ComponentsContainer.WithTextDisplay(desc);
 
@@ -237,9 +238,8 @@ public class AlbumService
 
             if (albumInfo?.Content == null || !albumInfo.Success)
             {
-                var desc = $"Last.fm did not return a result for **{lastPlayedTrack.AlbumName}** by **{lastPlayedTrack.ArtistName}**.\n" +
-                    $"This usually happens on recently released albums or on albums by smaller artists. Please try again later.\n\n" +
-                    $"Please note that .fmbot is not associated with Last.fm.";
+                var desc = localizer.Translate("album.noLastFmResult",
+                    ("album", lastPlayedTrack.AlbumName), ("artist", lastPlayedTrack.ArtistName));
                 response.Embed.WithDescription(desc);
                 response.ComponentsContainer.WithTextDisplay(desc);
 
@@ -282,8 +282,8 @@ public class AlbumService
 
             if (albumInfo?.Content == null || !albumInfo.Success)
             {
-                response.Embed.ErrorResponse(albumInfo.Error, albumInfo.Message, null, discordUser, "album");
-                response.ComponentsContainer.WithTextDisplay(response.Embed.Description ?? "Something went wrong while trying to get album info.");
+                response.Embed.ErrorResponse(albumInfo.Error, albumInfo.Message, null, localizer, discordUser, "album");
+                response.ComponentsContainer.WithTextDisplay(response.Embed.Description ?? localizer.Translate("album.infoFailed"));
                 response.CommandResponse = CommandResponse.LastFmError;
                 response.ResponseType = ResponseType.Embed;
                 return new AlbumSearch(null, response);
@@ -292,11 +292,11 @@ public class AlbumService
             return new AlbumSearch(albumInfo.Content, response);
         }
 
-        var notFoundDesc = $"Album could not be found, please check your search values and try again.\n\nYou can also enter the exact value with the | separator. Example: `artist name | album name`.";
+        var notFoundDesc = localizer.Translate("album.notFound");
         response.Embed.WithDescription(notFoundDesc);
-        response.Embed.WithFooter($"Search value: '{searchValue}'");
+        response.Embed.WithFooter(localizer.Translate("shared.searchValue", ("value", searchValue)));
         response.ComponentsContainer.WithTextDisplay(notFoundDesc);
-        response.ComponentsContainer.WithTextDisplay($"-# Search value: '{searchValue}'");
+        response.ComponentsContainer.WithTextDisplay($"-# {localizer.Translate("shared.searchValue", ("value", searchValue))}");
         response.CommandResponse = CommandResponse.NotFound;
         response.ResponseType = ResponseType.Embed;
         return new AlbumSearch(null, response);

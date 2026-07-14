@@ -72,6 +72,7 @@ public class GuildBuilders
                                 $"Use `{context.Prefix}login` to get started, or try `{context.Prefix}refreshmembers` to refresh the cached memberlist.";
 
                     var (filterStats, filteredGuildUsers) = WhoKnowsService.FilterGuildUsers(guildUsers, guild, context.ContextUser.UserId);
+                    var filterDescription = filterStats.GetFullDescription(context.Localizer);
 
                     var userPages = filteredGuildUsers
                         .OrderByDescending(o => o.Value.LastUsed)
@@ -93,9 +94,9 @@ public class GuildBuilders
                         footer.AppendLine(
                             $"-# Page {pageCounter}/{userPages.Count} - {guildUsers.Count.Format(context.NumberFormat)} total .fmbot users in this server");
 
-                        if (filterStats.FullDescription != null)
+                        if (filterDescription != null)
                         {
-                            footer.AppendLine($"-# {filterStats.FullDescription}");
+                            footer.AppendLine($"-# {filterDescription}");
                         }
 
                         pageDescriptions.Add(crownPageString.ToString());
@@ -163,6 +164,7 @@ public class GuildBuilders
                         await this._timeService.UserPlaysToGuildLeaderboard(context.DiscordGuild, userPlays, guildUsers);
 
                     var (filterStats, filteredTopListeningTimeUsers) = WhoKnowsService.FilterWhoKnowsObjects(userListeningTime, guildUsers,guild, context.ContextUser.UserId);
+                    var filterDescription = filterStats.GetFullDescription(context.Localizer);
 
                     var ltPages = filteredTopListeningTimeUsers.Chunk(10).ToList();
 
@@ -191,10 +193,10 @@ public class GuildBuilders
                         footer.Append($"{filteredTopListeningTimeUsers.Count.Format(context.NumberFormat)} users - ");
                         footer.Append($"{filteredTopListeningTimeUsers.Sum(s => s.Playcount).Format(context.NumberFormat)} total minutes");
 
-                        if (filterStats.FullDescription != null)
+                        if (filterDescription != null)
                         {
                             footer.AppendLine();
-                            footer.Append($"-# {filterStats.FullDescription}");
+                            footer.Append($"-# {filterDescription}");
                         }
 
                         pageDescriptions.Add(ltPageString.ToString());
@@ -212,6 +214,7 @@ public class GuildBuilders
                     var topPlaycountUsers = await this._playService.GetGuildUsersTotalPlaycount(context.DiscordGuild, guildUsers, guild.GuildId);
 
                     var (filterStats, filteredPlaycountUsers) = WhoKnowsService.FilterWhoKnowsObjects(topPlaycountUsers, guildUsers,guild, context.ContextUser.UserId);
+                    var filterDescription = filterStats.GetFullDescription(context.Localizer);
 
                     var playcountPages = filteredPlaycountUsers.Chunk(10).ToList();
 
@@ -237,10 +240,10 @@ public class GuildBuilders
                         footer.Append($"{filteredPlaycountUsers.Count.Format(context.NumberFormat)} users - ");
                         footer.Append($"{filteredPlaycountUsers.Sum(s => s.Playcount).Format(context.NumberFormat)} total plays");
 
-                        if (filterStats.FullDescription != null)
+                        if (filterDescription != null)
                         {
                             footer.AppendLine();
-                            footer.Append($"-# {filterStats.FullDescription}");
+                            footer.Append($"-# {filterDescription}");
                         }
 
                         pageDescriptions.Add(playcountPageString.ToString());

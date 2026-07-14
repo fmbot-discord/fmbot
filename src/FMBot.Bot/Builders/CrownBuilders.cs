@@ -76,14 +76,14 @@ public class CrownBuilders
 
             if (GenericEmbedService.RecentScrobbleCallFailed(recentTracks))
             {
-                return GenericEmbedService.RecentScrobbleCallFailedResponse(recentTracks, context.ContextUser.UserNameLastFM);
+                return GenericEmbedService.RecentScrobbleCallFailedResponse(recentTracks, context.ContextUser.UserNameLastFM, context.Localizer);
             }
 
             var currentTrack = recentTracks.Content.RecentTracks[0];
             artistValues = currentTrack.ArtistName;
         }
 
-        var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, artistValues,
+        var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, context.Localizer, artistValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
             userId: context.ContextUser.UserId, interactionId: context.InteractionId,
             referencedMessage: context.ReferencedMessage);

@@ -384,6 +384,12 @@ public class GuildSettingInteractions(
                     await this.Context.SendResponse(interactivity, response, userService, ephemeral: false);
                 }
                     break;
+                case GuildSetting.Language:
+                {
+                    response = await guildSettingBuilder.GuildLanguage(new ContextModel(this.Context));
+                    await this.Context.SendResponse(interactivity, response, userService, ephemeral: false);
+                }
+                    break;
                 case GuildSetting.WhoKnowsActivityThreshold:
                 {
                     response =
@@ -555,6 +561,43 @@ public class GuildSettingInteractions(
             }
 
             var response = await guildSettingBuilder.GuildMode(new ContextModel(this.Context), this.Context.User);
+
+            await this.Context.UpdateInteractionEmbed(response);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.GuildLanguageSetting)]
+    [ServerStaffOnly]
+    public async Task SetGuildLanguage()
+    {
+        if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
+        {
+            await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
+            return;
+        }
+
+        var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
+        var selectedValues = stringMenuInteraction.Data.SelectedValues;
+
+        try
+        {
+            if (selectedValues.Count > 0 && Enum.TryParse(selectedValues[0], out Language language))
+            {
+                await guildService.SetGuildLanguageAsync(this.Context.Guild, language);
+                LocalizationService.StoreGuildLanguage(this.Context.Guild.Id, language);
+            }
+            else
+            {
+                await guildService.SetGuildLanguageAsync(this.Context.Guild, null);
+                LocalizationService.RemoveGuildLanguage(this.Context.Guild.Id);
+            }
+
+            var response = await guildSettingBuilder.GuildLanguage(new ContextModel(this.Context), this.Context.User);
 
             await this.Context.UpdateInteractionEmbed(response);
         }

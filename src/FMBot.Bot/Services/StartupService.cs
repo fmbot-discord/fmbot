@@ -45,6 +45,7 @@ public class StartupService
     private readonly SupporterService _supporterService;
     private readonly ChartService _chartService;
     private readonly ShortcutService _shortcutService;
+    private readonly LocalizationService _localizationService;
 
     public StartupService(
         IServiceProvider provider,
@@ -61,6 +62,7 @@ public class StartupService
         SupporterService supporterService,
         ChartService chartService,
         ShortcutService shortcutService,
+        LocalizationService localizationService,
         CommandService<CommandContext> textCommands,
         ApplicationCommandService<ApplicationCommandContext, AutocompleteInteractionContext> appCommands,
         ComponentInteractionService<ComponentInteractionContext> componentCommands)
@@ -78,6 +80,7 @@ public class StartupService
         this._supporterService = supporterService;
         this._chartService = chartService;
         this._shortcutService = shortcutService;
+        this._localizationService = localizationService;
         this._textCommands = textCommands;
         this._appCommands = appCommands;
         this._componentCommands = componentCommands;
@@ -105,6 +108,9 @@ public class StartupService
 
         Log.Information("Loading command modules");
         this._textCommands.AddModules(typeof(Program).Assembly);
+
+        Log.Information("Loading translations");
+        this._localizationService.LoadTranslations();
 
         var cachesTask = LoadInitialCaches(databaseTask);
 
@@ -149,6 +155,9 @@ public class StartupService
         Log.Information("Loading all prefixes");
         var prefixTask = this._prefixService.LoadAllPrefixes();
 
+        Log.Information("Loading all guild languages");
+        var guildLanguagesTask = this._localizationService.LoadAllGuildLanguages();
+
         Log.Information("Loading all server disabled commands");
         var guildDisabledCommandsTask = this._guildDisabledCommands.LoadAllDisabledCommands();
 
@@ -172,6 +181,7 @@ public class StartupService
 
         await Task.WhenAll(
             prefixTask,
+            guildLanguagesTask,
             guildDisabledCommandsTask,
             channelToggledCommandsTask,
             disabledChannelsTask,

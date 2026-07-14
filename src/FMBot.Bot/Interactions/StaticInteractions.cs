@@ -459,7 +459,8 @@ public class StaticInteractions(
                 category,
                 null,
                 userName,
-                this.Context.User.Id);
+                this.Context.User.Id,
+                Localizer.ForGuild(this.Context.Interaction.GuildId, discordLocale: this.Context.Interaction.GuildLocale));
 
             await this.Context.UpdateInteractionEmbed(response, interactivity, defer: false);
             await this.Context.LogCommandUsedAsync(response, userService);
@@ -495,7 +496,8 @@ public class StaticInteractions(
                 null,
                 selectedCommand,
                 userName,
-                this.Context.User.Id);
+                this.Context.User.Id,
+                Localizer.ForGuild(this.Context.Interaction.GuildId, discordLocale: this.Context.Interaction.GuildLocale));
 
             await this.Context.UpdateInteractionEmbed(response, interactivity, defer: false);
             await this.Context.LogCommandUsedAsync(response, userService);

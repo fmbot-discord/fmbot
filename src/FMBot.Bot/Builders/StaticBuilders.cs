@@ -649,7 +649,8 @@ public class StaticBuilders
         CommandCategory? selectedCategory,
         string selectedCommand,
         string userName,
-        ulong userId)
+        ulong userId,
+        Localizer localizer)
     {
         var response = new ResponseModel
         {
@@ -698,7 +699,7 @@ public class StaticBuilders
 
             if (foundCommand != null)
             {
-                var helpResponse = GenericEmbedService.HelpResponse(response.Embed, foundCommand, prefix, userName);
+                var helpResponse = GenericEmbedService.HelpResponse(response.Embed, foundCommand, prefix, userName, localizer);
                 var userSettings = await this._userService.GetUserAsync(userId);
                 var isSupporter = userSettings != null && SupporterService.IsSupporter(userSettings.UserType);
                 if (helpResponse.showPurchaseButtons && !isSupporter)

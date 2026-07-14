@@ -103,7 +103,7 @@ public class TemplateBuilders
 
         if (GenericEmbedService.RecentScrobbleCallFailed(recentTracks))
         {
-            return (GenericEmbedService.RecentScrobbleCallFailedResponse(recentTracks, context.ContextUser.UserNameLastFM), null);
+            return (GenericEmbedService.RecentScrobbleCallFailedResponse(recentTracks, context.ContextUser.UserNameLastFM, context.Localizer), null);
         }
 
         guild ??= await this._guildService.GetGuildAsync(821660544581763093);

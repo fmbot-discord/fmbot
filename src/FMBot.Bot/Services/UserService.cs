@@ -1133,7 +1133,8 @@ public class UserService
             TotalScrobbles = totalScrobbles,
             DiscordContextGuild = contextModel.DiscordGuild,
             DiscordContextUser = contextModel.DiscordUser,
-            NumberFormat = contextModel.NumberFormat
+            NumberFormat = contextModel.NumberFormat,
+            Localizer = contextModel.Localizer
         };
 
         var footer = await TemplateService.GetFooterAsync(footerOptions, footerContext);
@@ -1169,7 +1170,8 @@ public class UserService
             PlayService = this._playService,
             UserSettings = userSettings,
             TotalScrobbles = totalScrobbles,
-            NumberFormat = numberFormat
+            NumberFormat = numberFormat,
+            Localizer = Localizer.ForGuild(guild?.DiscordGuildId, numberFormat)
         };
 
         return await this._templateService.GetTemplateFmAsync(userId, footerContext);

@@ -105,7 +105,7 @@ public class AlbumBuilders
             ResponseType = ResponseType.ComponentsV2,
         };
 
-        var albumSearch = await this._albumService.SearchAlbum(response, context.DiscordUser, searchValue,
+        var albumSearch = await this._albumService.SearchAlbum(response, context.DiscordUser, context.Localizer, searchValue,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
             userId: context.ContextUser.UserId, interactionId: context.InteractionId,
             referencedMessage: context.ReferencedMessage);
@@ -174,29 +174,31 @@ public class AlbumBuilders
         }
 
         // === Section 1: Header ===
-        var albumType = databaseAlbum?.Type switch
+        var albumTypeKey = databaseAlbum?.Type switch
         {
-            "single" => "Single",
-            "compilation" => "Compilation",
-            _ => "Album"
+            "single" => "album.typeSingleBy",
+            "compilation" => "album.typeCompilationBy",
+            _ => "album.typeAlbumBy"
         };
 
         var headerSection = new StringBuilder();
         headerSection.AppendLine(albumSearch.Album.AlbumUrl != null
             ? $"## {StringExtensions.MarkdownLink(albumSearch.Album.AlbumName, albumSearch.Album.AlbumUrl)}"
             : $"## {albumSearch.Album.AlbumName}");
-        headerSection.AppendLine(albumSearch.Album.ArtistUrl != null
-            ? $"{albumType} by **{StringExtensions.MarkdownLink(albumSearch.Album.ArtistName, albumSearch.Album.ArtistUrl)}**"
-            : $"{albumType} by **{albumSearch.Album.ArtistName}**");
+        headerSection.AppendLine(context.Localize(albumTypeKey,
+            ("artist", albumSearch.Album.ArtistUrl != null
+                ? StringExtensions.MarkdownLink(albumSearch.Album.ArtistName, albumSearch.Album.ArtistUrl)
+                : albumSearch.Album.ArtistName)));
 
         if (databaseAlbum.ReleaseDate != null)
         {
-            headerSection.AppendLine($"Released on **{AlbumService.GetAlbumReleaseDate(databaseAlbum)}**");
+            headerSection.AppendLine(context.Localize("album.releasedOn",
+                ("date", AlbumService.GetAlbumReleaseDate(databaseAlbum))));
         }
 
         if (databaseAlbum?.Label != null)
         {
-            headerSection.Append($"-# Label: {databaseAlbum.Label}");
+            headerSection.Append(context.Localize("album.label", ("label", databaseAlbum.Label)));
         }
 
         if (showThumbnail)
@@ -233,12 +235,12 @@ public class AlbumBuilders
             var recentPlaycounts = await recentPlaycountsTask;
             var userStats = new StringBuilder();
 
-            var playsLine =
-                $"**{albumSearch.Album.UserPlaycount.Format(context.NumberFormat)}** {StringExtensions.GetPlaysString(albumSearch.Album.UserPlaycount)} by **{userTitle}**";
-            if (recentPlaycounts.month > 0)
-            {
-                playsLine += $" — **{recentPlaycounts.month.Format(context.NumberFormat)}** last month";
-            }
+            var playsLine = recentPlaycounts.month > 0
+                ? context.LocalizeCount("album.playsByLastMonth", albumSearch.Album.UserPlaycount.Value,
+                    ("user", userTitle),
+                    ("month", recentPlaycounts.month.Format(context.NumberFormat)))
+                : context.LocalizeCount("album.playsBy", albumSearch.Album.UserPlaycount.Value,
+                    ("user", userTitle));
 
             userStats.AppendLine(playsLine);
 
@@ -246,12 +248,16 @@ public class AlbumBuilders
             {
                 var listeningTime = await this._timeService.GetAllTimePlayTimeForAlbum(albumSearch.Album.AlbumTracks,
                     artistUserTracks, albumSearch.Album.UserPlaycount.Value);
-                userStats.Append($"**{StringExtensions.GetLongListeningTimeString(listeningTime)}** listened");
-
                 if (context.ContextUser.TotalPlaycount is > 0 && albumSearch.Album.UserPlaycount is >= 30)
                 {
-                    userStats.Append(
-                        $" — **{((decimal)albumSearch.Album.UserPlaycount.Value / context.ContextUser.TotalPlaycount.Value).FormatPercentage(context.NumberFormat)}** of all your plays");
+                    userStats.Append(context.Localize("album.listeningTimePercentage",
+                        ("time", context.Localizer.LongListeningTime(listeningTime)),
+                        ("percentage", ((decimal)albumSearch.Album.UserPlaycount.Value / context.ContextUser.TotalPlaycount.Value).FormatPercentage(context.NumberFormat))));
+                }
+                else
+                {
+                    userStats.Append(context.Localize("album.listeningTime",
+                        ("time", context.Localizer.LongListeningTime(listeningTime))));
                 }
                 userStats.AppendLine();
 
@@ -260,7 +266,9 @@ public class AlbumBuilders
                     var tracksHeard = albumSearch.Album.AlbumTracks.Count(t =>
                         artistUserTracks.Any(ut => StringExtensions.SanitizeTrackNameForComparison(t.TrackName)
                             .Equals(StringExtensions.SanitizeTrackNameForComparison(ut.Name))));
-                    userStats.AppendLine($"**{tracksHeard}/{albumSearch.Album.AlbumTracks.Count}** tracks listened");
+                    userStats.AppendLine(context.Localize("album.tracksListened",
+                        ("heard", tracksHeard.ToString()),
+                        ("total", albumSearch.Album.AlbumTracks.Count.ToString())));
                 }
             }
 
@@ -270,7 +278,7 @@ public class AlbumBuilders
                 if (firstPlay != null)
                 {
                     var firstListenValue = ((DateTimeOffset)firstPlay).ToUnixTimeSeconds();
-                    userStats.AppendLine($"Discovered <t:{firstListenValue}:D>");
+                    userStats.AppendLine(context.Localize("album.discovered", ("date", $"<t:{firstListenValue}:D>")));
                 }
 
                 if (lastPlayTask != null)
@@ -279,7 +287,7 @@ public class AlbumBuilders
                     if (lastPlay != null && (firstPlay == null || lastPlay.Value.Date > firstPlay.Value.Date))
                     {
                         var lastListenValue = ((DateTimeOffset)lastPlay).ToUnixTimeSeconds();
-                        userStats.AppendLine($"Last listened <t:{lastListenValue}:D>");
+                        userStats.AppendLine(context.Localize("album.lastListened", ("date", $"<t:{lastListenValue}:D>")));
                     }
                 }
             }
@@ -291,8 +299,8 @@ public class AlbumBuilders
                         context.DiscordGuild?.Id))
                 {
                     this._supporterService.SetGuildSupporterPromoCache(context.DiscordGuild?.Id);
-                    userStats.AppendLine(
-                        $"*[Supporters]({Constants.GetSupporterOverviewLink}) can see album discovery dates.*");
+                    userStats.AppendLine(context.Localize("album.supporterDiscoveryPromo",
+                        ("url", Constants.GetSupporterOverviewLink)));
                 }
             }
 
@@ -316,8 +324,10 @@ public class AlbumBuilders
                     var serverListeners = filteredUsersWithAlbum.Count;
                     var serverPlaycount = filteredUsersWithAlbum.Sum(a => a.Playcount);
 
-                    statsSection.AppendLine(
-                        $"**{serverPlaycount.Format(context.NumberFormat)}** {StringExtensions.GetPlaysString(serverPlaycount)} in this server by **{serverListeners.Format(context.NumberFormat)}** {StringExtensions.GetListenersString(serverListeners)}");
+                    statsSection.AppendLine(context.LocalizeCount(
+                        serverListeners == 1 ? "album.serverStatsSingleListener" : "album.serverStats",
+                        serverPlaycount,
+                        ("listeners", serverListeners.Format(context.NumberFormat))));
                 }
             }
 
@@ -330,13 +340,15 @@ public class AlbumBuilders
             }
         }
 
-        statsSection.AppendLine(
-            $"**{albumSearch.Album.TotalPlaycount.Format(context.NumberFormat)}** Last.fm {StringExtensions.GetPlaysString(albumSearch.Album.TotalPlaycount)} by **{albumSearch.Album.TotalListeners.Format(context.NumberFormat)}** {StringExtensions.GetListenersString(albumSearch.Album.TotalListeners)}");
+        statsSection.AppendLine(context.LocalizeCount(
+            albumSearch.Album.TotalListeners == 1 ? "album.globalStatsSingleListener" : "album.globalStats",
+            albumSearch.Album.TotalPlaycount,
+            ("listeners", albumSearch.Album.TotalListeners.Format(context.NumberFormat))));
 
         var metaLine = new StringBuilder();
         if (databaseAlbum?.Popularity is > 0)
         {
-            metaLine.Append($"**{databaseAlbum.Popularity}** popularity");
+            metaLine.Append(context.Localize("album.popularity", ("value", databaseAlbum.Popularity.Value.ToString())));
         }
 
         if (featuredHistory.Any() || guildFeaturedHistory is { Count: > 0 })
@@ -352,8 +364,9 @@ public class AlbumBuilders
 
         if (albumSearch.IsRandom)
         {
-            statsSection.AppendLine(
-                $"Album #{albumSearch.RandomAlbumPosition} ({albumSearch.RandomAlbumPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(albumSearch.RandomAlbumPlaycount)})");
+            statsSection.AppendLine(context.LocalizeCount("album.randomPosition",
+                albumSearch.RandomAlbumPlaycount.GetValueOrDefault(),
+                ("position", albumSearch.RandomAlbumPosition.ToString())));
         }
 
         response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
@@ -393,12 +406,12 @@ public class AlbumBuilders
         var viewingUserId = userSettings?.DiscordUserId ?? context.ContextUser.DiscordUserId;
         var actionRow = new ActionRowProperties()
             .WithButton(
-                "Tracks",
+                context.Localize("album.buttons.tracks"),
                 $"{InteractionConstants.Album.Tracks}:{databaseAlbum.Id}:{viewingUserId}:{context.ContextUser.DiscordUserId}:",
                 style: ButtonStyle.Secondary,
                 emote: EmojiProperties.Standard("🎶"))
             .WithButton(
-                "Cover",
+                context.Localize("album.buttons.cover"),
                 $"{InteractionConstants.Album.Cover}:{databaseAlbum.Id}:{viewingUserId}:{context.ContextUser.DiscordUserId}:motion:",
                 style: ButtonStyle.Secondary,
                 emote: EmojiProperties.Standard("🖼️"));
@@ -420,7 +433,7 @@ public class AlbumBuilders
             ResponseType = ResponseType.Embed,
         };
 
-        var albumSearch = await this._albumService.SearchAlbum(response, context.DiscordUser, albumValues,
+        var albumSearch = await this._albumService.SearchAlbum(response, context.DiscordUser, context.Localizer, albumValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedAlbums: true,
             userId: context.ContextUser.UserId, interactionId: context.InteractionId,
             referencedMessage: context.ReferencedMessage);
@@ -478,8 +491,8 @@ public class AlbumBuilders
 
         if (mode == WhoKnowsResponseMode.Image)
         {
-            using var image = await this._puppeteerService.GetWhoKnows("WhoKnows Album",
-                $"in <b>{context.DiscordGuild.Name}</b>", albumCoverUrl, fullAlbumName,
+            using var image = await this._puppeteerService.GetWhoKnows(context.Localize("album.whoknows.imageHeader"),
+                context.Localize("album.whoknows.imageInServer", ("server", context.DiscordGuild.Name)), albumCoverUrl, fullAlbumName,
                 filteredUsersWithAlbum, context.ContextUser.UserId, PrivacyLevel.Server, context.NumberFormat);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
@@ -490,31 +503,37 @@ public class AlbumBuilders
             return response;
         }
 
-        var title = StringExtensions.TruncateLongString($"{fullAlbumName} in {context.DiscordGuild.Name}", 255);
+        var title = StringExtensions.TruncateLongString(context.Localize("album.whoknows.title",
+            ("album", albumSearch.Album.AlbumName),
+            ("artist", albumSearch.Album.ArtistName),
+            ("server", context.DiscordGuild.Name)), 255);
 
         var footer = new StringBuilder();
 
         if (albumSearch.IsRandom)
         {
-            footer.AppendLine(
-                $"Album #{albumSearch.RandomAlbumPosition} ({albumSearch.RandomAlbumPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(albumSearch.RandomAlbumPlaycount)})");
+            footer.AppendLine(context.LocalizeCount("album.randomPosition",
+                albumSearch.RandomAlbumPlaycount.GetValueOrDefault(),
+                ("position", albumSearch.RandomAlbumPosition.ToString())));
         }
 
         var rnd = new Random();
         var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(context.DiscordGuild);
         if (rnd.Next(0, 10) == 1 && lastIndex < DateTime.UtcNow.AddDays(-180))
         {
-            footer.AppendLine($"Missing members? Update with {context.Prefix}refreshmembers");
+            footer.AppendLine(context.Localize("album.whoknows.missingMembers",
+                ("command", $"{context.Prefix}refreshmembers")));
         }
 
-        if (filterStats.FullDescription != null)
+        var filterDescription = filterStats.GetFullDescription(context.Localizer);
+        if (filterDescription != null)
         {
-            footer.AppendLine($"{filterStats.FullDescription}");
+            footer.AppendLine(filterDescription);
         }
 
         if (filterDisabled)
         {
-            footer.AppendLine("Filters disabled");
+            footer.AppendLine(context.Localize("album.whoknows.filtersDisabled"));
         }
 
         if (filteredUsersWithAlbum.Any() && filteredUsersWithAlbum.Count > 1)
@@ -523,12 +542,9 @@ public class AlbumBuilders
             var serverPlaycount = filteredUsersWithAlbum.Sum(a => a.Playcount);
             var avgServerPlaycount = filteredUsersWithAlbum.Average(a => a.Playcount);
 
-            footer.Append($"Album - ");
-            footer.Append(
-                $"{serverListeners.Format(context.NumberFormat)} {StringExtensions.GetListenersString(serverListeners)} - ");
-            footer.Append(
-                $"{serverPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(serverPlaycount)} - ");
-            footer.AppendLine($"{((int)avgServerPlaycount).Format(context.NumberFormat)} avg");
+            footer.AppendLine(context.LocalizeCount("album.whoknows.serverStats", serverPlaycount,
+                ("listeners", serverListeners.Format(context.NumberFormat)),
+                ("avg", ((int)avgServerPlaycount).Format(context.NumberFormat))));
         }
 
         var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingAlbum(context.ContextUser.UserId,
@@ -542,7 +558,8 @@ public class AlbumBuilders
         if (albumSearch.LatestScrobble is { NowPlaying: false, TimePlayed: not null } &&
             albumSearch.LatestScrobble.TimePlayed < DateTime.UtcNow.AddHours(-2))
         {
-            footer.AppendLine($"Spotify not tracking properly? Check '{context.Prefix}outofsync'");
+            footer.AppendLine(context.Localize("album.whoknows.outOfSync",
+                ("command", $"{context.Prefix}outofsync")));
         }
 
         var closeFriendUserIds = await this._friendsService.GetCloseFriendUserIdsAsync(context.ContextUser);
@@ -563,7 +580,7 @@ public class AlbumBuilders
                 PrivacyLevel.Server, context.NumberFormat, closeFriendUserIds: closeFriendUserIds);
         if (filteredUsersWithAlbum.Count == 0)
         {
-            serverUsers = "Nobody in this server (not even you) has listened to this album.";
+            serverUsers = context.Localize("album.whoknows.noListeners");
         }
 
         response.Embed.WithDescription(serverUsers);
@@ -587,7 +604,7 @@ public class AlbumBuilders
             if (PublicProperties.PremiumServers.ContainsKey(context.DiscordGuild.Id))
             {
                 var allowedRoles = new RoleMenuProperties($"{InteractionConstants.WhoKnowsAlbumRolePicker}:{databaseAlbum.Id}")
-                    .WithPlaceholder("Apply role filter..")
+                    .WithPlaceholder(context.Localize("album.whoknows.rolePickerPlaceholder"))
                     .WithMinValues(0)
                     .WithMaxValues(25);
 
@@ -614,14 +631,13 @@ public class AlbumBuilders
 
         if (context.ContextUser.Friends?.Any() != true)
         {
-            response.Embed.WithDescription("We couldn't find any friends. To add friends:\n" +
-                                           $"`{context.Prefix}addfriends {Constants.UserMentionOrLfmUserNameExample.Replace("`", "")}`\n\n" +
-                                           $"Or right-click a user, go to apps and click 'Add as friend'");
+            response.Embed.WithDescription(context.Localize("album.whoknows.noFriendsFound",
+                ("command", $"{context.Prefix}addfriends {Constants.UserMentionOrLfmUserNameExample.Replace("`", "")}")));
             response.CommandResponse = CommandResponse.NotFound;
             return response;
         }
 
-        var albumSearch = await this._albumService.SearchAlbum(response, context.DiscordUser, albumValues,
+        var albumSearch = await this._albumService.SearchAlbum(response, context.DiscordUser, context.Localizer, albumValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedAlbums: true,
             userId: context.ContextUser.UserId, interactionId: context.InteractionId,
             referencedMessage: context.ReferencedMessage);
@@ -672,7 +688,8 @@ public class AlbumBuilders
 
         if (mode == WhoKnowsResponseMode.Image)
         {
-            using var image = await this._puppeteerService.GetWhoKnows("WhoKnows Album", $"from <b>{userTitle}</b>'s friends",
+            using var image = await this._puppeteerService.GetWhoKnows(context.Localize("album.whoknows.imageHeader"),
+                context.Localize("album.whoknows.imageFromFriends", ("user", userTitle)),
                 albumCoverUrl, albumName,
                 usersWithAlbum, context.ContextUser.UserId, PrivacyLevel.Server, context.NumberFormat);
 
@@ -684,15 +701,16 @@ public class AlbumBuilders
             return response;
         }
 
-        var title = $"{albumName} with friends";
+        var title = context.Localize("album.whoknows.friendsTitle",
+            ("album", albumSearch.Album.AlbumName),
+            ("artist", albumSearch.Album.ArtistName));
 
         var footer = "";
 
         var amountOfHiddenFriends = context.ContextUser.Friends.Count(c => !c.FriendUserId.HasValue);
         if (amountOfHiddenFriends > 0)
         {
-            footer +=
-                $"\n{amountOfHiddenFriends} non-fmbot {StringExtensions.GetFriendsString(amountOfHiddenFriends)} not visible";
+            footer += "\n" + context.LocalizeCount("album.whoknows.hiddenFriends", amountOfHiddenFriends);
         }
 
         if (usersWithAlbum.Any() && usersWithAlbum.Count > 1)
@@ -701,14 +719,12 @@ public class AlbumBuilders
             var globalPlaycount = usersWithAlbum.Sum(a => a.Playcount);
             var avgPlaycount = usersWithAlbum.Average(a => a.Playcount);
 
-            footer +=
-                $"\n{globalListeners.Format(context.NumberFormat)} {StringExtensions.GetListenersString(globalListeners)} - ";
-            footer +=
-                $"{globalPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(globalPlaycount)} - ";
-            footer += $"{((int)avgPlaycount).Format(context.NumberFormat)} avg";
+            footer += "\n" + context.LocalizeCount("album.whoknows.friendsStats", globalPlaycount,
+                ("listeners", globalListeners.Format(context.NumberFormat)),
+                ("avg", ((int)avgPlaycount).Format(context.NumberFormat)));
         }
 
-        footer += $"\nFriends WhoKnow album for {userTitle}";
+        footer += "\n" + context.Localize("album.whoknows.friendsFooter", ("user", userTitle));
 
         var closeFriendUserIds = await this._friendsService.GetCloseFriendUserIdsAsync(context.ContextUser);
 
@@ -728,7 +744,7 @@ public class AlbumBuilders
                 context.NumberFormat, closeFriendUserIds: closeFriendUserIds);
         if (usersWithAlbum.Count == 0)
         {
-            serverUsers = "None of your friends have listened to this album.";
+            serverUsers = context.Localize("album.whoknows.noFriendListeners");
         }
 
         response.Embed.WithDescription(serverUsers);
@@ -756,7 +772,7 @@ public class AlbumBuilders
             ResponseType = ResponseType.Embed,
         };
 
-        var albumSearch = await this._albumService.SearchAlbum(response, context.DiscordUser, albumValues,
+        var albumSearch = await this._albumService.SearchAlbum(response, context.DiscordUser, context.Localizer, albumValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedAlbums: true,
             userId: context.ContextUser.UserId, interactionId: context.InteractionId,
             referencedMessage: context.ReferencedMessage);
@@ -821,7 +837,8 @@ public class AlbumBuilders
 
         if (settings.ResponseMode == WhoKnowsResponseMode.Image)
         {
-            using var image = await this._puppeteerService.GetWhoKnows("WhoKnows Album", $"in <b>.fmbot 🌐</b>",
+            using var image = await this._puppeteerService.GetWhoKnows(context.Localize("album.whoknows.imageHeader"),
+                context.Localize("album.whoknows.imageGlobal"),
                 albumCoverUrl, albumName,
                 filteredUsersWithAlbum, context.ContextUser.UserId, privacyLevel, context.NumberFormat,
                 hidePrivateUsers: settings.HidePrivateUsers);
@@ -834,7 +851,9 @@ public class AlbumBuilders
             return response;
         }
 
-        var title = $"{albumName} globally";
+        var title = context.Localize("album.whoknows.globalTitle",
+            ("album", albumSearch.Album.AlbumName),
+            ("artist", albumSearch.Album.ArtistName));
 
         var footer = new StringBuilder();
 
@@ -846,12 +865,9 @@ public class AlbumBuilders
             var globalPlaycount = filteredUsersWithAlbum.Sum(a => a.Playcount);
             var avgPlaycount = filteredUsersWithAlbum.Average(a => a.Playcount);
 
-            footer.Append($"Global album - ");
-            footer.Append(
-                $"{globalListeners.Format(context.NumberFormat)} {StringExtensions.GetListenersString(globalListeners)} - ");
-            footer.Append(
-                $"{globalPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(globalPlaycount)} - ");
-            footer.AppendLine($"{((int)avgPlaycount).Format(context.NumberFormat)} avg");
+            footer.AppendLine(context.LocalizeCount("album.whoknows.globalStats", globalPlaycount,
+                ("listeners", globalListeners.Format(context.NumberFormat)),
+                ("avg", ((int)avgPlaycount).Format(context.NumberFormat))));
         }
 
         var closeFriendUserIds = await this._friendsService.GetCloseFriendUserIdsAsync(context.ContextUser);
@@ -873,7 +889,7 @@ public class AlbumBuilders
             closeFriendUserIds: closeFriendUserIds);
         if (filteredUsersWithAlbum.Count == 0)
         {
-            serverUsers = "Nobody that uses .fmbot has listened to this album.";
+            serverUsers = context.Localize("album.whoknows.noGlobalListeners");
         }
 
         response.Embed.WithDescription(serverUsers);
@@ -1078,7 +1094,7 @@ public class AlbumBuilders
             ResponseType = ResponseType.ComponentsV2,
         };
 
-        var albumSearch = await this._albumService.SearchAlbum(response, context.DiscordUser, searchValue,
+        var albumSearch = await this._albumService.SearchAlbum(response, context.DiscordUser, context.Localizer, searchValue,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, userSettings.UserNameLastFm,
             userId: context.ContextUser.UserId, interactionId: context.InteractionId,
             referencedMessage: context.ReferencedMessage);
@@ -1301,7 +1317,7 @@ public class AlbumBuilders
             ResponseType = ResponseType.Text,
         };
 
-        var albumSearch = await this._albumService.SearchAlbum(response, context.DiscordUser, searchValue,
+        var albumSearch = await this._albumService.SearchAlbum(response, context.DiscordUser, context.Localizer, searchValue,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
             otherUserUsername: userSettings.UserNameLastFm, userId: context.ContextUser.UserId,
             interactionId: context.InteractionId,
@@ -1311,9 +1327,11 @@ public class AlbumBuilders
             return albumSearch.Response;
         }
 
-        var reply =
-            $"**{StringExtensions.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()}** has **{albumSearch.Album.UserPlaycount.Format(context.NumberFormat)}** {StringExtensions.GetPlaysString(albumSearch.Album.UserPlaycount)} " +
-            $"for **{StringExtensions.Sanitize(albumSearch.Album.AlbumName)}** by **{StringExtensions.Sanitize(albumSearch.Album.ArtistName)}**";
+        var reply = context.LocalizeCount("album.plays.userPlays",
+            albumSearch.Album.UserPlaycount.GetValueOrDefault(),
+            ("user", $"{StringExtensions.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()}"),
+            ("album", StringExtensions.Sanitize(albumSearch.Album.AlbumName)),
+            ("artist", StringExtensions.Sanitize(albumSearch.Album.ArtistName)));
 
         if (albumSearch.Album.UserPlaycount.HasValue && !userSettings.DifferentUser)
         {
@@ -1332,9 +1350,9 @@ public class AlbumBuilders
                 albumSearch.Album.ArtistName);
         if (recentAlbumPlaycounts.month != 0)
         {
-            reply +=
-                $"\n-# *{recentAlbumPlaycounts.week.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(recentAlbumPlaycounts.week)} last week — " +
-                $"{recentAlbumPlaycounts.month.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(recentAlbumPlaycounts.month)} last month*";
+            reply += $"\n{context.Localize("shared.recentWeekMonthPlays",
+                ("week", context.LocalizeCount("shared.plays", recentAlbumPlaycounts.week)),
+                ("month", context.LocalizeCount("shared.plays", recentAlbumPlaycounts.month)))}";
         }
 
 
@@ -1354,7 +1372,7 @@ public class AlbumBuilders
             ResponseType = ResponseType.ComponentsV2,
         };
 
-        var albumSearch = await this._albumService.SearchAlbum(response, context.DiscordUser, searchValue,
+        var albumSearch = await this._albumService.SearchAlbum(response, context.DiscordUser, context.Localizer, searchValue,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
             useCachedAlbums: false, userId: context.ContextUser.UserId, interactionId: context.InteractionId,
             referencedMessage: context.ReferencedMessage);
@@ -1552,20 +1570,30 @@ public class AlbumBuilders
         var pages = new List<PageBuilder>();
 
         string userTitle;
+        string authorName;
         if (!userSettings.DifferentUser)
         {
             userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
+            authorName = context.Localize("album.topAlbumsTitleSelf",
+                ("period", timeSettings.Description.ToLower()),
+                ("user", userTitle));
         }
         else
         {
-            userTitle =
-                $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}";
+            var requesterTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
+            userTitle = context.Localize("album.topAlbumsRequestedBy",
+                ("user", userSettings.UserNameLastFm),
+                ("requester", requesterTitle));
+            authorName = context.Localize("album.topAlbumsTitleOther",
+                ("period", timeSettings.Description.ToLower()),
+                ("user", userSettings.UserNameLastFm),
+                ("requester", requesterTitle));
         }
 
         var userUrl = LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm,
             $"/library/albums?{timeSettings.UrlParameter}");
 
-        response.EmbedAuthor.WithName($"Top {timeSettings.Description.ToLower()} albums for {userTitle}");
+        response.EmbedAuthor.WithName(authorName);
         response.EmbedAuthor.WithUrl(userUrl);
 
         var amount = topListSettings.ReleaseYearFilter.HasValue || topListSettings.ReleaseDecadeFilter.HasValue || topListSettings.FilterSingles
@@ -1577,7 +1605,7 @@ public class AlbumBuilders
 
         if (!albums.Success || albums.Content == null)
         {
-            response.Embed.ErrorResponse(albums.Error, albums.Message, "top albums", context.DiscordUser);
+            response.Embed.ErrorResponse(albums.Error, albums.Message, "top albums", context.Localizer, context.DiscordUser);
             response.CommandResponse = CommandResponse.LastFmError;
             response.ResponseType = ResponseType.Embed;
             return response;
@@ -1585,8 +1613,7 @@ public class AlbumBuilders
 
         if (albums.Content?.TopAlbums == null || !albums.Content.TopAlbums.Any())
         {
-            response.Embed.WithDescription(
-                $"Sorry, you or the user you're searching for don't have any top albums in the [selected time period]({userUrl}).");
+            response.Embed.WithDescription(context.Localize("album.topAlbumsNoResults", ("url", userUrl)));
             response.Embed.WithColor(DiscordConstants.WarningColorOrange);
             response.CommandResponse = CommandResponse.NoScrobbles;
             response.ResponseType = ResponseType.Embed;
@@ -1630,19 +1657,28 @@ public class AlbumBuilders
             var firstAlbumImage =
                 albums.Content.TopAlbums.FirstOrDefault(f => f.AlbumCoverUrl != null)?.AlbumCoverUrl;
 
-            var title = "Top Albums";
+            string title;
             if (topListSettings.ReleaseYearFilter.HasValue)
             {
-                title = $"Top Albums from {topListSettings.ReleaseYearFilter}";
+                title = topListSettings.FilterSingles
+                    ? context.Localize("album.topAlbumsImageTitleYearSingles",
+                        ("year", topListSettings.ReleaseYearFilter.Value.ToString()))
+                    : context.Localize("album.topAlbumsImageTitleYear",
+                        ("year", topListSettings.ReleaseYearFilter.Value.ToString()));
             }
             else if (topListSettings.ReleaseDecadeFilter.HasValue)
             {
-                title = $"Top Albums from the {topListSettings.ReleaseDecadeFilter}s";
+                title = topListSettings.FilterSingles
+                    ? context.Localize("album.topAlbumsImageTitleDecadeSingles",
+                        ("decade", topListSettings.ReleaseDecadeFilter.Value.ToString()))
+                    : context.Localize("album.topAlbumsImageTitleDecade",
+                        ("decade", topListSettings.ReleaseDecadeFilter.Value.ToString()));
             }
-
-            if (topListSettings.FilterSingles)
+            else
             {
-                title += " (excluding singles)";
+                title = topListSettings.FilterSingles
+                    ? context.Localize("album.topAlbumsImageTitleSingles")
+                    : context.Localize("album.topAlbumsImageTitle");
             }
 
             using var image = await this._puppeteerService.GetTopList(userTitle, title, "albums", timeSettings.Description,
@@ -1691,7 +1727,7 @@ public class AlbumBuilders
                 }
 
                 var name =
-                    $"**{album.ArtistName}** - **{StringExtensions.MarkdownLink(escapedAlbumName, url)}** - *{album.UserPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(album.UserPlaycount)}*";
+                    $"**{album.ArtistName}** - **{StringExtensions.MarkdownLink(escapedAlbumName, url)}** - *{context.LocalizeCount("shared.plays", album.UserPlaycount.GetValueOrDefault())}*";
 
                 if (topListSettings.Billboard && previousTopAlbums.Any())
                 {
@@ -1716,10 +1752,18 @@ public class AlbumBuilders
 
             ImportService.AddImportDescription(footer, albums.PlaySources);
 
-            footer.Append($"Page {pageCounter}/{albumPages.Count}");
             if (albums.Content.TotalAmount.HasValue && albums.Content.TotalAmount.Value != amount)
             {
-                footer.Append($" - {albums.Content.TotalAmount} different albums");
+                footer.Append(context.Localize("album.topAlbumsPageCounterTotal",
+                    ("page", pageCounter.ToString()),
+                    ("pages", albumPages.Count.ToString()),
+                    ("amount", albums.Content.TotalAmount.Value.ToString())));
+            }
+            else
+            {
+                footer.Append(context.Localize("shared.pageCounter",
+                    ("page", pageCounter.ToString()),
+                    ("pages", albumPages.Count.ToString())));
             }
 
             if (topListSettings.Billboard)
@@ -1731,25 +1775,27 @@ public class AlbumBuilders
             if (topListSettings.ReleaseYearFilter.HasValue)
             {
                 footer.AppendLine();
-                footer.Append($"Filtering to albums released in {topListSettings.ReleaseYearFilter.Value}");
+                footer.Append(context.Localize("album.topAlbumsFilterYear",
+                    ("year", topListSettings.ReleaseYearFilter.Value.ToString())));
             }
 
             if (topListSettings.ReleaseDecadeFilter.HasValue)
             {
                 footer.AppendLine();
-                footer.Append($"Filtering to albums released in the {topListSettings.ReleaseDecadeFilter.Value}s");
+                footer.Append(context.Localize("album.topAlbumsFilterDecade",
+                    ("decade", topListSettings.ReleaseDecadeFilter.Value.ToString())));
             }
 
             if (topListSettings.FilterSingles)
             {
                 footer.AppendLine();
-                footer.Append("Filtering out singles");
+                footer.Append(context.Localize("album.topAlbumsFilterSingles"));
             }
 
             if (rnd == 1 && !topListSettings.Billboard && context.SelectMenu == null)
             {
                 footer.AppendLine();
-                footer.Append("View as billboard by adding 'billboard' or 'bb'");
+                footer.Append(context.Localize("album.topAlbumsBillboardHint"));
             }
 
             pages.Add(new PageBuilder()
@@ -1763,7 +1809,7 @@ public class AlbumBuilders
         if (!pages.Any())
         {
             pages.Add(new PageBuilder()
-                .WithDescription("No albums played in this time period.")
+                .WithDescription(context.Localize("album.topAlbumsNoPlays"))
                 .WithAuthor(response.EmbedAuthor));
         }
 

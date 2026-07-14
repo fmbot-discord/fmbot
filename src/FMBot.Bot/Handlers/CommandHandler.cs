@@ -255,7 +255,7 @@ public class CommandHandler
 
                 if (await this._userService.UserBlockedAsync(context.User.Id))
                 {
-                    await UserBlockedResponse(context, prfx, "fm");
+                    await UserBlockedResponse(context, "fm");
                     return;
                 }
 
@@ -266,7 +266,7 @@ public class CommandHandler
                     {
                         var embed = new EmbedProperties()
                             .WithColor(DiscordConstants.WarningColorOrange);
-                        embed.RateLimitedResponse();
+                        embed.RateLimitedResponse(Localizer.ForGuild(context.Guild?.Id, discordLocale: context.Guild?.PreferredLocale));
                         await context.Client.Rest.SendMessageAsync(context.Message.ChannelId, new MessageProperties
                         {
                             Embeds = [embed]
@@ -325,7 +325,7 @@ public class CommandHandler
 
             if (await this._userService.UserBlockedAsync(context.User.Id))
             {
-                await UserBlockedResponse(context, prfx, commandName);
+                await UserBlockedResponse(context, commandName);
                 return;
             }
 
@@ -342,12 +342,13 @@ public class CommandHandler
                         .WithColor(DiscordConstants.LastFmColorRed);
                     var guildUser = context.User as GuildUser;
 
-                    embed.UsernameNotSetErrorResponse(prfx ?? this._botSettings.Bot.Prefix,
+                    var localizer = Localizer.ForGuild(context.Guild?.Id, discordLocale: context.Guild?.PreferredLocale);
+                    embed.UsernameNotSetErrorResponse(localizer,
                         guildUser?.GetDisplayName() ?? context.User.GetDisplayName());
                     await context.Client.Rest.SendMessageAsync(context.Message.ChannelId, new MessageProperties
                     {
                         Embeds = [embed],
-                        Components = [GenericEmbedService.UsernameNotSetErrorComponents()]
+                        Components = [GenericEmbedService.UsernameNotSetErrorComponents(localizer)]
                     });
                     await context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.UsernameNotSet }, this._userService, commandName);
                     return;
@@ -360,7 +361,7 @@ public class CommandHandler
                     {
                         var embed = new EmbedProperties()
                             .WithColor(DiscordConstants.WarningColorOrange);
-                        embed.RateLimitedResponse();
+                        embed.RateLimitedResponse(Localizer.ForGuild(context.Guild?.Id, discordLocale: context.Guild?.PreferredLocale));
                         await context.Client.Rest.SendMessageAsync(context.Message.ChannelId, new MessageProperties
                         {
                             Embeds = [embed]
@@ -379,7 +380,7 @@ public class CommandHandler
                 {
                     var embed = new EmbedProperties()
                         .WithColor(DiscordConstants.LastFmColorRed);
-                    embed.SessionRequiredResponse(prfx ?? this._botSettings.Bot.Prefix);
+                    embed.SessionRequiredResponse(Localizer.ForGuild(context.Guild?.Id, discordLocale: context.Guild?.PreferredLocale));
                     await context.Client.Rest.SendMessageAsync(context.Message.ChannelId, new MessageProperties
                     {
                         Embeds = [embed]
@@ -412,7 +413,7 @@ public class CommandHandler
                     var dmChannel = await context.User.GetDMChannelAsync();
                     await context.Client.Rest.SendMessageAsync(dmChannel.Id, new MessageProperties
                     {
-                        Content = "This command is not supported in DMs."
+                        Content = Localizer.ForGuild(context.Guild?.Id, discordLocale: context.Guild?.PreferredLocale).Translate("errors.dmNotSupported")
                     });
                     await context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotSupportedInDm }, this._userService, commandName);
                     return;
@@ -425,10 +426,8 @@ public class CommandHandler
                 if (lastIndex == null)
                 {
                     var embed = new EmbedProperties();
-                    embed.WithDescription(
-                        "To use .fmbot commands with server-wide statistics, you need to create a memberlist cache first.\n\n" +
-                        $"Please run `{prfx}refreshmembers` to create this.\n" +
-                        $"Note that this can take some time on large servers.");
+                    embed.WithDescription(Localizer.ForGuild(context.Guild?.Id, discordLocale: context.Guild?.PreferredLocale)
+                        .Translate("errors.indexRequired", ("refreshCommand", $"{prfx}refreshmembers")));
                     await context.Client.Rest.SendMessageAsync(context.Message.ChannelId, new MessageProperties
                     {
                         Embeds = [embed]
@@ -449,7 +448,8 @@ public class CommandHandler
                 var userName = guildUser?.GetDisplayName() ?? context.User.GetDisplayName();
 
                 var helpResponse =
-                    GenericEmbedService.HelpResponse(embed, searchResult.Command, prfx, userName);
+                    GenericEmbedService.HelpResponse(embed, searchResult.Command, prfx, userName,
+                        Localizer.ForGuild(context.Guild?.Id, discordLocale: context.Guild?.PreferredLocale));
 
                 var messageProps = new MessageProperties
                 {
@@ -529,8 +529,7 @@ public class CommandHandler
 
             await context.Client.Rest.SendMessageAsync(context.Message.ChannelId, new MessageProperties
             {
-                Content = "The bot is missing the `Embed Links` permission in this channel, so it can't reply properly. " +
-                          "Please grant it server-wide via `Server Settings` > `Roles`, or per-channel via the channel permissions.",
+                Content = Localizer.ForGuild(context.Guild?.Id, discordLocale: context.Guild?.PreferredLocale).Translate("errors.embedLinksRequired"),
                 AllowedMentions = AllowedMentionsProperties.None
             });
             return false;
@@ -636,21 +635,22 @@ public class CommandHandler
 
                 if (!update)
                 {
+                    var localizer = Localizer.ForGuild(context.Guild?.Id, discordLocale: context.Guild?.PreferredLocale);
                     if (toggledChannelCommands != null &&
                         toggledChannelCommands.Any())
                     {
                         _ = (await context.Client.Rest.SendMessageAsync(context.Message.ChannelId, new MessageProperties
                         {
-                            Content = "The command you're trying to execute is not enabled in this channel." +
-                                      (isMod ? $"\n-# *Configured with `{prfx}togglecommand`*" : null)
+                            Content = localizer.Translate("errors.commandNotEnabledChannel") +
+                                      (isMod ? $"\n{localizer.Translate("errors.configuredWith", ("command", $"{prfx}togglecommand"))}" : null)
                         })).DeleteAfterAsync(8);
                     }
                     else
                     {
                         _ = (await context.Client.Rest.SendMessageAsync(context.Message.ChannelId, new MessageProperties
                         {
-                            Content = "The bot has been disabled in this channel." +
-                                      (isMod ? $"\n-# *Configured with `{prfx}togglecommand`*" : null)
+                            Content = localizer.Translate("errors.botDisabledChannel") +
+                                      (isMod ? $"\n{localizer.Translate("errors.configuredWith", ("command", $"{prfx}togglecommand"))}" : null)
                         })).DeleteAfterAsync(8);
                     }
 
@@ -667,10 +667,11 @@ public class CommandHandler
             {
                 if (!update)
                 {
+                    var localizer = Localizer.ForGuild(context.Guild?.Id, discordLocale: context.Guild?.PreferredLocale);
                     _ = (await context.Client.Rest.SendMessageAsync(context.Message.ChannelId, new MessageProperties
                     {
-                        Content = "The command you're trying to execute has been disabled in this server." +
-                                  (isMod ? $"\n-# *Configured with `{prfx}toggleservercommand`*" : null)
+                        Content = localizer.Translate("errors.commandDisabledServer") +
+                                  (isMod ? $"\n{localizer.Translate("errors.configuredWith", ("command", $"{prfx}toggleservercommand"))}" : null)
                     })).DeleteAfterAsync(8);
 
                     await context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Disabled }, this._userService, commandName);
@@ -688,10 +689,11 @@ public class CommandHandler
             {
                 if (!update)
                 {
+                    var localizer = Localizer.ForGuild(context.Guild?.Id, discordLocale: context.Guild?.PreferredLocale);
                     _ = (await context.Client.Rest.SendMessageAsync(context.Message.ChannelId, new MessageProperties
                     {
-                        Content = "The command you're trying to execute has been disabled in this channel." +
-                                  (isMod ? $"\n-# *Configured with `{prfx}togglecommand`*" : null)
+                        Content = localizer.Translate("errors.commandDisabledChannel") +
+                                  (isMod ? $"\n{localizer.Translate("errors.configuredWith", ("command", $"{prfx}togglecommand"))}" : null)
                     })).DeleteAfterAsync(8);
 
                     await context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Disabled }, this._userService, commandName);
@@ -704,11 +706,11 @@ public class CommandHandler
         return true;
     }
 
-    private async Task UserBlockedResponse(CommandContext context, string s, string commandName)
+    private async Task UserBlockedResponse(CommandContext context, string commandName)
     {
         var embed = new EmbedProperties()
             .WithColor(DiscordConstants.LastFmColorRed);
-        embed.UserBlockedResponse(s ?? this._botSettings.Bot.Prefix);
+        embed.UserBlockedResponse(Localizer.ForGuild(context.Guild?.Id, discordLocale: context.Guild?.PreferredLocale));
         await context.Client.Rest.SendMessageAsync(context.Message.ChannelId, new MessageProperties
         {
             Embeds = [embed]

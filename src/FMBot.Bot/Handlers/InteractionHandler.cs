@@ -359,13 +359,13 @@ public class InteractionHandler
                 var embed = new EmbedProperties()
                     .WithColor(DiscordConstants.LastFmColorRed);
                 var guildUser = user as GuildUser;
-                embed.UsernameNotSetErrorResponse("/", guildUser?.GetDisplayName() ?? user.GetDisplayName());
+                embed.UsernameNotSetErrorResponse(contextModel.Localizer, guildUser?.GetDisplayName() ?? user.GetDisplayName());
 
                 await interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties
                 {
                     Embeds = [embed],
                     Flags = MessageFlags.Ephemeral,
-                    Components = [GenericEmbedService.UsernameNotSetErrorComponents()]
+                    Components = [GenericEmbedService.UsernameNotSetErrorComponents(contextModel.Localizer)]
                 }));
                 await logCommandUsed(new ResponseModel { CommandResponse = CommandResponse.UsernameNotSet });
                 return false;
@@ -380,12 +380,12 @@ public class InteractionHandler
             {
                 var embed = new EmbedProperties()
                     .WithColor(DiscordConstants.LastFmColorRed);
-                embed.SessionRequiredResponse("/");
+                embed.SessionRequiredResponse(contextModel.Localizer);
                 await interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties
                 {
                     Embeds = [embed],
                     Flags = MessageFlags.Ephemeral,
-                    Components = [GenericEmbedService.ReconnectComponents()]
+                    Components = [GenericEmbedService.ReconnectComponents(contextModel.Localizer)]
                 }));
                 await logCommandUsed(new ResponseModel { CommandResponse = CommandResponse.UsernameNotSet });
                 return false;
@@ -415,7 +415,7 @@ public class InteractionHandler
             {
                 await interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties
                 {
-                    Content = "This command is not supported in DMs."
+                    Content = contextModel.Localizer.Translate("errors.dmNotSupported")
                 }));
                 await logCommandUsed(new ResponseModel { CommandResponse = CommandResponse.NotSupportedInDm });
                 return false;
@@ -428,10 +428,8 @@ public class InteractionHandler
             if (lastIndex == null)
             {
                 var embed = new EmbedProperties();
-                embed.WithDescription(
-                    "To use .fmbot commands with server-wide statistics, you need to create a memberlist cache first.\n\n" +
-                    $"Please run `/refreshmembers` to create this.\n" +
-                    $"Note that this can take some time on large servers.");
+                embed.WithDescription(contextModel.Localizer.Translate("errors.indexRequired",
+                    ("refreshCommand", "/refreshmembers")));
                 await interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties
                 {
                     Embeds = [embed]
@@ -443,8 +441,8 @@ public class InteractionHandler
             if (lastIndex < DateTime.UtcNow.AddDays(-180))
             {
                 var embed = new EmbedProperties();
-                embed.WithDescription("Server member cache is out of date, it was last updated over 180 days ago.\n" +
-                                      $"Please run `/refreshmembers` to update the cached memberlist.");
+                embed.WithDescription(contextModel.Localizer.Translate("errors.indexOutdated",
+                    ("refreshCommand", "/refreshmembers")));
                 await interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties
                 {
                     Embeds = [embed]
@@ -480,7 +478,7 @@ public class InteractionHandler
                 {
                     await context.Interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties
                     {
-                        Content = "The command you're trying to execute is not enabled in this channel.",
+                        Content = Localizer.ForGuild(context.Interaction.GuildId, discordLocale: context.Interaction.GuildLocale).Translate("errors.commandNotEnabledChannel"),
                         Flags = MessageFlags.Ephemeral
                     }));
                 }
@@ -488,7 +486,7 @@ public class InteractionHandler
                 {
                     await context.Interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties
                     {
-                        Content = "The bot has been disabled in this channel.",
+                        Content = Localizer.ForGuild(context.Interaction.GuildId, discordLocale: context.Interaction.GuildLocale).Translate("errors.botDisabledChannel"),
                         Flags = MessageFlags.Ephemeral
                     }));
                 }
@@ -503,7 +501,7 @@ public class InteractionHandler
             {
                 await context.Interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties
                 {
-                    Content = "The command you're trying to execute has been disabled in this server.",
+                    Content = Localizer.ForGuild(context.Interaction.GuildId, discordLocale: context.Interaction.GuildLocale).Translate("errors.commandDisabledServer"),
                     Flags = MessageFlags.Ephemeral
                 }));
                 await context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Disabled }, _userService, commandName);
@@ -517,7 +515,7 @@ public class InteractionHandler
             {
                 await context.Interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties
                 {
-                    Content = "The command you're trying to execute has been disabled in this channel.",
+                    Content = Localizer.ForGuild(context.Interaction.GuildId, discordLocale: context.Interaction.GuildLocale).Translate("errors.commandDisabledChannel"),
                     Flags = MessageFlags.Ephemeral
                 }));
                 await context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Disabled }, _userService, commandName);
@@ -531,7 +529,7 @@ public class InteractionHandler
     private async Task UserBlockedResponse(ApplicationCommandContext context, string commandName)
     {
         var embed = new EmbedProperties().WithColor(DiscordConstants.LastFmColorRed);
-        embed.UserBlockedResponse("/");
+        embed.UserBlockedResponse(Localizer.ForGuild(context.Interaction.GuildId, discordLocale: context.Interaction.GuildLocale));
         await context.Client.Rest.SendMessageAsync(context.Channel.Id, new MessageProperties
         {
             Embeds = [embed]

@@ -67,6 +67,8 @@ public static class InteractionConstants
 
     public const string FmGuildSettingType = "fm-guild-type-menu";
 
+    public const string GuildLanguageSetting = "guild-language-menu";
+
     public const string SetAllowedRoleMenu = "guild-allowed-roles-menu";
     public const string SetBlockedRoleMenu = "guild-blocked-roles-menu";
     public const string SetBotManagementRoleMenu = "guild-bot-management-roles-menu";

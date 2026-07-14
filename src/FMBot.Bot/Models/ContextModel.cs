@@ -1,4 +1,5 @@
 
+using FMBot.Bot.Services;
 using FMBot.Domain.Enums;
 using FMBot.Persistence.Domain.Models;
 using NetCord.Rest;
@@ -14,6 +15,7 @@ public class ContextModel
     {
         this.Prefix = prefix;
         this.NumberFormat = contextUser?.NumberFormat ?? NumberFormat.NoSeparator;
+        this.Localizer = new Localizer(LocalizationService.GetLanguage(context.Guild?.Id, context.Guild?.PreferredLocale), this.NumberFormat);
         this.DiscordGuild = context.Guild;
         this.DiscordChannel = context.Channel;
         this.DiscordUser = context.User;
@@ -27,6 +29,7 @@ public class ContextModel
     {
         this.Prefix = "/";
         this.NumberFormat = contextUser?.NumberFormat ?? NumberFormat.NoSeparator;
+        this.Localizer = new Localizer(LocalizationService.GetLanguage(context.Interaction.GuildId, context.Interaction.GuildLocale), this.NumberFormat);
         this.DiscordGuild = context.Guild;
         this.DiscordChannel = context.Channel;
         this.DiscordUser = discordContextUser ?? context.User;
@@ -39,6 +42,7 @@ public class ContextModel
     {
         this.Prefix = "/";
         this.NumberFormat = contextUser?.NumberFormat ?? NumberFormat.NoSeparator;
+        this.Localizer = new Localizer(LocalizationService.GetLanguage(context.Interaction.GuildId, context.Interaction.GuildLocale), this.NumberFormat);
         this.DiscordGuild = context.Guild;
         this.DiscordChannel = context.Channel;
         this.DiscordUser = discordContextUser ?? context.User;
@@ -65,4 +69,16 @@ public class ContextModel
     public User ContextUser { get; set; }
 
     public NumberFormat NumberFormat { get; set; }
+
+    public Localizer Localizer { get; set; }
+
+    public string Localize(string key, params (string Name, string Value)[] args)
+    {
+        return this.Localizer.Translate(key, args);
+    }
+
+    public string LocalizeCount(string key, long count, params (string Name, string Value)[] args)
+    {
+        return this.Localizer.TranslateCount(key, count, args);
+    }
 }

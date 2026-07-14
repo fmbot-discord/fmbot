@@ -107,7 +107,7 @@ public class PlayBuilder
             ResponseType = ResponseType.Embed,
         };
 
-        var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue,
+        var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, context.Localizer, searchValue,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
             userId: context.ContextUser.UserId, interactionId: context.InteractionId,
             referencedMessage: context.ReferencedMessage);
@@ -204,7 +204,7 @@ public class PlayBuilder
             ResponseType = ResponseType.Embed,
         };
 
-        var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue,
+        var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, context.Localizer, searchValue,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
             userId: context.ContextUser.UserId, interactionId: context.InteractionId,
             referencedMessage: context.ReferencedMessage);
@@ -338,7 +338,7 @@ public class PlayBuilder
 
         if (GenericEmbedService.RecentScrobbleCallFailed(recentTracks))
         {
-            return GenericEmbedService.RecentScrobbleCallFailedResponse(recentTracks, userSettings.UserNameLastFm);
+            return GenericEmbedService.RecentScrobbleCallFailedResponse(recentTracks, userSettings.UserNameLastFm, context.Localizer);
         }
 
         var embedType = fmEmbedType;
@@ -387,19 +387,12 @@ public class PlayBuilder
         };
 
         var requesterUserTitle = await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser);
-        string embedTitle;
-        if (userSettings.DisplayName.ContainsEmoji())
-        {
-            embedTitle = !userSettings.DifferentUser
-                ? $"{userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}"
-                : $"{userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}, requested by {requesterUserTitle}";
-        }
-        else
-        {
-            embedTitle = !userSettings.DifferentUser
-                ? $"[{userSettings.DisplayName}](<{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}>){userSettings.UserType.UserTypeToIcon()}"
-                : $"[{userSettings.DisplayName}](<{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}>){userSettings.UserType.UserTypeToIcon()}, requested by {requesterUserTitle}";
-        }
+        var userTitle = userSettings.DisplayName.ContainsEmoji()
+            ? $"{userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}"
+            : $"[{userSettings.DisplayName}](<{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}>){userSettings.UserType.UserTypeToIcon()}";
+        var embedTitle = !userSettings.DifferentUser
+            ? userTitle
+            : context.Localize("fm.titleRequestedBy", ("user", userTitle), ("requester", requesterUserTitle));
         // var embed = await this._userService.GetTemplateFmAsync(context.ContextUser.UserId, userSettings, currentTrack,
         //     previousTrack, totalPlaycount, guild, guildUsers);
         // response.Embeds = [embed.EmbedProperties];
@@ -430,7 +423,7 @@ public class PlayBuilder
             currentTrack.TimePlayed < DateTime.UtcNow.AddHours(-2))
         {
             var oosPrefix = useSmallText ? "-# " : "";
-            footerText.Append($"{oosPrefix}Spotify not tracking properly? Check '{context.Prefix}outofsync'");
+            footerText.Append($"{oosPrefix}{context.Localize("fm.outOfSyncHint", ("command", $"{context.Prefix}outofsync"))}");
         }
 
         List<IActionRowComponentProperties> fmButtonComponents = null;
@@ -479,17 +472,17 @@ public class PlayBuilder
                 {
                     if (currentTrack.NowPlaying)
                     {
-                        fmText += $"*{embedTitle}'s now playing:*\n";
+                        fmText += $"{context.Localize("fm.textNowPlaying", ("user", embedTitle))}\n";
                     }
                     else
                     {
-                        fmText += $"*{embedTitle}'s last played track:*\n";
+                        fmText += $"{context.Localize("fm.textLastPlayed", ("user", embedTitle))}\n";
                     }
 
                     fmText += StringService.TrackToString(currentTrack).FilterOutMentions();
 
                     fmText += $"\n" +
-                              $"*Previous:*\n";
+                              $"{context.Localize("fm.textPrevious")}\n";
 
                     fmText += StringService.TrackToString(previousTrack).FilterOutMentions();
                 }
@@ -578,14 +571,14 @@ public class PlayBuilder
                 {
                     var specifiedDateTime = DateTime.SpecifyKind(currentTrack.TimePlayed.Value, DateTimeKind.Utc);
                     var timestampUnix = ((DateTimeOffset)specifiedDateTime).ToUnixTimeSeconds();
-                    miniHeader.Append($"Last played <t:{timestampUnix}:R> for ");
+                    miniHeader.Append(context.Localize("fm.lastPlayedFor", ("timestamp", $"<t:{timestampUnix}:R>"),
+                        ("user", embedTitle)));
                 }
                 else
                 {
-                    miniHeader.Append("Now playing for ");
+                    miniHeader.Append(context.Localize("fm.nowPlayingFor", ("user", embedTitle)));
                 }
 
-                miniHeader.Append(embedTitle);
                 miniHeader.AppendLine();
 
                 var singleFmButton = fmButtonComponents is { Count: 1 };
@@ -631,7 +624,7 @@ public class PlayBuilder
                     {
                         response.ComponentsContainer.WithSeparator();
                         var previousTrackText = new StringBuilder();
-                        previousTrackText.AppendLine("-# Previous:");
+                        previousTrackText.AppendLine(context.Localize("fm.previous"));
                         previousTrackText.Append(StringService.TrackToLinkedString(previousTrack, context.ContextUser.RymEnabled, false));
                         response.ComponentsContainer.WithTextDisplay(previousTrackText.ToString());
                     }
@@ -936,7 +929,7 @@ public class PlayBuilder
 
         if (GenericEmbedService.RecentScrobbleCallFailed(recentTracks))
         {
-            return GenericEmbedService.RecentScrobbleCallFailedResponse(recentTracks, userSettings.UserNameLastFm);
+            return GenericEmbedService.RecentScrobbleCallFailedResponse(recentTracks, userSettings.UserNameLastFm, context.Localizer);
         }
 
         var playsToAdd = SupporterService.IsSupporter(userSettings.UserType)
@@ -965,12 +958,12 @@ public class PlayBuilder
 
         if (trackPages.Count == 0)
         {
-            var noResultsText = "No recent tracks found.";
+            var noResultsText = context.Localize("recent.noResults");
             if (!string.IsNullOrWhiteSpace(artistToFilter))
             {
                 noResultsText = SupporterService.IsSupporter(userSettings.UserType)
-                    ? "No recent tracks found for this artist."
-                    : $"No recent tracks found for this artist. Get [.fmbot supporter]({Constants.GetSupporterOverviewLink}) to search through your lifetime history and more.";
+                    ? context.Localize("recent.noResultsArtist")
+                    : context.Localize("recent.noResultsArtistNonSupporter", ("url", Constants.GetSupporterOverviewLink));
             }
 
             response.ResponseType = ResponseType.ComponentsV2;
@@ -997,8 +990,9 @@ public class PlayBuilder
 
             var container = new ComponentContainerProperties();
 
-            container.WithTextDisplay(
-                $"### Recent tracks for {StringExtensions.MarkdownLink(StringExtensions.Sanitize(userSettings.DisplayName), recentTracks.Content.UserRecentTracksUrl)}{userSettings.UserType.UserTypeToIcon()}");
+            container.WithTextDisplay(context.Localize("recent.title",
+                ("user",
+                    $"{StringExtensions.MarkdownLink(StringExtensions.Sanitize(userSettings.DisplayName), recentTracks.Content.UserRecentTracksUrl)}{userSettings.UserType.UserTypeToIcon()}")));
 
             foreach (var track in trackPage)
             {
@@ -1024,20 +1018,20 @@ public class PlayBuilder
             ImportService.AddImportDescription(footer, [trackPage.Last().PlaySource ?? PlaySource.LastFm]);
             footer.Append($"-# {pageIndex + 1}/{trackPages.Count.Format(context.NumberFormat)}");
             footer.Append(
-                $" - {userSettings.UserNameLastFm} has {recentTracks.Content.TotalAmount.Format(context.NumberFormat)} scrobbles");
+                $" - {context.LocalizeCount("recent.userScrobbles", recentTracks.Content.TotalAmount, ("user", userSettings.UserNameLastFm))}");
 
             if (!string.IsNullOrWhiteSpace(artistToFilter))
             {
                 footer.AppendLine();
                 if (!SupporterService.IsSupporter(userSettings.UserType))
                 {
-                    footer.Append(
-                        $"-# Filtering cached plays to artist **[{artistToFilter}]({LastfmUrlExtensions.GetArtistUrl(artistToFilter)})**");
+                    footer.Append(context.Localize("recent.filteringCachedPlays",
+                        ("artist", artistToFilter), ("url", LastfmUrlExtensions.GetArtistUrl(artistToFilter))));
                 }
                 else
                 {
-                    footer.Append(
-                        $"-# Filtering all plays to artist **[{artistToFilter}]({LastfmUrlExtensions.GetArtistUrl(artistToFilter)})**");
+                    footer.Append(context.Localize("recent.filteringAllPlays",
+                        ("artist", artistToFilter), ("url", LastfmUrlExtensions.GetArtistUrl(artistToFilter))));
                 }
             }
 
@@ -1102,7 +1096,7 @@ public class PlayBuilder
 
         if (GenericEmbedService.RecentScrobbleCallFailed(recentTracks))
         {
-            return GenericEmbedService.RecentScrobbleCallFailedResponse(recentTracks, userSettings.UserNameLastFm);
+            return GenericEmbedService.RecentScrobbleCallFailedResponse(recentTracks, userSettings.UserNameLastFm, context.Localizer);
         }
 
         var lastPlays = await this._playService.GetAllUserPlays(userSettings.UserId);
@@ -1668,7 +1662,7 @@ public class PlayBuilder
 
         if (!mileStonePlay.Success || mileStonePlay.Content == null)
         {
-            response.Embed.ErrorResponse(mileStonePlay.Error, mileStonePlay.Message, "milestone", context.DiscordUser);
+            response.Embed.ErrorResponse(mileStonePlay.Error, mileStonePlay.Message, "milestone", context.Localizer, context.DiscordUser);
             response.CommandResponse = CommandResponse.LastFmError;
             return response;
         }

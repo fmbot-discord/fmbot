@@ -235,7 +235,7 @@ public class SpotifyRemoteSlashCommands(
     private async Task<RemoteTrack> ResolveTrackAsync(string userNameLastFm, string sessionKey, int userId,
         string searchValue)
     {
-        var trackSearch = await trackService.SearchTrack(new ResponseModel(), this.Context.User, searchValue,
+        var trackSearch = await trackService.SearchTrack(new ResponseModel(), this.Context.User, Localizer.ForGuild(this.Context.Interaction.GuildId, discordLocale: this.Context.Interaction.GuildLocale), searchValue,
             userNameLastFm, sessionKey, userId: userId, useCachedTracks: true);
 
         if (trackSearch.Track == null)
@@ -259,7 +259,7 @@ public class SpotifyRemoteSlashCommands(
             }
         }
 
-        var trackSearch = await trackService.SearchTrack(new ResponseModel(), this.Context.User, null,
+        var trackSearch = await trackService.SearchTrack(new ResponseModel(), this.Context.User, Localizer.ForGuild(this.Context.Interaction.GuildId, discordLocale: this.Context.Interaction.GuildLocale), null,
             userNameLastFm, sessionKey, userId: userId, useCachedTracks: true, referencedMessage: message);
 
         if (trackSearch.Track == null)
