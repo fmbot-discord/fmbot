@@ -122,17 +122,15 @@ public class WhoKnowsService
 
         if (filterDisabled)
         {
-            if (guildUsers.Any(w => w.Value.SelfBlockFromWhoKnows))
+            if (guildUsers.Any(w => w.Value is { BlockedFromWhoKnows: true } or { SelfBlockFromWhoKnows: true }))
             {
                 var usersToFilter = guildUsers
-                    .DistinctBy(d => d.Value.UserId)
-                    .Where(w => w.Value.SelfBlockFromWhoKnows)
+                    .Where(w => w.Value.BlockedFromWhoKnows || w.Value.SelfBlockFromWhoKnows)
                     .Select(s => s.Value.UserId)
                     .ToHashSet();
 
                 var lastFmUsersToFilter = guildUsers
-                    .DistinctBy(d => d.Value.UserNameLastFM, comparer: StringComparer.OrdinalIgnoreCase)
-                    .Where(w => w.Value.SelfBlockFromWhoKnows)
+                    .Where(w => w.Value.BlockedFromWhoKnows || w.Value.SelfBlockFromWhoKnows)
                     .Select(s => s.Value.UserNameLastFM)
                     .ToHashSet();
 
