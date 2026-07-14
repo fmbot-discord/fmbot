@@ -1565,16 +1565,14 @@ public class GuildService(
 
     private static ReactionEmojiProperties ToReactionEmoji(string emoteString)
     {
-        if (emoteString.Length is 1 or 2 or 3)
-        {
-            return new ReactionEmojiProperties(emoteString);
-        }
-
         // Custom emote format: <:name:id> or <a:name:id>
         var parts = emoteString.Trim('<', '>').Split(':');
-        var name = parts[^2];
-        var id = ulong.Parse(parts[^1]);
-        return new ReactionEmojiProperties(name, id);
+        if (parts.Length >= 2 && ulong.TryParse(parts[^1], out var id))
+        {
+            return new ReactionEmojiProperties(parts[^2], id);
+        }
+
+        return new ReactionEmojiProperties(emoteString);
     }
 
 
