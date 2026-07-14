@@ -7,16 +7,19 @@ namespace FMBot.Bot.Models;
 
 public enum FeaturedView
 {
-    [Option("Global")]
+    [Option("Global", "Global featured")]
     Global = 1,
-    [Option("Members")]
+    [Option("Members", "Global featured")]
     [SlashCommandChoice(Name = "Members")]
     Server = 2,
-    [Option("Friends")]
+    [Option("Friends", "Global featured")]
     Friends = 3,
-    [Option("User")]
+    [Option("User", "Global featured")]
     User = 4,
-    [Option("Server featured")]
+    [Option("Server", "Server featured")]
     [SlashCommandChoice(Name = "Server featured")]
-    GuildFeatured = 5
+    GuildFeatured = 5,
+    [Option("User", "Server featured")]
+    [SlashCommandChoice(Name = "Server featured user")]
+    GuildFeaturedUser = 6
 }

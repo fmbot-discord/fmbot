@@ -345,6 +345,20 @@ public class FeaturedService
         return guildFeatureds.Select(GuildFeaturedToFeaturedLog).ToList();
     }
 
+    public async Task<List<FeaturedLog>> GetGuildFeaturedHistoryForUser(int guildId, int userId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        var guildFeatureds = await db.GuildFeaturedLogs
+            .AsQueryable()
+            .Where(w => w.GuildId == guildId && w.UserId == userId && w.HasFeatured)
+            .OrderByDescending(o => o.DateTime)
+            .Take(240)
+            .ToListAsync();
+
+        return guildFeatureds.Select(GuildFeaturedToFeaturedLog).ToList();
+    }
+
     public async Task<GuildFeaturedLog> NewGuildFeatured(Persistence.Domain.Models.Guild guild,
         DateTime featuredDateTime)
     {
