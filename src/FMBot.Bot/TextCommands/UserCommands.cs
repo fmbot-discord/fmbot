@@ -212,7 +212,7 @@ public class UserCommands(
         }
 
         emojis = emojis.Replace("><", "> <");
-        var emoteArray = emojis.Split(" ");
+        var emoteArray = emojis.Split(" ", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
         if (emoteArray.Count() > 5)
         {
