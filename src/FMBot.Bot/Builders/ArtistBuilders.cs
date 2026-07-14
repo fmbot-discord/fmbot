@@ -159,6 +159,7 @@ public class ArtistBuilders
         Guild guild = null;
         IDictionary<int, FullGuildUser> guildUsers = null;
         Task<IList<WhoKnowsObjectWithUser>> indexedUsersTask = null;
+        Task<List<FeaturedLog>> guildFeaturedHistoryTask = null;
         if (context.DiscordGuild != null)
         {
             var guildTask = this._guildService.GetGuildForWhoKnows(context.DiscordGuild.Id);
@@ -166,6 +167,12 @@ public class ArtistBuilders
 
             guild = await guildTask;
             guildUsers = await guildUsersTask;
+
+            if (guild != null)
+            {
+                guildFeaturedHistoryTask = this._featuredService.GetGuildArtistFeaturedHistory(guild,
+                    artistSearch.Artist.ArtistName);
+            }
 
             if (guild?.LastIndexed != null)
             {
@@ -177,6 +184,7 @@ public class ArtistBuilders
         var fullArtist = await fullArtistTask;
         var userTitle = await userTitleTask;
         var featuredHistory = await featuredHistoryTask;
+        var guildFeaturedHistory = guildFeaturedHistoryTask != null ? await guildFeaturedHistoryTask : null;
 
         var showThumbnail = false;
         if (fullArtist.SpotifyImageUrl != null)
@@ -393,9 +401,9 @@ public class ArtistBuilders
         statsSection.AppendLine(
             $"**{artistSearch.Artist.TotalPlaycount.Format(context.NumberFormat)}** Last.fm {StringExtensions.GetPlaysString(artistSearch.Artist.TotalPlaycount)} by **{artistSearch.Artist.TotalListeners.Format(context.NumberFormat)}** {StringExtensions.GetListenersString(artistSearch.Artist.TotalListeners)}");
 
-        if (featuredHistory.Any())
+        if (featuredHistory.Any() || guildFeaturedHistory is { Count: > 0 })
         {
-            statsSection.AppendLine($"Featured **{featuredHistory.Count}** {StringExtensions.GetTimesString(featuredHistory.Count)}");
+            statsSection.AppendLine(FeaturedService.GetFeaturedTimesString(featuredHistory.Count, guildFeaturedHistory?.Count ?? 0));
         }
 
         if (artistSearch.IsRandom)

@@ -624,6 +624,66 @@ public class FeaturedService
         return query.ToList();
     }
 
+    public async Task<List<FeaturedLog>> GetGuildTrackFeaturedHistory(Persistence.Domain.Models.Guild guild, string artistName, string trackName)
+    {
+        var artistHistory = await GetGuildArtistFeaturedHistory(guild, artistName);
+
+        return artistHistory
+            .Where(w =>
+                w.TrackName != null &&
+                string.Equals(w.TrackName, trackName, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+    }
+
+    public async Task<List<FeaturedLog>> GetGuildAlbumFeaturedHistory(Persistence.Domain.Models.Guild guild, string artistName, string albumName)
+    {
+        var artistHistory = await GetGuildArtistFeaturedHistory(guild, artistName);
+
+        return artistHistory
+            .Where(w =>
+                w.AlbumName != null &&
+                string.Equals(w.AlbumName, albumName, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+    }
+
+    public async Task<List<FeaturedLog>> GetGuildArtistFeaturedHistory(Persistence.Domain.Models.Guild guild, string artistName)
+    {
+        if (!PublicProperties.PremiumServers.ContainsKey(guild.DiscordGuildId))
+        {
+            return [];
+        }
+
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        var guildFeatureds = await db.GuildFeaturedLogs
+            .AsQueryable()
+            .Where(w => w.GuildId == guild.GuildId &&
+                        w.HasFeatured &&
+                        w.ArtistName != null &&
+                        w.ArtistName.ToUpper() == artistName.ToUpper())
+            .ToListAsync();
+
+        return guildFeatureds.Select(GuildFeaturedToFeaturedLog).ToList();
+    }
+
+    public static string GetFeaturedTimesString(int globalCount, int guildCount)
+    {
+        var description = new StringBuilder();
+
+        if (globalCount > 0)
+        {
+            description.Append($"Featured **{globalCount}** {StringExtensions.GetTimesString(globalCount)}");
+        }
+
+        if (guildCount > 0)
+        {
+            description.Append(globalCount > 0 ? " — " : "Featured ");
+            description.Append($"**{guildCount}** {StringExtensions.GetTimesString(guildCount)} in this server");
+        }
+
+        return description.ToString();
+    }
+
     public async Task<List<FeaturedLog>> GetFeaturedHistoryForGuild(IDictionary<int, FullGuildUser> users)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
