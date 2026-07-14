@@ -219,6 +219,10 @@ public class Localizer(Language language, NumberFormat numberFormat)
             {
                 return number == 0 || number == 1 ? "_one" : "_other";
             }
+            case Language.Indonesian:
+            {
+                return "_other";
+            }
             default:
             {
                 return number == 1 ? "_one" : "_other";

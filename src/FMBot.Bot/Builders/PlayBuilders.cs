@@ -1471,7 +1471,7 @@ public class PlayBuilder
         if (dailyOverview == null)
         {
             response.ResponseType = ResponseType.Text;
-            response.Text = "Sorry, we don't have plays for this user in the selected amount of days.";
+            response.Text = context.Localize("overview.noPlays");
             response.CommandResponse = CommandResponse.NoScrobbles;
             return response;
         }
@@ -1495,8 +1495,8 @@ public class PlayBuilder
 
             var container = new ComponentContainerProperties();
 
-            container.WithTextDisplay(
-                $"### Daily overview for {StringExtensions.MarkdownLink(StringExtensions.Sanitize(userSettings.DisplayName), $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library?date_preset=LAST_7_DAYS")}{userSettings.UserType.UserTypeToIcon()}");
+            container.WithTextDisplay(context.Localize("overview.title",
+                ("user", $"{StringExtensions.MarkdownLink(StringExtensions.Sanitize(userSettings.DisplayName), $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library?date_preset=LAST_7_DAYS")}{userSettings.UserType.UserTypeToIcon()}")));
 
             container.WithSeparator();
 
@@ -1528,9 +1528,10 @@ public class PlayBuilder
                 fieldContent.Append(day.TopTrack);
 
                 var content = new StringBuilder();
-                content.AppendLine($"**<t:{TimeZoneInfo.ConvertTimeToUtc(day.Date, timeZone).ToUnixEpochDate()}:D> — " +
-                                   $"{StringExtensions.GetListeningTimeString(day.ListeningTime)} — " +
-                                   $"{day.Playcount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(day.Playcount)}**");
+                content.AppendLine(context.Localize("overview.dayHeader",
+                    ("date", $"<t:{TimeZoneInfo.ConvertTimeToUtc(day.Date, timeZone).ToUnixEpochDate()}:D>"),
+                    ("listeningTime", StringExtensions.GetListeningTimeString(day.ListeningTime)),
+                    ("plays", context.LocalizeCount("shared.plays", day.Playcount))));
                 content.AppendLine(fieldContent.ToString());
                 container.WithTextDisplay(content.ToString());
                 container.WithSeparator();
@@ -1548,15 +1549,15 @@ public class PlayBuilder
             }
 
             footer.AppendLine(
-                $" - Top genres, artist, album and track");
-            footer.AppendLine(
-                $"-# {PlayService.GetUniqueCount(plays).Format(context.NumberFormat)} unique tracks - " +
-                $"{plays.Count.Format(context.NumberFormat)} total plays - " +
-                $"{Math.Round(PlayService.GetAvgPerDayCount(page), 1).Format(context.NumberFormat)} avg");
+                $" - {context.Localize("overview.footerLegend")}");
+            footer.AppendLine(context.Localize("overview.footerStats",
+                ("unique", PlayService.GetUniqueCount(plays).Format(context.NumberFormat)),
+                ("total", plays.Count.Format(context.NumberFormat)),
+                ("avg", Math.Round(PlayService.GetAvgPerDayCount(page), 1).Format(context.NumberFormat))));
 
             if (page.Count() < amount)
             {
-                footer.AppendLine($"{amount - page.Count()} days not shown because of no plays.");
+                footer.AppendLine(context.LocalizeCount("overview.daysNotShown", amount - page.Count()));
             }
 
             container

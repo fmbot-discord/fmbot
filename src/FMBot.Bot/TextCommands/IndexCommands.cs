@@ -136,7 +136,7 @@ public class IndexCommands(
         else
         {
             var initialResponse = userBuilder.UpdateOptionsInit(new ContextModel(this.Context, prfx, contextUser),
-                updateType.updateType, updateType.description);
+                updateType.updateType);
             var message = await this.Context.SendResponse(this.Interactivity, initialResponse, userService);
 
             if (initialResponse.CommandResponse != CommandResponse.Ok)

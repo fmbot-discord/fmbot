@@ -31,6 +31,7 @@ public static class LanguageExtensions
                 Language.Italian => "it",
                 Language.Turkish => "tr",
                 Language.Swedish => "sv-SE",
+                Language.Indonesian => "id",
                 _ => "en"
             };
         }
@@ -49,6 +50,7 @@ public static class LanguageExtensions
                 Language.Italian => "Italian",
                 Language.Turkish => "Turkish",
                 Language.Swedish => "Swedish",
+                Language.Indonesian => "Indonesian",
                 _ => "English"
             };
         }
@@ -69,6 +71,7 @@ public static class LanguageExtensions
             "it" => Language.Italian,
             "tr" => Language.Turkish,
             "sv-SE" => Language.Swedish,
+            "id" => Language.Indonesian,
             _ => null
         };
     }
@@ -112,6 +115,7 @@ public static class LanguageExtensions
             "italian" or "italiano" or "it" => Language.Italian,
             "turkish" or "turkce" or "tr" => Language.Turkish,
             "swedish" or "svenska" or "sv" or "sv-se" => Language.Swedish,
+            "indonesian" or "indonesia" or "bahasa indonesia" or "bahasa" or "id" => Language.Indonesian,
             _ => null
         };
     }

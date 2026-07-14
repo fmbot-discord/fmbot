@@ -166,7 +166,7 @@ public class GameCommands(
                 if (!perms.HasFlag(Permissions.AttachFiles))
                 {
                     await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
-                        { Content = "The bot is missing the `Attach Files` permission in this channel, which is required for playing Pixel Jumble properly. Please grant it server-wide via `Server Settings` > `Roles`, or per-channel via the channel permissions." });
+                        { Content = context.Localize("jumble.attachFilesPermissionRequired") });
                     await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
                     return;
                 }
@@ -217,7 +217,7 @@ public class GameCommands(
 
         await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
         {
-            Content = "The bot is missing the `Add Reactions` permission in this channel, which is required for playing Jumble properly. Please grant it server-wide via `Server Settings` > `Roles`, or per-channel via the channel permissions."
+            Content = Localizer.ForGuild(this.Context.Guild?.Id).Translate("jumble.addReactionsPermissionRequired")
         });
         await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
         return false;

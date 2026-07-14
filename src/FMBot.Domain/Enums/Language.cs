@@ -25,5 +25,7 @@ public enum Language
     [Option("Türkçe", "Turkish")]
     Turkish = 9,
     [Option("Svenska", "Swedish")]
-    Swedish = 10
+    Swedish = 10,
+    [Option("Bahasa Indonesia", "Indonesian")]
+    Indonesian = 11
 }

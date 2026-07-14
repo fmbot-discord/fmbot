@@ -121,8 +121,7 @@ public class IndexSlashCommands(
         else
         {
             var initialResponse =
-                userBuilder.UpdateOptionsInit(new ContextModel(this.Context, contextUser), updateType.updateType,
-                    updateType.description);
+                userBuilder.UpdateOptionsInit(new ContextModel(this.Context, contextUser), updateType.updateType);
             await this.Context.SendResponse(this.Interactivity, initialResponse, userService);
 
             if (initialResponse.CommandResponse != CommandResponse.Ok)

@@ -816,18 +816,16 @@ public class SettingService
         return (true, extraOptions);
     }
 
-    public static (UpdateType updateType, bool optionPicked, string description) GetUpdateType(string extraOptions, bool isSupporter)
+    public static (UpdateType updateType, bool optionPicked) GetUpdateType(string extraOptions, bool isSupporter)
     {
         var updateType = new UpdateType();
         var optionPicked = false;
-        var description = new StringBuilder();
 
         var full = new[] { "full", "force", "f" };
         if (Contains(extraOptions, full))
         {
             updateType |= UpdateType.Full;
             optionPicked = true;
-            description.AppendLine("- Everything (full update)");
         }
         else
         {
@@ -836,14 +834,6 @@ public class SettingService
             {
                 updateType |= UpdateType.AllPlays;
                 optionPicked = true;
-                if (isSupporter)
-                {
-                    description.AppendLine("- All scrobbles");
-                }
-                else
-                {
-                    description.AppendLine($"- Last {Constants.NonSupporterMaxSavedPlays} scrobbles");
-                }
             }
 
             var artists = new[] { "artists", "artist", "a" };
@@ -851,7 +841,6 @@ public class SettingService
             {
                 updateType |= UpdateType.Artists;
                 optionPicked = true;
-                description.AppendLine("- Your top artists");
             }
 
             var albums = new[] { "albums", "album", "ab" };
@@ -859,7 +848,6 @@ public class SettingService
             {
                 updateType |= UpdateType.Albums;
                 optionPicked = true;
-                description.AppendLine("- Your top albums");
             }
 
             var tracks = new[] { "tracks", "track", "tr" };
@@ -867,7 +855,6 @@ public class SettingService
             {
                 updateType |= UpdateType.Tracks;
                 optionPicked = true;
-                description.AppendLine("- Your top tracks");
             }
         }
 
@@ -876,10 +863,9 @@ public class SettingService
         // {
         //     updateType |= UpdateType.Discogs;
         //     optionPicked = true;
-        //     description.AppendLine("- Your Discogs collection");
         // }
 
-        return (updateType, optionPicked, description.ToString());
+        return (updateType, optionPicked);
     }
 
     public async Task<UserSettingsModel> GetUser(

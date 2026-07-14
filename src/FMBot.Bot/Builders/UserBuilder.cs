@@ -2177,7 +2177,7 @@ public class UserBuilder
         };
 
         response.Embed.WithDescription(
-            $"<a:loading:821676038102056991> Fetching **{context.ContextUser.UserNameLastFM}**'s latest scrobbles...");
+            $"<a:loading:821676038102056991> {context.Localize("update.fetchingScrobbles", ("user", context.ContextUser.UserNameLastFM))}");
 
         return response;
     }
@@ -2194,12 +2194,12 @@ public class UserBuilder
         var updatePromo =
             await this._supporterService.GetPromotionalUpdateMessage(context.ContextUser, context.Prefix,
                 context.DiscordGuild?.Id);
-        var upgradeButton = new ActionRowProperties().WithButton(Constants.GetSupporterButton,
+        var upgradeButton = new ActionRowProperties().WithButton(context.Localize("buttons.getFmbotSupporter"),
             style: ButtonStyle.Secondary,
             customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: updatePromo.supporterSource));
         var premiumServerButton = new ActionRowProperties().AddComponents(new ButtonProperties(
             $"{InteractionConstants.PremiumServer.GetOverview}:{updatePromo.supporterSource}",
-            "Premium server", ButtonStyle.Secondary));
+            context.Localize("buttons.premiumServer"), ButtonStyle.Secondary));
 
         if (GenericEmbedService.RecentScrobbleCallFailed(update))
         {
@@ -2213,8 +2213,9 @@ public class UserBuilder
             var previousUpdate = DateTime.SpecifyKind(context.ContextUser.LastUpdated.Value, DateTimeKind.Utc);
             var previousUpdateValue = ((DateTimeOffset)previousUpdate).ToUnixTimeSeconds();
 
-            updatedDescription.AppendLine(
-                $"Nothing new found on [your Last.fm profile]({LastfmUrlExtensions.GetUserUrl(context.ContextUser.UserNameLastFM)}) since the last time we checked <t:{previousUpdateValue}:R>.");
+            updatedDescription.AppendLine(context.Localize("update.nothingNew",
+                ("url", LastfmUrlExtensions.GetUserUrl(context.ContextUser.UserNameLastFM)),
+                ("timestamp", $"<t:{previousUpdateValue}:R>")));
 
             if (update.Content?.RecentTracks != null && update.Content.RecentTracks.Any())
             {
@@ -2226,20 +2227,19 @@ public class UserBuilder
                         var specifiedDateTime = DateTime.SpecifyKind(latestScrobble.TimePlayed.Value, DateTimeKind.Utc);
                         var dateValue = ((DateTimeOffset)specifiedDateTime).ToUnixTimeSeconds();
                         updatedDescription.AppendLine();
-                        updatedDescription.AppendLine($"Your last scrobble was <t:{dateValue}:R>.");
+                        updatedDescription.AppendLine(context.Localize("update.lastScrobble",
+                            ("timestamp", $"<t:{dateValue}:R>")));
                     }
 
                     updatedDescription.AppendLine();
                     if (latestScrobble?.TimePlayed < DateTime.UtcNow.AddHours(-3))
                     {
-                        updatedDescription.AppendLine(
-                            "Using Spotify? Your connection to Last.fm might have expired, which stops scrobbling completely. " +
-                            "Reconnect by pressing **Disconnect** and then **Connect** next to 'Spotify Scrobbling' in [your Last.fm settings](https://www.last.fm/settings/applications).");
+                        updatedDescription.AppendLine(context.Localize("update.spotifyConnectionExpired"));
                     }
                     else
                     {
-                        updatedDescription.AppendLine(
-                            $"Last.fm not keeping track of your Spotify properly? Try the instructions in `{context.Prefix}outofsync` for help.");
+                        updatedDescription.AppendLine(context.Localize("update.outOfSyncHint",
+                            ("command", $"{context.Prefix}outofsync")));
                     }
                 }
             }
@@ -2269,14 +2269,16 @@ public class UserBuilder
         {
             if (update.Content.RemovedRecentTracksAmount == 0)
             {
-                updatedDescription.AppendLine(
-                    $"✅ Cached playcounts have been updated for {context.ContextUser.UserNameLastFM} based on {update.Content.NewRecentTracksAmount.Format(context.NumberFormat)} new {StringExtensions.GetScrobblesString(update.Content.NewRecentTracksAmount)}.");
+                updatedDescription.AppendLine(context.Localize("update.playcountsUpdated",
+                    ("user", context.ContextUser.UserNameLastFM),
+                    ("newScrobbles", context.LocalizeCount("update.newScrobbles", update.Content.NewRecentTracksAmount))));
             }
             else
             {
-                updatedDescription.AppendLine(
-                    $"✅ Cached playcounts have been updated for {context.ContextUser.UserNameLastFM} based on {update.Content.NewRecentTracksAmount.Format(context.NumberFormat)} new {StringExtensions.GetScrobblesString(update.Content.NewRecentTracksAmount)} " +
-                    $"and {update.Content.RemovedRecentTracksAmount} removed {StringExtensions.GetScrobblesString(update.Content.RemovedRecentTracksAmount)}.");
+                updatedDescription.AppendLine(context.Localize("update.playcountsUpdatedWithRemoved",
+                    ("user", context.ContextUser.UserNameLastFM),
+                    ("newScrobbles", context.LocalizeCount("update.newScrobbles", update.Content.NewRecentTracksAmount)),
+                    ("removedScrobbles", context.LocalizeCount("update.removedScrobbles", update.Content.RemovedRecentTracksAmount))));
             }
 
             if (updatePromo.message != null)
@@ -2303,7 +2305,7 @@ public class UserBuilder
         return response;
     }
 
-    public ResponseModel UpdateOptionsInit(ContextModel context, UpdateType updateType, string updateTypeDescription)
+    public ResponseModel UpdateOptionsInit(ContextModel context, UpdateType updateType)
     {
         var response = new ResponseModel
         {
@@ -2314,12 +2316,11 @@ public class UserBuilder
         {
             var issueDescription = new StringBuilder();
 
-            issueDescription.AppendLine(
-                "Doing an advanced update is disabled temporarily while Last.fm is having issues. Please try again later.");
+            issueDescription.AppendLine(context.Localize("update.advancedUpdateDisabled"));
             if (PublicProperties.IssuesReason != null)
             {
                 issueDescription.AppendLine();
-                issueDescription.AppendLine("Note:");
+                issueDescription.AppendLine(context.Localize("shared.note"));
                 issueDescription.AppendLine($"*{PublicProperties.IssuesReason}*");
             }
 
@@ -2332,9 +2333,8 @@ public class UserBuilder
         if (context.ContextUser.LastIndexed > DateTime.UtcNow.AddMinutes(-30))
         {
             response.Embed.WithColor(DiscordConstants.WarningColorOrange);
-            response.Embed.WithDescription(
-                "You can't do full updates too often. These are only meant to be used when your Last.fm history has been adjusted.\n\n" +
-                $"Using Spotify and having problems with your music not being tracked or it lagging behind? Please use `{context.Prefix}outofsync` for help. Spotify sync issues can't be fixed inside of .fmbot.");
+            response.Embed.WithDescription(context.Localize("update.fullUpdateCooldown",
+                ("command", $"{context.Prefix}outofsync")));
             response.CommandResponse = CommandResponse.Cooldown;
             return response;
         }
@@ -2344,24 +2344,53 @@ public class UserBuilder
         if (!indexAlreadyStarted)
         {
             response.Embed.WithColor(DiscordConstants.WarningColorOrange);
-            response.Embed.WithDescription(
-                "An advanced update has recently already been started for you. Please wait before starting a new one.");
+            response.Embed.WithDescription(context.Localize("update.advancedUpdateAlreadyStarted"));
             response.CommandResponse = CommandResponse.Cooldown;
             return response;
         }
 
         var indexDescription = new StringBuilder();
         indexDescription.AppendLine(
-            $"<a:loading:821676038102056991> Fetching Last.fm playcounts for user {context.ContextUser.UserNameLastFM}...");
+            $"<a:loading:821676038102056991> {context.Localize("update.fetchingPlaycounts", ("user", context.ContextUser.UserNameLastFM))}");
         indexDescription.AppendLine();
-        indexDescription.AppendLine("The following playcount caches are being rebuilt:");
-        indexDescription.AppendLine(updateTypeDescription);
+        indexDescription.AppendLine(context.Localize("update.cachesBeingRebuilt"));
+
+        if (updateType.HasFlag(UpdateType.Full))
+        {
+            indexDescription.AppendLine(context.Localize("update.typeEverything"));
+        }
+        else
+        {
+            if (updateType.HasFlag(UpdateType.AllPlays))
+            {
+                indexDescription.AppendLine(SupporterService.IsSupporter(context.ContextUser.UserType)
+                    ? context.Localize("update.typeAllScrobbles")
+                    : context.Localize("update.typeLastScrobbles",
+                        ("amount", Constants.NonSupporterMaxSavedPlays.ToString())));
+            }
+
+            if (updateType.HasFlag(UpdateType.Artists))
+            {
+                indexDescription.AppendLine(context.Localize("update.typeTopArtists"));
+            }
+
+            if (updateType.HasFlag(UpdateType.Albums))
+            {
+                indexDescription.AppendLine(context.Localize("update.typeTopAlbums"));
+            }
+
+            if (updateType.HasFlag(UpdateType.Tracks))
+            {
+                indexDescription.AppendLine(context.Localize("update.typeTopTracks"));
+            }
+        }
+
+        indexDescription.AppendLine();
 
         if (context.ContextUser.UserType != UserType.User)
         {
-            indexDescription.AppendLine(
-                $"*Thanks for being an .fmbot {context.ContextUser.UserType.ToString().ToLower()}. " +
-                $"Your full Last.fm history will now be cached, so this command might take slightly longer...*");
+            indexDescription.AppendLine(context.Localize("update.supporterFullHistory",
+                ("userType", context.ContextUser.UserType.ToString().ToLower())));
         }
 
         response.Embed.WithDescription(indexDescription.ToString());
@@ -2389,7 +2418,8 @@ public class UserBuilder
 
         var result = await this._indexService.ModularUpdate(context.ContextUser, updateType);
 
-        var description = UserService.GetIndexCompletedUserStats(context.ContextUser, result, context.NumberFormat);
+        var description = UserService.GetIndexCompletedUserStats(context.ContextUser, result, context.NumberFormat,
+            context.Localizer);
 
         response.Embed = new EmbedProperties()
             .WithDescription(description.description)
@@ -2398,7 +2428,7 @@ public class UserBuilder
                 : DiscordConstants.WarningColorOrange);
         response.Components = description.promo
             ? new ActionRowProperties()
-                .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Secondary,
+                .WithButton(context.Localize("buttons.getFmbotSupporter"), style: ButtonStyle.Secondary,
                     customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "update-alldata"))
             : null;
 

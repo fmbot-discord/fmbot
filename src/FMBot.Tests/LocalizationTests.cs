@@ -79,6 +79,9 @@ public class LocalizationTests
     [TestCase(Language.Polish, 25, "_many")]
     [TestCase(Language.Polish, 112, "_many")]
     [TestCase(Language.Polish, 122, "_few")]
+    [TestCase(Language.Indonesian, 0, "_other")]
+    [TestCase(Language.Indonesian, 1, "_other")]
+    [TestCase(Language.Indonesian, 2, "_other")]
     public void PluralSuffix(Language language, long count, string expected)
     {
         Assert.That(Localizer.GetPluralSuffix(language, count), Is.EqualTo(expected));

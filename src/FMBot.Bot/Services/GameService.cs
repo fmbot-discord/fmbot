@@ -509,12 +509,12 @@ public class GameService(
     }
 
     public static List<JumbleSessionHint> GetJumbleArtistHints(Artist artist, long userPlaycount,
-        NumberFormat numberFormat,
+        Localizer localizer,
         CountryInfo country = null)
     {
-        var hints = GetRandomArtistHints(artist, country);
+        var hints = GetRandomArtistHints(artist, localizer, country);
         hints.Add(new JumbleSessionHint(JumbleHintType.Playcount,
-            $"- You have **{userPlaycount.Format(numberFormat)}** {StringExtensions.GetPlaysString(userPlaycount)} on this artist"));
+            localizer.TranslateCount("jumble.hints.playcountArtist", userPlaycount)));
 
         RandomNumberGenerator.Shuffle(CollectionsMarshal.AsSpan(hints));
 
@@ -528,7 +528,7 @@ public class GameService(
     }
 
     public static List<JumbleSessionHint> GetJumbleAlbumHints(Album album, Artist artist, long userPlaycount,
-        NumberFormat numberFormat, CountryInfo country = null)
+        Localizer localizer, CountryInfo country = null)
     {
         var albumType = "Album";
         if (album is { Type: not null } && album.Type.Equals("single", StringComparison.OrdinalIgnoreCase))
@@ -536,9 +536,11 @@ public class GameService(
             albumType = "Single";
         }
 
-        var hints = GetRandomAlbumHints(album, artist, country, albumType);
+        var hints = GetRandomAlbumHints(album, artist, localizer, country, albumType);
         hints.Add(new JumbleSessionHint(JumbleHintType.Playcount,
-            $"- You have **{userPlaycount.Format(numberFormat)}** {StringExtensions.GetPlaysString(userPlaycount)} on this {albumType.ToLower()}"));
+            albumType == "Single"
+                ? localizer.TranslateCount("jumble.hints.playcountSingle", userPlaycount)
+                : localizer.TranslateCount("jumble.hints.playcountAlbum", userPlaycount)));
 
         RandomNumberGenerator.Shuffle(CollectionsMarshal.AsSpan(hints));
 
@@ -642,21 +644,23 @@ public class GameService(
         await db.SaveChangesAsync();
     }
 
-    private static List<JumbleSessionHint> GetRandomArtistHints(Artist artist, CountryInfo country = null)
+    private static List<JumbleSessionHint> GetRandomArtistHints(Artist artist, Localizer localizer,
+        CountryInfo country = null)
     {
         var hints = new List<JumbleSessionHint>();
 
         if (artist is { Popularity: > 0 })
         {
             hints.Add(new JumbleSessionHint(JumbleHintType.Popularity,
-                $"- They have a popularity of **{artist.Popularity}** out of 100"));
+                localizer.Translate("jumble.hints.popularityArtist", ("value", artist.Popularity.ToString()))));
         }
 
         if (artist?.ArtistGenres != null && artist.ArtistGenres.Any())
         {
             var random = RandomNumberGenerator.GetInt32(artist.ArtistGenres.Count);
             var genre = artist.ArtistGenres.ToList()[random];
-            hints.Add(new JumbleSessionHint(JumbleHintType.Genre, $"- One of their genres is **{genre.Name}**"));
+            hints.Add(new JumbleSessionHint(JumbleHintType.Genre,
+                localizer.Translate("jumble.hints.genreArtist", ("genre", genre.Name))));
         }
 
         if (artist?.StartDate != null)
@@ -667,11 +671,13 @@ public class GameService(
             if (artist.Type?.ToLower() == "person")
             {
                 hints.Add(new JumbleSessionHint(JumbleHintType.StartDate,
-                    $"- They were born **<t:{dateValue}:D>** {ArtistsService.IsArtistBirthday(artist.StartDate)}"));
+                    localizer.Translate("jumble.hints.bornArtist", ("date", $"<t:{dateValue}:D>"),
+                        ("birthday", ArtistsService.IsArtistBirthday(artist.StartDate)))));
             }
             else
             {
-                hints.Add(new JumbleSessionHint(JumbleHintType.StartDate, $"- They started on **<t:{dateValue}:D>**"));
+                hints.Add(new JumbleSessionHint(JumbleHintType.StartDate,
+                    localizer.Translate("jumble.hints.startedArtist", ("date", $"<t:{dateValue}:D>"))));
             }
         }
 
@@ -683,11 +689,12 @@ public class GameService(
             if (artist.Type?.ToLower() == "person")
             {
                 hints.Add(new JumbleSessionHint(JumbleHintType.EndDate,
-                    $"- They passed away on **<t:{dateValue}:D>**"));
+                    localizer.Translate("jumble.hints.passedAwayArtist", ("date", $"<t:{dateValue}:D>"))));
             }
             else
             {
-                hints.Add(new JumbleSessionHint(JumbleHintType.EndDate, $"- They stopped on **<t:{dateValue}:D>**"));
+                hints.Add(new JumbleSessionHint(JumbleHintType.EndDate,
+                    localizer.Translate("jumble.hints.stoppedArtist", ("date", $"<t:{dateValue}:D>"))));
             }
         }
 
@@ -695,48 +702,61 @@ public class GameService(
             !artist.Disambiguation.Contains(artist.Name, StringComparison.OrdinalIgnoreCase))
         {
             hints.Add(new JumbleSessionHint(JumbleHintType.Disambiguation,
-                $"- They might be described as **{artist.Disambiguation}**"));
+                localizer.Translate("jumble.hints.describedArtist", ("description", artist.Disambiguation))));
         }
 
         if (!string.IsNullOrWhiteSpace(artist?.Type))
         {
-            hints.Add(new JumbleSessionHint(JumbleHintType.Type, $"- They are a **{artist.Type.ToLower()}**"));
+            hints.Add(new JumbleSessionHint(JumbleHintType.Type,
+                localizer.Translate("jumble.hints.typeArtist", ("type", artist.Type.ToLower()))));
         }
 
         if (artist?.CountryCode != null && country != null)
         {
             hints.Add(new JumbleSessionHint(JumbleHintType.Country,
-                $"- Their country flag: :flag_{country.Code.ToLower()}:"));
+                localizer.Translate("jumble.hints.countryArtist", ("flag", $":flag_{country.Code.ToLower()}:"))));
         }
 
         return hints;
     }
 
-    private static List<JumbleSessionHint> GetRandomAlbumHints(Album album, Artist artist, CountryInfo country = null,
+    private static List<JumbleSessionHint> GetRandomAlbumHints(Album album, Artist artist, Localizer localizer,
+        CountryInfo country = null,
         string albumType = "Album")
     {
         var hints = new List<JumbleSessionHint>();
+        var single = albumType == "Single";
 
         if (album is { Type: not null } && !album.Type.Equals("album", StringComparison.OrdinalIgnoreCase))
         {
-            hints.Add(new JumbleSessionHint(JumbleHintType.Type, $"- Album type is a **{album.Type}**"));
+            hints.Add(new JumbleSessionHint(JumbleHintType.Type,
+                localizer.Translate("jumble.hints.albumType", ("type", album.Type))));
         }
 
         if (album is { Popularity: > 0 })
         {
             hints.Add(new JumbleSessionHint(JumbleHintType.Popularity,
-                $"- {albumType} has a popularity of **{album.Popularity}** out of 100"));
+                single
+                    ? localizer.Translate("jumble.hints.popularitySingle", ("value", album.Popularity.ToString()))
+                    : localizer.Translate("jumble.hints.popularityAlbum", ("value", album.Popularity.ToString()))));
         }
 
         if (album is { Label: not null })
         {
-            hints.Add(new JumbleSessionHint(JumbleHintType.Label, $"- {albumType} label is **{album.Label}**"));
+            hints.Add(new JumbleSessionHint(JumbleHintType.Label,
+                single
+                    ? localizer.Translate("jumble.hints.labelSingle", ("label", album.Label))
+                    : localizer.Translate("jumble.hints.labelAlbum", ("label", album.Label))));
         }
 
         if (album is { ReleaseDate: not null })
         {
             hints.Add(new JumbleSessionHint(JumbleHintType.ReleaseDate,
-                $"- {albumType} was released on **{AlbumService.GetAlbumReleaseDate(album)}**"));
+                single
+                    ? localizer.Translate("jumble.hints.releasedSingle",
+                        ("date", AlbumService.GetAlbumReleaseDate(album)))
+                    : localizer.Translate("jumble.hints.releasedAlbum",
+                        ("date", AlbumService.GetAlbumReleaseDate(album)))));
         }
 
         if (album is { AppleMusicShortDescription: not null } &&
@@ -752,7 +772,8 @@ public class GameService(
         {
             var random = RandomNumberGenerator.GetInt32(artist.ArtistGenres.Count);
             var genre = artist.ArtistGenres.ToList()[random];
-            hints.Add(new JumbleSessionHint(JumbleHintType.Genre, $"- One of the artist's genres is **{genre.Name}**"));
+            hints.Add(new JumbleSessionHint(JumbleHintType.Genre,
+                localizer.Translate("jumble.hints.genreAlbumArtist", ("genre", genre.Name))));
         }
 
         if (artist?.StartDate != null)
@@ -763,12 +784,13 @@ public class GameService(
             if (artist.Type?.ToLower() == "person")
             {
                 hints.Add(new JumbleSessionHint(JumbleHintType.StartDate,
-                    $"- Artist was born **<t:{dateValue}:D>** {ArtistsService.IsArtistBirthday(artist.StartDate)}"));
+                    localizer.Translate("jumble.hints.bornAlbumArtist", ("date", $"<t:{dateValue}:D>"),
+                        ("birthday", ArtistsService.IsArtistBirthday(artist.StartDate)))));
             }
             else
             {
                 hints.Add(new JumbleSessionHint(JumbleHintType.StartDate,
-                    $"- Artist started on **<t:{dateValue}:D>**"));
+                    localizer.Translate("jumble.hints.startedAlbumArtist", ("date", $"<t:{dateValue}:D>"))));
             }
         }
 
@@ -780,11 +802,12 @@ public class GameService(
             if (artist.Type?.ToLower() == "person")
             {
                 hints.Add(new JumbleSessionHint(JumbleHintType.EndDate,
-                    $"- Artist passed away on **<t:{dateValue}:D>**"));
+                    localizer.Translate("jumble.hints.passedAwayAlbumArtist", ("date", $"<t:{dateValue}:D>"))));
             }
             else
             {
-                hints.Add(new JumbleSessionHint(JumbleHintType.EndDate, $"- Artist stopped on **<t:{dateValue}:D>**"));
+                hints.Add(new JumbleSessionHint(JumbleHintType.EndDate,
+                    localizer.Translate("jumble.hints.stoppedAlbumArtist", ("date", $"<t:{dateValue}:D>"))));
             }
         }
 
@@ -792,18 +815,19 @@ public class GameService(
             !artist.Disambiguation.Contains(artist.Name, StringComparison.OrdinalIgnoreCase))
         {
             hints.Add(new JumbleSessionHint(JumbleHintType.Disambiguation,
-                $"- Artist might be described as **{artist.Disambiguation}**"));
+                localizer.Translate("jumble.hints.describedAlbumArtist", ("description", artist.Disambiguation))));
         }
 
         if (!string.IsNullOrWhiteSpace(artist?.Type))
         {
-            hints.Add(new JumbleSessionHint(JumbleHintType.Type, $"- Artist is a **{artist.Type.ToLower()}**"));
+            hints.Add(new JumbleSessionHint(JumbleHintType.Type,
+                localizer.Translate("jumble.hints.typeAlbumArtist", ("type", artist.Type.ToLower()))));
         }
 
         if (artist?.CountryCode != null && country != null)
         {
             hints.Add(new JumbleSessionHint(JumbleHintType.Country,
-                $"- Artist country flag: :flag_{country.Code.ToLower()}:"));
+                localizer.Translate("jumble.hints.countryAlbumArtist", ("flag", $":flag_{country.Code.ToLower()}:"))));
         }
 
         return hints;
