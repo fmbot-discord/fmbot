@@ -70,7 +70,7 @@ public class StaticInteractions(
                 existingStripeSupporter?.Currency);
 
         var link = await supporterService.GetSupporterCheckoutLink(this.Context.User.Id,
-            contextUser.UserNameLastFM, type, pricing, existingStripeSupporter, source);
+            this.Context.User.Username, contextUser.UserNameLastFM, type, pricing, existingStripeSupporter, source);
 
         var components = new ActionRowProperties().WithButton($"Complete purchase", url: link,
             emote: EmojiProperties.Standard("⭐"));
@@ -126,6 +126,7 @@ public class StaticInteractions(
 
             var link = await supporterService.GetSupporterLifetimePromoCheckoutLink(
                 this.Context.User.Id,
+                this.Context.User.Username,
                 contextUser.UserNameLastFM,
                 priceId,
                 currency,
@@ -334,6 +335,7 @@ public class StaticInteractions(
         {
             var checkoutLink = await supporterService.GetSupporterGiftCheckoutLink(
                 contextUser.DiscordUserId,
+                this.Context.User.Username,
                 contextUser.UserNameLastFM,
                 priceId,
                 $"gift-{duration}",
