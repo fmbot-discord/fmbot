@@ -7,7 +7,7 @@ using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services;
-using FMBot.Domain.Extensions;
+using FMBot.Domain;
 using FMBot.Domain.Models;
 using NetCord.Services.ApplicationCommands;
 using NetCord;
@@ -73,6 +73,15 @@ public class TrackSlashCommands(
         bool filterDisabled = false)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
+
+        if (displayRoleFilter && !PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
+        {
+            var premiumRequiredResponse = PremiumSettingBuilder.PremiumServerRequired("rolefilter",
+                PremiumSettingBuilder.RoleFilterFeatureDescription);
+            await this.Context.SendFollowUpResponse(this.Interactivity, premiumRequiredResponse, userService);
+            await this.Context.LogCommandUsedAsync(premiumRequiredResponse, userService);
+            return;
+        }
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 

@@ -1,4 +1,3 @@
-using System;
 using System.Threading.Tasks;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.AutoCompleteHandlers;
@@ -7,6 +6,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
+using FMBot.Domain;
 using FMBot.Domain.Models;
 using NetCord.Services.ApplicationCommands;
 using NetCord;
@@ -44,6 +44,15 @@ public class ServerSlashCommands(
         bool displayRoleFilter = false)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
+
+        if (displayRoleFilter && !PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
+        {
+            var premiumRequiredResponse = PremiumSettingBuilder.PremiumServerRequired("rolefilter",
+                PremiumSettingBuilder.RoleFilterFeatureDescription);
+            await this.Context.SendFollowUpResponse(this.Interactivity, premiumRequiredResponse, userService);
+            await this.Context.LogCommandUsedAsync(premiumRequiredResponse, userService);
+            return;
+        }
 
         var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
 
@@ -83,6 +92,15 @@ public class ServerSlashCommands(
         bool displayRoleFilter = false)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
+
+        if (displayRoleFilter && !PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
+        {
+            var premiumRequiredResponse = PremiumSettingBuilder.PremiumServerRequired("rolefilter",
+                PremiumSettingBuilder.RoleFilterFeatureDescription);
+            await this.Context.SendFollowUpResponse(this.Interactivity, premiumRequiredResponse, userService);
+            await this.Context.LogCommandUsedAsync(premiumRequiredResponse, userService);
+            return;
+        }
 
         var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
 
@@ -124,6 +142,15 @@ public class ServerSlashCommands(
         bool displayRoleFilter = false)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
+
+        if (displayRoleFilter && !PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
+        {
+            var premiumRequiredResponse = PremiumSettingBuilder.PremiumServerRequired("rolefilter",
+                PremiumSettingBuilder.RoleFilterFeatureDescription);
+            await this.Context.SendFollowUpResponse(this.Interactivity, premiumRequiredResponse, userService);
+            await this.Context.LogCommandUsedAsync(premiumRequiredResponse, userService);
+            return;
+        }
 
         var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
 

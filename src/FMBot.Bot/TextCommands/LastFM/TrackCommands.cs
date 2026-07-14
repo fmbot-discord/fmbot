@@ -9,7 +9,6 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
-using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
@@ -301,8 +300,11 @@ public class TrackCommands(
 
     [Command("whoknowstrack", "wt", "wkt", "wktr", "wtr", "wktrack")]
     [Summary("Shows what other users listen to a track in your server")]
+    [Options("Response mode: `image`, `embed` or `pages`",
+        "Role filter: `rolefilter` / `rf` (Premium server)",
+        "Disable filters: `nofilter` / `nf`")]
     [Examples("wt", "whoknowstrack", "whoknowstrack Hothouse Flowers Don't Go",
-        "whoknowstrack Natasha Bedingfield | Unwritten")]
+        "whoknowstrack Natasha Bedingfield | Unwritten", "whoknowstrack rolefilter")]
     [UsernameSetRequired]
     [GuildOnly]
     [RequiresIndex]
@@ -324,6 +326,15 @@ public class TrackCommands(
             };
 
             var settings = SettingService.SetWhoKnowsSettings(currentSettings, trackValues, contextUser.UserType);
+
+            if (settings.DisplayRoleFilter && !PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
+            {
+                var premiumRequiredResponse = PremiumSettingBuilder.PremiumServerRequired("rolefilter-text",
+                    PremiumSettingBuilder.RoleFilterFeatureDescription);
+                await this.Context.SendResponse(this.Interactivity, premiumRequiredResponse, userService);
+                await this.Context.LogCommandUsedAsync(premiumRequiredResponse, userService);
+                return;
+            }
 
             var response = await trackBuilders.WhoKnowsTrackAsync(
                 new ContextModel(this.Context, prfx, contextUser), settings.ResponseMode, settings.NewSearchValue,
@@ -432,9 +443,9 @@ public class TrackCommands(
     [Command("servertracks", "st", "stt", "servertoptracks", "servertrack", "billboard", "bb")]
     [Summary("Top tracks for your server, optionally for an artist")]
     [Options("Time periods: `weekly`, `monthly`, `alltime` and last two months", "Order options: `plays` and `listeners`",
-        "Artist name")]
+        "Artist name", "Role filter: `rolefilter` / `rf` (Premium server)")]
     [Examples("st", "st a p", "servertracks", "servertracks alltime", "servertracks listeners weekly",
-        "servertracks the beatles listeners", "servertracks march")]
+        "servertracks the beatles listeners", "servertracks march", "servertracks rolefilter")]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Tracks)]
@@ -459,6 +470,15 @@ public class TrackCommands(
             guildListSettings.ChartTimePeriod, cachedOnly: true);
 
         guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
+
+        if (guildListSettings.DisplayRoleFilter && !PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
+        {
+            var premiumRequiredResponse = PremiumSettingBuilder.PremiumServerRequired("rolefilter-text",
+                PremiumSettingBuilder.RoleFilterFeatureDescription);
+            await this.Context.SendResponse(this.Interactivity, premiumRequiredResponse, userService);
+            await this.Context.LogCommandUsedAsync(premiumRequiredResponse, userService);
+            return;
+        }
 
         try
         {

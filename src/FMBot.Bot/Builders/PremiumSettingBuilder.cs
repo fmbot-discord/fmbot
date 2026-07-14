@@ -31,6 +31,10 @@ public class PremiumSettingBuilder(
     CommandService<CommandContext> commands,
     HttpClient httpClient)
 {
+    public const string RoleFilterFeatureDescription =
+        "**Role filtering** filters server charts down to members with the roles you pick. " +
+        "See what specific parts of your community are listening to.";
+
     public async Task<ResponseModel> PremiumServerOverview(ContextModel context, string userLocale,
         string source = "premiumserver")
     {
