@@ -1348,7 +1348,7 @@ public class SettingService
             return setGuildRankingSettings;
         }
 
-        var playcounts = new[] { "p", "pc", "playcount", "plays" };
+        var playcounts = new[] { "p", "pc", "playcount", "plays", "scrobbles" };
         if (Contains(extraOptions, playcounts))
         {
             guildRankingSettings.NewSearchValue = ContainsAndRemove(guildRankingSettings.NewSearchValue, playcounts);
