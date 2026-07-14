@@ -277,8 +277,12 @@ public class UserCommands(
     }
 
     [Command("featured", "featuredavatar", "featureduser", "featuredalbum", "avatar", "ftrd", "ftd", "feat", "pǝɹnʇɐǝɟ")]
-    [Summary("Displays the currently picked feature and the user.\n\n" +
-             "This command will also show something special if the user is in your server")]
+    [Summary("Displays the current featured user and their music.\n\n" +
+             "Every hour the bot randomly picks someone who used .fmbot in the last day. " +
+             "One of their album covers then becomes the bot's avatar, and this command shows who got picked and what they were listening to. " +
+             "It will also show something special if the featured user is in your server.\n\n" +
+             "On premium servers with server featured enabled, this shows the server's own featured member instead.")]
+    [Examples("featured")]
     [CommandCategories(CommandCategory.Other)]
     [SupporterEnhanced(
         "Every first Sunday of the month is Supporter Sunday. The bot will then exclusively feature supporters as a thank-you for supporting the bot.")]
@@ -360,8 +364,15 @@ public class UserCommands(
     }
 
     [Command("featuredlog", "featuredhistory", "recentfeatured", "rf", "recentlyfeatured", "fl", "flog", "ɓolpǝɹnʇɐǝɟ")]
-    [Summary("Shows featured history")]
-    [Options("global/members/serverfeatured/friends/self")]
+    [Summary("Shows featured history for you, someone else, your friends or this server")]
+    [Options("**Self**: Your own global featured history (default)",
+        "**Global**: Everyone who has been featured globally",
+        "**Members**: Members of this server featured globally",
+        "**Friends**: Your friends featured globally",
+        "**Serverfeatured**: This server's own featured history (premium servers)",
+        "**Serverfeatureduser**: How often someone has been server featured (premium servers)",
+        Constants.UserMentionExample)]
+    [Examples("featuredlog", "fl global", "featuredlog friends", "featuredlog @user", "fl serverfeatured", "fl serverfeatureduser @user")]
     [CommandCategories(CommandCategory.Other)]
     [UsernameSetRequired]
     public async Task FeaturedLogAsync([CommandParameter(Remainder = true)] string options = null)
@@ -374,7 +385,7 @@ public class UserCommands(
 
             var view = SettingService.SetFeaturedTypeView(userSettings.NewSearchValue);
 
-            if (view != FeaturedView.User)
+            if (view != FeaturedView.User && view != FeaturedView.GuildFeaturedUser)
             {
                 userSettings = await settingService.GetUser("", contextUser, this.Context);
             }

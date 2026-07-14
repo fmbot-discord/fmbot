@@ -111,13 +111,41 @@ public class WhoKnowsService
         IDictionary<int, FullGuildUser> guildUsers,
         Persistence.Domain.Models.Guild guild,
         int contextUserId,
-        List<ulong> roles = null)
+        List<ulong> roles = null,
+        bool filterDisabled = false)
     {
         var stats = new FilterStats
         {
             StartCount = users.Count,
             Roles = roles
         };
+
+        if (filterDisabled)
+        {
+            if (guildUsers.Any(w => w.Value is { BlockedFromWhoKnows: true } or { SelfBlockFromWhoKnows: true }))
+            {
+                var usersToFilter = guildUsers
+                    .Where(w => w.Value.BlockedFromWhoKnows || w.Value.SelfBlockFromWhoKnows)
+                    .Select(s => s.Value.UserId)
+                    .ToHashSet();
+
+                var lastFmUsersToFilter = guildUsers
+                    .Where(w => w.Value.BlockedFromWhoKnows || w.Value.SelfBlockFromWhoKnows)
+                    .Select(s => s.Value.UserNameLastFM)
+                    .ToHashSet();
+
+                var insensitiveLastFmUsersToFilter = new HashSet<string>(
+                    lastFmUsersToFilter, StringComparer.OrdinalIgnoreCase);
+
+                users = users
+                    .Where(w => !usersToFilter.Contains(w.UserId) &&
+                                !insensitiveLastFmUsersToFilter.Contains(w.LastFMUsername))
+                    .ToList();
+            }
+
+            stats.EndCount = users.Count;
+            return (stats, users.ToList());
+        }
 
         var premiumGuild = PublicProperties.PremiumServers.ContainsKey(guild.DiscordGuildId);
 

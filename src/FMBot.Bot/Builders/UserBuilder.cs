@@ -898,6 +898,21 @@ public class UserBuilder
                     ? await this._featuredService.GetGuildFeaturedHistory(dbGuild.GuildId)
                     : [];
                 break;
+            case FeaturedView.GuildFeaturedUser:
+                title = $"{userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}'s server featured history";
+                featuredHistory = dbGuild != null
+                    ? await this._featuredService.GetGuildFeaturedHistoryForUser(dbGuild.GuildId, userSettings.UserId)
+                    : [];
+
+                if (featuredHistory.Count >= 1)
+                {
+                    var guildSelf = userSettings.DifferentUser ? "They" : "You";
+                    footer.AppendLine(featuredHistory.Count == 1
+                        ? $"-# {guildSelf} have been server featured once"
+                        : $"-# {guildSelf} have been server featured {featuredHistory.Count} times");
+                }
+
+                break;
             case FeaturedView.User:
                 featuredHistory =
                     await this._featuredService.GetFeaturedHistoryForUser(userSettings.UserId,
@@ -920,7 +935,7 @@ public class UserBuilder
 
         var nextSupporterSunday = FeaturedService.GetDaysUntilNextSupporterSunday();
 
-        if (featuredHistory.Any() && view != FeaturedView.GuildFeatured)
+        if (featuredHistory.Any() && view != FeaturedView.GuildFeatured && view != FeaturedView.GuildFeaturedUser)
         {
             if (SupporterService.IsSupporter(context.ContextUser.UserType))
             {
@@ -945,7 +960,7 @@ public class UserBuilder
 
         foreach (var option in ((FeaturedView[])Enum.GetValues(typeof(FeaturedView))))
         {
-            var name = option.GetAttribute<OptionAttribute>().Name;
+            var optionAttribute = option.GetAttribute<OptionAttribute>();
             var value = $"{Enum.GetName(option)}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}";
 
             var active = option == view;
@@ -955,7 +970,7 @@ public class UserBuilder
                 continue;
             }
 
-            if (option == FeaturedView.GuildFeatured &&
+            if (option is FeaturedView.GuildFeatured or FeaturedView.GuildFeaturedUser &&
                 (context.DiscordGuild == null ||
                  dbGuild?.FeaturedMode != GuildFeaturedMode.GuildFeatured ||
                  !PublicProperties.PremiumServers.ContainsKey(context.DiscordGuild.Id)))
@@ -963,8 +978,9 @@ public class UserBuilder
                 continue;
             }
 
-            viewType.AddOption(new StringMenuSelectOptionProperties(name, value)
+            viewType.AddOption(new StringMenuSelectOptionProperties(optionAttribute.Name, value)
             {
+                Description = optionAttribute.Description,
                 Default = active
             });
         }
@@ -1004,6 +1020,17 @@ public class UserBuilder
                         description.AppendLine();
                         description.AppendLine(
                             "Server featured is a premium server feature where the bot regularly features someone from this server. Server admins can configure it with `.botbranding`.");
+                        break;
+                    case FeaturedView.GuildFeaturedUser:
+                        description.AppendLine(userSettings.DifferentUser
+                            ? "Sorry, they haven't been server featured yet.."
+                            : "Sorry, you haven't been server featured yet..");
+                        description.AppendLine();
+
+                        var frequencyHours = (int)(dbGuild?.FeaturedFrequency ?? GuildFeaturedFrequency.Hourly);
+                        description.AppendLine(frequencyHours == 1
+                            ? "This server's featured rotates every hour, and every rotation is a chance to get picked. Check back later!"
+                            : $"This server's featured rotates every {frequencyHours} hours, and every rotation is a chance to get picked. Check back later!");
                         break;
                     case FeaturedView.User:
                     {
@@ -1076,15 +1103,17 @@ public class UserBuilder
                 {
                     foreach (var featured in currentPage)
                     {
+                        var displayUser = view != FeaturedView.User && view != FeaturedView.GuildFeaturedUser;
+
                         FullGuildUser guildUser = null;
-                        if (view != FeaturedView.User && featured.UserId.HasValue)
+                        if (displayUser && featured.UserId.HasValue)
                         {
                             guildUsers.TryGetValue(featured.UserId.Value, out guildUser);
                         }
 
                         container.WithSeparator();
                         container.WithTextDisplay(
-                            this._featuredService.GetStringForFeatured(featured, view != FeaturedView.User, guildUser));
+                            this._featuredService.GetStringForFeatured(featured, displayUser, guildUser));
                     }
                 }
 

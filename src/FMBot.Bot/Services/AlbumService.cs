@@ -509,7 +509,7 @@ public class AlbumService
             .ToDictionary(g => g.Key, g => g.First());
     }
 
-    private static DateTime? ParseReleaseDate(string releaseDate, string precision)
+    public static DateTime? ParseReleaseDate(string releaseDate, string precision)
     {
         if (string.IsNullOrEmpty(releaseDate) || releaseDate == "0000")
         {

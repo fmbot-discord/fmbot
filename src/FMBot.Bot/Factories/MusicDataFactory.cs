@@ -524,13 +524,15 @@ public class MusicDataFactory(
         Task<FullAlbum> updateSpotify = null;
         Task<AmData<AmAlbumAttributes>> updateAppleMusic = null;
 
-        if (dbAlbum.SpotifyImageDate == null || dbAlbum.SpotifyImageDate < DateTime.UtcNow.AddDays(-60))
+        var refreshCutoff = DateTime.UtcNow.AddDays(-GetAlbumCacheDays(dbAlbum));
+
+        if (dbAlbum.SpotifyImageDate == null || dbAlbum.SpotifyImageDate < refreshCutoff)
         {
             updateSpotify =
                 spotifyService.GetAlbumFromSpotify(albumInfo.AlbumName, albumInfo.ArtistName.ToLower());
         }
 
-        if (dbAlbum.AppleMusicDate == null || dbAlbum.AppleMusicDate < DateTime.UtcNow.AddDays(-60))
+        if (dbAlbum.AppleMusicDate == null || dbAlbum.AppleMusicDate < refreshCutoff)
         {
             updateAppleMusic =
                 appleMusicService.GetAppleMusicAlbum(albumInfo.ArtistName, albumInfo.AlbumName, true);
@@ -615,6 +617,23 @@ public class MusicDataFactory(
         await connection.CloseAsync();
 
         return dbAlbum;
+    }
+
+    private static int GetAlbumCacheDays(Album album)
+    {
+        var releaseDate = AlbumService.ParseReleaseDate(album.ReleaseDate, album.ReleaseDatePrecision);
+
+        if (releaseDate.HasValue && releaseDate.Value > DateTime.UtcNow.AddDays(-20))
+        {
+            return 2;
+        }
+
+        if (releaseDate == null && album.SpotifyId == null && album.AppleMusicId == null)
+        {
+            return 7;
+        }
+
+        return 60;
     }
 
     private async Task GetOrStoreAlbumTracks(IEnumerable<SimpleTrack> simpleTracks, AlbumInfo albumInfo,

@@ -11,11 +11,8 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
-using FMBot.Domain.Enums;
-using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
-using NetCord.Gateway;
 using NetCord.Services.Commands;
 using TimePeriod = FMBot.Domain.Models.TimePeriod;
 using NetCord.Rest;
@@ -396,7 +393,11 @@ public class ArtistCommands(
 
     [Command("whoknows", "w", "wk", "thosewhoknow")]
     [Summary("Shows what other users listen to an artist in your server")]
-    [Examples("w", "wk COMA", "whoknows", "whoknows DJ Seinfeld")]
+    [Options("Response mode: `image`, `embed` or `pages`",
+        "Role filter: `rolefilter` / `rf` (Premium server)",
+        "Disable filters and crowns: `nofilter` / `nf`",
+        "Disable artist redirects: `noredirect` / `nr`")]
+    [Examples("w", "wk COMA", "whoknows", "whoknows DJ Seinfeld", "whoknows rolefilter")]
     [UsernameSetRequired]
     [GuildOnly]
     [RequiresIndex]
@@ -420,13 +421,23 @@ public class ArtistCommands(
             var settings =
                 SettingService.SetWhoKnowsSettings(currentSettings, artistValues, contextUser.UserType);
 
+            if (settings.DisplayRoleFilter && !PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
+            {
+                var premiumRequiredResponse = PremiumSettingBuilder.PremiumServerRequired("rolefilter-text",
+                    PremiumSettingBuilder.RoleFilterFeatureDescription);
+                await this.Context.SendResponse(this.Interactivity, premiumRequiredResponse, userService);
+                await this.Context.LogCommandUsedAsync(premiumRequiredResponse, userService);
+                return;
+            }
+
             var response = await artistBuilders.WhoKnowsArtistAsync(new ContextModel(this.Context,
                     prfx,
                     contextUser),
                 settings.ResponseMode,
                 settings.NewSearchValue,
                 settings.DisplayRoleFilter,
-                redirectsEnabled: settings.RedirectsEnabled);
+                redirectsEnabled: settings.RedirectsEnabled,
+                filterDisabled: settings.QualityFilterDisabled);
 
             await this.Context.SendResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);
@@ -544,8 +555,9 @@ public class ArtistCommands(
 
     [Command("serverartists", "sa", "sta", "servertopartists", "serverartist")]
     [Summary("Top artists for your server")]
-    [Options("Time periods: `weekly`, `monthly`, `alltime` and last two months", "Order options: `plays` and `listeners`")]
-    [Examples("sa", "sa a p", "serverartists", "serverartists alltime", "serverartists listeners weekly", "serverartists march")]
+    [Options("Time periods: `weekly`, `monthly`, `alltime` and last two months", "Order options: `plays` and `listeners`",
+        "Role filter: `rolefilter` / `rf` (Premium server)")]
+    [Examples("sa", "sa a p", "serverartists", "serverartists alltime", "serverartists listeners weekly", "serverartists march", "serverartists rolefilter")]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Artists)]
@@ -570,6 +582,15 @@ public class ArtistCommands(
             SettingService.GetTimePeriod(extraOptions, guildListSettings.ChartTimePeriod, cachedOnly: true);
 
         guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
+
+        if (guildListSettings.DisplayRoleFilter && !PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
+        {
+            var premiumRequiredResponse = PremiumSettingBuilder.PremiumServerRequired("rolefilter-text",
+                PremiumSettingBuilder.RoleFilterFeatureDescription);
+            await this.Context.SendResponse(this.Interactivity, premiumRequiredResponse, userService);
+            await this.Context.LogCommandUsedAsync(premiumRequiredResponse, userService);
+            return;
+        }
 
         try
         {

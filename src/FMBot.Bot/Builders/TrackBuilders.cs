@@ -190,11 +190,17 @@ public class TrackBuilders
         Guild guild = null;
         IDictionary<int, FullGuildUser> guildUsers = null;
         Task<IList<WhoKnowsObjectWithUser>> indexedUsersTask = null;
+        Task<List<FeaturedLog>> guildFeaturedHistoryTask = null;
         if (context.DiscordGuild != null)
         {
             guild = await guildTask;
             guildUsers = await guildUsersTask;
 
+            if (guild != null)
+            {
+                guildFeaturedHistoryTask = this._featuredService.GetGuildTrackFeaturedHistory(guild,
+                    trackSearch.Track.ArtistName, trackSearch.Track.TrackName);
+            }
 
             if (guild?.LastIndexed != null && dbTrack != null)
             {
@@ -202,6 +208,8 @@ public class TrackBuilders
                     guildUsers, guild.GuildId, dbTrack.ArtistName, dbTrack.Name);
             }
         }
+
+        var guildFeaturedHistory = guildFeaturedHistoryTask != null ? await guildFeaturedHistoryTask : null;
 
         string albumCoverUrl = null;
         var showThumbnail = false;
@@ -371,10 +379,10 @@ public class TrackBuilders
             metaLine.Append($"**{dbTrack.Popularity}** popularity");
         }
 
-        if (featuredHistory.Any())
+        if (featuredHistory.Any() || guildFeaturedHistory is { Count: > 0 })
         {
             if (metaLine.Length > 0) metaLine.Append(" — ");
-            metaLine.Append($"Featured **{featuredHistory.Count}** {StringExtensions.GetTimesString(featuredHistory.Count)}");
+            metaLine.Append(FeaturedService.GetFeaturedTimesString(featuredHistory.Count, guildFeaturedHistory?.Count ?? 0));
         }
 
         if (metaLine.Length > 0)
@@ -510,7 +518,8 @@ public class TrackBuilders
         WhoKnowsResponseMode mode,
         string trackValues,
         bool displayRoleSelector = false,
-        List<ulong> roles = null)
+        List<ulong> roles = null,
+        bool filterDisabled = false)
     {
         var response = new ResponseModel
         {
@@ -546,7 +555,8 @@ public class TrackBuilders
             trackName, context.DiscordGuild, track.Track.UserPlaycount);
 
         var (filterStats, filteredUsersWithTrack) =
-            WhoKnowsService.FilterWhoKnowsObjects(usersWithTrack, guildUsers, guild, context.ContextUser.UserId, roles);
+            WhoKnowsService.FilterWhoKnowsObjects(usersWithTrack, guildUsers, guild, context.ContextUser.UserId, roles,
+                filterDisabled);
 
         string albumCoverUrl = null;
         if (track.Track.AlbumName != null)
@@ -588,6 +598,11 @@ public class TrackBuilders
         if (filterStats.FullDescription != null)
         {
             footer.AppendLine($"{filterStats.FullDescription}");
+        }
+
+        if (filterDisabled)
+        {
+            footer.AppendLine("Filters disabled");
         }
 
         if (filteredUsersWithTrack.Any() && filteredUsersWithTrack.Count > 1)

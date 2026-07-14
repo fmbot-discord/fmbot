@@ -6,6 +6,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services.Guild.Renderers;
+using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
@@ -149,19 +150,19 @@ public class AutopostService(
             ? periodEnd.AddMonths(-1)
             : periodEnd.AddDays(-7);
 
-        int[] roleUserIds = null;
-        if (autopost.RoleIds is { Length: > 0 })
-        {
-            var guildUsers = await guildService.GetGuildUsers(autopost.Guild.DiscordGuildId);
-            roleUserIds = guildUsers.Values
-                .Where(w => w.Roles != null && w.Roles.Any(r => autopost.RoleIds.Contains(r)))
-                .Select(s => s.UserId)
-                .ToArray();
+        var guildUsers = await guildService.GetGuildUsers(autopost.Guild.DiscordGuildId);
+        var (_, filteredGuildUsers) = WhoKnowsService.FilterGuildUsers(guildUsers, autopost.Guild, 0,
+            autopost.RoleIds is { Length: > 0 } ? autopost.RoleIds.ToList() : null);
 
-            if (roleUserIds.Length == 0)
-            {
-                return AutopostPostResult.NoData;
-            }
+        if (filteredGuildUsers.Count == 0)
+        {
+            return AutopostPostResult.NoData;
+        }
+
+        int[] roleUserIds = null;
+        if (autopost.RoleIds is { Length: > 0 } || filteredGuildUsers.Count < guildUsers.Count)
+        {
+            roleUserIds = filteredGuildUsers.Keys.ToArray();
         }
 
         await using var db = await contextFactory.CreateDbContextAsync();

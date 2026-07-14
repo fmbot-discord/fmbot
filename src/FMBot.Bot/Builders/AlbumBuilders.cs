@@ -126,10 +126,17 @@ public class AlbumBuilders
         Guild guild = null;
         IDictionary<int, FullGuildUser> guildUsers = null;
         Task<IList<WhoKnowsObjectWithUser>> indexedUsersTask = null;
+        Task<List<FeaturedLog>> guildFeaturedHistoryTask = null;
         if (context.DiscordGuild != null)
         {
             guild = await this._guildService.GetGuildForWhoKnows(context.DiscordGuild.Id);
             guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
+
+            if (guild != null)
+            {
+                guildFeaturedHistoryTask = this._featuredService.GetGuildAlbumFeaturedHistory(guild,
+                    albumSearch.Album.ArtistName, albumSearch.Album.AlbumName);
+            }
 
             if (guild?.LastIndexed != null && databaseAlbum != null)
             {
@@ -140,6 +147,7 @@ public class AlbumBuilders
         var userTitle = await userTitleTask;
         var artistUserTracks = await artistUserTracksTask;
         var featuredHistory = await featuredHistoryTask;
+        var guildFeaturedHistory = guildFeaturedHistoryTask != null ? await guildFeaturedHistoryTask : null;
 
         // Album cover + accent color
         var albumCoverUrl = albumSearch.Album.AlbumCoverUrl;
@@ -331,10 +339,10 @@ public class AlbumBuilders
             metaLine.Append($"**{databaseAlbum.Popularity}** popularity");
         }
 
-        if (featuredHistory.Any())
+        if (featuredHistory.Any() || guildFeaturedHistory is { Count: > 0 })
         {
             if (metaLine.Length > 0) metaLine.Append(" — ");
-            metaLine.Append($"Featured **{featuredHistory.Count}** {StringExtensions.GetTimesString(featuredHistory.Count)}");
+            metaLine.Append(FeaturedService.GetFeaturedTimesString(featuredHistory.Count, guildFeaturedHistory?.Count ?? 0));
         }
 
         if (metaLine.Length > 0)
@@ -404,7 +412,8 @@ public class AlbumBuilders
         WhoKnowsResponseMode mode,
         string albumValues,
         bool displayRoleSelector = false,
-        List<ulong> roles = null)
+        List<ulong> roles = null,
+        bool filterDisabled = false)
     {
         var response = new ResponseModel
         {
@@ -438,7 +447,8 @@ public class AlbumBuilders
             fullAlbumName, context.DiscordGuild, albumSearch.Album.UserPlaycount);
 
         var (filterStats, filteredUsersWithAlbum) =
-            WhoKnowsService.FilterWhoKnowsObjects(usersWithAlbum, guildUsers, guild, context.ContextUser.UserId, roles);
+            WhoKnowsService.FilterWhoKnowsObjects(usersWithAlbum, guildUsers, guild, context.ContextUser.UserId, roles,
+                filterDisabled);
 
         var albumCoverUrl = albumSearch.Album.AlbumCoverUrl;
         if (databaseAlbum.SpotifyImageUrl != null)
@@ -500,6 +510,11 @@ public class AlbumBuilders
         if (filterStats.FullDescription != null)
         {
             footer.AppendLine($"{filterStats.FullDescription}");
+        }
+
+        if (filterDisabled)
+        {
+            footer.AppendLine("Filters disabled");
         }
 
         if (filteredUsersWithAlbum.Any() && filteredUsersWithAlbum.Count > 1)

@@ -8,8 +8,8 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
+using FMBot.Domain;
 using FMBot.Domain.Enums;
-using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using NetCord;
@@ -231,9 +231,20 @@ public class ArtistSlashCommands(
         [SlashCommandParameter(Name = "role-picker", Description = "Display a rolepicker to filter with roles")]
         bool displayRoleFilter = false,
         [SlashCommandParameter(Name = "redirects", Description = "Toggle Last.fm artist name redirects (defaults to enabled)")]
-        bool redirectsEnabled = true)
+        bool redirectsEnabled = true,
+        [SlashCommandParameter(Name = "no-filter", Description = "Disable server filters and crowns")]
+        bool filterDisabled = false)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
+
+        if (displayRoleFilter && !PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
+        {
+            var premiumRequiredResponse = PremiumSettingBuilder.PremiumServerRequired("rolefilter",
+                PremiumSettingBuilder.RoleFilterFeatureDescription);
+            await this.Context.SendFollowUpResponse(this.Interactivity, premiumRequiredResponse, userService);
+            await this.Context.LogCommandUsedAsync(premiumRequiredResponse, userService);
+            return;
+        }
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
@@ -242,7 +253,8 @@ public class ArtistSlashCommands(
         try
         {
             var response = await artistBuilders.WhoKnowsArtistAsync(new ContextModel(this.Context, contextUser),
-                mode.Value, name, displayRoleFilter, redirectsEnabled: redirectsEnabled);
+                mode.Value, name, displayRoleFilter, redirectsEnabled: redirectsEnabled,
+                filterDisabled: filterDisabled);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);

@@ -1405,6 +1405,12 @@ public class SettingService
             featuredView = FeaturedView.GuildFeatured;
         }
 
+        var guildFeaturedUser = new[] { "serverfeatureduser", "customfeatureduser", "sfu" };
+        if (Contains(extraOptions, guildFeaturedUser))
+        {
+            featuredView = FeaturedView.GuildFeaturedUser;
+        }
+
         return featuredView;
     }
 

@@ -7,7 +7,7 @@ using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services;
-using FMBot.Domain.Extensions;
+using FMBot.Domain;
 using FMBot.Domain.Models;
 using NetCord.Services.ApplicationCommands;
 using NetCord;
@@ -61,9 +61,20 @@ public class AlbumSlashCommands(
         [SlashCommandParameter(Name = "mode", Description = "The type of response you want - change default with /responsemode")]
         WhoKnowsResponseMode? mode = null,
         [SlashCommandParameter(Name = "role-picker", Description = "Display a rolepicker to filter with roles")]
-        bool displayRoleFilter = false)
+        bool displayRoleFilter = false,
+        [SlashCommandParameter(Name = "no-filter", Description = "Disable server filters")]
+        bool filterDisabled = false)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
+
+        if (displayRoleFilter && !PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
+        {
+            var premiumRequiredResponse = PremiumSettingBuilder.PremiumServerRequired("rolefilter",
+                PremiumSettingBuilder.RoleFilterFeatureDescription);
+            await this.Context.SendFollowUpResponse(this.Interactivity, premiumRequiredResponse, userService);
+            await this.Context.LogCommandUsedAsync(premiumRequiredResponse, userService);
+            return;
+        }
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
@@ -71,7 +82,8 @@ public class AlbumSlashCommands(
 
         try
         {
-            var response = await albumBuilders.WhoKnowsAlbumAsync(new ContextModel(this.Context, contextUser), mode.Value, name);
+            var response = await albumBuilders.WhoKnowsAlbumAsync(new ContextModel(this.Context, contextUser),
+                mode.Value, name, displayRoleFilter, filterDisabled: filterDisabled);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);

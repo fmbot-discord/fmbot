@@ -1,6 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using CsvHelper.Configuration.Attributes;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
@@ -9,7 +8,7 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
-using FMBot.Domain.Extensions;
+using FMBot.Domain;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
 using NetCord.Services.Commands;
@@ -170,8 +169,11 @@ public class AlbumCommands(
 
     [Command("whoknowsalbum", "wa", "wka", "wkab", "wab", "wkab", "wkal", "wkalbum")]
     [Summary("Shows what other users listen to an album in your server")]
+    [Options("Response mode: `image`, `embed` or `pages`",
+        "Role filter: `rolefilter` / `rf` (Premium server)",
+        "Disable filters: `nofilter` / `nf`")]
     [Examples("wa", "whoknowsalbum", "whoknowsalbum the beatles abbey road",
-        "whoknowsalbum Metallica & Lou Reed | Lulu")]
+        "whoknowsalbum Metallica & Lou Reed | Lulu", "whoknowsalbum rolefilter")]
     [UsernameSetRequired]
     [GuildOnly]
     [RequiresIndex]
@@ -194,9 +196,18 @@ public class AlbumCommands(
 
             var settings = SettingService.SetWhoKnowsSettings(currentSettings, albumValues, contextUser.UserType);
 
+            if (settings.DisplayRoleFilter && !PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
+            {
+                var premiumRequiredResponse = PremiumSettingBuilder.PremiumServerRequired("rolefilter-text",
+                    PremiumSettingBuilder.RoleFilterFeatureDescription);
+                await this.Context.SendResponse(this.Interactivity, premiumRequiredResponse, userService);
+                await this.Context.LogCommandUsedAsync(premiumRequiredResponse, userService);
+                return;
+            }
+
             var response = await albumBuilders.WhoKnowsAlbumAsync(
                 new ContextModel(this.Context, prfx, contextUser), settings.ResponseMode, settings.NewSearchValue,
-                settings.DisplayRoleFilter);
+                settings.DisplayRoleFilter, filterDisabled: settings.QualityFilterDisabled);
 
             await this.Context.SendResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);
@@ -336,9 +347,9 @@ public class AlbumCommands(
     [Command("serveralbums", "sab", "stab", "servertopalbums", "serveralbum")]
     [Summary("Top albums for your server, optionally for a specific artist.")]
     [Options("Time periods: `weekly`, `monthly`, `alltime` and last two months", "Order options: `plays` and `listeners`",
-        "Artist name")]
+        "Artist name", "Role filter: `rolefilter` / `rf` (Premium server)")]
     [Examples("sab", "sab a p", "serveralbums", "serveralbums alltime", "serveralbums listeners weekly",
-        "serveralbums the beatles monthly", "serveralbums march")]
+        "serveralbums the beatles monthly", "serveralbums march", "serveralbums rolefilter")]
     [RequiresIndex]
     [GuildOnly]
     [CommandCategories(CommandCategory.Albums)]
@@ -365,6 +376,15 @@ public class AlbumCommands(
                 guildListSettings.ChartTimePeriod, cachedOnly: true);
 
             guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
+
+            if (guildListSettings.DisplayRoleFilter && !PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
+            {
+                var premiumRequiredResponse = PremiumSettingBuilder.PremiumServerRequired("rolefilter-text",
+                    PremiumSettingBuilder.RoleFilterFeatureDescription);
+                await this.Context.SendResponse(this.Interactivity, premiumRequiredResponse, userService);
+                await this.Context.LogCommandUsedAsync(premiumRequiredResponse, userService);
+                return;
+            }
 
             var response =
                 await albumBuilders.GuildAlbumsAsync(new ContextModel(this.Context, prfx), guild,
