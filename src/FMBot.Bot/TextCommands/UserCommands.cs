@@ -17,6 +17,7 @@ using NetCord;
 using NetCord.Rest;
 using NetCord.Services.Commands;
 using Fergun.Interactive;
+using Serilog;
 
 namespace FMBot.Bot.TextCommands;
 
@@ -271,6 +272,9 @@ public class UserCommands(
                                             "Make sure the permissions are set correctly and the emojis are from a server that .fmbot is in.");
             }
 
+            Log.Warning(e,
+                "Emojis could not be added to the message correctly for user {userId} - {discordUserId} in server {discordServerId}. Error: {error}.",
+                user.UserId, this.Context.User.Id, this.Context.Guild?.Id, e.Message);
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Embeds = [this._embed] });
             await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Error }, userService);
         }
