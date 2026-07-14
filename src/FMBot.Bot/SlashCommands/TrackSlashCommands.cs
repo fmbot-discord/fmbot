@@ -68,7 +68,9 @@ public class TrackSlashCommands(
             Description = "The type of response you want - change default with /responsemode")]
         WhoKnowsResponseMode? mode = null,
         [SlashCommandParameter(Name = "role-picker", Description = "Display a rolepicker to filter with roles")]
-        bool displayRoleFilter = false)
+        bool displayRoleFilter = false,
+        [SlashCommandParameter(Name = "no-filter", Description = "Disable server filters")]
+        bool filterDisabled = false)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
 
@@ -80,7 +82,7 @@ public class TrackSlashCommands(
         {
             var response =
                 await trackBuilders.WhoKnowsTrackAsync(new ContextModel(this.Context, contextUser), mode.Value,
-                    name, displayRoleFilter);
+                    name, displayRoleFilter, filterDisabled: filterDisabled);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);

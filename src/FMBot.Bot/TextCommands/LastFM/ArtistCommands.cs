@@ -426,7 +426,8 @@ public class ArtistCommands(
                 settings.ResponseMode,
                 settings.NewSearchValue,
                 settings.DisplayRoleFilter,
-                redirectsEnabled: settings.RedirectsEnabled);
+                redirectsEnabled: settings.RedirectsEnabled,
+                filterDisabled: settings.QualityFilterDisabled);
 
             await this.Context.SendResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);

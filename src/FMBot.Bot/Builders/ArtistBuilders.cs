@@ -1776,7 +1776,8 @@ public class ArtistBuilders
         bool displayRoleSelector = false,
         List<ulong> roles = null,
         bool redirectsEnabled = true,
-        bool showCrownButton = false)
+        bool showCrownButton = false,
+        bool filterDisabled = false)
     {
         var response = new ResponseModel
         {
@@ -1821,11 +1822,11 @@ public class ArtistBuilders
 
         var (filterStats, filteredUsersWithArtist) =
             WhoKnowsService.FilterWhoKnowsObjects(usersWithArtist, guildUsers, contextGuild, context.ContextUser.UserId,
-                roles);
+                roles, filterDisabled);
 
         CrownModel crownModel = null;
         if (contextGuild.CrownsDisabled != true && filteredUsersWithArtist.Count >= 1 && !displayRoleSelector &&
-            redirectsEnabled)
+            redirectsEnabled && !filterDisabled)
         {
             crownModel =
                 await this._crownService.GetAndUpdateCrownForArtist(filteredUsersWithArtist, guildUsers,
@@ -1895,6 +1896,11 @@ public class ArtistBuilders
         if (filterStats.FullDescription != null)
         {
             footer.AppendLine(filterStats.FullDescription);
+        }
+
+        if (filterDisabled)
+        {
+            footer.AppendLine("Filters and crowns disabled");
         }
 
         if (filteredUsersWithArtist.Any() && filteredUsersWithArtist.Count > 1)

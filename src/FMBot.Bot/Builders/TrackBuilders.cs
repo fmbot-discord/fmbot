@@ -510,7 +510,8 @@ public class TrackBuilders
         WhoKnowsResponseMode mode,
         string trackValues,
         bool displayRoleSelector = false,
-        List<ulong> roles = null)
+        List<ulong> roles = null,
+        bool filterDisabled = false)
     {
         var response = new ResponseModel
         {
@@ -546,7 +547,8 @@ public class TrackBuilders
             trackName, context.DiscordGuild, track.Track.UserPlaycount);
 
         var (filterStats, filteredUsersWithTrack) =
-            WhoKnowsService.FilterWhoKnowsObjects(usersWithTrack, guildUsers, guild, context.ContextUser.UserId, roles);
+            WhoKnowsService.FilterWhoKnowsObjects(usersWithTrack, guildUsers, guild, context.ContextUser.UserId, roles,
+                filterDisabled);
 
         string albumCoverUrl = null;
         if (track.Track.AlbumName != null)
@@ -588,6 +590,11 @@ public class TrackBuilders
         if (filterStats.FullDescription != null)
         {
             footer.AppendLine($"{filterStats.FullDescription}");
+        }
+
+        if (filterDisabled)
+        {
+            footer.AppendLine("Filters disabled");
         }
 
         if (filteredUsersWithTrack.Any() && filteredUsersWithTrack.Count > 1)

@@ -327,7 +327,7 @@ public class TrackCommands(
 
             var response = await trackBuilders.WhoKnowsTrackAsync(
                 new ContextModel(this.Context, prfx, contextUser), settings.ResponseMode, settings.NewSearchValue,
-                settings.DisplayRoleFilter);
+                settings.DisplayRoleFilter, filterDisabled: settings.QualityFilterDisabled);
 
             await this.Context.SendResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);

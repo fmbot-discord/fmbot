@@ -196,7 +196,7 @@ public class AlbumCommands(
 
             var response = await albumBuilders.WhoKnowsAlbumAsync(
                 new ContextModel(this.Context, prfx, contextUser), settings.ResponseMode, settings.NewSearchValue,
-                settings.DisplayRoleFilter);
+                settings.DisplayRoleFilter, filterDisabled: settings.QualityFilterDisabled);
 
             await this.Context.SendResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);

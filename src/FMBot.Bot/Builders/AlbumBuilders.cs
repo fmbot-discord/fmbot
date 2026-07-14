@@ -404,7 +404,8 @@ public class AlbumBuilders
         WhoKnowsResponseMode mode,
         string albumValues,
         bool displayRoleSelector = false,
-        List<ulong> roles = null)
+        List<ulong> roles = null,
+        bool filterDisabled = false)
     {
         var response = new ResponseModel
         {
@@ -438,7 +439,8 @@ public class AlbumBuilders
             fullAlbumName, context.DiscordGuild, albumSearch.Album.UserPlaycount);
 
         var (filterStats, filteredUsersWithAlbum) =
-            WhoKnowsService.FilterWhoKnowsObjects(usersWithAlbum, guildUsers, guild, context.ContextUser.UserId, roles);
+            WhoKnowsService.FilterWhoKnowsObjects(usersWithAlbum, guildUsers, guild, context.ContextUser.UserId, roles,
+                filterDisabled);
 
         var albumCoverUrl = albumSearch.Album.AlbumCoverUrl;
         if (databaseAlbum.SpotifyImageUrl != null)
@@ -500,6 +502,11 @@ public class AlbumBuilders
         if (filterStats.FullDescription != null)
         {
             footer.AppendLine($"{filterStats.FullDescription}");
+        }
+
+        if (filterDisabled)
+        {
+            footer.AppendLine("Filters disabled");
         }
 
         if (filteredUsersWithAlbum.Any() && filteredUsersWithAlbum.Count > 1)
