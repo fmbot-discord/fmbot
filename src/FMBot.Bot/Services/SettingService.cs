@@ -9,6 +9,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
+using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -471,6 +472,25 @@ public class SettingService
         }
 
         return settingsModel;
+    }
+
+    public static (Language? Language, string NewSearchValue) GetLanguage(string extraOptions)
+    {
+        if (string.IsNullOrWhiteSpace(extraOptions))
+        {
+            return (null, extraOptions);
+        }
+
+        foreach (var word in extraOptions.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var language = LanguageExtensions.FromUserInput(word);
+            if (language.HasValue)
+            {
+                return (language, ContainsAndRemove(extraOptions, [word], true));
+            }
+        }
+
+        return (null, extraOptions);
     }
 
     public static DiscogsCollectionSettings SetDiscogsCollectionSettings(string extraOptions = null)

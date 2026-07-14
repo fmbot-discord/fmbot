@@ -1150,10 +1150,16 @@ public class UserInteractions(
         try
         {
             var discordUserId = ulong.Parse(discordUser);
-            var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
+            var requesterParts = requesterDiscordUser.Split(':');
+            var requesterDiscordUserId = ulong.Parse(requesterParts[0]);
+            var languageOverride = requesterParts.Length > 1
+                ? LanguageExtensions.FromLocaleCode(requesterParts[1])
+                : null;
 
-            var localizer = Localizer.ForGuild(this.Context.Interaction.GuildId,
-                discordLocale: this.Context.Interaction.GuildLocale);
+            var localizer = languageOverride.HasValue
+                ? new Localizer(languageOverride.Value, NumberFormat.NoSeparator)
+                : Localizer.ForGuild(this.Context.Interaction.GuildId,
+                    discordLocale: this.Context.Interaction.GuildLocale);
 
             if (requesterDiscordUserId != this.Context.User.Id)
             {
@@ -1237,9 +1243,14 @@ public class UserInteractions(
                 return;
             }
 
+            var contextModel = new ContextModel(this.Context, contextUser);
+            if (languageOverride.HasValue)
+            {
+                contextModel.Localizer = new Localizer(languageOverride.Value, contextModel.NumberFormat);
+            }
+
             var response = await userBuilder.JudgeHandleAsync(
-                new ContextModel(this.Context, contextUser),
-                userSettings, result, topArtists, topTracks);
+                contextModel, userSettings, result, topArtists, topTracks);
 
             await this.Context.Interaction.ModifyResponseAsync(e =>
             {

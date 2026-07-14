@@ -454,7 +454,9 @@ public class UserSlashCommands(
             AutocompleteProviderType = typeof(DateTimeAutoComplete))]
         string timePeriod = null,
         [SlashCommandParameter(Name = "user", Description = "The user to judge")]
-        string user = null)
+        string user = null,
+        [SlashCommandParameter(Name = "language", Description = "Language for this judgement")]
+        Language? language = null)
     {
         var contextUser = await userService.GetUserAsync(this.Context.User.Id);
         var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.Quarterly);
@@ -464,9 +466,15 @@ public class UserSlashCommands(
 
         var commandUsesLeft = await openAiService.GetJudgeUsesLeft(contextUser);
 
+        var contextModel = new ContextModel(this.Context, contextUser);
+        if (language.HasValue)
+        {
+            contextModel.Localizer = new Localizer(language.Value, contextModel.NumberFormat);
+        }
+
         var response =
-            UserBuilder.JudgeAsync(new ContextModel(this.Context, contextUser), userSettings, timeSettings,
-                contextUser.UserType, commandUsesLeft);
+            UserBuilder.JudgeAsync(contextModel, userSettings, timeSettings,
+                contextUser.UserType, commandUsesLeft, language);
 
         await this.Context.SendResponse(this.Interactivity, response, userService);
         await this.Context.LogCommandUsedAsync(response, userService);

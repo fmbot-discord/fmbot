@@ -143,22 +143,29 @@ public class UserCommands(
     [Command("judge", "roast", "compliment")]
     [Summary("Judges your music taste using AI")]
     [UsernameSetRequired]
-    [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample)]
+    [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample, "Language, for example 'french', 'français' or 'fr'")]
     [CommandCategories(CommandCategory.Other)]
     [SupporterEnhanced("Supporters get an improved AI model with better output and a higher usage limit")]
     public async Task JudgeAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         var contextUser = await userService.GetUserAsync(this.Context.User.Id);
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
-        var timeSettings = SettingService.GetTimePeriod(extraOptions, TimePeriod.Quarterly);
+        var languageSettings = SettingService.GetLanguage(extraOptions);
+        var timeSettings = SettingService.GetTimePeriod(languageSettings.NewSearchValue, TimePeriod.Quarterly);
 
         var userSettings = await settingService.GetUser(timeSettings.NewSearchValue, contextUser, this.Context);
 
         var commandUsesLeft = await openAiService.GetJudgeUsesLeft(contextUser);
 
+        var contextModel = new ContextModel(this.Context, prfx, contextUser);
+        if (languageSettings.Language.HasValue)
+        {
+            contextModel.Localizer = new Localizer(languageSettings.Language.Value, contextModel.NumberFormat);
+        }
+
         var response =
-            UserBuilder.JudgeAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, timeSettings,
-                contextUser.UserType, commandUsesLeft);
+            UserBuilder.JudgeAsync(contextModel, userSettings, timeSettings,
+                contextUser.UserType, commandUsesLeft, languageSettings.Language);
 
         await this.Context.SendResponse(this.Interactivity, response, userService);
         await this.Context.LogCommandUsedAsync(response, userService);

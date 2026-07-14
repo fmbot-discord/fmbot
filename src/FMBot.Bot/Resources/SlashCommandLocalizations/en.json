@@ -616,6 +616,9 @@
     "judge": {
       "description": "Judges your music taste using AI",
       "parameters": {
+        "language": {
+          "description": "Language for this judgement"
+        },
         "time-period": {
           "description": "Time period"
         },

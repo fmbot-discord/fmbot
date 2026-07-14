@@ -1553,7 +1553,8 @@ public class UserBuilder
         UserSettingsModel userSettings,
         TimeSettingsModel timeSettings,
         UserType userType,
-        (int amount, bool show, int amountThisWeek) usesLeftToday)
+        (int amount, bool show, int amountThisWeek) usesLeftToday,
+        Language? languageOverride = null)
     {
         var response = new ResponseModel
         {
@@ -1624,15 +1625,17 @@ public class UserBuilder
 
         container.WithTextDisplay(description.ToString());
 
+        var languageSuffix = languageOverride.HasValue ? $":{languageOverride.Value.GetLocaleCode()}" : null;
+
         if (hasUsesLeft)
         {
             container.AddComponents(new ActionRowProperties()
                 .WithButton(context.Localize("judge.buttons.compliment"), emote: EmojiProperties.Standard("🙂"), style: ButtonStyle.Primary,
                     customId:
-                    $"{InteractionConstants.Judge}:{timeSettings.Description}:compliment:{userSettings.DiscordUserId}:{context.DiscordUser.Id}")
+                    $"{InteractionConstants.Judge}:{timeSettings.Description}:compliment:{userSettings.DiscordUserId}:{context.DiscordUser.Id}{languageSuffix}")
                 .WithButton(context.Localize("judge.buttons.roast"), emote: EmojiProperties.Standard("🔥"), style: ButtonStyle.Primary,
                     customId:
-                    $"{InteractionConstants.Judge}:{timeSettings.Description}:roast:{userSettings.DiscordUserId}:{context.DiscordUser.Id}"));
+                    $"{InteractionConstants.Judge}:{timeSettings.Description}:roast:{userSettings.DiscordUserId}:{context.DiscordUser.Id}{languageSuffix}"));
         }
 
         if (!isSupporter)
