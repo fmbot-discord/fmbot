@@ -8,7 +8,7 @@ namespace FMBot.Bot.Models;
 
 public class Localizer(Language language, NumberFormat numberFormat)
 {
-    private Language Language { get; } = language;
+    public Language Language { get; } = language;
 
     public static Localizer ForGuild(ulong? discordGuildId, NumberFormat numberFormat = NumberFormat.NoSeparator, string discordLocale = null)
     {

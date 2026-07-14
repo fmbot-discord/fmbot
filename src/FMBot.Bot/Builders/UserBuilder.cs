@@ -1572,14 +1572,15 @@ public class UserBuilder
         {
             if (!userSettings.DifferentUser)
             {
-                description.AppendLine("Want your music taste to be judged by AI?");
+                description.AppendLine(context.Localize("judge.intro"));
             }
             else
             {
-                description.AppendLine($"Judging music taste for **{userSettings.DisplayName}**");
+                description.AppendLine(context.Localize("judge.introOther",
+                    ("user", userSettings.DisplayName)));
             }
 
-            description.AppendLine("Pick using the buttons below..");
+            description.AppendLine(context.Localize("judge.pickButtons"));
         }
 
         if (isSupporter)
@@ -1588,14 +1589,14 @@ public class UserBuilder
 
             if (usesLeftToday.amount is <= 30 and > 0 && usesLeftToday.show)
             {
-                description.AppendLine($"You can use this command `{usesLeftToday.amount}` more times today.");
+                description.AppendLine(context.LocalizeCount("judge.usesLeftToday", usesLeftToday.amount));
             }
 
-            description.AppendLine("⭐ Supporter perk: Using premium AI model");
+            description.AppendLine(context.Localize("judge.supporterPerkModel"));
 
             if (!hasUsesLeft)
             {
-                description.AppendLine("You've run out of command uses for today.");
+                description.AppendLine(context.Localize("judge.outOfUses"));
             }
         }
         else
@@ -1605,21 +1606,20 @@ public class UserBuilder
                 if (usesLeftToday.show)
                 {
                     description.AppendLine();
-                    description.AppendLine($"You can use this command `{usesLeftToday.amount}` more times today.");
+                    description.AppendLine(context.LocalizeCount("judge.usesLeftToday", usesLeftToday.amount));
                 }
             }
             else
             {
                 description.AppendLine();
-                description.AppendLine(
-                    "You've run out of command uses for today, unfortunately the service we use for this is not free.");
+                description.AppendLine(context.Localize("judge.outOfUsesFree"));
             }
         }
 
         if (!timeSettings.DefaultPicked)
         {
             description.AppendLine();
-            description.AppendLine($"-# Time period: {timeSettings.Description}");
+            description.AppendLine(context.Localize("judge.timePeriod", ("period", timeSettings.Description)));
         }
 
         container.WithTextDisplay(description.ToString());
@@ -1627,10 +1627,10 @@ public class UserBuilder
         if (hasUsesLeft)
         {
             container.AddComponents(new ActionRowProperties()
-                .WithButton("Compliment", emote: EmojiProperties.Standard("🙂"), style: ButtonStyle.Primary,
+                .WithButton(context.Localize("judge.buttons.compliment"), emote: EmojiProperties.Standard("🙂"), style: ButtonStyle.Primary,
                     customId:
                     $"{InteractionConstants.Judge}:{timeSettings.Description}:compliment:{userSettings.DiscordUserId}:{context.DiscordUser.Id}")
-                .WithButton("Roast", emote: EmojiProperties.Standard("🔥"), style: ButtonStyle.Primary,
+                .WithButton(context.Localize("judge.buttons.roast"), emote: EmojiProperties.Standard("🔥"), style: ButtonStyle.Primary,
                     customId:
                     $"{InteractionConstants.Judge}:{timeSettings.Description}:roast:{userSettings.DiscordUserId}:{context.DiscordUser.Id}"));
         }
@@ -1640,13 +1640,11 @@ public class UserBuilder
             container.WithSeparator();
             container.AddComponents(new ComponentSectionProperties(new ButtonProperties(
                 InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "judge", expandWithPerks: true),
-                "Get supporter", ButtonStyle.Secondary))
+                context.Localize("buttons.getSupporter"), ButtonStyle.Secondary))
             {
                 Components =
                 [
-                    new TextDisplayProperties(
-                        "⭐ Become a supporter for better judgements\n" +
-                        "-# Unlocks a better model and other perks for more insights into your music taste")
+                    new TextDisplayProperties(context.Localize("judge.supporterPromo"))
                 ]
             });
         }
@@ -1673,24 +1671,21 @@ public class UserBuilder
 
             if (context.ContextUser.UserType == UserType.User)
             {
-                container.WithTextDisplay(
-                    "You've run out of command uses for today, unfortunately the service we use for this is not free.");
+                container.WithTextDisplay(context.Localize("judge.outOfUsesFree"));
                 container.WithSeparator();
                 container.AddComponents(new ComponentSectionProperties(new ButtonProperties(
                     InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "judge-dailylimit"),
-                    Constants.GetSupporterButton, ButtonStyle.Primary))
+                    context.Localize("buttons.getSupporter"), ButtonStyle.Primary))
                 {
                     Components =
                     [
-                        new TextDisplayProperties(
-                            "⭐ Become a supporter for better judgements\n" +
-                            "-# Unlocks an improved model with better output and a higher daily usage limit")
+                        new TextDisplayProperties(context.Localize("judge.supporterPromoLimit"))
                     ]
                 });
             }
             else
             {
-                container.WithTextDisplay("You've run out of command uses for today.");
+                container.WithTextDisplay(context.Localize("judge.outOfUses"));
             }
 
             response.CommandResponse = CommandResponse.Cooldown;
@@ -1721,19 +1716,20 @@ public class UserBuilder
         container.WithAccentColor(new Color(186, 237, 169));
 
         var supporter = context.ContextUser.UserType != UserType.User;
-        var enhanced = supporter ? " - Premium model ⭐" : null;
-        container.WithTextDisplay($"### {userSettings.DisplayName}'s .fmbot judgement - Compliment 🙂{enhanced}");
+        var enhanced = supporter ? context.Localize("judge.premiumModelSuffix") : null;
+        container.WithTextDisplay(context.Localize("judge.complimentHeader",
+            ("user", userSettings.DisplayName), ("premium", enhanced)));
 
         await this._openAiService.StoreAiGeneration(context.InteractionId, context.ContextUser.UserId,
             userSettings.DifferentUser ? userSettings.UserId : null);
 
         var openAiResponse =
             await this._openAiService.GetJudgeResponse(topArtists, topTracks, PromptType.Compliment, amountThisWeek,
-                supporter);
+                supporter, context.Localizer.Language);
 
         if (openAiResponse.Output == null)
         {
-            container.WithTextDisplay("<:404:882220605783560222> OpenAI API error - please try again");
+            container.WithTextDisplay($"<:404:882220605783560222> {context.Localize("judge.apiError")}");
             return response;
         }
 
@@ -1757,19 +1753,20 @@ public class UserBuilder
         container.WithAccentColor(new Color(255, 122, 1));
 
         var supporter = context.ContextUser.UserType != UserType.User;
-        var enhanced = supporter ? " - Premium model ⭐" : null;
-        container.WithTextDisplay($"### {userSettings.DisplayName}'s .fmbot AI judgement - Roast 🔥{enhanced}");
+        var enhanced = supporter ? context.Localize("judge.premiumModelSuffix") : null;
+        container.WithTextDisplay(context.Localize("judge.roastHeader",
+            ("user", userSettings.DisplayName), ("premium", enhanced)));
 
         await this._openAiService.StoreAiGeneration(context.InteractionId, context.ContextUser.UserId,
             userSettings.DifferentUser ? userSettings.UserId : null);
 
         var openAiResponse =
             await this._openAiService.GetJudgeResponse(topArtists, topTracks, PromptType.Roast, amountThisWeek,
-                supporter);
+                supporter, context.Localizer.Language);
 
         if (openAiResponse.Output == null)
         {
-            container.WithTextDisplay("<:404:882220605783560222> OpenAI API error - please try again");
+            container.WithTextDisplay($"<:404:882220605783560222> {context.Localize("judge.apiError")}");
             return response;
         }
 

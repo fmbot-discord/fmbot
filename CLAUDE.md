@@ -155,14 +155,16 @@ User-facing strings are localized via JSON files, managed in Weblate. Weblate/gl
 - When migrating existing hardcoded strings: rendered English output must stay byte-for-byte identical (grammar fixes like "1 plays"→"1 play" only when explicitly flagged in the report).
 
 ### Protected terms (never translated, stay verbatim in every language)
-Command names, WhoKnows, GlobalWhoKnows, scrobble/scrobbles/scrobbling, plays (loanword), Top (as feature prefix), .fmbot, Last.fm, Spotify and other brand names, supporter, Jumble.
+Command **names** (`fm`, `whoknows`, ... — the generic noun "command" in prose DOES translate), WhoKnows, GlobalWhoKnows, scrobble/scrobbles/scrobbling, plays (loanword), billboard/bb (literal input token, matched in `SettingService`), Top (as feature prefix), .fmbot, Last.fm, Spotify and other brand names, supporter, Jumble.
 
 ### Never localize
 Log messages, exception text, SQL, custom ids, cache keys, admin/censor-only strings, featured descriptions (rendered once, broadcast to all guilds), user-authored template content, autocomplete option VALUES (labels may localize later; values round-trip into English parsing), period/time input parsing.
 
 ### Translation content style (for agents writing translations)
 - Informal address (du/tu/je/jij), concise natural phrasing; preserve every `{{placeholder}}` exactly.
+- In `` `{{value}}` label `` lines (`track.duration`, `track.keyBpm`, `track.danceableEnergetic`, `track.acousticInstrumental`, `track.speechfulLiveness`, `track.happy`), the backticked `{{...}}` is a pre-formatted value (usually a percentage) and the bare word next to it is a visible label that MUST translate. The English labels are adjectives (danceable, energetic, speechful) — keep them adjectives, not nouns.
 - Dutch specifics (reference: `nl.json`): plays/scrobbles stay English; "track" in compact stat lines but "nummer" in prose; luisteraars/artiesten/kronen; "Pagina" for page; "Aangevraagd door" for requested by; ordinals are `{{count}}e`; "uur" is uninflected in plural.
+- German specifics (reference: `de.json`): "Befehl" for command; compounds with a protected English term or proper noun KEEP the hyphen (`Künstler-Plays`, `Mitglieder-Cache`, `Last.fm-Account`), pure-German compounds don't (`Künstlerinfos`); `{{date}}` needs a preposition ("entdeckt am {{date}}") since German has no bare adverbial date; generic masculine ("der Künstler", "der Nutzer") throughout.
 
 ### Slash command descriptions
 `src/FMBot.Bot/Resources/SlashCommandLocalizations/{locale}.json` (NetCord nested schema: `commands` → `description`/`parameters`/`subcommands`). NEVER add `name` keys — command names stay identical in every locale, and the test suite fails if one appears. `en.json` there is generated from the `[SlashCommand]` attributes: regenerate with `FMBOT_REGEN_SLASH_LOCALIZATIONS=1 dotnet test --filter EnglishBaseFileMatchesSlashCommandAttributes`. Its `CopyToOutputDirectory=Never` csproj entry must stay (bare `en` is an invalid Discord locale and breaks command registration).

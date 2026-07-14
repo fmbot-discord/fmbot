@@ -8,27 +8,48 @@ public static class LanguageExtensions
 {
     private static readonly ConcurrentDictionary<Language, CultureInfo> Cultures = new();
 
-    public static CultureInfo GetCultureInfo(this Language language)
+    extension(Language language)
     {
-        return Cultures.GetOrAdd(language, l => new CultureInfo(l.GetLocaleCode()));
-    }
-
-    public static string GetLocaleCode(this Language language)
-    {
-        return language switch
+        public CultureInfo GetCultureInfo()
         {
-            Language.Portuguese => "pt-BR",
-            Language.Spanish => "es-ES",
-            Language.Hindi => "hi",
-            Language.German => "de",
-            Language.Polish => "pl",
-            Language.Dutch => "nl",
-            Language.French => "fr",
-            Language.Italian => "it",
-            Language.Turkish => "tr",
-            Language.Swedish => "sv-SE",
-            _ => "en"
-        };
+            return Cultures.GetOrAdd(language, l => new CultureInfo(l.GetLocaleCode()));
+        }
+
+        public string GetLocaleCode()
+        {
+            return language switch
+            {
+                Language.Portuguese => "pt-BR",
+                Language.Spanish => "es-ES",
+                Language.Hindi => "hi",
+                Language.German => "de",
+                Language.Polish => "pl",
+                Language.Dutch => "nl",
+                Language.French => "fr",
+                Language.Italian => "it",
+                Language.Turkish => "tr",
+                Language.Swedish => "sv-SE",
+                _ => "en"
+            };
+        }
+
+        public string GetEnglishName()
+        {
+            return language switch
+            {
+                Language.Portuguese => "Brazilian Portuguese",
+                Language.Spanish => "Spanish",
+                Language.Hindi => "Hindi",
+                Language.German => "German",
+                Language.Polish => "Polish",
+                Language.Dutch => "Dutch",
+                Language.French => "French",
+                Language.Italian => "Italian",
+                Language.Turkish => "Turkish",
+                Language.Swedish => "Swedish",
+                _ => "English"
+            };
+        }
     }
 
     public static Language? FromDiscordLocale(string discordLocale)

@@ -1152,10 +1152,13 @@ public class UserInteractions(
             var discordUserId = ulong.Parse(discordUser);
             var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
 
+            var localizer = Localizer.ForGuild(this.Context.Interaction.GuildId,
+                discordLocale: this.Context.Interaction.GuildLocale);
+
             if (requesterDiscordUserId != this.Context.User.Id)
             {
                 await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
-                    .WithContent("Hey, this button is not for you. At least you tried.")
+                    .WithContent(localizer.Translate("errors.buttonNotForYou"))
                     .WithFlags(MessageFlags.Ephemeral)));
                 return;
             }
@@ -1166,19 +1169,22 @@ public class UserInteractions(
             var userSettings = await settingService.GetOriginalContextUser(
                 discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
 
-            var descriptor = userSettings.DifferentUser ? $"**{userSettings.DisplayName}**'s" : "your";
             var loaderContainer = new ComponentContainerProperties();
             if (result == "compliment")
             {
                 loaderContainer.WithAccentColor(new Color(186, 237, 169));
                 loaderContainer.WithTextDisplay(
-                    $"<a:loading:821676038102056991> Loading {descriptor} compliment...");
+                    $"<a:loading:821676038102056991> {(userSettings.DifferentUser
+                        ? localizer.Translate("judge.loadingComplimentOther", ("user", userSettings.DisplayName))
+                        : localizer.Translate("judge.loadingComplimentSelf"))}");
             }
             else
             {
                 loaderContainer.WithAccentColor(new Color(255, 122, 1));
                 loaderContainer.WithTextDisplay(
-                    $"<a:loading:821676038102056991> Loading {descriptor} roast (don't take it personally)...");
+                    $"<a:loading:821676038102056991> {(userSettings.DifferentUser
+                        ? localizer.Translate("judge.loadingRoastOther", ("user", userSettings.DisplayName))
+                        : localizer.Translate("judge.loadingRoastSelf"))}");
             }
 
             await this.Context.Interaction.ModifyResponseAsync(e =>
@@ -1220,8 +1226,7 @@ public class UserInteractions(
             {
                 var errorContainer = new ComponentContainerProperties();
                 errorContainer.WithAccentColor(DiscordConstants.LastFmColorRed);
-                errorContainer.WithTextDisplay(
-                    "Sorry, you or the user you're searching for don't have any top artists or top tracks in the selected time period.");
+                errorContainer.WithTextDisplay(localizer.Translate("judge.noTopResults"));
                 await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoScrobbles }, userService);
                 await this.Context.Interaction.ModifyResponseAsync(e =>
                 {

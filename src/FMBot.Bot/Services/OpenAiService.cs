@@ -7,21 +7,17 @@ using static FMBot.Bot.Models.OpenAIModels;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
 using System;
-using System.Globalization;
 using System.Text;
-using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
-using FMBot.Bot.Models;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
+using FMBot.Domain.Extensions;
 using FMBot.Domain.Types;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Serilog;
-using NetCord.Gateway;
-using DiscordGuild = NetCord.Gateway.Guild;
 
 namespace FMBot.Bot.Services;
 
@@ -107,13 +103,22 @@ public class OpenAiService(
     }
 
     public async Task<OpenAiResponse> GetJudgeResponse(List<TopArtist> artists, List<TopTrack> topTracks,
-        PromptType promptType, int amountThisWeek, bool supporter = false, string language = "en-us")
+        PromptType promptType, int amountThisWeek, bool supporter = false, Language language = Language.English)
     {
         await using var db = await contextFactory.CreateDbContextAsync();
         var prompt = await db.AiPrompts
             .OrderByDescending(o => o.Version)
             .FirstAsync(f => f.Type == promptType &&
-                             f.Language == language);
+                             f.Language == "en-us");
+
+        var promptText = prompt.Prompt;
+        if (language != Language.English)
+        {
+            var languageName = language.GetEnglishName();
+            promptText +=
+                $"\n\nWrite your entire response in {languageName}. Keep artist, album and track names exactly as they are. " +
+                $"The response should read like it was originally written by a native {languageName} speaker, not translated from English.";
+        }
 
         var music = new StringBuilder();
         music.AppendLine("My top artists: ");
@@ -137,7 +142,7 @@ public class OpenAiService(
 
         var model = supporter ? (amountThisWeek <= 2 ? prompt.UltraModel : prompt.PremiumModel) : prompt.FreeModel;
 
-        return await SendRequest(prompt.Prompt, model, music.ToString());
+        return await SendRequest(promptText, model, music.ToString());
     }
 
     public async Task<AiGeneration> StoreAiGeneration(ulong contextId, int userId, int? targetedUserId)
