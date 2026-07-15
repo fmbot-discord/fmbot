@@ -95,17 +95,19 @@ public class GenreBuilders
                 guildListSettings.BillboardStartDateTime, guildListSettings.OrderType, guildListSettings.BillboardEndDateTime);
         }
 
-        var title = $"Top {guildListSettings.TimeDescription.ToLower()} genres in {context.DiscordGuild.Name}";
+        var title = context.Localize("genre.server.title",
+            ("period", context.Localizer.PeriodLabel(guildListSettings)),
+            ("server", context.DiscordGuild.Name));
 
         var footerLabel = guildListSettings.OrderType == OrderType.Listeners
-            ? "Listener count"
-            : "Play count";
+            ? context.Localize("server.orderListeners")
+            : context.Localize("server.orderPlays");
 
         string footerHint = new Random().Next(0, 5) switch
         {
-            1 => $"View specific genre listeners with '{context.Prefix}whoknowsgenre'",
-            2 => "Available time periods: alltime, monthly, weekly, current and last month",
-            3 => "Available sorting options: plays and listeners",
+            1 => context.Localize("server.hintWhoKnowsGenre", ("command", $"{context.Prefix}whoknowsgenre")),
+            2 => context.Localize("server.hintTimePeriods"),
+            3 => context.Localize("server.hintSorting"),
             _ => null
         };
 
@@ -119,8 +121,8 @@ public class GenreBuilders
             foreach (var genre in page)
             {
                 var name = guildListSettings.OrderType == OrderType.Listeners
-                    ? $"`{genre.ListenerCount.Format(context.NumberFormat)}` · **{genre.GenreName.Transform(To.TitleCase)}** - *{genre.TotalPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(genre.TotalPlaycount)}*"
-                    : $"`{genre.TotalPlaycount.Format(context.NumberFormat)}` · **{genre.GenreName.Transform(To.TitleCase)}** - *{genre.ListenerCount.Format(context.NumberFormat)} {StringExtensions.GetListenersString(genre.ListenerCount)}*";
+                    ? $"`{genre.ListenerCount.Format(context.NumberFormat)}` · **{genre.GenreName.Transform(To.TitleCase)}** - *{context.LocalizeCount("shared.plays", genre.TotalPlaycount)}*"
+                    : $"`{genre.TotalPlaycount.Format(context.NumberFormat)}` · **{genre.GenreName.Transform(To.TitleCase)}** - *{context.LocalizeCount("shared.listeners", genre.ListenerCount)}*";
 
                 if (previousTopGuildGenres != null && previousTopGuildGenres.Any())
                 {
@@ -167,7 +169,7 @@ public class GenreBuilders
 
             container.WithSeparator();
 
-            var pageFooter = $"-# {footerLabel} - Page {p.CurrentPageIndex + 1}/{pageDescriptions.Count}";
+            var pageFooter = $"-# {footerLabel} - {context.Localize("shared.pageCounter", ("page", (p.CurrentPageIndex + 1).ToString()), ("pages", pageDescriptions.Count.ToString()))}";
             if (footerHint != null)
             {
                 pageFooter += $"\n-# {footerHint}";
@@ -351,14 +353,14 @@ public class GenreBuilders
         }
 
         var footerBase = new StringBuilder();
-        footerBase.Append("Genre source: Spotify");
+        footerBase.Append(context.Localize("genre.source"));
         if (topListSettings.Billboard)
         {
             footerBase.Append($" · {StringService.GetBillBoardSettingString(timeSettings, userSettings.RegisteredLastFm)}");
         }
         if (rnd == 1 && !topListSettings.Billboard && context.SelectMenu == null)
         {
-            footerBase.Append(" · View as billboard by adding 'billboard' or 'bb'");
+            footerBase.Append($" · {context.Localize("artist.top.billboardHint")}");
         }
 
         var footerBaseText = footerBase.ToString();
@@ -376,7 +378,9 @@ public class GenreBuilders
         {
             var container = new ComponentContainerProperties();
 
-            container.WithTextDisplay($"### Top {timeSettings.Description.ToLower()} artist genres for {userTitleWithLink}");
+            container.WithTextDisplay(context.Localize("genre.top.title",
+                ("period", context.Localizer.PeriodLabel(timeSettings)),
+                ("user", userTitleWithLink)));
             container.WithSeparator();
 
             var currentPage = pageDescriptions.ElementAtOrDefault(p.CurrentPageIndex);
@@ -824,7 +828,7 @@ public class GenreBuilders
             response.ComponentsContainer.WithTextDisplay(pageDescriptions[0].TrimEnd());
             response.ComponentsContainer.WithSeparator();
             var footer = new StringBuilder();
-            footer.AppendLine("Genre source: Spotify");
+            footer.AppendLine(context.Localize("genre.source"));
             footer.Append(footerStats);
             if (anyMatches)
             {
@@ -874,7 +878,7 @@ public class GenreBuilders
 
                 container.WithSeparator();
                 var pageFooter = new StringBuilder();
-                pageFooter.AppendLine($"Page {p.CurrentPageIndex + 1}/{pageDescriptions.Count} · Genre source: Spotify");
+                pageFooter.AppendLine($"{context.Localize("shared.pageCounter", ("page", (p.CurrentPageIndex + 1).ToString()), ("pages", pageDescriptions.Count.ToString()))} · {context.Localize("genre.source")}");
                 pageFooter.Append(footerStats);
                 if (anyMatches)
                 {
@@ -1030,11 +1034,10 @@ public class GenreBuilders
             var serverPlaycount = filteredUsersWithGenre.Sum(a => a.Playcount);
             var avgServerPlaycount = filteredUsersWithGenre.Average(a => a.Playcount);
 
-            footer.Append($"Genre - ");
-            footer.Append($"{serverListeners.Format(context.NumberFormat)} {StringExtensions.GetListenersString(serverListeners)} - ");
-            footer.Append($"{serverPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(serverPlaycount)} - ");
-            footer.Append($"{((int)avgServerPlaycount).Format(context.NumberFormat)} avg");
-            footer.AppendLine();
+            footer.AppendLine(context.Localize("genre.whoknows.serverStats",
+                ("listeners", context.LocalizeCount("shared.listeners", serverListeners)),
+                ("plays", context.LocalizeCount("shared.plays", serverPlaycount)),
+                ("avg", ((int)avgServerPlaycount).Format(context.NumberFormat))));
         }
 
         var filterDescription = filterStats.GetFullDescription(context.Localizer);
@@ -1061,7 +1064,7 @@ public class GenreBuilders
                 PrivacyLevel.Server, context.NumberFormat, doNotLinkEmojis: true, closeFriendUserIds: closeFriendUserIds);
         if (filteredUsersWithGenre.Count == 0)
         {
-            serverUsers = "Nobody in this server (not even you) has listened to this genre.";
+            serverUsers = context.Localize("genre.whoknows.nobodyInServer");
         }
 
         response.ComponentsContainer.WithTextDisplay($"### {title}");
@@ -1097,9 +1100,8 @@ public class GenreBuilders
 
         if (context.ContextUser.Friends?.Any() != true)
         {
-            response.ComponentsContainer.WithTextDisplay("We couldn't find any friends. To add friends:\n" +
-                                           $"`{context.Prefix}addfriends {Constants.UserMentionOrLfmUserNameExample.Replace("`", "")}`\n\n" +
-                                           $"Or right-click a user, go to apps and click 'Add as friend'");
+            response.ComponentsContainer.WithTextDisplay(context.Localize("artist.whoknows.noFriendsFound",
+                ("command", $"{context.Prefix}addfriends {Constants.UserMentionOrLfmUserNameExample.Replace("`", "")}")));
             response.CommandResponse = CommandResponse.NotFound;
             return response;
         }
@@ -1146,13 +1148,12 @@ public class GenreBuilders
         var footer = new StringBuilder();
 
         var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
-        footer.AppendLine($"Friends WhoKnow genre for {userTitle}");
+        footer.AppendLine(context.Localize("genre.whoknows.friendsFooter", ("user", userTitle)));
 
         var amountOfHiddenFriends = context.ContextUser.Friends.Count(c => !c.FriendUserId.HasValue);
         if (amountOfHiddenFriends > 0)
         {
-            footer.AppendLine(
-                $"{amountOfHiddenFriends} non-fmbot {StringExtensions.GetFriendsString(amountOfHiddenFriends)} not visible");
+            footer.AppendLine(context.LocalizeCount("artist.whoknows.hiddenFriends", amountOfHiddenFriends));
         }
 
         if (usersWithGenre.Any() && usersWithGenre.Count > 1)
@@ -1161,11 +1162,10 @@ public class GenreBuilders
             var serverPlaycount = usersWithGenre.Sum(a => a.Playcount);
             var avgServerPlaycount = usersWithGenre.Average(a => a.Playcount);
 
-            footer.Append($"Genre - ");
-            footer.Append($"{serverListeners.Format(context.NumberFormat)} {StringExtensions.GetListenersString(serverListeners)} - ");
-            footer.Append($"{serverPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(serverPlaycount)} - ");
-            footer.Append($"{((int)avgServerPlaycount).Format(context.NumberFormat)} avg");
-            footer.AppendLine();
+            footer.AppendLine(context.Localize("genre.whoknows.serverStats",
+                ("listeners", context.LocalizeCount("shared.listeners", serverListeners)),
+                ("plays", context.LocalizeCount("shared.plays", serverPlaycount)),
+                ("avg", ((int)avgServerPlaycount).Format(context.NumberFormat))));
         }
 
         var closeFriendUserIds = await this._friendsService.GetCloseFriendUserIdsAsync(context.ContextUser);

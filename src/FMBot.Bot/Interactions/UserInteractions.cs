@@ -1200,7 +1200,7 @@ public class UserInteractions(
                 e.Embeds = [];
             });
 
-            var timeSettings = SettingService.GetTimePeriod(timeOption, TimePeriod.AllTime);
+            var timeSettings = SettingService.GetTimePeriod(timeOption, TimePeriod.AllTime, language: LocalizationService.GetLanguage(this.Context.Interaction.GuildId, this.Context.Interaction.GuildLocale));
 
             List<TopArtist> topArtists;
             if (timeSettings.TimePeriod == TimePeriod.Quarterly && !userSettings.DifferentUser)

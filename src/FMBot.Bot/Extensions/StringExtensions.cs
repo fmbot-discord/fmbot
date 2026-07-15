@@ -418,8 +418,8 @@ public static partial class StringExtensions
 
     public static string GetTimeAgo(DateTime timeAgo)
     {
-        var ts = new TimeSpan(DateTime.UtcNow.Ticks - timeAgo.Ticks);
-        var delta = Math.Abs(ts.TotalSeconds);
+        var ts = new TimeSpan(Math.Abs(DateTime.UtcNow.Ticks - timeAgo.Ticks));
+        var delta = ts.TotalSeconds;
 
         if (delta < 60)
         {

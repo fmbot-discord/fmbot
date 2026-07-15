@@ -151,7 +151,7 @@ public class UserCommands(
         var contextUser = await userService.GetUserAsync(this.Context.User.Id);
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
         var languageSettings = SettingService.GetLanguage(extraOptions);
-        var timeSettings = SettingService.GetTimePeriod(languageSettings.NewSearchValue, TimePeriod.Quarterly);
+        var timeSettings = SettingService.GetTimePeriod(languageSettings.NewSearchValue, TimePeriod.Quarterly, language: LocalizationService.GetLanguage(this.Context.Guild?.Id, this.Context.Guild?.PreferredLocale));
 
         var userSettings = await settingService.GetUser(timeSettings.NewSearchValue, contextUser, this.Context);
 
@@ -710,7 +710,7 @@ public class UserCommands(
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
         var contextUser = await userService.GetUserAsync(this.Context.User.Id);
 
-        var response = UserBuilder.LoginRequired(prfx, contextUser != null);
+        var response = UserBuilder.LoginRequired(new ContextModel(this.Context, prfx, contextUser), contextUser != null);
 
         await this.Context.SendResponse(this.Interactivity, response, userService);
         await this.Context.LogCommandUsedAsync(response, userService);

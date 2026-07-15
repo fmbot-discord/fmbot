@@ -267,8 +267,8 @@ public class AlbumBuilders
                         artistUserTracks.Any(ut => StringExtensions.SanitizeTrackNameForComparison(t.TrackName)
                             .Equals(StringExtensions.SanitizeTrackNameForComparison(ut.Name))));
                     userStats.AppendLine(context.Localize("album.tracksListened",
-                        ("heard", tracksHeard.ToString()),
-                        ("total", albumSearch.Album.AlbumTracks.Count.ToString())));
+                        ("heard", tracksHeard.Format(context.NumberFormat)),
+                        ("total", albumSearch.Album.AlbumTracks.Count.Format(context.NumberFormat))));
                 }
             }
 
@@ -331,7 +331,7 @@ public class AlbumBuilders
                 }
             }
 
-            var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingAlbum(context.ContextUser.UserId,
+            var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingAlbum(context.Localizer, context.ContextUser.UserId,
                 guildUsers, guild, albumSearch.Album.ArtistName, albumSearch.Album.AlbumName);
 
             if (guildAlsoPlaying != null)
@@ -348,7 +348,7 @@ public class AlbumBuilders
         var metaLine = new StringBuilder();
         if (databaseAlbum?.Popularity is > 0)
         {
-            metaLine.Append(context.Localize("album.popularity", ("value", databaseAlbum.Popularity.Value.ToString())));
+            metaLine.Append(context.Localize("album.popularity", ("value", databaseAlbum.Popularity.Value.Format(context.NumberFormat))));
         }
 
         if (featuredHistory.Any() || guildFeaturedHistory is { Count: > 0 })
@@ -366,7 +366,7 @@ public class AlbumBuilders
         {
             statsSection.AppendLine(context.LocalizeCount("album.randomPosition",
                 albumSearch.RandomAlbumPlaycount.GetValueOrDefault(),
-                ("position", albumSearch.RandomAlbumPosition.ToString())));
+                ("position", albumSearch.RandomAlbumPosition.Format(context.NumberFormat))));
         }
 
         response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
@@ -514,7 +514,7 @@ public class AlbumBuilders
         {
             footer.AppendLine(context.LocalizeCount("album.randomPosition",
                 albumSearch.RandomAlbumPlaycount.GetValueOrDefault(),
-                ("position", albumSearch.RandomAlbumPosition.ToString())));
+                ("position", albumSearch.RandomAlbumPosition.Format(context.NumberFormat))));
         }
 
         var rnd = new Random();
@@ -547,7 +547,7 @@ public class AlbumBuilders
                 ("avg", ((int)avgServerPlaycount).Format(context.NumberFormat))));
         }
 
-        var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingAlbum(context.ContextUser.UserId,
+        var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingAlbum(context.Localizer, context.ContextUser.UserId,
             guildUsers, guild, albumSearch.Album.ArtistName, albumSearch.Album.AlbumName);
 
         if (guildAlsoPlaying != null)
@@ -952,26 +952,31 @@ public class AlbumBuilders
         if (!topGuildAlbums.Any() && (roles == null || !roles.Any()))
         {
             response.Embed.WithDescription(guildListSettings.NewSearchValue != null
-                ? $"Sorry, there are no registered top albums for artist `{guildListSettings.NewSearchValue}` on this server in the time period you selected."
-                : $"Sorry, there are no registered top albums on this server in the time period you selected.");
+                ? context.Localize("album.server.noResultsSearch", ("artist", guildListSettings.NewSearchValue))
+                : context.Localize("album.server.noResults"));
             response.Embed.WithColor(DiscordConstants.WarningColorOrange);
             response.CommandResponse = CommandResponse.NotFound;
             return response;
         }
 
         var title = string.IsNullOrWhiteSpace(guildListSettings.NewSearchValue)
-            ? $"Top {guildListSettings.TimeDescription.ToLower()} albums in {context.DiscordGuild.Name}"
-            : $"Top {guildListSettings.TimeDescription.ToLower()} '{guildListSettings.NewSearchValue}' albums in {context.DiscordGuild.Name}";
+            ? context.Localize("album.server.title",
+                ("period", context.Localizer.PeriodLabel(guildListSettings)),
+                ("server", context.DiscordGuild.Name))
+            : context.Localize("album.server.titleSearch",
+                ("period", context.Localizer.PeriodLabel(guildListSettings)),
+                ("search", guildListSettings.NewSearchValue),
+                ("server", context.DiscordGuild.Name));
 
         var footerLabel = guildListSettings.OrderType == OrderType.Listeners
-            ? "Listener count"
-            : "Play count";
+            ? context.Localize("server.orderListeners")
+            : context.Localize("server.orderPlays");
 
         string footerHint = new Random().Next(0, 5) switch
         {
-            1 => $"View specific album listeners with '{context.Prefix}whoknowsalbum'",
-            2 => "Available time periods: alltime, monthly, weekly, current and last month",
-            3 => "Available sorting options: plays and listeners",
+            1 => context.Localize("server.hintWhoKnowsAlbum", ("command", $"{context.Prefix}whoknowsalbum")),
+            2 => context.Localize("server.hintTimePeriods"),
+            3 => context.Localize("server.hintSorting"),
             _ => null
         };
 
@@ -988,8 +993,8 @@ public class AlbumBuilders
                     ? $"**{StringExtensions.Sanitize(album.ArtistName)}** - **{StringExtensions.Sanitize(album.AlbumName)}**"
                     : $"**{StringExtensions.Sanitize(album.AlbumName)}**";
                 var name = guildListSettings.OrderType == OrderType.Listeners
-                    ? $"`{album.ListenerCount.Format(context.NumberFormat)}` · {albumName} · *{album.TotalPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(album.TotalPlaycount)}*"
-                    : $"`{album.TotalPlaycount.Format(context.NumberFormat)}` · {albumName} · *{album.ListenerCount.Format(context.NumberFormat)} {StringExtensions.GetListenersString(album.ListenerCount)}*";
+                    ? $"`{album.ListenerCount.Format(context.NumberFormat)}` · {albumName} · *{context.LocalizeCount("shared.plays", album.TotalPlaycount)}*"
+                    : $"`{album.TotalPlaycount.Format(context.NumberFormat)}` · {albumName} · *{context.LocalizeCount("shared.listeners", album.ListenerCount)}*";
 
                 if (previousTopGuildAlbums != null && previousTopGuildAlbums.Any())
                 {
@@ -1015,7 +1020,7 @@ public class AlbumBuilders
 
         if (pageDescriptions.Count == 0)
         {
-            pageDescriptions.Add("Sorry, there are no registered top albums for the roles you selected in this time period.");
+            pageDescriptions.Add(context.Localize("album.server.noResultsRoles"));
         }
 
         RoleMenuProperties roleMenu = null;
@@ -1024,7 +1029,7 @@ public class AlbumBuilders
         {
             roleMenu = new RoleMenuProperties(
                     $"{InteractionConstants.ServerAlbumsRolePicker}:{(int)guildListSettings.OrderType}:{guildListSettings.TimeDescription}:{guildListSettings.NewSearchValue}")
-                .WithPlaceholder("Apply role filter..")
+                .WithPlaceholder(context.Localize("server.roleFilterPlaceholder"))
                 .WithMinValues(0)
                 .WithMaxValues(25);
         }
@@ -1053,10 +1058,10 @@ public class AlbumBuilders
 
             container.WithSeparator();
 
-            var pageFooter = $"-# {footerLabel} - Page {p.CurrentPageIndex + 1}/{pageDescriptions.Count}";
+            var pageFooter = $"-# {footerLabel} - {context.Localize("shared.pageCounter", ("page", (p.CurrentPageIndex + 1).ToString()), ("pages", pageDescriptions.Count.ToString()))}";
             if (roles != null && roles.Any())
             {
-                pageFooter += $"\n-# ✨ Role filter enabled with {roles.Count} {StringExtensions.GetRolesString(roles.Count)} picked";
+                pageFooter += $"\n-# {context.LocalizeCount("server.roleFilterEnabled", roles.Count)}";
             }
             if (footerHint != null)
             {
@@ -1537,17 +1542,17 @@ public class AlbumBuilders
 
         if (safeForChannel == CensorService.CensorResult.Nsfw)
         {
-            descriptionText.AppendLine("⚠️ NSFW - Click to reveal");
+            descriptionText.AppendLine(context.Localize("artist.whoknows.nsfwReveal"));
         }
 
         descriptionText.Append(
-            $"-# Requested by {await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser)}");
+            $"-# {context.Localize("shared.requestedBy", ("user", await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser)))}");
 
         if (albumSearch.IsRandom)
         {
             descriptionText.AppendLine();
             descriptionText.Append(
-                $"-# Random album #{albumSearch.RandomAlbumPosition} ({albumSearch.RandomAlbumPlaycount} {StringExtensions.GetPlaysString(albumSearch.RandomAlbumPlaycount)})");
+                $"-# {context.LocalizeCount("album.randomPositionCover", albumSearch.RandomAlbumPlaycount.GetValueOrDefault(), ("position", albumSearch.RandomAlbumPosition.Format(context.NumberFormat)))}");
         }
 
         response.ComponentsContainer.WithTextDisplay(descriptionText.ToString());
@@ -1575,7 +1580,7 @@ public class AlbumBuilders
         {
             userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
             authorName = context.Localize("album.topAlbumsTitleSelf",
-                ("period", timeSettings.Description.ToLower()),
+                ("period", context.Localizer.PeriodLabel(timeSettings)),
                 ("user", userTitle));
         }
         else
@@ -1585,7 +1590,7 @@ public class AlbumBuilders
                 ("user", userSettings.UserNameLastFm),
                 ("requester", requesterTitle));
             authorName = context.Localize("album.topAlbumsTitleOther",
-                ("period", timeSettings.Description.ToLower()),
+                ("period", context.Localizer.PeriodLabel(timeSettings)),
                 ("user", userSettings.UserNameLastFm),
                 ("requester", requesterTitle));
         }
@@ -1757,7 +1762,7 @@ public class AlbumBuilders
                 footer.Append(context.Localize("album.topAlbumsPageCounterTotal",
                     ("page", pageCounter.ToString()),
                     ("pages", albumPages.Count.ToString()),
-                    ("amount", albums.Content.TotalAmount.Value.ToString())));
+                    ("amount", albums.Content.TotalAmount.Value.Format(context.NumberFormat))));
             }
             else
             {

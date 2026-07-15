@@ -456,9 +456,11 @@ public class PlayBuilder
         switch (embedType)
         {
             case FmEmbedType.TextOneLine:
-                response.Text =
-                    $"**{userSettings.DisplayName}** is listening to **{currentTrack.TrackName}** by **{currentTrack.ArtistName}**"
-                        .FilterOutMentions();
+                response.Text = context.Localize("fm.textOneLine",
+                        ("user", userSettings.DisplayName),
+                        ("track", currentTrack.TrackName),
+                        ("artist", currentTrack.ArtistName))
+                    .FilterOutMentions();
 
                 response.ResponseType = ResponseType.Text;
                 break;
@@ -557,7 +559,7 @@ public class PlayBuilder
                 string guildAlsoPlaying = null;
                 if (guild != null && !userSettings.DifferentUser && embedType != FmEmbedType.EmbedTiny)
                 {
-                    guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingTrack(context.ContextUser.UserId,
+                    guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingTrack(context.Localizer, context.ContextUser.UserId,
                         guildUsers, guild, currentTrack.ArtistName, currentTrack.TrackName);
                 }
 
@@ -1026,12 +1028,12 @@ public class PlayBuilder
                 if (!SupporterService.IsSupporter(userSettings.UserType))
                 {
                     footer.Append(context.Localize("recent.filteringCachedPlays",
-                        ("artist", artistToFilter), ("url", LastfmUrlExtensions.GetArtistUrl(artistToFilter))));
+                        ("artist", StringExtensions.Sanitize(artistToFilter)), ("url", LastfmUrlExtensions.GetArtistUrl(artistToFilter))));
                 }
                 else
                 {
                     footer.Append(context.Localize("recent.filteringAllPlays",
-                        ("artist", artistToFilter), ("url", LastfmUrlExtensions.GetArtistUrl(artistToFilter))));
+                        ("artist", StringExtensions.Sanitize(artistToFilter)), ("url", LastfmUrlExtensions.GetArtistUrl(artistToFilter))));
                 }
             }
 

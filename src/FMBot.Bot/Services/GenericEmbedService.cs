@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -289,8 +290,13 @@ public static class GenericEmbedService
             switch (responseStatus)
             {
                 case ResponseStatus.Failure:
+                    var failureRate = LastfmErrorRateTracker.GetSnapshot();
                     embed.WithDescription(localizer.Translate("errors.lastFmFailure")
-                        + LastfmErrorRateTracker.GetFailureRateDescription());
+                        + (failureRate == null
+                            ? string.Empty
+                            : "\n\n" + localizer.Translate("errors.lastFmFailureRate",
+                                ("percentage", failureRate.AveragePercent.ToString("0.#", CultureInfo.InvariantCulture)),
+                                ("sparkline", failureRate.Sparkline))));
                     break;
                 case ResponseStatus.LoginRequired:
                     embed.WithDescription(localizer.Translate("errors.lastFmLoginRequired", ("loginCommand", loginCommand)));
@@ -305,7 +311,7 @@ public static class GenericEmbedService
                     if (expectedResultType != null)
                     {
                         embed.Title = null;
-                        embed.WithDescription(localizer.Translate("errors.lastFmNoResult", ("resultType", expectedResultType)));
+                        embed.WithDescription(localizer.Translate($"errors.lastFmNoResult.{expectedResultType}"));
                     }
                     else if (message.Equals("Not found"))
                     {

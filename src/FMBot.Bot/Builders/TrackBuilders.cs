@@ -370,7 +370,7 @@ public class TrackBuilders
                 }
             }
 
-            var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingTrack(context.ContextUser.UserId,
+            var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingTrack(context.Localizer, context.ContextUser.UserId,
                 guildUsers, guild, trackSearch.Track.ArtistName, trackSearch.Track.TrackName);
 
             if (guildAlsoPlaying != null)
@@ -385,7 +385,7 @@ public class TrackBuilders
         var metaLine = new StringBuilder();
         if (dbTrack?.Popularity is > 0)
         {
-            metaLine.Append(context.Localize("track.popularity", ("value", dbTrack.Popularity.Value.ToString())));
+            metaLine.Append(context.Localize("track.popularity", ("value", dbTrack.Popularity.Value.Format(context.NumberFormat))));
         }
 
         if (featuredHistory.Any() || guildFeaturedHistory is { Count: > 0 })
@@ -403,7 +403,7 @@ public class TrackBuilders
         {
             statsSection.AppendLine(context.LocalizeCount("track.randomTrackPosition",
                 trackSearch.RandomTrackPlaycount.GetValueOrDefault(),
-                ("position", trackSearch.RandomTrackPosition.ToString())));
+                ("position", trackSearch.RandomTrackPosition.Format(context.NumberFormat))));
         }
 
         response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
@@ -604,7 +604,7 @@ public class TrackBuilders
         {
             footer.AppendLine(context.LocalizeCount("track.randomTrackPosition",
                 track.RandomTrackPlaycount.GetValueOrDefault(),
-                ("position", track.RandomTrackPosition.ToString())));
+                ("position", track.RandomTrackPosition.Format(context.NumberFormat))));
         }
 
         var rnd = new Random();
@@ -638,7 +638,7 @@ public class TrackBuilders
                 ("avg", ((int)avgServerPlaycount).Format(context.NumberFormat))));
         }
 
-        var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingTrack(context.ContextUser.UserId,
+        var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingTrack(context.Localizer, context.ContextUser.UserId,
             guildUsers, guild, track.Track.ArtistName, track.Track.TrackName);
 
         if (guildAlsoPlaying != null)
@@ -884,7 +884,7 @@ public class TrackBuilders
                 privacyLevel = PrivacyLevel.Server;
             }
 
-            var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingTrack(context.ContextUser.UserId,
+            var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingTrack(context.Localizer, context.ContextUser.UserId,
                 guildUsers, guild, track.Track.ArtistName, track.Track.TrackName);
 
             if (guildAlsoPlaying != null)
@@ -1415,26 +1415,31 @@ public class TrackBuilders
         if (topGuildTracks.Count == 0 && (roles == null || !roles.Any()))
         {
             response.Embed.WithDescription(guildListSettings.NewSearchValue != null
-                ? $"Sorry, there are no registered top tracks for artist `{guildListSettings.NewSearchValue}` on this server in the time period you selected."
-                : $"Sorry, there are no registered top tracks on this server in the time period you selected.");
+                ? context.Localize("track.server.noResultsSearch", ("artist", guildListSettings.NewSearchValue))
+                : context.Localize("track.server.noResults"));
             response.Embed.WithColor(DiscordConstants.WarningColorOrange);
             response.CommandResponse = CommandResponse.NotFound;
             return response;
         }
 
         var title = string.IsNullOrWhiteSpace(guildListSettings.NewSearchValue)
-            ? $"Top {guildListSettings.TimeDescription.ToLower()} tracks in {context.DiscordGuild.Name}"
-            : $"Top {guildListSettings.TimeDescription.ToLower()} '{guildListSettings.NewSearchValue}' tracks in {context.DiscordGuild.Name}";
+            ? context.Localize("track.server.title",
+                ("period", context.Localizer.PeriodLabel(guildListSettings)),
+                ("server", context.DiscordGuild.Name))
+            : context.Localize("track.server.titleSearch",
+                ("period", context.Localizer.PeriodLabel(guildListSettings)),
+                ("search", guildListSettings.NewSearchValue),
+                ("server", context.DiscordGuild.Name));
 
         var footerLabel = guildListSettings.OrderType == OrderType.Listeners
-            ? "Listener count"
-            : "Play count";
+            ? context.Localize("server.orderListeners")
+            : context.Localize("server.orderPlays");
 
         string footerHint = new Random().Next(0, 5) switch
         {
-            1 => $"View specific track listeners with '{context.Prefix}whoknowstrack'",
-            2 => "Available time periods: alltime, monthly, weekly, current and last month",
-            3 => "Available sorting options: plays and listeners",
+            1 => context.Localize("server.hintWhoKnowsTrack", ("command", $"{context.Prefix}whoknowstrack")),
+            2 => context.Localize("server.hintTimePeriods"),
+            3 => context.Localize("server.hintSorting"),
             _ => null
         };
 
@@ -1451,8 +1456,8 @@ public class TrackBuilders
                     ? $"**{StringExtensions.Sanitize(track.ArtistName)}** - **{StringExtensions.Sanitize(track.TrackName)}**"
                     : $"**{StringExtensions.Sanitize(track.TrackName)}**";
                 var name = guildListSettings.OrderType == OrderType.Listeners
-                    ? $"`{track.ListenerCount.Format(context.NumberFormat)}` · {trackName} · *{track.TotalPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(track.TotalPlaycount)}*"
-                    : $"`{track.TotalPlaycount.Format(context.NumberFormat)}` · {trackName} · *{track.ListenerCount.Format(context.NumberFormat)} {StringExtensions.GetListenersString(track.ListenerCount)}*";
+                    ? $"`{track.ListenerCount.Format(context.NumberFormat)}` · {trackName} · *{context.LocalizeCount("shared.plays", track.TotalPlaycount)}*"
+                    : $"`{track.TotalPlaycount.Format(context.NumberFormat)}` · {trackName} · *{context.LocalizeCount("shared.listeners", track.ListenerCount)}*";
 
                 if (previousTopGuildTracks != null && previousTopGuildTracks.Any())
                 {
@@ -1478,7 +1483,7 @@ public class TrackBuilders
 
         if (pageDescriptions.Count == 0)
         {
-            pageDescriptions.Add("Sorry, there are no registered top tracks for the roles you selected in this time period.");
+            pageDescriptions.Add(context.Localize("track.server.noResultsRoles"));
         }
 
         RoleMenuProperties roleMenu = null;
@@ -1487,7 +1492,7 @@ public class TrackBuilders
         {
             roleMenu = new RoleMenuProperties(
                     $"{InteractionConstants.ServerTracksRolePicker}:{(int)guildListSettings.OrderType}:{guildListSettings.TimeDescription}:{guildListSettings.NewSearchValue}")
-                .WithPlaceholder("Apply role filter..")
+                .WithPlaceholder(context.Localize("server.roleFilterPlaceholder"))
                 .WithMinValues(0)
                 .WithMaxValues(25);
         }
@@ -1516,10 +1521,10 @@ public class TrackBuilders
 
             container.WithSeparator();
 
-            var pageFooter = $"-# {footerLabel} - Page {p.CurrentPageIndex + 1}/{pageDescriptions.Count}";
+            var pageFooter = $"-# {footerLabel} - {context.Localize("shared.pageCounter", ("page", (p.CurrentPageIndex + 1).ToString()), ("pages", pageDescriptions.Count.ToString()))}";
             if (roles != null && roles.Any())
             {
-                pageFooter += $"\n-# ✨ Role filter enabled with {roles.Count} {StringExtensions.GetRolesString(roles.Count)} picked";
+                pageFooter += $"\n-# {context.LocalizeCount("server.roleFilterEnabled", roles.Count)}";
             }
             if (footerHint != null)
             {
@@ -1574,7 +1579,7 @@ public class TrackBuilders
         var userUrl =
             $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library/tracks?{timeSettings.UrlParameter}";
         response.EmbedAuthor.WithName(context.Localize("track.topTracksTitle",
-            ("period", timeSettings.Description.ToLower()), ("user", userTitle)));
+            ("period", context.Localizer.PeriodLabel(timeSettings)), ("user", userTitle)));
         response.EmbedAuthor.WithUrl(userUrl);
 
         var topTracks = await this._dataSourceFactory.GetTopTracksAsync(userSettings.UserNameLastFm, timeSettings, topListSettings.ListAmount,
@@ -1605,7 +1610,7 @@ public class TrackBuilders
             var backgroundImage = (await this._artistsService.GetArtistFromDatabase(topTracks.Content.TopTracks.First()
                 .ArtistName))?.SpotifyImageUrl;
 
-            using var image = await this._puppeteerService.GetTopList(userTitle, "Top Tracks", "tracks",
+            using var image = await this._puppeteerService.GetTopList(userTitle, context.Localize("track.topTracksImageTitle"), "tracks",
                 timeSettings.Description,
                 topTracks.Content.TotalAmount.GetValueOrDefault(), totalPlays.GetValueOrDefault(), backgroundImage,
                 topTracks.TopList, context.NumberFormat);
@@ -1703,13 +1708,16 @@ public class TrackBuilders
 
             ImportService.AddImportDescription(footer, topTracks.PlaySources);
 
-            footer.Append(context.Localize("shared.pageCounter",
-                ("page", pageCounter.ToString()), ("pages", trackPages.Count.ToString())));
             if (topTracks.Content.TotalAmount.HasValue)
             {
-                var differentTracks = context.Localize("track.differentTracks",
-                    ("total", topTracks.Content.TotalAmount.Value.Format(context.NumberFormat)));
-                footer.Append($" - {differentTracks}");
+                footer.Append(context.LocalizeCount("track.topTracksPageCounterTotal",
+                    topTracks.Content.TotalAmount.Value,
+                    ("page", pageCounter.ToString()), ("pages", trackPages.Count.ToString())));
+            }
+            else
+            {
+                footer.Append(context.Localize("shared.pageCounter",
+                    ("page", pageCounter.ToString()), ("pages", trackPages.Count.ToString())));
             }
 
             if (topListSettings.Billboard)

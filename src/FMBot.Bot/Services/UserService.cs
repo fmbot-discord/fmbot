@@ -1148,6 +1148,7 @@ public class UserService
         RecentTrack previousTrack,
         long totalScrobbles,
         NumberFormat numberFormat,
+        Localizer localizer,
         Persistence.Domain.Models.Guild guild = null,
         IDictionary<int, FullGuildUser> guildUsers = null)
     {
@@ -1171,7 +1172,7 @@ public class UserService
             UserSettings = userSettings,
             TotalScrobbles = totalScrobbles,
             NumberFormat = numberFormat,
-            Localizer = Localizer.ForGuild(guild?.DiscordGuildId, numberFormat)
+            Localizer = localizer
         };
 
         return await this._templateService.GetTemplateFmAsync(userId, footerContext);

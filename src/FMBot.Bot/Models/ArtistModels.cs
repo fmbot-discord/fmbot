@@ -13,6 +13,8 @@ public class GuildRankingSettings
 
     public string TimeDescription { get; set; }
 
+    public TimeSettingsModel TimeSettings { get; set; }
+
     public DateTime StartDateTime { get; set; }
     public DateTime? EndDateTime { get; set; }
 

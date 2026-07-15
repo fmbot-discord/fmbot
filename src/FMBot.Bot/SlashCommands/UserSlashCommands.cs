@@ -81,7 +81,7 @@ public class UserSlashCommands(
 
         try
         {
-            var response = UserBuilder.LoginRequired("/", contextUser != null);
+            var response = UserBuilder.LoginRequired(new ContextModel(this.Context, contextUser), contextUser != null);
 
             await this.Context.SendResponse(this.Interactivity, response, userService, true);
             await this.Context.LogCommandUsedAsync(response, userService);
@@ -459,7 +459,7 @@ public class UserSlashCommands(
         Language? language = null)
     {
         var contextUser = await userService.GetUserAsync(this.Context.User.Id);
-        var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.Quarterly);
+        var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.Quarterly, language: LocalizationService.GetLanguage(this.Context.Interaction.GuildId, this.Context.Interaction.GuildLocale));
 
         var userSettings =
             await settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);

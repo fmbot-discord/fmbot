@@ -217,7 +217,8 @@ public class GameCommands(
 
         await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
         {
-            Content = Localizer.ForGuild(this.Context.Guild?.Id).Translate("jumble.addReactionsPermissionRequired")
+            Content = Localizer.ForGuild(this.Context.Guild?.Id, discordLocale: this.Context.Guild?.PreferredLocale)
+                .Translate("jumble.addReactionsPermissionRequired")
         });
         await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
         return false;

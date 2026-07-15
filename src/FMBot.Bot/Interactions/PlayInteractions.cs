@@ -373,7 +373,7 @@ public class PlayInteractions(
         try
         {
             var timeSettings =
-                SettingService.GetTimePeriod("alltime", TimePeriod.AllTime, timeZone: userSettings.TimeZone);
+                SettingService.GetTimePeriod("alltime", TimePeriod.AllTime, timeZone: userSettings.TimeZone, language: LocalizationService.GetLanguage(this.Context.Interaction.GuildId, this.Context.Interaction.GuildLocale));
 
             var response = await recapBuilders.RecapAsync(new ContextModel(this.Context, contextUser),
                 userSettings, timeSettings, RecapPage.Overview);
@@ -413,7 +413,7 @@ public class PlayInteractions(
 
             var timeSettings = SettingService.GetTimePeriod(splitInput[3],
                 registeredLastFm: userSettings.RegisteredLastFm,
-                timeZone: userSettings.TimeZone, defaultTimePeriod: TimePeriod.Yearly);
+                timeZone: userSettings.TimeZone, defaultTimePeriod: TimePeriod.Yearly, language: LocalizationService.GetLanguage(this.Context.Interaction.GuildId, this.Context.Interaction.GuildLocale));
 
             if (userSettings.DiscordUserId != this.Context.User.Id &&
                 (viewType == RecapPage.BotStats ||

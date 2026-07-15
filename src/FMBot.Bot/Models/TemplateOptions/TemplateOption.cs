@@ -30,6 +30,9 @@ public abstract class TemplateOption
     public string Variable { get; set; }
 
     public string Description { get; set; }
+
+    public string DescriptionKey => $"template.option.{this.Variable}";
+
     public VariableType VariableType { get; set; }
 }
 

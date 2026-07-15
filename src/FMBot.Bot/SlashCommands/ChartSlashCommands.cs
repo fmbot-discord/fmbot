@@ -71,7 +71,8 @@ public class ChartSlashCommands(
             !string.IsNullOrWhiteSpace(year) || !string.IsNullOrWhiteSpace(decade) || filteredArtist != null
                 ? TimePeriod.AllTime
                 : TimePeriod.Weekly,
-            timeZone: userSettings.TimeZone);
+            timeZone: userSettings.TimeZone,
+            language: LocalizationService.GetLanguage(this.Context.Interaction.GuildId, this.Context.Interaction.GuildLocale));
 
         var chartSettings = new ChartSettings(this.Context.User)
         {
@@ -128,7 +129,7 @@ public class ChartSlashCommands(
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
-        var timeSettings = SettingService.GetTimePeriod(timePeriod, timeZone: userSettings.TimeZone);
+        var timeSettings = SettingService.GetTimePeriod(timePeriod, timeZone: userSettings.TimeZone, language: LocalizationService.GetLanguage(this.Context.Interaction.GuildId, this.Context.Interaction.GuildLocale));
 
         var chartSettings = new ChartSettings(this.Context.User)
         {

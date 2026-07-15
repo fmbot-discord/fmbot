@@ -46,7 +46,7 @@ public class CountryInteractions(
 
             var timeSettings = SettingService.GetTimePeriod(timeDescription,
                 registeredLastFm: userSettings.RegisteredLastFm, timeZone: userSettings.TimeZone,
-                defaultTimePeriod: TimePeriod.AllTime);
+                defaultTimePeriod: TimePeriod.AllTime, language: LocalizationService.GetLanguage(this.Context.Interaction.GuildId, this.Context.Interaction.GuildLocale));
 
             var response = await countryBuilders.GetTopCountryChart(
                 new ContextModel(this.Context, contextUser), userSettings, timeSettings, theme);

@@ -47,7 +47,7 @@ public class CountryCommands(
             var topListSettings = SettingService.SetTopListSettings(extraOptions);
 
             userSettings.RegisteredLastFm ??= await indexService.AddUserRegisteredLfmDate(userSettings.UserId);
-            var timeSettings = SettingService.GetTimePeriod(extraOptions, registeredLastFm: userSettings.RegisteredLastFm, timeZone: userSettings.TimeZone);
+            var timeSettings = SettingService.GetTimePeriod(extraOptions, registeredLastFm: userSettings.RegisteredLastFm, timeZone: userSettings.TimeZone, language: LocalizationService.GetLanguage(this.Context.Guild?.Id, this.Context.Guild?.PreferredLocale));
             var mode = SettingService.SetMode(extraOptions, contextUser.Mode);
 
             var response = await countryBuilders.TopCountriesAsync(new ContextModel(this.Context, prfx, contextUser),
@@ -83,7 +83,8 @@ public class CountryCommands(
             userSettings.RegisteredLastFm ??= await indexService.AddUserRegisteredLfmDate(userSettings.UserId);
             var timeSettings = SettingService.GetTimePeriod(extraOptions, registeredLastFm: userSettings.RegisteredLastFm,
                 defaultTimePeriod: TimePeriod.AllTime,
-                timeZone: userSettings.TimeZone);
+                timeZone: userSettings.TimeZone,
+                language: LocalizationService.GetLanguage(this.Context.Guild?.Id, this.Context.Guild?.PreferredLocale));
 
             var response = await countryBuilders.GetTopCountryChart(new ContextModel(this.Context, prfx, contextUser),
                 userSettings, timeSettings, theme);

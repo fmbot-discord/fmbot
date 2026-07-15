@@ -104,7 +104,7 @@ public class AlbumInteractions(
             DisplayRoleFilter = true
         };
 
-        var timeSettings = SettingService.GetTimePeriod(timePeriod, guildListSettings.ChartTimePeriod, cachedOnly: true);
+        var timeSettings = SettingService.GetTimePeriod(timePeriod, guildListSettings.ChartTimePeriod, cachedOnly: true, language: LocalizationService.GetLanguage(this.Context.Interaction.GuildId, this.Context.Interaction.GuildLocale));
         guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
         guildListSettings.NewSearchValue = string.IsNullOrWhiteSpace(searchValue) ? null : searchValue;
 

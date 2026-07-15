@@ -58,7 +58,8 @@ public class SettingService
         DateTime? registeredLastFm = null,
         bool cachedOnly = false,
         bool dailyTimePeriods = true,
-        string timeZone = null)
+        string timeZone = null,
+        Language language = Language.English)
     {
         var settingsModel = new TimeSettingsModel();
         bool? customTimePeriod = null;
@@ -75,7 +76,7 @@ public class SettingService
         var localMidnightInUtc = TimeZoneInfo.ConvertTimeToUtc(localTime.Date, timeZoneInfo);
 
         var year = GetYear(options, false, 1970);
-        var month = GetMonth(options);
+        var month = GetMonth(options, language);
 
         if (year != null || month != null)
         {
@@ -89,6 +90,7 @@ public class SettingService
             if (month.HasValue && month.Value.monthNumber > localTime.Month && !year.HasValue)
             {
                 settingsModel.StartDateTime = settingsModel.StartDateTime.Value.AddYears(-1);
+                startUnspecified = startUnspecified.AddYears(-1);
                 year = settingsModel.StartDateTime.Value.Year;
             }
 
@@ -107,6 +109,7 @@ public class SettingService
                     [month.Value.monthName, DateTimeFormatInfo.CurrentInfo.GetMonthName(month.Value.monthNumber)]);
 
                 settingsModel.Description = startUnspecified.ToString("MMMM");
+                settingsModel.PeriodMonthDate = startUnspecified;
                 settingsModel.AltDescription = $"month {startUnspecified.ToString("MMMM")}";
                 settingsModel.EndDateTime = settingsModel.StartDateTime.Value.AddMonths(1).AddSeconds(-1);
                 settingsModel.BillboardTimeDescription = $"{startUnspecified.AddMonths(-1):MMMM}";
@@ -119,6 +122,8 @@ public class SettingService
                 ;
 
                 settingsModel.Description = $"{startUnspecified:MMMM} {year}";
+                settingsModel.PeriodMonthDate = startUnspecified;
+                settingsModel.PeriodMonthIncludesYear = true;
                 settingsModel.AltDescription = $"month {startUnspecified:MMMM} of {year}";
                 settingsModel.EndDateTime = settingsModel.StartDateTime.Value.AddMonths(1).AddSeconds(-1);
             }
@@ -148,6 +153,9 @@ public class SettingService
                 {
                     settingsModel.TimePeriod = TimePeriod.Monthly;
                     settingsModel.Description = "Monthly";
+                    settingsModel.PeriodLabelKey = "shared.period.monthly";
+                    settingsModel.PeriodMonthDate = null;
+                    settingsModel.PeriodMonthIncludesYear = false;
                     settingsModel.AltDescription = "last month";
                     settingsModel.PlayDays = 30;
                     settingsModel.StartDateTime = DateTime.UtcNow.AddDays(-30);
@@ -161,21 +169,22 @@ public class SettingService
             return settingsModel;
         }
 
-        var oneDay = new[] { "1-day", "1day", "1d", "24h", "24-h", "24hr", "24-hr", "24hours" };
-        var today = new[] { "today", "day", "daily" };
-        var yesterday = new[] { "yesterday", "yd" };
-        var twoDays = new[] { "2-day", "2day", "2d" };
-        var threeDays = new[] { "3-day", "3day", "3d" };
-        var fourDays = new[] { "4-day", "4day", "4d" };
-        var fiveDays = new[] { "5-day", "5day", "5d" };
-        var sixDays = new[] { "6-day", "6day", "6d" };
-        var weekly = new[] { "weekly", "week", "w", "7d" };
-        var monthly = new[] { "monthly", "month", "m", "1m", "30d" };
-        var quarterly = new[] { "quarterly", "quarter", "q", "3m", "90d" };
-        var halfYearly = new[] { "half-yearly", "halfyearly", "half", "h", "6m", "180d" };
-        var yearly = new[] { "yearly", "year", "y", "12m", "365d", "1y" };
-        var twoYear = new[] { "two-year", "twoyear", "two-yearly", "twoyearly", "2y", "2year", "24m", "730d" };
-        var allTime = new[] { "overall", "alltime", "all-time", "all", "a", "o", "at" };
+        var aliases = PeriodAliases.For(language);
+        var oneDay = Merge(["1-day", "1day", "1d", "24h", "24-h", "24hr", "24-hr", "24hours"], aliases.OneDay);
+        var today = Merge(["today", "day", "daily"], aliases.Today);
+        var yesterday = Merge(["yesterday", "yd"], aliases.Yesterday);
+        var twoDays = Merge(["2-day", "2day", "2d"], aliases.TwoDays);
+        var threeDays = Merge(["3-day", "3day", "3d"], aliases.ThreeDays);
+        var fourDays = Merge(["4-day", "4day", "4d"], aliases.FourDays);
+        var fiveDays = Merge(["5-day", "5day", "5d"], aliases.FiveDays);
+        var sixDays = Merge(["6-day", "6day", "6d"], aliases.SixDays);
+        var weekly = Merge(["weekly", "week", "w", "7d"], aliases.Weekly);
+        var monthly = Merge(["monthly", "month", "m", "1m", "30d"], aliases.Monthly);
+        var quarterly = Merge(["quarterly", "quarter", "q", "3m", "90d"], aliases.Quarterly);
+        var halfYearly = Merge(["half-yearly", "halfyearly", "half", "h", "6m", "180d"], aliases.HalfYearly);
+        var yearly = Merge(["yearly", "year", "y", "12m", "365d", "1y"], aliases.Yearly);
+        var twoYear = Merge(["two-year", "twoyear", "two-yearly", "twoyearly", "2y", "2year", "24m", "730d"], aliases.TwoYear);
+        var allTime = Merge(["overall", "alltime", "all-time", "all", "a", "o", "at"], aliases.AllTime);
 
         if (Contains(options, weekly))
         {
@@ -183,21 +192,11 @@ public class SettingService
             settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Week;
             settingsModel.TimePeriod = TimePeriod.Weekly;
             settingsModel.Description = "Weekly";
+            settingsModel.PeriodLabelKey = "shared.period.weekly";
             settingsModel.AltDescription = "last week";
             settingsModel.UrlParameter = "date_preset=LAST_7_DAYS";
             settingsModel.ApiParameter = "7day";
             settingsModel.PlayDays = 7;
-        }
-        else if (Contains(options, monthly))
-        {
-            settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, monthly);
-            settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Month;
-            settingsModel.TimePeriod = TimePeriod.Monthly;
-            settingsModel.Description = "Monthly";
-            settingsModel.AltDescription = "last month";
-            settingsModel.UrlParameter = "date_preset=LAST_30_DAYS";
-            settingsModel.ApiParameter = "1month";
-            settingsModel.PlayDays = 30;
         }
         else if (Contains(options, quarterly) && !cachedOnly)
         {
@@ -205,6 +204,7 @@ public class SettingService
             settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Quarter;
             settingsModel.TimePeriod = TimePeriod.Quarterly;
             settingsModel.Description = "Quarterly";
+            settingsModel.PeriodLabelKey = "shared.period.quarterly";
             settingsModel.AltDescription = "last quarter";
             settingsModel.UrlParameter = "date_preset=LAST_90_DAYS";
             settingsModel.ApiParameter = "3month";
@@ -216,27 +216,30 @@ public class SettingService
             settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Half;
             settingsModel.TimePeriod = TimePeriod.Half;
             settingsModel.Description = "Half-yearly";
+            settingsModel.PeriodLabelKey = "shared.period.halfYearly";
             settingsModel.AltDescription = "last half year";
             settingsModel.UrlParameter = "date_preset=LAST_180_DAYS";
             settingsModel.ApiParameter = "6month";
             settingsModel.PlayDays = 180;
         }
-        else if (Contains(options, yearly) && !cachedOnly)
+        else if (Contains(options, monthly))
         {
-            settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, yearly);
-            settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Year;
-            settingsModel.TimePeriod = TimePeriod.Yearly;
-            settingsModel.Description = "Yearly";
-            settingsModel.AltDescription = "last year";
-            settingsModel.UrlParameter = "date_preset=LAST_365_DAYS";
-            settingsModel.ApiParameter = "12month";
-            settingsModel.PlayDays = 365;
+            settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, monthly);
+            settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Month;
+            settingsModel.TimePeriod = TimePeriod.Monthly;
+            settingsModel.Description = "Monthly";
+            settingsModel.PeriodLabelKey = "shared.period.monthly";
+            settingsModel.AltDescription = "last month";
+            settingsModel.UrlParameter = "date_preset=LAST_30_DAYS";
+            settingsModel.ApiParameter = "1month";
+            settingsModel.PlayDays = 30;
         }
         else if (Contains(options, twoYear) && !cachedOnly)
         {
             settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, twoYear);
             var dateString = localTime.AddDays(-729).ToString("yyyy-M-dd");
             settingsModel.Description = "Two-year";
+            settingsModel.PeriodLabelKey = "shared.period.twoYear";
             settingsModel.AltDescription = "last two years";
             settingsModel.UrlParameter = $"from={dateString}";
             settingsModel.UsePlays = true;
@@ -244,12 +247,25 @@ public class SettingService
             settingsModel.PlayDays = 730;
             settingsModel.StartDateTime = localMidnightInUtc.AddDays(-729);
         }
+        else if (Contains(options, yearly) && !cachedOnly)
+        {
+            settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, yearly);
+            settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Year;
+            settingsModel.TimePeriod = TimePeriod.Yearly;
+            settingsModel.Description = "Yearly";
+            settingsModel.PeriodLabelKey = "shared.period.yearly";
+            settingsModel.AltDescription = "last year";
+            settingsModel.UrlParameter = "date_preset=LAST_365_DAYS";
+            settingsModel.ApiParameter = "12month";
+            settingsModel.PlayDays = 365;
+        }
         else if (Contains(options, allTime))
         {
             settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, allTime);
             settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Overall;
             settingsModel.TimePeriod = TimePeriod.AllTime;
             settingsModel.Description = "Overall";
+            settingsModel.PeriodLabelKey = "shared.period.overall";
             settingsModel.AltDescription = "all-time";
             settingsModel.UrlParameter = "date_preset=ALL";
             settingsModel.ApiParameter = "overall";
@@ -269,6 +285,7 @@ public class SettingService
             settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, sixDays);
             var dateString = localTime.AddDays(-5).ToString("yyyy-M-dd");
             settingsModel.Description = "6-day";
+            settingsModel.PeriodLabelKey = "shared.period.sixDay";
             settingsModel.AltDescription = "last 6 days";
             settingsModel.UrlParameter = $"from={dateString}";
             settingsModel.UsePlays = true;
@@ -281,6 +298,7 @@ public class SettingService
             settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, fiveDays);
             var dateString = localTime.AddDays(-4).ToString("yyyy-M-dd");
             settingsModel.Description = "5-day";
+            settingsModel.PeriodLabelKey = "shared.period.fiveDay";
             settingsModel.AltDescription = "last 5 days";
             settingsModel.UrlParameter = $"from={dateString}";
             settingsModel.UsePlays = true;
@@ -293,6 +311,7 @@ public class SettingService
             settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, fourDays);
             var dateString = localTime.AddDays(-3).ToString("yyyy-M-dd");
             settingsModel.Description = "4-day";
+            settingsModel.PeriodLabelKey = "shared.period.fourDay";
             settingsModel.AltDescription = "last 4 days";
             settingsModel.UrlParameter = $"from={dateString}";
             settingsModel.UsePlays = true;
@@ -305,6 +324,7 @@ public class SettingService
             settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, threeDays);
             var dateString = localTime.AddDays(-2).ToString("yyyy-M-dd");
             settingsModel.Description = "3-day";
+            settingsModel.PeriodLabelKey = "shared.period.threeDay";
             settingsModel.AltDescription = "last 3 days";
             settingsModel.UrlParameter = $"from={dateString}";
             settingsModel.UsePlays = true;
@@ -317,6 +337,7 @@ public class SettingService
             settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, twoDays);
             var dateString = localTime.AddDays(-1).ToString("yyyy-M-dd");
             settingsModel.Description = "2-day";
+            settingsModel.PeriodLabelKey = "shared.period.twoDay";
             settingsModel.AltDescription = "last 2 days";
             settingsModel.UrlParameter = $"from={dateString}";
             settingsModel.UsePlays = true;
@@ -329,6 +350,7 @@ public class SettingService
             settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, yesterday);
             var dateString = localTime.AddDays(-1).ToString("yyyy-M-dd");
             settingsModel.Description = "yesterday";
+            settingsModel.PeriodLabelKey = "shared.period.yesterday";
             settingsModel.AltDescription = "yesterday";
             settingsModel.UrlParameter = $"from={dateString}&to={dateString}";
             settingsModel.UsePlays = true;
@@ -342,6 +364,7 @@ public class SettingService
             settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, today);
             var dateString = localTime.ToString("yyyy-M-dd");
             settingsModel.Description = "day";
+            settingsModel.PeriodLabelKey = "shared.period.day";
             settingsModel.AltDescription = "day";
             settingsModel.UrlParameter = $"from={dateString}";
             settingsModel.UsePlays = true;
@@ -354,6 +377,7 @@ public class SettingService
             settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, oneDay);
             var dateString = localTime.ToString("yyyy-M-dd");
             settingsModel.Description = "24h";
+            settingsModel.PeriodLabelKey = "shared.period.oneDay";
             settingsModel.AltDescription = "24h";
             settingsModel.UrlParameter = $"from={dateString}";
             settingsModel.UsePlays = true;
@@ -374,6 +398,7 @@ public class SettingService
                 settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Overall;
                 settingsModel.TimePeriod = TimePeriod.AllTime;
                 settingsModel.Description = "Overall";
+                settingsModel.PeriodLabelKey = "shared.period.overall";
                 settingsModel.AltDescription = "all-time";
                 settingsModel.UrlParameter = "date_preset=ALL";
                 settingsModel.ApiParameter = "overall";
@@ -393,6 +418,7 @@ public class SettingService
                 settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Year;
                 settingsModel.TimePeriod = TimePeriod.Yearly;
                 settingsModel.Description = "Yearly";
+                settingsModel.PeriodLabelKey = "shared.period.yearly";
                 settingsModel.AltDescription = "last year";
                 settingsModel.UrlParameter = "date_preset=LAST_365_DAYS";
                 settingsModel.ApiParameter = "12month";
@@ -403,6 +429,7 @@ public class SettingService
                 settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Month;
                 settingsModel.TimePeriod = TimePeriod.Monthly;
                 settingsModel.Description = "Monthly";
+                settingsModel.PeriodLabelKey = "shared.period.monthly";
                 settingsModel.AltDescription = "last month";
                 settingsModel.UrlParameter = "date_preset=LAST_30_DAYS";
                 settingsModel.ApiParameter = "1month";
@@ -413,6 +440,7 @@ public class SettingService
                 settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Quarter;
                 settingsModel.TimePeriod = TimePeriod.Quarterly;
                 settingsModel.Description = "Quarterly";
+                settingsModel.PeriodLabelKey = "shared.period.quarterly";
                 settingsModel.AltDescription = "last quarter";
                 settingsModel.UrlParameter = "date_preset=LAST_90_DAYS";
                 settingsModel.ApiParameter = "3month";
@@ -423,6 +451,7 @@ public class SettingService
                 settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Week;
                 settingsModel.TimePeriod = TimePeriod.Weekly;
                 settingsModel.Description = "Weekly";
+                settingsModel.PeriodLabelKey = "shared.period.weekly";
                 settingsModel.AltDescription = "last week";
                 settingsModel.UrlParameter = "date_preset=LAST_7_DAYS";
                 settingsModel.ApiParameter = "7day";
@@ -462,6 +491,7 @@ public class SettingService
             {
                 settingsModel.TimePeriod = TimePeriod.Monthly;
                 settingsModel.Description = "Monthly";
+                settingsModel.PeriodLabelKey = "shared.period.monthly";
                 settingsModel.AltDescription = "last month";
                 settingsModel.PlayDays = 30;
                 settingsModel.StartDateTime = DateTime.UtcNow.AddDays(-30);
@@ -1164,7 +1194,7 @@ public class SettingService
         return null;
     }
 
-    private static (string monthName, int monthNumber)? GetMonth(string extraOptions)
+    private static (string monthName, int monthNumber)? GetMonth(string extraOptions, Language language = Language.English)
     {
         if (string.IsNullOrWhiteSpace(extraOptions))
         {
@@ -1180,7 +1210,34 @@ public class SettingService
             }
         }
 
+        if (language != Language.English)
+        {
+            var dateTimeFormat = language.GetCultureInfo().DateTimeFormat;
+            var excludedMonths = PeriodAliases.For(language).ExcludedMonths;
+            foreach (var option in options)
+            {
+                var lowerOption = option.ToLower();
+                if (excludedMonths.Contains(lowerOption))
+                {
+                    continue;
+                }
+
+                for (var monthNumber = 1; monthNumber <= 12; monthNumber++)
+                {
+                    if (lowerOption.Equals(dateTimeFormat.GetMonthName(monthNumber).ToLower()))
+                    {
+                        return (lowerOption, monthNumber);
+                    }
+                }
+            }
+        }
+
         return null;
+    }
+
+    private static string[] Merge(string[] tokens, string[] aliases)
+    {
+        return aliases.Length == 0 ? tokens : [.. aliases, .. tokens];
     }
 
     private static readonly Dictionary<string, int> Months = new()
@@ -1425,6 +1482,7 @@ public class SettingService
     {
         guildRankingSettings.ChartTimePeriod = timeSettings.TimePeriod;
         guildRankingSettings.TimeDescription = timeSettings.Description;
+        guildRankingSettings.TimeSettings = timeSettings;
         guildRankingSettings.EndDateTime = timeSettings.EndDateTime;
         guildRankingSettings.BillboardEndDateTime = timeSettings.BillboardEndDateTime;
         guildRankingSettings.BillboardTimeDescription = timeSettings.BillboardTimeDescription;
@@ -1474,16 +1532,13 @@ public class SettingService
             return false;
         }
 
-        var optionArray = extraOptions.Split(" ");
+        var paddedOptions = $" {extraOptions.ToLower()} ";
 
         foreach (var value in values)
         {
-            foreach (var option in optionArray)
+            if (paddedOptions.Contains($" {value.ToLower()} ", StringComparison.OrdinalIgnoreCase))
             {
-                if (option.ToLower().Equals(value.ToLower()))
-                {
-                    return true;
-                }
+                return true;
             }
         }
 

@@ -61,18 +61,16 @@ public class FilterStats
 
         if (this.Roles != null && this.Roles.Any())
         {
+            if (description.Length > 0)
+            {
+                description.Append(' ');
+            }
+
             description.Append(localizer.TranslateCount("whoknows.roleFilterEnabled", this.Roles.Count));
         }
 
         return description.Length > 0 ?
             description.ToString() :
             null;
-    }
-
-    public string GetBasicDescription(Localizer localizer)
-    {
-        return this.EndCount < this.StartCount ?
-                localizer.TranslateCount("whoknows.usersFiltered", this.StartCount - this.EndCount) :
-                null;
     }
 }

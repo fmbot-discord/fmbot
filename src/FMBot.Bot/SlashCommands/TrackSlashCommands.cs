@@ -323,13 +323,13 @@ public class TrackSlashCommands(
         var userSettings =
             await settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
 
-        var timeSettings = SettingService.GetTimePeriod(timePeriod, timeZone: userSettings.TimeZone);
+        var timeSettings = SettingService.GetTimePeriod(timePeriod, timeZone: userSettings.TimeZone, language: LocalizationService.GetLanguage(this.Context.Interaction.GuildId, this.Context.Interaction.GuildLocale));
 
         if (timeSettings.DefaultPicked)
         {
             var monthName = DateTime.UtcNow.AddDays(-24).ToString("MMM", CultureInfo.InvariantCulture);
             timeSettings = SettingService.GetTimePeriod(monthName, registeredLastFm: userSettings.RegisteredLastFm,
-                timeZone: userSettings.TimeZone);
+                timeZone: userSettings.TimeZone, language: LocalizationService.GetLanguage(this.Context.Interaction.GuildId, this.Context.Interaction.GuildLocale));
         }
 
         var response =

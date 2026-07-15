@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
 using Serilog;
@@ -637,7 +638,7 @@ public class ChartService
     }
 
     public async Task<ChartSettings> SetSettings(ChartSettings currentChartSettings, UserSettingsModel userSettings,
-        bool aoty = false, bool aotd = false)
+        bool aoty = false, bool aotd = false, Language language = Language.English)
     {
         var chartSettings = currentChartSettings;
         chartSettings.CustomOptionsEnabled = false;
@@ -823,7 +824,8 @@ public class ChartService
         }
 
         var timeSettings = SettingService.GetTimePeriod(cleanedOptions,
-            aoty || aotd ? TimePeriod.AllTime : TimePeriod.Weekly, timeZone: userSettings.TimeZone);
+            aoty || aotd ? TimePeriod.AllTime : TimePeriod.Weekly, timeZone: userSettings.TimeZone,
+            language: language);
 
         if (!string.IsNullOrWhiteSpace(timeSettings.NewSearchValue))
         {
@@ -857,7 +859,7 @@ public class ChartService
                 {
                     chartSettings.FilteredArtist = artist;
                     timeSettings = SettingService.GetTimePeriod(cleanedOptions, TimePeriod.AllTime,
-                        timeZone: userSettings.TimeZone);
+                        timeZone: userSettings.TimeZone, language: language);
                 }
             }
         }
@@ -946,7 +948,7 @@ public class ChartService
         if (chartSettings.FilteredArtist != null && !chartSettings.ArtistChart)
         {
             embedDescription.AppendLine(localizer.Translate("chart.filterArtist",
-                ("artist", chartSettings.FilteredArtist.Name),
+                ("artist", StringExtensions.Sanitize(chartSettings.FilteredArtist.Name)),
                 ("url", LastfmUrlExtensions.GetArtistUrl(chartSettings.FilteredArtist.Name))));
         }
 

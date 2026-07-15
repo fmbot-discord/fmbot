@@ -343,7 +343,7 @@ public class PlayCommands(
 
         var userSettings = await settingService.GetUser(extraOptions, contextUser, this.Context);
         var timeSettings = SettingService.GetTimePeriod(timePeriod, registeredLastFm: userSettings.RegisteredLastFm,
-            timeZone: userSettings.TimeZone, defaultTimePeriod: TimePeriod.Yearly);
+            timeZone: userSettings.TimeZone, defaultTimePeriod: TimePeriod.Yearly, language: LocalizationService.GetLanguage(this.Context.Guild?.Id, this.Context.Guild?.PreferredLocale));
 
         try
         {
@@ -393,7 +393,7 @@ public class PlayCommands(
 
             var goalAmount = SettingService.GetGoalAmount(extraOptions, userInfo.Playcount);
             var timeSettings =
-                SettingService.GetTimePeriod(extraOptions, TimePeriod.AllTime, timeZone: userSettings.TimeZone);
+                SettingService.GetTimePeriod(extraOptions, TimePeriod.AllTime, timeZone: userSettings.TimeZone, language: LocalizationService.GetLanguage(this.Context.Guild?.Id, this.Context.Guild?.PreferredLocale));
             var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
             if (string.IsNullOrWhiteSpace(extraOptions) &&
@@ -468,7 +468,7 @@ public class PlayCommands(
 
         var userSettings = await settingService.GetUser(extraOptions, contextUser, this.Context);
         var timeSettings = SettingService.GetTimePeriod(userSettings.NewSearchValue, TimePeriod.AllTime,
-            timeZone: userSettings.TimeZone);
+            timeZone: userSettings.TimeZone, language: LocalizationService.GetLanguage(this.Context.Guild?.Id, this.Context.Guild?.PreferredLocale));
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
         var response = await playBuilder.PlaysAsync(new ContextModel(this.Context, prfx, contextUser),

@@ -166,7 +166,7 @@ public class ChartBuilders
                     ("required", chartSettings.ImagesNeeded.ToString()),
                     ("artist", chartSettings.FilteredArtist.Name),
                     ("url", LastfmUrlExtensions.GetArtistUrl(chartSettings.FilteredArtist.Name)),
-                    ("period", chartSettings.TimeSettings.Description)));
+                    ("period", context.Localizer.PeriodLabel(chartSettings.TimeSettings))));
                 reply.AppendLine();
                 reply.AppendLine(context.Localize("chart.tryDifferentArtistFilter",
                     ("periods", Constants.CompactTimePeriodList)));
@@ -177,8 +177,8 @@ public class ChartBuilders
                     chartSettings.FilteredGenres.Count,
                     ("amount", count.ToString()),
                     ("required", chartSettings.ImagesNeeded.ToString()),
-                    ("genres", string.Join("**, **", chartSettings.FilteredGenres)),
-                    ("period", chartSettings.TimeSettings.Description)));
+                    ("genres", string.Join("**, **", chartSettings.FilteredGenres.Select(StringExtensions.Sanitize))),
+                    ("period", context.Localizer.PeriodLabel(chartSettings.TimeSettings))));
                 reply.AppendLine();
                 reply.AppendLine(context.Localize("chart.tryDifferentGenres",
                     ("periods", Constants.CompactTimePeriodList)));
@@ -188,7 +188,7 @@ public class ChartBuilders
                 reply.AppendLine(context.Localize("chart.notEnoughAlbums",
                     ("amount", count.ToString()),
                     ("required", chartSettings.ImagesNeeded.ToString()),
-                    ("period", chartSettings.TimeSettings.Description)));
+                    ("period", context.Localizer.PeriodLabel(chartSettings.TimeSettings))));
                 reply.AppendLine();
                 reply.AppendLine(context.Localize("chart.tryDifferent",
                     ("periods", Constants.CompactTimePeriodList)));
@@ -307,7 +307,7 @@ public class ChartBuilders
         var embedTitle = new StringBuilder();
         embedTitle.Append(context.Localize("chart.albumChartTitle",
             ("size", $"{chartSettings.Width}x{chartSettings.Height}"),
-            ("timespan", chartSettings.TimespanString),
+            ("timespan", context.Localizer.PeriodLabel(chartSettings.TimeSettings)),
             ("url", url),
             ("user", userSettings.DisplayName)));
 
@@ -459,7 +459,7 @@ public class ChartBuilders
                     chartSettings.FilteredGenres.Count,
                     ("amount", count.ToString()),
                     ("required", chartSettings.ImagesNeeded.ToString()),
-                    ("genres", string.Join("**, **", chartSettings.FilteredGenres)),
+                    ("genres", string.Join("**, **", chartSettings.FilteredGenres.Select(g => StringExtensions.Sanitize(g)))),
                     ("periods", Constants.CompactTimePeriodList));
             }
             else
@@ -514,7 +514,7 @@ public class ChartBuilders
 
         embedTitle.Append(context.Localize("chart.artistChartTitle",
             ("size", $"{chartSettings.Width}x{chartSettings.Height}"),
-            ("timespan", chartSettings.TimespanString),
+            ("timespan", context.Localizer.PeriodLabel(chartSettings.TimeSettings)),
             ("url", url),
             ("user", userSettings.DisplayName)));
 
@@ -555,6 +555,7 @@ public class ChartBuilders
                 new TextDisplayProperties(context.Localize("chart.containsNsfwImages")));
         }
 
+        response.FileDescription = StringExtensions.TruncateLongString(chartSettings.FileDescription.ToString(), 1024);
         response.FileName =
             $"artist-chart-{chartSettings.Width}w-{chartSettings.Height}h-{chartSettings.TimeSettings.TimePeriod}-{userSettings.UserNameLastFm}.png";
 

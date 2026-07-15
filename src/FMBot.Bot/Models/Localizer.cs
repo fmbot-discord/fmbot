@@ -3,6 +3,7 @@ using System.Text;
 using FMBot.Bot.Services;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
+using FMBot.Domain.Models;
 
 namespace FMBot.Bot.Models;
 
@@ -23,13 +24,13 @@ public class Localizer(Language language, NumberFormat numberFormat)
     public string TranslateCount(string key, long count, params (string Name, string Value)[] args)
     {
         var translation = LocalizationService.GetPluralTranslation(this.Language, key, GetPluralSuffix(this.Language, count));
-        return Interpolate(translation, args).Replace("{{count}}", count.Format(numberFormat));
+        return Interpolate(translation.Replace("{{count}}", count.Format(numberFormat)), args);
     }
 
     public string TimeAgo(DateTime timeAgo)
     {
-        var ts = new TimeSpan(DateTime.UtcNow.Ticks - timeAgo.Ticks);
-        var delta = Math.Abs(ts.TotalSeconds);
+        var ts = new TimeSpan(Math.Abs(DateTime.UtcNow.Ticks - timeAgo.Ticks));
+        var delta = ts.TotalSeconds;
 
         if (delta < 60)
         {
@@ -104,6 +105,31 @@ public class Localizer(Language language, NumberFormat numberFormat)
         return TranslateCount("shared.minutes", timeSpan.Minutes);
     }
 
+    public string PeriodLabel(TimeSettingsModel timeSettings)
+    {
+        if (timeSettings.PeriodLabelKey != null)
+        {
+            return Translate(timeSettings.PeriodLabelKey);
+        }
+
+        if (timeSettings.PeriodMonthDate.HasValue)
+        {
+            var culture = this.Language.GetCultureInfo();
+            return timeSettings.PeriodMonthIncludesYear
+                ? timeSettings.PeriodMonthDate.Value.ToString(culture.DateTimeFormat.YearMonthPattern, culture)
+                : timeSettings.PeriodMonthDate.Value.ToString("MMMM", culture);
+        }
+
+        return timeSettings.Description;
+    }
+
+    public string PeriodLabel(GuildRankingSettings guildListSettings)
+    {
+        return guildListSettings.TimeSettings != null
+            ? PeriodLabel(guildListSettings.TimeSettings)
+            : guildListSettings.TimeDescription.ToLower();
+    }
+
     public string FormatMonthDay(DateTime date)
     {
         var culture = this.Language.GetCultureInfo();
@@ -126,6 +152,15 @@ public class Localizer(Language language, NumberFormat numberFormat)
         if (language == Language.French)
         {
             return amount == 1 ? "shared.ordinalOne" : "shared.ordinalOther";
+        }
+
+        if (language == Language.Swedish)
+        {
+            var swedishMod10 = amount % 10;
+            var swedishMod100 = amount % 100;
+            return (swedishMod10 == 1 || swedishMod10 == 2) && swedishMod100 != 11 && swedishMod100 != 12
+                ? "shared.ordinalOne"
+                : "shared.ordinalOther";
         }
 
         if (language != Language.English)
@@ -203,6 +238,7 @@ public class Localizer(Language language, NumberFormat numberFormat)
                 return "_other";
             }
             case Language.Spanish:
+            case Language.Italian:
             {
                 if (number == 1)
                 {

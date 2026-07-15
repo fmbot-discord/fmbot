@@ -385,7 +385,7 @@ public class UserBuilder
         return response;
     }
 
-    public static ResponseModel LoginRequired(string prfx, bool alreadyRegistered)
+    public static ResponseModel LoginRequired(ContextModel context, bool alreadyRegistered)
     {
         var response = new ResponseModel
         {
@@ -396,17 +396,14 @@ public class UserBuilder
         if (alreadyRegistered)
         {
             response.Embed.WithDescription(
-                "You have already connected a Last.fm account. To change the account you've connected to .fmbot, use the buttons below.\n\n" +
-                $"Using Spotify and having problems with your music not being tracked or it lagging behind? Re-logging in again will not fix this, please use `{prfx}outofsync` for help instead.");
+                context.Localize("login.alreadyConnected", ("command", $"{context.Prefix}outofsync")));
         }
         else
         {
-            response.Embed.WithDescription(
-                "Welcome to .fmbot. To use .fmbot, a Last.fm account is required.\n\n" +
-                "Use the buttons below to sign up or connect your existing Last.fm account.");
+            response.Embed.WithDescription(context.Localize("login.welcome"));
         }
 
-        response.Components = GenericEmbedService.UsernameNotSetErrorComponents(Localizer.ForGuild(null));
+        response.Components = GenericEmbedService.UsernameNotSetErrorComponents(context.Localizer);
 
         return response;
     }
@@ -1620,7 +1617,8 @@ public class UserBuilder
         if (!timeSettings.DefaultPicked)
         {
             description.AppendLine();
-            description.AppendLine(context.Localize("judge.timePeriod", ("period", timeSettings.Description)));
+            description.AppendLine(context.Localize("judge.timePeriod",
+                ("period", context.Localizer.PeriodLabel(timeSettings))));
         }
 
         container.WithTextDisplay(description.ToString());
@@ -2448,10 +2446,9 @@ public class UserBuilder
         {
             var prfx = context.Prefix == "/" ? "." : context.Prefix;
             var promoText = new StringBuilder();
-            promoText.AppendLine(
-                "Become an .fmbot supporter and create shortcuts to easily access your favorite commands together with whatever option you configure.");
+            promoText.AppendLine(context.Localize("shortcuts.supporterPromo"));
             promoText.AppendLine();
-            promoText.AppendLine("Some examples of what you can use as input and output:");
+            promoText.AppendLine(context.Localize("shortcuts.examplesHeader"));
             promoText.AppendLine($"- `{prfx}today` > `chart today 2x2`");
             promoText.AppendLine($"- `{prfx}bestie` > `fm @356268235697553409`");
             promoText.AppendLine($"- `{prfx}gamble` > `milestone random`");

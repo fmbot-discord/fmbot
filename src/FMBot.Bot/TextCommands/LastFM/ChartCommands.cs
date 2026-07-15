@@ -88,7 +88,8 @@ public class ChartCommands(
             var aoty = messageContent.Contains("aoty") || messageContent.Contains("albumsoftheyear") || messageContent.Contains("albumoftheyear");
             var aotd = messageContent.Contains("aotd") || messageContent.Contains("albumsofthedecade") || messageContent.Contains("albumofthedecade");
 
-            chartSettings = await chartService.SetSettings(chartSettings, userSettings, aoty, aotd);
+            chartSettings = await chartService.SetSettings(chartSettings, userSettings, aoty, aotd,
+                language: LocalizationService.GetLanguage(this.Context.Guild?.Id, this.Context.Guild?.PreferredLocale));
 
             var response = await chartBuilders.AlbumChartAsync(new ContextModel(this.Context, prfx, user), userSettings,
                 chartSettings);
@@ -145,7 +146,8 @@ public class ChartCommands(
 
             var chartSettings = new ChartSettings(this.Context.User) { ArtistChart = true };
 
-            chartSettings = await chartService.SetSettings(chartSettings, userSettings);
+            chartSettings = await chartService.SetSettings(chartSettings, userSettings,
+                language: LocalizationService.GetLanguage(this.Context.Guild?.Id, this.Context.Guild?.PreferredLocale));
 
             var response = await chartBuilders.ArtistChartAsync(new ContextModel(this.Context, prfx, user), userSettings,
                 chartSettings);
