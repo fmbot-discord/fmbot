@@ -522,12 +522,13 @@ public static class InteractionContextExtensions
 
                     break;
                 case ResponseType.Paginator:
-                    _ = interactiveService.SendPaginatorAsync(
+                    var paginator = await interactiveService.SendPaginatorAsync(
                         response.ComponentPaginator.Build(),
                         context.Interaction,
                         TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
                         InteractionCallbackType.DeferredMessage,
                         ephemeral: ephemeral);
+                    responseId = paginator.Message?.Id;
                     break;
                 case ResponseType.ImageWithEmbed:
                     response.FileName =

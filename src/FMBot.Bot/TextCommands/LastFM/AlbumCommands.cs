@@ -391,11 +391,7 @@ public class AlbumCommands(
                 await albumBuilders.GuildAlbumsAsync(new ContextModel(this.Context, prfx), guild,
                     guildListSettings);
 
-            _ = this.Interactivity.SendPaginatorAsync(
-                response.ComponentPaginator.Build(),
-                this.Context.Channel,
-                TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
-
+            await this.Context.SendResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)

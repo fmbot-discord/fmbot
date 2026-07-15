@@ -600,11 +600,7 @@ public class ArtistCommands(
                 await artistBuilders.GuildArtistsAsync(new ContextModel(this.Context, prfx), guild,
                     guildListSettings);
 
-            _ = this.Interactivity.SendPaginatorAsync(
-                response.ComponentPaginator.Build(),
-                this.Context.Channel,
-                TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
-
+            await this.Context.SendResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
@@ -654,6 +650,10 @@ public class ArtistCommands(
                 this._embed.WithDescription(description.ToString());
 
                 var message = await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
+
+                PublicProperties.UsedCommandsResponseMessageId.TryAdd(this.Context.Message.Id, message.Id);
+                PublicProperties.UsedCommandsResponseContextId.TryAdd(message.Id, this.Context.Message.Id);
+                await userService.UpdateCommandInteractionAsync(this.Context.Message.Id, responseId: message.Id);
 
                 response = await artistBuilders
                     .AffinityAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, guild, guildUsers,
