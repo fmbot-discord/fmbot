@@ -867,7 +867,7 @@ public class GuildSettingBuilder(GuildService guildService, IOptions<BotSettings
         var description = new StringBuilder();
         description.AppendLine("Select the language for .fmbot responses in this server.");
         description.AppendLine();
-        description.AppendLine("Translations are in beta and might be incomplete. Untranslated text will show in English.");
+        description.AppendLine("Translations are in beta and might be incomplete. Untranslated text will show in English. Some terms might remain English for consistency reasons.");
         description.AppendLine();
         description.AppendLine("To use the default again, simply de-select the language you have selected.");
         description.AppendLine();
