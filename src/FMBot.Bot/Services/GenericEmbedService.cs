@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -19,71 +20,64 @@ namespace FMBot.Bot.Services;
 
 public static class GenericEmbedService
 {
-    public static void UsernameNotSetErrorResponse(this EmbedProperties embed, string prfx, string name)
+    public static void UsernameNotSetErrorResponse(this EmbedProperties embed, Localizer localizer, string name)
     {
-        embed.WithDescription($"Hi {name}, welcome to .fmbot.\n" +
-                              $"To use this bot you first need to add your Last.fm account.\n\n" +
-                              $"Use the buttons below to sign up or connect your existing Last.fm account.");
+        embed.WithDescription(localizer.Translate("welcome.usernameNotSet", ("user", name)));
 
         embed.WithUrl($"{Constants.DocsUrl}/commands/");
 
         embed.WithColor(DiscordConstants.WarningColorOrange);
     }
 
-    public static ActionRowProperties UsernameNotSetErrorComponents()
+    public static ActionRowProperties UsernameNotSetErrorComponents(Localizer localizer)
     {
         return new ActionRowProperties()
-            .WithButton("Sign up", url: "https://www.last.fm/join")
-            .WithButton("Connect Last.fm account", style: ButtonStyle.Secondary,
+            .WithButton(localizer.Translate("buttons.signUp"), url: "https://www.last.fm/join")
+            .WithButton(localizer.Translate("buttons.connectLastfm"), style: ButtonStyle.Secondary,
                 customId: InteractionConstants.User.Login);
     }
 
-    public static ActionRowProperties ReconnectComponents()
+    public static ActionRowProperties ReconnectComponents(Localizer localizer)
     {
         return new ActionRowProperties()
-            .WithButton("Reconnect Last.fm account", style: ButtonStyle.Secondary,
+            .WithButton(localizer.Translate("buttons.reconnectLastfm"), style: ButtonStyle.Secondary,
                 customId: InteractionConstants.User.Login);
     }
 
     extension(EmbedProperties embed)
     {
-        public void RateLimitedResponse()
+        public void RateLimitedResponse(Localizer localizer)
         {
-            embed.WithDescription(
-                $"Sorry, you're being rate-limited. Please cool down and wait a minute before using commands again.");
+            embed.WithDescription(localizer.Translate("errors.rateLimited"));
             embed.WithColor(DiscordConstants.WarningColorOrange);
         }
 
-        public void UserBlockedResponse(string prfx)
+        public void UserBlockedResponse(Localizer localizer)
         {
-            embed.WithDescription("You're banned from using .fmbot.");
+            embed.WithDescription(localizer.Translate("errors.userBlocked"));
             embed.WithThumbnail("https://i.imgur.com/wNmcoR5.jpg");
 
             embed.WithColor(DiscordConstants.WarningColorOrange);
         }
 
-        public void SessionRequiredResponse(string prfx)
+        public void SessionRequiredResponse(Localizer localizer)
         {
-            embed.WithDescription(
-                "While you have set your username, you haven't connected .fmbot to your Last.fm account yet, which is required for the command you're trying to use.\n" +
-                $"Please reconnect your Last.fm account with the button below.");
+            embed.WithDescription(localizer.Translate("errors.sessionRequired"));
 
             embed.WithColor(DiscordConstants.WarningColorOrange);
         }
 
-        private void NoScrobblesFoundErrorResponse(string userName)
+        private void NoScrobblesFoundErrorResponse(Localizer localizer, string userName)
         {
             var description = new StringBuilder();
-            description.AppendLine(
-                $"The Last.fm user **{userName}** has no listening history on [their profile]({Constants.LastFMUserUrl}{userName}) yet.");
+            description.AppendLine(localizer.Translate("errors.noScrobbles.header",
+                ("user", userName), ("url", $"{Constants.LastFMUserUrl}{userName}")));
             description.AppendLine();
-            description.AppendLine(
-                "Just created your Last.fm account? Make sure you set it to [track your music app](https://www.last.fm/about/trackmymusic).");
+            description.AppendLine(localizer.Translate("errors.noScrobbles.trackMyMusic"));
             description.AppendLine();
-            description.AppendLine(
-                "Using Spotify? You can link that [here](https://www.last.fm/settings/applications). This can take a few minutes to start working.");
+            description.AppendLine(localizer.Translate("errors.noScrobbles.spotify"));
             description.AppendLine();
-            description.AppendLine($"Please note that .fmbot is not affiliated with Last.fm or Spotify.");
+            description.AppendLine(localizer.Translate("errors.noScrobbles.disclaimer"));
 
             embed.WithDescription(description.ToString());
 
@@ -91,11 +85,11 @@ public static class GenericEmbedService
         }
     }
 
-    private static ActionRowProperties NoScrobblesFoundComponents()
+    private static ActionRowProperties NoScrobblesFoundComponents(Localizer localizer)
     {
         return new ActionRowProperties()
-            .WithButton("Track my music app", url: "https://www.last.fm/about/trackmymusic")
-            .WithButton("Track Spotify", url: "https://www.last.fm/settings/applications");
+            .WithButton(localizer.Translate("buttons.trackMyMusicApp"), url: "https://www.last.fm/about/trackmymusic")
+            .WithButton(localizer.Translate("buttons.trackSpotify"), url: "https://www.last.fm/settings/applications");
     }
 
     public static bool RecentScrobbleCallFailed(Response<RecentTrackList> recentScrobbles)
@@ -111,10 +105,11 @@ public static class GenericEmbedService
     public static async Task<bool> RecentScrobbleCallFailedReply(Response<RecentTrackList> recentScrobbles,
         string lastFmUserName, CommandContext context, UserService userService)
     {
+        var localizer = Localizer.ForGuild(context.Guild?.Id, discordLocale: context.Guild?.PreferredLocale);
         var embed = new EmbedProperties();
         if (!recentScrobbles.Success || recentScrobbles.Content == null)
         {
-            embed.ErrorResponse(recentScrobbles.Error, recentScrobbles.Message, context.Message.Content, context.User);
+            embed.ErrorResponse(recentScrobbles.Error, recentScrobbles.Message, context.Message.Content, localizer, context.User);
             await context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.LastFmError }, userService);
             await context.Channel.SendMessageAsync(new MessageProperties
             {
@@ -125,12 +120,12 @@ public static class GenericEmbedService
 
         if (!recentScrobbles.Content.RecentTracks.Any())
         {
-            embed.NoScrobblesFoundErrorResponse(lastFmUserName);
+            embed.NoScrobblesFoundErrorResponse(localizer, lastFmUserName);
             await context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoScrobbles }, userService);
             await context.Channel.SendMessageAsync(new MessageProperties
             {
                 Embeds = [embed],
-                Components = [NoScrobblesFoundComponents()]
+                Components = [NoScrobblesFoundComponents(localizer)]
             });
             return true;
         }
@@ -139,7 +134,7 @@ public static class GenericEmbedService
     }
 
     public static ResponseModel RecentScrobbleCallFailedResponse(Response<RecentTrackList> recentScrobbles,
-        string lastFmUserName)
+        string lastFmUserName, Localizer localizer)
     {
         var errorResponse = new ResponseModel
         {
@@ -148,18 +143,18 @@ public static class GenericEmbedService
 
         if (recentScrobbles.Content?.RecentTracks == null || !recentScrobbles.Success)
         {
-            errorResponse.Embed.ErrorResponse(recentScrobbles.Error, recentScrobbles.Message, null);
-            errorResponse.ComponentsContainer.WithTextDisplay(errorResponse.Embed.Description ?? "Something went wrong while trying to get recent scrobbles.");
+            errorResponse.Embed.ErrorResponse(recentScrobbles.Error, recentScrobbles.Message, null, localizer);
+            errorResponse.ComponentsContainer.WithTextDisplay(errorResponse.Embed.Description ?? localizer.Translate("errors.recentScrobblesFailed"));
             errorResponse.CommandResponse = CommandResponse.LastFmError;
             return errorResponse;
         }
 
         if (!recentScrobbles.Content.RecentTracks.Any())
         {
-            errorResponse.Embed.NoScrobblesFoundErrorResponse(lastFmUserName);
-            errorResponse.ComponentsContainer.WithTextDisplay(errorResponse.Embed.Description ?? "No scrobbles found.");
+            errorResponse.Embed.NoScrobblesFoundErrorResponse(localizer, lastFmUserName);
+            errorResponse.ComponentsContainer.WithTextDisplay(errorResponse.Embed.Description ?? localizer.Translate("errors.noScrobblesShort"));
             errorResponse.CommandResponse = CommandResponse.NoScrobbles;
-            errorResponse.Components = NoScrobblesFoundComponents();
+            errorResponse.Components = NoScrobblesFoundComponents(localizer);
             return errorResponse;
         }
 
@@ -167,10 +162,11 @@ public static class GenericEmbedService
     }
 
     public static (EmbedProperties EmbedProperties, bool showPurchaseButtons) HelpResponse(EmbedProperties embed,
-        ICommandInfo<CommandContext> commandInfo, string prfx, string userName)
+        ICommandInfo<CommandContext> commandInfo, string prfx, string userName, Localizer localizer)
     {
         embed.WithColor(DiscordConstants.InformationColorBlue);
-        embed.WithTitle($"Information about '{prfx}{commandInfo.Aliases[0]}' for {userName}");
+        embed.WithTitle(localizer.Translate("help.title",
+            ("command", $"{prfx}{commandInfo.Aliases[0]}"), ("user", userName)));
 
         var allAttributes = commandInfo.Attributes.Values.SelectMany(x => x);
         var summary = allAttributes.OfType<SummaryAttribute>().FirstOrDefault()?.Summary;
@@ -189,7 +185,7 @@ public static class GenericEmbedService
                 optionsString.AppendLine($"- {option}");
             }
 
-            embed.AddField("Options", optionsString.ToString());
+            embed.AddField(localizer.Translate("help.options"), optionsString.ToString());
         }
 
         var examples = allAttributes.OfType<ExamplesAttribute>()
@@ -202,7 +198,7 @@ public static class GenericEmbedService
                 examplesString.AppendLine($"`{prfx}{example}`");
             }
 
-            embed.AddField("Examples", examplesString.ToString());
+            embed.AddField(localizer.Translate("help.examples"), examplesString.ToString());
         }
 
         var aliases = commandInfo.Aliases.Skip(1).ToList();
@@ -220,7 +216,7 @@ public static class GenericEmbedService
                 aliasesString.Append($"`{prfx}{alias}`");
             }
 
-            embed.AddField("Aliases", aliasesString.ToString());
+            embed.AddField(localizer.Translate("help.aliases"), aliasesString.ToString());
         }
 
         var showPurchaseButtons = false;
@@ -229,7 +225,7 @@ public static class GenericEmbedService
         if (supporterEnhanced?.Explainer != null)
         {
             showPurchaseButtons = true;
-            embed.AddField("⭐ Enhanced for .fmbot supporters", supporterEnhanced.Explainer);
+            embed.AddField(localizer.Translate("help.supporterEnhanced"), supporterEnhanced.Explainer);
         }
 
         var supporterExclusive = allAttributes.OfType<SupporterExclusiveAttribute>()
@@ -237,7 +233,7 @@ public static class GenericEmbedService
         if (supporterExclusive?.Explainer != null)
         {
             showPurchaseButtons = true;
-            embed.AddField("⭐ Exclusive for .fmbot supporters", supporterExclusive.Explainer);
+            embed.AddField(localizer.Translate("help.supporterExclusive"), supporterExclusive.Explainer);
         }
 
         return (embed, showPurchaseButtons);
@@ -280,11 +276,11 @@ public static class GenericEmbedService
         }
 
         public void ErrorResponse(ResponseStatus? responseStatus, string message,
-            string commandContent, User contextUser = null, string expectedResultType = null)
+            string commandContent, Localizer localizer, User contextUser = null, string expectedResultType = null)
         {
             if (PublicProperties.IssuesAtLastFm && PublicProperties.IssuesReason != null)
             {
-                embed.AddField("Note from .fmbot staff:", $"*\"{PublicProperties.IssuesReason}\"*");
+                embed.AddField(localizer.Translate("errors.staffNote"), $"*\"{PublicProperties.IssuesReason}\"*");
             }
 
             var loginCommand = PublicProperties.SlashCommands.TryGetValue("login", out var slashCommand)
@@ -294,34 +290,32 @@ public static class GenericEmbedService
             switch (responseStatus)
             {
                 case ResponseStatus.Failure:
-                    embed.WithDescription(
-                        "We tried fetching your data from Last.fm, but they returned an error. Please try again in a bit."
-                        + LastfmErrorRateTracker.GetFailureRateDescription());
+                    var failureRate = LastfmErrorRateTracker.GetSnapshot();
+                    embed.WithDescription(localizer.Translate("errors.lastFmFailure")
+                        + (failureRate == null
+                            ? string.Empty
+                            : "\n\n" + localizer.Translate("errors.lastFmFailureRate",
+                                ("percentage", failureRate.AveragePercent.ToString("0.#", CultureInfo.InvariantCulture)),
+                                ("sparkline", failureRate.Sparkline))));
                     break;
                 case ResponseStatus.LoginRequired:
-                    embed.WithDescription(
-                        "We couldn't fetch your data, your recent tracks are marked private on Last.fm.\n\n" +
-                        $"Change this in your [privacy settings](https://www.last.fm/settings/privacy), or authorize .fmbot to access private scrobbles with {loginCommand}.");
+                    embed.WithDescription(localizer.Translate("errors.lastFmLoginRequired", ("loginCommand", loginCommand)));
                     break;
                 case ResponseStatus.BadAuth:
-                    embed.WithDescription(
-                        $"We couldn't reach Last.fm for you, your session is invalid or Last.fm is having issues. You can try logging in again with {loginCommand} or trying again in a bit.");
+                    embed.WithDescription(localizer.Translate("errors.lastFmBadAuth", ("loginCommand", loginCommand)));
                     break;
                 case ResponseStatus.SessionExpired:
-                    embed.WithDescription(
-                        $"We couldn't fetch your data, .fmbot got disconnected from your Last.fm account. Please re-authorize with {loginCommand} and use the 'Connect Last.fm account' button.");
+                    embed.WithDescription(localizer.Translate("errors.lastFmSessionExpired", ("loginCommand", loginCommand)));
                     break;
                 case ResponseStatus.MissingParameters:
                     if (expectedResultType != null)
                     {
                         embed.Title = null;
-                        embed.WithDescription(
-                            $"Last.fm didn't return a {expectedResultType} for your search.");
+                        embed.WithDescription(localizer.Translate($"errors.lastFmNoResult.{expectedResultType}"));
                     }
                     else if (message.Equals("Not found"))
                     {
-                        embed.WithDescription(
-                            "Last.fm didn't return a result. If you're searching for a user who recently changed their username, they should re-run `/login`.");
+                        embed.WithDescription(localizer.Translate("errors.lastFmUserNotFound"));
                     }
                     else
                     {
@@ -330,7 +324,7 @@ public static class GenericEmbedService
 
                     break;
                 default:
-                    embed.WithDescription(message ?? "Unknown error");
+                    embed.WithDescription(message ?? localizer.Translate("errors.unknown"));
                     break;
             }
 
@@ -338,11 +332,11 @@ public static class GenericEmbedService
 
             if (responseStatus != null)
             {
-                footer.Append($"Error code: {responseStatus}");
+                footer.Append(localizer.Translate("errors.errorCode", ("code", responseStatus.ToString())));
                 footer.AppendLine();
             }
 
-            footer.Append(".fmbot is not affiliated with Last.fm");
+            footer.Append(localizer.Translate("errors.notAffiliated"));
 
             embed.WithFooter(footer.ToString());
 

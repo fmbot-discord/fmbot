@@ -38,7 +38,7 @@ public class ImportGroupSlashCommands(
 {
     private InteractiveService Interactivity { get; } = interactivity;
 
-    private const string SpotifyFileDescription = "Spotify history package (.zip) or history files (.json) ";
+    private const string SpotifyFileDescription = "Spotify history package (.zip) or history files (.json)";
 
     [SubSlashCommand("spotify", "⭐ Import your Spotify history into .fmbot")]
     [UsernameSetRequired]

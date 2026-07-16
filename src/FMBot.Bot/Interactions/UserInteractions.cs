@@ -494,11 +494,14 @@ public class UserInteractions(
     {
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var token = await dataSourceFactory.GetAuthToken();
+        var localizer = Localizer.ForGuild(this.Context.Interaction.GuildId,
+            discordLocale: this.Context.Interaction.GuildLocale);
 
         try
         {
             var loginUrlResponse =
-                UserBuilder.StartLogin(contextUser, token.Content.Token, this._botSettings.LastFm.PublicKey);
+                UserBuilder.StartLogin(contextUser, token.Content.Token, this._botSettings.LastFm.PublicKey,
+                    localizer);
 
             await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
                 .WithEmbeds([loginUrlResponse.Embed])
@@ -518,7 +521,8 @@ public class UserInteractions(
 
                 var loginSuccessResponse =
                     UserBuilder.LoginSuccess(newUserSettings,
-                        indexUser ? UserBuilder.LoginState.SuccessPendingIndex : UserBuilder.LoginState.SuccessNoIndex);
+                        indexUser ? UserBuilder.LoginState.SuccessPendingIndex : UserBuilder.LoginState.SuccessNoIndex,
+                        localizer);
 
                 await this.Context.Interaction.ModifyResponseAsync(m =>
                 {
@@ -534,7 +538,8 @@ public class UserInteractions(
                     await indexService.IndexUser(newUserSettings);
 
                     loginSuccessResponse =
-                        UserBuilder.LoginSuccess(newUserSettings, UserBuilder.LoginState.SuccessIndexComplete);
+                        UserBuilder.LoginSuccess(newUserSettings, UserBuilder.LoginState.SuccessIndexComplete,
+                            localizer);
 
                     await this.Context.Interaction.ModifyResponseAsync(m =>
                     {
@@ -569,7 +574,7 @@ public class UserInteractions(
             }
             else if (loginResult.Status == UserService.LoginStatus.TooManyAccounts)
             {
-                var loginFailure = UserBuilder.LoginTooManyAccounts(loginResult.AltCount);
+                var loginFailure = UserBuilder.LoginTooManyAccounts(loginResult.AltCount, localizer);
                 await this.Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
                     .WithEmbeds([loginFailure.Embed])
                     .WithComponents(loginFailure.Components?.Any() == true ? [loginFailure.Components] : null)
@@ -579,9 +584,10 @@ public class UserInteractions(
             }
             else
             {
-                var loginFailure = UserBuilder.LoginFailure();
+                var loginFailure = UserBuilder.LoginFailure(localizer);
                 await this.Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
                     .WithEmbeds([loginFailure.Embed])
+                    .WithComponents(loginFailure.Components?.Any() == true ? [loginFailure.Components] : null)
                     .WithFlags(MessageFlags.Ephemeral));
 
                 await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
@@ -1150,12 +1156,21 @@ public class UserInteractions(
         try
         {
             var discordUserId = ulong.Parse(discordUser);
-            var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
+            var requesterParts = requesterDiscordUser.Split(':');
+            var requesterDiscordUserId = ulong.Parse(requesterParts[0]);
+            var languageOverride = requesterParts.Length > 1
+                ? LanguageExtensions.FromLocaleCode(requesterParts[1])
+                : null;
+
+            var localizer = languageOverride.HasValue
+                ? new Localizer(languageOverride.Value, NumberFormat.NoSeparator)
+                : Localizer.ForGuild(this.Context.Interaction.GuildId,
+                    discordLocale: this.Context.Interaction.GuildLocale);
 
             if (requesterDiscordUserId != this.Context.User.Id)
             {
                 await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
-                    .WithContent("Hey, this button is not for you. At least you tried.")
+                    .WithContent(localizer.Translate("errors.buttonNotForYou"))
                     .WithFlags(MessageFlags.Ephemeral)));
                 return;
             }
@@ -1166,19 +1181,22 @@ public class UserInteractions(
             var userSettings = await settingService.GetOriginalContextUser(
                 discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
 
-            var descriptor = userSettings.DifferentUser ? $"**{userSettings.DisplayName}**'s" : "your";
             var loaderContainer = new ComponentContainerProperties();
             if (result == "compliment")
             {
                 loaderContainer.WithAccentColor(new Color(186, 237, 169));
                 loaderContainer.WithTextDisplay(
-                    $"<a:loading:821676038102056991> Loading {descriptor} compliment...");
+                    $"<a:loading:821676038102056991> {(userSettings.DifferentUser
+                        ? localizer.Translate("judge.loadingComplimentOther", ("user", userSettings.DisplayName))
+                        : localizer.Translate("judge.loadingComplimentSelf"))}");
             }
             else
             {
                 loaderContainer.WithAccentColor(new Color(255, 122, 1));
                 loaderContainer.WithTextDisplay(
-                    $"<a:loading:821676038102056991> Loading {descriptor} roast (don't take it personally)...");
+                    $"<a:loading:821676038102056991> {(userSettings.DifferentUser
+                        ? localizer.Translate("judge.loadingRoastOther", ("user", userSettings.DisplayName))
+                        : localizer.Translate("judge.loadingRoastSelf"))}");
             }
 
             await this.Context.Interaction.ModifyResponseAsync(e =>
@@ -1188,7 +1206,7 @@ public class UserInteractions(
                 e.Embeds = [];
             });
 
-            var timeSettings = SettingService.GetTimePeriod(timeOption, TimePeriod.AllTime);
+            var timeSettings = SettingService.GetTimePeriod(timeOption, TimePeriod.AllTime, language: LocalizationService.GetLanguage(this.Context.Interaction.GuildId, this.Context.Interaction.GuildLocale));
 
             List<TopArtist> topArtists;
             if (timeSettings.TimePeriod == TimePeriod.Quarterly && !userSettings.DifferentUser)
@@ -1220,8 +1238,7 @@ public class UserInteractions(
             {
                 var errorContainer = new ComponentContainerProperties();
                 errorContainer.WithAccentColor(DiscordConstants.LastFmColorRed);
-                errorContainer.WithTextDisplay(
-                    "Sorry, you or the user you're searching for don't have any top artists or top tracks in the selected time period.");
+                errorContainer.WithTextDisplay(localizer.Translate("judge.noTopResults"));
                 await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoScrobbles }, userService);
                 await this.Context.Interaction.ModifyResponseAsync(e =>
                 {
@@ -1232,9 +1249,14 @@ public class UserInteractions(
                 return;
             }
 
+            var contextModel = new ContextModel(this.Context, contextUser);
+            if (languageOverride.HasValue)
+            {
+                contextModel.Localizer = new Localizer(languageOverride.Value, contextModel.NumberFormat);
+            }
+
             var response = await userBuilder.JudgeHandleAsync(
-                new ContextModel(this.Context, contextUser),
-                userSettings, result, topArtists, topTracks);
+                contextModel, userSettings, result, topArtists, topTracks);
 
             await this.Context.Interaction.ModifyResponseAsync(e =>
             {

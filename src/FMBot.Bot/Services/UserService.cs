@@ -1133,7 +1133,8 @@ public class UserService
             TotalScrobbles = totalScrobbles,
             DiscordContextGuild = contextModel.DiscordGuild,
             DiscordContextUser = contextModel.DiscordUser,
-            NumberFormat = contextModel.NumberFormat
+            NumberFormat = contextModel.NumberFormat,
+            Localizer = contextModel.Localizer
         };
 
         var footer = await TemplateService.GetFooterAsync(footerOptions, footerContext);
@@ -1147,6 +1148,7 @@ public class UserService
         RecentTrack previousTrack,
         long totalScrobbles,
         NumberFormat numberFormat,
+        Localizer localizer,
         Persistence.Domain.Models.Guild guild = null,
         IDictionary<int, FullGuildUser> guildUsers = null)
     {
@@ -1169,7 +1171,8 @@ public class UserService
             PlayService = this._playService,
             UserSettings = userSettings,
             TotalScrobbles = totalScrobbles,
-            NumberFormat = numberFormat
+            NumberFormat = numberFormat,
+            Localizer = localizer
         };
 
         return await this._templateService.GetTemplateFmAsync(userId, footerContext);
@@ -1236,90 +1239,90 @@ public class UserService
     }
 
     public static (bool promo, string description) GetIndexCompletedUserStats(User user, IndexedUserStats stats,
-        NumberFormat numberFormat)
+        NumberFormat numberFormat, Localizer localizer)
     {
         var description = new StringBuilder();
         var promo = false;
 
         if (stats == null)
         {
-            description.AppendLine("Full update could not complete, something went wrong. Please try again later.");
+            description.AppendLine(localizer.Translate("update.fullUpdateFailed"));
             return (false, description.ToString());
         }
 
         if (stats.UpdateError == true)
         {
-            description.AppendLine($"❌ A Last.fm error occurred while attempting to update `{user.UserNameLastFM}`:");
+            description.AppendLine(localizer.Translate("update.lastfmUpdateError", ("user", user.UserNameLastFM)));
             if (stats.FailedUpdates.HasFlag(UpdateType.Full))
             {
-                description.AppendLine($"- Could not fetch user info from Last.fm");
+                description.AppendLine(localizer.Translate("update.errorUserInfo"));
             }
 
             if (stats.FailedUpdates.HasFlag(UpdateType.Artists))
             {
-                description.AppendLine($"- Could not fetch top artists");
+                description.AppendLine(localizer.Translate("update.errorTopArtists"));
             }
 
             if (stats.FailedUpdates.HasFlag(UpdateType.Albums))
             {
-                description.AppendLine($"- Could not fetch top albums");
+                description.AppendLine(localizer.Translate("update.errorTopAlbums"));
             }
 
             if (stats.FailedUpdates.HasFlag(UpdateType.Tracks))
             {
-                description.AppendLine($"- Could not fetch top tracks");
+                description.AppendLine(localizer.Translate("update.errorTopTracks"));
             }
 
-            description.AppendLine("Please try again later.");
+            description.AppendLine(localizer.Translate("update.tryAgainLater"));
         }
         else
         {
-            description.AppendLine($"✅ `{user.UserNameLastFM}` has been fully updated.");
+            description.AppendLine(localizer.Translate("update.fullyUpdated", ("user", user.UserNameLastFM)));
             description.AppendLine();
-            description.AppendLine("Cached the following playcounts:");
+            description.AppendLine(localizer.Translate("update.cachedFollowing"));
 
             if (user.UserType == UserType.User)
             {
                 if (stats.PlayCount.HasValue)
                 {
-                    description.AppendLine($"- Last **{stats.PlayCount.Format(numberFormat)}** plays");
+                    description.AppendLine(localizer.TranslateCount("update.statsLastPlays", stats.PlayCount.Value));
                 }
 
                 if (stats.ArtistCount.HasValue)
                 {
-                    description.AppendLine($"- Top **{stats.ArtistCount.Format(numberFormat)}** artists");
+                    description.AppendLine(localizer.TranslateCount("update.statsTopArtists", stats.ArtistCount.Value));
                 }
 
                 if (stats.AlbumCount.HasValue)
                 {
-                    description.AppendLine($"- Top **{stats.AlbumCount.Format(numberFormat)}** albums");
+                    description.AppendLine(localizer.TranslateCount("update.statsTopAlbums", stats.AlbumCount.Value));
                 }
 
                 if (stats.TrackCount.HasValue)
                 {
-                    description.AppendLine($"- Top **{stats.TrackCount.Format(numberFormat)}** tracks");
+                    description.AppendLine(localizer.TranslateCount("update.statsTopTracks", stats.TrackCount.Value));
                 }
             }
             else
             {
                 if (stats.PlayCount.HasValue)
                 {
-                    description.AppendLine($"- **{stats.PlayCount.Format(numberFormat)}** Last.fm plays");
+                    description.AppendLine(localizer.TranslateCount("update.statsFullPlays", stats.PlayCount.Value));
                 }
 
                 if (stats.ArtistCount.HasValue)
                 {
-                    description.AppendLine($"- **{stats.ArtistCount.Format(numberFormat)}** top artists");
+                    description.AppendLine(localizer.TranslateCount("update.statsFullArtists", stats.ArtistCount.Value));
                 }
 
                 if (stats.AlbumCount.HasValue)
                 {
-                    description.AppendLine($"- **{stats.AlbumCount.Format(numberFormat)}** top albums");
+                    description.AppendLine(localizer.TranslateCount("update.statsFullAlbums", stats.AlbumCount.Value));
                 }
 
                 if (stats.TrackCount.HasValue)
                 {
-                    description.AppendLine($"- **{stats.TrackCount.Format(numberFormat)}** top tracks");
+                    description.AppendLine(localizer.TranslateCount("update.statsFullTracks", stats.TrackCount.Value));
                 }
 
                 if (stats.ImportCount != null)
@@ -1327,9 +1330,10 @@ public class UserService
                     description.AppendLine();
 
                     var name = user.DataSource.GetAttribute<OptionAttribute>().Name;
-                    description.AppendLine($"Import setting: {name}");
-                    description.AppendLine(
-                        $"Combined with your **{stats.ImportCount.Format(numberFormat)}** imported plays you have a total of **{stats.TotalCount.Format(numberFormat)}** plays.");
+                    description.AppendLine(localizer.Translate("update.importSetting", ("setting", name)));
+                    description.AppendLine(localizer.Translate("update.importTotal",
+                        ("importCount", stats.ImportCount.Format(numberFormat)),
+                        ("totalCount", stats.TotalCount.Format(numberFormat))));
                 }
             }
 
@@ -1340,8 +1344,8 @@ public class UserService
                  stats.ArtistCount >= 3900))
             {
                 description.AppendLine();
-                description.AppendLine(
-                    $"Want your full Last.fm history to be stored in the bot? [{Constants.GetSupporterButton}]({Constants.GetSupporterOverviewLink}).");
+                description.AppendLine(localizer.Translate("update.supporterPromoHistory",
+                    ("url", Constants.GetSupporterOverviewLink)));
                 promo = true;
             }
         }
@@ -1413,10 +1417,9 @@ public class UserService
         Log.Information("LastfmAuth: Login session starting for {user} | {discordUserId}", contextUser.Username,
             contextUser.Id);
 
-        var loginDelay = 6000;
-        for (var i = 0; i < 11; i++)
+        for (var i = 0; i < 44; i++)
         {
-            await Task.Delay(loginDelay);
+            await Task.Delay(GetLoginAttemptDelay(i));
 
             var authSession = await this._dataSourceFactory.GetAuthSession(token);
 
@@ -1453,20 +1456,22 @@ public class UserService
                 return (LoginStatus.Success, 0);
             }
 
-            if (!authSession.Success && i == 10)
-            {
-                Log.Information("LastfmAuth: Login timed out or auth not successful (discordUserId: {discordUserId})",
-                    contextUser.Id);
-                return (LoginStatus.TimedOut, 0);
-            }
-
-            if (!authSession.Success)
-            {
-                loginDelay += 3000;
-            }
         }
 
+        Log.Information("LastfmAuth: Login timed out or auth not successful (discordUserId: {discordUserId})",
+            contextUser.Id);
         return (LoginStatus.TimedOut, 0);
+    }
+
+    private static int GetLoginAttemptDelay(int attempt)
+    {
+        return attempt switch
+        {
+            < 10 => 3000,
+            < 20 => 5000,
+            < 28 => 8000,
+            _ => 14000
+        };
     }
 
     public async Task<PrivacyLevel> SetPrivacyLevel(int userId, PrivacyLevel privacyLevel)

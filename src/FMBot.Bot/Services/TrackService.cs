@@ -114,9 +114,9 @@ public class TrackService
         return this._cache.TryGetValue(key, out _);
     }
 
-    public async Task<TrackSearch> SearchTrack(ResponseModel response, NetCord.User discordUser, string trackValues,
-        string lastFmUserName, string sessionKey = null, string otherUserUsername = null, bool useCachedTracks = false,
-        int? userId = null, ulong? interactionId = null, RestMessage referencedMessage = null)
+    public async Task<TrackSearch> SearchTrack(ResponseModel response, NetCord.User discordUser, Localizer localizer,
+        string trackValues, string lastFmUserName, string sessionKey = null, string otherUserUsername = null,
+        bool useCachedTracks = false, int? userId = null, ulong? interactionId = null, RestMessage referencedMessage = null)
     {
         string searchValue;
         if (referencedMessage != null && string.IsNullOrWhiteSpace(trackValues))
@@ -202,8 +202,8 @@ public class TrackService
 
                 if (!trackInfo.Success && trackInfo.Error == ResponseStatus.MissingParameters)
                 {
-                    response.Embed.WithDescription(
-                        $"Track `{trackName}` by `{trackArtist}` could not be found, please check your search values and try again.");
+                    response.Embed.WithDescription(localizer.Translate("track.notFoundWithValues",
+                        ("track", trackName), ("artist", trackArtist)));
                     response.CommandResponse = CommandResponse.NotFound;
                     response.ResponseType = ResponseType.Embed;
                     return new TrackSearch(null, response);
@@ -211,7 +211,7 @@ public class TrackService
 
                 if (!trackInfo.Success || trackInfo.Content == null)
                 {
-                    response.Embed.ErrorResponse(trackInfo.Error, trackInfo.Message, null, discordUser, "track");
+                    response.Embed.ErrorResponse(trackInfo.Error, trackInfo.Message, null, localizer, discordUser, "track");
                     response.CommandResponse = CommandResponse.LastFmError;
                     response.ResponseType = ResponseType.Embed;
                     return new TrackSearch(null, response);
@@ -237,7 +237,7 @@ public class TrackService
             if (GenericEmbedService.RecentScrobbleCallFailed(recentScrobbles))
             {
                 var errorResponse =
-                    GenericEmbedService.RecentScrobbleCallFailedResponse(recentScrobbles, lastFmUserName);
+                    GenericEmbedService.RecentScrobbleCallFailedResponse(recentScrobbles, lastFmUserName, localizer);
                 return new TrackSearch(null, errorResponse);
             }
 
@@ -324,9 +324,8 @@ public class TrackService
 
             if (trackInfo?.Content == null || !trackInfo.Success)
             {
-                response.Embed.WithDescription(
-                    $"Last.fm did not return a result for **{trackSearch.Name}** by **{trackSearch.ArtistName}**.\n\n" +
-                    $"This usually happens on recently released tracks. Please try again later.");
+                response.Embed.WithDescription(localizer.Translate("track.noLastFmResult",
+                    ("track", trackSearch.Name), ("artist", trackSearch.ArtistName)));
 
                 response.CommandResponse = CommandResponse.NotFound;
                 response.ResponseType = ResponseType.Embed;
@@ -343,9 +342,8 @@ public class TrackService
             return new TrackSearch(trackInfo.Content, response);
         }
 
-        response.Embed.WithDescription($"Track could not be found, please check your search values and try again.\n\n" +
-                                       $"You can also enter the exact value with the | separator. Example: `artist name | track name`.");
-        response.Embed.WithFooter($"Search value: '{searchValue}'");
+        response.Embed.WithDescription(localizer.Translate("track.notFound"));
+        response.Embed.WithFooter(localizer.Translate("shared.searchValue", ("value", searchValue)));
         response.CommandResponse = CommandResponse.NotFound;
         response.ResponseType = ResponseType.Embed;
         return new TrackSearch(null, response);

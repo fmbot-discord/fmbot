@@ -81,7 +81,7 @@ public class UserSlashCommands(
 
         try
         {
-            var response = UserBuilder.LoginRequired("/", contextUser != null);
+            var response = UserBuilder.LoginRequired(new ContextModel(this.Context, contextUser), contextUser != null);
 
             await this.Context.SendResponse(this.Interactivity, response, userService, true);
             await this.Context.LogCommandUsedAsync(response, userService);
@@ -454,19 +454,27 @@ public class UserSlashCommands(
             AutocompleteProviderType = typeof(DateTimeAutoComplete))]
         string timePeriod = null,
         [SlashCommandParameter(Name = "user", Description = "The user to judge")]
-        string user = null)
+        string user = null,
+        [SlashCommandParameter(Name = "language", Description = "Language for this judgement")]
+        Language? language = null)
     {
         var contextUser = await userService.GetUserAsync(this.Context.User.Id);
-        var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.Quarterly);
+        var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.Quarterly, language: LocalizationService.GetLanguage(this.Context.Interaction.GuildId, this.Context.Interaction.GuildLocale));
 
         var userSettings =
             await settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
 
         var commandUsesLeft = await openAiService.GetJudgeUsesLeft(contextUser);
 
+        var contextModel = new ContextModel(this.Context, contextUser);
+        if (language.HasValue)
+        {
+            contextModel.Localizer = new Localizer(language.Value, contextModel.NumberFormat);
+        }
+
         var response =
-            UserBuilder.JudgeAsync(new ContextModel(this.Context, contextUser), userSettings, timeSettings,
-                contextUser.UserType, commandUsesLeft);
+            UserBuilder.JudgeAsync(contextModel, userSettings, timeSettings,
+                contextUser.UserType, commandUsesLeft, language);
 
         await this.Context.SendResponse(this.Interactivity, response, userService);
         await this.Context.LogCommandUsedAsync(response, userService);
@@ -568,7 +576,7 @@ public class UserSlashCommands(
         IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task ProfileAsync(
-        [SlashCommandParameter(Name = "user", Description = "The user of which you want to view their profile")]
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
         string user = null)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());

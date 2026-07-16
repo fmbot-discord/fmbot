@@ -374,7 +374,7 @@ public class SpotifyRemoteCommands(
             }
         }
 
-        var trackSearch = await trackService.SearchTrack(new ResponseModel(), this.Context.User, searchValue,
+        var trackSearch = await trackService.SearchTrack(new ResponseModel(), this.Context.User, Localizer.ForGuild(this.Context.Guild?.Id, discordLocale: this.Context.Guild?.PreferredLocale), searchValue,
             userNameLastFm, sessionKey, userId: userId, useCachedTracks: true, referencedMessage: referencedMessage);
 
         if (trackSearch.Track == null)

@@ -1,6 +1,6 @@
 using System.Linq;
 using System.Collections.Generic;
-using FMBot.Bot.Extensions;
+using FMBot.Bot.Models;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
@@ -18,6 +18,7 @@ public class WhoKnowsPlayService
     }
 
     public string GuildAlsoPlayingTrack(
+        Localizer localizer,
         int currentUserId,
         IDictionary<int, FullGuildUser> guildUsers,
         Persistence.Domain.Models.Guild guild,
@@ -50,10 +51,11 @@ public class WhoKnowsPlayService
             return null;
         }
 
-        return Description(foundUsers, userPlays, "track");
+        return Description(localizer, foundUsers, userPlays, "Track");
     }
 
     public string GuildAlsoPlayingAlbum(
+        Localizer localizer,
         int currentUserId,
         IDictionary<int, FullGuildUser> guildUsers,
         Persistence.Domain.Models.Guild guild,
@@ -86,10 +88,11 @@ public class WhoKnowsPlayService
             return null;
         }
 
-        return Description(foundUsers, userPlays, "album");
+        return Description(localizer, foundUsers, userPlays, "Album");
     }
 
     public string GuildAlsoPlayingArtist(
+        Localizer localizer,
         int currentUserId,
         IDictionary<int, FullGuildUser> guildUsers,
         Persistence.Domain.Models.Guild guild,
@@ -121,21 +124,31 @@ public class WhoKnowsPlayService
             return null;
         }
 
-        return Description(foundUsers, userPlays, "artist");
+        return Description(localizer, foundUsers, userPlays, "Artist");
     }
 
-    private static string Description(IReadOnlyList<FullGuildUser> fullGuildUsers, IEnumerable<UserPlay> userPlayTsList, string type)
+    private static string Description(Localizer localizer, IReadOnlyList<FullGuildUser> fullGuildUsers, IEnumerable<UserPlay> userPlayTsList, string type)
     {
         return fullGuildUsers.Count switch
         {
             1 =>
-                $"{fullGuildUsers.First().UserName} was also listening to this {type} {StringExtensions.GetTimeAgo(userPlayTsList.OrderByDescending(o => o.TimePlayed).First().TimePlayed)}!",
+                localizer.Translate($"whoknows.alsoPlayingOne{type}",
+                    ("user", fullGuildUsers.First().UserName),
+                    ("timeAgo", localizer.TimeAgo(userPlayTsList.OrderByDescending(o => o.TimePlayed).First().TimePlayed))),
             2 =>
-                $"{fullGuildUsers[0].UserName} and {fullGuildUsers[1].UserName} were also recently listening to this {type}!",
+                localizer.Translate($"whoknows.alsoPlayingTwo{type}s",
+                    ("userOne", fullGuildUsers[0].UserName),
+                    ("userTwo", fullGuildUsers[1].UserName)),
             3 =>
-                $"{fullGuildUsers[0].UserName}, {fullGuildUsers[1].UserName} and {fullGuildUsers[2].UserName} were also recently listening to this {type}!",
+                localizer.Translate($"whoknows.alsoPlayingThree{type}s",
+                    ("userOne", fullGuildUsers[0].UserName),
+                    ("userTwo", fullGuildUsers[1].UserName),
+                    ("userThree", fullGuildUsers[2].UserName)),
             > 3 =>
-                $"{fullGuildUsers[0].UserName}, {fullGuildUsers[1].UserName}, {fullGuildUsers[2].UserName} and {fullGuildUsers.Count - 3} others were also recently listening to this {type}!",
+                localizer.TranslateCount($"whoknows.alsoPlayingMany{type}s", fullGuildUsers.Count - 3,
+                    ("userOne", fullGuildUsers[0].UserName),
+                    ("userTwo", fullGuildUsers[1].UserName),
+                    ("userThree", fullGuildUsers[2].UserName)),
             _ => null
         };
     }

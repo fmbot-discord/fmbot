@@ -30,6 +30,9 @@ public abstract class TemplateOption
     public string Variable { get; set; }
 
     public string Description { get; set; }
+
+    public string DescriptionKey => $"template.option.{this.Variable}";
+
     public VariableType VariableType { get; set; }
 }
 
@@ -91,6 +94,8 @@ public class TemplateContext
     public string Genres { get; set; }
 
     public NumberFormat NumberFormat { get; set; }
+
+    public Localizer Localizer { get; set; }
 
     public IDictionary<int, FullGuildUser> GuildUsers { get; set; }
     public WhoKnowsArtistService WhoKnowsArtistService { get; set; }
@@ -209,7 +214,9 @@ public static class TemplateOptions
             Description = "Last.fm account creation date",
             VariableType = VariableType.Text,
             ExecutionLogic = context =>
-                Task.FromResult(new VariableResult(context.UserSettings.RegisteredLastFm?.ToString("MMMM d yyyy")))
+                Task.FromResult(new VariableResult(context.UserSettings.RegisteredLastFm.HasValue
+                    ? context.Localizer.FormatMonthDayYear(context.UserSettings.RegisteredLastFm.Value)
+                    : null))
         },
         new ComplexTemplateOption
         {
@@ -312,7 +319,9 @@ public static class TemplateOptions
             VariableType = VariableType.Text,
             FooterOrder = 10,
             ExecutionLogic = context =>
-                Task.FromResult(context.CurrentTrack.Loved ? new VariableResult("❤️ Loved track", "❤️") : null)
+                Task.FromResult(context.CurrentTrack.Loved
+                    ? new VariableResult(context.Localizer.Translate("footer.loved"), "❤️")
+                    : null)
         },
         new SqlTemplateOption
         {
@@ -326,7 +335,7 @@ public static class TemplateOptions
             ResultProcessor = async (context, reader) =>
             {
                 var playcount = await reader.IsDBNullAsync(0) ? 0 : await reader.GetFieldValueAsync<int>(0);
-                return new VariableResult($"{playcount.Format(context.NumberFormat)} artist scrobbles",
+                return new VariableResult(context.Localizer.TranslateCount("footer.artistScrobbles", playcount),
                     playcount.Format(context.NumberFormat).ToString());
             },
             ParametersFactory = context => new Dictionary<string, object>
@@ -349,7 +358,7 @@ public static class TemplateOptions
                     context.Connection, start);
                 var count = plays.Count(a =>
                     a.ArtistName.Equals(context.CurrentTrack.ArtistName, StringComparison.OrdinalIgnoreCase));
-                return new VariableResult($"{count.Format(context.NumberFormat)} artist plays this week",
+                return new VariableResult(context.Localizer.TranslateCount("footer.artistPlaysWeek", count),
                     count.Format(context.NumberFormat).ToString());
             }
         },
@@ -365,7 +374,7 @@ public static class TemplateOptions
                     context.Connection, start);
                 var count = plays.Count(a =>
                     a.ArtistName.Equals(context.CurrentTrack.ArtistName, StringComparison.OrdinalIgnoreCase));
-                return new VariableResult($"{count.Format(context.NumberFormat)} artist plays this month",
+                return new VariableResult(context.Localizer.TranslateCount("footer.artistPlaysMonth", count),
                     count.Format(context.NumberFormat).ToString());
             }
         },
@@ -380,7 +389,7 @@ public static class TemplateOptions
             ResultProcessor = async (context, reader) =>
             {
                 var playcount = await reader.IsDBNullAsync(0) ? 0 : await reader.GetFieldValueAsync<int>(0);
-                return new VariableResult($"{playcount.Format(context.NumberFormat)} album scrobbles",
+                return new VariableResult(context.Localizer.TranslateCount("footer.albumScrobbles", playcount),
                     playcount.Format(context.NumberFormat).ToString());
             },
             ParametersFactory = context => new Dictionary<string, object>
@@ -403,7 +412,7 @@ public static class TemplateOptions
                     a.AlbumName != null &&
                     a.ArtistName.Equals(context.CurrentTrack.ArtistName, StringComparison.OrdinalIgnoreCase) &&
                     a.AlbumName.Equals(context.CurrentTrack.AlbumName, StringComparison.OrdinalIgnoreCase));
-                return new VariableResult($"{count.Format(context.NumberFormat)} album plays this week",
+                return new VariableResult(context.Localizer.TranslateCount("footer.albumPlaysWeek", count),
                     count.Format(context.NumberFormat).ToString());
             }
         },
@@ -421,7 +430,7 @@ public static class TemplateOptions
                     a.AlbumName != null &&
                     a.ArtistName.Equals(context.CurrentTrack.ArtistName, StringComparison.OrdinalIgnoreCase) &&
                     a.AlbumName.Equals(context.CurrentTrack.AlbumName, StringComparison.OrdinalIgnoreCase));
-                return new VariableResult($"{count.Format(context.NumberFormat)} album plays this month",
+                return new VariableResult(context.Localizer.TranslateCount("footer.albumPlaysMonth", count),
                     count.Format(context.NumberFormat).ToString());
             }
         },
@@ -436,7 +445,7 @@ public static class TemplateOptions
             ResultProcessor = async (context, reader) =>
             {
                 var playcount = await reader.IsDBNullAsync(0) ? 0 : await reader.GetFieldValueAsync<int>(0);
-                return new VariableResult($"{playcount.Format(context.NumberFormat)} track scrobbles",
+                return new VariableResult(context.Localizer.TranslateCount("footer.trackScrobbles", playcount),
                     playcount.Format(context.NumberFormat).ToString());
             },
             ParametersFactory = context => new Dictionary<string, object>
@@ -458,7 +467,7 @@ public static class TemplateOptions
                 var count = plays.Count(a =>
                     a.ArtistName.Equals(context.CurrentTrack.ArtistName, StringComparison.OrdinalIgnoreCase) &&
                     a.TrackName.Equals(context.CurrentTrack.TrackName, StringComparison.OrdinalIgnoreCase));
-                return new VariableResult($"{count.Format(context.NumberFormat)} track plays this week",
+                return new VariableResult(context.Localizer.TranslateCount("footer.trackPlaysWeek", count),
                     count.Format(context.NumberFormat).ToString());
             }
         },
@@ -475,7 +484,7 @@ public static class TemplateOptions
                 var count = plays.Count(a =>
                     a.ArtistName.Equals(context.CurrentTrack.ArtistName, StringComparison.OrdinalIgnoreCase) &&
                     a.TrackName.Equals(context.CurrentTrack.TrackName, StringComparison.OrdinalIgnoreCase));
-                return new VariableResult($"{count.Format(context.NumberFormat)} track plays this month",
+                return new VariableResult(context.Localizer.TranslateCount("footer.trackPlaysMonth", count),
                     count.Format(context.NumberFormat).ToString());
             }
         },
@@ -488,7 +497,7 @@ public static class TemplateOptions
             FooterOrder = 50,
             ExecutionLogic = context =>
                 Task.FromResult(new VariableResult(
-                    $"{context.TotalScrobbles.Format(context.NumberFormat)} total scrobbles",
+                    context.Localizer.TranslateCount("footer.totalScrobbles", context.TotalScrobbles),
                     context.TotalScrobbles.Format(context.NumberFormat).ToString()))
         },
         new ComplexTemplateOption
@@ -581,33 +590,39 @@ public static class TemplateOptions
 
                                 if (startDate.Month == today.Month && startDate.Day == today.Day)
                                 {
-                                    return new VariableResult($"🎂 today (died at {ageAtDeath})");
+                                    return new VariableResult(context.Localizer.Translate("footer.birthdayTodayDied",
+                                        ("age", ageAtDeath.ToString())));
                                 }
 
-                                return new VariableResult($"🎂 {startDate:MMMM d} (died at {ageAtDeath})");
+                                return new VariableResult(context.Localizer.Translate("footer.birthdayDied",
+                                    ("date", context.Localizer.FormatMonthDay(startDate)), ("age", ageAtDeath.ToString())));
                             }
 
                             if (startDate.Month == today.Month && startDate.Day == today.Day)
                             {
-                                return new VariableResult("🎂 today");
+                                return new VariableResult(context.Localizer.Translate("footer.birthdayToday"));
                             }
 
-                            return new VariableResult($"🎂 {startDate:MMMM d}");
+                            return new VariableResult(context.Localizer.Translate("footer.birthday",
+                                ("date", context.Localizer.FormatMonthDay(startDate))));
                         }
 
                         var age = GetAgeInYears(startDate);
 
                         if (startDate.Month == today.Month && startDate.Day == today.Day)
                         {
-                            return new VariableResult($"🎂 today! ({age})");
+                            return new VariableResult(context.Localizer.Translate("footer.birthdayTodayAge",
+                                ("age", age.ToString())));
                         }
 
                         if (startDate.Month == today.AddDays(1).Month && startDate.Day == today.AddDays(1).Day)
                         {
-                            return new VariableResult($"🎂 tomorrow (becomes {age + 1})");
+                            return new VariableResult(context.Localizer.Translate("footer.birthdayTomorrow",
+                                ("age", (age + 1).ToString())));
                         }
 
-                        return new VariableResult($"🎂 {startDate:MMMM d} (currently {age})");
+                        return new VariableResult(context.Localizer.Translate("footer.birthdayUpcoming",
+                            ("date", context.Localizer.FormatMonthDay(startDate)), ("age", age.ToString())));
                     }
                 }
 
@@ -748,7 +763,9 @@ public static class TemplateOptions
             {
                 if (context.DbTrack?.Tempo != null)
                 {
-                    return Task.FromResult(new VariableResult($"bpm {context.DbTrack?.Tempo:0.0}", $"{context.DbTrack?.Tempo:0.0}"));
+                    return Task.FromResult(new VariableResult(
+                        context.Localizer.Translate("footer.bpm", ("value", $"{context.DbTrack?.Tempo:0.0}")),
+                        $"{context.DbTrack?.Tempo:0.0}"));
                 }
 
                 return Task.FromResult<VariableResult>(null);
@@ -846,7 +863,8 @@ public static class TemplateOptions
                     var currentPlaycount = await reader.GetFieldValueAsync<int>(0);
                     var userName = await reader.GetFieldValueAsync<string>(2);
                     return new VariableResult(
-                        $"👑 {StringExtensions.Sanitize(userName)} ({currentPlaycount.Format(context.NumberFormat)} plays)",
+                        context.Localizer.TranslateCount("footer.crownHolder", currentPlaycount,
+                            ("user", StringExtensions.Sanitize(userName))),
                         StringExtensions.Sanitize(userName));
                 }
 
@@ -885,7 +903,9 @@ public static class TemplateOptions
                     if (requestedUser != null)
                     {
                         var index = artistListeners.IndexOf(requestedUser);
-                        return new VariableResult($"WhoKnows #{index + 1}", (index + 1).ToString());
+                        return new VariableResult(
+                            context.Localizer.Translate("footer.whoknowsRank", ("rank", (index + 1).ToString())),
+                            (index + 1).ToString());
                     }
                 }
 
@@ -913,7 +933,7 @@ public static class TemplateOptions
                     .filteredUsers;
 
                 return artistListeners.Any()
-                    ? new VariableResult($"{artistListeners.Count.Format(context.NumberFormat)} listeners",
+                    ? new VariableResult(context.Localizer.TranslateCount("shared.listeners", artistListeners.Count),
                         artistListeners.Count.Format(context.NumberFormat).ToString())
                     : null;
             }
@@ -948,7 +968,9 @@ public static class TemplateOptions
                     if (requestedUser != null)
                     {
                         var index = albumListeners.IndexOf(requestedUser);
-                        return new VariableResult($"WhoKnows album #{index + 1}", (index + 1).ToString());
+                        return new VariableResult(
+                            context.Localizer.Translate("footer.whoknowsAlbumRank", ("rank", (index + 1).ToString())),
+                            (index + 1).ToString());
                     }
                 }
 
@@ -980,7 +1002,7 @@ public static class TemplateOptions
                     .FilterWhoKnowsObjects(albumListeners, context.GuildUsers, context.Guild, 0).filteredUsers;
 
                 return albumListeners.Any()
-                    ? new VariableResult($"{albumListeners.Count.Format(context.NumberFormat)} album listeners",
+                    ? new VariableResult(context.Localizer.TranslateCount("footer.albumListeners", albumListeners.Count),
                         albumListeners.Count.Format(context.NumberFormat).ToString())
                     : null;
             }
@@ -1015,7 +1037,9 @@ public static class TemplateOptions
                     if (requestedUser != null)
                     {
                         var index = trackListeners.IndexOf(requestedUser);
-                        return new VariableResult($"WhoKnows track #{index + 1}", (index + 1).ToString());
+                        return new VariableResult(
+                            context.Localizer.Translate("footer.whoknowsTrackRank", ("rank", (index + 1).ToString())),
+                            (index + 1).ToString());
                     }
                 }
 
@@ -1047,7 +1071,7 @@ public static class TemplateOptions
                     .FilterWhoKnowsObjects(trackListeners, context.GuildUsers, context.Guild, 0).filteredUsers;
 
                 return trackListeners.Any()
-                    ? new VariableResult($"{trackListeners.Count.Format(context.NumberFormat)} track listeners",
+                    ? new VariableResult(context.Localizer.TranslateCount("footer.trackListeners", trackListeners.Count),
                         trackListeners.Count.Format(context.NumberFormat).ToString())
                     : null;
             }
@@ -1085,7 +1109,9 @@ public static class TemplateOptions
                 if (!await reader.IsDBNullAsync(0))
                 {
                     var rank = await reader.GetFieldValueAsync<long>(0);
-                    return new VariableResult($"GlobalWhoKnows #{rank}", rank.ToString());
+                    return new VariableResult(
+                        context.Localizer.Translate("footer.globalWhoknowsRank", ("rank", rank.ToString())),
+                        rank.ToString());
                 }
 
                 return null;
@@ -1129,7 +1155,9 @@ public static class TemplateOptions
                 if (!await reader.IsDBNullAsync(0))
                 {
                     var rank = await reader.GetFieldValueAsync<long>(0);
-                    return new VariableResult($"GlobalWhoKnows album #{rank}", rank.ToString());
+                    return new VariableResult(
+                        context.Localizer.Translate("footer.globalWhoknowsAlbumRank", ("rank", rank.ToString())),
+                        rank.ToString());
                 }
 
                 return null;
@@ -1173,7 +1201,9 @@ public static class TemplateOptions
                 if (!await reader.IsDBNullAsync(0))
                 {
                     var rank = await reader.GetFieldValueAsync<long>(0);
-                    return new VariableResult($"GlobalWhoKnows track #{rank}", rank.ToString());
+                    return new VariableResult(
+                        context.Localizer.Translate("footer.globalWhoknowsTrackRank", ("rank", rank.ToString())),
+                        rank.ToString());
                 }
 
                 return null;
@@ -1204,7 +1234,9 @@ public static class TemplateOptions
                 if (firstPlay == null) return null;
 
                 var timestamp = ((DateTimeOffset)DateTime.SpecifyKind(firstPlay.Value, DateTimeKind.Utc)).ToUnixTimeSeconds();
-                return new VariableResult($"Artist discovered <t:{timestamp}:D>", $"<t:{timestamp}:D>");
+                return new VariableResult(
+                    context.Localizer.Translate("footer.artistDiscovered", ("date", $"<t:{timestamp}:D>")),
+                    $"<t:{timestamp}:D>");
             }
         },
         new ComplexTemplateOption
@@ -1227,7 +1259,9 @@ public static class TemplateOptions
                 if (firstPlay == null) return null;
 
                 var timestamp = ((DateTimeOffset)DateTime.SpecifyKind(firstPlay.Value, DateTimeKind.Utc)).ToUnixTimeSeconds();
-                return new VariableResult($"Album discovered <t:{timestamp}:D>", $"<t:{timestamp}:D>");
+                return new VariableResult(
+                    context.Localizer.Translate("footer.albumDiscovered", ("date", $"<t:{timestamp}:D>")),
+                    $"<t:{timestamp}:D>");
             }
         },
         new ComplexTemplateOption
@@ -1249,7 +1283,9 @@ public static class TemplateOptions
                 if (firstPlay == null) return null;
 
                 var timestamp = ((DateTimeOffset)DateTime.SpecifyKind(firstPlay.Value, DateTimeKind.Utc)).ToUnixTimeSeconds();
-                return new VariableResult($"Track discovered <t:{timestamp}:D>", $"<t:{timestamp}:D>");
+                return new VariableResult(
+                    context.Localizer.Translate("footer.trackDiscovered", ("date", $"<t:{timestamp}:D>")),
+                    $"<t:{timestamp}:D>");
             }
         },
         new ComplexTemplateOption
@@ -1277,7 +1313,9 @@ public static class TemplateOptions
                 if (firstPlay != null && firstPlay.Value.Date == lastPlay.Value.Date) return null;
 
                 var timestamp = ((DateTimeOffset)DateTime.SpecifyKind(lastPlay.Value, DateTimeKind.Utc)).ToUnixTimeSeconds();
-                return new VariableResult($"Artist last listened <t:{timestamp}:D>", $"<t:{timestamp}:D>");
+                return new VariableResult(
+                    context.Localizer.Translate("footer.artistLastListened", ("date", $"<t:{timestamp}:D>")),
+                    $"<t:{timestamp}:D>");
             }
         },
         new ComplexTemplateOption
@@ -1304,7 +1342,9 @@ public static class TemplateOptions
                 if (firstPlay != null && firstPlay.Value.Date == lastPlay.Value.Date) return null;
 
                 var timestamp = ((DateTimeOffset)DateTime.SpecifyKind(lastPlay.Value, DateTimeKind.Utc)).ToUnixTimeSeconds();
-                return new VariableResult($"Album last listened <t:{timestamp}:D>", $"<t:{timestamp}:D>");
+                return new VariableResult(
+                    context.Localizer.Translate("footer.albumLastListened", ("date", $"<t:{timestamp}:D>")),
+                    $"<t:{timestamp}:D>");
             }
         },
         new ComplexTemplateOption
@@ -1330,7 +1370,9 @@ public static class TemplateOptions
                 if (firstPlay != null && firstPlay.Value.Date == lastPlay.Value.Date) return null;
 
                 var timestamp = ((DateTimeOffset)DateTime.SpecifyKind(lastPlay.Value, DateTimeKind.Utc)).ToUnixTimeSeconds();
-                return new VariableResult($"Track last listened <t:{timestamp}:D>", $"<t:{timestamp}:D>");
+                return new VariableResult(
+                    context.Localizer.Translate("footer.trackLastListened", ("date", $"<t:{timestamp}:D>")),
+                    $"<t:{timestamp}:D>");
             }
         }
     };

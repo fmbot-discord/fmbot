@@ -103,14 +103,14 @@ public class TemplateBuilders
 
         if (GenericEmbedService.RecentScrobbleCallFailed(recentTracks))
         {
-            return (GenericEmbedService.RecentScrobbleCallFailedResponse(recentTracks, context.ContextUser.UserNameLastFM), null);
+            return (GenericEmbedService.RecentScrobbleCallFailedResponse(recentTracks, context.ContextUser.UserNameLastFM, context.Localizer), null);
         }
 
         guild ??= await this._guildService.GetGuildAsync(821660544581763093);
         var guildUsers = await this._guildService.GetGuildUsers(guild.DiscordGuildId);
 
         var fmEmbed = await this._userService.GetTemplateFmAsync(context.ContextUser.UserId, exampleUserSettings, recentTracks.Content.RecentTracks[0],
-            recentTracks.Content.RecentTracks.Count > 1 ? recentTracks.Content.RecentTracks[1] : null, context.ContextUser.TotalPlaycount ?? 100, context.NumberFormat, guild, guildUsers);
+            recentTracks.Content.RecentTracks.Count > 1 ? recentTracks.Content.RecentTracks[1] : null, context.ContextUser.TotalPlaycount ?? 100, context.NumberFormat, context.Localizer, guild, guildUsers);
 
         foreach (var option in ((EmbedOption[])Enum.GetValues(typeof(EmbedOption))))
         {
@@ -156,10 +156,10 @@ public class TemplateBuilders
         var description = new StringBuilder();
         foreach (var option in TemplateOptions.Options.OrderBy(o => o.Variable))
         {
-            description.AppendLine($"**`{option.Variable}`** - {option.Description}");
+            description.AppendLine($"**`{option.Variable}`** - {context.Localize(option.DescriptionKey)}");
         }
 
-        response.Embed.WithAuthor("Template variables");
+        response.Embed.WithAuthor(context.Localize("template.variablesHeader"));
         response.Embed.WithDescription(description.ToString());
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 

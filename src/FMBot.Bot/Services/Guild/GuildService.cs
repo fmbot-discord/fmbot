@@ -627,6 +627,30 @@ public class GuildService(
         return true;
     }
 
+    public async Task<bool> SetGuildLanguageAsync(NetCord.Gateway.Guild discordGuild, Language? language)
+    {
+        await using var db = await contextFactory.CreateDbContextAsync();
+        var existingGuild = await db.Guilds
+            .AsQueryable()
+            .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuild.Id);
+
+        if (existingGuild == null)
+        {
+            return false;
+        }
+
+        existingGuild.Name = discordGuild.Name;
+        existingGuild.Language = language;
+
+        db.Entry(existingGuild).State = EntityState.Modified;
+
+        await db.SaveChangesAsync();
+
+        await RemoveGuildFromCache(discordGuild.Id);
+
+        return true;
+    }
+
     public async Task<bool> SetFeaturedFrequencyAsync(NetCord.Gateway.Guild discordGuild, GuildFeaturedFrequency? featuredFrequency)
     {
         await using var db = await contextFactory.CreateDbContextAsync();

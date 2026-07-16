@@ -60,7 +60,7 @@ public class CountryBuilders(
             if (GenericEmbedService.RecentScrobbleCallFailed(recentTracks))
             {
                 return GenericEmbedService.RecentScrobbleCallFailedResponse(recentTracks,
-                    context.ContextUser.UserNameLastFM);
+                    context.ContextUser.UserNameLastFM, context.Localizer);
             }
 
             var artistName = recentTracks.Content.RecentTracks.First().ArtistName;
@@ -333,7 +333,7 @@ public class CountryBuilders(
 
             if (!artists.Success || artists.Content == null)
             {
-                response.Embed.ErrorResponse(artists.Error, artists.Message, "topgenres", context.DiscordUser);
+                response.Embed.ErrorResponse(artists.Error, artists.Message, "topgenres", context.Localizer, context.DiscordUser);
                 response.CommandResponse = CommandResponse.LastFmError;
                 return response;
             }
@@ -497,7 +497,7 @@ public class CountryBuilders(
 
             if (!artists.Success || artists.Content == null)
             {
-                response.Embed.ErrorResponse(artists.Error, artists.Message, "countrychart", context.DiscordUser);
+                response.Embed.ErrorResponse(artists.Error, artists.Message, "countrychart", context.Localizer, context.DiscordUser);
                 response.CommandResponse = CommandResponse.LastFmError;
                 response.ResponseType = ResponseType.Embed;
                 return response;

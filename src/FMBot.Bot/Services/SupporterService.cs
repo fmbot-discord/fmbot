@@ -2622,7 +2622,8 @@ public class SupporterService
             .ToListAsync();
     }
 
-    public async Task<string> GetSupporterCheckoutLink(ulong discordUserId, string lastFmUserName, string type,
+    public async Task<string> GetSupporterCheckoutLink(ulong discordUserId, string discordUserName,
+        string lastFmUserName, string type,
         StripePricing pricing, StripeSupporter existingStripeSupporter = null, string source = "unknown")
     {
         var existingStripeCustomerId = "";
@@ -2645,6 +2646,7 @@ public class SupporterService
         var url = await this._supporterLinkService.GetCheckoutLinkAsync(new CreateLinkOptions
         {
             DiscordUserId = (long)discordUserId,
+            DiscordUserName = discordUserName ?? "",
             LastFmUserName = lastFmUserName,
             Type = type,
             ExistingCustomerId = existingStripeCustomerId,
@@ -2655,13 +2657,15 @@ public class SupporterService
         return url?.CheckoutLink;
     }
 
-    public async Task<string> GetSupporterGiftCheckoutLink(ulong discordUserId, string lastFmUserName,
+    public async Task<string> GetSupporterGiftCheckoutLink(ulong discordUserId, string discordUserName,
+        string lastFmUserName,
         string priceId, string source, ulong giftReceiverDiscordUserId, string giftReceiverLastFmUserName,
         string existingStripeCustomerId = null)
     {
         var url = await this._supporterLinkService.GetCheckoutLinkAsync(new CreateLinkOptions
         {
             DiscordUserId = (long)discordUserId,
+            DiscordUserName = discordUserName ?? "",
             LastFmUserName = lastFmUserName,
             Type = "GiftedSupporter",
             ExistingCustomerId = existingStripeCustomerId ?? "",
@@ -2674,12 +2678,14 @@ public class SupporterService
         return url?.CheckoutLink;
     }
 
-    public async Task<string> GetSupporterLifetimePromoCheckoutLink(ulong discordUserId, string lastFmUserName,
+    public async Task<string> GetSupporterLifetimePromoCheckoutLink(ulong discordUserId, string discordUserName,
+        string lastFmUserName,
         string priceId, string currency, string existingCustomerId = null)
     {
         var url = await this._supporterLinkService.GetCheckoutLinkAsync(new CreateLinkOptions
         {
             DiscordUserId = (long)discordUserId,
+            DiscordUserName = discordUserName ?? "",
             LastFmUserName = lastFmUserName,
             Type = $"lifetime-promo-{currency}",
             ExistingCustomerId = existingCustomerId ?? "",
@@ -2700,7 +2706,8 @@ public class SupporterService
         return url?.ManageLink;
     }
 
-    public async Task<CreateLinkReply> GetPremiumGuildCheckoutLink(ulong discordUserId, string lastFmUserName,
+    public async Task<CreateLinkReply> GetPremiumGuildCheckoutLink(ulong discordUserId, string discordUserName,
+        string lastFmUserName,
         string type, ulong discordGuildId, string guildName, StripePricing pricing, string existingCustomerId = null,
         string source = "unknown")
     {
@@ -2711,6 +2718,7 @@ public class SupporterService
         return await this._supporterLinkService.GetCheckoutLinkAsync(new CreateLinkOptions
         {
             DiscordUserId = (long)discordUserId,
+            DiscordUserName = discordUserName ?? "",
             LastFmUserName = lastFmUserName ?? "",
             Type = $"premiumserver-{type}",
             ExistingCustomerId = existingCustomerId ?? "",

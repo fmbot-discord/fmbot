@@ -65,7 +65,7 @@ public class ServerSlashCommands(
             DisplayRoleFilter = displayRoleFilter
         };
 
-        var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.Weekly, cachedOnly: true);
+        var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.Weekly, cachedOnly: true, language: LocalizationService.GetLanguage(this.Context.Interaction.GuildId, this.Context.Interaction.GuildLocale));
 
         guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
 
@@ -114,7 +114,7 @@ public class ServerSlashCommands(
             DisplayRoleFilter = displayRoleFilter
         };
 
-        var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.Weekly, cachedOnly: true);
+        var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.Weekly, cachedOnly: true, language: LocalizationService.GetLanguage(this.Context.Interaction.GuildId, this.Context.Interaction.GuildLocale));
 
         guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
         guildListSettings.NewSearchValue = artist;
@@ -164,7 +164,7 @@ public class ServerSlashCommands(
             DisplayRoleFilter = displayRoleFilter
         };
 
-        var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.Weekly, cachedOnly: true);
+        var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.Weekly, cachedOnly: true, language: LocalizationService.GetLanguage(this.Context.Interaction.GuildId, this.Context.Interaction.GuildLocale));
 
         guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
         guildListSettings.NewSearchValue = artist;
@@ -198,7 +198,7 @@ public class ServerSlashCommands(
             AmountOfDays = 7,
         };
 
-        var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.Weekly, cachedOnly: true);
+        var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.Weekly, cachedOnly: true, language: LocalizationService.GetLanguage(this.Context.Interaction.GuildId, this.Context.Interaction.GuildLocale));
 
         guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
 

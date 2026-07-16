@@ -192,7 +192,7 @@ public class AlbumSlashCommands(
         }
     }
 
-    [SlashCommand("albumtracks", "Shows album info for the album you're currently listening to or searching for",
+    [SlashCommand("albumtracks", "Shows track playcounts for the album you're currently listening to or searching for",
         Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild],
         IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]

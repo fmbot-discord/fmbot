@@ -124,7 +124,7 @@ public class ArtistCommands(
 
         var redirectsEnabled = SettingService.RedirectsEnabled(userSettings.NewSearchValue);
         var timeSettings = SettingService.GetTimePeriod(redirectsEnabled.NewSearchValue, TimePeriod.AllTime,
-            cachedOnly: true, dailyTimePeriods: false);
+            cachedOnly: true, dailyTimePeriods: false, language: LocalizationService.GetLanguage(this.Context.Guild?.Id, this.Context.Guild?.PreferredLocale));
 
         var response = await artistBuilders.ArtistTracksAsync(new ContextModel(this.Context, prfx, contextUser),
             timeSettings,
@@ -212,12 +212,12 @@ public class ArtistCommands(
 
             var redirectsEnabled = SettingService.RedirectsEnabled(userSettings.NewSearchValue);
             var timeSettings = SettingService.GetTimePeriod(redirectsEnabled.NewSearchValue, TimePeriod.Monthly,
-                cachedOnly: true, timeZone: userSettings.TimeZone);
+                cachedOnly: true, timeZone: userSettings.TimeZone, language: LocalizationService.GetLanguage(this.Context.Guild?.Id, this.Context.Guild?.PreferredLocale));
 
             if (timeSettings.TimePeriod == TimePeriod.AllTime)
             {
                 timeSettings =
-                    SettingService.GetTimePeriod("monthly", TimePeriod.Monthly, timeZone: userSettings.TimeZone);
+                    SettingService.GetTimePeriod("monthly", TimePeriod.Monthly, timeZone: userSettings.TimeZone, language: LocalizationService.GetLanguage(this.Context.Guild?.Id, this.Context.Guild?.PreferredLocale));
             }
 
             var response = await artistBuilders.ArtistPaceAsync(new ContextModel(this.Context, prfx, contextUser),
@@ -255,7 +255,7 @@ public class ArtistCommands(
 
             var timeSettings = SettingService.GetTimePeriod(topListSettings.NewSearchValue,
                 topListSettings.Discogs ? TimePeriod.AllTime : TimePeriod.Weekly,
-                registeredLastFm: userSettings.RegisteredLastFm, timeZone: userSettings.TimeZone);
+                registeredLastFm: userSettings.RegisteredLastFm, timeZone: userSettings.TimeZone, language: LocalizationService.GetLanguage(this.Context.Guild?.Id, this.Context.Guild?.PreferredLocale));
             var mode = SettingService.SetMode(extraOptions, contextUser.Mode);
 
             var response = topListSettings.Discogs
@@ -313,7 +313,8 @@ public class ArtistCommands(
 
             var timeSettings = SettingService.GetTimePeriod(topListSettings.NewSearchValue, TimePeriod.Quarterly,
                 registeredLastFm: userSettings.RegisteredLastFm,
-                timeZone: userSettings.TimeZone);
+                timeZone: userSettings.TimeZone,
+                language: context.Localizer.Language);
             var mode = SettingService.SetMode(timeSettings.NewSearchValue, contextUser.Mode);
 
             var response = await artistBuilders.ArtistDiscoveriesAsync(context, topListSettings, timeSettings,
@@ -367,12 +368,13 @@ public class ArtistCommands(
 
         var timeSettings = SettingService.GetTimePeriod(
             string.IsNullOrWhiteSpace(otherUser.NewSearchValue) ? "two-year" : otherUser.NewSearchValue,
-            timeZone: userSettings.TimeZone);
+            timeZone: userSettings.TimeZone,
+            language: LocalizationService.GetLanguage(this.Context.Guild?.Id, this.Context.Guild?.PreferredLocale));
 
         if (timeSettings.DefaultPicked)
         {
             timeSettings = SettingService.GetTimePeriod("two-year " + otherUser.NewSearchValue,
-                timeZone: userSettings.TimeZone);
+                timeZone: userSettings.TimeZone, language: LocalizationService.GetLanguage(this.Context.Guild?.Id, this.Context.Guild?.PreferredLocale));
         }
 
         var embedSize = artistsService.SetTasteEmbedSize(timeSettings.NewSearchValue);
@@ -579,7 +581,7 @@ public class ArtistCommands(
 
         guildListSettings = SettingService.SetGuildRankingSettings(guildListSettings, extraOptions);
         var timeSettings =
-            SettingService.GetTimePeriod(extraOptions, guildListSettings.ChartTimePeriod, cachedOnly: true);
+            SettingService.GetTimePeriod(extraOptions, guildListSettings.ChartTimePeriod, cachedOnly: true, language: LocalizationService.GetLanguage(this.Context.Guild?.Id, this.Context.Guild?.PreferredLocale));
 
         guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
 
@@ -598,11 +600,7 @@ public class ArtistCommands(
                 await artistBuilders.GuildArtistsAsync(new ContextModel(this.Context, prfx), guild,
                     guildListSettings);
 
-            _ = this.Interactivity.SendPaginatorAsync(
-                response.ComponentPaginator.Build(),
-                this.Context.Channel,
-                TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
-
+            await this.Context.SendResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
@@ -612,7 +610,7 @@ public class ArtistCommands(
     }
 
     [Command("affinity", "n", "aff", "neighbors", "soulmates", "neighbours")]
-    [Summary("Shows users from this server with similar top artists.")]
+    [Summary("Shows users from this server with a similar music taste, based on artists, genres and countries.")]
     [UsernameSetRequired]
     [GuildOnly]
     [RequiresIndex]
@@ -652,6 +650,10 @@ public class ArtistCommands(
                 this._embed.WithDescription(description.ToString());
 
                 var message = await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
+
+                PublicProperties.UsedCommandsResponseMessageId.TryAdd(this.Context.Message.Id, message.Id);
+                PublicProperties.UsedCommandsResponseContextId.TryAdd(message.Id, this.Context.Message.Id);
+                await userService.UpdateCommandInteractionAsync(this.Context.Message.Id, responseId: message.Id);
 
                 response = await artistBuilders
                     .AffinityAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, guild, guildUsers,
@@ -695,7 +697,7 @@ public class ArtistCommands(
             var userSettings = await settingService.GetUser(extraOptions, contextUser, this.Context);
             var timeSettings = SettingService.GetTimePeriod(extraOptions,
                 registeredLastFm: userSettings.RegisteredLastFm, timeZone: userSettings.TimeZone,
-                defaultTimePeriod: TimePeriod.AllTime);
+                defaultTimePeriod: TimePeriod.AllTime, language: LocalizationService.GetLanguage(this.Context.Guild?.Id, this.Context.Guild?.PreferredLocale));
             var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
             var response = await artistBuilders.GetIceberg(new ContextModel(this.Context, prfx, contextUser),

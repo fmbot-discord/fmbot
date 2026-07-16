@@ -29,7 +29,7 @@ public class ArtistSlashCommands(
 {
     private InteractiveService Interactivity { get; } = interactivity;
 
-    [SlashCommand("artist", "General info for current artist or one you're searching for",
+    [SlashCommand("artist", "General info for current artist or the one you're searching for",
         Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild],
         IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
@@ -138,7 +138,7 @@ public class ArtistSlashCommands(
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
 
-        var timeSettings = SettingService.GetTimePeriod(Enum.GetName(timePeriod), TimePeriod.AllTime);
+        var timeSettings = SettingService.GetTimePeriod(Enum.GetName(timePeriod), TimePeriod.AllTime, language: LocalizationService.GetLanguage(this.Context.Interaction.GuildId, this.Context.Interaction.GuildLocale));
 
         var response = await artistBuilders.ArtistTracksAsync(new ContextModel(this.Context, contextUser), timeSettings,
             userSettings, name, redirectsEnabled);
@@ -197,7 +197,7 @@ public class ArtistSlashCommands(
         try
         {
             var userInfo = await dataSourceFactory.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
-            var timeSettings = SettingService.GetTimePeriod(Enum.GetName(typeof(ArtistPaceTimePeriod), timePeriod), TimePeriod.Monthly);
+            var timeSettings = SettingService.GetTimePeriod(Enum.GetName(typeof(ArtistPaceTimePeriod), timePeriod), TimePeriod.Monthly, language: LocalizationService.GetLanguage(this.Context.Interaction.GuildId, this.Context.Interaction.GuildLocale));
 
             var response = await artistBuilders.ArtistPaceAsync(new ContextModel(this.Context, contextUser),
                 userSettings, timeSettings, amount.ToString(), name, redirectsEnabled);
@@ -355,7 +355,7 @@ public class ArtistSlashCommands(
         string user = null,
         [SlashCommandParameter(Name = "mode", Description = "The type of response you want - change default with /responsemode")]
         ResponseMode? mode = null,
-        [SlashCommandParameter(Name = "size", Description = "Amount of artists discoveries to show per page")]
+        [SlashCommandParameter(Name = "size", Description = "Amount of artist discoveries to show per page")]
         EmbedSize? embedSize = null,
         [SlashCommandParameter(Name = "private", Description = "Only show response to you")]
         bool privateResponse = false)
@@ -377,7 +377,7 @@ public class ArtistSlashCommands(
 
         await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
 
-        var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.Quarterly, timeZone: userSettings.TimeZone);
+        var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.Quarterly, timeZone: userSettings.TimeZone, language: context.Localizer.Language);
 
         var topListSettings = new TopListSettings(embedSize ?? EmbedSize.Default);
 
@@ -395,7 +395,7 @@ public class ArtistSlashCommands(
         await TasteAsync(user.Id.ToString());
     }
 
-    [SlashCommand("taste", "Compares your top artists, genres, and countries to those of another user.",
+    [SlashCommand("taste", "Compares your top artists, genres, and countries to those of another user",
         Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild],
         IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
@@ -416,7 +416,7 @@ public class ArtistSlashCommands(
 
         try
         {
-            var timeSettings = SettingService.GetTimePeriod(timePeriod ?? "two-year", timeZone: userSettings.TimeZone);
+            var timeSettings = SettingService.GetTimePeriod(timePeriod ?? "two-year", timeZone: userSettings.TimeZone, language: LocalizationService.GetLanguage(this.Context.Interaction.GuildId, this.Context.Interaction.GuildLocale));
 
             var response = await artistBuilders.TasteAsync(new ContextModel(this.Context, contextUser),
                 embedSize ?? EmbedSize.Default, timeSettings, userSettings);
@@ -430,7 +430,7 @@ public class ArtistSlashCommands(
         }
     }
 
-    [SlashCommand("affinity", "Shows users from this server with similar top artists.",
+    [SlashCommand("affinity", "Shows users from this server with a similar music taste (artists, genres and countries)",
         Contexts = [InteractionContextType.Guild],
         IntegrationTypes = [ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
@@ -459,7 +459,7 @@ public class ArtistSlashCommands(
         }
     }
 
-    [SlashCommand("iceberg", "Shows your iceberg, based on artist popularity.",
+    [SlashCommand("iceberg", "Shows your iceberg, based on artist popularity",
         Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild],
         IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
@@ -478,7 +478,7 @@ public class ArtistSlashCommands(
 
         var timeSettings = SettingService.GetTimePeriod(timePeriod,
             registeredLastFm: userSettings.RegisteredLastFm, timeZone: userSettings.TimeZone,
-            defaultTimePeriod: TimePeriod.AllTime);
+            defaultTimePeriod: TimePeriod.AllTime, language: LocalizationService.GetLanguage(this.Context.Interaction.GuildId, this.Context.Interaction.GuildLocale));
 
         var response = await artistBuilders.GetIceberg(new ContextModel(this.Context, contextUser), userSettings, timeSettings);
 

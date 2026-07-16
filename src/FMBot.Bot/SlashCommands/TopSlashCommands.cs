@@ -64,7 +64,7 @@ public class TopSlashCommands(
         mode ??= contextUser.Mode ?? ResponseMode.Embed;
 
         var timeSettings = SettingService.GetTimePeriod(timePeriod, discogs ? TimePeriod.AllTime : TimePeriod.Weekly,
-            userSettings.RegisteredLastFm, timeZone: userSettings.TimeZone);
+            userSettings.RegisteredLastFm, timeZone: userSettings.TimeZone, language: LocalizationService.GetLanguage(this.Context.Interaction.GuildId, this.Context.Interaction.GuildLocale));
         var topListSettings = new TopListSettings(embedSize ?? EmbedSize.Default, billboard, discogs);
 
         var response = topListSettings.Discogs
@@ -114,7 +114,7 @@ public class TopSlashCommands(
         var timeSettings = SettingService.GetTimePeriod(timePeriod,
             !string.IsNullOrWhiteSpace(year) || !string.IsNullOrWhiteSpace(decade) || hideSingles
                 ? TimePeriod.AllTime
-                : TimePeriod.Weekly, timeZone: userSettings.TimeZone);
+                : TimePeriod.Weekly, timeZone: userSettings.TimeZone, language: LocalizationService.GetLanguage(this.Context.Interaction.GuildId, this.Context.Interaction.GuildLocale));
 
         var topListSettings = new TopListSettings(embedSize ?? EmbedSize.Default, billboard,
             year: year != null ? int.Parse(year) : null, decade: decade != null ? int.Parse(decade) : null,
@@ -153,7 +153,7 @@ public class TopSlashCommands(
             await settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
         mode ??= contextUser.Mode ?? ResponseMode.Embed;
 
-        var timeSettings = SettingService.GetTimePeriod(timePeriod, timeZone: userSettings.TimeZone);
+        var timeSettings = SettingService.GetTimePeriod(timePeriod, timeZone: userSettings.TimeZone, language: LocalizationService.GetLanguage(this.Context.Interaction.GuildId, this.Context.Interaction.GuildLocale));
 
         var topListSettings = new TopListSettings(embedSize ?? EmbedSize.Default, billboard);
 
@@ -190,7 +190,7 @@ public class TopSlashCommands(
             await settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
         mode ??= contextUser.Mode ?? ResponseMode.Embed;
 
-        var timeSettings = SettingService.GetTimePeriod(timePeriod, timeZone: userSettings.TimeZone);
+        var timeSettings = SettingService.GetTimePeriod(timePeriod, timeZone: userSettings.TimeZone, language: LocalizationService.GetLanguage(this.Context.Interaction.GuildId, this.Context.Interaction.GuildLocale));
 
         var topListSettings = new TopListSettings(embedSize ?? EmbedSize.Default, billboard);
 
@@ -227,7 +227,7 @@ public class TopSlashCommands(
             await settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
         mode ??= contextUser.Mode ?? ResponseMode.Embed;
 
-        var timeSettings = SettingService.GetTimePeriod(timePeriod, timeZone: userSettings.TimeZone);
+        var timeSettings = SettingService.GetTimePeriod(timePeriod, timeZone: userSettings.TimeZone, language: LocalizationService.GetLanguage(this.Context.Interaction.GuildId, this.Context.Interaction.GuildLocale));
 
         var topListSettings = new TopListSettings(embedSize ?? EmbedSize.Default, billboard);
 

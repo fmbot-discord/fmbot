@@ -10,7 +10,6 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain;
-using FMBot.Domain.Attributes;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Caching.Memory;
@@ -373,7 +372,7 @@ public class PlayInteractions(
         try
         {
             var timeSettings =
-                SettingService.GetTimePeriod("alltime", TimePeriod.AllTime, timeZone: userSettings.TimeZone);
+                SettingService.GetTimePeriod("alltime", TimePeriod.AllTime, timeZone: userSettings.TimeZone, language: LocalizationService.GetLanguage(this.Context.Interaction.GuildId, this.Context.Interaction.GuildLocale));
 
             var response = await recapBuilders.RecapAsync(new ContextModel(this.Context, contextUser),
                 userSettings, timeSettings, RecapPage.Overview);
@@ -413,7 +412,9 @@ public class PlayInteractions(
 
             var timeSettings = SettingService.GetTimePeriod(splitInput[3],
                 registeredLastFm: userSettings.RegisteredLastFm,
-                timeZone: userSettings.TimeZone, defaultTimePeriod: TimePeriod.Yearly);
+                timeZone: userSettings.TimeZone, defaultTimePeriod: TimePeriod.Yearly, language: LocalizationService.GetLanguage(this.Context.Interaction.GuildId, this.Context.Interaction.GuildLocale));
+
+            var context = new ContextModel(this.Context, contextUser, discordContextUser);
 
             if (userSettings.DiscordUserId != this.Context.User.Id &&
                 (viewType == RecapPage.BotStats ||
@@ -421,8 +422,7 @@ public class PlayInteractions(
                  viewType == RecapPage.BotStatsCommands))
             {
                 var noPermResponse = new ResponseModel();
-                noPermResponse.Embed.WithDescription(
-                    "Sorry, due to privacy reasons only the user themselves can look up their bot usage stats.");
+                noPermResponse.Embed.WithDescription(context.Localize("recap.privacyBotStats"));
                 noPermResponse.CommandResponse = CommandResponse.NoPermission;
                 noPermResponse.ResponseType = ResponseType.Embed;
                 noPermResponse.Embed.WithColor(DiscordConstants.WarningColorOrange);
@@ -439,15 +439,16 @@ public class PlayInteractions(
                 return;
             }
 
-            var name = viewType.GetAttribute<OptionAttribute>().Name;
+            var loadingLabel = context.Localize("recap.loadingPage",
+                ("page", context.LocalizeOption(viewType)),
+                ("period", context.Localizer.PeriodLabel(timeSettings)));
             var components =
-                new ActionRowProperties().WithButton($"{name} for {timeSettings.Description} loading...", customId: "1",
+                new ActionRowProperties().WithButton(loadingLabel, customId: "1",
                     emote: EmojiProperties.Custom(DiscordConstants.Loading), disabled: true, style: ButtonStyle.Secondary);
             await Context.ModifyComponents(message, components);
 
             var response =
-                await recapBuilders.RecapAsync(
-                    new ContextModel(this.Context, contextUser, discordContextUser), userSettings, timeSettings,
+                await recapBuilders.RecapAsync(context, userSettings, timeSettings,
                     viewType);
 
             await this.Context.UpdateInteractionEmbed(response, interactivity, false);

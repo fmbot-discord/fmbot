@@ -24,7 +24,7 @@ public class AppleMusicSlashCommands(
 {
     private InteractiveService Interactivity { get; } = interactivity;
 
-    [SlashCommand("applemusic", "Search through Apple Music.",
+    [SlashCommand("applemusic", "Search through Apple Music",
         Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild],
         IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
@@ -62,7 +62,7 @@ public class AppleMusicSlashCommands(
 
                 if (GenericEmbedService.RecentScrobbleCallFailed(recentScrobbles))
                 {
-                    var errorResponse = GenericEmbedService.RecentScrobbleCallFailedResponse(recentScrobbles, contextUser.UserNameLastFM);
+                    var errorResponse = GenericEmbedService.RecentScrobbleCallFailedResponse(recentScrobbles, contextUser.UserNameLastFM, Localizer.ForGuild(this.Context.Interaction.GuildId, discordLocale: this.Context.Interaction.GuildLocale));
 
                     await this.Context.SendResponse(this.Interactivity, errorResponse, userService);
                     await this.Context.LogCommandUsedAsync(errorResponse, userService);

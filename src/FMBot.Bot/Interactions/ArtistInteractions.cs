@@ -121,7 +121,7 @@ public class ArtistInteractions(
         var userSettings = await settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
 
         var artist = await artistsService.GetArtistForId(int.Parse(artistId));
-        var timeSettings = SettingService.GetTimePeriod(Enum.GetName(typeof(PlayTimePeriod), PlayTimePeriod.AllTime), TimePeriod.AllTime);
+        var timeSettings = SettingService.GetTimePeriod(Enum.GetName(PlayTimePeriod.AllTime), TimePeriod.AllTime, language: LocalizationService.GetLanguage(this.Context.Interaction.GuildId, this.Context.Interaction.GuildLocale));
 
         var response = await artistBuilders.ArtistTracksAsync(new ContextModel(this.Context, contextUser, discordContextUser), timeSettings,
             userSettings, artist.Name, false);
@@ -213,7 +213,7 @@ public class ArtistInteractions(
             DisplayRoleFilter = true
         };
 
-        var timeSettings = SettingService.GetTimePeriod(timePeriod, guildListSettings.ChartTimePeriod, cachedOnly: true);
+        var timeSettings = SettingService.GetTimePeriod(timePeriod, guildListSettings.ChartTimePeriod, cachedOnly: true, language: LocalizationService.GetLanguage(this.Context.Interaction.GuildId, this.Context.Interaction.GuildLocale));
         guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
 
         try

@@ -78,8 +78,8 @@ public class ArtistsService
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<ArtistSearch> SearchArtist(ResponseModel response, NetCord.User discordUser, string artistValues,
-        string lastFmUserName, string sessionKey = null, string otherUserUsername = null,
+    public async Task<ArtistSearch> SearchArtist(ResponseModel response, NetCord.User discordUser, Localizer localizer,
+        string artistValues, string lastFmUserName, string sessionKey = null, string otherUserUsername = null,
         bool useCachedArtists = false, int? userId = null, bool redirectsEnabled = true, ulong? interactionId = null,
         RestMessage referencedMessage = null)
     {
@@ -148,7 +148,7 @@ public class ArtistsService
 
             if (!artistCall.Success && artistCall.Error == ResponseStatus.MissingParameters)
             {
-                var desc = $"Artist `{artistValues}` could not be found, please check your search values and try again.";
+                var desc = localizer.Translate("artist.notFoundWithValues", ("artist", artistValues));
                 response.Embed.WithDescription(desc);
                 response.ComponentsContainer.WithTextDisplay(desc);
                 response.CommandResponse = CommandResponse.NotFound;
@@ -158,8 +158,8 @@ public class ArtistsService
 
             if (!artistCall.Success || artistCall.Content == null)
             {
-                response.Embed.ErrorResponse(artistCall.Error, artistCall.Message, null, discordUser, "artist");
-                response.ComponentsContainer.WithTextDisplay(response.Embed.Description ?? "Something went wrong while trying to get artist info.");
+                response.Embed.ErrorResponse(artistCall.Error, artistCall.Message, null, localizer, discordUser, "artist");
+                response.ComponentsContainer.WithTextDisplay(response.Embed.Description ?? localizer.Translate("artist.infoFailed"));
                 response.CommandResponse = CommandResponse.LastFmError;
                 response.ResponseType = ResponseType.Embed;
                 return new ArtistSearch(null, response);
@@ -186,7 +186,7 @@ public class ArtistsService
             if (GenericEmbedService.RecentScrobbleCallFailed(recentScrobbles))
             {
                 var errorResponse =
-                    GenericEmbedService.RecentScrobbleCallFailedResponse(recentScrobbles, lastFmUserName);
+                    GenericEmbedService.RecentScrobbleCallFailedResponse(recentScrobbles, lastFmUserName, localizer);
                 return new ArtistSearch(null, errorResponse);
             }
 
@@ -215,7 +215,7 @@ public class ArtistsService
 
             if (artistCall.Content == null || !artistCall.Success)
             {
-                var desc = $"Last.fm did not return a result for **{lastPlayedTrack.ArtistName}**.";
+                var desc = localizer.Translate("artist.noLastFmResult", ("artist", lastPlayedTrack.ArtistName));
                 response.Embed.WithDescription(desc);
                 response.ComponentsContainer.WithTextDisplay(desc);
                 response.CommandResponse = CommandResponse.NotFound;

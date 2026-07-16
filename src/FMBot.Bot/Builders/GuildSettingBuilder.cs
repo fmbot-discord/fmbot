@@ -91,6 +91,17 @@ public class GuildSettingBuilder(GuildService guildService, IOptions<BotSettings
             settings.Append($"`{this._botSettings.Bot.Prefix}` (default)");
         }
 
+        settings.AppendLine();
+        settings.Append("Language: ");
+        if (guild.Language.HasValue)
+        {
+            settings.Append($"`{guild.Language.Value.GetAttribute<OptionAttribute>().Name}`");
+        }
+        else
+        {
+            settings.Append("`English` (default)");
+        }
+
         container.WithTextDisplay(settings.ToString());
 
         var whoKnowsSettings = new StringBuilder();
@@ -823,6 +834,62 @@ public class GuildSettingBuilder(GuildService guildService, IOptions<BotSettings
         }
 
         response.StringMenus.Add(fmType);
+
+        return response;
+    }
+
+    public async Task<ResponseModel> GuildLanguage(ContextModel context, NetCord.User lastModifier = null)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        var guild = await guildService.GetGuildAsync(context.DiscordGuild.Id);
+
+        var languageMenu = new StringMenuProperties(InteractionConstants.GuildLanguageSetting)
+            .WithPlaceholder("Server language")
+            .WithMinValues(0)
+            .WithMaxValues(1);
+
+        foreach (var option in Enum.GetValues<Language>())
+        {
+            var name = option.GetAttribute<OptionAttribute>().Name;
+            var optionDescription = option.GetAttribute<OptionAttribute>().Description;
+            var value = Enum.GetName(option);
+
+            var selected = value == guild.Language.ToString();
+            languageMenu.AddOption(name, value, description: optionDescription, isDefault: selected);
+        }
+
+        response.Embed.WithTitle("Set server language");
+
+        var description = new StringBuilder();
+        description.AppendLine("Select the language for .fmbot responses in this server.");
+        description.AppendLine();
+        description.AppendLine("Translations are in beta and might be incomplete. Untranslated text will show in English. Some terms might remain English for consistency reasons.");
+        description.AppendLine();
+        description.AppendLine("To use the default again, simply de-select the language you have selected.");
+        description.AppendLine();
+
+        if (guild.Language.HasValue)
+        {
+            description.AppendLine($"Current language: **{guild.Language.Value.GetAttribute<OptionAttribute>().Name}**.");
+        }
+        else
+        {
+            description.AppendLine("Current language: **English** (default)");
+        }
+
+        response.Embed.WithDescription(description.ToString());
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+
+        if (lastModifier != null)
+        {
+            response.Embed.WithFooter($"Last modified by {lastModifier.Username}");
+        }
+
+        response.StringMenus.Add(languageMenu);
 
         return response;
     }

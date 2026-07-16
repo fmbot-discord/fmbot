@@ -1,5 +1,4 @@
 using System;
-using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -9,7 +8,6 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain;
-using FMBot.Domain.Attributes;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
@@ -56,9 +54,9 @@ public class RecapBuilders
         this._chartBuilders = chartBuilders;
     }
 
-    public bool RecapCacheHot(string timePeriod, string lastFmUserName)
+    public bool RecapCacheHot(string timePeriod, string lastFmUserName, Language language)
     {
-        return this._openAiService.RecapCacheHot(timePeriod, lastFmUserName);
+        return this._openAiService.RecapCacheHot(timePeriod, lastFmUserName, language);
     }
 
     public async Task<ResponseModel> RecapAsync(ContextModel context,
@@ -96,7 +94,7 @@ public class RecapBuilders
         };
 
         var viewType = new StringMenuProperties(InteractionConstants.RecapPicker)
-            .WithPlaceholder("Select recap page")
+            .WithPlaceholder(context.Localize("recap.pagePicker"))
             .WithMinValues(1)
             .WithMaxValues(1);
 
@@ -114,7 +112,7 @@ public class RecapBuilders
                 continue;
             }
 
-            var name = option.GetAttribute<OptionAttribute>().Name;
+            var name = context.LocalizeOption(option);
             var value =
                 $"{Enum.GetName(option)}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}-{timeSettings.Description}";
 
@@ -133,7 +131,9 @@ public class RecapBuilders
         {
             case RecapPage.Overview:
             {
-                response.Embed.WithAuthor($"{timeSettings.Description} Recap for {userSettings.DisplayName}");
+                response.Embed.WithAuthor(context.Localize("recap.title",
+                    ("period", context.Localizer.PeriodLabel(timeSettings)),
+                    ("user", userSettings.DisplayName)));
 
                 var plays = await this._playService.GetAllUserPlays(userSettings.UserId);
                 var filteredPlays = plays
@@ -146,7 +146,7 @@ public class RecapBuilders
                         useCache: true);
 
                 var description = await this._openAiService.GetPlayRecap(timeSettings.Description, filteredPlays,
-                    userSettings.UserNameLastFm, topArtists);
+                    userSettings.UserNameLastFm, topArtists, context.Localizer.Language);
                 response.Embed.WithDescription(description);
 
                 if (topArtists.Content?.TopArtists != null)
@@ -161,7 +161,7 @@ public class RecapBuilders
 
                     if (genreString.Length > 0)
                     {
-                        response.Embed.AddField("Top genres", genreString.ToString(), true);
+                        response.Embed.AddField(context.Localize("recap.pages.topGenres"), genreString.ToString(), true);
                     }
 
                     var topArtistString = new StringBuilder();
@@ -173,95 +173,110 @@ public class RecapBuilders
 
                     if (topArtistString.Length > 0)
                     {
-                        response.Embed.AddField("Top artists", topArtistString.ToString(), true);
+                        response.Embed.AddField(context.Localize("recap.pages.topArtists"), topArtistString.ToString(), true);
                     }
                 }
 
                 if (SupporterService.IsSupporter(userSettings.UserType))
                 {
                     var enrichedPlays = await this._timeService.EnrichPlaysWithPlayTime(filteredPlays);
-                    response.Embed.AddField("Scrobbles",
-                        $"You got **{filteredPlays.Count.Format(context.NumberFormat)}** {StringExtensions.GetScrobblesString(filteredPlays.Count)} in **{enrichedPlays.totalPlayTime.TotalMinutes:0}** minutes of listening time.");
+                    response.Embed.AddField(context.Localize("recap.fieldScrobbles"),
+                        context.LocalizeCount("recap.scrobblesWithTime", filteredPlays.Count,
+                            ("minutes", enrichedPlays.totalPlayTime.TotalMinutes.ToString("0"))));
                 }
                 else
                 {
                     var count = await this._dataSourceFactory.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm,
                         timeSettings.TimeFrom, userSettings.SessionKeyLastFm, timeSettings.TimeUntil);
 
-                    response.Embed.AddField("Scrobbles",
-                        $"You got **{count.Format(context.NumberFormat)}** {StringExtensions.GetScrobblesString(count)}.");
+                    response.Embed.AddField(context.Localize("recap.fieldScrobbles"),
+                        context.LocalizeCount("recap.scrobbleCount", count.GetValueOrDefault()));
                 }
 
                 if (!userSettings.DifferentUser && timeSettings.EndDateTime >= botStatsCutoff)
                 {
                     var differentArtists =
                         userInteractions.Where(w => w.Artist != null).GroupBy(g => g.Artist.ToLower()).Count();
-                    response.Embed.AddField("Bot stats",
-                        $"You ran **{userInteractions.Count.Format(context.NumberFormat)}** commands, which showed you **{differentArtists.Format(context.NumberFormat)}** different artists.");
+                    response.Embed.AddField(context.Localize("recap.fieldBotStats"),
+                        context.Localize("recap.botStatsSummary",
+                            ("commands", userInteractions.Count.Format(context.NumberFormat)),
+                            ("artists", differentArtists.Format(context.NumberFormat))));
                 }
 
-                response.Embed.WithFooter("⬇️ Dive deeper with the dropdown below");
+                response.Embed.WithFooter(context.Localize("recap.footerDiveDeeper"));
 
                 break;
             }
             case RecapPage.BotStats:
             {
-                response.Embed.WithAuthor($"Bot recap for {userSettings.DisplayName} - {timeSettings.Description}");
+                response.Embed.WithAuthor(context.Localize("recap.botTitle",
+                    ("user", userSettings.DisplayName),
+                    ("period", context.Localizer.PeriodLabel(timeSettings))));
 
                 var stats = this._userService.CalculateBotStats(userInteractions);
 
                 var searchStats = new StringBuilder();
-                searchStats.AppendLine($"**{stats.UniqueArtistsSearched.Format(context.NumberFormat)}** different artists");
-                searchStats.AppendLine($"**{stats.UniqueAlbumsSearched.Format(context.NumberFormat)}** different albums");
-                searchStats.AppendLine($"**{stats.UniqueTracksSearched.Format(context.NumberFormat)}** different tracks");
-                response.Embed.AddField("Viewed counts", searchStats.ToString(), true);
+                searchStats.AppendLine(context.LocalizeCount("recap.viewedArtists", stats.UniqueArtistsSearched));
+                searchStats.AppendLine(context.LocalizeCount("recap.viewedAlbums", stats.UniqueAlbumsSearched));
+                searchStats.AppendLine(context.LocalizeCount("recap.viewedTracks", stats.UniqueTracksSearched));
+                response.Embed.AddField(context.Localize("recap.fieldViewedCounts"), searchStats.ToString(), true);
 
                 var activityField = new StringBuilder();
                 var timeForHour = DateTime.UtcNow.Date.AddHours(stats.MostActiveHour);
                 var activeHourTimestamp = ((DateTimeOffset)timeForHour).ToUnixTimeSeconds();
-                activityField.AppendLine($"Most active hour: <t:{activeHourTimestamp}:t>");
-                activityField.AppendLine($"Most active day: **{stats.MostActiveDayOfWeek}**");
+                activityField.AppendLine(context.Localize("recap.mostActiveHour",
+                    ("time", $"<t:{activeHourTimestamp}:t>")));
+                activityField.AppendLine(context.Localize("recap.mostActiveDay",
+                    ("day", context.Localizer.DayName(stats.MostActiveDayOfWeek))));
                 var avgDays = Math.Max(1, (timeSettings.EndDateTime.Value - timeSettings.StartDateTime.Value).Days);
-                activityField.AppendLine(
-                    $"Avg commands per day: **{stats.TotalCommands / avgDays:F1}**");
-                response.Embed.AddField("Activity patterns", activityField.ToString(), true);
+                activityField.AppendLine(context.Localize("recap.avgCommandsPerDay",
+                    ("amount", $"{stats.TotalCommands / avgDays:F1}")));
+                response.Embed.AddField(context.Localize("recap.fieldActivityPatterns"), activityField.ToString(), true);
 
                 var usageField = new StringBuilder();
-                usageField.AppendLine($"Total commands: **{stats.TotalCommands.Format(context.NumberFormat)}**");
-                usageField.AppendLine($"Servers used in: **{stats.ServersUsedIn}**");
-                usageField.AppendLine($"Reliability: **{(100 - stats.ErrorRate):F1}%**");
-                response.Embed.AddField("Usage stats", usageField.ToString(), true);
+                usageField.AppendLine(context.Localize("recap.totalCommands",
+                    ("amount", stats.TotalCommands.Format(context.NumberFormat))));
+                usageField.AppendLine(context.Localize("recap.serversUsedIn",
+                    ("amount", stats.ServersUsedIn.Format(context.NumberFormat))));
+                usageField.AppendLine(context.Localize("recap.reliability",
+                    ("percentage", $"{(100 - stats.ErrorRate):F1}")));
+                response.Embed.AddField(context.Localize("recap.fieldUsageStats"), usageField.ToString(), true);
 
                 var peakDaysField = new StringBuilder();
                 foreach (var (date, count) in stats.PeakUsageDays)
                 {
                     var unixTimestamp = ((DateTimeOffset)date).ToUnixTimeSeconds();
-                    peakDaysField.AppendLine($"<t:{unixTimestamp}:D> - *{count} commands*");
+                    peakDaysField.AppendLine(context.LocalizeCount("recap.peakDay", count,
+                        ("date", $"<t:{unixTimestamp}:D>")));
                 }
 
-                response.Embed.AddField("Most active days", peakDaysField.ToString(), true);
+                response.Embed.AddField(context.Localize("recap.fieldMostActiveDays"), peakDaysField.ToString(), true);
 
                 var patternsField = new StringBuilder();
-                patternsField.AppendLine($"Longest daily streak: **{stats.LongestCommandStreak.Format(context.NumberFormat)} days**");
-                patternsField.AppendLine(
-                    $"Avg. time between commands: **{stats.AverageTimeBetweenCommands.Hours}h {stats.AverageTimeBetweenCommands.Minutes}m**");
-                patternsField.AppendLine($"Avg. commands per session: **{stats.AverageCommandsPerSession:F1}**");
-                response.Embed.AddField("Usage patterns", patternsField.ToString(), true);
+                patternsField.AppendLine(context.LocalizeCount("recap.longestDailyStreak", stats.LongestCommandStreak));
+                patternsField.AppendLine(context.Localize("recap.avgTimeBetweenCommands",
+                    ("hours", stats.AverageTimeBetweenCommands.Hours.ToString()),
+                    ("minutes", stats.AverageTimeBetweenCommands.Minutes.ToString())));
+                patternsField.AppendLine(context.Localize("recap.avgCommandsPerSession",
+                    ("amount", $"{stats.AverageCommandsPerSession:F1}")));
+                response.Embed.AddField(context.Localize("recap.fieldUsagePatterns"), patternsField.ToString(), true);
 
                 if (timeSettings.StartDateTime < botStatsCutoff)
                 {
-                    response.Embed.AddField("⚠️ Data possibly incomplete",
-                        "*Commands before <t:1701385200:D> are not included*");
+                    response.Embed.AddField(context.Localize("recap.fieldDataIncomplete"),
+                        context.Localize("recap.dataIncompleteCommands", ("date", "<t:1701385200:D>")));
                 }
 
-                footer.AppendLine("Private - Only you can request your bot usage stats");
+                footer.AppendLine(context.Localize("recap.footerPrivateBotStats"));
                 response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
                 break;
             }
             case RecapPage.BotStatsCommands:
             {
-                response.Embed.WithAuthor($"Top {timeSettings.Description} commands for {userSettings.DisplayName}");
+                response.Embed.WithAuthor(context.Localize("recap.botCommandsTitle",
+                    ("period", context.Localizer.PeriodLabel(timeSettings)),
+                    ("user", userSettings.DisplayName)));
 
                 var stats = this._userService.CalculateBotStats(userInteractions);
 
@@ -275,26 +290,30 @@ public class RecapBuilders
                 {
                     var (command, count) = topCommands[index];
                     var percentage = (count / (float)stats.TotalCommands) * 100;
-                    commandsField.AppendLine($"{index + 1}. **{command}** — *{count} uses* — {percentage:F1}%");
+                    commandsField.AppendLine(context.LocalizeCount("recap.commandUsage", count,
+                        ("rank", (index + 1).ToString()),
+                        ("command", command),
+                        ("percentage", $"{percentage:F1}")));
                 }
 
                 response.Embed.WithDescription(commandsField.ToString());
 
                 if (timeSettings.StartDateTime < botStatsCutoff)
                 {
-                    response.Embed.AddField("⚠️ Data possibly incomplete",
-                        "*Commands before <t:1701385200:D> are not included*");
+                    response.Embed.AddField(context.Localize("recap.fieldDataIncomplete"),
+                        context.Localize("recap.dataIncompleteCommands", ("date", "<t:1701385200:D>")));
                 }
 
-                footer.AppendLine("Private - Only you can request your bot usage stats");
+                footer.AppendLine(context.Localize("recap.footerPrivateBotStats"));
                 response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
                 break;
             }
             case RecapPage.BotStatsArtists:
             {
-                response.Embed.WithAuthor(
-                    $"Top {timeSettings.Description} command artists for {userSettings.DisplayName}");
+                response.Embed.WithAuthor(context.Localize("recap.botArtistsTitle",
+                    ("period", context.Localizer.PeriodLabel(timeSettings)),
+                    ("user", userSettings.DisplayName)));
 
                 var stats = this._userService.CalculateBotStats(userInteractions);
 
@@ -309,7 +328,9 @@ public class RecapBuilders
                     for (var index = 0; index < topArtists.Count; index++)
                     {
                         var (artist, count) = topArtists[index];
-                        artistsField.AppendLine($"{index + 1}. **{artist}** - *{count}x shown*");
+                        artistsField.AppendLine(context.LocalizeCount("recap.artistShown", count,
+                            ("rank", (index + 1).ToString()),
+                            ("artist", artist)));
                     }
 
                     response.Embed.WithDescription(artistsField.ToString());
@@ -317,11 +338,11 @@ public class RecapBuilders
 
                 if (timeSettings.StartDateTime < botStatsCutoff)
                 {
-                    response.Embed.AddField("⚠️ Data possibly incomplete",
-                        "*Commands before <t:1701385200:D> are not included*");
+                    response.Embed.AddField(context.Localize("recap.fieldDataIncomplete"),
+                        context.Localize("recap.dataIncompleteCommands", ("date", "<t:1701385200:D>")));
                 }
 
-                footer.AppendLine("Private - Only you can request your bot usage stats");
+                footer.AppendLine(context.Localize("recap.footerPrivateBotStats"));
                 response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
                 break;
@@ -425,7 +446,7 @@ public class RecapBuilders
                     response.Embed.Description = ArtistBuilders.DiscoverySupporterRequired(context, userSettings).Embed
                         .Description;
                     response.Embed.WithColor(DiscordConstants.InformationColorBlue);
-                    response.Components.WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
+                    response.Components.WithButton(context.Localize("buttons.getSupporter"), style: ButtonStyle.Primary,
                         customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "recap-discoveries"));
                 }
 
@@ -435,8 +456,9 @@ public class RecapBuilders
             {
                 if (SupporterService.IsSupporter(userSettings.UserType))
                 {
-                    response.Embed.WithAuthor(
-                        $"Listening time for {userSettings.DisplayName} - {timeSettings.Description}");
+                    response.Embed.WithAuthor(context.Localize("recap.listeningTimeTitle",
+                        ("user", userSettings.DisplayName),
+                        ("period", context.Localizer.PeriodLabel(timeSettings))));
                     var timeZone =
                         SettingService.ResolveTimeZone(userSettings.TimeZone ?? "Eastern Standard Time");
 
@@ -448,7 +470,7 @@ public class RecapBuilders
 
                     if (filteredPlays.Count == 0)
                     {
-                        response.Embed.WithDescription("You have no plays in this period.");
+                        response.Embed.WithDescription(context.Localize("recap.noPlaysInPeriod"));
                         break;
                     }
 
@@ -458,10 +480,10 @@ public class RecapBuilders
                                             filteredPlays.OrderBy(o => o.TimePlayed).First().TimePlayed;
                     var listeningTimeDescription = new StringBuilder();
 
-                    listeningTimeDescription.AppendLine(
-                        $"- **`All`** " +
-                        $"— **{enrichedPlays.enrichedPlays.Count.Format(context.NumberFormat)}** plays " +
-                        $"— **{StringExtensions.GetLongListeningTimeString(enrichedPlays.totalPlayTime)}**");
+                    listeningTimeDescription.AppendLine(context.LocalizeCount("recap.listeningRow",
+                        enrichedPlays.enrichedPlays.Count,
+                        ("label", context.Localize("recap.rowLabelAll")),
+                        ("time", context.Localizer.LongListeningTime(enrichedPlays.totalPlayTime))));
 
                     if (coveredTimePeriod.Days <= 32)
                     {
@@ -481,19 +503,19 @@ public class RecapBuilders
                             var averageTime =
                                 TimeSpan.FromMilliseconds(enrichedPlays.totalPlayTime.TotalMilliseconds / numberOfDays);
 
-                            listeningTimeDescription.AppendLine(
-                                $"- **`Avg`** " +
-                                $"— **{averagePlays.Format(context.NumberFormat)}** plays " +
-                                $"— **{StringExtensions.GetLongListeningTimeString(averageTime)}**");
+                            listeningTimeDescription.AppendLine(context.LocalizeCount("recap.listeningRow",
+                                averagePlays,
+                                ("label", context.Localize("recap.rowLabelAvg")),
+                                ("time", context.Localizer.LongListeningTime(averageTime))));
                         }
 
                         foreach (var day in dayGroups)
                         {
                             var time = TimeService.GetPlayTimeForEnrichedPlays(day);
-                            listeningTimeDescription.AppendLine(
-                                $"- **`{day.Key.Day}`** " +
-                                $"— **{day.Count().Format(context.NumberFormat)}** plays " +
-                                $"— **{StringExtensions.GetLongListeningTimeString(time)}**");
+                            listeningTimeDescription.AppendLine(context.LocalizeCount("recap.listeningRow",
+                                day.Count(),
+                                ("label", day.Key.Day.ToString()),
+                                ("time", context.Localizer.LongListeningTime(time))));
                         }
                     }
                     else if (coveredTimePeriod.Days <= 800)
@@ -514,19 +536,20 @@ public class RecapBuilders
                                 TimeSpan.FromMilliseconds(
                                     enrichedPlays.totalPlayTime.TotalMilliseconds / numberOfMonths);
 
-                            listeningTimeDescription.AppendLine(
-                                $"- **`Avg`** " +
-                                $"— **{averagePlays.Format(context.NumberFormat)}** plays " +
-                                $"— **{StringExtensions.GetLongListeningTimeString(averageTime)}**");
+                            listeningTimeDescription.AppendLine(context.LocalizeCount("recap.listeningRow",
+                                averagePlays,
+                                ("label", context.Localize("recap.rowLabelAvg")),
+                                ("time", context.Localizer.LongListeningTime(averageTime))));
                         }
 
                         foreach (var month in monthGroups)
                         {
                             var time = TimeService.GetPlayTimeForEnrichedPlays(month);
-                            listeningTimeDescription.AppendLine(
-                                $"- **`{CultureInfo.CurrentCulture.DateTimeFormat.GetAbbreviatedMonthName(month.Key.Month)}`** " +
-                                $"— **{month.Count().Format(context.NumberFormat)}** plays " +
-                                $"— **{StringExtensions.GetLongListeningTimeString(time)}**");
+                            listeningTimeDescription.AppendLine(context.LocalizeCount("recap.listeningRow",
+                                month.Count(),
+                                ("label", context.Localizer.Language.GetCultureInfo().DateTimeFormat
+                                    .GetAbbreviatedMonthName(month.Key.Month)),
+                                ("time", context.Localizer.LongListeningTime(time))));
                         }
                     }
                     else
@@ -543,19 +566,19 @@ public class RecapBuilders
                                 TimeSpan.FromMilliseconds(enrichedPlays.totalPlayTime.TotalMilliseconds /
                                                           numberOfYears);
 
-                            listeningTimeDescription.AppendLine(
-                                $"- **`Avg`** " +
-                                $"— **{averagePlays.Format(context.NumberFormat)}** plays " +
-                                $"— **{StringExtensions.GetLongListeningTimeString(averageTime)}**");
+                            listeningTimeDescription.AppendLine(context.LocalizeCount("recap.listeningRow",
+                                averagePlays,
+                                ("label", context.Localize("recap.rowLabelAvg")),
+                                ("time", context.Localizer.LongListeningTime(averageTime))));
                         }
 
                         foreach (var year in yearGroups)
                         {
                             var time = TimeService.GetPlayTimeForEnrichedPlays(year);
-                            listeningTimeDescription.AppendLine(
-                                $"- **`{year.Key.Year}`** " +
-                                $"— **{year.Count().Format(context.NumberFormat)}** plays " +
-                                $"— **{StringExtensions.GetLongListeningTimeString(time)}**");
+                            listeningTimeDescription.AppendLine(context.LocalizeCount("recap.listeningRow",
+                                year.Count(),
+                                ("label", year.Key.Year.ToString()),
+                                ("time", context.Localizer.LongListeningTime(time))));
                         }
                     }
 
@@ -567,10 +590,9 @@ public class RecapBuilders
                 }
                 else
                 {
-                    response.Embed.WithDescription(
-                        $"To accurately calculate listening time, we need to store your full Last.fm history. Your lifetime history and more are only available for supporters.");
+                    response.Embed.WithDescription(context.Localize("recap.listeningTimeSupporterRequired"));
                     response.Embed.WithColor(DiscordConstants.InformationColorBlue);
-                    response.Components.WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
+                    response.Components.WithButton(context.Localize("buttons.getSupporter"), style: ButtonStyle.Primary,
                         customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "recap-listeningtime"));
                 }
 

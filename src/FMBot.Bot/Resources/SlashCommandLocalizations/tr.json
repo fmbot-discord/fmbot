@@ -1,0 +1,1262 @@
+{
+  "commands": {
+    "addfriend": {
+      "description": ".fmbot arkadaşlarına bir arkadaş ekle",
+      "parameters": {
+        "user": {
+          "description": "Eklenecek kullanıcı"
+        }
+      }
+    },
+    "affinity": {
+      "description": "Bu sunucuda benzer müzik zevkine sahip kullanıcıları gösterir (sanatçılar, türler ve ülkeler)",
+      "parameters": {
+        "user": {
+          "description": "Benzerliği gösterilecek kullanıcı"
+        }
+      }
+    },
+    "album": {
+      "description": "Şu an dinlediğin veya aradığın albümün bilgileri",
+      "parameters": {
+        "album": {
+          "description": "Aramak istediğin albüm (varsayılan: şu an çalan)"
+        }
+      }
+    },
+    "albumplays": {
+      "description": "Mevcut albümün veya aradığın albümün play sayısını gösterir",
+      "parameters": {
+        "album": {
+          "description": "Aramak istediğin albüm (varsayılan: şu an çalan)"
+        },
+        "user": {
+          "description": "Gösterilecek kullanıcı (varsayılan: sen)"
+        }
+      }
+    },
+    "albumtracks": {
+      "description": "Şu an dinlediğin veya aradığın albümün parça play sayılarını gösterir",
+      "parameters": {
+        "album": {
+          "description": "Aramak istediğin albüm (varsayılan: şu an çalan)"
+        },
+        "playcount-order": {
+          "description": "Liste play sayısına göre sıralansın mı"
+        },
+        "user": {
+          "description": "Gösterilecek kullanıcı (varsayılan: sen)"
+        }
+      }
+    },
+    "applemusic": {
+      "description": "Apple Music'te arama yap",
+      "parameters": {
+        "private": {
+          "description": "Yanıtı yalnızca sana göster"
+        },
+        "search": {
+          "description": "Arama değeri"
+        }
+      }
+    },
+    "artist": {
+      "description": "Mevcut sanatçının veya aradığın sanatçının genel bilgileri",
+      "parameters": {
+        "artist": {
+          "description": "Aramak istediğin sanatçı (varsayılan: şu an çalan)"
+        },
+        "redirects": {
+          "description": "Last.fm sanatçı adı yönlendirmelerini aç/kapat (varsayılan: açık)"
+        }
+      }
+    },
+    "artistalbums": {
+      "description": "Bir sanatçı için top albümlerini gösterir",
+      "parameters": {
+        "artist": {
+          "description": "Aramak istediğin sanatçı (varsayılan: şu an çalan)"
+        },
+        "hide-singles": {
+          "description": "Single'ları sonuçlardan gizle"
+        },
+        "redirects": {
+          "description": "Last.fm sanatçı adı yönlendirmelerini aç/kapat (varsayılan: açık)"
+        },
+        "user": {
+          "description": "Gösterilecek kullanıcı (varsayılan: sen)"
+        }
+      }
+    },
+    "artistoverview": {
+      "description": "Mevcut sanatçının veya aradığın sanatçının genel bakışını gösterir",
+      "parameters": {
+        "artist": {
+          "description": "Aramak istediğin sanatçı (varsayılan: şu an çalan)"
+        },
+        "redirects": {
+          "description": "Last.fm sanatçı adı yönlendirmelerini aç/kapat (varsayılan: açık)"
+        },
+        "user": {
+          "description": "Gösterilecek kullanıcı (varsayılan: sen)"
+        }
+      }
+    },
+    "artistpace": {
+      "description": "Bir sanatçıda belirli bir play sayısına ulaşacağın tahmini tarihi gösterir",
+      "parameters": {
+        "amount": {
+          "description": "Hedef play sayısı"
+        },
+        "artist": {
+          "description": "Aramak istediğin sanatçı (varsayılan: şu an çalan)"
+        },
+        "redirects": {
+          "description": "Last.fm sanatçı adı yönlendirmelerini aç/kapat (varsayılan: açık)"
+        },
+        "time-period": {
+          "description": "Ortalama play sayısının temel alınacağı zaman aralığı"
+        },
+        "user": {
+          "description": "Gösterilecek kullanıcı (varsayılan: sen)"
+        }
+      }
+    },
+    "artistplays": {
+      "description": "Mevcut sanatçının veya aradığın sanatçının play sayısını gösterir",
+      "parameters": {
+        "artist": {
+          "description": "Aramak istediğin sanatçı (varsayılan: şu an çalan)"
+        },
+        "redirects": {
+          "description": "Last.fm sanatçı adı yönlendirmelerini aç/kapat (varsayılan: açık)"
+        },
+        "user": {
+          "description": "Gösterilecek kullanıcı (varsayılan: sen)"
+        }
+      }
+    },
+    "artisttracks": {
+      "description": "Bir sanatçı için top parçalarını gösterir",
+      "parameters": {
+        "artist": {
+          "description": "Aramak istediğin sanatçı (varsayılan: şu an çalan)"
+        },
+        "redirects": {
+          "description": "Last.fm sanatçı adı yönlendirmelerini aç/kapat (varsayılan: açık)"
+        },
+        "time-period": {
+          "description": "Parçaların gösterileceği zaman aralığı"
+        },
+        "user": {
+          "description": "Gösterilecek kullanıcı (varsayılan: sen)"
+        }
+      }
+    },
+    "block": {
+      "description": "Bir kullanıcının WhoKnows ve sunucu geneli listelerde görünmesini engelle",
+      "parameters": {
+        "user": {
+          "description": "Engellemek istediğin kullanıcı"
+        }
+      }
+    },
+    "botscrobbling": {
+      "description": "Müzik botu scrobbling'i hakkında bilgi gösterir ve ayarlarını değiştirmeni sağlar"
+    },
+    "chart": {
+      "description": "Albüm kapakları veya sanatçı görselleriyle chart oluştur",
+      "subcommands": {
+        "albums": {
+          "description": "Albüm görsel chart'ı oluşturur",
+          "parameters": {
+            "artist": {
+              "description": "Belirli bir sanatçıya filtrele"
+            },
+            "decade": {
+              "description": "Belirli bir dönemde çıkan albümlere filtrele"
+            },
+            "hide-singles": {
+              "description": "Single'ları chart'tan gizle"
+            },
+            "private": {
+              "description": "Yanıtı yalnızca sana göster"
+            },
+            "rainbow": {
+              "description": "Deneysel gökkuşağı ayarı"
+            },
+            "released": {
+              "description": "Belirli bir yılda çıkan albümlere filtrele"
+            },
+            "sfw": {
+              "description": "Yalnızca güvenli (SFW) görseller"
+            },
+            "size": {
+              "description": "Chart boyutu"
+            },
+            "skip": {
+              "description": "Görseli olmayan albümleri atla"
+            },
+            "time-period": {
+              "description": "Zaman aralığı"
+            },
+            "titles": {
+              "description": "Başlık gösterim ayarı"
+            },
+            "user": {
+              "description": "Gösterilecek kullanıcı (varsayılan: sen)"
+            }
+          }
+        },
+        "artists": {
+          "description": "Sanatçı görsel chart'ı oluşturur",
+          "parameters": {
+            "private": {
+              "description": "Yanıtı yalnızca sana göster"
+            },
+            "rainbow": {
+              "description": "Deneysel gökkuşağı ayarı"
+            },
+            "size": {
+              "description": "Chart boyutu"
+            },
+            "skip": {
+              "description": "Görseli olmayan sanatçıları atla"
+            },
+            "time-period": {
+              "description": "Zaman aralığı"
+            },
+            "titles": {
+              "description": "Başlık gösterim ayarı"
+            },
+            "user": {
+              "description": "Gösterilecek kullanıcı (varsayılan: sen)"
+            }
+          }
+        }
+      }
+    },
+    "collection": {
+      "description": "Senin veya başkasının Discogs koleksiyonu",
+      "parameters": {
+        "format": {
+          "description": "Dahil edilecek medya formatı"
+        },
+        "search": {
+          "description": "Filtrelemek için arama sorgusu"
+        },
+        "user": {
+          "description": "Gösterilecek kullanıcı (varsayılan: sen)"
+        }
+      }
+    },
+    "country": {
+      "description": "Sanatçının ülkesi veya ülkenin top sanatçıları",
+      "parameters": {
+        "search": {
+          "description": "Görüntülemek istediğin ülke veya sanatçı"
+        }
+      }
+    },
+    "countrychart": {
+      "description": "Top sanatçılarının konumlarını gösteren bir harita oluşturur",
+      "parameters": {
+        "private": {
+          "description": "Yanıtı yalnızca sana göster"
+        },
+        "theme": {
+          "description": "Harita için renk teması"
+        },
+        "time-period": {
+          "description": "Zaman aralığı"
+        },
+        "user": {
+          "description": "Gösterilecek kullanıcı (varsayılan: sen)"
+        }
+      }
+    },
+    "cover": {
+      "description": "Mevcut albümün veya aradığın albümün kapağı",
+      "parameters": {
+        "album": {
+          "description": "Aramak istediğin albüm (varsayılan: şu an çalan)"
+        }
+      }
+    },
+    "covermode": {
+      "description": "Albüm kapakları hareketli mi yoksa hep sabit mi gösterilsin, ayarla"
+    },
+    "crown": {
+      "description": "Belirli bir tacın geçmişi",
+      "parameters": {
+        "artist": {
+          "description": "Aramak istediğin sanatçı (varsayılan: şu an çalan)"
+        }
+      }
+    },
+    "crowns": {
+      "description": "Senin veya başkasının taçlarının listesini görüntüle",
+      "parameters": {
+        "user": {
+          "description": "Gösterilecek kullanıcı (varsayılan: sen)"
+        },
+        "view": {
+          "description": "Görmek istediğin taç görünümü"
+        }
+      }
+    },
+    "discogs": {
+      "description": "DM'lerine bağlantı göndererek Discogs hesabını bağlar"
+    },
+    "discoveries": {
+      "description": "⭐ Yakın zamanda keşfettiğin sanatçıları gösterir",
+      "parameters": {
+        "mode": {
+          "description": "İstediğin yanıt türü - varsayılanı /responsemode ile değiştir"
+        },
+        "private": {
+          "description": "Yanıtı yalnızca sana göster"
+        },
+        "size": {
+          "description": "Sayfa başına gösterilecek sanatçı keşfi sayısı"
+        },
+        "time-period": {
+          "description": "Zaman aralığı"
+        },
+        "user": {
+          "description": "Gösterilecek kullanıcı (varsayılan: sen)"
+        }
+      }
+    },
+    "discoverydate": {
+      "description": "⭐ Sanatçıyı, albümü ve parçayı keşfettiğin tarihi gösterir",
+      "parameters": {
+        "track": {
+          "description": "Aramak istediğin parça (varsayılan: şu an çalan)"
+        },
+        "user": {
+          "description": "Gösterilecek kullanıcı (varsayılan: sen)"
+        }
+      }
+    },
+    "eurovision": {
+      "description": "Bir yıl ve/veya ülke için Eurovision genel bakışını görüntüle",
+      "parameters": {
+        "country": {
+          "description": "Eurovision ülkesi"
+        },
+        "year": {
+          "description": "Yıl (1956'dan bugüne)"
+        }
+      }
+    },
+    "featured": {
+      "description": "Şu anda öne çıkarılanı (ve botun avatarını) gösterir"
+    },
+    "featuredlog": {
+      "description": "Senin veya başkasının öne çıkarılma geçmişini gösterir",
+      "parameters": {
+        "user": {
+          "description": "Öne çıkarılma geçmişi görüntülenecek kullanıcı (varsayılan: sen)"
+        },
+        "view": {
+          "description": "Görüntülemek istediğin kayıt türü"
+        }
+      }
+    },
+    "fm": {
+      "description": "Şu An Çalıyor - Senin veya başkasının mevcut parçasını gösterir",
+      "parameters": {
+        "embed-type": {
+          "description": "Kullanılacak embed türü, ayar olarak da yapılandırılabilir"
+        },
+        "user": {
+          "description": "Gösterilecek kullanıcı (varsayılan: sen)"
+        }
+      }
+    },
+    "fmmode": {
+      "description": "'/fm' düzenini değiştirir"
+    },
+    "frequently-asked": {
+      "description": ".fmbot hakkında sık sorulan sorular"
+    },
+    "friendsfm": {
+      "description": "Arkadaşlarını ve ne dinlediklerini gösterir"
+    },
+    "friendswhoknow": {
+      "description": "Arkadaşlarından kimlerin bir sanatçıyı dinlediğini gösterir",
+      "parameters": {
+        "artist": {
+          "description": "Aramak istediğin sanatçı (varsayılan: şu an çalan)"
+        },
+        "mode": {
+          "description": "İstediğin yanıt türü - varsayılanı /responsemode ile değiştir"
+        },
+        "private": {
+          "description": "Yanıtı yalnızca sana göster"
+        },
+        "redirects": {
+          "description": "Last.fm sanatçı adı yönlendirmelerini aç/kapat (varsayılan: açık)"
+        }
+      }
+    },
+    "fwkalbum": {
+      "description": "Arkadaşlarından kimler bir albümü biliyor",
+      "parameters": {
+        "album": {
+          "description": "Aramak istediğin albüm (varsayılan: şu an çalan)"
+        },
+        "mode": {
+          "description": "İstediğin yanıt türü - varsayılanı /responsemode ile değiştir"
+        },
+        "private": {
+          "description": "Yanıtı yalnızca sana göster"
+        }
+      }
+    },
+    "fwkgenre": {
+      "description": "Arkadaşlarından kimlerin bir türü dinlediğini gösterir",
+      "parameters": {
+        "mode": {
+          "description": "İstediğin yanıt türü - varsayılanı /responsemode ile değiştir"
+        },
+        "private": {
+          "description": "Yanıtı yalnızca sana göster"
+        },
+        "search": {
+          "description": "Görüntülemek istediğin tür veya sanatçı"
+        }
+      }
+    },
+    "fwktrack": {
+      "description": "Arkadaşlarından kimler bir parçayı biliyor",
+      "parameters": {
+        "mode": {
+          "description": "İstediğin yanıt türü - varsayılanı /responsemode ile değiştir"
+        },
+        "private": {
+          "description": "Yanıtı yalnızca sana göster"
+        },
+        "track": {
+          "description": "Aramak istediğin parça (varsayılan: şu an çalan)"
+        }
+      }
+    },
+    "gaps": {
+      "description": "⭐ Bir dinleme arasından sonra geri döndüğün müzikler",
+      "parameters": {
+        "mode": {
+          "description": "İstediğin yanıt türü - varsayılanı /responsemode ile değiştir"
+        },
+        "private": {
+          "description": "Yanıtı yalnızca sana göster"
+        },
+        "size": {
+          "description": "Sayfa başına gösterilecek dinleme arası sayısı"
+        },
+        "type": {
+          "description": "Dinleme arası türü"
+        },
+        "user": {
+          "description": "Gösterilecek kullanıcı (varsayılan: sen)"
+        }
+      }
+    },
+    "genre": {
+      "description": "Sanatçının tür bilgisini veya türün top sanatçılarını gösterir",
+      "parameters": {
+        "search": {
+          "description": "Görüntülemek istediğin tür veya sanatçı"
+        },
+        "user": {
+          "description": "Gösterilecek kullanıcı (varsayılan: sen)"
+        }
+      }
+    },
+    "getsupporter": {
+      "description": "⭐ Supporter ol veya mevcut aboneliğini yönet"
+    },
+    "giftsupporter": {
+      "description": "🎁 Başka bir kullanıcıya supporter hediye et",
+      "parameters": {
+        "user": {
+          "description": "Supporter hediye etmek istediğin kullanıcı"
+        }
+      }
+    },
+    "globalwhoknows": {
+      "description": ".fmbot genelinde bir sanatçıyı hangi kullanıcıların dinlediğini gösterir",
+      "parameters": {
+        "artist": {
+          "description": "Aramak istediğin sanatçı (varsayılan: şu an çalan)"
+        },
+        "hide-private": {
+          "description": "Gizli kullanıcıları gizle veya göster"
+        },
+        "mode": {
+          "description": "İstediğin yanıt türü - varsayılanı /responsemode ile değiştir"
+        },
+        "redirects": {
+          "description": "Last.fm sanatçı adı yönlendirmelerini aç/kapat (varsayılan: açık)"
+        }
+      }
+    },
+    "gwkalbum": {
+      "description": ".fmbot genelinde bir albümü hangi kullanıcıların dinlediğini gösterir",
+      "parameters": {
+        "album": {
+          "description": "Aramak istediğin albüm (varsayılan: şu an çalan)"
+        },
+        "hide-private": {
+          "description": "Gizli kullanıcıları gizle veya göster"
+        },
+        "mode": {
+          "description": "İstediğin yanıt türü - varsayılanı /responsemode ile değiştir"
+        }
+      }
+    },
+    "gwktrack": {
+      "description": ".fmbot genelinde bir parçayı hangi kullanıcıların dinlediğini gösterir",
+      "parameters": {
+        "hide-private": {
+          "description": "Gizli kullanıcıları gizle veya göster"
+        },
+        "mode": {
+          "description": "İstediğin yanıt türü - varsayılanı /responsemode ile değiştir"
+        },
+        "track": {
+          "description": "Aramak istediğin parça (varsayılan: şu an çalan)"
+        }
+      }
+    },
+    "iceberg": {
+      "description": "Sanatçı popülerliğine dayalı iceberg'ini gösterir",
+      "parameters": {
+        "private": {
+          "description": "Yanıtı yalnızca sana göster"
+        },
+        "time-period": {
+          "description": "Zaman aralığı"
+        },
+        "user": {
+          "description": "Gösterilecek kullanıcı (varsayılan: sen)"
+        }
+      }
+    },
+    "import": {
+      "description": "Veri içe aktarmalarını yönet",
+      "subcommands": {
+        "applemusic": {
+          "description": "⭐ Apple Music geçmişini .fmbot'a aktar",
+          "parameters": {
+            "file": {
+              "description": "'Apple Media Services information.zip' veya 'Apple Music Play Activity.csv' dosyası"
+            }
+          }
+        },
+        "manage": {
+          "description": "⭐ İçe aktarmalarını yönet ve nasıl kullanılacaklarını yapılandır"
+        },
+        "modify": {
+          "description": "⭐ .fmbot içe aktarmalarındaki sanatçıları, albümleri ve parçaları düzenle ve sil"
+        },
+        "spotify": {
+          "description": "⭐ Spotify geçmişini .fmbot'a aktar",
+          "parameters": {
+            "file-1": {
+              "description": "Spotify geçmiş paketi (.zip) veya geçmiş dosyaları (.json)"
+            },
+            "file-10": {
+              "description": "Spotify geçmiş paketi (.zip) veya geçmiş dosyaları (.json)"
+            },
+            "file-11": {
+              "description": "Spotify geçmiş paketi (.zip) veya geçmiş dosyaları (.json)"
+            },
+            "file-12": {
+              "description": "Spotify geçmiş paketi (.zip) veya geçmiş dosyaları (.json)"
+            },
+            "file-13": {
+              "description": "Spotify geçmiş paketi (.zip) veya geçmiş dosyaları (.json)"
+            },
+            "file-14": {
+              "description": "Spotify geçmiş paketi (.zip) veya geçmiş dosyaları (.json)"
+            },
+            "file-15": {
+              "description": "Spotify geçmiş paketi (.zip) veya geçmiş dosyaları (.json)"
+            },
+            "file-2": {
+              "description": "Spotify geçmiş paketi (.zip) veya geçmiş dosyaları (.json)"
+            },
+            "file-3": {
+              "description": "Spotify geçmiş paketi (.zip) veya geçmiş dosyaları (.json)"
+            },
+            "file-4": {
+              "description": "Spotify geçmiş paketi (.zip) veya geçmiş dosyaları (.json)"
+            },
+            "file-5": {
+              "description": "Spotify geçmiş paketi (.zip) veya geçmiş dosyaları (.json)"
+            },
+            "file-6": {
+              "description": "Spotify geçmiş paketi (.zip) veya geçmiş dosyaları (.json)"
+            },
+            "file-7": {
+              "description": "Spotify geçmiş paketi (.zip) veya geçmiş dosyaları (.json)"
+            },
+            "file-8": {
+              "description": "Spotify geçmiş paketi (.zip) veya geçmiş dosyaları (.json)"
+            },
+            "file-9": {
+              "description": "Spotify geçmiş paketi (.zip) veya geçmiş dosyaları (.json)"
+            }
+          }
+        }
+      }
+    },
+    "judge": {
+      "description": "Müzik zevkini yapay zeka ile yargılar",
+      "parameters": {
+        "language": {
+          "description": "Bu yargı için dil"
+        },
+        "time-period": {
+          "description": "Zaman aralığı"
+        },
+        "user": {
+          "description": "Yargılanacak kullanıcı"
+        }
+      }
+    },
+    "lastlistened": {
+      "description": "⭐ Sanatçıyı, albümü ve parçayı en son dinlediğin tarihi gösterir",
+      "parameters": {
+        "track": {
+          "description": "Aramak istediğin parça (varsayılan: şu an çalan)"
+        },
+        "user": {
+          "description": "Gösterilecek kullanıcı (varsayılan: sen)"
+        }
+      }
+    },
+    "like": {
+      "description": "Spotify beğenilen şarkılarına bir parça ekle",
+      "parameters": {
+        "search": {
+          "description": "Beğenilecek parça (varsayılan: şu an çalan)"
+        }
+      }
+    },
+    "localization": {
+      "description": ".fmbot'ta saat dilimini ve sayı biçimini yapılandır",
+      "parameters": {
+        "numberformat": {
+          "description": "Kullanmak istediğin sayı biçimi"
+        },
+        "timezone": {
+          "description": "Ayarlamak istediğin saat dilimi"
+        }
+      }
+    },
+    "login": {
+      "description": "Last.fm hesabını .fmbot'a bağlaman için bir bağlantı verir"
+    },
+    "love": {
+      "description": "Şu an dinlediğin veya aradığın parçayı Last.fm'de favorilere ekler",
+      "parameters": {
+        "private": {
+          "description": "Yanıtı yalnızca sana göster"
+        },
+        "track": {
+          "description": "Favorilere eklemek istediğin parça (varsayılan: şu an çalan)"
+        }
+      }
+    },
+    "loved": {
+      "description": "Last.fm'de favorilere eklediğin parçalar",
+      "parameters": {
+        "private": {
+          "description": "Yanıtı yalnızca sana göster"
+        },
+        "user": {
+          "description": "Gösterilecek kullanıcı (varsayılan: sen)"
+        }
+      }
+    },
+    "lyrics": {
+      "description": "⭐ Şu an dinlediğin veya aradığın parçanın şarkı sözlerini gösterir",
+      "parameters": {
+        "track": {
+          "description": "Aramak istediğin parça (varsayılan: şu an çalan)"
+        }
+      }
+    },
+    "members": {
+      "description": "Bu sunucuda .fmbot kullanan üyeler",
+      "parameters": {
+        "view": {
+          "description": "Görüntülemek istediğin istatistik"
+        }
+      }
+    },
+    "milestone": {
+      "description": "Bir kilometre taşı scrobble'ını gösterir",
+      "parameters": {
+        "amount": {
+          "description": "Kilometre taşı scrobble sayısı"
+        },
+        "user": {
+          "description": "Gösterilecek kullanıcı (varsayılan: sen)"
+        }
+      }
+    },
+    "outofsync": {
+      "description": "Last.fm'in Spotify ile senkronize değilse ne yapmalısın",
+      "parameters": {
+        "private": {
+          "description": "Yanıtı yalnızca sana göster"
+        }
+      }
+    },
+    "overview": {
+      "description": "Günlük genel bakış gösterir",
+      "parameters": {
+        "amount": {
+          "description": "Gösterilecek gün sayısı"
+        },
+        "user": {
+          "description": "Gösterilecek kullanıcı (varsayılan: sen)"
+        }
+      }
+    },
+    "pace": {
+      "description": "Günlük ortalama scrobble'a göre hedefe ulaşacağın tahmini tarihi gösterir",
+      "parameters": {
+        "amount": {
+          "description": "Hedef scrobble sayısı"
+        },
+        "time-period": {
+          "description": "Ortalama play sayısının temel alınacağı zaman aralığı"
+        },
+        "user": {
+          "description": "Gösterilecek kullanıcı (varsayılan: sen)"
+        }
+      }
+    },
+    "plays": {
+      "description": "Belirli bir zaman aralığındaki toplam scrobble sayını gösterir",
+      "parameters": {
+        "time-period": {
+          "description": "Ortalama play sayısının temel alınacağı zaman aralığı"
+        },
+        "user": {
+          "description": "Gösterilecek kullanıcı (varsayılan: sen)"
+        }
+      }
+    },
+    "premiumserver": {
+      "description": "✨ Bu sunucu için sunucu geneli avantajların ve otomasyonun kilidini aç"
+    },
+    "privacy": {
+      "description": "Global WhoKnows'ta diğer .fmbot kullanıcılarına görünürlüğünü değiştirir"
+    },
+    "profile": {
+      "description": "Senin veya başkasının profilini gösterir",
+      "parameters": {
+        "user": {
+          "description": "Gösterilecek kullanıcı (varsayılan: sen)"
+        }
+      }
+    },
+    "queue": {
+      "description": "Spotify'ında bir parçayı sıraya ekle",
+      "parameters": {
+        "search": {
+          "description": "Sıraya eklenecek parça (varsayılan: şu an çalan)"
+        }
+      }
+    },
+    "recap": {
+      "description": "Seçtiğin zaman aralığı için bir özet gösterir",
+      "parameters": {
+        "time-period": {
+          "description": "Gösterilecek zaman aralığı (varsayılan: yıl)"
+        },
+        "user": {
+          "description": "Gösterilecek kullanıcı (varsayılan: sen)"
+        }
+      }
+    },
+    "receipt": {
+      "description": "Receiptify temelli parça fişini gösterir",
+      "parameters": {
+        "private": {
+          "description": "Yanıtı yalnızca sana göster"
+        },
+        "time-period": {
+          "description": "Zaman aralığı"
+        },
+        "user": {
+          "description": "Gösterilecek kullanıcı (varsayılan: sen)"
+        }
+      }
+    },
+    "recent": {
+      "description": "Senin veya başkasının son çalınan parçalarını gösterir",
+      "parameters": {
+        "artist": {
+          "description": "Filtrelemek istediğin sanatçı"
+        },
+        "user": {
+          "description": "Gösterilecek kullanıcı (varsayılan: sen)"
+        }
+      }
+    },
+    "refreshmembers": {
+      "description": ".fmbot'un sunucun için önbelleğe aldığı üye listesini yeniler"
+    },
+    "remote": {
+      "description": "Kendi Spotify oynatmanı kontrol et"
+    },
+    "remove": {
+      "description": ".fmbot hesabını siler"
+    },
+    "removefriend": {
+      "description": ".fmbot arkadaşlarından bir arkadaşı çıkar",
+      "parameters": {
+        "user": {
+          "description": "Çıkarılacak kullanıcı"
+        }
+      }
+    },
+    "responsemode": {
+      "description": "Varsayılan whoknows ve top liste modunu değiştirir"
+    },
+    "scrobble": {
+      "description": "Last.fm'de bir parçayı scrobble'lar",
+      "parameters": {
+        "private": {
+          "description": "Yanıtı yalnızca sana göster"
+        },
+        "track": {
+          "description": "Scrobble'lamak istediğin parça"
+        },
+        "user": {
+          "description": "Scrobble'lamak için bir kullanıcının son parçalarını görüntüle"
+        }
+      }
+    },
+    "search": {
+      "description": "Kayıtlı kitaplığında ara (parçalar, albümler, sanatçılar, scrobble'lar)",
+      "parameters": {
+        "query": {
+          "description": "Aranacak değer (parça, albüm veya sanatçıyla eşleşir)"
+        }
+      }
+    },
+    "selfblock": {
+      "description": "Bu sunucuda seni WhoKnows ve sunucu geneli listelerden gizler"
+    },
+    "selfunblock": {
+      "description": "Bu sunucuda selfblock ile kendine eklediğin engeli kaldırır"
+    },
+    "server": {
+      "description": "Sunucu billboard komutları",
+      "subcommands": {
+        "albums": {
+          "description": "Sunucun için top albümler",
+          "parameters": {
+            "artist": {
+              "description": "Filtrelemek istediğin sanatçı"
+            },
+            "order": {
+              "description": "Chart sıralaması (varsayılan: dinleyiciler)"
+            },
+            "role-picker": {
+              "description": "Rollerle filtrelemek için rol seçici göster"
+            },
+            "time-period": {
+              "description": "Zaman aralığı"
+            }
+          }
+        },
+        "artists": {
+          "description": "Sunucun için top sanatçılar",
+          "parameters": {
+            "order": {
+              "description": "Chart sıralaması (varsayılan: dinleyiciler)"
+            },
+            "role-picker": {
+              "description": "Rollerle filtrelemek için rol seçici göster"
+            },
+            "time-period": {
+              "description": "Zaman aralığı"
+            }
+          }
+        },
+        "genres": {
+          "description": "Sunucun için top türler",
+          "parameters": {
+            "order": {
+              "description": "Chart sıralaması (varsayılan: dinleyiciler)"
+            },
+            "time-period": {
+              "description": "Zaman aralığı"
+            }
+          }
+        },
+        "tracks": {
+          "description": "Sunucun için top parçalar",
+          "parameters": {
+            "artist": {
+              "description": "Filtrelemek istediğin sanatçı"
+            },
+            "order": {
+              "description": "Chart sıralaması (varsayılan: dinleyiciler)"
+            },
+            "role-picker": {
+              "description": "Rollerle filtrelemek için rol seçici göster"
+            },
+            "time-period": {
+              "description": "Zaman aralığı"
+            }
+          }
+        }
+      }
+    },
+    "settings": {
+      "description": ".fmbot'taki kullanıcı ayarların ve sunucu yapılandırman"
+    },
+    "skip": {
+      "description": "Spotify'ında sonraki parçaya geç"
+    },
+    "spotify": {
+      "description": "Spotify'da arama yap",
+      "parameters": {
+        "private": {
+          "description": "Yanıtı yalnızca sana göster"
+        },
+        "search": {
+          "description": "Arama değeri"
+        },
+        "type": {
+          "description": "Spotify'da aramak istediğin şey (varsayılan: parça)"
+        }
+      }
+    },
+    "streak": {
+      "description": "Senin veya başkasının sanatçı, albüm ve parça serisi",
+      "parameters": {
+        "user": {
+          "description": "Gösterilecek kullanıcı (varsayılan: sen)"
+        }
+      }
+    },
+    "streakhistory": {
+      "description": "Senin veya başkasının seri geçmişini gösterir",
+      "parameters": {
+        "artist": {
+          "description": "Sonuçları filtrelemek istediğin sanatçı"
+        },
+        "editmode": {
+          "description": "Düzenleyici modunu aç veya kapat"
+        },
+        "user": {
+          "description": "Gösterilecek kullanıcı (varsayılan: sen)"
+        }
+      }
+    },
+    "supporters": {
+      "description": "⭐ Tüm mevcut supporter'ları gösterir"
+    },
+    "taste": {
+      "description": "Top sanatçılarını, türlerini ve ülkelerini başka bir kullanıcıyla karşılaştırır",
+      "parameters": {
+        "private": {
+          "description": "Yanıtı yalnızca sana göster"
+        },
+        "size": {
+          "description": "Gösterilecek karşılaştırma sayısı"
+        },
+        "time-period": {
+          "description": "Zaman aralığı"
+        },
+        "user": {
+          "description": "Zevkini karşılaştıracağın kullanıcı"
+        }
+      }
+    },
+    "top": {
+      "description": "Top listeler - Sanatçılar/Albümler/Parçalar/Türler/Ülkeler",
+      "subcommands": {
+        "albums": {
+          "description": "Top albümlerini gösterir",
+          "parameters": {
+            "billboard": {
+              "description": "Top albümleri billboard tarzında göster"
+            },
+            "decade": {
+              "description": "Belirli bir dönemde çıkan albümlere filtrele"
+            },
+            "hide-singles": {
+              "description": "Single'ları sonuçlardan gizle"
+            },
+            "mode": {
+              "description": "İstediğin yanıt türü - varsayılanı /responsemode ile değiştir"
+            },
+            "private": {
+              "description": "Yanıtı yalnızca sana göster"
+            },
+            "released": {
+              "description": "Belirli bir yılda çıkan albümlere filtrele"
+            },
+            "size": {
+              "description": "Gösterilecek albüm sayısı"
+            },
+            "time-period": {
+              "description": "Zaman aralığı"
+            },
+            "user": {
+              "description": "Gösterilecek kullanıcı (varsayılan: sen)"
+            }
+          }
+        },
+        "artists": {
+          "description": "Top sanatçıların",
+          "parameters": {
+            "billboard": {
+              "description": "Top sanatçıları billboard tarzında göster"
+            },
+            "discogs": {
+              "description": "Discogs koleksiyonundaki top sanatçıları göster"
+            },
+            "mode": {
+              "description": "İstediğin yanıt türü - varsayılanı /responsemode ile değiştir"
+            },
+            "private": {
+              "description": "Yanıtı yalnızca sana göster"
+            },
+            "size": {
+              "description": "Gösterilecek sanatçı sayısı"
+            },
+            "time-period": {
+              "description": "Zaman aralığı"
+            },
+            "user": {
+              "description": "Gösterilecek kullanıcı (varsayılan: sen)"
+            }
+          }
+        },
+        "countries": {
+          "description": "Top ülkelerini gösterir",
+          "parameters": {
+            "billboard": {
+              "description": "Top ülkeleri billboard tarzında göster"
+            },
+            "mode": {
+              "description": "İstediğin yanıt türü - varsayılanı /responsemode ile değiştir"
+            },
+            "private": {
+              "description": "Yanıtı yalnızca sana göster"
+            },
+            "size": {
+              "description": "Gösterilecek ülke sayısı"
+            },
+            "time-period": {
+              "description": "Zaman aralığı"
+            },
+            "user": {
+              "description": "Gösterilecek kullanıcı (varsayılan: sen)"
+            }
+          }
+        },
+        "genres": {
+          "description": "Top türlerini gösterir",
+          "parameters": {
+            "billboard": {
+              "description": "Top türleri billboard tarzında göster"
+            },
+            "mode": {
+              "description": "İstediğin yanıt türü - varsayılanı /responsemode ile değiştir"
+            },
+            "private": {
+              "description": "Yanıtı yalnızca sana göster"
+            },
+            "size": {
+              "description": "Gösterilecek tür sayısı"
+            },
+            "time-period": {
+              "description": "Zaman aralığı"
+            },
+            "user": {
+              "description": "Gösterilecek kullanıcı (varsayılan: sen)"
+            }
+          }
+        },
+        "tracks": {
+          "description": "Top parçalarını gösterir",
+          "parameters": {
+            "billboard": {
+              "description": "Top parçaları billboard tarzında göster"
+            },
+            "mode": {
+              "description": "İstediğin yanıt türü - varsayılanı /responsemode ile değiştir"
+            },
+            "private": {
+              "description": "Yanıtı yalnızca sana göster"
+            },
+            "size": {
+              "description": "Gösterilecek parça sayısı"
+            },
+            "time-period": {
+              "description": "Zaman aralığı"
+            },
+            "user": {
+              "description": "Gösterilecek kullanıcı (varsayılan: sen)"
+            }
+          }
+        }
+      }
+    },
+    "track": {
+      "description": "Şu an dinlediğin veya aradığın parçanın bilgilerini gösterir",
+      "parameters": {
+        "track": {
+          "description": "Aramak istediğin parça (varsayılan: şu an çalan)"
+        }
+      }
+    },
+    "trackdetails": {
+      "description": "Mevcut parçanın veya aradığın parçanın meta veri ayrıntılarını gösterir",
+      "parameters": {
+        "track": {
+          "description": "Aramak istediğin parça (varsayılan: şu an çalan)"
+        }
+      }
+    },
+    "trackplays": {
+      "description": "Mevcut parçanın veya aradığın parçanın play sayısını gösterir",
+      "parameters": {
+        "track": {
+          "description": "Aramak istediğin parça (varsayılan: şu an çalan)"
+        },
+        "user": {
+          "description": "Gösterilecek kullanıcı (varsayılan: sen)"
+        }
+      }
+    },
+    "unblock": {
+      "description": "Bir kullanıcının engelini kaldır, WhoKnows ve sunucu geneli listelerde yeniden görünsün",
+      "parameters": {
+        "user": {
+          "description": "Engelini kaldırmak istediğin kullanıcı"
+        }
+      }
+    },
+    "unlove": {
+      "description": "Şu an dinlediğin veya aradığın parçayı favori parçalarından çıkarır",
+      "parameters": {
+        "private": {
+          "description": "Yanıtı yalnızca sana göster"
+        },
+        "track": {
+          "description": "Çıkarmak istediğin parça (varsayılan: şu an çalan)"
+        }
+      }
+    },
+    "update": {
+      "description": ".fmbot önbelleğini en son Last.fm verilerinle elle güncelle",
+      "parameters": {
+        "type": {
+          "description": "Neyi güncellemek istediğini seç"
+        }
+      }
+    },
+    "whoknows": {
+      "description": "Sunucunda bir sanatçıyı hangi kullanıcıların dinlediğini gösterir",
+      "parameters": {
+        "artist": {
+          "description": "Aramak istediğin sanatçı (varsayılan: şu an çalan)"
+        },
+        "mode": {
+          "description": "İstediğin yanıt türü - varsayılanı /responsemode ile değiştir"
+        },
+        "no-filter": {
+          "description": "Sunucu filtrelerini ve taçları devre dışı bırak"
+        },
+        "redirects": {
+          "description": "Last.fm sanatçı adı yönlendirmelerini aç/kapat (varsayılan: açık)"
+        },
+        "role-picker": {
+          "description": "Rollerle filtrelemek için rol seçici göster"
+        }
+      }
+    },
+    "wkalbum": {
+      "description": "Sunucunda bir albümü hangi kullanıcıların dinlediğini gösterir",
+      "parameters": {
+        "album": {
+          "description": "Aramak istediğin albüm (varsayılan: şu an çalan)"
+        },
+        "mode": {
+          "description": "İstediğin yanıt türü - varsayılanı /responsemode ile değiştir"
+        },
+        "no-filter": {
+          "description": "Sunucu filtrelerini devre dışı bırak"
+        },
+        "role-picker": {
+          "description": "Rollerle filtrelemek için rol seçici göster"
+        }
+      }
+    },
+    "wkgenre": {
+      "description": "Sunucunda bir türü hangi kullanıcıların dinlediğini gösterir",
+      "parameters": {
+        "mode": {
+          "description": "İstediğin yanıt türü - varsayılanı /responsemode ile değiştir"
+        },
+        "search": {
+          "description": "Görüntülemek istediğin tür veya sanatçı"
+        }
+      }
+    },
+    "wktrack": {
+      "description": "Sunucunda bir parçayı hangi kullanıcıların dinlediğini gösterir",
+      "parameters": {
+        "mode": {
+          "description": "İstediğin yanıt türü - varsayılanı /responsemode ile değiştir"
+        },
+        "no-filter": {
+          "description": "Sunucu filtrelerini devre dışı bırak"
+        },
+        "role-picker": {
+          "description": "Rollerle filtrelemek için rol seçici göster"
+        },
+        "track": {
+          "description": "Aramak istediğin parça (varsayılan: şu an çalan)"
+        }
+      }
+    },
+    "year": {
+      "description": "Yılına genel bir bakış gösterir",
+      "parameters": {
+        "user": {
+          "description": "Gösterilecek kullanıcı (varsayılan: sen)"
+        },
+        "year": {
+          "description": "Görüntülenecek yıl"
+        }
+      }
+    },
+    "youtube": {
+      "description": "YouTube'da arama yap",
+      "parameters": {
+        "private": {
+          "description": "Yanıtı yalnızca sana göster"
+        },
+        "search": {
+          "description": "Arama değeri"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,1262 @@
+{
+  "commands": {
+    "addfriend": {
+      "description": "अपने .fmbot दोस्तों में एक दोस्त जोड़ो",
+      "parameters": {
+        "user": {
+          "description": "जिस यूज़र को जोड़ना है"
+        }
+      }
+    },
+    "affinity": {
+      "description": "इस सर्वर के वे यूज़र जिनकी म्यूज़िक की पसंद तुमसे मिलती-जुलती है (artists, genres और देश)",
+      "parameters": {
+        "user": {
+          "description": "जिस यूज़र की एफ़िनिटी देखनी है"
+        }
+      }
+    },
+    "album": {
+      "description": "जो album अभी बज रहा है या जिसे तुम खोज रहे हो, उसकी जानकारी",
+      "parameters": {
+        "album": {
+          "description": "जो album तुम खोजना चाहते हो (डिफ़ॉल्ट: अभी बज रहा)"
+        }
+      }
+    },
+    "albumplays": {
+      "description": "मौजूदा album या खोजे गए album का playcount दिखाता है",
+      "parameters": {
+        "album": {
+          "description": "जो album तुम खोजना चाहते हो (डिफ़ॉल्ट: अभी बज रहा)"
+        },
+        "user": {
+          "description": "जिस यूज़र का डेटा दिखाना है (डिफ़ॉल्ट: तुम खुद)"
+        }
+      }
+    },
+    "albumtracks": {
+      "description": "मौजूदा या खोजे गए album के tracks के playcounts दिखाता है",
+      "parameters": {
+        "album": {
+          "description": "जो album तुम खोजना चाहते हो (डिफ़ॉल्ट: अभी बज रहा)"
+        },
+        "playcount-order": {
+          "description": "लिस्ट playcount के क्रम में हो या नहीं"
+        },
+        "user": {
+          "description": "जिस यूज़र का डेटा दिखाना है (डिफ़ॉल्ट: तुम खुद)"
+        }
+      }
+    },
+    "applemusic": {
+      "description": "Apple Music में सर्च करो",
+      "parameters": {
+        "private": {
+          "description": "जवाब सिर्फ़ तुम्हें दिखे"
+        },
+        "search": {
+          "description": "सर्च वैल्यू"
+        }
+      }
+    },
+    "artist": {
+      "description": "मौजूदा artist या खोजे गए artist की सामान्य जानकारी",
+      "parameters": {
+        "artist": {
+          "description": "जो artist तुम खोजना चाहते हो (डिफ़ॉल्ट: अभी बज रहा)"
+        },
+        "redirects": {
+          "description": "Last.fm artist नाम रीडायरेक्ट चालू/बंद करो (डिफ़ॉल्ट: चालू)"
+        }
+      }
+    },
+    "artistalbums": {
+      "description": "किसी artist के तुम्हारे top albums दिखाता है",
+      "parameters": {
+        "artist": {
+          "description": "जो artist तुम खोजना चाहते हो (डिफ़ॉल्ट: अभी बज रहा)"
+        },
+        "hide-singles": {
+          "description": "नतीजों से सिंगल्स छिपाओ"
+        },
+        "redirects": {
+          "description": "Last.fm artist नाम रीडायरेक्ट चालू/बंद करो (डिफ़ॉल्ट: चालू)"
+        },
+        "user": {
+          "description": "जिस यूज़र का डेटा दिखाना है (डिफ़ॉल्ट: तुम खुद)"
+        }
+      }
+    },
+    "artistoverview": {
+      "description": "मौजूदा artist या खोजे गए artist का ओवरव्यू दिखाता है",
+      "parameters": {
+        "artist": {
+          "description": "जो artist तुम खोजना चाहते हो (डिफ़ॉल्ट: अभी बज रहा)"
+        },
+        "redirects": {
+          "description": "Last.fm artist नाम रीडायरेक्ट चालू/बंद करो (डिफ़ॉल्ट: चालू)"
+        },
+        "user": {
+          "description": "जिस यूज़र का डेटा दिखाना है (डिफ़ॉल्ट: तुम खुद)"
+        }
+      }
+    },
+    "artistpace": {
+      "description": "अनुमानित तारीख़ जब तुम किसी artist पर तय plays तक पहुँचोगे",
+      "parameters": {
+        "amount": {
+          "description": "Plays का लक्ष्य"
+        },
+        "artist": {
+          "description": "जो artist तुम खोजना चाहते हो (डिफ़ॉल्ट: अभी बज रहा)"
+        },
+        "redirects": {
+          "description": "Last.fm artist नाम रीडायरेक्ट चालू/बंद करो (डिफ़ॉल्ट: चालू)"
+        },
+        "time-period": {
+          "description": "औसत playcount जिस समय अवधि पर आधारित हो"
+        },
+        "user": {
+          "description": "जिस यूज़र का डेटा दिखाना है (डिफ़ॉल्ट: तुम खुद)"
+        }
+      }
+    },
+    "artistplays": {
+      "description": "मौजूदा artist या खोजे गए artist का playcount दिखाता है",
+      "parameters": {
+        "artist": {
+          "description": "जो artist तुम खोजना चाहते हो (डिफ़ॉल्ट: अभी बज रहा)"
+        },
+        "redirects": {
+          "description": "Last.fm artist नाम रीडायरेक्ट चालू/बंद करो (डिफ़ॉल्ट: चालू)"
+        },
+        "user": {
+          "description": "जिस यूज़र का डेटा दिखाना है (डिफ़ॉल्ट: तुम खुद)"
+        }
+      }
+    },
+    "artisttracks": {
+      "description": "किसी artist के तुम्हारे top tracks दिखाता है",
+      "parameters": {
+        "artist": {
+          "description": "जो artist तुम खोजना चाहते हो (डिफ़ॉल्ट: अभी बज रहा)"
+        },
+        "redirects": {
+          "description": "Last.fm artist नाम रीडायरेक्ट चालू/बंद करो (डिफ़ॉल्ट: चालू)"
+        },
+        "time-period": {
+          "description": "किस समय अवधि के tracks दिखाने हैं"
+        },
+        "user": {
+          "description": "जिस यूज़र का डेटा दिखाना है (डिफ़ॉल्ट: तुम खुद)"
+        }
+      }
+    },
+    "block": {
+      "description": "किसी यूज़र को WhoKnows और सर्वर-वाइड चार्ट में दिखने से ब्लॉक करो",
+      "parameters": {
+        "user": {
+          "description": "जिस यूज़र को ब्लॉक करना है"
+        }
+      }
+    },
+    "botscrobbling": {
+      "description": "म्यूज़िक बॉट scrobbling की जानकारी दिखाता है और सेटिंग्स बदलने देता है"
+    },
+    "chart": {
+      "description": "Album कवर या artist इमेज वाले चार्ट बनाओ",
+      "subcommands": {
+        "albums": {
+          "description": "Album इमेज चार्ट बनाता है",
+          "parameters": {
+            "artist": {
+              "description": "किसी एक artist पर फ़िल्टर करो"
+            },
+            "decade": {
+              "description": "उस दशक में रिलीज़ हुए albums पर फ़िल्टर करो"
+            },
+            "hide-singles": {
+              "description": "चार्ट से सिंगल्स छिपाओ"
+            },
+            "private": {
+              "description": "जवाब सिर्फ़ तुम्हें दिखे"
+            },
+            "rainbow": {
+              "description": "एक्सपेरिमेंटल रेनबो सेटिंग"
+            },
+            "released": {
+              "description": "उस साल रिलीज़ हुए albums पर फ़िल्टर करो"
+            },
+            "sfw": {
+              "description": "सिर्फ़ सुरक्षित (SFW) इमेज"
+            },
+            "size": {
+              "description": "चार्ट साइज़"
+            },
+            "skip": {
+              "description": "बिना इमेज वाले albums छोड़ दो"
+            },
+            "time-period": {
+              "description": "समय अवधि"
+            },
+            "titles": {
+              "description": "टाइटल दिखाने की सेटिंग"
+            },
+            "user": {
+              "description": "जिस यूज़र का डेटा दिखाना है (डिफ़ॉल्ट: तुम खुद)"
+            }
+          }
+        },
+        "artists": {
+          "description": "Artist इमेज चार्ट बनाता है",
+          "parameters": {
+            "private": {
+              "description": "जवाब सिर्फ़ तुम्हें दिखे"
+            },
+            "rainbow": {
+              "description": "एक्सपेरिमेंटल रेनबो सेटिंग"
+            },
+            "size": {
+              "description": "चार्ट साइज़"
+            },
+            "skip": {
+              "description": "बिना इमेज वाले artists छोड़ दो"
+            },
+            "time-period": {
+              "description": "समय अवधि"
+            },
+            "titles": {
+              "description": "टाइटल दिखाने की सेटिंग"
+            },
+            "user": {
+              "description": "जिस यूज़र का डेटा दिखाना है (डिफ़ॉल्ट: तुम खुद)"
+            }
+          }
+        }
+      }
+    },
+    "collection": {
+      "description": "तुम्हारा या किसी और का Discogs कलेक्शन",
+      "parameters": {
+        "format": {
+          "description": "कौन सा मीडिया फ़ॉर्मैट शामिल करना है"
+        },
+        "search": {
+          "description": "फ़िल्टर करने के लिए सर्च क्वेरी"
+        },
+        "user": {
+          "description": "जिस यूज़र का डेटा दिखाना है (डिफ़ॉल्ट: तुम खुद)"
+        }
+      }
+    },
+    "country": {
+      "description": "Artist का देश या देश के top artists",
+      "parameters": {
+        "search": {
+          "description": "जो देश या artist तुम देखना चाहते हो"
+        }
+      }
+    },
+    "countrychart": {
+      "description": "तुम्हारे top artists की लोकेशन का नक्शा बनाता है",
+      "parameters": {
+        "private": {
+          "description": "जवाब सिर्फ़ तुम्हें दिखे"
+        },
+        "theme": {
+          "description": "नक्शे की कलर थीम"
+        },
+        "time-period": {
+          "description": "समय अवधि"
+        },
+        "user": {
+          "description": "जिस यूज़र का डेटा दिखाना है (डिफ़ॉल्ट: तुम खुद)"
+        }
+      }
+    },
+    "cover": {
+      "description": "मौजूदा album या खोजे गए album का कवर",
+      "parameters": {
+        "album": {
+          "description": "जो album तुम खोजना चाहते हो (डिफ़ॉल्ट: अभी बज रहा)"
+        }
+      }
+    },
+    "covermode": {
+      "description": "Album कवर एनिमेट हों या हमेशा स्थिर दिखें, यह सेट करो"
+    },
+    "crown": {
+      "description": "किसी क्राउन की हिस्ट्री",
+      "parameters": {
+        "artist": {
+          "description": "जो artist तुम खोजना चाहते हो (डिफ़ॉल्ट: अभी बज रहा)"
+        }
+      }
+    },
+    "crowns": {
+      "description": "तुम्हारे या किसी और के क्राउन की लिस्ट देखो",
+      "parameters": {
+        "user": {
+          "description": "जिस यूज़र का डेटा दिखाना है (डिफ़ॉल्ट: तुम खुद)"
+        },
+        "view": {
+          "description": "क्राउन का कौन सा व्यू देखना है"
+        }
+      }
+    },
+    "discogs": {
+      "description": "तुम्हारे DM में लिंक भेजकर तुम्हारा Discogs अकाउंट कनेक्ट करता है"
+    },
+    "discoveries": {
+      "description": "⭐ हाल में डिस्कवर किए गए artists दिखाता है",
+      "parameters": {
+        "mode": {
+          "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /responsemode से बदलो"
+        },
+        "private": {
+          "description": "जवाब सिर्फ़ तुम्हें दिखे"
+        },
+        "size": {
+          "description": "हर पेज पर कितने डिस्कवर किए गए artists दिखाने हैं"
+        },
+        "time-period": {
+          "description": "समय अवधि"
+        },
+        "user": {
+          "description": "जिस यूज़र का डेटा दिखाना है (डिफ़ॉल्ट: तुम खुद)"
+        }
+      }
+    },
+    "discoverydate": {
+      "description": "⭐ वह तारीख़ जब तुमने artist, album और track डिस्कवर किए",
+      "parameters": {
+        "track": {
+          "description": "जो track तुम खोजना चाहते हो (डिफ़ॉल्ट: अभी बज रहा)"
+        },
+        "user": {
+          "description": "जिस यूज़र का डेटा दिखाना है (डिफ़ॉल्ट: तुम खुद)"
+        }
+      }
+    },
+    "eurovision": {
+      "description": "किसी साल और/या देश का Eurovision ओवरव्यू देखो",
+      "parameters": {
+        "country": {
+          "description": "Eurovision देश"
+        },
+        "year": {
+          "description": "साल (1956 से अब तक)"
+        }
+      }
+    },
+    "featured": {
+      "description": "अभी क्या featured है (और बॉट का अवतार) दिखाता है"
+    },
+    "featuredlog": {
+      "description": "तुम्हारी या किसी और की featured हिस्ट्री दिखाता है",
+      "parameters": {
+        "user": {
+          "description": "जिस यूज़र का featured लॉग देखना है (डिफ़ॉल्ट: तुम खुद)"
+        },
+        "view": {
+          "description": "किस तरह का लॉग देखना है"
+        }
+      }
+    },
+    "fm": {
+      "description": "Now Playing - तुम्हारा या किसी और का मौजूदा track दिखाता है",
+      "parameters": {
+        "embed-type": {
+          "description": "कौन सा एम्बेड टाइप इस्तेमाल हो, सेटिंग से भी सेट कर सकते हो"
+        },
+        "user": {
+          "description": "जिस यूज़र का डेटा दिखाना है (डिफ़ॉल्ट: तुम खुद)"
+        }
+      }
+    },
+    "fmmode": {
+      "description": "तुम्हारा '/fm' लेआउट बदलता है"
+    },
+    "frequently-asked": {
+      "description": ".fmbot के बारे में अक्सर पूछे जाने वाले सवाल"
+    },
+    "friendsfm": {
+      "description": "तुम्हारे दोस्त और वे क्या सुन रहे हैं, यह दिखाता है"
+    },
+    "friendswhoknow": {
+      "description": "तुम्हारे कौन से दोस्त किसी artist को सुनते हैं",
+      "parameters": {
+        "artist": {
+          "description": "जो artist तुम खोजना चाहते हो (डिफ़ॉल्ट: अभी बज रहा)"
+        },
+        "mode": {
+          "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /responsemode से बदलो"
+        },
+        "private": {
+          "description": "जवाब सिर्फ़ तुम्हें दिखे"
+        },
+        "redirects": {
+          "description": "Last.fm artist नाम रीडायरेक्ट चालू/बंद करो (डिफ़ॉल्ट: चालू)"
+        }
+      }
+    },
+    "fwkalbum": {
+      "description": "तुम्हारे कौन से दोस्त किसी album को जानते हैं",
+      "parameters": {
+        "album": {
+          "description": "जो album तुम खोजना चाहते हो (डिफ़ॉल्ट: अभी बज रहा)"
+        },
+        "mode": {
+          "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /responsemode से बदलो"
+        },
+        "private": {
+          "description": "जवाब सिर्फ़ तुम्हें दिखे"
+        }
+      }
+    },
+    "fwkgenre": {
+      "description": "तुम्हारे कौन से दोस्त किसी genre को सुनते हैं",
+      "parameters": {
+        "mode": {
+          "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /responsemode से बदलो"
+        },
+        "private": {
+          "description": "जवाब सिर्फ़ तुम्हें दिखे"
+        },
+        "search": {
+          "description": "जो genre या artist तुम देखना चाहते हो"
+        }
+      }
+    },
+    "fwktrack": {
+      "description": "तुम्हारे कौन से दोस्त किसी track को जानते हैं",
+      "parameters": {
+        "mode": {
+          "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /responsemode से बदलो"
+        },
+        "private": {
+          "description": "जवाब सिर्फ़ तुम्हें दिखे"
+        },
+        "track": {
+          "description": "जो track तुम खोजना चाहते हो (डिफ़ॉल्ट: अभी बज रहा)"
+        }
+      }
+    },
+    "gaps": {
+      "description": "⭐ वह म्यूज़िक जिस पर तुम कुछ समय के गैप के बाद लौटे हो",
+      "parameters": {
+        "mode": {
+          "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /responsemode से बदलो"
+        },
+        "private": {
+          "description": "जवाब सिर्फ़ तुम्हें दिखे"
+        },
+        "size": {
+          "description": "हर पेज पर कितने गैप दिखाने हैं"
+        },
+        "type": {
+          "description": "म्यूज़िक गैप का टाइप"
+        },
+        "user": {
+          "description": "जिस यूज़र का डेटा दिखाना है (डिफ़ॉल्ट: तुम खुद)"
+        }
+      }
+    },
+    "genre": {
+      "description": "Artist के genre की जानकारी या genre के top artists",
+      "parameters": {
+        "search": {
+          "description": "जो genre या artist तुम देखना चाहते हो"
+        },
+        "user": {
+          "description": "जिस यूज़र का डेटा दिखाना है (डिफ़ॉल्ट: तुम खुद)"
+        }
+      }
+    },
+    "getsupporter": {
+      "description": "⭐ Supporter बनो या अपना मौजूदा सब्सक्रिप्शन मैनेज करो"
+    },
+    "giftsupporter": {
+      "description": "🎁 किसी और यूज़र को supporter गिफ़्ट करो",
+      "parameters": {
+        "user": {
+          "description": "जिस यूज़र को supporter गिफ़्ट करना है"
+        }
+      }
+    },
+    "globalwhoknows": {
+      "description": ".fmbot में कौन से यूज़र किसी artist को सुनते हैं",
+      "parameters": {
+        "artist": {
+          "description": "जो artist तुम खोजना चाहते हो (डिफ़ॉल्ट: अभी बज रहा)"
+        },
+        "hide-private": {
+          "description": "प्राइवेट यूज़र छिपाओ या दिखाओ"
+        },
+        "mode": {
+          "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /responsemode से बदलो"
+        },
+        "redirects": {
+          "description": "Last.fm artist नाम रीडायरेक्ट चालू/बंद करो (डिफ़ॉल्ट: चालू)"
+        }
+      }
+    },
+    "gwkalbum": {
+      "description": ".fmbot में ग्लोबली कौन से यूज़र किसी album को सुनते हैं",
+      "parameters": {
+        "album": {
+          "description": "जो album तुम खोजना चाहते हो (डिफ़ॉल्ट: अभी बज रहा)"
+        },
+        "hide-private": {
+          "description": "प्राइवेट यूज़र छिपाओ या दिखाओ"
+        },
+        "mode": {
+          "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /responsemode से बदलो"
+        }
+      }
+    },
+    "gwktrack": {
+      "description": ".fmbot में ग्लोबली कौन से यूज़र किसी track को सुनते हैं",
+      "parameters": {
+        "hide-private": {
+          "description": "प्राइवेट यूज़र छिपाओ या दिखाओ"
+        },
+        "mode": {
+          "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /responsemode से बदलो"
+        },
+        "track": {
+          "description": "जो track तुम खोजना चाहते हो (डिफ़ॉल्ट: अभी बज रहा)"
+        }
+      }
+    },
+    "iceberg": {
+      "description": "Artist लोकप्रियता पर आधारित तुम्हारा आइसबर्ग दिखाता है",
+      "parameters": {
+        "private": {
+          "description": "जवाब सिर्फ़ तुम्हें दिखे"
+        },
+        "time-period": {
+          "description": "समय अवधि"
+        },
+        "user": {
+          "description": "जिस यूज़र का डेटा दिखाना है (डिफ़ॉल्ट: तुम खुद)"
+        }
+      }
+    },
+    "import": {
+      "description": "अपने डेटा इंपोर्ट मैनेज करो",
+      "subcommands": {
+        "applemusic": {
+          "description": "⭐ अपनी Apple Music हिस्ट्री .fmbot में इंपोर्ट करो",
+          "parameters": {
+            "file": {
+              "description": "'Apple Media Services information.zip' या 'Apple Music Play Activity.csv' फ़ाइल"
+            }
+          }
+        },
+        "manage": {
+          "description": "⭐ अपने इंपोर्ट मैनेज करो और तय करो कि वे कैसे इस्तेमाल हों"
+        },
+        "modify": {
+          "description": "⭐ अपने .fmbot इंपोर्ट में artists, albums और tracks एडिट/डिलीट करो"
+        },
+        "spotify": {
+          "description": "⭐ अपनी Spotify हिस्ट्री .fmbot में इंपोर्ट करो",
+          "parameters": {
+            "file-1": {
+              "description": "Spotify हिस्ट्री पैकेज (.zip) या हिस्ट्री फ़ाइलें (.json)"
+            },
+            "file-10": {
+              "description": "Spotify हिस्ट्री पैकेज (.zip) या हिस्ट्री फ़ाइलें (.json)"
+            },
+            "file-11": {
+              "description": "Spotify हिस्ट्री पैकेज (.zip) या हिस्ट्री फ़ाइलें (.json)"
+            },
+            "file-12": {
+              "description": "Spotify हिस्ट्री पैकेज (.zip) या हिस्ट्री फ़ाइलें (.json)"
+            },
+            "file-13": {
+              "description": "Spotify हिस्ट्री पैकेज (.zip) या हिस्ट्री फ़ाइलें (.json)"
+            },
+            "file-14": {
+              "description": "Spotify हिस्ट्री पैकेज (.zip) या हिस्ट्री फ़ाइलें (.json)"
+            },
+            "file-15": {
+              "description": "Spotify हिस्ट्री पैकेज (.zip) या हिस्ट्री फ़ाइलें (.json)"
+            },
+            "file-2": {
+              "description": "Spotify हिस्ट्री पैकेज (.zip) या हिस्ट्री फ़ाइलें (.json)"
+            },
+            "file-3": {
+              "description": "Spotify हिस्ट्री पैकेज (.zip) या हिस्ट्री फ़ाइलें (.json)"
+            },
+            "file-4": {
+              "description": "Spotify हिस्ट्री पैकेज (.zip) या हिस्ट्री फ़ाइलें (.json)"
+            },
+            "file-5": {
+              "description": "Spotify हिस्ट्री पैकेज (.zip) या हिस्ट्री फ़ाइलें (.json)"
+            },
+            "file-6": {
+              "description": "Spotify हिस्ट्री पैकेज (.zip) या हिस्ट्री फ़ाइलें (.json)"
+            },
+            "file-7": {
+              "description": "Spotify हिस्ट्री पैकेज (.zip) या हिस्ट्री फ़ाइलें (.json)"
+            },
+            "file-8": {
+              "description": "Spotify हिस्ट्री पैकेज (.zip) या हिस्ट्री फ़ाइलें (.json)"
+            },
+            "file-9": {
+              "description": "Spotify हिस्ट्री पैकेज (.zip) या हिस्ट्री फ़ाइलें (.json)"
+            }
+          }
+        }
+      }
+    },
+    "judge": {
+      "description": "AI से तुम्हारी म्यूज़िक की पसंद जज करता है",
+      "parameters": {
+        "language": {
+          "description": "इस जजमेंट की भाषा"
+        },
+        "time-period": {
+          "description": "समय अवधि"
+        },
+        "user": {
+          "description": "जिस यूज़र को जज करना है"
+        }
+      }
+    },
+    "lastlistened": {
+      "description": "⭐ वह तारीख़ जब तुमने artist, album और track आख़िरी बार सुने",
+      "parameters": {
+        "track": {
+          "description": "जो track तुम खोजना चाहते हो (डिफ़ॉल्ट: अभी बज रहा)"
+        },
+        "user": {
+          "description": "जिस यूज़र का डेटा दिखाना है (डिफ़ॉल्ट: तुम खुद)"
+        }
+      }
+    },
+    "like": {
+      "description": "अपने Spotify पसंदीदा गानों में एक track जोड़ो",
+      "parameters": {
+        "search": {
+          "description": "जिस track को लाइक करना है (डिफ़ॉल्ट: अभी बज रहा)"
+        }
+      }
+    },
+    "localization": {
+      "description": ".fmbot में अपना टाइमज़ोन और नंबर फ़ॉर्मैट सेट करो",
+      "parameters": {
+        "numberformat": {
+          "description": "कौन सा नंबर फ़ॉर्मैट इस्तेमाल करना है"
+        },
+        "timezone": {
+          "description": "कौन सा टाइमज़ोन सेट करना है"
+        }
+      }
+    },
+    "login": {
+      "description": "तुम्हारा Last.fm अकाउंट .fmbot से कनेक्ट करने का लिंक देता है"
+    },
+    "love": {
+      "description": "मौजूदा या खोजा गया track Last.fm पर पसंदीदा (love) करता है",
+      "parameters": {
+        "private": {
+          "description": "जवाब सिर्फ़ तुम्हें दिखे"
+        },
+        "track": {
+          "description": "जिस track को love करना है (डिफ़ॉल्ट: अभी बज रहा)"
+        }
+      }
+    },
+    "loved": {
+      "description": "Last.fm पर तुम्हारे पसंदीदा (loved) tracks",
+      "parameters": {
+        "private": {
+          "description": "जवाब सिर्फ़ तुम्हें दिखे"
+        },
+        "user": {
+          "description": "जिस यूज़र का डेटा दिखाना है (डिफ़ॉल्ट: तुम खुद)"
+        }
+      }
+    },
+    "lyrics": {
+      "description": "⭐ मौजूदा या खोजे गए track के लिरिक्स दिखाता है",
+      "parameters": {
+        "track": {
+          "description": "जो track तुम खोजना चाहते हो (डिफ़ॉल्ट: अभी बज रहा)"
+        }
+      }
+    },
+    "members": {
+      "description": "इस सर्वर के मेंबर जो .fmbot इस्तेमाल करते हैं",
+      "parameters": {
+        "view": {
+          "description": "कौन सा आँकड़ा देखना है"
+        }
+      }
+    },
+    "milestone": {
+      "description": "एक माइलस्टोन scrobble दिखाता है",
+      "parameters": {
+        "amount": {
+          "description": "माइलस्टोन scrobble संख्या"
+        },
+        "user": {
+          "description": "जिस यूज़र का डेटा दिखाना है (डिफ़ॉल्ट: तुम खुद)"
+        }
+      }
+    },
+    "outofsync": {
+      "description": "अगर तुम्हारा Last.fm, Spotify से सिंक नहीं है तो क्या करें",
+      "parameters": {
+        "private": {
+          "description": "जवाब सिर्फ़ तुम्हें दिखे"
+        }
+      }
+    },
+    "overview": {
+      "description": "डेली ओवरव्यू दिखाता है",
+      "parameters": {
+        "amount": {
+          "description": "कितने दिन दिखाने हैं"
+        },
+        "user": {
+          "description": "जिस यूज़र का डेटा दिखाना है (डिफ़ॉल्ट: तुम खुद)"
+        }
+      }
+    },
+    "pace": {
+      "description": "रोज़ के औसत scrobbles के आधार पर scrobble लक्ष्य तक पहुँचने की अनुमानित तारीख़",
+      "parameters": {
+        "amount": {
+          "description": "Scrobbles का लक्ष्य"
+        },
+        "time-period": {
+          "description": "औसत playcount जिस समय अवधि पर आधारित हो"
+        },
+        "user": {
+          "description": "जिस यूज़र का डेटा दिखाना है (डिफ़ॉल्ट: तुम खुद)"
+        }
+      }
+    },
+    "plays": {
+      "description": "किसी समय अवधि में तुम्हारे कुल scrobbles दिखाता है",
+      "parameters": {
+        "time-period": {
+          "description": "औसत playcount जिस समय अवधि पर आधारित हो"
+        },
+        "user": {
+          "description": "जिस यूज़र का डेटा दिखाना है (डिफ़ॉल्ट: तुम खुद)"
+        }
+      }
+    },
+    "premiumserver": {
+      "description": "✨ इस सर्वर के लिए सर्वर-वाइड फ़ायदे और ऑटोमेशन अनलॉक करो"
+    },
+    "privacy": {
+      "description": "Global WhoKnows में दूसरे .fmbot यूज़र के लिए तुम्हारी विज़िबिलिटी बदलता है"
+    },
+    "profile": {
+      "description": "तुम्हारी या किसी और की प्रोफ़ाइल दिखाता है",
+      "parameters": {
+        "user": {
+          "description": "जिस यूज़र का डेटा दिखाना है (डिफ़ॉल्ट: तुम खुद)"
+        }
+      }
+    },
+    "queue": {
+      "description": "अपने Spotify पर एक track क्यू करो",
+      "parameters": {
+        "search": {
+          "description": "जिस track को क्यू करना है (डिफ़ॉल्ट: अभी बज रहा)"
+        }
+      }
+    },
+    "recap": {
+      "description": "चुनी हुई समय अवधि का रीकैप दिखाता है",
+      "parameters": {
+        "time-period": {
+          "description": "कौन सी समय अवधि दिखानी है (डिफ़ॉल्ट: साल)"
+        },
+        "user": {
+          "description": "जिस यूज़र का डेटा दिखाना है (डिफ़ॉल्ट: तुम खुद)"
+        }
+      }
+    },
+    "receipt": {
+      "description": "Receiptify पर आधारित तुम्हारी track रसीद दिखाता है",
+      "parameters": {
+        "private": {
+          "description": "जवाब सिर्फ़ तुम्हें दिखे"
+        },
+        "time-period": {
+          "description": "समय अवधि"
+        },
+        "user": {
+          "description": "जिस यूज़र का डेटा दिखाना है (डिफ़ॉल्ट: तुम खुद)"
+        }
+      }
+    },
+    "recent": {
+      "description": "तुम्हारे या किसी और के हाल के tracks दिखाता है",
+      "parameters": {
+        "artist": {
+          "description": "जिस artist पर फ़िल्टर करना है"
+        },
+        "user": {
+          "description": "जिस यूज़र का डेटा दिखाना है (डिफ़ॉल्ट: तुम खुद)"
+        }
+      }
+    },
+    "refreshmembers": {
+      "description": "तुम्हारे सर्वर के लिए .fmbot की कैश की गई मेंबर लिस्ट रीफ़्रेश करता है"
+    },
+    "remote": {
+      "description": "अपना Spotify प्लेबैक कंट्रोल करो"
+    },
+    "remove": {
+      "description": "तुम्हारा .fmbot अकाउंट डिलीट करता है"
+    },
+    "removefriend": {
+      "description": "अपने .fmbot दोस्तों से एक दोस्त हटाओ",
+      "parameters": {
+        "user": {
+          "description": "जिस यूज़र को हटाना है"
+        }
+      }
+    },
+    "responsemode": {
+      "description": "तुम्हारा डिफ़ॉल्ट whoknows और top लिस्ट मोड बदलता है"
+    },
+    "scrobble": {
+      "description": "Last.fm पर एक track scrobble करता है",
+      "parameters": {
+        "private": {
+          "description": "जवाब सिर्फ़ तुम्हें दिखे"
+        },
+        "track": {
+          "description": "जिस track को scrobble करना है"
+        },
+        "user": {
+          "description": "Scrobble करने के लिए किसी यूज़र के हाल के tracks देखो"
+        }
+      }
+    },
+    "search": {
+      "description": "अपनी स्टोर की गई लाइब्रेरी में सर्च करो (tracks, albums, artists, scrobbles)",
+      "parameters": {
+        "query": {
+          "description": "क्या खोजना है (track, album या artist से मैच होता है)"
+        }
+      }
+    },
+    "selfblock": {
+      "description": "इस सर्वर में तुम्हें WhoKnows और सर्वर-वाइड चार्ट से छिपाता है"
+    },
+    "selfunblock": {
+      "description": "इस सर्वर में selfblock से खुद पर लगाया ब्लॉक हटाता है"
+    },
+    "server": {
+      "description": "सर्वर billboard कमांड",
+      "subcommands": {
+        "albums": {
+          "description": "तुम्हारे सर्वर के Top albums",
+          "parameters": {
+            "artist": {
+              "description": "जिस artist पर फ़िल्टर करना है"
+            },
+            "order": {
+              "description": "चार्ट का क्रम (डिफ़ॉल्ट: श्रोता)"
+            },
+            "role-picker": {
+              "description": "रोल से फ़िल्टर करने के लिए रोल-पिकर दिखाओ"
+            },
+            "time-period": {
+              "description": "समय अवधि"
+            }
+          }
+        },
+        "artists": {
+          "description": "तुम्हारे सर्वर के Top artists",
+          "parameters": {
+            "order": {
+              "description": "चार्ट का क्रम (डिफ़ॉल्ट: श्रोता)"
+            },
+            "role-picker": {
+              "description": "रोल से फ़िल्टर करने के लिए रोल-पिकर दिखाओ"
+            },
+            "time-period": {
+              "description": "समय अवधि"
+            }
+          }
+        },
+        "genres": {
+          "description": "तुम्हारे सर्वर के Top genres",
+          "parameters": {
+            "order": {
+              "description": "चार्ट का क्रम (डिफ़ॉल्ट: श्रोता)"
+            },
+            "time-period": {
+              "description": "समय अवधि"
+            }
+          }
+        },
+        "tracks": {
+          "description": "तुम्हारे सर्वर के Top tracks",
+          "parameters": {
+            "artist": {
+              "description": "जिस artist पर फ़िल्टर करना है"
+            },
+            "order": {
+              "description": "चार्ट का क्रम (डिफ़ॉल्ट: श्रोता)"
+            },
+            "role-picker": {
+              "description": "रोल से फ़िल्टर करने के लिए रोल-पिकर दिखाओ"
+            },
+            "time-period": {
+              "description": "समय अवधि"
+            }
+          }
+        }
+      }
+    },
+    "settings": {
+      "description": ".fmbot में तुम्हारी यूज़र सेटिंग्स और सर्वर कॉन्फ़िगरेशन"
+    },
+    "skip": {
+      "description": "अपने Spotify पर अगले track पर जाओ"
+    },
+    "spotify": {
+      "description": "Spotify में सर्च करो",
+      "parameters": {
+        "private": {
+          "description": "जवाब सिर्फ़ तुम्हें दिखे"
+        },
+        "search": {
+          "description": "सर्च वैल्यू"
+        },
+        "type": {
+          "description": "Spotify पर क्या खोजना है (डिफ़ॉल्ट: track)"
+        }
+      }
+    },
+    "streak": {
+      "description": "Artist, album और track की तुम्हारी या किसी और की स्ट्रीक",
+      "parameters": {
+        "user": {
+          "description": "जिस यूज़र का डेटा दिखाना है (डिफ़ॉल्ट: तुम खुद)"
+        }
+      }
+    },
+    "streakhistory": {
+      "description": "तुम्हारी या किसी और की स्ट्रीक हिस्ट्री दिखाता है",
+      "parameters": {
+        "artist": {
+          "description": "जिस artist पर नतीजे फ़िल्टर करने हैं"
+        },
+        "editmode": {
+          "description": "एडिटर मोड चालू या बंद करो"
+        },
+        "user": {
+          "description": "जिस यूज़र का डेटा दिखाना है (डिफ़ॉल्ट: तुम खुद)"
+        }
+      }
+    },
+    "supporters": {
+      "description": "⭐ सभी मौजूदा supporters दिखाता है"
+    },
+    "taste": {
+      "description": "तुम्हारे top artists, genres और देशों की किसी और यूज़र से तुलना करता है",
+      "parameters": {
+        "private": {
+          "description": "जवाब सिर्फ़ तुम्हें दिखे"
+        },
+        "size": {
+          "description": "कितनी तुलनाएँ दिखानी हैं"
+        },
+        "time-period": {
+          "description": "समय अवधि"
+        },
+        "user": {
+          "description": "जिस यूज़र से अपनी पसंद की तुलना करनी है"
+        }
+      }
+    },
+    "top": {
+      "description": "Top लिस्ट - Artists/Albums/Tracks/Genres/देश",
+      "subcommands": {
+        "albums": {
+          "description": "तुम्हारे top albums दिखाता है",
+          "parameters": {
+            "billboard": {
+              "description": "Top albums billboard स्टाइल में दिखाओ"
+            },
+            "decade": {
+              "description": "उस दशक में रिलीज़ हुए albums पर फ़िल्टर करो"
+            },
+            "hide-singles": {
+              "description": "नतीजों से सिंगल्स छिपाओ"
+            },
+            "mode": {
+              "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /responsemode से बदलो"
+            },
+            "private": {
+              "description": "जवाब सिर्फ़ तुम्हें दिखे"
+            },
+            "released": {
+              "description": "उस साल रिलीज़ हुए albums पर फ़िल्टर करो"
+            },
+            "size": {
+              "description": "कितने albums दिखाने हैं"
+            },
+            "time-period": {
+              "description": "समय अवधि"
+            },
+            "user": {
+              "description": "जिस यूज़र का डेटा दिखाना है (डिफ़ॉल्ट: तुम खुद)"
+            }
+          }
+        },
+        "artists": {
+          "description": "तुम्हारे top artists",
+          "parameters": {
+            "billboard": {
+              "description": "Top artists billboard स्टाइल में दिखाओ"
+            },
+            "discogs": {
+              "description": "Discogs कलेक्शन के top artists दिखाओ"
+            },
+            "mode": {
+              "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /responsemode से बदलो"
+            },
+            "private": {
+              "description": "जवाब सिर्फ़ तुम्हें दिखे"
+            },
+            "size": {
+              "description": "कितने artists दिखाने हैं"
+            },
+            "time-period": {
+              "description": "समय अवधि"
+            },
+            "user": {
+              "description": "जिस यूज़र का डेटा दिखाना है (डिफ़ॉल्ट: तुम खुद)"
+            }
+          }
+        },
+        "countries": {
+          "description": "तुम्हारे top देश दिखाता है",
+          "parameters": {
+            "billboard": {
+              "description": "Top देश billboard स्टाइल में दिखाओ"
+            },
+            "mode": {
+              "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /responsemode से बदलो"
+            },
+            "private": {
+              "description": "जवाब सिर्फ़ तुम्हें दिखे"
+            },
+            "size": {
+              "description": "कितने देश दिखाने हैं"
+            },
+            "time-period": {
+              "description": "समय अवधि"
+            },
+            "user": {
+              "description": "जिस यूज़र का डेटा दिखाना है (डिफ़ॉल्ट: तुम खुद)"
+            }
+          }
+        },
+        "genres": {
+          "description": "तुम्हारे top genres दिखाता है",
+          "parameters": {
+            "billboard": {
+              "description": "Top genres billboard स्टाइल में दिखाओ"
+            },
+            "mode": {
+              "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /responsemode से बदलो"
+            },
+            "private": {
+              "description": "जवाब सिर्फ़ तुम्हें दिखे"
+            },
+            "size": {
+              "description": "कितने genres दिखाने हैं"
+            },
+            "time-period": {
+              "description": "समय अवधि"
+            },
+            "user": {
+              "description": "जिस यूज़र का डेटा दिखाना है (डिफ़ॉल्ट: तुम खुद)"
+            }
+          }
+        },
+        "tracks": {
+          "description": "तुम्हारे top tracks दिखाता है",
+          "parameters": {
+            "billboard": {
+              "description": "Top tracks billboard स्टाइल में दिखाओ"
+            },
+            "mode": {
+              "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /responsemode से बदलो"
+            },
+            "private": {
+              "description": "जवाब सिर्फ़ तुम्हें दिखे"
+            },
+            "size": {
+              "description": "कितने tracks दिखाने हैं"
+            },
+            "time-period": {
+              "description": "समय अवधि"
+            },
+            "user": {
+              "description": "जिस यूज़र का डेटा दिखाना है (डिफ़ॉल्ट: तुम खुद)"
+            }
+          }
+        }
+      }
+    },
+    "track": {
+      "description": "मौजूदा या खोजे गए track की जानकारी दिखाता है",
+      "parameters": {
+        "track": {
+          "description": "जो track तुम खोजना चाहते हो (डिफ़ॉल्ट: अभी बज रहा)"
+        }
+      }
+    },
+    "trackdetails": {
+      "description": "मौजूदा या खोजे गए track की मेटाडेटा डिटेल दिखाता है",
+      "parameters": {
+        "track": {
+          "description": "जो track तुम खोजना चाहते हो (डिफ़ॉल्ट: अभी बज रहा)"
+        }
+      }
+    },
+    "trackplays": {
+      "description": "मौजूदा track या खोजे गए track का playcount दिखाता है",
+      "parameters": {
+        "track": {
+          "description": "जो track तुम खोजना चाहते हो (डिफ़ॉल्ट: अभी बज रहा)"
+        },
+        "user": {
+          "description": "जिस यूज़र का डेटा दिखाना है (डिफ़ॉल्ट: तुम खुद)"
+        }
+      }
+    },
+    "unblock": {
+      "description": "यूज़र का ब्लॉक हटाओ ताकि वह फिर WhoKnows और सर्वर-वाइड चार्ट में दिखे",
+      "parameters": {
+        "user": {
+          "description": "जिस यूज़र को अनब्लॉक करना है"
+        }
+      }
+    },
+    "unlove": {
+      "description": "मौजूदा या खोजा गया track तुम्हारे पसंदीदा tracks से हटाता है",
+      "parameters": {
+        "private": {
+          "description": "जवाब सिर्फ़ तुम्हें दिखे"
+        },
+        "track": {
+          "description": "जिस track को हटाना है (डिफ़ॉल्ट: अभी बज रहा)"
+        }
+      }
+    },
+    "update": {
+      "description": "अपने ताज़ा Last.fm डेटा से .fmbot का कैश मैन्युअली अपडेट करो",
+      "parameters": {
+        "type": {
+          "description": "क्या अपडेट करना है, चुनो"
+        }
+      }
+    },
+    "whoknows": {
+      "description": "तुम्हारे सर्वर में कौन से यूज़र किसी artist को सुनते हैं",
+      "parameters": {
+        "artist": {
+          "description": "जो artist तुम खोजना चाहते हो (डिफ़ॉल्ट: अभी बज रहा)"
+        },
+        "mode": {
+          "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /responsemode से बदलो"
+        },
+        "no-filter": {
+          "description": "सर्वर फ़िल्टर और क्राउन बंद करो"
+        },
+        "redirects": {
+          "description": "Last.fm artist नाम रीडायरेक्ट चालू/बंद करो (डिफ़ॉल्ट: चालू)"
+        },
+        "role-picker": {
+          "description": "रोल से फ़िल्टर करने के लिए रोल-पिकर दिखाओ"
+        }
+      }
+    },
+    "wkalbum": {
+      "description": "तुम्हारे सर्वर में कौन से यूज़र किसी album को सुनते हैं",
+      "parameters": {
+        "album": {
+          "description": "जो album तुम खोजना चाहते हो (डिफ़ॉल्ट: अभी बज रहा)"
+        },
+        "mode": {
+          "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /responsemode से बदलो"
+        },
+        "no-filter": {
+          "description": "सर्वर फ़िल्टर बंद करो"
+        },
+        "role-picker": {
+          "description": "रोल से फ़िल्टर करने के लिए रोल-पिकर दिखाओ"
+        }
+      }
+    },
+    "wkgenre": {
+      "description": "तुम्हारे सर्वर में कौन से यूज़र किसी genre को सुनते हैं",
+      "parameters": {
+        "mode": {
+          "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /responsemode से बदलो"
+        },
+        "search": {
+          "description": "जो genre या artist तुम देखना चाहते हो"
+        }
+      }
+    },
+    "wktrack": {
+      "description": "तुम्हारे सर्वर में कौन से यूज़र किसी track को सुनते हैं",
+      "parameters": {
+        "mode": {
+          "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /responsemode से बदलो"
+        },
+        "no-filter": {
+          "description": "सर्वर फ़िल्टर बंद करो"
+        },
+        "role-picker": {
+          "description": "रोल से फ़िल्टर करने के लिए रोल-पिकर दिखाओ"
+        },
+        "track": {
+          "description": "जो track तुम खोजना चाहते हो (डिफ़ॉल्ट: अभी बज रहा)"
+        }
+      }
+    },
+    "year": {
+      "description": "तुम्हारे साल का ओवरव्यू दिखाता है",
+      "parameters": {
+        "user": {
+          "description": "जिस यूज़र का डेटा दिखाना है (डिफ़ॉल्ट: तुम खुद)"
+        },
+        "year": {
+          "description": "कौन सा साल देखना है"
+        }
+      }
+    },
+    "youtube": {
+      "description": "YouTube में सर्च करो",
+      "parameters": {
+        "private": {
+          "description": "जवाब सिर्फ़ तुम्हें दिखे"
+        },
+        "search": {
+          "description": "सर्च वैल्यू"
+        }
+      }
+    }
+  }
+}

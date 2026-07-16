@@ -151,7 +151,8 @@ public class AlbumCommands(
                     ? TimePeriod.AllTime
                     : TimePeriod.Weekly,
                 registeredLastFm: userSettings.RegisteredLastFm,
-                timeZone: userSettings.TimeZone);
+                timeZone: userSettings.TimeZone,
+                language: LocalizationService.GetLanguage(this.Context.Guild?.Id, this.Context.Guild?.PreferredLocale));
             var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
             var mode = SettingService.SetMode(timeSettings.NewSearchValue, contextUser.Mode);
 
@@ -373,7 +374,7 @@ public class AlbumCommands(
         {
             guildListSettings = SettingService.SetGuildRankingSettings(guildListSettings, guildAlbumsOptions);
             var timeSettings = SettingService.GetTimePeriod(guildListSettings.NewSearchValue,
-                guildListSettings.ChartTimePeriod, cachedOnly: true);
+                guildListSettings.ChartTimePeriod, cachedOnly: true, language: LocalizationService.GetLanguage(this.Context.Guild?.Id, this.Context.Guild?.PreferredLocale));
 
             guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
 
@@ -390,11 +391,7 @@ public class AlbumCommands(
                 await albumBuilders.GuildAlbumsAsync(new ContextModel(this.Context, prfx), guild,
                     guildListSettings);
 
-            _ = this.Interactivity.SendPaginatorAsync(
-                response.ComponentPaginator.Build(),
-                this.Context.Channel,
-                TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
-
+            await this.Context.SendResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)

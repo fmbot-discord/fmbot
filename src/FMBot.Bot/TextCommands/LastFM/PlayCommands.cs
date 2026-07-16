@@ -133,11 +133,11 @@ public class PlayCommands(
         if (contextUser?.UserNameLastFM == null)
         {
             var discordGuildUser = this.Context.User as NetCord.GuildUser;
-            this._embed.UsernameNotSetErrorResponse(prfx,
+            this._embed.UsernameNotSetErrorResponse(Localizer.ForGuild(this.Context.Guild?.Id, discordLocale: this.Context.Guild?.PreferredLocale),
                 discordGuildUser?.GetDisplayName() ?? this.Context.User.GetDisplayName());
 
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
-                new() { Embeds = [this._embed], Components = [GenericEmbedService.UsernameNotSetErrorComponents()] });
+                new() { Embeds = [this._embed], Components = [GenericEmbedService.UsernameNotSetErrorComponents(Localizer.ForGuild(this.Context.Guild?.Id, discordLocale: this.Context.Guild?.PreferredLocale))] });
             await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.UsernameNotSet }, userService);
             return;
         }
@@ -342,13 +342,14 @@ public class PlayCommands(
         var timePeriod = !string.IsNullOrWhiteSpace(extraOptions) ? extraOptions : year.ToString();
 
         var userSettings = await settingService.GetUser(extraOptions, contextUser, this.Context);
+        var language = LocalizationService.GetLanguage(this.Context.Guild?.Id, this.Context.Guild?.PreferredLocale);
         var timeSettings = SettingService.GetTimePeriod(timePeriod, registeredLastFm: userSettings.RegisteredLastFm,
-            timeZone: userSettings.TimeZone, defaultTimePeriod: TimePeriod.Yearly);
+            timeZone: userSettings.TimeZone, defaultTimePeriod: TimePeriod.Yearly, language: language);
 
         try
         {
             var loading = false;
-            if (!recapBuilders.RecapCacheHot(timeSettings.Description, userSettings.UserNameLastFm))
+            if (!recapBuilders.RecapCacheHot(timeSettings.Description, userSettings.UserNameLastFm, language))
             {
                 await Context.Message.AddReactionAsync(new ReactionEmojiProperties("Loading", DiscordConstants.Loading));
                 loading = true;
@@ -393,7 +394,7 @@ public class PlayCommands(
 
             var goalAmount = SettingService.GetGoalAmount(extraOptions, userInfo.Playcount);
             var timeSettings =
-                SettingService.GetTimePeriod(extraOptions, TimePeriod.AllTime, timeZone: userSettings.TimeZone);
+                SettingService.GetTimePeriod(extraOptions, TimePeriod.AllTime, timeZone: userSettings.TimeZone, language: LocalizationService.GetLanguage(this.Context.Guild?.Id, this.Context.Guild?.PreferredLocale));
             var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
             if (string.IsNullOrWhiteSpace(extraOptions) &&
@@ -468,7 +469,7 @@ public class PlayCommands(
 
         var userSettings = await settingService.GetUser(extraOptions, contextUser, this.Context);
         var timeSettings = SettingService.GetTimePeriod(userSettings.NewSearchValue, TimePeriod.AllTime,
-            timeZone: userSettings.TimeZone);
+            timeZone: userSettings.TimeZone, language: LocalizationService.GetLanguage(this.Context.Guild?.Id, this.Context.Guild?.PreferredLocale));
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
         var response = await playBuilder.PlaysAsync(new ContextModel(this.Context, prfx, contextUser),

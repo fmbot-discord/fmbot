@@ -1287,6 +1287,10 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("guild_flags");
 
+                    b.Property<int?>("Language")
+                        .HasColumnType("integer")
+                        .HasColumnName("language");
+
                     b.Property<DateTime?>("LastCrownSeed")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("last_crown_seed");

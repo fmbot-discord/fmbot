@@ -360,7 +360,7 @@ public class PlaySlashCommands(
             var userInfo = await dataSourceFactory.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
             var goalAmount = SettingService.GetGoalAmount(amount.ToString(), userInfo.Playcount);
             var timeSettings =
-                SettingService.GetTimePeriod(timePeriod, TimePeriod.AllTime, timeZone: userSettings.TimeZone);
+                SettingService.GetTimePeriod(timePeriod, TimePeriod.AllTime, timeZone: userSettings.TimeZone, language: LocalizationService.GetLanguage(this.Context.Interaction.GuildId, this.Context.Interaction.GuildLocale));
 
             var response = await playBuilder.PaceAsync(new ContextModel(this.Context, contextUser),
                 userSettings, timeSettings, goalAmount, userInfo.Playcount, userInfo.RegisteredUnix);
@@ -395,7 +395,7 @@ public class PlaySlashCommands(
         try
         {
             var timeSettings =
-                SettingService.GetTimePeriod(timePeriod, TimePeriod.AllTime, timeZone: userSettings.TimeZone);
+                SettingService.GetTimePeriod(timePeriod, TimePeriod.AllTime, timeZone: userSettings.TimeZone, language: LocalizationService.GetLanguage(this.Context.Interaction.GuildId, this.Context.Interaction.GuildLocale));
 
             var response = await playBuilder.PlaysAsync(new ContextModel(this.Context, contextUser), userSettings,
                 timeSettings);
@@ -523,7 +523,7 @@ public class PlaySlashCommands(
             var selectedTimePeriod = !string.IsNullOrWhiteSpace(timePeriod) ? timePeriod : year.ToString();
 
             var timeSettings = SettingService.GetTimePeriod(selectedTimePeriod, TimePeriod.AllTime,
-                timeZone: userSettings.TimeZone);
+                timeZone: userSettings.TimeZone, language: LocalizationService.GetLanguage(this.Context.Interaction.GuildId, this.Context.Interaction.GuildLocale));
 
             var response = await recapBuilders.RecapAsync(new ContextModel(this.Context, contextUser),
                 userSettings, timeSettings, RecapPage.Overview);

@@ -52,11 +52,11 @@ public class StaticBuilders
 
         var container = response.ComponentsContainer;
         container.WithAccentColor(DiscordConstants.InformationColorBlue);
-        container.WithTextDisplay("### Using Spotify and tracking is out of sync?");
+        container.WithTextDisplay(context.Localize("outofsync.title"));
 
         var intro = new StringBuilder();
-        intro.Append(
-            $".fmbot uses [your Last.fm account]({LastfmUrlExtensions.GetUserUrl(context.ContextUser?.UserNameLastFM) ?? "https://last.fm/user/_"}) for knowing what you listen to.");
+        intro.Append(context.Localize("outofsync.intro",
+            ("url", LastfmUrlExtensions.GetUserUrl(context.ContextUser?.UserNameLastFM) ?? "https://last.fm/user/_")));
 
         if (context.ContextUser?.UserNameLastFM != null)
         {
@@ -66,8 +66,7 @@ public class StaticBuilders
             if (recentTracks.Success && recentTracks.Content?.RecentTracks != null &&
                 recentTracks.Content.RecentTracks.Any(a => a.NowPlaying))
             {
-                intro.Append(
-                    " The last scrobble on your profile is **currently playing**, so it looks like everything is working well.");
+                intro.Append($" {context.Localize("outofsync.currentlyPlaying")}");
             }
             else
             {
@@ -82,41 +81,37 @@ public class StaticBuilders
                     var timePlayed = DateTime.SpecifyKind(lastScrobble.TimePlayed.Value, DateTimeKind.Utc);
                     var unixTime = ((DateTimeOffset)timePlayed).ToUnixTimeSeconds();
                     var style = timePlayed > DateTime.UtcNow.AddHours(-12) ? "t" : "f";
-                    intro.Append($" The last scrobble on your profile was <t:{unixTime}:{style}>, about <t:{unixTime}:R>.");
+                    intro.Append($" {context.Localize("outofsync.lastScrobble",
+                        ("timestamp", $"<t:{unixTime}:{style}>"),
+                        ("relativeTimestamp", $"<t:{unixTime}:R>"))}");
                 }
             }
         }
 
         intro.AppendLine();
         intro.AppendLine();
-        intro.AppendLine(
-            "**.fmbot is not affiliated with Last.fm**. Sync and scrobbling issues are Last.fm issues and **not .fmbot issues**, so __we can't fix them for you__.");
+        intro.AppendLine(context.Localize("outofsync.notAffiliated"));
 
         container.WithTextDisplay(intro.ToString());
         container.WithSeparator();
 
         var expiredConnection = new StringBuilder();
-        expiredConnection.AppendLine("**Spotify stopped scrobbling completely?**");
-        expiredConnection.AppendLine(
-            "Spotify expires the Last.fm connection every 6 months. Press **Disconnect** and then **Connect** next to 'Spotify Scrobbling' in [your Last.fm settings](https://www.last.fm/settings/applications).");
+        expiredConnection.AppendLine(context.Localize("outofsync.stoppedScrobblingTitle"));
+        expiredConnection.AppendLine(context.Localize("outofsync.stoppedScrobblingDescription"));
 
         container.WithTextDisplay(expiredConnection.ToString());
         container.WithSeparator();
 
         var thingsToTry = new StringBuilder();
-        thingsToTry.AppendLine("**Still not working after reconnecting?**");
-        thingsToTry.AppendLine(
-            "Try restarting your Spotify client. Sometimes there's also other issues with Last.fm or Spotify that can cause this. " +
-            "For a comprehensive list of all solutions, please check **[the guide on the Last.fm support forums](https://support.last.fm/t/spotify-has-stopped-scrobbling-what-can-i-do/3184)**.");
+        thingsToTry.AppendLine(context.Localize("outofsync.stillNotWorkingTitle"));
+        thingsToTry.AppendLine(context.Localize("outofsync.stillNotWorkingDescription"));
 
         container.WithTextDisplay(thingsToTry.ToString());
 
         if (PublicProperties.IssuesAtLastFm)
         {
             container.WithSeparator();
-            container.WithTextDisplay(
-                "**Note:**\n⚠️ [Last.fm](https://twitter.com/lastfmstatus) is currently experiencing issues, so the steps listed above might not work. " +
-                ".fmbot is not affiliated with Last.fm.");
+            container.WithTextDisplay(context.Localize("outofsync.lastfmIssuesNote"));
         }
 
         return response;
@@ -649,7 +644,8 @@ public class StaticBuilders
         CommandCategory? selectedCategory,
         string selectedCommand,
         string userName,
-        ulong userId)
+        ulong userId,
+        Localizer localizer)
     {
         var response = new ResponseModel
         {
@@ -698,7 +694,7 @@ public class StaticBuilders
 
             if (foundCommand != null)
             {
-                var helpResponse = GenericEmbedService.HelpResponse(response.Embed, foundCommand, prefix, userName);
+                var helpResponse = GenericEmbedService.HelpResponse(response.Embed, foundCommand, prefix, userName, localizer);
                 var userSettings = await this._userService.GetUserAsync(userId);
                 var isSupporter = userSettings != null && SupporterService.IsSupporter(userSettings.UserType);
                 if (helpResponse.showPurchaseButtons && !isSupporter)

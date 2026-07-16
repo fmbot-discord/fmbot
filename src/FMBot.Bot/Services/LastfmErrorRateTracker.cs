@@ -30,7 +30,7 @@ public static class LastfmErrorRateTracker
     private static Snapshot _snapshot;
     private static int _refreshing;
 
-    public static string GetFailureRateDescription()
+    public static Snapshot GetSnapshot()
     {
         var snap = _snapshot;
 
@@ -39,13 +39,7 @@ public static class LastfmErrorRateTracker
             TriggerRefresh();
         }
 
-        if (snap is not { HasData: true })
-        {
-            return string.Empty;
-        }
-
-        return
-            $"\n\nIn the last hour they've returned an error on {snap.AveragePercent.ToString("0.#", CultureInfo.InvariantCulture)}% of our requests.  `{snap.Sparkline}`";
+        return snap is { HasData: true } ? snap : null;
     }
 
     private static void TriggerRefresh()
@@ -152,5 +146,5 @@ public static class LastfmErrorRateTracker
         _snapshot = new Snapshot(DateTime.UtcNow, true, avgPercent, sb.ToString());
     }
 
-    private sealed record Snapshot(DateTime FetchedAt, bool HasData, double AveragePercent, string Sparkline);
+    public sealed record Snapshot(DateTime FetchedAt, bool HasData, double AveragePercent, string Sparkline);
 }

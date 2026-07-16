@@ -474,7 +474,8 @@ public class StaticCommands(
                 null,
                 selectedCommand,
                 userName,
-                this.Context.User.Id);
+                this.Context.User.Id,
+                Localizer.ForGuild(this.Context.Guild?.Id, discordLocale: this.Context.Guild?.PreferredLocale));
 
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
             {

@@ -10,6 +10,8 @@ public enum GuildSetting
     EmoteReactions = 2,
     [Option("Default 'fm' type", "Default 'fm' embed type for everyone")]
     DefaultEmbedType = 3,
+    [Option("Language", "Language for .fmbot responses in this server")]
+    Language = 4,
 
     [Option("WhoKnows activity threshold", "Filter fmbot-inactive users from WhoKnows")]
     WhoKnowsActivityThreshold = 10,

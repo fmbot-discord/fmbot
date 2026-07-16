@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
 using Serilog;
@@ -637,7 +638,7 @@ public class ChartService
     }
 
     public async Task<ChartSettings> SetSettings(ChartSettings currentChartSettings, UserSettingsModel userSettings,
-        bool aoty = false, bool aotd = false)
+        bool aoty = false, bool aotd = false, Language language = Language.English)
     {
         var chartSettings = currentChartSettings;
         chartSettings.CustomOptionsEnabled = false;
@@ -823,7 +824,8 @@ public class ChartService
         }
 
         var timeSettings = SettingService.GetTimePeriod(cleanedOptions,
-            aoty || aotd ? TimePeriod.AllTime : TimePeriod.Weekly, timeZone: userSettings.TimeZone);
+            aoty || aotd ? TimePeriod.AllTime : TimePeriod.Weekly, timeZone: userSettings.TimeZone,
+            language: language);
 
         if (!string.IsNullOrWhiteSpace(timeSettings.NewSearchValue))
         {
@@ -857,7 +859,7 @@ public class ChartService
                 {
                     chartSettings.FilteredArtist = artist;
                     timeSettings = SettingService.GetTimePeriod(cleanedOptions, TimePeriod.AllTime,
-                        timeZone: userSettings.TimeZone);
+                        timeZone: userSettings.TimeZone, language: language);
                 }
             }
         }
@@ -903,70 +905,75 @@ public class ChartService
     }
 
     public static void AddSettingsToDescription(ChartSettings chartSettings, StringBuilder embedDescription,
-        string randomSupporter, string prfx)
+        string randomSupporter, string prfx, Localizer localizer)
     {
-        var single = chartSettings.ArtistChart ? "Artist" : "Album";
-        var multiple = chartSettings.ArtistChart ? "Artists" : "Albums";
-
         if (chartSettings.ReleaseYearFilter.HasValue)
         {
-            embedDescription.AppendLine($"- Filtering to albums released in {chartSettings.ReleaseYearFilter.Value}");
+            embedDescription.AppendLine(localizer.Translate("chart.filterReleaseYear",
+                ("year", chartSettings.ReleaseYearFilter.Value.ToString())));
         }
 
         if (chartSettings.ReleaseDecadeFilter.HasValue)
         {
-            embedDescription.AppendLine(
-                $"- Filtering to albums released in the {chartSettings.ReleaseDecadeFilter.Value}s");
+            embedDescription.AppendLine(localizer.Translate("chart.filterReleaseDecade",
+                ("decade", chartSettings.ReleaseDecadeFilter.Value.ToString())));
         }
 
         if (chartSettings.FilterSingles)
         {
-            embedDescription.AppendLine("- Filtering out singles");
+            embedDescription.AppendLine(localizer.Translate("chart.filterSingles"));
         }
 
         if (chartSettings.SkipWithoutImage)
         {
-            embedDescription.AppendLine($"- {multiple} without images skipped");
+            embedDescription.AppendLine(chartSettings.ArtistChart
+                ? localizer.Translate("chart.skippingArtistsWithoutImages")
+                : localizer.Translate("chart.skippingAlbumsWithoutImages"));
         }
 
         if (chartSettings.SkipNsfw)
         {
-            embedDescription.AppendLine($"- {multiple} with NSFW images skipped");
+            embedDescription.AppendLine(chartSettings.ArtistChart
+                ? localizer.Translate("chart.skippingNsfwArtists")
+                : localizer.Translate("chart.skippingNsfwAlbums"));
         }
 
         if (chartSettings.TitleSetting == TitleSetting.TitlesDisabled)
         {
-            embedDescription.AppendLine($"- {single} titles disabled");
+            embedDescription.AppendLine(chartSettings.ArtistChart
+                ? localizer.Translate("chart.artistTitlesDisabled")
+                : localizer.Translate("chart.albumTitlesDisabled"));
         }
 
         if (chartSettings.FilteredArtist != null && !chartSettings.ArtistChart)
         {
-            embedDescription.AppendLine(
-                $"- Filtering to artist **[{chartSettings.FilteredArtist.Name}]({LastfmUrlExtensions.GetArtistUrl(chartSettings.FilteredArtist.Name)})**");
+            embedDescription.AppendLine(localizer.Translate("chart.filterArtist",
+                ("artist", StringExtensions.Sanitize(chartSettings.FilteredArtist.Name)),
+                ("url", LastfmUrlExtensions.GetArtistUrl(chartSettings.FilteredArtist.Name))));
         }
 
         if (chartSettings.HasGenreFilter)
         {
-            var genreWord = chartSettings.FilteredGenres.Count == 1 ? "genre" : "genres";
-            embedDescription.AppendLine(
-                $"- Filtering to {genreWord} **{string.Join("**, **", chartSettings.FilteredGenres.Select(g => StringExtensions.Sanitize(g)))}**");
+            embedDescription.AppendLine(localizer.TranslateCount("chart.filterGenres",
+                chartSettings.FilteredGenres.Count,
+                ("genres", string.Join("**, **", chartSettings.FilteredGenres.Select(g => StringExtensions.Sanitize(g))))));
         }
 
         if (chartSettings.RainbowSortingEnabled)
         {
-            embedDescription.AppendLine("- Secret rainbow option enabled! (Not perfect, but hey, it somewhat exists)");
+            embedDescription.AppendLine(localizer.Translate("chart.rainbow"));
         }
 
         var rnd = new Random();
         if (chartSettings.ImagesNeeded == 1 && rnd.Next(0, 3) == 1 && !chartSettings.ArtistChart)
         {
-            embedDescription.AppendLine($"*Linus Tech Tip: Use `{prfx}cover` if you just want to see an album cover.*");
+            embedDescription.AppendLine(localizer.Translate("chart.coverTip", ("command", $"{prfx}cover")));
         }
 
         if (!string.IsNullOrEmpty(randomSupporter))
         {
-            embedDescription.AppendLine(
-                $"- *Brought to you by .fmbot supporter {StringExtensions.Sanitize(randomSupporter)}.*");
+            embedDescription.AppendLine(localizer.Translate("chart.broughtBy",
+                ("name", StringExtensions.Sanitize(randomSupporter))));
         }
     }
 }

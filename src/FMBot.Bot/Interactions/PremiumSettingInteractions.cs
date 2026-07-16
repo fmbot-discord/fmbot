@@ -220,8 +220,8 @@ public class PremiumSettingInteractions(
             var existingCustomerId = await supporterService.GetExistingStripeCustomerId(this.Context.User.Id);
 
             var checkout = await supporterService.GetPremiumGuildCheckoutLink(this.Context.User.Id,
-                contextUser?.UserNameLastFM, type, this.Context.Guild.Id, this.Context.Guild.Name, pricing,
-                existingCustomerId, source);
+                this.Context.User.Username, contextUser?.UserNameLastFM, type, this.Context.Guild.Id,
+                this.Context.Guild.Name, pricing, existingCustomerId, source);
 
             if (checkout == null || checkout.GuildAlreadySubscribed)
             {

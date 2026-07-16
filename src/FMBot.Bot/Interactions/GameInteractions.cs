@@ -120,7 +120,8 @@ public class GameInteractions(
                 }
 
                 var name = await UserService.GetNameAsync(this.Context.Guild, this.Context.User);
-                var components = new ActionRowProperties().WithButton($"{name} is playing again!", customId: "1",
+                var components = new ActionRowProperties().WithButton(
+                    context.Localize("jumble.playingAgain", ("user", name)), customId: "1",
                     url: null, disabled: true, style: ButtonStyle.Secondary);
                 _ = Task.Run(() => message.ModifyAsync(m => m.Components = [components]));
 

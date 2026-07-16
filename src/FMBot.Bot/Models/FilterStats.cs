@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using FMBot.Bot.Extensions;
 using FMBot.Bot.Services;
 
 namespace FMBot.Bot.Models;
@@ -23,62 +22,55 @@ public class FilterStats
 
     public int EndCount { get; set; }
 
-    public string FullDescription
+    public string GetFullDescription(Localizer localizer)
     {
-        get
+        var descriptionList = new List<string>();
+
+        if (this.ActivityThresholdFiltered is > 0)
         {
-            var descriptionList = new List<string>();
-
-            if (this.ActivityThresholdFiltered is > 0)
-            {
-                descriptionList.Add($"{this.ActivityThresholdFiltered.Value} inactive .fmbot");
-            }
-            if (this.GuildActivityThresholdFiltered is > 0)
-            {
-                descriptionList.Add($"{this.GuildActivityThresholdFiltered.Value} inactive server");
-            }
-            if (this.BlockedFiltered is > 0)
-            {
-                descriptionList.Add($"{this.BlockedFiltered.Value} blocked");
-            }
-            if (this.AllowedRolesFiltered is > 0)
-            {
-                descriptionList.Add($"{this.AllowedRolesFiltered.Value} without allowed roles");
-            }
-            if (this.BlockedRolesFiltered is > 0)
-            {
-                descriptionList.Add($"{this.BlockedRolesFiltered.Value} with blocked roles");
-            }
-
-            var description = new StringBuilder();
-            if (descriptionList.Any())
-            {
-                description.Append($"Filtered: {StringService.StringListToLongString(descriptionList)} users");
-            }
-
-            if (RequesterFiltered == true)
-            {
-                description.Append($" (You've been filtered)");
-            }
-
-            if (this.Roles != null && this.Roles.Any())
-            {
-                description.Append($"✨ Role filter enabled with {this.Roles.Count} {StringExtensions.GetRolesString(this.Roles.Count)} picked");
-            }
-
-            return description.Length > 0 ?
-                description.ToString() :
-                null;
+            descriptionList.Add(localizer.TranslateCount("whoknows.filteredInactiveFmbot", this.ActivityThresholdFiltered.Value));
         }
-    }
-
-    public string BasicDescription
-    {
-        get
+        if (this.GuildActivityThresholdFiltered is > 0)
         {
-            return this.EndCount < this.StartCount ?
-                    $"{this.StartCount - this.EndCount} {StringExtensions.GetUsersString(this.StartCount - this.EndCount)} filtered" :
-                    null;
+            descriptionList.Add(localizer.TranslateCount("whoknows.filteredInactiveServer", this.GuildActivityThresholdFiltered.Value));
         }
+        if (this.BlockedFiltered is > 0)
+        {
+            descriptionList.Add(localizer.TranslateCount("whoknows.filteredBlocked", this.BlockedFiltered.Value));
+        }
+        if (this.AllowedRolesFiltered is > 0)
+        {
+            descriptionList.Add(localizer.TranslateCount("whoknows.filteredWithoutAllowedRoles", this.AllowedRolesFiltered.Value));
+        }
+        if (this.BlockedRolesFiltered is > 0)
+        {
+            descriptionList.Add(localizer.TranslateCount("whoknows.filteredWithBlockedRoles", this.BlockedRolesFiltered.Value));
+        }
+
+        var description = new StringBuilder();
+        if (descriptionList.Any())
+        {
+            description.Append(localizer.Translate("whoknows.filteredTotal",
+                ("filters", StringService.StringListToLongString(descriptionList))));
+        }
+
+        if (RequesterFiltered == true)
+        {
+            description.Append($" {localizer.Translate("whoknows.filteredRequester")}");
+        }
+
+        if (this.Roles != null && this.Roles.Any())
+        {
+            if (description.Length > 0)
+            {
+                description.Append(' ');
+            }
+
+            description.Append(localizer.TranslateCount("whoknows.roleFilterEnabled", this.Roles.Count));
+        }
+
+        return description.Length > 0 ?
+            description.ToString() :
+            null;
     }
 }

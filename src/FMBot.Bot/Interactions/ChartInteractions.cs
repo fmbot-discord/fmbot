@@ -93,7 +93,7 @@ public class ChartInteractions(
     private async Task<List<string>> GetChartGenreOptions(
         string chartType, UserSettingsModel userSettings, string timePeriodStr, List<string> selectedGenres)
     {
-        var timeSettings = SettingService.GetTimePeriod(timePeriodStr, timeZone: userSettings.TimeZone);
+        var timeSettings = SettingService.GetTimePeriod(timePeriodStr, timeZone: userSettings.TimeZone, language: LocalizationService.GetLanguage(this.Context.Interaction.GuildId, this.Context.Interaction.GuildLocale));
 
         List<string> artistNames;
         if (chartType == "a")
@@ -219,7 +219,8 @@ public class ChartInteractions(
             var timeSettings = SettingService.GetTimePeriod(
                 timePeriodValue,
                 hasFilters ? TimePeriod.AllTime : TimePeriod.Weekly,
-                timeZone: userSettings.TimeZone);
+                timeZone: userSettings.TimeZone,
+                language: LocalizationService.GetLanguage(this.Context.Interaction.GuildId, this.Context.Interaction.GuildLocale));
 
             var chartSettings = new ChartSettings(this.Context.User)
             {

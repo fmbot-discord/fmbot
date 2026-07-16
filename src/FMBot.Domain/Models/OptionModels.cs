@@ -9,6 +9,9 @@ public class TimeSettingsModel
     public string UrlParameter { get; set; }
     public string ApiParameter { get; set; }
     public string Description { get; set; }
+    public string PeriodLabelKey { get; set; }
+    public DateTime? PeriodMonthDate { get; set; }
+    public bool PeriodMonthIncludesYear { get; set; }
     public string AltDescription { get; set; }
     public LastStatsTimeSpan LastStatsTimeSpan { get; set; }
     public TimePeriod TimePeriod { get; set; }

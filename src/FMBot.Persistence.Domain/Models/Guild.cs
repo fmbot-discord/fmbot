@@ -17,6 +17,8 @@ public class Guild
 
     public FmEmbedType? FmEmbedType { get; set; }
 
+    public Language? Language { get; set; }
+
     public string[] EmoteReactions { get; set; }
 
     public string[] DisabledCommands { get; set; }

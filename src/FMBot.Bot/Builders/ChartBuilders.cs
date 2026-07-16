@@ -66,7 +66,7 @@ public class ChartBuilders
 
             response.ComponentsContainer.AddComponent(
                 new ComponentSectionProperties(
-                    new ButtonProperties(editCustomId, "Edit", ButtonStyle.Secondary))
+                    new ButtonProperties(editCustomId, context.Localize("buttons.edit"), ButtonStyle.Secondary))
                 {
                     Components = [new TextDisplayProperties(message)]
                 });
@@ -94,7 +94,7 @@ public class ChartBuilders
         if (chartSettings.ImagesNeeded > 100)
         {
             return BuildChartValidationError(context,
-                "You can't create a chart with more than 100 images (10x10).\nPlease try a smaller size.",
+                context.Localize("chart.tooManyImages"),
                 InteractionConstants.Chart.AlbumType, chartSettings, userSettings.UserNameLastFm);
         }
 
@@ -161,33 +161,44 @@ public class ChartBuilders
             var reply = new StringBuilder();
             if (chartSettings.FilteredArtist != null)
             {
-                reply.AppendLine(
-                    $"Not enough scrobbled albums ({count} of required {chartSettings.ImagesNeeded}) from **[{chartSettings.FilteredArtist.Name}]({LastfmUrlExtensions.GetArtistUrl(chartSettings.FilteredArtist.Name)})** in {chartSettings.TimeSettings.Description} time period.");
+                reply.AppendLine(context.Localize("chart.notEnoughAlbumsArtist",
+                    ("amount", count.ToString()),
+                    ("required", chartSettings.ImagesNeeded.ToString()),
+                    ("artist", chartSettings.FilteredArtist.Name),
+                    ("url", LastfmUrlExtensions.GetArtistUrl(chartSettings.FilteredArtist.Name)),
+                    ("period", context.Localizer.PeriodLabel(chartSettings.TimeSettings))));
                 reply.AppendLine();
-                reply.AppendLine(
-                    $"Try a smaller chart, bigger time period ({Constants.CompactTimePeriodList}) or remove the artist filter.");
+                reply.AppendLine(context.Localize("chart.tryDifferentArtistFilter",
+                    ("periods", Constants.CompactTimePeriodList)));
             }
             else if (chartSettings.HasGenreFilter)
             {
-                reply.AppendLine(
-                    $"Not enough scrobbled albums ({count} of required {chartSettings.ImagesNeeded}) in the **{string.Join("**, **", chartSettings.FilteredGenres)}** {(chartSettings.FilteredGenres.Count == 1 ? "genre" : "genres")} in {chartSettings.TimeSettings.Description} time period.");
+                reply.AppendLine(context.LocalizeCount("chart.notEnoughAlbumsGenre",
+                    chartSettings.FilteredGenres.Count,
+                    ("amount", count.ToString()),
+                    ("required", chartSettings.ImagesNeeded.ToString()),
+                    ("genres", string.Join("**, **", chartSettings.FilteredGenres.Select(StringExtensions.Sanitize))),
+                    ("period", context.Localizer.PeriodLabel(chartSettings.TimeSettings))));
                 reply.AppendLine();
-                reply.AppendLine(
-                    $"Try a smaller chart, a bigger time period ({Constants.CompactTimePeriodList}) or different genres.");
+                reply.AppendLine(context.Localize("chart.tryDifferentGenres",
+                    ("periods", Constants.CompactTimePeriodList)));
             }
             else
             {
-                reply.AppendLine(
-                    $"Not enough scrobbled albums ({count} of required {chartSettings.ImagesNeeded}) in {chartSettings.TimeSettings.Description} time period.");
+                reply.AppendLine(context.Localize("chart.notEnoughAlbums",
+                    ("amount", count.ToString()),
+                    ("required", chartSettings.ImagesNeeded.ToString()),
+                    ("period", context.Localizer.PeriodLabel(chartSettings.TimeSettings))));
                 reply.AppendLine();
-                reply.AppendLine($"Try a smaller chart or a bigger time period ({Constants.CompactTimePeriodList}).");
+                reply.AppendLine(context.Localize("chart.tryDifferent",
+                    ("periods", Constants.CompactTimePeriodList)));
             }
 
             if (chartSettings.SkipWithoutImage && chartSettings.FilteredArtist == null && !chartSettings.HasGenreFilter)
             {
                 reply.AppendLine();
-                reply.AppendLine(
-                    $"Note that {extraAlbums} extra albums are required because you are skipping albums without an image.");
+                reply.AppendLine(context.Localize("chart.extraAlbumsRequired",
+                    ("amount", extraAlbums.ToString())));
             }
 
             return BuildChartValidationError(context, reply.ToString(),
@@ -224,8 +235,11 @@ public class ChartBuilders
             if (albums.Content.TopAlbums.Count < chartSettings.ImagesNeeded)
             {
                 return BuildChartValidationError(context,
-                    $"Sorry, you haven't listened to enough albums released in {chartSettings.ReleaseYearFilter} ({albums.Content.TopAlbums.Count} of required {chartSettings.ImagesNeeded}) to generate a chart.\n" +
-                    $"Please try a smaller chart, a different year or a bigger time period ({Constants.CompactTimePeriodList})",
+                    context.Localize("chart.notEnoughReleaseYear",
+                        ("year", chartSettings.ReleaseYearFilter.Value.ToString()),
+                        ("amount", albums.Content.TopAlbums.Count.ToString()),
+                        ("required", chartSettings.ImagesNeeded.ToString()),
+                        ("periods", Constants.CompactTimePeriodList)),
                     InteractionConstants.Chart.AlbumType, chartSettings, userSettings.UserNameLastFm);
             }
         }
@@ -237,8 +251,11 @@ public class ChartBuilders
             if (albums.Content.TopAlbums.Count < chartSettings.ImagesNeeded)
             {
                 return BuildChartValidationError(context,
-                    $"Sorry, you haven't listened to enough albums released in the {chartSettings.ReleaseDecadeFilter}s ({albums.Content.TopAlbums.Count} of required {chartSettings.ImagesNeeded}) to generate a chart.\n" +
-                    $"Please try a smaller chart, a different year or a bigger time period ({Constants.CompactTimePeriodList})",
+                    context.Localize("chart.notEnoughReleaseDecade",
+                        ("decade", chartSettings.ReleaseDecadeFilter.Value.ToString()),
+                        ("amount", albums.Content.TopAlbums.Count.ToString()),
+                        ("required", chartSettings.ImagesNeeded.ToString()),
+                        ("periods", Constants.CompactTimePeriodList)),
                     InteractionConstants.Chart.AlbumType, chartSettings, userSettings.UserNameLastFm);
             }
         }
@@ -250,8 +267,10 @@ public class ChartBuilders
             if (albums.Content.TopAlbums.Count < chartSettings.ImagesNeeded)
             {
                 return BuildChartValidationError(context,
-                    $"Sorry, not enough non-single albums ({albums.Content.TopAlbums.Count} of required {chartSettings.ImagesNeeded}) to generate a chart.\n" +
-                    $"Please try a smaller chart or a bigger time period ({Constants.CompactTimePeriodList})",
+                    context.Localize("chart.notEnoughNonSingles",
+                        ("amount", albums.Content.TopAlbums.Count.ToString()),
+                        ("required", chartSettings.ImagesNeeded.ToString()),
+                        ("periods", Constants.CompactTimePeriodList)),
                     InteractionConstants.Chart.AlbumType, chartSettings, userSettings.UserNameLastFm);
             }
         }
@@ -286,14 +305,18 @@ public class ChartBuilders
         var url =
             $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library/albums?{chartSettings.TimespanUrlString}";
         var embedTitle = new StringBuilder();
-        embedTitle.Append(
-            $"[{chartSettings.Width}x{chartSettings.Height} {chartSettings.TimespanString} Chart]({url}) for {userSettings.DisplayName}");
+        embedTitle.Append(context.Localize("chart.albumChartTitle",
+            ("size", $"{chartSettings.Width}x{chartSettings.Height}"),
+            ("timespan", context.Localizer.PeriodLabel(chartSettings.TimeSettings)),
+            ("url", url),
+            ("user", userSettings.DisplayName)));
 
         var embedDescription = new StringBuilder();
 
         var supporter =
             await this._supporterService.GetRandomSupporter(context.DiscordGuild, context.ContextUser.UserType);
-        ChartService.AddSettingsToDescription(chartSettings, embedDescription, supporter, context.Prefix);
+        ChartService.AddSettingsToDescription(chartSettings, embedDescription, supporter, context.Prefix,
+            context.Localizer);
 
         var nsfwAllowed = context.DiscordGuild == null || ((TextGuildChannel)context.DiscordChannel).Nsfw;
         using var chart = await this._chartService.GenerateChartAsync(chartSettings);
@@ -301,13 +324,13 @@ public class ChartBuilders
         if (chartSettings.CensoredItems is > 0)
         {
             embedDescription.AppendLine(
-                $"{chartSettings.CensoredItems.Value} {StringExtensions.GetAlbumsString(chartSettings.CensoredItems.Value)} filtered due to images that are not allowed to be posted on Discord.");
+                context.LocalizeCount("chart.albumsFiltered", chartSettings.CensoredItems.Value));
         }
 
         if (chartSettings.ContainsNsfw && !nsfwAllowed)
         {
             response.ComponentsContainer.AddComponent(
-                new TextDisplayProperties("**⚠️ Contains NSFW covers - Click to reveal**"));
+                new TextDisplayProperties(context.Localize("chart.containsNsfwCovers")));
         }
 
         response.FileDescription = StringExtensions.TruncateLongString(chartSettings.FileDescription.ToString(), 1024);
@@ -334,8 +357,10 @@ public class ChartBuilders
         }
 
         var footerText = !userSettings.DifferentUser
-            ? $"-# {userSettings.UserNameLastFm} has {context.ContextUser.TotalPlaycount.Format(context.NumberFormat)} scrobbles"
-            : $"-# Chart requested by {await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser)}";
+            ? context.LocalizeCount("chart.userScrobbles", context.ContextUser.TotalPlaycount.GetValueOrDefault(),
+                ("user", userSettings.UserNameLastFm))
+            : context.Localize("chart.requestedBy",
+                ("user", await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser)));
 
         if (context.SelectMenu == null)
         {
@@ -345,7 +370,7 @@ public class ChartBuilders
 
             response.ComponentsContainer.AddComponent(
                 new ComponentSectionProperties(
-                    new ButtonProperties(editCustomId, "Edit", ButtonStyle.Secondary))
+                    new ButtonProperties(editCustomId, context.Localize("buttons.edit"), ButtonStyle.Secondary))
                 {
                     Components = [new TextDisplayProperties(footerText)]
                 });
@@ -371,7 +396,7 @@ public class ChartBuilders
         if (supporter != null)
         {
             var actionRow = new ActionRowProperties();
-            actionRow.WithButton(Constants.GetSupporterButton,
+            actionRow.WithButton(context.Localize("buttons.getFmbotSupporter"),
                 customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "chart-broughtby"),
                 style: ButtonStyle.Secondary);
             response.ComponentsV2.AddComponent(actionRow);
@@ -393,7 +418,7 @@ public class ChartBuilders
         if (chartSettings.ImagesNeeded > 100)
         {
             return BuildChartValidationError(context,
-                "You can't create a chart with more than 100 images (10x10).\nPlease try a smaller size.",
+                context.Localize("chart.tooManyImages"),
                 InteractionConstants.Chart.ArtistType, chartSettings, userSettings.UserNameLastFm);
         }
 
@@ -430,20 +455,24 @@ public class ChartBuilders
             string reply;
             if (chartSettings.HasGenreFilter)
             {
-                reply =
-                    $"Not enough scrobbled artists ({count} of required {chartSettings.ImagesNeeded}) in the **{string.Join("**, **", chartSettings.FilteredGenres)}** {(chartSettings.FilteredGenres.Count == 1 ? "genre" : "genres")} for a chart this size. \n" +
-                    $"Please try a smaller chart, a bigger time period ({Constants.CompactTimePeriodList}) or different genres.";
+                reply = context.LocalizeCount("chart.notEnoughArtistsGenre",
+                    chartSettings.FilteredGenres.Count,
+                    ("amount", count.ToString()),
+                    ("required", chartSettings.ImagesNeeded.ToString()),
+                    ("genres", string.Join("**, **", chartSettings.FilteredGenres.Select(g => StringExtensions.Sanitize(g)))),
+                    ("periods", Constants.CompactTimePeriodList));
             }
             else
             {
-                reply =
-                    $"User hasn't listened to enough artists ({count} of required {chartSettings.ImagesNeeded}) for a chart this size. \n" +
-                    $"Please try a smaller chart or a bigger time period ({Constants.CompactTimePeriodList}).";
+                reply = context.Localize("chart.notEnoughArtists",
+                    ("amount", count.ToString()),
+                    ("required", chartSettings.ImagesNeeded.ToString()),
+                    ("periods", Constants.CompactTimePeriodList));
 
                 if (chartSettings.SkipWithoutImage)
                 {
-                    reply += "\n\n" +
-                             $"Note that {extraArtists} extra artists are required because you are skipping artists without an image.";
+                    reply += "\n\n" + context.Localize("chart.extraArtistsRequired",
+                        ("amount", extraArtists.ToString()));
                 }
             }
 
@@ -483,28 +512,33 @@ public class ChartBuilders
 
         var embedTitle = new StringBuilder();
 
-        embedTitle.Append(
-            $"[{chartSettings.Width}x{chartSettings.Height} {chartSettings.TimespanString} Artist Chart]({url}) for {userSettings.DisplayName}");
+        embedTitle.Append(context.Localize("chart.artistChartTitle",
+            ("size", $"{chartSettings.Width}x{chartSettings.Height}"),
+            ("timespan", context.Localizer.PeriodLabel(chartSettings.TimeSettings)),
+            ("url", url),
+            ("user", userSettings.DisplayName)));
 
         var embedDescription = new StringBuilder();
 
         var footer = new StringBuilder();
         if (!userSettings.DifferentUser)
         {
-            footer.AppendLine(
-                $"-# {userSettings.UserNameLastFm} has {context.ContextUser.TotalPlaycount.Format(context.NumberFormat)} scrobbles");
+            footer.AppendLine(context.LocalizeCount("chart.userScrobbles",
+                context.ContextUser.TotalPlaycount.GetValueOrDefault(),
+                ("user", userSettings.UserNameLastFm)));
         }
         else
         {
-            footer.AppendLine(
-                $"-# Chart requested by {await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser)}");
+            footer.AppendLine(context.Localize("chart.requestedBy",
+                ("user", await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser))));
         }
 
-        footer.AppendLine("-# Image source: Spotify | Use 'skip' to skip artists without images");
+        footer.AppendLine(context.Localize("chart.imageSource"));
 
         var supporter =
             await this._supporterService.GetRandomSupporter(context.DiscordGuild, context.ContextUser.UserType);
-        ChartService.AddSettingsToDescription(chartSettings, embedDescription, supporter, context.Prefix);
+        ChartService.AddSettingsToDescription(chartSettings, embedDescription, supporter, context.Prefix,
+            context.Localizer);
 
         var nsfwAllowed = context.DiscordGuild == null || ((TextGuildChannel)context.DiscordChannel).Nsfw;
         using var chart = await this._chartService.GenerateChartAsync(chartSettings);
@@ -512,15 +546,16 @@ public class ChartBuilders
         if (chartSettings.CensoredItems is > 0)
         {
             embedDescription.AppendLine(
-                $"{chartSettings.CensoredItems.Value} {StringExtensions.GetArtistsString(chartSettings.CensoredItems.Value)} filtered due to images that are not allowed to be posted on Discord.");
+                context.LocalizeCount("chart.artistsFiltered", chartSettings.CensoredItems.Value));
         }
 
         if (chartSettings.ContainsNsfw && !nsfwAllowed)
         {
             response.ComponentsContainer.AddComponent(
-                new TextDisplayProperties("**⚠️ Contains NSFW images - Click to reveal**"));
+                new TextDisplayProperties(context.Localize("chart.containsNsfwImages")));
         }
 
+        response.FileDescription = StringExtensions.TruncateLongString(chartSettings.FileDescription.ToString(), 1024);
         response.FileName =
             $"artist-chart-{chartSettings.Width}w-{chartSettings.Height}h-{chartSettings.TimeSettings.TimePeriod}-{userSettings.UserNameLastFm}.png";
 
@@ -551,7 +586,7 @@ public class ChartBuilders
 
             response.ComponentsContainer.AddComponent(
                 new ComponentSectionProperties(
-                    new ButtonProperties(editCustomId, "Edit", ButtonStyle.Secondary))
+                    new ButtonProperties(editCustomId, context.Localize("buttons.edit"), ButtonStyle.Secondary))
                 {
                     Components = [new TextDisplayProperties(footer.ToString())]
                 });
@@ -577,7 +612,7 @@ public class ChartBuilders
         if (supporter != null)
         {
             var actionRow = new ActionRowProperties();
-            actionRow.WithButton(Constants.GetSupporterButton,
+            actionRow.WithButton(context.Localize("buttons.getFmbotSupporter"),
                 customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "chart-broughtby"),
                 style: ButtonStyle.Secondary);
             response.ComponentsV2.AddComponent(actionRow);

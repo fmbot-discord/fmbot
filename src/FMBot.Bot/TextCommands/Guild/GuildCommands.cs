@@ -142,6 +142,22 @@ public class GuildCommands(
         await this.Context.LogCommandUsedAsync(response, userService);
     }
 
+    [Command("language", "serverlanguage", "lang", "locale")]
+    [Summary("Sets the language for .fmbot responses in your server")]
+    [Examples("language")]
+    [GuildOnly]
+    [CommandCategories(CommandCategory.ServerSettings)]
+    public async Task SetServerLanguageAsync([CommandParameter(Remainder = true)] string unused = null)
+    {
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+
+        var response = await guildSettingBuilder.GuildLanguage(new ContextModel(this.Context, prfx));
+
+        await this.Context.SendResponse(this.Interactivity, response, userService);
+        await this.Context.LogCommandUsedAsync(response, userService);
+    }
+
     [Command("serverreactions", "serversetreactions", "serveremojis", "serverreacts")]
     [Summary("Sets the automatic emoji reactions for the `fm` and `featured` command.\n\n" +
              "Use this command without any emojis to disable.")]

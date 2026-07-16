@@ -1,0 +1,1262 @@
+{
+  "commands": {
+    "addfriend": {
+      "description": "Voeg een vriend toe aan je .fmbot-vrienden",
+      "parameters": {
+        "user": {
+          "description": "De gebruiker om toe te voegen"
+        }
+      }
+    },
+    "affinity": {
+      "description": "Toont gebruikers uit deze server met een vergelijkbare muzieksmaak (artiesten, genres en landen)",
+      "parameters": {
+        "user": {
+          "description": "De gebruiker om de affiniteit voor te bekijken"
+        }
+      }
+    },
+    "album": {
+      "description": "Albuminfo voor het album waar je nu naar luistert of dat je zoekt",
+      "parameters": {
+        "album": {
+          "description": "Het album dat je zoekt (standaard wat je nu speelt)"
+        }
+      }
+    },
+    "albumplays": {
+      "description": "Toont het aantal plays voor het huidige album of het album dat je zoekt",
+      "parameters": {
+        "album": {
+          "description": "Het album dat je zoekt (standaard wat je nu speelt)"
+        },
+        "user": {
+          "description": "De gebruiker om te tonen (standaard jijzelf)"
+        }
+      }
+    },
+    "albumtracks": {
+      "description": "Toont plays per track voor het album waar je nu naar luistert of dat je zoekt",
+      "parameters": {
+        "album": {
+          "description": "Het album dat je zoekt (standaard wat je nu speelt)"
+        },
+        "playcount-order": {
+          "description": "Of de lijst op aantal plays gesorteerd moet worden"
+        },
+        "user": {
+          "description": "De gebruiker om te tonen (standaard jijzelf)"
+        }
+      }
+    },
+    "applemusic": {
+      "description": "Zoek op Apple Music",
+      "parameters": {
+        "private": {
+          "description": "Toon de reactie alleen aan jou"
+        },
+        "search": {
+          "description": "Zoekterm"
+        }
+      }
+    },
+    "artist": {
+      "description": "Algemene info voor de huidige artiest of de artiest die je zoekt",
+      "parameters": {
+        "artist": {
+          "description": "De artiest die je zoekt (standaard wat je nu speelt)"
+        },
+        "redirects": {
+          "description": "Schakel Last.fm-artiestnaamredirects in of uit (standaard aan)"
+        }
+      }
+    },
+    "artistalbums": {
+      "description": "Toont je top albums voor een artiest",
+      "parameters": {
+        "artist": {
+          "description": "De artiest die je zoekt (standaard wat je nu speelt)"
+        },
+        "hide-singles": {
+          "description": "Verberg singles in de resultaten"
+        },
+        "redirects": {
+          "description": "Schakel Last.fm-artiestnaamredirects in of uit (standaard aan)"
+        },
+        "user": {
+          "description": "De gebruiker om te tonen (standaard jijzelf)"
+        }
+      }
+    },
+    "artistoverview": {
+      "description": "Toont een overzicht voor de huidige artiest of de artiest die je zoekt",
+      "parameters": {
+        "artist": {
+          "description": "De artiest die je zoekt (standaard wat je nu speelt)"
+        },
+        "redirects": {
+          "description": "Schakel Last.fm-artiestnaamredirects in of uit (standaard aan)"
+        },
+        "user": {
+          "description": "De gebruiker om te tonen (standaard jijzelf)"
+        }
+      }
+    },
+    "artistpace": {
+      "description": "Toont de geschatte datum waarop je een aantal plays voor een artiest bereikt",
+      "parameters": {
+        "amount": {
+          "description": "Doelaantal plays"
+        },
+        "artist": {
+          "description": "De artiest die je zoekt (standaard wat je nu speelt)"
+        },
+        "redirects": {
+          "description": "Schakel Last.fm-artiestnaamredirects in of uit (standaard aan)"
+        },
+        "time-period": {
+          "description": "Periode voor het gemiddelde aantal plays"
+        },
+        "user": {
+          "description": "De gebruiker om te tonen (standaard jijzelf)"
+        }
+      }
+    },
+    "artistplays": {
+      "description": "Toont het aantal plays voor de huidige artiest of de artiest die je zoekt",
+      "parameters": {
+        "artist": {
+          "description": "De artiest die je zoekt (standaard wat je nu speelt)"
+        },
+        "redirects": {
+          "description": "Schakel Last.fm-artiestnaamredirects in of uit (standaard aan)"
+        },
+        "user": {
+          "description": "De gebruiker om te tonen (standaard jijzelf)"
+        }
+      }
+    },
+    "artisttracks": {
+      "description": "Toont je top tracks voor een artiest",
+      "parameters": {
+        "artist": {
+          "description": "De artiest die je zoekt (standaard wat je nu speelt)"
+        },
+        "redirects": {
+          "description": "Schakel Last.fm-artiestnaamredirects in of uit (standaard aan)"
+        },
+        "time-period": {
+          "description": "Periode om tracks voor te tonen"
+        },
+        "user": {
+          "description": "De gebruiker om te tonen (standaard jijzelf)"
+        }
+      }
+    },
+    "block": {
+      "description": "Voorkom dat een gebruiker in WhoKnows en serverbrede lijsten verschijnt",
+      "parameters": {
+        "user": {
+          "description": "De gebruiker die je wilt blokkeren"
+        }
+      }
+    },
+    "botscrobbling": {
+      "description": "Toont info over muziekbot-scrobbling en laat je je instellingen wijzigen"
+    },
+    "chart": {
+      "description": "Genereer charts met albumhoezen of artiestafbeeldingen",
+      "subcommands": {
+        "albums": {
+          "description": "Genereert een chart met albumafbeeldingen",
+          "parameters": {
+            "artist": {
+              "description": "Filter op een specifieke artiest"
+            },
+            "decade": {
+              "description": "Filter op albums uitgebracht in een decennium"
+            },
+            "hide-singles": {
+              "description": "Verberg singles in de chart"
+            },
+            "private": {
+              "description": "Toon de reactie alleen aan jou"
+            },
+            "rainbow": {
+              "description": "Experimentele regenbooginstelling"
+            },
+            "released": {
+              "description": "Filter op albums uitgebracht in een jaar"
+            },
+            "sfw": {
+              "description": "Alleen werkveilige afbeeldingen"
+            },
+            "size": {
+              "description": "Chartformaat"
+            },
+            "skip": {
+              "description": "Sla albums zonder afbeelding over"
+            },
+            "time-period": {
+              "description": "Periode"
+            },
+            "titles": {
+              "description": "Instelling voor titelweergave"
+            },
+            "user": {
+              "description": "De gebruiker om te tonen (standaard jijzelf)"
+            }
+          }
+        },
+        "artists": {
+          "description": "Genereert een chart met artiestafbeeldingen",
+          "parameters": {
+            "private": {
+              "description": "Toon de reactie alleen aan jou"
+            },
+            "rainbow": {
+              "description": "Experimentele regenbooginstelling"
+            },
+            "size": {
+              "description": "Chartformaat"
+            },
+            "skip": {
+              "description": "Sla artiesten zonder afbeelding over"
+            },
+            "time-period": {
+              "description": "Periode"
+            },
+            "titles": {
+              "description": "Instelling voor titelweergave"
+            },
+            "user": {
+              "description": "De gebruiker om te tonen (standaard jijzelf)"
+            }
+          }
+        }
+      }
+    },
+    "collection": {
+      "description": "Jouw of andermans Discogs-collectie",
+      "parameters": {
+        "format": {
+          "description": "Mediaformaat om mee te nemen"
+        },
+        "search": {
+          "description": "Zoekterm om op te filteren"
+        },
+        "user": {
+          "description": "De gebruiker om te tonen (standaard jijzelf)"
+        }
+      }
+    },
+    "country": {
+      "description": "Land van een artiest of top artiesten voor een land",
+      "parameters": {
+        "search": {
+          "description": "Het land of de artiest die je wilt bekijken"
+        }
+      }
+    },
+    "countrychart": {
+      "description": "Genereert een kaart met de locaties van je top artiesten",
+      "parameters": {
+        "private": {
+          "description": "Toon de reactie alleen aan jou"
+        },
+        "theme": {
+          "description": "Kleurthema voor de kaart"
+        },
+        "time-period": {
+          "description": "Periode"
+        },
+        "user": {
+          "description": "De gebruiker om te tonen (standaard jijzelf)"
+        }
+      }
+    },
+    "cover": {
+      "description": "Hoes van het huidige album of het album dat je zoekt",
+      "parameters": {
+        "album": {
+          "description": "Het album dat je zoekt (standaard wat je nu speelt)"
+        }
+      }
+    },
+    "covermode": {
+      "description": "Stel in of albumhoezen bewegen of altijd stilstaan"
+    },
+    "crown": {
+      "description": "Geschiedenis van een specifieke kroon",
+      "parameters": {
+        "artist": {
+          "description": "De artiest die je zoekt (standaard wat je nu speelt)"
+        }
+      }
+    },
+    "crowns": {
+      "description": "Bekijk een lijst met kronen van jou of iemand anders",
+      "parameters": {
+        "user": {
+          "description": "De gebruiker om te tonen (standaard jijzelf)"
+        },
+        "view": {
+          "description": "Weergave van kronen die je wilt zien"
+        }
+      }
+    },
+    "discogs": {
+      "description": "Koppelt je Discogs-account door een link naar je DM te sturen"
+    },
+    "discoveries": {
+      "description": "⭐ Toont artiesten die je onlangs hebt ontdekt",
+      "parameters": {
+        "mode": {
+          "description": "Het type reactie dat je wilt - wijzig de standaard met /responsemode"
+        },
+        "private": {
+          "description": "Toon de reactie alleen aan jou"
+        },
+        "size": {
+          "description": "Aantal ontdekte artiesten per pagina"
+        },
+        "time-period": {
+          "description": "Periode"
+        },
+        "user": {
+          "description": "De gebruiker om te tonen (standaard jijzelf)"
+        }
+      }
+    },
+    "discoverydate": {
+      "description": "⭐ Toont de datum waarop je de artiest, het album en de track ontdekte",
+      "parameters": {
+        "track": {
+          "description": "De track die je zoekt (standaard wat je nu speelt)"
+        },
+        "user": {
+          "description": "De gebruiker om te tonen (standaard jijzelf)"
+        }
+      }
+    },
+    "eurovision": {
+      "description": "Bekijk een Eurovision-overzicht voor een jaar en/of land",
+      "parameters": {
+        "country": {
+          "description": "Eurovision-land"
+        },
+        "year": {
+          "description": "Jaar (1956 tot nu)"
+        }
+      }
+    },
+    "featured": {
+      "description": "Toont wat er nu featured is (en de avatar van de bot)"
+    },
+    "featuredlog": {
+      "description": "Toont jouw of andermans featured-geschiedenis",
+      "parameters": {
+        "user": {
+          "description": "De gebruiker om het featured-log voor te tonen (standaard jijzelf)"
+        },
+        "view": {
+          "description": "Type log dat je wilt bekijken"
+        }
+      }
+    },
+    "fm": {
+      "description": "Now Playing - Toont jouw of andermans huidige track",
+      "parameters": {
+        "embed-type": {
+          "description": "Het embedtype om te gebruiken, kan ook als instelling geconfigureerd worden"
+        },
+        "user": {
+          "description": "De gebruiker om te tonen (standaard jijzelf)"
+        }
+      }
+    },
+    "fmmode": {
+      "description": "Wijzigt de lay-out van je '/fm'"
+    },
+    "frequently-asked": {
+      "description": "Veelgestelde vragen over .fmbot"
+    },
+    "friendsfm": {
+      "description": "Toont je vrienden en waar ze naar luisteren"
+    },
+    "friendswhoknow": {
+      "description": "Toont welke van je vrienden naar een artiest luisteren",
+      "parameters": {
+        "artist": {
+          "description": "De artiest die je zoekt (standaard wat je nu speelt)"
+        },
+        "mode": {
+          "description": "Het type reactie dat je wilt - wijzig de standaard met /responsemode"
+        },
+        "private": {
+          "description": "Toon de reactie alleen aan jou"
+        },
+        "redirects": {
+          "description": "Schakel Last.fm-artiestnaamredirects in of uit (standaard aan)"
+        }
+      }
+    },
+    "fwkalbum": {
+      "description": "Welke van je vrienden een album kennen",
+      "parameters": {
+        "album": {
+          "description": "Het album dat je zoekt (standaard wat je nu speelt)"
+        },
+        "mode": {
+          "description": "Het type reactie dat je wilt - wijzig de standaard met /responsemode"
+        },
+        "private": {
+          "description": "Toon de reactie alleen aan jou"
+        }
+      }
+    },
+    "fwkgenre": {
+      "description": "Toont welke van je vrienden naar een genre luisteren",
+      "parameters": {
+        "mode": {
+          "description": "Het type reactie dat je wilt - wijzig de standaard met /responsemode"
+        },
+        "private": {
+          "description": "Toon de reactie alleen aan jou"
+        },
+        "search": {
+          "description": "Het genre of de artiest die je wilt bekijken"
+        }
+      }
+    },
+    "fwktrack": {
+      "description": "Welke van je vrienden een track kennen",
+      "parameters": {
+        "mode": {
+          "description": "Het type reactie dat je wilt - wijzig de standaard met /responsemode"
+        },
+        "private": {
+          "description": "Toon de reactie alleen aan jou"
+        },
+        "track": {
+          "description": "De track die je zoekt (standaard wat je nu speelt)"
+        }
+      }
+    },
+    "gaps": {
+      "description": "⭐ Muziek waarnaar je na een luisterpauze bent teruggekeerd",
+      "parameters": {
+        "mode": {
+          "description": "Het type reactie dat je wilt - wijzig de standaard met /responsemode"
+        },
+        "private": {
+          "description": "Toon de reactie alleen aan jou"
+        },
+        "size": {
+          "description": "Aantal luisterpauzes per pagina"
+        },
+        "type": {
+          "description": "Type luisterpauze"
+        },
+        "user": {
+          "description": "De gebruiker om te tonen (standaard jijzelf)"
+        }
+      }
+    },
+    "genre": {
+      "description": "Toont genre-info voor een artiest of top artiesten voor een genre",
+      "parameters": {
+        "search": {
+          "description": "Het genre of de artiest die je wilt bekijken"
+        },
+        "user": {
+          "description": "De gebruiker om te tonen (standaard jijzelf)"
+        }
+      }
+    },
+    "getsupporter": {
+      "description": "⭐ Word supporter of beheer je huidige abonnement"
+    },
+    "giftsupporter": {
+      "description": "🎁 Geef supporter cadeau aan een andere gebruiker",
+      "parameters": {
+        "user": {
+          "description": "De gebruiker aan wie je supporter cadeau wilt geven"
+        }
+      }
+    },
+    "globalwhoknows": {
+      "description": "Toont welke andere gebruikers in .fmbot naar een artiest luisteren",
+      "parameters": {
+        "artist": {
+          "description": "De artiest die je zoekt (standaard wat je nu speelt)"
+        },
+        "hide-private": {
+          "description": "Verberg of toon privégebruikers"
+        },
+        "mode": {
+          "description": "Het type reactie dat je wilt - wijzig de standaard met /responsemode"
+        },
+        "redirects": {
+          "description": "Schakel Last.fm-artiestnaamredirects in of uit (standaard aan)"
+        }
+      }
+    },
+    "gwkalbum": {
+      "description": "Toont welke andere gebruikers wereldwijd in .fmbot naar een album luisteren",
+      "parameters": {
+        "album": {
+          "description": "Het album dat je zoekt (standaard wat je nu speelt)"
+        },
+        "hide-private": {
+          "description": "Verberg of toon privégebruikers"
+        },
+        "mode": {
+          "description": "Het type reactie dat je wilt - wijzig de standaard met /responsemode"
+        }
+      }
+    },
+    "gwktrack": {
+      "description": "Toont welke andere gebruikers wereldwijd in .fmbot naar een track luisteren",
+      "parameters": {
+        "hide-private": {
+          "description": "Verberg of toon privégebruikers"
+        },
+        "mode": {
+          "description": "Het type reactie dat je wilt - wijzig de standaard met /responsemode"
+        },
+        "track": {
+          "description": "De track die je zoekt (standaard wat je nu speelt)"
+        }
+      }
+    },
+    "iceberg": {
+      "description": "Toont je iceberg, gebaseerd op artiestpopulariteit",
+      "parameters": {
+        "private": {
+          "description": "Toon de reactie alleen aan jou"
+        },
+        "time-period": {
+          "description": "Periode"
+        },
+        "user": {
+          "description": "De gebruiker om te tonen (standaard jijzelf)"
+        }
+      }
+    },
+    "import": {
+      "description": "Beheer je data-imports",
+      "subcommands": {
+        "applemusic": {
+          "description": "⭐ Importeer je Apple Music-geschiedenis in .fmbot",
+          "parameters": {
+            "file": {
+              "description": "'Apple Media Services information.zip'- of 'Apple Music Play Activity.csv'-bestand"
+            }
+          }
+        },
+        "manage": {
+          "description": "⭐ Beheer je imports en stel in hoe ze worden gebruikt"
+        },
+        "modify": {
+          "description": "⭐ Bewerk en verwijder artiesten, albums en tracks in je .fmbot-imports"
+        },
+        "spotify": {
+          "description": "⭐ Importeer je Spotify-geschiedenis in .fmbot",
+          "parameters": {
+            "file-1": {
+              "description": "Spotify-geschiedenispakket (.zip) of geschiedenisbestanden (.json)"
+            },
+            "file-10": {
+              "description": "Spotify-geschiedenispakket (.zip) of geschiedenisbestanden (.json)"
+            },
+            "file-11": {
+              "description": "Spotify-geschiedenispakket (.zip) of geschiedenisbestanden (.json)"
+            },
+            "file-12": {
+              "description": "Spotify-geschiedenispakket (.zip) of geschiedenisbestanden (.json)"
+            },
+            "file-13": {
+              "description": "Spotify-geschiedenispakket (.zip) of geschiedenisbestanden (.json)"
+            },
+            "file-14": {
+              "description": "Spotify-geschiedenispakket (.zip) of geschiedenisbestanden (.json)"
+            },
+            "file-15": {
+              "description": "Spotify-geschiedenispakket (.zip) of geschiedenisbestanden (.json)"
+            },
+            "file-2": {
+              "description": "Spotify-geschiedenispakket (.zip) of geschiedenisbestanden (.json)"
+            },
+            "file-3": {
+              "description": "Spotify-geschiedenispakket (.zip) of geschiedenisbestanden (.json)"
+            },
+            "file-4": {
+              "description": "Spotify-geschiedenispakket (.zip) of geschiedenisbestanden (.json)"
+            },
+            "file-5": {
+              "description": "Spotify-geschiedenispakket (.zip) of geschiedenisbestanden (.json)"
+            },
+            "file-6": {
+              "description": "Spotify-geschiedenispakket (.zip) of geschiedenisbestanden (.json)"
+            },
+            "file-7": {
+              "description": "Spotify-geschiedenispakket (.zip) of geschiedenisbestanden (.json)"
+            },
+            "file-8": {
+              "description": "Spotify-geschiedenispakket (.zip) of geschiedenisbestanden (.json)"
+            },
+            "file-9": {
+              "description": "Spotify-geschiedenispakket (.zip) of geschiedenisbestanden (.json)"
+            }
+          }
+        }
+      }
+    },
+    "judge": {
+      "description": "Beoordeelt je muzieksmaak met AI",
+      "parameters": {
+        "language": {
+          "description": "Taal voor deze beoordeling"
+        },
+        "time-period": {
+          "description": "Periode"
+        },
+        "user": {
+          "description": "De gebruiker om te beoordelen"
+        }
+      }
+    },
+    "lastlistened": {
+      "description": "⭐ Toont wanneer je voor het laatst naar de artiest, het album en de track luisterde",
+      "parameters": {
+        "track": {
+          "description": "De track die je zoekt (standaard wat je nu speelt)"
+        },
+        "user": {
+          "description": "De gebruiker om te tonen (standaard jijzelf)"
+        }
+      }
+    },
+    "like": {
+      "description": "Voeg een track toe aan je gelikete tracks op Spotify",
+      "parameters": {
+        "search": {
+          "description": "Track om te liken (standaard wat je nu speelt)"
+        }
+      }
+    },
+    "localization": {
+      "description": "Configureer je tijdzone en getalnotatie in .fmbot",
+      "parameters": {
+        "numberformat": {
+          "description": "Getalnotatie die je wilt gebruiken"
+        },
+        "timezone": {
+          "description": "Tijdzone die je wilt instellen"
+        }
+      }
+    },
+    "login": {
+      "description": "Geeft je een link om je Last.fm-account aan .fmbot te koppelen"
+    },
+    "love": {
+      "description": "Markeert de track waar je nu naar luistert of die je zoekt als loved op Last.fm",
+      "parameters": {
+        "private": {
+          "description": "Toon de reactie alleen aan jou"
+        },
+        "track": {
+          "description": "De track om als loved te markeren (standaard wat je nu speelt)"
+        }
+      }
+    },
+    "loved": {
+      "description": "Tracks die je als loved hebt gemarkeerd op Last.fm",
+      "parameters": {
+        "private": {
+          "description": "Toon de reactie alleen aan jou"
+        },
+        "user": {
+          "description": "De gebruiker om te tonen (standaard jijzelf)"
+        }
+      }
+    },
+    "lyrics": {
+      "description": "⭐ Toont de songtekst van de track waar je nu naar luistert of die je zoekt",
+      "parameters": {
+        "track": {
+          "description": "De track die je zoekt (standaard wat je nu speelt)"
+        }
+      }
+    },
+    "members": {
+      "description": "Leden in deze server die .fmbot gebruiken",
+      "parameters": {
+        "view": {
+          "description": "Statistiek die je wilt bekijken"
+        }
+      }
+    },
+    "milestone": {
+      "description": "Toont een mijlpaal-scrobble",
+      "parameters": {
+        "amount": {
+          "description": "Aantal scrobbles voor de mijlpaal"
+        },
+        "user": {
+          "description": "De gebruiker om te tonen (standaard jijzelf)"
+        }
+      }
+    },
+    "outofsync": {
+      "description": "Wat te doen als je Last.fm niet synchroon loopt met Spotify",
+      "parameters": {
+        "private": {
+          "description": "Toon de reactie alleen aan jou"
+        }
+      }
+    },
+    "overview": {
+      "description": "Toont een dagelijks overzicht",
+      "parameters": {
+        "amount": {
+          "description": "Aantal dagen om te tonen"
+        },
+        "user": {
+          "description": "De gebruiker om te tonen (standaard jijzelf)"
+        }
+      }
+    },
+    "pace": {
+      "description": "Toont de geschatte datum waarop je een scrobbledoel bereikt op basis van je gemiddelde per dag",
+      "parameters": {
+        "amount": {
+          "description": "Doelaantal scrobbles"
+        },
+        "time-period": {
+          "description": "Periode voor het gemiddelde aantal plays"
+        },
+        "user": {
+          "description": "De gebruiker om te tonen (standaard jijzelf)"
+        }
+      }
+    },
+    "plays": {
+      "description": "Toont je totale aantal scrobbles voor een specifieke periode",
+      "parameters": {
+        "time-period": {
+          "description": "Periode voor het gemiddelde aantal plays"
+        },
+        "user": {
+          "description": "De gebruiker om te tonen (standaard jijzelf)"
+        }
+      }
+    },
+    "premiumserver": {
+      "description": "✨ Ontgrendel serverbrede extra's en automatisering voor deze server"
+    },
+    "privacy": {
+      "description": "Wijzigt je zichtbaarheid voor andere .fmbot-gebruikers in Global WhoKnows"
+    },
+    "profile": {
+      "description": "Toont jouw of andermans profiel",
+      "parameters": {
+        "user": {
+          "description": "De gebruiker om te tonen (standaard jijzelf)"
+        }
+      }
+    },
+    "queue": {
+      "description": "Zet een track in de wachtrij op je Spotify",
+      "parameters": {
+        "search": {
+          "description": "Track voor de wachtrij (standaard wat je nu speelt)"
+        }
+      }
+    },
+    "recap": {
+      "description": "Toont een recap voor je gekozen periode",
+      "parameters": {
+        "time-period": {
+          "description": "Periode om te tonen (standaard jaar)"
+        },
+        "user": {
+          "description": "De gebruiker om te tonen (standaard jijzelf)"
+        }
+      }
+    },
+    "receipt": {
+      "description": "Toont een kassabon van je tracks, gebaseerd op Receiptify",
+      "parameters": {
+        "private": {
+          "description": "Toon de reactie alleen aan jou"
+        },
+        "time-period": {
+          "description": "Periode"
+        },
+        "user": {
+          "description": "De gebruiker om te tonen (standaard jijzelf)"
+        }
+      }
+    },
+    "recent": {
+      "description": "Toont jouw of andermans recente tracks",
+      "parameters": {
+        "artist": {
+          "description": "Artiest waarop je wilt filteren"
+        },
+        "user": {
+          "description": "De gebruiker om te tonen (standaard jijzelf)"
+        }
+      }
+    },
+    "refreshmembers": {
+      "description": "Vernieuwt de ledenlijst-cache van .fmbot voor je server"
+    },
+    "remote": {
+      "description": "Bedien het afspelen op je eigen Spotify"
+    },
+    "remove": {
+      "description": "Verwijdert je .fmbot-account"
+    },
+    "removefriend": {
+      "description": "Verwijder een vriend uit je .fmbot-vrienden",
+      "parameters": {
+        "user": {
+          "description": "De gebruiker om te verwijderen"
+        }
+      }
+    },
+    "responsemode": {
+      "description": "Wijzigt je standaardweergave voor whoknows en toplijsten"
+    },
+    "scrobble": {
+      "description": "Scrobbelt een track op Last.fm",
+      "parameters": {
+        "private": {
+          "description": "Toon de reactie alleen aan jou"
+        },
+        "track": {
+          "description": "De track die je wilt scrobbelen"
+        },
+        "user": {
+          "description": "Bekijk de recente tracks van een gebruiker om daaruit te scrobbelen"
+        }
+      }
+    },
+    "search": {
+      "description": "Doorzoek je eigen opgeslagen bibliotheek (tracks, albums, artiesten, scrobbles)",
+      "parameters": {
+        "query": {
+          "description": "Waarnaar je wilt zoeken (track, album of artiest)"
+        }
+      }
+    },
+    "selfblock": {
+      "description": "Verbergt je uit WhoKnows en serverbrede lijsten in deze server"
+    },
+    "selfunblock": {
+      "description": "Verwijdert een blokkade die je jezelf met selfblock hebt opgelegd in deze server"
+    },
+    "server": {
+      "description": "Server billboard-commando's",
+      "subcommands": {
+        "albums": {
+          "description": "Top albums voor je server",
+          "parameters": {
+            "artist": {
+              "description": "De artiest waarop je wilt filteren"
+            },
+            "order": {
+              "description": "Volgorde van de lijst (standaard luisteraars)"
+            },
+            "role-picker": {
+              "description": "Toon een rollenkiezer om op rollen te filteren"
+            },
+            "time-period": {
+              "description": "Periode"
+            }
+          }
+        },
+        "artists": {
+          "description": "Top artiesten voor je server",
+          "parameters": {
+            "order": {
+              "description": "Volgorde van de lijst (standaard luisteraars)"
+            },
+            "role-picker": {
+              "description": "Toon een rollenkiezer om op rollen te filteren"
+            },
+            "time-period": {
+              "description": "Periode"
+            }
+          }
+        },
+        "genres": {
+          "description": "Top genres voor je server",
+          "parameters": {
+            "order": {
+              "description": "Volgorde van de lijst (standaard luisteraars)"
+            },
+            "time-period": {
+              "description": "Periode"
+            }
+          }
+        },
+        "tracks": {
+          "description": "Top tracks voor je server",
+          "parameters": {
+            "artist": {
+              "description": "De artiest waarop je wilt filteren"
+            },
+            "order": {
+              "description": "Volgorde van de lijst (standaard luisteraars)"
+            },
+            "role-picker": {
+              "description": "Toon een rollenkiezer om op rollen te filteren"
+            },
+            "time-period": {
+              "description": "Periode"
+            }
+          }
+        }
+      }
+    },
+    "settings": {
+      "description": "Je gebruikersinstellingen en serverconfiguratie in .fmbot"
+    },
+    "skip": {
+      "description": "Ga naar de volgende track op je Spotify"
+    },
+    "spotify": {
+      "description": "Zoek op Spotify",
+      "parameters": {
+        "private": {
+          "description": "Toon de reactie alleen aan jou"
+        },
+        "search": {
+          "description": "Zoekterm"
+        },
+        "type": {
+          "description": "Wat je op Spotify wilt zoeken (standaard track)"
+        }
+      }
+    },
+    "streak": {
+      "description": "Jouw of andermans streak voor een artiest, album en track",
+      "parameters": {
+        "user": {
+          "description": "De gebruiker om te tonen (standaard jijzelf)"
+        }
+      }
+    },
+    "streakhistory": {
+      "description": "Toont jouw of andermans streakgeschiedenis",
+      "parameters": {
+        "artist": {
+          "description": "De artiest waarop je je resultaten wilt filteren"
+        },
+        "editmode": {
+          "description": "Schakel de bewerkmodus in of uit"
+        },
+        "user": {
+          "description": "De gebruiker om te tonen (standaard jijzelf)"
+        }
+      }
+    },
+    "supporters": {
+      "description": "⭐ Toont alle huidige supporters"
+    },
+    "taste": {
+      "description": "Vergelijkt je top artiesten, genres en landen met die van een andere gebruiker",
+      "parameters": {
+        "private": {
+          "description": "Toon de reactie alleen aan jou"
+        },
+        "size": {
+          "description": "Aantal vergelijkingen om te tonen"
+        },
+        "time-period": {
+          "description": "Periode"
+        },
+        "user": {
+          "description": "De gebruiker om je smaak mee te vergelijken"
+        }
+      }
+    },
+    "top": {
+      "description": "Toplijsten - Artiesten/Albums/Tracks/Genres/Landen",
+      "subcommands": {
+        "albums": {
+          "description": "Toont je top albums",
+          "parameters": {
+            "billboard": {
+              "description": "Toon top albums in billboard-stijl"
+            },
+            "decade": {
+              "description": "Filter op albums uitgebracht in een decennium"
+            },
+            "hide-singles": {
+              "description": "Verberg singles in de resultaten"
+            },
+            "mode": {
+              "description": "Het type reactie dat je wilt - wijzig de standaard met /responsemode"
+            },
+            "private": {
+              "description": "Toon de reactie alleen aan jou"
+            },
+            "released": {
+              "description": "Filter op albums uitgebracht in een jaar"
+            },
+            "size": {
+              "description": "Aantal albums om te tonen"
+            },
+            "time-period": {
+              "description": "Periode"
+            },
+            "user": {
+              "description": "De gebruiker om te tonen (standaard jijzelf)"
+            }
+          }
+        },
+        "artists": {
+          "description": "Je top artiesten",
+          "parameters": {
+            "billboard": {
+              "description": "Toon top artiesten in billboard-stijl"
+            },
+            "discogs": {
+              "description": "Toon top artiesten in je Discogs-collectie"
+            },
+            "mode": {
+              "description": "Het type reactie dat je wilt - wijzig de standaard met /responsemode"
+            },
+            "private": {
+              "description": "Toon de reactie alleen aan jou"
+            },
+            "size": {
+              "description": "Aantal artiesten om te tonen"
+            },
+            "time-period": {
+              "description": "Periode"
+            },
+            "user": {
+              "description": "De gebruiker om te tonen (standaard jijzelf)"
+            }
+          }
+        },
+        "countries": {
+          "description": "Toont je top landen",
+          "parameters": {
+            "billboard": {
+              "description": "Toon top landen in billboard-stijl"
+            },
+            "mode": {
+              "description": "Het type reactie dat je wilt - wijzig de standaard met /responsemode"
+            },
+            "private": {
+              "description": "Toon de reactie alleen aan jou"
+            },
+            "size": {
+              "description": "Aantal landen om te tonen"
+            },
+            "time-period": {
+              "description": "Periode"
+            },
+            "user": {
+              "description": "De gebruiker om te tonen (standaard jijzelf)"
+            }
+          }
+        },
+        "genres": {
+          "description": "Toont je top genres",
+          "parameters": {
+            "billboard": {
+              "description": "Toon top genres in billboard-stijl"
+            },
+            "mode": {
+              "description": "Het type reactie dat je wilt - wijzig de standaard met /responsemode"
+            },
+            "private": {
+              "description": "Toon de reactie alleen aan jou"
+            },
+            "size": {
+              "description": "Aantal genres om te tonen"
+            },
+            "time-period": {
+              "description": "Periode"
+            },
+            "user": {
+              "description": "De gebruiker om te tonen (standaard jijzelf)"
+            }
+          }
+        },
+        "tracks": {
+          "description": "Toont je top tracks",
+          "parameters": {
+            "billboard": {
+              "description": "Toon top tracks in billboard-stijl"
+            },
+            "mode": {
+              "description": "Het type reactie dat je wilt - wijzig de standaard met /responsemode"
+            },
+            "private": {
+              "description": "Toon de reactie alleen aan jou"
+            },
+            "size": {
+              "description": "Aantal tracks om te tonen"
+            },
+            "time-period": {
+              "description": "Periode"
+            },
+            "user": {
+              "description": "De gebruiker om te tonen (standaard jijzelf)"
+            }
+          }
+        }
+      }
+    },
+    "track": {
+      "description": "Toont trackinfo voor de track waar je nu naar luistert of die je zoekt",
+      "parameters": {
+        "track": {
+          "description": "De track die je zoekt (standaard wat je nu speelt)"
+        }
+      }
+    },
+    "trackdetails": {
+      "description": "Toont metadata voor de huidige track of de track die je zoekt",
+      "parameters": {
+        "track": {
+          "description": "De track die je zoekt (standaard wat je nu speelt)"
+        }
+      }
+    },
+    "trackplays": {
+      "description": "Toont het aantal plays voor de huidige track of de track die je zoekt",
+      "parameters": {
+        "track": {
+          "description": "De track die je zoekt (standaard wat je nu speelt)"
+        },
+        "user": {
+          "description": "De gebruiker om te tonen (standaard jijzelf)"
+        }
+      }
+    },
+    "unblock": {
+      "description": "Deblokkeer een gebruiker zodat die weer in WhoKnows en serverbrede lijsten verschijnt",
+      "parameters": {
+        "user": {
+          "description": "De gebruiker die je wilt deblokkeren"
+        }
+      }
+    },
+    "unlove": {
+      "description": "Verwijdert de track waar je nu naar luistert of die je zoekt uit je loved tracks",
+      "parameters": {
+        "private": {
+          "description": "Toon de reactie alleen aan jou"
+        },
+        "track": {
+          "description": "De track die je wilt verwijderen (standaard wat je nu speelt)"
+        }
+      }
+    },
+    "update": {
+      "description": "Werk de cache van .fmbot handmatig bij met je nieuwste Last.fm-data",
+      "parameters": {
+        "type": {
+          "description": "Kies wat je wilt bijwerken"
+        }
+      }
+    },
+    "whoknows": {
+      "description": "Toont welke andere gebruikers in je server naar een artiest luisteren",
+      "parameters": {
+        "artist": {
+          "description": "De artiest die je zoekt (standaard wat je nu speelt)"
+        },
+        "mode": {
+          "description": "Het type reactie dat je wilt - wijzig de standaard met /responsemode"
+        },
+        "no-filter": {
+          "description": "Schakel serverfilters en kronen uit"
+        },
+        "redirects": {
+          "description": "Schakel Last.fm-artiestnaamredirects in of uit (standaard aan)"
+        },
+        "role-picker": {
+          "description": "Toon een rollenkiezer om op rollen te filteren"
+        }
+      }
+    },
+    "wkalbum": {
+      "description": "Toont welke andere gebruikers in je server naar een album luisteren",
+      "parameters": {
+        "album": {
+          "description": "Het album dat je zoekt (standaard wat je nu speelt)"
+        },
+        "mode": {
+          "description": "Het type reactie dat je wilt - wijzig de standaard met /responsemode"
+        },
+        "no-filter": {
+          "description": "Schakel serverfilters uit"
+        },
+        "role-picker": {
+          "description": "Toon een rollenkiezer om op rollen te filteren"
+        }
+      }
+    },
+    "wkgenre": {
+      "description": "Toont welke andere gebruikers in je server naar een genre luisteren",
+      "parameters": {
+        "mode": {
+          "description": "Het type reactie dat je wilt - wijzig de standaard met /responsemode"
+        },
+        "search": {
+          "description": "Het genre of de artiest die je wilt bekijken"
+        }
+      }
+    },
+    "wktrack": {
+      "description": "Toont welke andere gebruikers in je server naar een track luisteren",
+      "parameters": {
+        "mode": {
+          "description": "Het type reactie dat je wilt - wijzig de standaard met /responsemode"
+        },
+        "no-filter": {
+          "description": "Schakel serverfilters uit"
+        },
+        "role-picker": {
+          "description": "Toon een rollenkiezer om op rollen te filteren"
+        },
+        "track": {
+          "description": "De track die je zoekt (standaard wat je nu speelt)"
+        }
+      }
+    },
+    "year": {
+      "description": "Toont een overzicht van je jaar",
+      "parameters": {
+        "user": {
+          "description": "De gebruiker om te tonen (standaard jijzelf)"
+        },
+        "year": {
+          "description": "Jaar om te bekijken"
+        }
+      }
+    },
+    "youtube": {
+      "description": "Zoek op YouTube",
+      "parameters": {
+        "private": {
+          "description": "Toon de reactie alleen aan jou"
+        },
+        "search": {
+          "description": "Zoekterm"
+        }
+      }
+    }
+  }
+}
