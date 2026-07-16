@@ -1,5 +1,8 @@
 
+using System;
+using FMBot.Bot.Extensions;
 using FMBot.Bot.Services;
+using FMBot.Domain.Attributes;
 using FMBot.Domain.Enums;
 using FMBot.Persistence.Domain.Models;
 using NetCord.Rest;
@@ -80,5 +83,11 @@ public class ContextModel
     public string LocalizeCount(string key, long count, params (string Name, string Value)[] args)
     {
         return this.Localizer.TranslateCount(key, count, args);
+    }
+
+    public string LocalizeOption(Enum option)
+    {
+        var attribute = option.GetAttribute<OptionAttribute>();
+        return attribute.LocalizationKey != null ? this.Localize(attribute.LocalizationKey) : attribute.Name;
     }
 }

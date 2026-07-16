@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Models.TemplateOptions;
 using FMBot.Bot.Services;
+using FMBot.Domain.Attributes;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using NetCord.Services.ApplicationCommands;
@@ -57,12 +58,23 @@ public class LocalizationTests
     {
         ["AlbumBuilders.cs"] = 1,
         ["TrackBuilders.cs"] = 1,
-        ["TemplateBuilders.cs"] = 1
+        ["TemplateBuilders.cs"] = 1,
+        ["ContextModel.cs"] = 1
     };
 
     private static IEnumerable<string> TemplateOptionKeys()
     {
         return TemplateOptions.Options.Select(o => o.DescriptionKey);
+    }
+
+    private static IEnumerable<string> OptionLocalizationKeys()
+    {
+        return typeof(ContextModel).Assembly.GetTypes()
+            .Concat(typeof(OptionAttribute).Assembly.GetTypes())
+            .Where(t => t.IsEnum)
+            .SelectMany(t => t.GetFields(BindingFlags.Public | BindingFlags.Static))
+            .Select(f => f.GetCustomAttribute<OptionAttribute>()?.LocalizationKey)
+            .OfType<string>();
     }
 
     private static readonly long[] PluralSampleCounts =
@@ -418,7 +430,7 @@ public class LocalizationTests
         var english = LoadLocaleFile("en");
 
         var missing = new List<string>();
-        foreach (var key in DynamicPlainKeys.Concat(TemplateOptionKeys()))
+        foreach (var key in DynamicPlainKeys.Concat(TemplateOptionKeys()).Concat(OptionLocalizationKeys()))
         {
             if (!english.ContainsKey(key))
             {
@@ -435,7 +447,7 @@ public class LocalizationTests
         }
 
         Assert.That(missing, Is.Empty,
-            "Keys built dynamically in code (switch expressions, TemplateOption.DescriptionKey) are invisible to the " +
+            "Keys built dynamically in code (switch expressions, TemplateOption.DescriptionKey, OptionAttribute.LocalizationKey) are invisible to the " +
             $"literal key scan, so they are registered here and must exist in en.json:\n{string.Join("\n", missing)}");
     }
 
@@ -693,7 +705,7 @@ public class LocalizationTests
         var plainKeyRegex = new Regex(@"\.(?:Localize|Translate)\(\s*""(?<key>[a-zA-Z][a-zA-Z0-9.]+)""", RegexOptions.Compiled);
         var countKeyRegex = new Regex(@"\.(?:LocalizeCount|TranslateCount)\(\s*""(?<key>[a-zA-Z][a-zA-Z0-9.]+)""", RegexOptions.Compiled);
 
-        var plainRefs = new HashSet<string>(RuntimeKeys.Concat(DynamicPlainKeys).Concat(TemplateOptionKeys()));
+        var plainRefs = new HashSet<string>(RuntimeKeys.Concat(DynamicPlainKeys).Concat(TemplateOptionKeys()).Concat(OptionLocalizationKeys()));
         var pluralRefs = new HashSet<string>(DynamicPluralBaseKeys);
         foreach (var file in sourceFiles)
         {

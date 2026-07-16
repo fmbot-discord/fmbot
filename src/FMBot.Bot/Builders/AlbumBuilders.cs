@@ -539,8 +539,9 @@ public class AlbumBuilders
             var serverPlaycount = filteredUsersWithAlbum.Sum(a => a.Playcount);
             var avgServerPlaycount = filteredUsersWithAlbum.Average(a => a.Playcount);
 
-            footer.AppendLine(context.LocalizeCount("album.whoknows.serverStats", serverPlaycount,
-                ("listeners", serverListeners.Format(context.NumberFormat)),
+            footer.AppendLine(context.Localize("album.whoknows.serverStats",
+                ("listeners", context.LocalizeCount("shared.listeners", serverListeners)),
+                ("plays", context.LocalizeCount("shared.plays", serverPlaycount)),
                 ("avg", ((int)avgServerPlaycount).Format(context.NumberFormat))));
         }
 
@@ -716,8 +717,9 @@ public class AlbumBuilders
             var globalPlaycount = usersWithAlbum.Sum(a => a.Playcount);
             var avgPlaycount = usersWithAlbum.Average(a => a.Playcount);
 
-            footer += "\n" + context.LocalizeCount("album.whoknows.friendsStats", globalPlaycount,
-                ("listeners", globalListeners.Format(context.NumberFormat)),
+            footer += "\n" + context.Localize("album.whoknows.friendsStats",
+                ("listeners", context.LocalizeCount("shared.listeners", globalListeners)),
+                ("plays", context.LocalizeCount("shared.plays", globalPlaycount)),
                 ("avg", ((int)avgPlaycount).Format(context.NumberFormat)));
         }
 
@@ -862,8 +864,9 @@ public class AlbumBuilders
             var globalPlaycount = filteredUsersWithAlbum.Sum(a => a.Playcount);
             var avgPlaycount = filteredUsersWithAlbum.Average(a => a.Playcount);
 
-            footer.AppendLine(context.LocalizeCount("album.whoknows.globalStats", globalPlaycount,
-                ("listeners", globalListeners.Format(context.NumberFormat)),
+            footer.AppendLine(context.Localize("album.whoknows.globalStats",
+                ("listeners", context.LocalizeCount("shared.listeners", globalListeners)),
+                ("plays", context.LocalizeCount("shared.plays", globalPlaycount)),
                 ("avg", ((int)avgPlaycount).Format(context.NumberFormat))));
         }
 

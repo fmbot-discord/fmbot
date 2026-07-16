@@ -247,17 +247,22 @@ public class OpenAiService(
         }
     }
 
-    public bool RecapCacheHot(string timePeriod, string lastFmUserName)
+    public bool RecapCacheHot(string timePeriod, string lastFmUserName, Language language = Language.English)
     {
-        return cache.TryGetValue($"{lastFmUserName}-recap-{timePeriod}", out _);
+        return cache.TryGetValue(RecapCacheKey(timePeriod, lastFmUserName, language), out _);
+    }
+
+    private static string RecapCacheKey(string timePeriod, string lastFmUserName, Language language)
+    {
+        return $"{lastFmUserName}-recap-{timePeriod}-{language.GetLocaleCode()}";
     }
 
     public async Task<string> GetPlayRecap(string timePeriod, List<UserPlay> userPlays, string lastFmUserName,
-        Response<TopArtistList> topArtists)
+        Response<TopArtistList> topArtists, Language language = Language.English)
     {
         try
         {
-            var cacheKey = $"{lastFmUserName}-recap-{timePeriod}";
+            var cacheKey = RecapCacheKey(timePeriod, lastFmUserName, language);
             if (cache.TryGetValue(cacheKey, out string cachedResponse))
             {
                 return cachedResponse;
@@ -268,7 +273,14 @@ public class OpenAiService(
                 .OrderByDescending(o => o.Version)
                 .FirstAsync(f => f.Type == PromptType.Recap);
 
-            prompt.Prompt = prompt.Prompt.Replace("{{recapType}}", timePeriod);
+            var promptText = prompt.Prompt.Replace("{{recapType}}", timePeriod);
+            if (language != Language.English)
+            {
+                var languageName = language.GetEnglishName();
+                promptText +=
+                    $"\n\nWrite your entire response in {languageName}. Keep artist, album and track names exactly as they are. " +
+                    $"The response should read like it was originally written by a native {languageName} speaker, not translated from English.";
+            }
 
             var promptBuilder = new StringBuilder();
 
@@ -324,7 +336,7 @@ public class OpenAiService(
                 }
             }
 
-            var response = await SendRequest(prompt.Prompt, userMessage: promptBuilder.ToString());
+            var response = await SendRequest(promptText, userMessage: promptBuilder.ToString());
 
             if (string.IsNullOrWhiteSpace(response?.Output))
             {

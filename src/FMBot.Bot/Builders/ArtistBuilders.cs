@@ -1487,11 +1487,10 @@ public class ArtistBuilders
 
         if (context.ContextUser.UserType == UserType.User)
         {
-            response.Embed.WithDescription(
-                $"To see what music you've recently discovered, we need to store your lifetime Last.fm history. Your lifetime history and more are only available for supporters.");
+            response.Embed.WithDescription(context.Localize("artist.discoveriesSupporterRequired"));
 
             response.Components = new ActionRowProperties()
-                .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
+                .WithButton(context.Localize("buttons.getSupporter"), style: ButtonStyle.Primary,
                     customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "discoveries"));
             response.Embed.WithColor(DiscordConstants.InformationColorBlue);
             response.CommandResponse = CommandResponse.SupporterRequired;
@@ -1501,8 +1500,7 @@ public class ArtistBuilders
 
         if (userSettings.UserType == UserType.User)
         {
-            response.Embed.WithDescription(
-                $"Sorry, the discovery command uses somebody's lifetime listening history. You can only use this command on other supporters.");
+            response.Embed.WithDescription(context.Localize("artist.discoveriesOtherSupporterOnly"));
 
             response.Components = new ActionRowProperties()
                 .WithButton(".fmbot supporter", style: ButtonStyle.Secondary,

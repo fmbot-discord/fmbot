@@ -9,11 +9,13 @@ public class OptionAttribute : Attribute
     public string Description { get; private set; }
     public bool SupporterOnly { get; private set; }
     public int? Order { get; private set; }
+    public string LocalizationKey { get; private set; }
 
-    public OptionAttribute(string name, string description = null, bool supporterOnly = false)
+    public OptionAttribute(string name, string description = null, bool supporterOnly = false, string localizationKey = null)
     {
         this.Name = name;
         this.Description = description;
         this.SupporterOnly = supporterOnly;
+        this.LocalizationKey = localizationKey;
     }
 }

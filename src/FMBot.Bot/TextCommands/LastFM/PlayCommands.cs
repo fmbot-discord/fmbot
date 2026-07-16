@@ -342,13 +342,14 @@ public class PlayCommands(
         var timePeriod = !string.IsNullOrWhiteSpace(extraOptions) ? extraOptions : year.ToString();
 
         var userSettings = await settingService.GetUser(extraOptions, contextUser, this.Context);
+        var language = LocalizationService.GetLanguage(this.Context.Guild?.Id, this.Context.Guild?.PreferredLocale);
         var timeSettings = SettingService.GetTimePeriod(timePeriod, registeredLastFm: userSettings.RegisteredLastFm,
-            timeZone: userSettings.TimeZone, defaultTimePeriod: TimePeriod.Yearly, language: LocalizationService.GetLanguage(this.Context.Guild?.Id, this.Context.Guild?.PreferredLocale));
+            timeZone: userSettings.TimeZone, defaultTimePeriod: TimePeriod.Yearly, language: language);
 
         try
         {
             var loading = false;
-            if (!recapBuilders.RecapCacheHot(timeSettings.Description, userSettings.UserNameLastFm))
+            if (!recapBuilders.RecapCacheHot(timeSettings.Description, userSettings.UserNameLastFm, language))
             {
                 await Context.Message.AddReactionAsync(new ReactionEmojiProperties("Loading", DiscordConstants.Loading));
                 loading = true;
