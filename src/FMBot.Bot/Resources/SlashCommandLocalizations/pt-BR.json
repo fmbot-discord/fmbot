@@ -1,3 +1,1262 @@
 {
-  "commands": {}
+  "commands": {
+    "addfriend": {
+      "description": "Adiciona um amigo aos seus amigos do .fmbot",
+      "parameters": {
+        "user": {
+          "description": "O usuário a adicionar"
+        }
+      }
+    },
+    "affinity": {
+      "description": "Mostra usuários deste servidor com um gosto musical parecido (artistas, gêneros e países)",
+      "parameters": {
+        "user": {
+          "description": "O usuário para calcular a afinidade"
+        }
+      }
+    },
+    "album": {
+      "description": "Informações do álbum que você está ouvindo ou buscando",
+      "parameters": {
+        "album": {
+          "description": "O álbum a buscar (padrão: o que está tocando)"
+        }
+      }
+    },
+    "albumplays": {
+      "description": "Mostra a contagem de plays do álbum atual ou do que você buscar",
+      "parameters": {
+        "album": {
+          "description": "O álbum a buscar (padrão: o que está tocando)"
+        },
+        "user": {
+          "description": "O usuário a mostrar (padrão: você)"
+        }
+      }
+    },
+    "albumtracks": {
+      "description": "Mostra a contagem de plays das faixas do álbum que você está ouvindo ou buscando",
+      "parameters": {
+        "album": {
+          "description": "O álbum a buscar (padrão: o que está tocando)"
+        },
+        "playcount-order": {
+          "description": "Se a lista deve ser ordenada por contagem de plays"
+        },
+        "user": {
+          "description": "O usuário a mostrar (padrão: você)"
+        }
+      }
+    },
+    "applemusic": {
+      "description": "Pesquisar no Apple Music",
+      "parameters": {
+        "private": {
+          "description": "Mostrar a resposta só para você"
+        },
+        "search": {
+          "description": "Valor de busca"
+        }
+      }
+    },
+    "artist": {
+      "description": "Informações gerais do artista atual ou do que você buscar",
+      "parameters": {
+        "artist": {
+          "description": "O artista a buscar (padrão: o que está tocando)"
+        },
+        "redirects": {
+          "description": "Ativa/desativa redirecionamentos de nome de artista do Last.fm (padrão: ativado)"
+        }
+      }
+    },
+    "artistalbums": {
+      "description": "Mostra seus top álbuns de um artista",
+      "parameters": {
+        "artist": {
+          "description": "O artista a buscar (padrão: o que está tocando)"
+        },
+        "hide-singles": {
+          "description": "Ocultar singles dos resultados"
+        },
+        "redirects": {
+          "description": "Ativa/desativa redirecionamentos de nome de artista do Last.fm (padrão: ativado)"
+        },
+        "user": {
+          "description": "O usuário a mostrar (padrão: você)"
+        }
+      }
+    },
+    "artistoverview": {
+      "description": "Mostra um resumo do artista atual ou do que você buscar",
+      "parameters": {
+        "artist": {
+          "description": "O artista a buscar (padrão: o que está tocando)"
+        },
+        "redirects": {
+          "description": "Ativa/desativa redirecionamentos de nome de artista do Last.fm (padrão: ativado)"
+        },
+        "user": {
+          "description": "O usuário a mostrar (padrão: você)"
+        }
+      }
+    },
+    "artistpace": {
+      "description": "Mostra a data estimada em que você alcançará certa quantidade de plays de um artista",
+      "parameters": {
+        "amount": {
+          "description": "Meta de plays"
+        },
+        "artist": {
+          "description": "O artista a buscar (padrão: o que está tocando)"
+        },
+        "redirects": {
+          "description": "Ativa/desativa redirecionamentos de nome de artista do Last.fm (padrão: ativado)"
+        },
+        "time-period": {
+          "description": "Período para basear a média de plays"
+        },
+        "user": {
+          "description": "O usuário a mostrar (padrão: você)"
+        }
+      }
+    },
+    "artistplays": {
+      "description": "Mostra a contagem de plays do artista atual ou do que você buscar",
+      "parameters": {
+        "artist": {
+          "description": "O artista a buscar (padrão: o que está tocando)"
+        },
+        "redirects": {
+          "description": "Ativa/desativa redirecionamentos de nome de artista do Last.fm (padrão: ativado)"
+        },
+        "user": {
+          "description": "O usuário a mostrar (padrão: você)"
+        }
+      }
+    },
+    "artisttracks": {
+      "description": "Mostra suas top faixas de um artista",
+      "parameters": {
+        "artist": {
+          "description": "O artista a buscar (padrão: o que está tocando)"
+        },
+        "redirects": {
+          "description": "Ativa/desativa redirecionamentos de nome de artista do Last.fm (padrão: ativado)"
+        },
+        "time-period": {
+          "description": "Período para mostrar as faixas"
+        },
+        "user": {
+          "description": "O usuário a mostrar (padrão: você)"
+        }
+      }
+    },
+    "block": {
+      "description": "Bloqueia um usuário de aparecer no WhoKnows e nos rankings do servidor",
+      "parameters": {
+        "user": {
+          "description": "O usuário que você quer bloquear"
+        }
+      }
+    },
+    "botscrobbling": {
+      "description": "Mostra informações sobre scrobbling de bots de música e permite mudar suas configurações"
+    },
+    "chart": {
+      "description": "Gera charts com capas de álbuns ou imagens de artistas",
+      "subcommands": {
+        "albums": {
+          "description": "Gera um chart de imagens de álbuns",
+          "parameters": {
+            "artist": {
+              "description": "Filtrar por um artista específico"
+            },
+            "decade": {
+              "description": "Filtrar por álbuns lançados na década"
+            },
+            "hide-singles": {
+              "description": "Ocultar singles do chart"
+            },
+            "private": {
+              "description": "Mostrar a resposta só para você"
+            },
+            "rainbow": {
+              "description": "Configuração experimental de arco-íris"
+            },
+            "released": {
+              "description": "Filtrar por álbuns lançados no ano"
+            },
+            "sfw": {
+              "description": "Apenas imagens seguras para o trabalho"
+            },
+            "size": {
+              "description": "Tamanho do chart"
+            },
+            "skip": {
+              "description": "Pular álbuns sem imagem"
+            },
+            "time-period": {
+              "description": "Período"
+            },
+            "titles": {
+              "description": "Configuração de exibição de títulos"
+            },
+            "user": {
+              "description": "O usuário a mostrar (padrão: você)"
+            }
+          }
+        },
+        "artists": {
+          "description": "Gera um chart de imagens de artistas",
+          "parameters": {
+            "private": {
+              "description": "Mostrar a resposta só para você"
+            },
+            "rainbow": {
+              "description": "Configuração experimental de arco-íris"
+            },
+            "size": {
+              "description": "Tamanho do chart"
+            },
+            "skip": {
+              "description": "Pular artistas sem imagem"
+            },
+            "time-period": {
+              "description": "Período"
+            },
+            "titles": {
+              "description": "Configuração de exibição de títulos"
+            },
+            "user": {
+              "description": "O usuário a mostrar (padrão: você)"
+            }
+          }
+        }
+      }
+    },
+    "collection": {
+      "description": "Sua coleção do Discogs ou a de outra pessoa",
+      "parameters": {
+        "format": {
+          "description": "Formato de mídia a incluir"
+        },
+        "search": {
+          "description": "Termo de busca para filtrar"
+        },
+        "user": {
+          "description": "O usuário a mostrar (padrão: você)"
+        }
+      }
+    },
+    "country": {
+      "description": "País de um artista ou top artistas de um país",
+      "parameters": {
+        "search": {
+          "description": "O país ou artista que você quer ver"
+        }
+      }
+    },
+    "countrychart": {
+      "description": "Gera um mapa com as localizações dos seus top artistas",
+      "parameters": {
+        "private": {
+          "description": "Mostrar a resposta só para você"
+        },
+        "theme": {
+          "description": "Tema de cores do mapa"
+        },
+        "time-period": {
+          "description": "Período"
+        },
+        "user": {
+          "description": "O usuário a mostrar (padrão: você)"
+        }
+      }
+    },
+    "cover": {
+      "description": "Capa do álbum atual ou do que você buscar",
+      "parameters": {
+        "album": {
+          "description": "O álbum a buscar (padrão: o que está tocando)"
+        }
+      }
+    },
+    "covermode": {
+      "description": "Define se as capas de álbum são animadas ou sempre estáticas"
+    },
+    "crown": {
+      "description": "Histórico de uma coroa específica",
+      "parameters": {
+        "artist": {
+          "description": "O artista a buscar (padrão: o que está tocando)"
+        }
+      }
+    },
+    "crowns": {
+      "description": "Veja a lista de coroas suas ou de outra pessoa",
+      "parameters": {
+        "user": {
+          "description": "O usuário a mostrar (padrão: você)"
+        },
+        "view": {
+          "description": "Visualização de coroas que você quer ver"
+        }
+      }
+    },
+    "discogs": {
+      "description": "Conecta sua conta do Discogs enviando um link por DM"
+    },
+    "discoveries": {
+      "description": "⭐ Mostra artistas que você descobriu recentemente",
+      "parameters": {
+        "mode": {
+          "description": "O tipo de resposta que você quer - mude o padrão com /responsemode"
+        },
+        "private": {
+          "description": "Mostrar a resposta só para você"
+        },
+        "size": {
+          "description": "Quantidade de artistas descobertos a mostrar por página"
+        },
+        "time-period": {
+          "description": "Período"
+        },
+        "user": {
+          "description": "O usuário a mostrar (padrão: você)"
+        }
+      }
+    },
+    "discoverydate": {
+      "description": "⭐ Mostra a data em que você descobriu o artista, o álbum e a faixa",
+      "parameters": {
+        "track": {
+          "description": "A faixa a buscar (padrão: a que está tocando)"
+        },
+        "user": {
+          "description": "O usuário a mostrar (padrão: você)"
+        }
+      }
+    },
+    "eurovision": {
+      "description": "Veja um resumo do Eurovision de um ano e/ou país",
+      "parameters": {
+        "country": {
+          "description": "País do Eurovision"
+        },
+        "year": {
+          "description": "Ano (de 1956 até agora)"
+        }
+      }
+    },
+    "featured": {
+      "description": "Mostra o que está em destaque agora (e o avatar do bot)"
+    },
+    "featuredlog": {
+      "description": "Mostra o histórico de destaques seu ou de outra pessoa",
+      "parameters": {
+        "user": {
+          "description": "O usuário para ver o histórico de destaques (padrão: você)"
+        },
+        "view": {
+          "description": "Tipo de histórico que você quer ver"
+        }
+      }
+    },
+    "fm": {
+      "description": "Tocando agora - Mostra a faixa atual sua ou de outra pessoa",
+      "parameters": {
+        "embed-type": {
+          "description": "O tipo de embed a usar, também pode ser configurado nas configurações"
+        },
+        "user": {
+          "description": "O usuário a mostrar (padrão: você)"
+        }
+      }
+    },
+    "fmmode": {
+      "description": "Muda o layout do seu '/fm'"
+    },
+    "frequently-asked": {
+      "description": "Perguntas frequentes sobre o .fmbot"
+    },
+    "friendsfm": {
+      "description": "Exibe seus amigos e o que eles estão ouvindo"
+    },
+    "friendswhoknow": {
+      "description": "Mostra quais dos seus amigos ouvem um artista",
+      "parameters": {
+        "artist": {
+          "description": "O artista a buscar (padrão: o que está tocando)"
+        },
+        "mode": {
+          "description": "O tipo de resposta que você quer - mude o padrão com /responsemode"
+        },
+        "private": {
+          "description": "Mostrar a resposta só para você"
+        },
+        "redirects": {
+          "description": "Ativa/desativa redirecionamentos de nome de artista do Last.fm (padrão: ativado)"
+        }
+      }
+    },
+    "fwkalbum": {
+      "description": "Quais dos seus amigos conhecem um álbum",
+      "parameters": {
+        "album": {
+          "description": "O álbum a buscar (padrão: o que está tocando)"
+        },
+        "mode": {
+          "description": "O tipo de resposta que você quer - mude o padrão com /responsemode"
+        },
+        "private": {
+          "description": "Mostrar a resposta só para você"
+        }
+      }
+    },
+    "fwkgenre": {
+      "description": "Mostra quais dos seus amigos ouvem um gênero",
+      "parameters": {
+        "mode": {
+          "description": "O tipo de resposta que você quer - mude o padrão com /responsemode"
+        },
+        "private": {
+          "description": "Mostrar a resposta só para você"
+        },
+        "search": {
+          "description": "O gênero ou artista que você quer ver"
+        }
+      }
+    },
+    "fwktrack": {
+      "description": "Quais dos seus amigos conhecem uma faixa",
+      "parameters": {
+        "mode": {
+          "description": "O tipo de resposta que você quer - mude o padrão com /responsemode"
+        },
+        "private": {
+          "description": "Mostrar a resposta só para você"
+        },
+        "track": {
+          "description": "A faixa a buscar (padrão: a que está tocando)"
+        }
+      }
+    },
+    "gaps": {
+      "description": "⭐ Músicas que você voltou a ouvir depois de um tempo",
+      "parameters": {
+        "mode": {
+          "description": "O tipo de resposta que você quer - mude o padrão com /responsemode"
+        },
+        "private": {
+          "description": "Mostrar a resposta só para você"
+        },
+        "size": {
+          "description": "Quantidade de intervalos de escuta a mostrar por página"
+        },
+        "type": {
+          "description": "Tipo de intervalo musical"
+        },
+        "user": {
+          "description": "O usuário a mostrar (padrão: você)"
+        }
+      }
+    },
+    "genre": {
+      "description": "Mostra os gêneros de um artista ou os top artistas de um gênero",
+      "parameters": {
+        "search": {
+          "description": "O gênero ou artista que você quer ver"
+        },
+        "user": {
+          "description": "O usuário a mostrar (padrão: você)"
+        }
+      }
+    },
+    "getsupporter": {
+      "description": "⭐ Torne-se supporter ou gerencie sua assinatura atual"
+    },
+    "giftsupporter": {
+      "description": "🎁 Presenteie outro usuário com supporter",
+      "parameters": {
+        "user": {
+          "description": "O usuário que você quer presentear com supporter"
+        }
+      }
+    },
+    "globalwhoknows": {
+      "description": "Mostra quais outros usuários ouvem um artista no .fmbot",
+      "parameters": {
+        "artist": {
+          "description": "O artista a buscar (padrão: o que está tocando)"
+        },
+        "hide-private": {
+          "description": "Ocultar ou mostrar usuários privados"
+        },
+        "mode": {
+          "description": "O tipo de resposta que você quer - mude o padrão com /responsemode"
+        },
+        "redirects": {
+          "description": "Ativa/desativa redirecionamentos de nome de artista do Last.fm (padrão: ativado)"
+        }
+      }
+    },
+    "gwkalbum": {
+      "description": "Mostra quais outros usuários ouvem um álbum globalmente no .fmbot",
+      "parameters": {
+        "album": {
+          "description": "O álbum a buscar (padrão: o que está tocando)"
+        },
+        "hide-private": {
+          "description": "Ocultar ou mostrar usuários privados"
+        },
+        "mode": {
+          "description": "O tipo de resposta que você quer - mude o padrão com /responsemode"
+        }
+      }
+    },
+    "gwktrack": {
+      "description": "Mostra quais outros usuários ouvem uma faixa globalmente no .fmbot",
+      "parameters": {
+        "hide-private": {
+          "description": "Ocultar ou mostrar usuários privados"
+        },
+        "mode": {
+          "description": "O tipo de resposta que você quer - mude o padrão com /responsemode"
+        },
+        "track": {
+          "description": "A faixa a buscar (padrão: a que está tocando)"
+        }
+      }
+    },
+    "iceberg": {
+      "description": "Mostra seu iceberg, baseado na popularidade dos artistas",
+      "parameters": {
+        "private": {
+          "description": "Mostrar a resposta só para você"
+        },
+        "time-period": {
+          "description": "Período"
+        },
+        "user": {
+          "description": "O usuário a mostrar (padrão: você)"
+        }
+      }
+    },
+    "import": {
+      "description": "Gerencie suas importações de dados",
+      "subcommands": {
+        "applemusic": {
+          "description": "⭐ Importe seu histórico do Apple Music para o .fmbot",
+          "parameters": {
+            "file": {
+              "description": "Arquivo 'Apple Media Services information.zip' ou 'Apple Music Play Activity.csv'"
+            }
+          }
+        },
+        "manage": {
+          "description": "⭐ Gerencie suas importações e configure como elas são usadas"
+        },
+        "modify": {
+          "description": "⭐ Edite e exclua artistas, álbuns e faixas nas suas importações do .fmbot"
+        },
+        "spotify": {
+          "description": "⭐ Importe seu histórico do Spotify para o .fmbot",
+          "parameters": {
+            "file-1": {
+              "description": "Pacote de histórico do Spotify (.zip) ou arquivos de histórico (.json)"
+            },
+            "file-10": {
+              "description": "Pacote de histórico do Spotify (.zip) ou arquivos de histórico (.json)"
+            },
+            "file-11": {
+              "description": "Pacote de histórico do Spotify (.zip) ou arquivos de histórico (.json)"
+            },
+            "file-12": {
+              "description": "Pacote de histórico do Spotify (.zip) ou arquivos de histórico (.json)"
+            },
+            "file-13": {
+              "description": "Pacote de histórico do Spotify (.zip) ou arquivos de histórico (.json)"
+            },
+            "file-14": {
+              "description": "Pacote de histórico do Spotify (.zip) ou arquivos de histórico (.json)"
+            },
+            "file-15": {
+              "description": "Pacote de histórico do Spotify (.zip) ou arquivos de histórico (.json)"
+            },
+            "file-2": {
+              "description": "Pacote de histórico do Spotify (.zip) ou arquivos de histórico (.json)"
+            },
+            "file-3": {
+              "description": "Pacote de histórico do Spotify (.zip) ou arquivos de histórico (.json)"
+            },
+            "file-4": {
+              "description": "Pacote de histórico do Spotify (.zip) ou arquivos de histórico (.json)"
+            },
+            "file-5": {
+              "description": "Pacote de histórico do Spotify (.zip) ou arquivos de histórico (.json)"
+            },
+            "file-6": {
+              "description": "Pacote de histórico do Spotify (.zip) ou arquivos de histórico (.json)"
+            },
+            "file-7": {
+              "description": "Pacote de histórico do Spotify (.zip) ou arquivos de histórico (.json)"
+            },
+            "file-8": {
+              "description": "Pacote de histórico do Spotify (.zip) ou arquivos de histórico (.json)"
+            },
+            "file-9": {
+              "description": "Pacote de histórico do Spotify (.zip) ou arquivos de histórico (.json)"
+            }
+          }
+        }
+      }
+    },
+    "judge": {
+      "description": "Julga seu gosto musical usando IA",
+      "parameters": {
+        "language": {
+          "description": "Idioma deste julgamento"
+        },
+        "time-period": {
+          "description": "Período"
+        },
+        "user": {
+          "description": "O usuário a julgar"
+        }
+      }
+    },
+    "lastlistened": {
+      "description": "⭐ Mostra a última vez que você ouviu o artista, o álbum e a faixa",
+      "parameters": {
+        "track": {
+          "description": "A faixa a buscar (padrão: a que está tocando)"
+        },
+        "user": {
+          "description": "O usuário a mostrar (padrão: você)"
+        }
+      }
+    },
+    "like": {
+      "description": "Adiciona uma faixa às suas músicas curtidas do Spotify",
+      "parameters": {
+        "search": {
+          "description": "Faixa a curtir (padrão: a que está tocando)"
+        }
+      }
+    },
+    "localization": {
+      "description": "Configure seu fuso horário e formato de números no .fmbot",
+      "parameters": {
+        "numberformat": {
+          "description": "Formato de números que você quer usar"
+        },
+        "timezone": {
+          "description": "Fuso horário que você quer definir"
+        }
+      }
+    },
+    "login": {
+      "description": "Fornece um link para conectar sua conta do Last.fm ao .fmbot"
+    },
+    "love": {
+      "description": "Ama no Last.fm a faixa que você está ouvindo ou buscando",
+      "parameters": {
+        "private": {
+          "description": "Mostrar a resposta só para você"
+        },
+        "track": {
+          "description": "A faixa que você quer amar (padrão: a que está tocando)"
+        }
+      }
+    },
+    "loved": {
+      "description": "Faixas que você amou no Last.fm",
+      "parameters": {
+        "private": {
+          "description": "Mostrar a resposta só para você"
+        },
+        "user": {
+          "description": "O usuário a mostrar (padrão: você)"
+        }
+      }
+    },
+    "lyrics": {
+      "description": "⭐ Mostra a letra da faixa que você está ouvindo ou buscando",
+      "parameters": {
+        "track": {
+          "description": "A faixa a buscar (padrão: a que está tocando)"
+        }
+      }
+    },
+    "members": {
+      "description": "Membros deste servidor que usam o .fmbot",
+      "parameters": {
+        "view": {
+          "description": "Estatística que você quer ver"
+        }
+      }
+    },
+    "milestone": {
+      "description": "Mostra um marco de scrobbles",
+      "parameters": {
+        "amount": {
+          "description": "Número do scrobble do marco"
+        },
+        "user": {
+          "description": "O usuário a mostrar (padrão: você)"
+        }
+      }
+    },
+    "outofsync": {
+      "description": "O que fazer se seu Last.fm não está sincronizado com o Spotify",
+      "parameters": {
+        "private": {
+          "description": "Mostrar a resposta só para você"
+        }
+      }
+    },
+    "overview": {
+      "description": "Mostra um resumo diário",
+      "parameters": {
+        "amount": {
+          "description": "Quantidade de dias a mostrar"
+        },
+        "user": {
+          "description": "O usuário a mostrar (padrão: você)"
+        }
+      }
+    },
+    "pace": {
+      "description": "Mostra a data estimada em que você alcançará uma meta de scrobbles pela média diária",
+      "parameters": {
+        "amount": {
+          "description": "Meta de scrobbles"
+        },
+        "time-period": {
+          "description": "Período para basear a média de plays"
+        },
+        "user": {
+          "description": "O usuário a mostrar (padrão: você)"
+        }
+      }
+    },
+    "plays": {
+      "description": "Mostra seu total de scrobbles em um período específico",
+      "parameters": {
+        "time-period": {
+          "description": "Período para basear a média de plays"
+        },
+        "user": {
+          "description": "O usuário a mostrar (padrão: você)"
+        }
+      }
+    },
+    "premiumserver": {
+      "description": "✨ Desbloqueie vantagens e automações para todo este servidor"
+    },
+    "privacy": {
+      "description": "Muda sua visibilidade para outros usuários do .fmbot no Global WhoKnows"
+    },
+    "profile": {
+      "description": "Mostra o perfil seu ou de outra pessoa",
+      "parameters": {
+        "user": {
+          "description": "O usuário a mostrar (padrão: você)"
+        }
+      }
+    },
+    "queue": {
+      "description": "Adiciona uma faixa à fila do seu Spotify",
+      "parameters": {
+        "search": {
+          "description": "Faixa para a fila (padrão: a que está tocando)"
+        }
+      }
+    },
+    "recap": {
+      "description": "Mostra uma retrospectiva do período selecionado",
+      "parameters": {
+        "time-period": {
+          "description": "Período a mostrar (padrão: ano)"
+        },
+        "user": {
+          "description": "O usuário a mostrar (padrão: você)"
+        }
+      }
+    },
+    "receipt": {
+      "description": "Mostra o recibo das suas faixas, baseado no Receiptify",
+      "parameters": {
+        "private": {
+          "description": "Mostrar a resposta só para você"
+        },
+        "time-period": {
+          "description": "Período"
+        },
+        "user": {
+          "description": "O usuário a mostrar (padrão: você)"
+        }
+      }
+    },
+    "recent": {
+      "description": "Mostra as faixas recentes suas ou de outra pessoa",
+      "parameters": {
+        "artist": {
+          "description": "Artista pelo qual você quer filtrar"
+        },
+        "user": {
+          "description": "O usuário a mostrar (padrão: você)"
+        }
+      }
+    },
+    "refreshmembers": {
+      "description": "Atualiza a lista de membros em cache que o .fmbot tem do seu servidor"
+    },
+    "remote": {
+      "description": "Controle a reprodução do seu Spotify"
+    },
+    "remove": {
+      "description": "Exclui sua conta do .fmbot"
+    },
+    "removefriend": {
+      "description": "Remove um amigo dos seus amigos do .fmbot",
+      "parameters": {
+        "user": {
+          "description": "O usuário a remover"
+        }
+      }
+    },
+    "responsemode": {
+      "description": "Muda seu modo padrão do whoknows e das listas top"
+    },
+    "scrobble": {
+      "description": "Faz scrobble de uma faixa no Last.fm",
+      "parameters": {
+        "private": {
+          "description": "Mostrar a resposta só para você"
+        },
+        "track": {
+          "description": "A faixa da qual você quer fazer scrobble"
+        },
+        "user": {
+          "description": "Veja as faixas recentes de um usuário para fazer scrobble"
+        }
+      }
+    },
+    "search": {
+      "description": "Pesquise sua biblioteca salva (faixas, álbuns, artistas, scrobbles)",
+      "parameters": {
+        "query": {
+          "description": "O que buscar (corresponde a faixa, álbum ou artista)"
+        }
+      }
+    },
+    "selfblock": {
+      "description": "Oculta você do WhoKnows e dos rankings deste servidor"
+    },
+    "selfunblock": {
+      "description": "Remove um bloqueio que você aplicou a si com selfblock neste servidor"
+    },
+    "server": {
+      "description": "Comandos billboard do servidor",
+      "subcommands": {
+        "albums": {
+          "description": "Top álbuns do seu servidor",
+          "parameters": {
+            "artist": {
+              "description": "O artista pelo qual você quer filtrar"
+            },
+            "order": {
+              "description": "Ordem da lista (padrão: ouvintes)"
+            },
+            "role-picker": {
+              "description": "Exibe um seletor para filtrar por cargos"
+            },
+            "time-period": {
+              "description": "Período"
+            }
+          }
+        },
+        "artists": {
+          "description": "Top artistas do seu servidor",
+          "parameters": {
+            "order": {
+              "description": "Ordem da lista (padrão: ouvintes)"
+            },
+            "role-picker": {
+              "description": "Exibe um seletor para filtrar por cargos"
+            },
+            "time-period": {
+              "description": "Período"
+            }
+          }
+        },
+        "genres": {
+          "description": "Top gêneros do seu servidor",
+          "parameters": {
+            "order": {
+              "description": "Ordem da lista (padrão: ouvintes)"
+            },
+            "time-period": {
+              "description": "Período"
+            }
+          }
+        },
+        "tracks": {
+          "description": "Top faixas do seu servidor",
+          "parameters": {
+            "artist": {
+              "description": "O artista pelo qual você quer filtrar"
+            },
+            "order": {
+              "description": "Ordem da lista (padrão: ouvintes)"
+            },
+            "role-picker": {
+              "description": "Exibe um seletor para filtrar por cargos"
+            },
+            "time-period": {
+              "description": "Período"
+            }
+          }
+        }
+      }
+    },
+    "settings": {
+      "description": "Suas configurações de usuário e do servidor no .fmbot"
+    },
+    "skip": {
+      "description": "Pula para a próxima faixa no seu Spotify"
+    },
+    "spotify": {
+      "description": "Pesquisar no Spotify",
+      "parameters": {
+        "private": {
+          "description": "Mostrar a resposta só para você"
+        },
+        "search": {
+          "description": "Valor de busca"
+        },
+        "type": {
+          "description": "O que você quer buscar no Spotify (padrão: faixa)"
+        }
+      }
+    },
+    "streak": {
+      "description": "Sua sequência ou a de outra pessoa para artista, álbum e faixa",
+      "parameters": {
+        "user": {
+          "description": "O usuário a mostrar (padrão: você)"
+        }
+      }
+    },
+    "streakhistory": {
+      "description": "Mostra o histórico de sequências seu ou de outra pessoa",
+      "parameters": {
+        "artist": {
+          "description": "O artista pelo qual você quer filtrar os resultados"
+        },
+        "editmode": {
+          "description": "Ativa ou desativa o modo de edição"
+        },
+        "user": {
+          "description": "O usuário a mostrar (padrão: você)"
+        }
+      }
+    },
+    "supporters": {
+      "description": "⭐ Mostra todos os supporters atuais"
+    },
+    "taste": {
+      "description": "Compara seus top artistas, gêneros e países com os de outro usuário",
+      "parameters": {
+        "private": {
+          "description": "Mostrar a resposta só para você"
+        },
+        "size": {
+          "description": "Quantidade de comparações a mostrar"
+        },
+        "time-period": {
+          "description": "Período"
+        },
+        "user": {
+          "description": "O usuário para comparar seu gosto"
+        }
+      }
+    },
+    "top": {
+      "description": "Listas top - Artistas/Álbuns/Faixas/Gêneros/Países",
+      "subcommands": {
+        "albums": {
+          "description": "Mostra seus top álbuns",
+          "parameters": {
+            "billboard": {
+              "description": "Mostrar top álbuns em estilo billboard"
+            },
+            "decade": {
+              "description": "Filtrar por álbuns lançados na década"
+            },
+            "hide-singles": {
+              "description": "Ocultar singles dos resultados"
+            },
+            "mode": {
+              "description": "O tipo de resposta que você quer - mude o padrão com /responsemode"
+            },
+            "private": {
+              "description": "Mostrar a resposta só para você"
+            },
+            "released": {
+              "description": "Filtrar por álbuns lançados no ano"
+            },
+            "size": {
+              "description": "Quantidade de álbuns a mostrar"
+            },
+            "time-period": {
+              "description": "Período"
+            },
+            "user": {
+              "description": "O usuário a mostrar (padrão: você)"
+            }
+          }
+        },
+        "artists": {
+          "description": "Seus top artistas",
+          "parameters": {
+            "billboard": {
+              "description": "Mostrar top artistas em estilo billboard"
+            },
+            "discogs": {
+              "description": "Mostrar top artistas da coleção do Discogs"
+            },
+            "mode": {
+              "description": "O tipo de resposta que você quer - mude o padrão com /responsemode"
+            },
+            "private": {
+              "description": "Mostrar a resposta só para você"
+            },
+            "size": {
+              "description": "Quantidade de artistas a mostrar"
+            },
+            "time-period": {
+              "description": "Período"
+            },
+            "user": {
+              "description": "O usuário a mostrar (padrão: você)"
+            }
+          }
+        },
+        "countries": {
+          "description": "Mostra seus top países",
+          "parameters": {
+            "billboard": {
+              "description": "Mostrar top países em estilo billboard"
+            },
+            "mode": {
+              "description": "O tipo de resposta que você quer - mude o padrão com /responsemode"
+            },
+            "private": {
+              "description": "Mostrar a resposta só para você"
+            },
+            "size": {
+              "description": "Quantidade de países a mostrar"
+            },
+            "time-period": {
+              "description": "Período"
+            },
+            "user": {
+              "description": "O usuário a mostrar (padrão: você)"
+            }
+          }
+        },
+        "genres": {
+          "description": "Mostra seus top gêneros",
+          "parameters": {
+            "billboard": {
+              "description": "Mostrar top gêneros em estilo billboard"
+            },
+            "mode": {
+              "description": "O tipo de resposta que você quer - mude o padrão com /responsemode"
+            },
+            "private": {
+              "description": "Mostrar a resposta só para você"
+            },
+            "size": {
+              "description": "Quantidade de gêneros a mostrar"
+            },
+            "time-period": {
+              "description": "Período"
+            },
+            "user": {
+              "description": "O usuário a mostrar (padrão: você)"
+            }
+          }
+        },
+        "tracks": {
+          "description": "Mostra suas top faixas",
+          "parameters": {
+            "billboard": {
+              "description": "Mostrar top faixas em estilo billboard"
+            },
+            "mode": {
+              "description": "O tipo de resposta que você quer - mude o padrão com /responsemode"
+            },
+            "private": {
+              "description": "Mostrar a resposta só para você"
+            },
+            "size": {
+              "description": "Quantidade de faixas a mostrar"
+            },
+            "time-period": {
+              "description": "Período"
+            },
+            "user": {
+              "description": "O usuário a mostrar (padrão: você)"
+            }
+          }
+        }
+      }
+    },
+    "track": {
+      "description": "Mostra informações da faixa que você está ouvindo ou buscando",
+      "parameters": {
+        "track": {
+          "description": "A faixa a buscar (padrão: a que está tocando)"
+        }
+      }
+    },
+    "trackdetails": {
+      "description": "Mostra metadados da faixa atual ou da que você buscar",
+      "parameters": {
+        "track": {
+          "description": "A faixa a buscar (padrão: a que está tocando)"
+        }
+      }
+    },
+    "trackplays": {
+      "description": "Mostra a contagem de plays da faixa atual ou da que você buscar",
+      "parameters": {
+        "track": {
+          "description": "A faixa a buscar (padrão: a que está tocando)"
+        },
+        "user": {
+          "description": "O usuário a mostrar (padrão: você)"
+        }
+      }
+    },
+    "unblock": {
+      "description": "Desbloqueia um usuário para que volte a aparecer no WhoKnows e nos rankings do servidor",
+      "parameters": {
+        "user": {
+          "description": "O usuário que você quer desbloquear"
+        }
+      }
+    },
+    "unlove": {
+      "description": "Remove a faixa que você está ouvindo ou buscando das suas faixas amadas",
+      "parameters": {
+        "private": {
+          "description": "Mostrar a resposta só para você"
+        },
+        "track": {
+          "description": "A faixa que você quer remover (padrão: a que está tocando)"
+        }
+      }
+    },
+    "update": {
+      "description": "Atualize manualmente o cache do .fmbot com seus dados recentes do Last.fm",
+      "parameters": {
+        "type": {
+          "description": "Selecione o que você quer atualizar"
+        }
+      }
+    },
+    "whoknows": {
+      "description": "Mostra quais outros usuários ouvem um artista no seu servidor",
+      "parameters": {
+        "artist": {
+          "description": "O artista a buscar (padrão: o que está tocando)"
+        },
+        "mode": {
+          "description": "O tipo de resposta que você quer - mude o padrão com /responsemode"
+        },
+        "no-filter": {
+          "description": "Desativar filtros do servidor e coroas"
+        },
+        "redirects": {
+          "description": "Ativa/desativa redirecionamentos de nome de artista do Last.fm (padrão: ativado)"
+        },
+        "role-picker": {
+          "description": "Exibe um seletor para filtrar por cargos"
+        }
+      }
+    },
+    "wkalbum": {
+      "description": "Mostra quais outros usuários ouvem um álbum no seu servidor",
+      "parameters": {
+        "album": {
+          "description": "O álbum a buscar (padrão: o que está tocando)"
+        },
+        "mode": {
+          "description": "O tipo de resposta que você quer - mude o padrão com /responsemode"
+        },
+        "no-filter": {
+          "description": "Desativar filtros do servidor"
+        },
+        "role-picker": {
+          "description": "Exibe um seletor para filtrar por cargos"
+        }
+      }
+    },
+    "wkgenre": {
+      "description": "Mostra quais outros usuários ouvem um gênero no seu servidor",
+      "parameters": {
+        "mode": {
+          "description": "O tipo de resposta que você quer - mude o padrão com /responsemode"
+        },
+        "search": {
+          "description": "O gênero ou artista que você quer ver"
+        }
+      }
+    },
+    "wktrack": {
+      "description": "Mostra quais outros usuários ouvem uma faixa no seu servidor",
+      "parameters": {
+        "mode": {
+          "description": "O tipo de resposta que você quer - mude o padrão com /responsemode"
+        },
+        "no-filter": {
+          "description": "Desativar filtros do servidor"
+        },
+        "role-picker": {
+          "description": "Exibe um seletor para filtrar por cargos"
+        },
+        "track": {
+          "description": "A faixa a buscar (padrão: a que está tocando)"
+        }
+      }
+    },
+    "year": {
+      "description": "Mostra um resumo do seu ano",
+      "parameters": {
+        "user": {
+          "description": "O usuário a mostrar (padrão: você)"
+        },
+        "year": {
+          "description": "Ano que você quer ver"
+        }
+      }
+    },
+    "youtube": {
+      "description": "Pesquisar no YouTube",
+      "parameters": {
+        "private": {
+          "description": "Mostrar a resposta só para você"
+        },
+        "search": {
+          "description": "Valor de busca"
+        }
+      }
+    }
+  }
 }

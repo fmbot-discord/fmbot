@@ -302,7 +302,7 @@ public class TrackSlashCommands(
         }
     }
 
-    [SlashCommand("receipt", "Shows your track receipt. Based on Receiptify.",
+    [SlashCommand("receipt", "Shows your track receipt, based on Receiptify",
         Contexts =
             [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild],
         IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]

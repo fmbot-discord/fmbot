@@ -1,3 +1,1262 @@
 {
-  "commands": {}
+  "commands": {
+    "addfriend": {
+      "description": "Lägg till en vän bland dina .fmbot-vänner",
+      "parameters": {
+        "user": {
+          "description": "Användaren som ska läggas till"
+        }
+      }
+    },
+    "affinity": {
+      "description": "Visar användare på den här servern med liknande musiksmak (artister, genrer och länder)",
+      "parameters": {
+        "user": {
+          "description": "Användaren att visa likhet för"
+        }
+      }
+    },
+    "album": {
+      "description": "Albuminfo för albumet du lyssnar på eller söker efter",
+      "parameters": {
+        "album": {
+          "description": "Albumet du vill söka efter (standard: det som spelas nu)"
+        }
+      }
+    },
+    "albumplays": {
+      "description": "Visar playcount för nuvarande album eller det du söker efter",
+      "parameters": {
+        "album": {
+          "description": "Albumet du vill söka efter (standard: det som spelas nu)"
+        },
+        "user": {
+          "description": "Användaren som ska visas (standard: du själv)"
+        }
+      }
+    },
+    "albumtracks": {
+      "description": "Visar playcount per låt för albumet du lyssnar på eller söker efter",
+      "parameters": {
+        "album": {
+          "description": "Albumet du vill söka efter (standard: det som spelas nu)"
+        },
+        "playcount-order": {
+          "description": "Om listan ska sorteras efter playcount"
+        },
+        "user": {
+          "description": "Användaren som ska visas (standard: du själv)"
+        }
+      }
+    },
+    "applemusic": {
+      "description": "Sök på Apple Music",
+      "parameters": {
+        "private": {
+          "description": "Visa svaret endast för dig"
+        },
+        "search": {
+          "description": "Sökterm"
+        }
+      }
+    },
+    "artist": {
+      "description": "Allmän info om nuvarande artist eller den du söker efter",
+      "parameters": {
+        "artist": {
+          "description": "Artisten du vill söka efter (standard: det som spelas nu)"
+        },
+        "redirects": {
+          "description": "Slå av/på Last.fm-omdirigering av artistnamn (standard: på)"
+        }
+      }
+    },
+    "artistalbums": {
+      "description": "Visar dina top album för en artist",
+      "parameters": {
+        "artist": {
+          "description": "Artisten du vill söka efter (standard: det som spelas nu)"
+        },
+        "hide-singles": {
+          "description": "Dölj singlar i resultaten"
+        },
+        "redirects": {
+          "description": "Slå av/på Last.fm-omdirigering av artistnamn (standard: på)"
+        },
+        "user": {
+          "description": "Användaren som ska visas (standard: du själv)"
+        }
+      }
+    },
+    "artistoverview": {
+      "description": "Visar översikt för nuvarande artist eller den du söker efter",
+      "parameters": {
+        "artist": {
+          "description": "Artisten du vill söka efter (standard: det som spelas nu)"
+        },
+        "redirects": {
+          "description": "Slå av/på Last.fm-omdirigering av artistnamn (standard: på)"
+        },
+        "user": {
+          "description": "Användaren som ska visas (standard: du själv)"
+        }
+      }
+    },
+    "artistpace": {
+      "description": "Visar beräknat datum då du når ett visst antal plays på en artist",
+      "parameters": {
+        "amount": {
+          "description": "Målantal plays"
+        },
+        "artist": {
+          "description": "Artisten du vill söka efter (standard: det som spelas nu)"
+        },
+        "redirects": {
+          "description": "Slå av/på Last.fm-omdirigering av artistnamn (standard: på)"
+        },
+        "time-period": {
+          "description": "Tidsperiod att basera genomsnittligt playcount på"
+        },
+        "user": {
+          "description": "Användaren som ska visas (standard: du själv)"
+        }
+      }
+    },
+    "artistplays": {
+      "description": "Visar playcount för nuvarande artist eller den du söker efter",
+      "parameters": {
+        "artist": {
+          "description": "Artisten du vill söka efter (standard: det som spelas nu)"
+        },
+        "redirects": {
+          "description": "Slå av/på Last.fm-omdirigering av artistnamn (standard: på)"
+        },
+        "user": {
+          "description": "Användaren som ska visas (standard: du själv)"
+        }
+      }
+    },
+    "artisttracks": {
+      "description": "Visar dina top tracks för en artist",
+      "parameters": {
+        "artist": {
+          "description": "Artisten du vill söka efter (standard: det som spelas nu)"
+        },
+        "redirects": {
+          "description": "Slå av/på Last.fm-omdirigering av artistnamn (standard: på)"
+        },
+        "time-period": {
+          "description": "Tidsperiod att visa låtar för"
+        },
+        "user": {
+          "description": "Användaren som ska visas (standard: du själv)"
+        }
+      }
+    },
+    "block": {
+      "description": "Blockera en användare från WhoKnows och serverövergripande statistik",
+      "parameters": {
+        "user": {
+          "description": "Användaren du vill blockera"
+        }
+      }
+    },
+    "botscrobbling": {
+      "description": "Visar info om scrobbling från musikbottar och låter dig ändra dina inställningar"
+    },
+    "chart": {
+      "description": "Skapa charts med albumomslag eller artistbilder",
+      "subcommands": {
+        "albums": {
+          "description": "Skapar en chart med albumbilder",
+          "parameters": {
+            "artist": {
+              "description": "Filtrera på en specifik artist"
+            },
+            "decade": {
+              "description": "Filtrera på album släppta ett visst årtionde"
+            },
+            "hide-singles": {
+              "description": "Dölj singlar i charten"
+            },
+            "private": {
+              "description": "Visa svaret endast för dig"
+            },
+            "rainbow": {
+              "description": "Experimentell regnbågsinställning"
+            },
+            "released": {
+              "description": "Filtrera på album släppta ett visst år"
+            },
+            "sfw": {
+              "description": "Endast SFW-bilder"
+            },
+            "size": {
+              "description": "Chartstorlek"
+            },
+            "skip": {
+              "description": "Hoppa över album utan bild"
+            },
+            "time-period": {
+              "description": "Tidsperiod"
+            },
+            "titles": {
+              "description": "Inställning för titelvisning"
+            },
+            "user": {
+              "description": "Användaren som ska visas (standard: du själv)"
+            }
+          }
+        },
+        "artists": {
+          "description": "Skapar en chart med artistbilder",
+          "parameters": {
+            "private": {
+              "description": "Visa svaret endast för dig"
+            },
+            "rainbow": {
+              "description": "Experimentell regnbågsinställning"
+            },
+            "size": {
+              "description": "Chartstorlek"
+            },
+            "skip": {
+              "description": "Hoppa över artister utan bild"
+            },
+            "time-period": {
+              "description": "Tidsperiod"
+            },
+            "titles": {
+              "description": "Inställning för titelvisning"
+            },
+            "user": {
+              "description": "Användaren som ska visas (standard: du själv)"
+            }
+          }
+        }
+      }
+    },
+    "collection": {
+      "description": "Din eller någon annans Discogs-samling",
+      "parameters": {
+        "format": {
+          "description": "Medieformat att inkludera"
+        },
+        "search": {
+          "description": "Sökterm att filtrera på"
+        },
+        "user": {
+          "description": "Användaren som ska visas (standard: du själv)"
+        }
+      }
+    },
+    "country": {
+      "description": "Land för en artist eller Top-artister för ett land",
+      "parameters": {
+        "search": {
+          "description": "Landet eller artisten du vill visa"
+        }
+      }
+    },
+    "countrychart": {
+      "description": "Skapar en karta över var dina Top-artister kommer ifrån",
+      "parameters": {
+        "private": {
+          "description": "Visa svaret endast för dig"
+        },
+        "theme": {
+          "description": "Färgtema för kartan"
+        },
+        "time-period": {
+          "description": "Tidsperiod"
+        },
+        "user": {
+          "description": "Användaren som ska visas (standard: du själv)"
+        }
+      }
+    },
+    "cover": {
+      "description": "Omslag för nuvarande album eller det du söker efter",
+      "parameters": {
+        "album": {
+          "description": "Albumet du vill söka efter (standard: det som spelas nu)"
+        }
+      }
+    },
+    "covermode": {
+      "description": "Välj om albumomslag animeras eller alltid visas som stillbild"
+    },
+    "crown": {
+      "description": "Historik för en specifik krona",
+      "parameters": {
+        "artist": {
+          "description": "Artisten du vill söka efter (standard: det som spelas nu)"
+        }
+      }
+    },
+    "crowns": {
+      "description": "Visa en lista med kronor för dig eller någon annan",
+      "parameters": {
+        "user": {
+          "description": "Användaren som ska visas (standard: du själv)"
+        },
+        "view": {
+          "description": "Vilken vy av kronor du vill se"
+        }
+      }
+    },
+    "discogs": {
+      "description": "Kopplar ditt Discogs-konto genom att skicka en länk i dina DM"
+    },
+    "discoveries": {
+      "description": "⭐ Visar artister du nyligen har upptäckt",
+      "parameters": {
+        "mode": {
+          "description": "Typen av svar du vill ha - ändra standard med /responsemode"
+        },
+        "private": {
+          "description": "Visa svaret endast för dig"
+        },
+        "size": {
+          "description": "Antal artistupptäckter som visas per sida"
+        },
+        "time-period": {
+          "description": "Tidsperiod"
+        },
+        "user": {
+          "description": "Användaren som ska visas (standard: du själv)"
+        }
+      }
+    },
+    "discoverydate": {
+      "description": "⭐ Visar datumet då du upptäckte artisten, albumet och låten",
+      "parameters": {
+        "track": {
+          "description": "Låten du vill söka efter (standard: det som spelas nu)"
+        },
+        "user": {
+          "description": "Användaren som ska visas (standard: du själv)"
+        }
+      }
+    },
+    "eurovision": {
+      "description": "Visa Eurovision-översikt för ett år och/eller ett land",
+      "parameters": {
+        "country": {
+          "description": "Eurovision-land"
+        },
+        "year": {
+          "description": "År (1956 till nu)"
+        }
+      }
+    },
+    "featured": {
+      "description": "Visar vad som är utvalt just nu (och bottens avatar)"
+    },
+    "featuredlog": {
+      "description": "Visar din eller någon annans historik som utvald",
+      "parameters": {
+        "user": {
+          "description": "Användaren att visa historiken för (standard: du själv)"
+        },
+        "view": {
+          "description": "Typ av logg du vill visa"
+        }
+      }
+    },
+    "fm": {
+      "description": "Spelas nu - Visar din eller någon annans nuvarande låt",
+      "parameters": {
+        "embed-type": {
+          "description": "Embed-typ att använda, kan även konfigureras som inställning"
+        },
+        "user": {
+          "description": "Användaren som ska visas (standard: du själv)"
+        }
+      }
+    },
+    "fmmode": {
+      "description": "Ändrar layouten för '/fm'"
+    },
+    "frequently-asked": {
+      "description": "Vanliga frågor om .fmbot"
+    },
+    "friendsfm": {
+      "description": "Visar dina vänner och vad de lyssnar på"
+    },
+    "friendswhoknow": {
+      "description": "Visar vilka av dina vänner som lyssnar på en artist",
+      "parameters": {
+        "artist": {
+          "description": "Artisten du vill söka efter (standard: det som spelas nu)"
+        },
+        "mode": {
+          "description": "Typen av svar du vill ha - ändra standard med /responsemode"
+        },
+        "private": {
+          "description": "Visa svaret endast för dig"
+        },
+        "redirects": {
+          "description": "Slå av/på Last.fm-omdirigering av artistnamn (standard: på)"
+        }
+      }
+    },
+    "fwkalbum": {
+      "description": "Vilka av dina vänner som känner till ett album",
+      "parameters": {
+        "album": {
+          "description": "Albumet du vill söka efter (standard: det som spelas nu)"
+        },
+        "mode": {
+          "description": "Typen av svar du vill ha - ändra standard med /responsemode"
+        },
+        "private": {
+          "description": "Visa svaret endast för dig"
+        }
+      }
+    },
+    "fwkgenre": {
+      "description": "Visar vilka av dina vänner som lyssnar på en genre",
+      "parameters": {
+        "mode": {
+          "description": "Typen av svar du vill ha - ändra standard med /responsemode"
+        },
+        "private": {
+          "description": "Visa svaret endast för dig"
+        },
+        "search": {
+          "description": "Genren eller artisten du vill visa"
+        }
+      }
+    },
+    "fwktrack": {
+      "description": "Vilka av dina vänner som känner till en låt",
+      "parameters": {
+        "mode": {
+          "description": "Typen av svar du vill ha - ändra standard med /responsemode"
+        },
+        "private": {
+          "description": "Visa svaret endast för dig"
+        },
+        "track": {
+          "description": "Låten du vill söka efter (standard: det som spelas nu)"
+        }
+      }
+    },
+    "gaps": {
+      "description": "⭐ Musik du har återvänt till efter ett uppehåll i lyssnandet",
+      "parameters": {
+        "mode": {
+          "description": "Typen av svar du vill ha - ändra standard med /responsemode"
+        },
+        "private": {
+          "description": "Visa svaret endast för dig"
+        },
+        "size": {
+          "description": "Antal lyssningsuppehåll som visas per sida"
+        },
+        "type": {
+          "description": "Typ av musikuppehåll"
+        },
+        "user": {
+          "description": "Användaren som ska visas (standard: du själv)"
+        }
+      }
+    },
+    "genre": {
+      "description": "Visar genreinfo för en artist eller Top-artister för en genre",
+      "parameters": {
+        "search": {
+          "description": "Genren eller artisten du vill visa"
+        },
+        "user": {
+          "description": "Användaren som ska visas (standard: du själv)"
+        }
+      }
+    },
+    "getsupporter": {
+      "description": "⭐ Skaffa supporter eller hantera din nuvarande prenumeration"
+    },
+    "giftsupporter": {
+      "description": "🎁 Ge bort supporter till en annan användare",
+      "parameters": {
+        "user": {
+          "description": "Användaren du vill ge supporter till"
+        }
+      }
+    },
+    "globalwhoknows": {
+      "description": "Visar vilka andra användare i .fmbot som lyssnar på en artist",
+      "parameters": {
+        "artist": {
+          "description": "Artisten du vill söka efter (standard: det som spelas nu)"
+        },
+        "hide-private": {
+          "description": "Dölj eller visa privata användare"
+        },
+        "mode": {
+          "description": "Typen av svar du vill ha - ändra standard med /responsemode"
+        },
+        "redirects": {
+          "description": "Slå av/på Last.fm-omdirigering av artistnamn (standard: på)"
+        }
+      }
+    },
+    "gwkalbum": {
+      "description": "Visar vilka andra användare i .fmbot som lyssnar på ett album globalt",
+      "parameters": {
+        "album": {
+          "description": "Albumet du vill söka efter (standard: det som spelas nu)"
+        },
+        "hide-private": {
+          "description": "Dölj eller visa privata användare"
+        },
+        "mode": {
+          "description": "Typen av svar du vill ha - ändra standard med /responsemode"
+        }
+      }
+    },
+    "gwktrack": {
+      "description": "Visar vilka andra användare i .fmbot som lyssnar på en låt globalt",
+      "parameters": {
+        "hide-private": {
+          "description": "Dölj eller visa privata användare"
+        },
+        "mode": {
+          "description": "Typen av svar du vill ha - ändra standard med /responsemode"
+        },
+        "track": {
+          "description": "Låten du vill söka efter (standard: det som spelas nu)"
+        }
+      }
+    },
+    "iceberg": {
+      "description": "Visar ditt isberg, baserat på artisternas popularitet",
+      "parameters": {
+        "private": {
+          "description": "Visa svaret endast för dig"
+        },
+        "time-period": {
+          "description": "Tidsperiod"
+        },
+        "user": {
+          "description": "Användaren som ska visas (standard: du själv)"
+        }
+      }
+    },
+    "import": {
+      "description": "Hantera dina dataimporter",
+      "subcommands": {
+        "applemusic": {
+          "description": "⭐ Importera din Apple Music-historik till .fmbot",
+          "parameters": {
+            "file": {
+              "description": "Filen 'Apple Media Services information.zip' eller 'Apple Music Play Activity.csv'"
+            }
+          }
+        },
+        "manage": {
+          "description": "⭐ Hantera dina importer och ställ in hur de används"
+        },
+        "modify": {
+          "description": "⭐ Redigera och ta bort artister, album och låtar i dina .fmbot-importer"
+        },
+        "spotify": {
+          "description": "⭐ Importera din Spotify-historik till .fmbot",
+          "parameters": {
+            "file-1": {
+              "description": "Spotify-historikpaket (.zip) eller historikfiler (.json)"
+            },
+            "file-10": {
+              "description": "Spotify-historikpaket (.zip) eller historikfiler (.json)"
+            },
+            "file-11": {
+              "description": "Spotify-historikpaket (.zip) eller historikfiler (.json)"
+            },
+            "file-12": {
+              "description": "Spotify-historikpaket (.zip) eller historikfiler (.json)"
+            },
+            "file-13": {
+              "description": "Spotify-historikpaket (.zip) eller historikfiler (.json)"
+            },
+            "file-14": {
+              "description": "Spotify-historikpaket (.zip) eller historikfiler (.json)"
+            },
+            "file-15": {
+              "description": "Spotify-historikpaket (.zip) eller historikfiler (.json)"
+            },
+            "file-2": {
+              "description": "Spotify-historikpaket (.zip) eller historikfiler (.json)"
+            },
+            "file-3": {
+              "description": "Spotify-historikpaket (.zip) eller historikfiler (.json)"
+            },
+            "file-4": {
+              "description": "Spotify-historikpaket (.zip) eller historikfiler (.json)"
+            },
+            "file-5": {
+              "description": "Spotify-historikpaket (.zip) eller historikfiler (.json)"
+            },
+            "file-6": {
+              "description": "Spotify-historikpaket (.zip) eller historikfiler (.json)"
+            },
+            "file-7": {
+              "description": "Spotify-historikpaket (.zip) eller historikfiler (.json)"
+            },
+            "file-8": {
+              "description": "Spotify-historikpaket (.zip) eller historikfiler (.json)"
+            },
+            "file-9": {
+              "description": "Spotify-historikpaket (.zip) eller historikfiler (.json)"
+            }
+          }
+        }
+      }
+    },
+    "judge": {
+      "description": "Bedömer din musiksmak med AI",
+      "parameters": {
+        "language": {
+          "description": "Språk för den här bedömningen"
+        },
+        "time-period": {
+          "description": "Tidsperiod"
+        },
+        "user": {
+          "description": "Användaren som ska bedömas"
+        }
+      }
+    },
+    "lastlistened": {
+      "description": "⭐ Visar datumet då du senast spelade artisten, albumet och låten",
+      "parameters": {
+        "track": {
+          "description": "Låten du vill söka efter (standard: det som spelas nu)"
+        },
+        "user": {
+          "description": "Användaren som ska visas (standard: du själv)"
+        }
+      }
+    },
+    "like": {
+      "description": "Lägg till en låt bland dina gillade låtar på Spotify",
+      "parameters": {
+        "search": {
+          "description": "Låt att gilla (standard: det som spelas nu)"
+        }
+      }
+    },
+    "localization": {
+      "description": "Ställ in din tidszon och ditt sifferformat i .fmbot",
+      "parameters": {
+        "numberformat": {
+          "description": "Sifferformatet du vill använda"
+        },
+        "timezone": {
+          "description": "Tidszonen du vill ställa in"
+        }
+      }
+    },
+    "login": {
+      "description": "Ger dig en länk för att koppla ditt Last.fm-konto till .fmbot"
+    },
+    "love": {
+      "description": "Älskar låten du lyssnar på eller söker efter på Last.fm",
+      "parameters": {
+        "private": {
+          "description": "Visa svaret endast för dig"
+        },
+        "track": {
+          "description": "Låten du vill älska (standard: det som spelas nu)"
+        }
+      }
+    },
+    "loved": {
+      "description": "Låtar du har älskat på Last.fm",
+      "parameters": {
+        "private": {
+          "description": "Visa svaret endast för dig"
+        },
+        "user": {
+          "description": "Användaren som ska visas (standard: du själv)"
+        }
+      }
+    },
+    "lyrics": {
+      "description": "⭐ Visar låttexten för låten du lyssnar på eller söker efter",
+      "parameters": {
+        "track": {
+          "description": "Låten du vill söka efter (standard: det som spelas nu)"
+        }
+      }
+    },
+    "members": {
+      "description": "Medlemmar på den här servern som använder .fmbot",
+      "parameters": {
+        "view": {
+          "description": "Statistiken du vill visa"
+        }
+      }
+    },
+    "milestone": {
+      "description": "Visar en milstolpe-scrobble",
+      "parameters": {
+        "amount": {
+          "description": "Antal scrobbles för milstolpen"
+        },
+        "user": {
+          "description": "Användaren som ska visas (standard: du själv)"
+        }
+      }
+    },
+    "outofsync": {
+      "description": "Vad du kan göra om din Last.fm inte är i synk med Spotify",
+      "parameters": {
+        "private": {
+          "description": "Visa svaret endast för dig"
+        }
+      }
+    },
+    "overview": {
+      "description": "Visar en daglig översikt",
+      "parameters": {
+        "amount": {
+          "description": "Antal dagar som ska visas"
+        },
+        "user": {
+          "description": "Användaren som ska visas (standard: du själv)"
+        }
+      }
+    },
+    "pace": {
+      "description": "Visar beräknat datum då du når ett scrobble-mål, baserat på scrobbles per dag i snitt",
+      "parameters": {
+        "amount": {
+          "description": "Målantal scrobbles"
+        },
+        "time-period": {
+          "description": "Tidsperiod att basera genomsnittligt playcount på"
+        },
+        "user": {
+          "description": "Användaren som ska visas (standard: du själv)"
+        }
+      }
+    },
+    "plays": {
+      "description": "Visar ditt totala antal scrobbles för en viss tidsperiod",
+      "parameters": {
+        "time-period": {
+          "description": "Tidsperiod att basera genomsnittligt playcount på"
+        },
+        "user": {
+          "description": "Användaren som ska visas (standard: du själv)"
+        }
+      }
+    },
+    "premiumserver": {
+      "description": "✨ Lås upp serverövergripande förmåner och automatisering för den här servern"
+    },
+    "privacy": {
+      "description": "Ändrar din synlighet för andra .fmbot-användare i Global WhoKnows"
+    },
+    "profile": {
+      "description": "Visar din eller någon annans profil",
+      "parameters": {
+        "user": {
+          "description": "Användaren som ska visas (standard: du själv)"
+        }
+      }
+    },
+    "queue": {
+      "description": "Köa en låt på din Spotify",
+      "parameters": {
+        "search": {
+          "description": "Låt att köa (standard: det som spelas nu)"
+        }
+      }
+    },
+    "recap": {
+      "description": "Visar en sammanfattning för din valda tidsperiod",
+      "parameters": {
+        "time-period": {
+          "description": "Tidsperiod som visas (standard: år)"
+        },
+        "user": {
+          "description": "Användaren som ska visas (standard: du själv)"
+        }
+      }
+    },
+    "receipt": {
+      "description": "Visar ditt låtkvitto, baserat på Receiptify",
+      "parameters": {
+        "private": {
+          "description": "Visa svaret endast för dig"
+        },
+        "time-period": {
+          "description": "Tidsperiod"
+        },
+        "user": {
+          "description": "Användaren som ska visas (standard: du själv)"
+        }
+      }
+    },
+    "recent": {
+      "description": "Visar dina eller någon annans senaste låtar",
+      "parameters": {
+        "artist": {
+          "description": "Artisten du vill filtrera på"
+        },
+        "user": {
+          "description": "Användaren som ska visas (standard: du själv)"
+        }
+      }
+    },
+    "refreshmembers": {
+      "description": "Uppdaterar den cachade medlemslistan som .fmbot har för din server"
+    },
+    "remote": {
+      "description": "Styr din egen Spotify-uppspelning"
+    },
+    "remove": {
+      "description": "Raderar ditt .fmbot-konto"
+    },
+    "removefriend": {
+      "description": "Ta bort en vän från dina .fmbot-vänner",
+      "parameters": {
+        "user": {
+          "description": "Användaren som ska tas bort"
+        }
+      }
+    },
+    "responsemode": {
+      "description": "Ändrar ditt standardläge för whoknows och topplistor"
+    },
+    "scrobble": {
+      "description": "Scrobblar en låt på Last.fm",
+      "parameters": {
+        "private": {
+          "description": "Visa svaret endast för dig"
+        },
+        "track": {
+          "description": "Låten du vill scrobbla"
+        },
+        "user": {
+          "description": "Visa en användares senaste låtar att scrobbla från"
+        }
+      }
+    },
+    "search": {
+      "description": "Sök i ditt eget lagrade bibliotek (låtar, album, artister, scrobbles)",
+      "parameters": {
+        "query": {
+          "description": "Vad du vill söka efter (matchar låt, album eller artist)"
+        }
+      }
+    },
+    "selfblock": {
+      "description": "Döljer dig från WhoKnows och serverövergripande statistik på den här servern"
+    },
+    "selfunblock": {
+      "description": "Tar bort en blockering du lade på dig själv med selfblock på den här servern"
+    },
+    "server": {
+      "description": "Billboard-kommandon för servern",
+      "subcommands": {
+        "albums": {
+          "description": "Top-album för din server",
+          "parameters": {
+            "artist": {
+              "description": "Artisten du vill filtrera på"
+            },
+            "order": {
+              "description": "Sortering för listan (standard: lyssnare)"
+            },
+            "role-picker": {
+              "description": "Visa en rollväljare för att filtrera med roller"
+            },
+            "time-period": {
+              "description": "Tidsperiod"
+            }
+          }
+        },
+        "artists": {
+          "description": "Top-artister för din server",
+          "parameters": {
+            "order": {
+              "description": "Sortering för listan (standard: lyssnare)"
+            },
+            "role-picker": {
+              "description": "Visa en rollväljare för att filtrera med roller"
+            },
+            "time-period": {
+              "description": "Tidsperiod"
+            }
+          }
+        },
+        "genres": {
+          "description": "Top-genrer för din server",
+          "parameters": {
+            "order": {
+              "description": "Sortering för listan (standard: lyssnare)"
+            },
+            "time-period": {
+              "description": "Tidsperiod"
+            }
+          }
+        },
+        "tracks": {
+          "description": "Top-låtar för din server",
+          "parameters": {
+            "artist": {
+              "description": "Artisten du vill filtrera på"
+            },
+            "order": {
+              "description": "Sortering för listan (standard: lyssnare)"
+            },
+            "role-picker": {
+              "description": "Visa en rollväljare för att filtrera med roller"
+            },
+            "time-period": {
+              "description": "Tidsperiod"
+            }
+          }
+        }
+      }
+    },
+    "settings": {
+      "description": "Dina användarinställningar och serverkonfiguration i .fmbot"
+    },
+    "skip": {
+      "description": "Hoppa till nästa låt på din Spotify"
+    },
+    "spotify": {
+      "description": "Sök på Spotify",
+      "parameters": {
+        "private": {
+          "description": "Visa svaret endast för dig"
+        },
+        "search": {
+          "description": "Sökterm"
+        },
+        "type": {
+          "description": "Vad du vill söka efter på Spotify (standard: låt)"
+        }
+      }
+    },
+    "streak": {
+      "description": "Din eller någon annans streak för en artist, ett album och en låt",
+      "parameters": {
+        "user": {
+          "description": "Användaren som ska visas (standard: du själv)"
+        }
+      }
+    },
+    "streakhistory": {
+      "description": "Visar din eller någon annans streak-historik",
+      "parameters": {
+        "artist": {
+          "description": "Artisten du vill filtrera dina resultat på"
+        },
+        "editmode": {
+          "description": "Aktivera eller inaktivera redigeringsläge"
+        },
+        "user": {
+          "description": "Användaren som ska visas (standard: du själv)"
+        }
+      }
+    },
+    "supporters": {
+      "description": "⭐ Visar alla nuvarande supporters"
+    },
+    "taste": {
+      "description": "Jämför dina Top-artister, genrer och länder med en annan användares",
+      "parameters": {
+        "private": {
+          "description": "Visa svaret endast för dig"
+        },
+        "size": {
+          "description": "Antal jämförelser som ska visas"
+        },
+        "time-period": {
+          "description": "Tidsperiod"
+        },
+        "user": {
+          "description": "Användaren att jämföra din smak med"
+        }
+      }
+    },
+    "top": {
+      "description": "Topplistor - Artister/Album/Låtar/Genrer/Länder",
+      "subcommands": {
+        "albums": {
+          "description": "Visar dina Top-album",
+          "parameters": {
+            "billboard": {
+              "description": "Visa Top-album i billboard-stil"
+            },
+            "decade": {
+              "description": "Filtrera på album släppta ett visst årtionde"
+            },
+            "hide-singles": {
+              "description": "Dölj singlar i resultaten"
+            },
+            "mode": {
+              "description": "Typen av svar du vill ha - ändra standard med /responsemode"
+            },
+            "private": {
+              "description": "Visa svaret endast för dig"
+            },
+            "released": {
+              "description": "Filtrera på album släppta ett visst år"
+            },
+            "size": {
+              "description": "Antal album som ska visas"
+            },
+            "time-period": {
+              "description": "Tidsperiod"
+            },
+            "user": {
+              "description": "Användaren som ska visas (standard: du själv)"
+            }
+          }
+        },
+        "artists": {
+          "description": "Dina Top-artister",
+          "parameters": {
+            "billboard": {
+              "description": "Visa Top-artister i billboard-stil"
+            },
+            "discogs": {
+              "description": "Visa Top-artister i Discogs-samlingen"
+            },
+            "mode": {
+              "description": "Typen av svar du vill ha - ändra standard med /responsemode"
+            },
+            "private": {
+              "description": "Visa svaret endast för dig"
+            },
+            "size": {
+              "description": "Antal artister som ska visas"
+            },
+            "time-period": {
+              "description": "Tidsperiod"
+            },
+            "user": {
+              "description": "Användaren som ska visas (standard: du själv)"
+            }
+          }
+        },
+        "countries": {
+          "description": "Visar dina Top-länder",
+          "parameters": {
+            "billboard": {
+              "description": "Visa Top-länder i billboard-stil"
+            },
+            "mode": {
+              "description": "Typen av svar du vill ha - ändra standard med /responsemode"
+            },
+            "private": {
+              "description": "Visa svaret endast för dig"
+            },
+            "size": {
+              "description": "Antal länder som ska visas"
+            },
+            "time-period": {
+              "description": "Tidsperiod"
+            },
+            "user": {
+              "description": "Användaren som ska visas (standard: du själv)"
+            }
+          }
+        },
+        "genres": {
+          "description": "Visar dina Top-genrer",
+          "parameters": {
+            "billboard": {
+              "description": "Visa Top-genrer i billboard-stil"
+            },
+            "mode": {
+              "description": "Typen av svar du vill ha - ändra standard med /responsemode"
+            },
+            "private": {
+              "description": "Visa svaret endast för dig"
+            },
+            "size": {
+              "description": "Antal genrer som ska visas"
+            },
+            "time-period": {
+              "description": "Tidsperiod"
+            },
+            "user": {
+              "description": "Användaren som ska visas (standard: du själv)"
+            }
+          }
+        },
+        "tracks": {
+          "description": "Visar dina Top-låtar",
+          "parameters": {
+            "billboard": {
+              "description": "Visa Top-låtar i billboard-stil"
+            },
+            "mode": {
+              "description": "Typen av svar du vill ha - ändra standard med /responsemode"
+            },
+            "private": {
+              "description": "Visa svaret endast för dig"
+            },
+            "size": {
+              "description": "Antal låtar som ska visas"
+            },
+            "time-period": {
+              "description": "Tidsperiod"
+            },
+            "user": {
+              "description": "Användaren som ska visas (standard: du själv)"
+            }
+          }
+        }
+      }
+    },
+    "track": {
+      "description": "Visar låtinfo för låten du lyssnar på eller söker efter",
+      "parameters": {
+        "track": {
+          "description": "Låten du vill söka efter (standard: det som spelas nu)"
+        }
+      }
+    },
+    "trackdetails": {
+      "description": "Visar metadata för nuvarande låt eller den du söker efter",
+      "parameters": {
+        "track": {
+          "description": "Låten du vill söka efter (standard: det som spelas nu)"
+        }
+      }
+    },
+    "trackplays": {
+      "description": "Visar playcount för nuvarande låt eller den du söker efter",
+      "parameters": {
+        "track": {
+          "description": "Låten du vill söka efter (standard: det som spelas nu)"
+        },
+        "user": {
+          "description": "Användaren som ska visas (standard: du själv)"
+        }
+      }
+    },
+    "unblock": {
+      "description": "Avblockera en användare så att hen syns i WhoKnows och serverövergripande statistik igen",
+      "parameters": {
+        "user": {
+          "description": "Användaren du vill avblockera"
+        }
+      }
+    },
+    "unlove": {
+      "description": "Tar bort låten du lyssnar på eller söker efter från dina älskade låtar",
+      "parameters": {
+        "private": {
+          "description": "Visa svaret endast för dig"
+        },
+        "track": {
+          "description": "Låten du vill ta bort (standard: det som spelas nu)"
+        }
+      }
+    },
+    "update": {
+      "description": "Uppdatera .fmbots cache manuellt med dina senaste Last.fm-data",
+      "parameters": {
+        "type": {
+          "description": "Välj vad du vill uppdatera"
+        }
+      }
+    },
+    "whoknows": {
+      "description": "Visar vilka andra användare på din server som lyssnar på en artist",
+      "parameters": {
+        "artist": {
+          "description": "Artisten du vill söka efter (standard: det som spelas nu)"
+        },
+        "mode": {
+          "description": "Typen av svar du vill ha - ändra standard med /responsemode"
+        },
+        "no-filter": {
+          "description": "Inaktivera serverfilter och kronor"
+        },
+        "redirects": {
+          "description": "Slå av/på Last.fm-omdirigering av artistnamn (standard: på)"
+        },
+        "role-picker": {
+          "description": "Visa en rollväljare för att filtrera med roller"
+        }
+      }
+    },
+    "wkalbum": {
+      "description": "Visar vilka andra användare på din server som lyssnar på ett album",
+      "parameters": {
+        "album": {
+          "description": "Albumet du vill söka efter (standard: det som spelas nu)"
+        },
+        "mode": {
+          "description": "Typen av svar du vill ha - ändra standard med /responsemode"
+        },
+        "no-filter": {
+          "description": "Inaktivera serverfilter"
+        },
+        "role-picker": {
+          "description": "Visa en rollväljare för att filtrera med roller"
+        }
+      }
+    },
+    "wkgenre": {
+      "description": "Visar vilka andra användare på din server som lyssnar på en genre",
+      "parameters": {
+        "mode": {
+          "description": "Typen av svar du vill ha - ändra standard med /responsemode"
+        },
+        "search": {
+          "description": "Genren eller artisten du vill visa"
+        }
+      }
+    },
+    "wktrack": {
+      "description": "Visar vilka andra användare på din server som lyssnar på en låt",
+      "parameters": {
+        "mode": {
+          "description": "Typen av svar du vill ha - ändra standard med /responsemode"
+        },
+        "no-filter": {
+          "description": "Inaktivera serverfilter"
+        },
+        "role-picker": {
+          "description": "Visa en rollväljare för att filtrera med roller"
+        },
+        "track": {
+          "description": "Låten du vill söka efter (standard: det som spelas nu)"
+        }
+      }
+    },
+    "year": {
+      "description": "Visar en översikt över ditt år",
+      "parameters": {
+        "user": {
+          "description": "Användaren som ska visas (standard: du själv)"
+        },
+        "year": {
+          "description": "År att visa"
+        }
+      }
+    },
+    "youtube": {
+      "description": "Sök på YouTube",
+      "parameters": {
+        "private": {
+          "description": "Visa svaret endast för dig"
+        },
+        "search": {
+          "description": "Sökterm"
+        }
+      }
+    }
+  }
 }

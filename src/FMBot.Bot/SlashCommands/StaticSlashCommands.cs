@@ -30,7 +30,7 @@ public class StaticSlashCommands(
         ApplicationIntegrationType.UserInstall
     ])]
     public async Task OutOfSyncAsync(
-        [SlashCommandParameter(Name = "private", Description = "Show info privately?")]
+        [SlashCommandParameter(Name = "private", Description = "Only show response to you")]
         bool privateResponse = true)
     {
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
@@ -79,7 +79,7 @@ public class StaticSlashCommands(
         ApplicationIntegrationType.UserInstall
     ])]
     public async Task GiftSupporterAsync(
-        [SlashCommandParameter(Name = "user", Description = "The user you want to gift supporter")]
+        [SlashCommandParameter(Name = "user", Description = "The user you want to gift supporter to")]
         NetCord.User user)
     {
         await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));

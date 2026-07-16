@@ -9,7 +9,7 @@
       }
     },
     "affinity": {
-      "description": "Shows users from this server with similar top artists.",
+      "description": "Shows users from this server with a similar music taste (artists, genres and countries)",
       "parameters": {
         "user": {
           "description": "The user to get the affinity for"
@@ -36,7 +36,7 @@
       }
     },
     "albumtracks": {
-      "description": "Shows album info for the album you're currently listening to or searching for",
+      "description": "Shows track playcounts for the album you're currently listening to or searching for",
       "parameters": {
         "album": {
           "description": "The album you want to search for (defaults to currently playing)"
@@ -50,7 +50,7 @@
       }
     },
     "applemusic": {
-      "description": "Search through Apple Music.",
+      "description": "Search through Apple Music",
       "parameters": {
         "private": {
           "description": "Only show response to you"
@@ -61,7 +61,7 @@
       }
     },
     "artist": {
-      "description": "General info for current artist or one you're searching for",
+      "description": "General info for current artist or the one you're searching for",
       "parameters": {
         "artist": {
           "description": "The artist you want to search for (defaults to currently playing)"
@@ -318,7 +318,7 @@
           "description": "Only show response to you"
         },
         "size": {
-          "description": "Amount of artists discoveries to show per page"
+          "description": "Amount of artist discoveries to show per page"
         },
         "time-period": {
           "description": "Time period"
@@ -481,7 +481,7 @@
       "description": "\uD83C\uDF81 Gift supporter to another user",
       "parameters": {
         "user": {
-          "description": "The user you want to gift supporter"
+          "description": "The user you want to gift supporter to"
         }
       }
     },
@@ -531,7 +531,7 @@
       }
     },
     "iceberg": {
-      "description": "Shows your iceberg, based on artist popularity.",
+      "description": "Shows your iceberg, based on artist popularity",
       "parameters": {
         "private": {
           "description": "Only show response to you"
@@ -565,49 +565,49 @@
           "description": "⭐ Import your Spotify history into .fmbot",
           "parameters": {
             "file-1": {
-              "description": "Spotify history package (.zip) or history files (.json) "
+              "description": "Spotify history package (.zip) or history files (.json)"
             },
             "file-10": {
-              "description": "Spotify history package (.zip) or history files (.json) "
+              "description": "Spotify history package (.zip) or history files (.json)"
             },
             "file-11": {
-              "description": "Spotify history package (.zip) or history files (.json) "
+              "description": "Spotify history package (.zip) or history files (.json)"
             },
             "file-12": {
-              "description": "Spotify history package (.zip) or history files (.json) "
+              "description": "Spotify history package (.zip) or history files (.json)"
             },
             "file-13": {
-              "description": "Spotify history package (.zip) or history files (.json) "
+              "description": "Spotify history package (.zip) or history files (.json)"
             },
             "file-14": {
-              "description": "Spotify history package (.zip) or history files (.json) "
+              "description": "Spotify history package (.zip) or history files (.json)"
             },
             "file-15": {
-              "description": "Spotify history package (.zip) or history files (.json) "
+              "description": "Spotify history package (.zip) or history files (.json)"
             },
             "file-2": {
-              "description": "Spotify history package (.zip) or history files (.json) "
+              "description": "Spotify history package (.zip) or history files (.json)"
             },
             "file-3": {
-              "description": "Spotify history package (.zip) or history files (.json) "
+              "description": "Spotify history package (.zip) or history files (.json)"
             },
             "file-4": {
-              "description": "Spotify history package (.zip) or history files (.json) "
+              "description": "Spotify history package (.zip) or history files (.json)"
             },
             "file-5": {
-              "description": "Spotify history package (.zip) or history files (.json) "
+              "description": "Spotify history package (.zip) or history files (.json)"
             },
             "file-6": {
-              "description": "Spotify history package (.zip) or history files (.json) "
+              "description": "Spotify history package (.zip) or history files (.json)"
             },
             "file-7": {
-              "description": "Spotify history package (.zip) or history files (.json) "
+              "description": "Spotify history package (.zip) or history files (.json)"
             },
             "file-8": {
-              "description": "Spotify history package (.zip) or history files (.json) "
+              "description": "Spotify history package (.zip) or history files (.json)"
             },
             "file-9": {
-              "description": "Spotify history package (.zip) or history files (.json) "
+              "description": "Spotify history package (.zip) or history files (.json)"
             }
           }
         }
@@ -713,7 +713,7 @@
       "description": "What to do if your Last.fm isn't up to date with Spotify",
       "parameters": {
         "private": {
-          "description": "Show info privately?"
+          "description": "Only show response to you"
         }
       }
     },
@@ -763,7 +763,7 @@
       "description": "Shows you or someone else's profile",
       "parameters": {
         "user": {
-          "description": "The user of which you want to view their profile"
+          "description": "The user to show (defaults to self)"
         }
       }
     },
@@ -787,7 +787,7 @@
       }
     },
     "receipt": {
-      "description": "Shows your track receipt. Based on Receiptify.",
+      "description": "Shows your track receipt, based on Receiptify",
       "parameters": {
         "private": {
           "description": "Only show response to you"
@@ -969,7 +969,7 @@
       "description": "⭐ Shows all current supporters"
     },
     "taste": {
-      "description": "Compares your top artists, genres, and countries to those of another user.",
+      "description": "Compares your top artists, genres, and countries to those of another user",
       "parameters": {
         "private": {
           "description": "Only show response to you"

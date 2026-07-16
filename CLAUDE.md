@@ -165,7 +165,7 @@ Log messages, exception text, SQL, custom ids, cache keys, admin/censor-only str
 ### Translation content style (for agents writing translations)
 - Informal address (du/tu/je/jij), concise natural phrasing; preserve every `{{placeholder}}` exactly.
 - In `` `{{value}}` label `` lines (`track.duration`, `track.keyBpm`, `track.danceableEnergetic`, `track.acousticInstrumental`, `track.speechfulLiveness`, `track.happy`), the backticked `{{...}}` is a pre-formatted value (usually a percentage) and the bare word next to it is a visible label that MUST translate. The English labels are adjectives (danceable, energetic, speechful) — keep them adjectives, not nouns.
-- Dutch specifics (reference: `nl.json`): plays/scrobbles stay English; "track" in compact stat lines but "nummer" in prose; luisteraars/artiesten/kronen; "Pagina" for page; "Aangevraagd door" for requested by; ordinals are `{{count}}e`; "uur" is uninflected in plural.
+- Dutch specifics (reference: `nl.json`): plays/scrobbles stay English; always "track"/"tracks", never "nummer" (de-word: "de track", "deze track", "die je zoekt"); luisteraars/artiesten/kronen; "Pagina" for page; "Aangevraagd door" for requested by; ordinals are `{{count}}e`; "uur" is uninflected in plural.
 - German specifics (reference: `de.json`): "Befehl" for command; compounds with a protected English term or proper noun KEEP the hyphen (`Künstler-Plays`, `Mitglieder-Cache`, `Last.fm-Account`), pure-German compounds don't (`Künstlerinfos`); `{{date}}` needs a preposition ("entdeckt am {{date}}") since German has no bare adverbial date; generic masculine ("der Künstler", "der Nutzer") throughout.
 
 ### Slash command descriptions

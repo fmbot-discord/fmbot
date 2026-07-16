@@ -29,7 +29,7 @@ public class ArtistSlashCommands(
 {
     private InteractiveService Interactivity { get; } = interactivity;
 
-    [SlashCommand("artist", "General info for current artist or one you're searching for",
+    [SlashCommand("artist", "General info for current artist or the one you're searching for",
         Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild],
         IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
@@ -355,7 +355,7 @@ public class ArtistSlashCommands(
         string user = null,
         [SlashCommandParameter(Name = "mode", Description = "The type of response you want - change default with /responsemode")]
         ResponseMode? mode = null,
-        [SlashCommandParameter(Name = "size", Description = "Amount of artists discoveries to show per page")]
+        [SlashCommandParameter(Name = "size", Description = "Amount of artist discoveries to show per page")]
         EmbedSize? embedSize = null,
         [SlashCommandParameter(Name = "private", Description = "Only show response to you")]
         bool privateResponse = false)
@@ -395,7 +395,7 @@ public class ArtistSlashCommands(
         await TasteAsync(user.Id.ToString());
     }
 
-    [SlashCommand("taste", "Compares your top artists, genres, and countries to those of another user.",
+    [SlashCommand("taste", "Compares your top artists, genres, and countries to those of another user",
         Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild],
         IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
@@ -430,7 +430,7 @@ public class ArtistSlashCommands(
         }
     }
 
-    [SlashCommand("affinity", "Shows users from this server with similar top artists.",
+    [SlashCommand("affinity", "Shows users from this server with a similar music taste (artists, genres and countries)",
         Contexts = [InteractionContextType.Guild],
         IntegrationTypes = [ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
@@ -459,7 +459,7 @@ public class ArtistSlashCommands(
         }
     }
 
-    [SlashCommand("iceberg", "Shows your iceberg, based on artist popularity.",
+    [SlashCommand("iceberg", "Shows your iceberg, based on artist popularity",
         Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild],
         IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]

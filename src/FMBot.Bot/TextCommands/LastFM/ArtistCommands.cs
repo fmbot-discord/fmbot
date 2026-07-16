@@ -610,7 +610,7 @@ public class ArtistCommands(
     }
 
     [Command("affinity", "n", "aff", "neighbors", "soulmates", "neighbours")]
-    [Summary("Shows users from this server with similar top artists.")]
+    [Summary("Shows users from this server with a similar music taste, based on artists, genres and countries.")]
     [UsernameSetRequired]
     [GuildOnly]
     [RequiresIndex]

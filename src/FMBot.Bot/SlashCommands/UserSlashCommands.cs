@@ -576,7 +576,7 @@ public class UserSlashCommands(
         IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task ProfileAsync(
-        [SlashCommandParameter(Name = "user", Description = "The user of which you want to view their profile")]
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
         string user = null)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());

@@ -24,7 +24,7 @@ public class AppleMusicSlashCommands(
 {
     private InteractiveService Interactivity { get; } = interactivity;
 
-    [SlashCommand("applemusic", "Search through Apple Music.",
+    [SlashCommand("applemusic", "Search through Apple Music",
         Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild],
         IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]

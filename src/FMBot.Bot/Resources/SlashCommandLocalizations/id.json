@@ -1,3 +1,1262 @@
 {
-  "commands": {}
+  "commands": {
+    "addfriend": {
+      "description": "Tambahkan teman ke daftar teman .fmbot kamu",
+      "parameters": {
+        "user": {
+          "description": "Pengguna yang ingin ditambahkan"
+        }
+      }
+    },
+    "affinity": {
+      "description": "Menampilkan pengguna di server ini dengan selera musik yang mirip (artis, genre, dan negara)",
+      "parameters": {
+        "user": {
+          "description": "Pengguna yang ingin dilihat afinitasnya"
+        }
+      }
+    },
+    "album": {
+      "description": "Info album untuk album yang sedang kamu dengarkan atau cari",
+      "parameters": {
+        "album": {
+          "description": "Album yang ingin kamu cari (default: yang sedang diputar)"
+        }
+      }
+    },
+    "albumplays": {
+      "description": "Menampilkan playcount untuk album saat ini atau yang kamu cari",
+      "parameters": {
+        "album": {
+          "description": "Album yang ingin kamu cari (default: yang sedang diputar)"
+        },
+        "user": {
+          "description": "Pengguna yang ditampilkan (default: kamu sendiri)"
+        }
+      }
+    },
+    "albumtracks": {
+      "description": "Menampilkan playcount lagu untuk album yang sedang kamu dengarkan atau cari",
+      "parameters": {
+        "album": {
+          "description": "Album yang ingin kamu cari (default: yang sedang diputar)"
+        },
+        "playcount-order": {
+          "description": "Apakah daftar diurutkan berdasarkan playcount"
+        },
+        "user": {
+          "description": "Pengguna yang ditampilkan (default: kamu sendiri)"
+        }
+      }
+    },
+    "applemusic": {
+      "description": "Cari lewat Apple Music",
+      "parameters": {
+        "private": {
+          "description": "Hanya tampilkan respons ke kamu"
+        },
+        "search": {
+          "description": "Kata pencarian"
+        }
+      }
+    },
+    "artist": {
+      "description": "Info umum untuk artis saat ini atau yang kamu cari",
+      "parameters": {
+        "artist": {
+          "description": "Artis yang ingin kamu cari (default: yang sedang diputar)"
+        },
+        "redirects": {
+          "description": "Aktifkan/nonaktifkan redirect nama artis Last.fm (default: aktif)"
+        }
+      }
+    },
+    "artistalbums": {
+      "description": "Menampilkan top album kamu untuk seorang artis",
+      "parameters": {
+        "artist": {
+          "description": "Artis yang ingin kamu cari (default: yang sedang diputar)"
+        },
+        "hide-singles": {
+          "description": "Sembunyikan single dari hasil"
+        },
+        "redirects": {
+          "description": "Aktifkan/nonaktifkan redirect nama artis Last.fm (default: aktif)"
+        },
+        "user": {
+          "description": "Pengguna yang ditampilkan (default: kamu sendiri)"
+        }
+      }
+    },
+    "artistoverview": {
+      "description": "Menampilkan ringkasan untuk artis saat ini atau yang kamu cari",
+      "parameters": {
+        "artist": {
+          "description": "Artis yang ingin kamu cari (default: yang sedang diputar)"
+        },
+        "redirects": {
+          "description": "Aktifkan/nonaktifkan redirect nama artis Last.fm (default: aktif)"
+        },
+        "user": {
+          "description": "Pengguna yang ditampilkan (default: kamu sendiri)"
+        }
+      }
+    },
+    "artistpace": {
+      "description": "Menampilkan perkiraan tanggal kamu mencapai jumlah plays tertentu untuk sebuah artis",
+      "parameters": {
+        "amount": {
+          "description": "Target jumlah plays"
+        },
+        "artist": {
+          "description": "Artis yang ingin kamu cari (default: yang sedang diputar)"
+        },
+        "redirects": {
+          "description": "Aktifkan/nonaktifkan redirect nama artis Last.fm (default: aktif)"
+        },
+        "time-period": {
+          "description": "Periode waktu sebagai dasar rata-rata playcount"
+        },
+        "user": {
+          "description": "Pengguna yang ditampilkan (default: kamu sendiri)"
+        }
+      }
+    },
+    "artistplays": {
+      "description": "Menampilkan playcount untuk artis saat ini atau yang kamu cari",
+      "parameters": {
+        "artist": {
+          "description": "Artis yang ingin kamu cari (default: yang sedang diputar)"
+        },
+        "redirects": {
+          "description": "Aktifkan/nonaktifkan redirect nama artis Last.fm (default: aktif)"
+        },
+        "user": {
+          "description": "Pengguna yang ditampilkan (default: kamu sendiri)"
+        }
+      }
+    },
+    "artisttracks": {
+      "description": "Menampilkan top lagu kamu untuk seorang artis",
+      "parameters": {
+        "artist": {
+          "description": "Artis yang ingin kamu cari (default: yang sedang diputar)"
+        },
+        "redirects": {
+          "description": "Aktifkan/nonaktifkan redirect nama artis Last.fm (default: aktif)"
+        },
+        "time-period": {
+          "description": "Periode waktu untuk menampilkan lagu"
+        },
+        "user": {
+          "description": "Pengguna yang ditampilkan (default: kamu sendiri)"
+        }
+      }
+    },
+    "block": {
+      "description": "Blokir pengguna agar tidak muncul di WhoKnows dan chart seluruh server",
+      "parameters": {
+        "user": {
+          "description": "Pengguna yang ingin kamu blokir"
+        }
+      }
+    },
+    "botscrobbling": {
+      "description": "Menampilkan info scrobbling bot musik dan memungkinkan kamu mengubah pengaturan"
+    },
+    "chart": {
+      "description": "Buat chart dengan sampul album atau gambar artis",
+      "subcommands": {
+        "albums": {
+          "description": "Membuat chart gambar album",
+          "parameters": {
+            "artist": {
+              "description": "Filter ke artis tertentu"
+            },
+            "decade": {
+              "description": "Filter ke album yang dirilis di dekade tertentu"
+            },
+            "hide-singles": {
+              "description": "Sembunyikan single dari chart"
+            },
+            "private": {
+              "description": "Hanya tampilkan respons ke kamu"
+            },
+            "rainbow": {
+              "description": "Pengaturan pelangi eksperimental"
+            },
+            "released": {
+              "description": "Filter ke album yang dirilis di tahun tertentu"
+            },
+            "sfw": {
+              "description": "Hanya gambar yang aman (SFW)"
+            },
+            "size": {
+              "description": "Ukuran chart"
+            },
+            "skip": {
+              "description": "Lewati album tanpa gambar"
+            },
+            "time-period": {
+              "description": "Periode waktu"
+            },
+            "titles": {
+              "description": "Pengaturan tampilan judul"
+            },
+            "user": {
+              "description": "Pengguna yang ditampilkan (default: kamu sendiri)"
+            }
+          }
+        },
+        "artists": {
+          "description": "Membuat chart gambar artis",
+          "parameters": {
+            "private": {
+              "description": "Hanya tampilkan respons ke kamu"
+            },
+            "rainbow": {
+              "description": "Pengaturan pelangi eksperimental"
+            },
+            "size": {
+              "description": "Ukuran chart"
+            },
+            "skip": {
+              "description": "Lewati artis tanpa gambar"
+            },
+            "time-period": {
+              "description": "Periode waktu"
+            },
+            "titles": {
+              "description": "Pengaturan tampilan judul"
+            },
+            "user": {
+              "description": "Pengguna yang ditampilkan (default: kamu sendiri)"
+            }
+          }
+        }
+      }
+    },
+    "collection": {
+      "description": "Koleksi Discogs kamu atau orang lain",
+      "parameters": {
+        "format": {
+          "description": "Format media yang disertakan"
+        },
+        "search": {
+          "description": "Kata pencarian untuk memfilter"
+        },
+        "user": {
+          "description": "Pengguna yang ditampilkan (default: kamu sendiri)"
+        }
+      }
+    },
+    "country": {
+      "description": "Negara untuk artis atau top artis untuk negara",
+      "parameters": {
+        "search": {
+          "description": "Negara atau artis yang ingin kamu lihat"
+        }
+      }
+    },
+    "countrychart": {
+      "description": "Membuat peta lokasi top artis kamu",
+      "parameters": {
+        "private": {
+          "description": "Hanya tampilkan respons ke kamu"
+        },
+        "theme": {
+          "description": "Tema warna untuk peta"
+        },
+        "time-period": {
+          "description": "Periode waktu"
+        },
+        "user": {
+          "description": "Pengguna yang ditampilkan (default: kamu sendiri)"
+        }
+      }
+    },
+    "cover": {
+      "description": "Sampul untuk album saat ini atau yang kamu cari",
+      "parameters": {
+        "album": {
+          "description": "Album yang ingin kamu cari (default: yang sedang diputar)"
+        }
+      }
+    },
+    "covermode": {
+      "description": "Atur apakah sampul album beranimasi atau selalu tampil diam"
+    },
+    "crown": {
+      "description": "Riwayat untuk mahkota tertentu",
+      "parameters": {
+        "artist": {
+          "description": "Artis yang ingin kamu cari (default: yang sedang diputar)"
+        }
+      }
+    },
+    "crowns": {
+      "description": "Lihat daftar mahkota milik kamu atau orang lain",
+      "parameters": {
+        "user": {
+          "description": "Pengguna yang ditampilkan (default: kamu sendiri)"
+        },
+        "view": {
+          "description": "Tampilan mahkota yang ingin kamu lihat"
+        }
+      }
+    },
+    "discogs": {
+      "description": "Menghubungkan akun Discogs kamu lewat link yang dikirim ke DM"
+    },
+    "discoveries": {
+      "description": "⭐ Menampilkan artis yang baru kamu temukan",
+      "parameters": {
+        "mode": {
+          "description": "Jenis respons yang kamu mau - ubah default dengan /responsemode"
+        },
+        "private": {
+          "description": "Hanya tampilkan respons ke kamu"
+        },
+        "size": {
+          "description": "Jumlah penemuan artis yang ditampilkan per halaman"
+        },
+        "time-period": {
+          "description": "Periode waktu"
+        },
+        "user": {
+          "description": "Pengguna yang ditampilkan (default: kamu sendiri)"
+        }
+      }
+    },
+    "discoverydate": {
+      "description": "⭐ Menampilkan tanggal kamu menemukan artis, album, dan lagunya",
+      "parameters": {
+        "track": {
+          "description": "Lagu yang ingin kamu cari (default: yang sedang diputar)"
+        },
+        "user": {
+          "description": "Pengguna yang ditampilkan (default: kamu sendiri)"
+        }
+      }
+    },
+    "eurovision": {
+      "description": "Lihat ringkasan Eurovision untuk suatu tahun dan/atau negara",
+      "parameters": {
+        "country": {
+          "description": "Negara Eurovision"
+        },
+        "year": {
+          "description": "Tahun (1956 sampai sekarang)"
+        }
+      }
+    },
+    "featured": {
+      "description": "Menampilkan apa yang sedang featured (dan avatar bot)"
+    },
+    "featuredlog": {
+      "description": "Menampilkan riwayat featured kamu atau orang lain",
+      "parameters": {
+        "user": {
+          "description": "Pengguna yang dilihat riwayat featured-nya (default: kamu sendiri)"
+        },
+        "view": {
+          "description": "Jenis riwayat yang ingin kamu lihat"
+        }
+      }
+    },
+    "fm": {
+      "description": "Now Playing - Menampilkan lagu saat ini milik kamu atau orang lain",
+      "parameters": {
+        "embed-type": {
+          "description": "Jenis embed yang digunakan, juga bisa diatur sebagai pengaturan"
+        },
+        "user": {
+          "description": "Pengguna yang ditampilkan (default: kamu sendiri)"
+        }
+      }
+    },
+    "fmmode": {
+      "description": "Mengubah tata letak '/fm' kamu"
+    },
+    "frequently-asked": {
+      "description": "Pertanyaan yang sering diajukan tentang .fmbot"
+    },
+    "friendsfm": {
+      "description": "Menampilkan teman-temanmu dan apa yang mereka dengarkan"
+    },
+    "friendswhoknow": {
+      "description": "Menampilkan siapa dari temanmu yang mendengarkan suatu artis",
+      "parameters": {
+        "artist": {
+          "description": "Artis yang ingin kamu cari (default: yang sedang diputar)"
+        },
+        "mode": {
+          "description": "Jenis respons yang kamu mau - ubah default dengan /responsemode"
+        },
+        "private": {
+          "description": "Hanya tampilkan respons ke kamu"
+        },
+        "redirects": {
+          "description": "Aktifkan/nonaktifkan redirect nama artis Last.fm (default: aktif)"
+        }
+      }
+    },
+    "fwkalbum": {
+      "description": "Siapa dari temanmu yang tahu suatu album",
+      "parameters": {
+        "album": {
+          "description": "Album yang ingin kamu cari (default: yang sedang diputar)"
+        },
+        "mode": {
+          "description": "Jenis respons yang kamu mau - ubah default dengan /responsemode"
+        },
+        "private": {
+          "description": "Hanya tampilkan respons ke kamu"
+        }
+      }
+    },
+    "fwkgenre": {
+      "description": "Menampilkan siapa dari temanmu yang mendengarkan suatu genre",
+      "parameters": {
+        "mode": {
+          "description": "Jenis respons yang kamu mau - ubah default dengan /responsemode"
+        },
+        "private": {
+          "description": "Hanya tampilkan respons ke kamu"
+        },
+        "search": {
+          "description": "Genre atau artis yang ingin kamu lihat"
+        }
+      }
+    },
+    "fwktrack": {
+      "description": "Siapa dari temanmu yang tahu suatu lagu",
+      "parameters": {
+        "mode": {
+          "description": "Jenis respons yang kamu mau - ubah default dengan /responsemode"
+        },
+        "private": {
+          "description": "Hanya tampilkan respons ke kamu"
+        },
+        "track": {
+          "description": "Lagu yang ingin kamu cari (default: yang sedang diputar)"
+        }
+      }
+    },
+    "gaps": {
+      "description": "⭐ Musik yang kamu dengarkan lagi setelah jeda",
+      "parameters": {
+        "mode": {
+          "description": "Jenis respons yang kamu mau - ubah default dengan /responsemode"
+        },
+        "private": {
+          "description": "Hanya tampilkan respons ke kamu"
+        },
+        "size": {
+          "description": "Jumlah jeda mendengarkan yang ditampilkan per halaman"
+        },
+        "type": {
+          "description": "Jenis jeda musik"
+        },
+        "user": {
+          "description": "Pengguna yang ditampilkan (default: kamu sendiri)"
+        }
+      }
+    },
+    "genre": {
+      "description": "Menampilkan info genre untuk artis atau top artis untuk genre",
+      "parameters": {
+        "search": {
+          "description": "Genre atau artis yang ingin kamu lihat"
+        },
+        "user": {
+          "description": "Pengguna yang ditampilkan (default: kamu sendiri)"
+        }
+      }
+    },
+    "getsupporter": {
+      "description": "⭐ Dapatkan supporter atau kelola langgananmu saat ini"
+    },
+    "giftsupporter": {
+      "description": "🎁 Hadiahkan supporter ke pengguna lain",
+      "parameters": {
+        "user": {
+          "description": "Pengguna yang ingin kamu hadiahkan supporter"
+        }
+      }
+    },
+    "globalwhoknows": {
+      "description": "Menampilkan pengguna lain yang mendengarkan suatu artis di .fmbot",
+      "parameters": {
+        "artist": {
+          "description": "Artis yang ingin kamu cari (default: yang sedang diputar)"
+        },
+        "hide-private": {
+          "description": "Sembunyikan atau tampilkan pengguna privat"
+        },
+        "mode": {
+          "description": "Jenis respons yang kamu mau - ubah default dengan /responsemode"
+        },
+        "redirects": {
+          "description": "Aktifkan/nonaktifkan redirect nama artis Last.fm (default: aktif)"
+        }
+      }
+    },
+    "gwkalbum": {
+      "description": "Menampilkan pengguna lain yang mendengarkan suatu album secara global di .fmbot",
+      "parameters": {
+        "album": {
+          "description": "Album yang ingin kamu cari (default: yang sedang diputar)"
+        },
+        "hide-private": {
+          "description": "Sembunyikan atau tampilkan pengguna privat"
+        },
+        "mode": {
+          "description": "Jenis respons yang kamu mau - ubah default dengan /responsemode"
+        }
+      }
+    },
+    "gwktrack": {
+      "description": "Menampilkan pengguna lain yang mendengarkan suatu lagu secara global di .fmbot",
+      "parameters": {
+        "hide-private": {
+          "description": "Sembunyikan atau tampilkan pengguna privat"
+        },
+        "mode": {
+          "description": "Jenis respons yang kamu mau - ubah default dengan /responsemode"
+        },
+        "track": {
+          "description": "Lagu yang ingin kamu cari (default: yang sedang diputar)"
+        }
+      }
+    },
+    "iceberg": {
+      "description": "Menampilkan iceberg kamu, berdasarkan popularitas artis",
+      "parameters": {
+        "private": {
+          "description": "Hanya tampilkan respons ke kamu"
+        },
+        "time-period": {
+          "description": "Periode waktu"
+        },
+        "user": {
+          "description": "Pengguna yang ditampilkan (default: kamu sendiri)"
+        }
+      }
+    },
+    "import": {
+      "description": "Kelola impor datamu",
+      "subcommands": {
+        "applemusic": {
+          "description": "⭐ Impor riwayat Apple Music kamu ke .fmbot",
+          "parameters": {
+            "file": {
+              "description": "File 'Apple Media Services information.zip' atau 'Apple Music Play Activity.csv'"
+            }
+          }
+        },
+        "manage": {
+          "description": "⭐ Kelola impormu dan atur bagaimana impor digunakan"
+        },
+        "modify": {
+          "description": "⭐ Edit dan hapus artis, album, dan lagu di impor .fmbot kamu"
+        },
+        "spotify": {
+          "description": "⭐ Impor riwayat Spotify kamu ke .fmbot",
+          "parameters": {
+            "file-1": {
+              "description": "Paket riwayat Spotify (.zip) atau file riwayat (.json)"
+            },
+            "file-10": {
+              "description": "Paket riwayat Spotify (.zip) atau file riwayat (.json)"
+            },
+            "file-11": {
+              "description": "Paket riwayat Spotify (.zip) atau file riwayat (.json)"
+            },
+            "file-12": {
+              "description": "Paket riwayat Spotify (.zip) atau file riwayat (.json)"
+            },
+            "file-13": {
+              "description": "Paket riwayat Spotify (.zip) atau file riwayat (.json)"
+            },
+            "file-14": {
+              "description": "Paket riwayat Spotify (.zip) atau file riwayat (.json)"
+            },
+            "file-15": {
+              "description": "Paket riwayat Spotify (.zip) atau file riwayat (.json)"
+            },
+            "file-2": {
+              "description": "Paket riwayat Spotify (.zip) atau file riwayat (.json)"
+            },
+            "file-3": {
+              "description": "Paket riwayat Spotify (.zip) atau file riwayat (.json)"
+            },
+            "file-4": {
+              "description": "Paket riwayat Spotify (.zip) atau file riwayat (.json)"
+            },
+            "file-5": {
+              "description": "Paket riwayat Spotify (.zip) atau file riwayat (.json)"
+            },
+            "file-6": {
+              "description": "Paket riwayat Spotify (.zip) atau file riwayat (.json)"
+            },
+            "file-7": {
+              "description": "Paket riwayat Spotify (.zip) atau file riwayat (.json)"
+            },
+            "file-8": {
+              "description": "Paket riwayat Spotify (.zip) atau file riwayat (.json)"
+            },
+            "file-9": {
+              "description": "Paket riwayat Spotify (.zip) atau file riwayat (.json)"
+            }
+          }
+        }
+      }
+    },
+    "judge": {
+      "description": "Menilai selera musikmu menggunakan AI",
+      "parameters": {
+        "language": {
+          "description": "Bahasa untuk penilaian ini"
+        },
+        "time-period": {
+          "description": "Periode waktu"
+        },
+        "user": {
+          "description": "Pengguna yang ingin dinilai"
+        }
+      }
+    },
+    "lastlistened": {
+      "description": "⭐ Menampilkan tanggal terakhir kamu mendengarkan artis, album, dan lagunya",
+      "parameters": {
+        "track": {
+          "description": "Lagu yang ingin kamu cari (default: yang sedang diputar)"
+        },
+        "user": {
+          "description": "Pengguna yang ditampilkan (default: kamu sendiri)"
+        }
+      }
+    },
+    "like": {
+      "description": "Tambahkan lagu ke lagu yang kamu sukai di Spotify",
+      "parameters": {
+        "search": {
+          "description": "Lagu yang disukai (default: yang sedang kamu putar)"
+        }
+      }
+    },
+    "localization": {
+      "description": "Atur zona waktu dan format angka kamu di .fmbot",
+      "parameters": {
+        "numberformat": {
+          "description": "Format angka yang ingin kamu gunakan"
+        },
+        "timezone": {
+          "description": "Zona waktu yang ingin kamu atur"
+        }
+      }
+    },
+    "login": {
+      "description": "Memberikan link untuk menghubungkan akun Last.fm kamu ke .fmbot"
+    },
+    "love": {
+      "description": "Menyukai lagu yang sedang kamu dengarkan atau cari di Last.fm",
+      "parameters": {
+        "private": {
+          "description": "Hanya tampilkan respons ke kamu"
+        },
+        "track": {
+          "description": "Lagu yang ingin kamu sukai (default: yang sedang diputar)"
+        }
+      }
+    },
+    "loved": {
+      "description": "Lagu yang kamu sukai di Last.fm",
+      "parameters": {
+        "private": {
+          "description": "Hanya tampilkan respons ke kamu"
+        },
+        "user": {
+          "description": "Pengguna yang ditampilkan (default: kamu sendiri)"
+        }
+      }
+    },
+    "lyrics": {
+      "description": "⭐ Menampilkan lirik lagu yang sedang kamu dengarkan atau cari",
+      "parameters": {
+        "track": {
+          "description": "Lagu yang ingin kamu cari (default: yang sedang diputar)"
+        }
+      }
+    },
+    "members": {
+      "description": "Member di server ini yang menggunakan .fmbot",
+      "parameters": {
+        "view": {
+          "description": "Statistik yang ingin kamu lihat"
+        }
+      }
+    },
+    "milestone": {
+      "description": "Menampilkan scrobble milestone",
+      "parameters": {
+        "amount": {
+          "description": "Jumlah scrobble milestone"
+        },
+        "user": {
+          "description": "Pengguna yang ditampilkan (default: kamu sendiri)"
+        }
+      }
+    },
+    "outofsync": {
+      "description": "Yang harus dilakukan jika Last.fm kamu tidak sinkron dengan Spotify",
+      "parameters": {
+        "private": {
+          "description": "Hanya tampilkan respons ke kamu"
+        }
+      }
+    },
+    "overview": {
+      "description": "Menampilkan ringkasan harian",
+      "parameters": {
+        "amount": {
+          "description": "Jumlah hari yang ditampilkan"
+        },
+        "user": {
+          "description": "Pengguna yang ditampilkan (default: kamu sendiri)"
+        }
+      }
+    },
+    "pace": {
+      "description": "Perkiraan tanggal kamu mencapai target scrobble berdasarkan rata-rata scrobbles per hari",
+      "parameters": {
+        "amount": {
+          "description": "Target jumlah scrobble"
+        },
+        "time-period": {
+          "description": "Periode waktu sebagai dasar rata-rata playcount"
+        },
+        "user": {
+          "description": "Pengguna yang ditampilkan (default: kamu sendiri)"
+        }
+      }
+    },
+    "plays": {
+      "description": "Menampilkan total scrobbles kamu untuk periode waktu tertentu",
+      "parameters": {
+        "time-period": {
+          "description": "Periode waktu sebagai dasar rata-rata playcount"
+        },
+        "user": {
+          "description": "Pengguna yang ditampilkan (default: kamu sendiri)"
+        }
+      }
+    },
+    "premiumserver": {
+      "description": "✨ Buka keuntungan dan otomatisasi seluruh server untuk server ini"
+    },
+    "privacy": {
+      "description": "Mengubah visibilitasmu ke pengguna .fmbot lain di Global WhoKnows"
+    },
+    "profile": {
+      "description": "Menampilkan profil kamu atau orang lain",
+      "parameters": {
+        "user": {
+          "description": "Pengguna yang ditampilkan (default: kamu sendiri)"
+        }
+      }
+    },
+    "queue": {
+      "description": "Tambahkan lagu ke antrean Spotify kamu",
+      "parameters": {
+        "search": {
+          "description": "Lagu yang diantrekan (default: yang sedang kamu putar)"
+        }
+      }
+    },
+    "recap": {
+      "description": "Menampilkan rangkuman untuk periode waktu yang kamu pilih",
+      "parameters": {
+        "time-period": {
+          "description": "Periode waktu yang ditampilkan (default: tahun)"
+        },
+        "user": {
+          "description": "Pengguna yang ditampilkan (default: kamu sendiri)"
+        }
+      }
+    },
+    "receipt": {
+      "description": "Menampilkan struk lagu kamu, berdasarkan Receiptify",
+      "parameters": {
+        "private": {
+          "description": "Hanya tampilkan respons ke kamu"
+        },
+        "time-period": {
+          "description": "Periode waktu"
+        },
+        "user": {
+          "description": "Pengguna yang ditampilkan (default: kamu sendiri)"
+        }
+      }
+    },
+    "recent": {
+      "description": "Menampilkan lagu terbaru kamu atau orang lain",
+      "parameters": {
+        "artist": {
+          "description": "Artis yang ingin kamu filter"
+        },
+        "user": {
+          "description": "Pengguna yang ditampilkan (default: kamu sendiri)"
+        }
+      }
+    },
+    "refreshmembers": {
+      "description": "Memperbarui cache daftar member yang dimiliki .fmbot untuk servermu"
+    },
+    "remote": {
+      "description": "Kendalikan pemutaran Spotify kamu sendiri"
+    },
+    "remove": {
+      "description": "Menghapus akun .fmbot kamu"
+    },
+    "removefriend": {
+      "description": "Hapus teman dari daftar teman .fmbot kamu",
+      "parameters": {
+        "user": {
+          "description": "Pengguna yang ingin dihapus"
+        }
+      }
+    },
+    "responsemode": {
+      "description": "Mengubah mode default whoknows dan daftar top kamu"
+    },
+    "scrobble": {
+      "description": "Scrobble sebuah lagu di Last.fm",
+      "parameters": {
+        "private": {
+          "description": "Hanya tampilkan respons ke kamu"
+        },
+        "track": {
+          "description": "Lagu yang ingin kamu scrobble"
+        },
+        "user": {
+          "description": "Lihat lagu terbaru pengguna untuk di-scrobble"
+        }
+      }
+    },
+    "search": {
+      "description": "Cari di library tersimpanmu (lagu, album, artis, scrobbles)",
+      "parameters": {
+        "query": {
+          "description": "Apa yang dicari (cocok dengan lagu, album, atau artis)"
+        }
+      }
+    },
+    "selfblock": {
+      "description": "Menyembunyikan kamu dari WhoKnows dan chart seluruh server di server ini"
+    },
+    "selfunblock": {
+      "description": "Menghapus blokir yang kamu pasang sendiri dengan selfblock di server ini"
+    },
+    "server": {
+      "description": "Perintah billboard server",
+      "subcommands": {
+        "albums": {
+          "description": "Top album untuk servermu",
+          "parameters": {
+            "artist": {
+              "description": "Artis yang ingin kamu filter"
+            },
+            "order": {
+              "description": "Urutan chart (default: pendengar)"
+            },
+            "role-picker": {
+              "description": "Tampilkan pemilih role untuk memfilter dengan role"
+            },
+            "time-period": {
+              "description": "Periode waktu"
+            }
+          }
+        },
+        "artists": {
+          "description": "Top artis untuk servermu",
+          "parameters": {
+            "order": {
+              "description": "Urutan chart (default: pendengar)"
+            },
+            "role-picker": {
+              "description": "Tampilkan pemilih role untuk memfilter dengan role"
+            },
+            "time-period": {
+              "description": "Periode waktu"
+            }
+          }
+        },
+        "genres": {
+          "description": "Top genre untuk servermu",
+          "parameters": {
+            "order": {
+              "description": "Urutan chart (default: pendengar)"
+            },
+            "time-period": {
+              "description": "Periode waktu"
+            }
+          }
+        },
+        "tracks": {
+          "description": "Top lagu untuk servermu",
+          "parameters": {
+            "artist": {
+              "description": "Artis yang ingin kamu filter"
+            },
+            "order": {
+              "description": "Urutan chart (default: pendengar)"
+            },
+            "role-picker": {
+              "description": "Tampilkan pemilih role untuk memfilter dengan role"
+            },
+            "time-period": {
+              "description": "Periode waktu"
+            }
+          }
+        }
+      }
+    },
+    "settings": {
+      "description": "Pengaturan pengguna dan konfigurasi server kamu di .fmbot"
+    },
+    "skip": {
+      "description": "Lompat ke lagu berikutnya di Spotify kamu"
+    },
+    "spotify": {
+      "description": "Cari lewat Spotify",
+      "parameters": {
+        "private": {
+          "description": "Hanya tampilkan respons ke kamu"
+        },
+        "search": {
+          "description": "Kata pencarian"
+        },
+        "type": {
+          "description": "Apa yang ingin kamu cari di Spotify (default: lagu)"
+        }
+      }
+    },
+    "streak": {
+      "description": "Streak kamu atau orang lain untuk artis, album, dan lagu",
+      "parameters": {
+        "user": {
+          "description": "Pengguna yang ditampilkan (default: kamu sendiri)"
+        }
+      }
+    },
+    "streakhistory": {
+      "description": "Menampilkan riwayat streak kamu atau orang lain",
+      "parameters": {
+        "artist": {
+          "description": "Artis untuk memfilter hasilmu"
+        },
+        "editmode": {
+          "description": "Aktifkan atau nonaktifkan mode editor"
+        },
+        "user": {
+          "description": "Pengguna yang ditampilkan (default: kamu sendiri)"
+        }
+      }
+    },
+    "supporters": {
+      "description": "⭐ Menampilkan semua supporter saat ini"
+    },
+    "taste": {
+      "description": "Membandingkan top artis, genre, dan negara kamu dengan pengguna lain",
+      "parameters": {
+        "private": {
+          "description": "Hanya tampilkan respons ke kamu"
+        },
+        "size": {
+          "description": "Jumlah perbandingan yang ditampilkan"
+        },
+        "time-period": {
+          "description": "Periode waktu"
+        },
+        "user": {
+          "description": "Pengguna untuk membandingkan seleramu"
+        }
+      }
+    },
+    "top": {
+      "description": "Daftar top - Artis/Album/Lagu/Genre/Negara",
+      "subcommands": {
+        "albums": {
+          "description": "Menampilkan top album kamu",
+          "parameters": {
+            "billboard": {
+              "description": "Tampilkan top album gaya billboard"
+            },
+            "decade": {
+              "description": "Filter ke album yang dirilis di dekade tertentu"
+            },
+            "hide-singles": {
+              "description": "Sembunyikan single dari hasil"
+            },
+            "mode": {
+              "description": "Jenis respons yang kamu mau - ubah default dengan /responsemode"
+            },
+            "private": {
+              "description": "Hanya tampilkan respons ke kamu"
+            },
+            "released": {
+              "description": "Filter ke album yang dirilis di tahun tertentu"
+            },
+            "size": {
+              "description": "Jumlah album yang ditampilkan"
+            },
+            "time-period": {
+              "description": "Periode waktu"
+            },
+            "user": {
+              "description": "Pengguna yang ditampilkan (default: kamu sendiri)"
+            }
+          }
+        },
+        "artists": {
+          "description": "Top artis kamu",
+          "parameters": {
+            "billboard": {
+              "description": "Tampilkan top artis gaya billboard"
+            },
+            "discogs": {
+              "description": "Tampilkan top artis di koleksi Discogs"
+            },
+            "mode": {
+              "description": "Jenis respons yang kamu mau - ubah default dengan /responsemode"
+            },
+            "private": {
+              "description": "Hanya tampilkan respons ke kamu"
+            },
+            "size": {
+              "description": "Jumlah artis yang ditampilkan"
+            },
+            "time-period": {
+              "description": "Periode waktu"
+            },
+            "user": {
+              "description": "Pengguna yang ditampilkan (default: kamu sendiri)"
+            }
+          }
+        },
+        "countries": {
+          "description": "Menampilkan top negara kamu",
+          "parameters": {
+            "billboard": {
+              "description": "Tampilkan top negara gaya billboard"
+            },
+            "mode": {
+              "description": "Jenis respons yang kamu mau - ubah default dengan /responsemode"
+            },
+            "private": {
+              "description": "Hanya tampilkan respons ke kamu"
+            },
+            "size": {
+              "description": "Jumlah negara yang ditampilkan"
+            },
+            "time-period": {
+              "description": "Periode waktu"
+            },
+            "user": {
+              "description": "Pengguna yang ditampilkan (default: kamu sendiri)"
+            }
+          }
+        },
+        "genres": {
+          "description": "Menampilkan top genre kamu",
+          "parameters": {
+            "billboard": {
+              "description": "Tampilkan top genre gaya billboard"
+            },
+            "mode": {
+              "description": "Jenis respons yang kamu mau - ubah default dengan /responsemode"
+            },
+            "private": {
+              "description": "Hanya tampilkan respons ke kamu"
+            },
+            "size": {
+              "description": "Jumlah genre yang ditampilkan"
+            },
+            "time-period": {
+              "description": "Periode waktu"
+            },
+            "user": {
+              "description": "Pengguna yang ditampilkan (default: kamu sendiri)"
+            }
+          }
+        },
+        "tracks": {
+          "description": "Menampilkan top lagu kamu",
+          "parameters": {
+            "billboard": {
+              "description": "Tampilkan top lagu gaya billboard"
+            },
+            "mode": {
+              "description": "Jenis respons yang kamu mau - ubah default dengan /responsemode"
+            },
+            "private": {
+              "description": "Hanya tampilkan respons ke kamu"
+            },
+            "size": {
+              "description": "Jumlah lagu yang ditampilkan"
+            },
+            "time-period": {
+              "description": "Periode waktu"
+            },
+            "user": {
+              "description": "Pengguna yang ditampilkan (default: kamu sendiri)"
+            }
+          }
+        }
+      }
+    },
+    "track": {
+      "description": "Menampilkan info lagu untuk lagu yang sedang kamu dengarkan atau cari",
+      "parameters": {
+        "track": {
+          "description": "Lagu yang ingin kamu cari (default: yang sedang diputar)"
+        }
+      }
+    },
+    "trackdetails": {
+      "description": "Menampilkan detail metadata untuk lagu saat ini atau yang kamu cari",
+      "parameters": {
+        "track": {
+          "description": "Lagu yang ingin kamu cari (default: yang sedang diputar)"
+        }
+      }
+    },
+    "trackplays": {
+      "description": "Menampilkan playcount untuk lagu saat ini atau yang kamu cari",
+      "parameters": {
+        "track": {
+          "description": "Lagu yang ingin kamu cari (default: yang sedang diputar)"
+        },
+        "user": {
+          "description": "Pengguna yang ditampilkan (default: kamu sendiri)"
+        }
+      }
+    },
+    "unblock": {
+      "description": "Hapus blokir pengguna agar muncul lagi di WhoKnows dan chart seluruh server",
+      "parameters": {
+        "user": {
+          "description": "Pengguna yang ingin kamu buka blokirnya"
+        }
+      }
+    },
+    "unlove": {
+      "description": "Menghapus lagu yang sedang kamu dengarkan atau cari dari lagu yang kamu sukai",
+      "parameters": {
+        "private": {
+          "description": "Hanya tampilkan respons ke kamu"
+        },
+        "track": {
+          "description": "Lagu yang ingin kamu hapus (default: yang sedang diputar)"
+        }
+      }
+    },
+    "update": {
+      "description": "Perbarui cache .fmbot secara manual dengan data Last.fm terbarumu",
+      "parameters": {
+        "type": {
+          "description": "Pilih apa yang ingin kamu perbarui"
+        }
+      }
+    },
+    "whoknows": {
+      "description": "Menampilkan pengguna lain yang mendengarkan suatu artis di servermu",
+      "parameters": {
+        "artist": {
+          "description": "Artis yang ingin kamu cari (default: yang sedang diputar)"
+        },
+        "mode": {
+          "description": "Jenis respons yang kamu mau - ubah default dengan /responsemode"
+        },
+        "no-filter": {
+          "description": "Nonaktifkan filter server dan mahkota"
+        },
+        "redirects": {
+          "description": "Aktifkan/nonaktifkan redirect nama artis Last.fm (default: aktif)"
+        },
+        "role-picker": {
+          "description": "Tampilkan pemilih role untuk memfilter dengan role"
+        }
+      }
+    },
+    "wkalbum": {
+      "description": "Menampilkan pengguna lain yang mendengarkan suatu album di servermu",
+      "parameters": {
+        "album": {
+          "description": "Album yang ingin kamu cari (default: yang sedang diputar)"
+        },
+        "mode": {
+          "description": "Jenis respons yang kamu mau - ubah default dengan /responsemode"
+        },
+        "no-filter": {
+          "description": "Nonaktifkan filter server"
+        },
+        "role-picker": {
+          "description": "Tampilkan pemilih role untuk memfilter dengan role"
+        }
+      }
+    },
+    "wkgenre": {
+      "description": "Menampilkan pengguna lain yang mendengarkan suatu genre di servermu",
+      "parameters": {
+        "mode": {
+          "description": "Jenis respons yang kamu mau - ubah default dengan /responsemode"
+        },
+        "search": {
+          "description": "Genre atau artis yang ingin kamu lihat"
+        }
+      }
+    },
+    "wktrack": {
+      "description": "Menampilkan pengguna lain yang mendengarkan suatu lagu di servermu",
+      "parameters": {
+        "mode": {
+          "description": "Jenis respons yang kamu mau - ubah default dengan /responsemode"
+        },
+        "no-filter": {
+          "description": "Nonaktifkan filter server"
+        },
+        "role-picker": {
+          "description": "Tampilkan pemilih role untuk memfilter dengan role"
+        },
+        "track": {
+          "description": "Lagu yang ingin kamu cari (default: yang sedang diputar)"
+        }
+      }
+    },
+    "year": {
+      "description": "Menampilkan ringkasan tahunmu",
+      "parameters": {
+        "user": {
+          "description": "Pengguna yang ditampilkan (default: kamu sendiri)"
+        },
+        "year": {
+          "description": "Tahun yang dilihat"
+        }
+      }
+    },
+    "youtube": {
+      "description": "Cari lewat YouTube",
+      "parameters": {
+        "private": {
+          "description": "Hanya tampilkan respons ke kamu"
+        },
+        "search": {
+          "description": "Kata pencarian"
+        }
+      }
+    }
+  }
 }
