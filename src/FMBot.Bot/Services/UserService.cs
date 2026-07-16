@@ -1417,10 +1417,9 @@ public class UserService
         Log.Information("LastfmAuth: Login session starting for {user} | {discordUserId}", contextUser.Username,
             contextUser.Id);
 
-        var loginDelay = 6000;
-        for (var i = 0; i < 11; i++)
+        for (var i = 0; i < 44; i++)
         {
-            await Task.Delay(loginDelay);
+            await Task.Delay(GetLoginAttemptDelay(i));
 
             var authSession = await this._dataSourceFactory.GetAuthSession(token);
 
@@ -1457,20 +1456,22 @@ public class UserService
                 return (LoginStatus.Success, 0);
             }
 
-            if (!authSession.Success && i == 10)
-            {
-                Log.Information("LastfmAuth: Login timed out or auth not successful (discordUserId: {discordUserId})",
-                    contextUser.Id);
-                return (LoginStatus.TimedOut, 0);
-            }
-
-            if (!authSession.Success)
-            {
-                loginDelay += 3000;
-            }
         }
 
+        Log.Information("LastfmAuth: Login timed out or auth not successful (discordUserId: {discordUserId})",
+            contextUser.Id);
         return (LoginStatus.TimedOut, 0);
+    }
+
+    private static int GetLoginAttemptDelay(int attempt)
+    {
+        return attempt switch
+        {
+            < 10 => 3000,
+            < 20 => 5000,
+            < 28 => 8000,
+            _ => 14000
+        };
     }
 
     public async Task<PrivacyLevel> SetPrivacyLevel(int userId, PrivacyLevel privacyLevel)

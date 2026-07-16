@@ -494,11 +494,14 @@ public class UserInteractions(
     {
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var token = await dataSourceFactory.GetAuthToken();
+        var localizer = Localizer.ForGuild(this.Context.Interaction.GuildId,
+            discordLocale: this.Context.Interaction.GuildLocale);
 
         try
         {
             var loginUrlResponse =
-                UserBuilder.StartLogin(contextUser, token.Content.Token, this._botSettings.LastFm.PublicKey);
+                UserBuilder.StartLogin(contextUser, token.Content.Token, this._botSettings.LastFm.PublicKey,
+                    localizer);
 
             await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
                 .WithEmbeds([loginUrlResponse.Embed])
@@ -518,7 +521,8 @@ public class UserInteractions(
 
                 var loginSuccessResponse =
                     UserBuilder.LoginSuccess(newUserSettings,
-                        indexUser ? UserBuilder.LoginState.SuccessPendingIndex : UserBuilder.LoginState.SuccessNoIndex);
+                        indexUser ? UserBuilder.LoginState.SuccessPendingIndex : UserBuilder.LoginState.SuccessNoIndex,
+                        localizer);
 
                 await this.Context.Interaction.ModifyResponseAsync(m =>
                 {
@@ -534,7 +538,8 @@ public class UserInteractions(
                     await indexService.IndexUser(newUserSettings);
 
                     loginSuccessResponse =
-                        UserBuilder.LoginSuccess(newUserSettings, UserBuilder.LoginState.SuccessIndexComplete);
+                        UserBuilder.LoginSuccess(newUserSettings, UserBuilder.LoginState.SuccessIndexComplete,
+                            localizer);
 
                     await this.Context.Interaction.ModifyResponseAsync(m =>
                     {
@@ -569,7 +574,7 @@ public class UserInteractions(
             }
             else if (loginResult.Status == UserService.LoginStatus.TooManyAccounts)
             {
-                var loginFailure = UserBuilder.LoginTooManyAccounts(loginResult.AltCount);
+                var loginFailure = UserBuilder.LoginTooManyAccounts(loginResult.AltCount, localizer);
                 await this.Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
                     .WithEmbeds([loginFailure.Embed])
                     .WithComponents(loginFailure.Components?.Any() == true ? [loginFailure.Components] : null)
@@ -579,9 +584,10 @@ public class UserInteractions(
             }
             else
             {
-                var loginFailure = UserBuilder.LoginFailure();
+                var loginFailure = UserBuilder.LoginFailure(localizer);
                 await this.Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
                     .WithEmbeds([loginFailure.Embed])
+                    .WithComponents(loginFailure.Components?.Any() == true ? [loginFailure.Components] : null)
                     .WithFlags(MessageFlags.Ephemeral));
 
                 await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);

@@ -130,6 +130,18 @@ public class Localizer(Language language, NumberFormat numberFormat)
             : guildListSettings.TimeDescription.ToLower();
     }
 
+    public string MonthName(int month)
+    {
+        var culture = this.Language.GetCultureInfo();
+        return culture.DateTimeFormat.GetMonthName(month);
+    }
+
+    public string DayName(DayOfWeek dayOfWeek)
+    {
+        var culture = this.Language.GetCultureInfo();
+        return culture.DateTimeFormat.GetDayName(dayOfWeek);
+    }
+
     public string FormatMonthDay(DateTime date)
     {
         var culture = this.Language.GetCultureInfo();

@@ -707,8 +707,20 @@ public class GameService(
 
         if (!string.IsNullOrWhiteSpace(artist?.Type))
         {
+            var typeKey = artist.Type.ToLower() switch
+            {
+                "person" => "jumble.hints.typeArtistPerson",
+                "group" => "jumble.hints.typeArtistGroup",
+                "orchestra" => "jumble.hints.typeArtistOrchestra",
+                "choir" => "jumble.hints.typeArtistChoir",
+                "character" => "jumble.hints.typeArtistCharacter",
+                _ => null
+            };
+
             hints.Add(new JumbleSessionHint(JumbleHintType.Type,
-                localizer.Translate("jumble.hints.typeArtist", ("type", artist.Type.ToLower()))));
+                typeKey != null
+                    ? localizer.Translate(typeKey)
+                    : localizer.Translate("jumble.hints.typeArtist", ("type", artist.Type.ToLower()))));
         }
 
         if (artist?.CountryCode != null && country != null)
@@ -820,8 +832,20 @@ public class GameService(
 
         if (!string.IsNullOrWhiteSpace(artist?.Type))
         {
+            var typeKey = artist.Type.ToLower() switch
+            {
+                "person" => "jumble.hints.typeAlbumArtistPerson",
+                "group" => "jumble.hints.typeAlbumArtistGroup",
+                "orchestra" => "jumble.hints.typeAlbumArtistOrchestra",
+                "choir" => "jumble.hints.typeAlbumArtistChoir",
+                "character" => "jumble.hints.typeAlbumArtistCharacter",
+                _ => null
+            };
+
             hints.Add(new JumbleSessionHint(JumbleHintType.Type,
-                localizer.Translate("jumble.hints.typeAlbumArtist", ("type", artist.Type.ToLower()))));
+                typeKey != null
+                    ? localizer.Translate(typeKey)
+                    : localizer.Translate("jumble.hints.typeAlbumArtist", ("type", artist.Type.ToLower()))));
         }
 
         if (artist?.CountryCode != null && country != null)

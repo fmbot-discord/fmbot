@@ -42,18 +42,20 @@ public class LocalizationTests
         "album.typeSingleBy", "album.typeCompilationBy", "album.typeAlbumBy",
         "track.headerOnSingle", "track.headerOnCompilation", "track.headerOnAlbum",
         "errors.lastFmNoResult.artist", "errors.lastFmNoResult.album",
-        "errors.lastFmNoResult.track", "errors.lastFmNoResult.artistList"
+        "errors.lastFmNoResult.track", "errors.lastFmNoResult.artistList",
+        "jumble.hints.typeArtistPerson", "jumble.hints.typeArtistGroup",
+        "jumble.hints.typeArtistOrchestra", "jumble.hints.typeArtistChoir",
+        "jumble.hints.typeArtistCharacter",
+        "jumble.hints.typeAlbumArtistPerson", "jumble.hints.typeAlbumArtistGroup",
+        "jumble.hints.typeAlbumArtistOrchestra", "jumble.hints.typeAlbumArtistChoir",
+        "jumble.hints.typeAlbumArtistCharacter"
     ];
 
-    private static readonly string[] DynamicPluralBaseKeys =
-    [
-        "album.serverStats", "album.serverStatsSingleListener",
-        "album.globalStats", "album.globalStatsSingleListener"
-    ];
+    private static readonly string[] DynamicPluralBaseKeys = [];
 
     private static readonly Dictionary<string, int> KnownDynamicCallSites = new()
     {
-        ["AlbumBuilders.cs"] = 3,
+        ["AlbumBuilders.cs"] = 1,
         ["TrackBuilders.cs"] = 1,
         ["TemplateBuilders.cs"] = 1
     };

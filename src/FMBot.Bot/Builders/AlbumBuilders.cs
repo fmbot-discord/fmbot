@@ -324,10 +324,8 @@ public class AlbumBuilders
                     var serverListeners = filteredUsersWithAlbum.Count;
                     var serverPlaycount = filteredUsersWithAlbum.Sum(a => a.Playcount);
 
-                    statsSection.AppendLine(context.LocalizeCount(
-                        serverListeners == 1 ? "album.serverStatsSingleListener" : "album.serverStats",
-                        serverPlaycount,
-                        ("listeners", serverListeners.Format(context.NumberFormat))));
+                    statsSection.AppendLine(context.LocalizeCount("album.serverStats", serverPlaycount,
+                        ("listeners", context.LocalizeCount("album.listenersBold", serverListeners))));
                 }
             }
 
@@ -340,10 +338,9 @@ public class AlbumBuilders
             }
         }
 
-        statsSection.AppendLine(context.LocalizeCount(
-            albumSearch.Album.TotalListeners == 1 ? "album.globalStatsSingleListener" : "album.globalStats",
+        statsSection.AppendLine(context.LocalizeCount("album.globalStats",
             albumSearch.Album.TotalPlaycount,
-            ("listeners", albumSearch.Album.TotalListeners.Format(context.NumberFormat))));
+            ("listeners", context.LocalizeCount("album.listenersBold", albumSearch.Album.TotalListeners))));
 
         var metaLine = new StringBuilder();
         if (databaseAlbum?.Popularity is > 0)

@@ -258,7 +258,7 @@ public class UserBuilder
         return response;
     }
 
-    public static ResponseModel StartLogin(User contextUser, string authToken, string publicKey)
+    public static ResponseModel StartLogin(User contextUser, string authToken, string publicKey, Localizer localizer)
     {
         var response = new ResponseModel
         {
@@ -271,25 +271,21 @@ public class UserBuilder
 
         if (contextUser == null)
         {
-            reply.AppendLine($"Use the button below to add your Last.fm account to .fmbot.");
+            reply.AppendLine(localizer.Translate("login.start"));
             reply.AppendLine();
-            reply.AppendLine("This link will expire in 5 minutes, please wait a moment after allowing access...");
+            reply.AppendLine(localizer.Translate("login.linkExpiry"));
         }
         else
         {
-            reply.AppendLine(
-                $"You have already connected a Last.fm account to the bot. If you want to change or reconnect your connected Last.fm account, **[click here.]({link})** " +
-                $"Note that this link will expire after 5 minutes. Also use this link if the bot says you have to re-login.");
+            reply.AppendLine(localizer.Translate("login.reconnect", ("url", link)));
             reply.AppendLine();
-            reply.AppendLine(
-                $"Using Spotify and having problems with your music not being tracked or it lagging behind? " +
-                $"Re-logging in again will not fix this, please use `/outofsync` for help instead.");
+            reply.AppendLine(localizer.Translate("login.spotifyOutOfSync", ("command", "/outofsync")));
         }
 
         response.Embed.WithColor(DiscordConstants.LastFmColorRed);
         response.Embed.WithDescription(reply.ToString());
         response.Components = new ActionRowProperties()
-            .WithButton("Connect Last.fm account to .fmbot", url: link);
+            .WithButton(localizer.Translate("buttons.connectLastfmToFmbot"), url: link);
         return response;
     }
 
@@ -300,7 +296,7 @@ public class UserBuilder
         SuccessIndexComplete
     }
 
-    public static ResponseModel LoginSuccess(User newContextUser, LoginState loginState)
+    public static ResponseModel LoginSuccess(User newContextUser, LoginState loginState, Localizer localizer)
     {
         var response = new ResponseModel
         {
@@ -309,41 +305,43 @@ public class UserBuilder
 
         response.Embed.WithColor(DiscordConstants.SuccessColorGreen);
         var description = new StringBuilder();
+        var userUrl = LastfmUrlExtensions.GetUserUrl(newContextUser.UserNameLastFM);
         switch (loginState)
         {
             case LoginState.SuccessNoIndex:
-                description.AppendLine(
-                    $"✅ You have been logged in to .fmbot with the username [{newContextUser.UserNameLastFM}]({LastfmUrlExtensions.GetUserUrl(newContextUser.UserNameLastFM)})!");
+                description.AppendLine(localizer.Translate("login.success",
+                    ("username", newContextUser.UserNameLastFM), ("url", userUrl)));
                 break;
             case LoginState.SuccessPendingIndex:
-                description.AppendLine(
-                    $"{EmojiProperties.Custom(DiscordConstants.Loading).ToDiscordString("loading", true)} Fetching Last.fm data for [{newContextUser.UserNameLastFM}]({LastfmUrlExtensions.GetUserUrl(newContextUser.UserNameLastFM)})...");
+                description.AppendLine(localizer.Translate("login.fetching",
+                    ("emote", EmojiProperties.Custom(DiscordConstants.Loading).ToDiscordString("loading", true)),
+                    ("username", newContextUser.UserNameLastFM), ("url", userUrl)));
                 break;
             case LoginState.SuccessIndexComplete:
-                description.AppendLine(
-                    $"✅ You have been logged in to .fmbot with the username [{newContextUser.UserNameLastFM}]({LastfmUrlExtensions.GetUserUrl(newContextUser.UserNameLastFM)})!");
+                description.AppendLine(localizer.Translate("login.success",
+                    ("username", newContextUser.UserNameLastFM), ("url", userUrl)));
                 break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(loginState), loginState, null);
         }
 
         description.AppendLine();
-        description.AppendLine(
-            $"Use the button below to start configuring your settings and to customize your .fmbot experience.");
+        description.AppendLine(localizer.Translate("login.settingsIntro"));
         description.AppendLine();
-        description.AppendLine($"Please note that .fmbot is not affiliated with Last.fm.");
+        description.AppendLine(localizer.Translate("login.notAffiliated"));
 
         response.Components = new ActionRowProperties()
-            .WithButton("Settings", style: ButtonStyle.Secondary, customId: InteractionConstants.User.Settings,
+            .WithButton(localizer.Translate("buttons.settings"), style: ButtonStyle.Secondary,
+                customId: InteractionConstants.User.Settings,
                 emote: EmojiProperties.Standard("⚙️"))
-            .WithButton("Add .fmbot",
+            .WithButton(localizer.Translate("buttons.addFmbot"),
                 url: "https://discord.com/oauth2/authorize?client_id=356268235697553409");
 
         response.Embed.WithDescription(description.ToString());
         return response;
     }
 
-    public static ResponseModel LoginFailure()
+    public static ResponseModel LoginFailure(Localizer localizer)
     {
         var response = new ResponseModel
         {
@@ -351,14 +349,16 @@ public class UserBuilder
         };
 
         response.Embed.WithColor(DiscordConstants.WarningColorOrange);
-        response.Embed.WithDescription(
-            $"Login expired or failed. Re-run `/login` to try again.\n\n" +
-            $"Still having trouble connecting your Last.fm to .fmbot? Feel free to ask for help on our support server.");
+        response.Embed.WithDescription(localizer.Translate("login.failed"));
+
+        response.Components = new ActionRowProperties()
+            .WithButton(localizer.Translate("buttons.tryAgain"), customId: InteractionConstants.User.Login,
+                style: ButtonStyle.Primary);
 
         return response;
     }
 
-    public static ResponseModel LoginTooManyAccounts(int altCount)
+    public static ResponseModel LoginTooManyAccounts(int altCount, Localizer localizer)
     {
         var response = new ResponseModel
         {
@@ -366,21 +366,19 @@ public class UserBuilder
         };
 
         var description = new StringBuilder();
-        description.AppendLine(
-            $"Can't login, this Last.fm is connected to too many Discord accounts already ({altCount}/{Constants.MaxAlts}).");
+        description.AppendLine(localizer.Translate("login.tooManyAccounts",
+            ("altCount", altCount.ToString()), ("maxAlts", Constants.MaxAlts.ToString())));
         description.AppendLine("");
-        description.AppendLine("To delete and transfer data from your other .fmbot accounts:");
-        description.AppendLine("1. Use 'Manage alts'");
-        description.AppendLine("2. Delete .fmbot accounts you don't use anymore");
-        description.AppendLine("3. Login again");
+        description.AppendLine(localizer.Translate("login.tooManyAccountsSteps"));
         description.AppendLine("");
-        description.AppendLine($"Note that deleting an .fmbot account does not delete any data from Last.fm.");
+        description.AppendLine(localizer.Translate("login.altDeleteNote"));
 
         response.Embed.WithDescription(description.ToString());
         response.Embed.WithColor(DiscordConstants.WarningColorOrange);
 
         response.Components = new ActionRowProperties()
-            .WithButton("Manage alts", InteractionConstants.ManageAlts.ManageAltsButton, style: ButtonStyle.Primary);
+            .WithButton(localizer.Translate("buttons.manageAlts"), InteractionConstants.ManageAlts.ManageAltsButton,
+                style: ButtonStyle.Primary);
 
         return response;
     }
@@ -1157,7 +1155,7 @@ public class UserBuilder
         {
             if (userSettings.DifferentUser && user.DiscordUserId == userSettings.DiscordUserId)
             {
-                response.Embed.WithDescription("That user is not registered in .fmbot.");
+                response.Embed.WithDescription(context.Localize("profile.userNotRegistered"));
                 response.CommandResponse = CommandResponse.WrongInput;
                 return response;
             }
@@ -1177,7 +1175,7 @@ public class UserBuilder
         var userInfo = await this._dataSourceFactory.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
         if (userInfo == null)
         {
-            response.Embed.WithDescription("Could not load this profile due to a Last.fm error, please try again later.");
+            response.Embed.WithDescription(context.Localize("profile.lastFmError"));
             response.CommandResponse = CommandResponse.LastFmError;
             return response;
         }
@@ -1186,8 +1184,8 @@ public class UserBuilder
             $"## {StringExtensions.MarkdownLink(userTitle, LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm))}");
 
         // initialDescription.AppendLine($"-# {userInfo.Country}");
-        initialDescription.AppendLine($"**{userInfo.Playcount.Format(context.NumberFormat)}** scrobbles");
-        initialDescription.AppendLine($"Since <t:{userInfo.LfmRegisteredUnix}:D>");
+        initialDescription.AppendLine(context.LocalizeCount("profile.scrobbles", userInfo.Playcount));
+        initialDescription.AppendLine(context.Localize("profile.since", ("date", $"<t:{userInfo.LfmRegisteredUnix}:D>")));
         if (user.UserType != UserType.User)
         {
             initialDescription.AppendLine(
@@ -1212,9 +1210,9 @@ public class UserBuilder
         var playcounts = new StringBuilder();
         if (userInfo.Playcount > 0)
         {
-            playcounts.AppendLine($"**{userInfo.TrackCount.Format(context.NumberFormat)}** different tracks");
-            playcounts.AppendLine($"**{userInfo.AlbumCount.Format(context.NumberFormat)}** different albums");
-            playcounts.AppendLine($"**{userInfo.ArtistCount.Format(context.NumberFormat)}** different artists");
+            playcounts.AppendLine(context.LocalizeCount("profile.differentTracks", userInfo.TrackCount));
+            playcounts.AppendLine(context.LocalizeCount("profile.differentAlbums", userInfo.AlbumCount));
+            playcounts.AppendLine(context.LocalizeCount("profile.differentArtists", userInfo.ArtistCount));
         }
 
         if (playcounts.Length > 0)
@@ -1238,7 +1236,7 @@ public class UserBuilder
                     foreach (var type in collectionTypes)
                     {
                         collection.AppendLine(
-                            $" {StringService.GetDiscogsFormatEmote(type.Key)} **{type.Key}** - *{type.Count()} collected* ");
+                            $" {StringService.GetDiscogsFormatEmote(type.Key)} {context.LocalizeCount("profile.discogsCollected", type.Count(), ("format", type.Key))} ");
                     }
 
                     discogs = true;
@@ -1264,28 +1262,31 @@ public class UserBuilder
             var hasImported = PlayService.UserHasImported(allPlays);
             if (hasImported)
             {
-                stats.AppendLine("User has most likely imported plays from external source");
+                stats.AppendLine(context.Localize("profile.importedPlays"));
             }
         }
 
-        stats.AppendLine($"Average of **{Math.Round(avgPerDay, 1).Format(context.NumberFormat)}** scrobbles per day");
+        stats.AppendLine(context.Localize("profile.avgScrobblesPerDay",
+            ("average", Math.Round(avgPerDay, 1).Format(context.NumberFormat))));
 
-        stats.AppendLine(
-            $"Average of **{Math.Round((double)userInfo.AlbumCount / userInfo.ArtistCount, 1).Format(context.NumberFormat)}** albums and **{Math.Round((double)userInfo.TrackCount / userInfo.ArtistCount, 1).Format(context.NumberFormat)}** tracks per artist");
+        stats.AppendLine(context.Localize("profile.avgPerArtist",
+            ("albums", Math.Round((double)userInfo.AlbumCount / userInfo.ArtistCount, 1).Format(context.NumberFormat)),
+            ("tracks", Math.Round((double)userInfo.TrackCount / userInfo.ArtistCount, 1).Format(context.NumberFormat))));
 
         var topArtists = await this._artistsService.GetUserAllTimeTopArtists(userSettings.UserId, true);
 
         if (topArtists.Any())
         {
             var amount = topArtists.OrderByDescending(o => o.UserPlaycount).Take(10).Sum(s => s.UserPlaycount);
-            stats.AppendLine(
-                $"Top **10** artists make up **{Math.Round((double)amount / userInfo.Playcount * 100, 1).Format(context.NumberFormat)}%** of scrobbles");
+            stats.AppendLine(context.Localize("profile.topArtistsPercentage",
+                ("percentage", Math.Round((double)amount / userInfo.Playcount * 100, 1).Format(context.NumberFormat))));
         }
 
         var topDay = allPlays.GroupBy(g => g.TimePlayed.DayOfWeek).MaxBy(o => o.Count());
         if (topDay != null)
         {
-            stats.AppendLine($"Most active day of the week is **{topDay.Key.ToString()}**");
+            stats.AppendLine(context.Localize("profile.mostActiveDay",
+                ("day", context.Localizer.DayName(topDay.Key))));
         }
 
         if (stats.Length > 0 && userInfo.Playcount > 0)
@@ -1300,7 +1301,7 @@ public class UserBuilder
         var footer = new StringBuilder();
         if (user.Friends?.Count > 0)
         {
-            footer.Append($"{user.Friends?.Count} friends");
+            footer.Append(context.LocalizeCount("shared.friends", user.Friends.Count));
         }
 
         if (user.FriendedByUsers?.Count > 0)
@@ -1310,7 +1311,7 @@ public class UserBuilder
                 footer.Append($" - ");
             }
 
-            footer.Append($"Befriended by {user.FriendedByUsers?.Count}");
+            footer.Append(context.LocalizeCount("profile.befriendedBy", user.FriendedByUsers.Count));
         }
 
         if (featuredHistory.Count >= 1)
@@ -1320,8 +1321,7 @@ public class UserBuilder
                 footer.Append($" - ");
             }
 
-            footer.Append(
-                $"Featured {featuredHistory.Count} {StringExtensions.GetTimesString(featuredHistory.Count)}");
+            footer.Append(context.LocalizeCount("profile.featured", featuredHistory.Count));
         }
 
         if (footer.Length > 0)
@@ -1332,14 +1332,14 @@ public class UserBuilder
 
         var actionRow = new ActionRowProperties();
 
-        actionRow.WithButton("History",
+        actionRow.WithButton(context.Localize("profile.buttons.history"),
             $"{InteractionConstants.User.History}:{user.DiscordUserId}:{context.ContextUser.DiscordUserId}",
             style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("📖"));
 
         if (discogs)
         {
             actionRow
-                .WithButton("Collection",
+                .WithButton(context.Localize("profile.buttons.collection"),
                     $"{InteractionConstants.Discogs.Collection}:{user.DiscordUserId}:{context.ContextUser.DiscordUserId}",
                     style: ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.Vinyl));
         }
@@ -1367,7 +1367,7 @@ public class UserBuilder
         {
             if (userSettings.DifferentUser && context.ContextUser.DiscordUserId == userSettings.DiscordUserId)
             {
-                response.Embed.WithDescription("That user is not registered in .fmbot.");
+                response.Embed.WithDescription(context.Localize("profile.userNotRegistered"));
                 response.CommandResponse = CommandResponse.WrongInput;
                 return response;
             }
@@ -1388,15 +1388,15 @@ public class UserBuilder
         if (userInfo == null)
         {
             response.ResponseType = ResponseType.Embed;
-            response.Embed.WithDescription("Could not load this profile due to a Last.fm error, please try again later.");
+            response.Embed.WithDescription(context.Localize("profile.lastFmError"));
             response.CommandResponse = CommandResponse.LastFmError;
             return response;
         }
 
-        initialDescription.AppendLine(
-            $"## {StringExtensions.MarkdownLink(userTitle, LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm))}'s history");
-        initialDescription.AppendLine($"**{userInfo.Playcount.Format(context.NumberFormat)}** scrobbles");
-        initialDescription.AppendLine($"Since <t:{userInfo.LfmRegisteredUnix}:D>");
+        initialDescription.AppendLine(context.Localize("profile.historyTitle",
+            ("user", StringExtensions.MarkdownLink(userTitle, LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)))));
+        initialDescription.AppendLine(context.LocalizeCount("profile.scrobbles", userInfo.Playcount));
+        initialDescription.AppendLine(context.Localize("profile.since", ("date", $"<t:{userInfo.LfmRegisteredUnix}:D>")));
         if (user.UserType != UserType.User)
         {
             initialDescription.AppendLine(
@@ -1434,10 +1434,9 @@ public class UserBuilder
             }
 
             var time = TimeService.GetPlayTimeForEnrichedPlays(month);
-            monthDescription.AppendLine(
-                $"**`{CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(month.Key.Month)}`** " +
-                $"- **{month.Count().Format(context.NumberFormat)}** plays " +
-                $"- **{StringExtensions.GetLongListeningTimeString(time)}**");
+            monthDescription.AppendLine(context.LocalizeCount("profile.historyEntry", month.Count(),
+                ("period", context.Localizer.MonthName(month.Key.Month)),
+                ("time", context.Localizer.LongListeningTime(time))));
             processedPlays += month.Count();
         }
 
@@ -1445,7 +1444,8 @@ public class UserBuilder
         {
             anyHistoryStored = true;
             response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
-            response.ComponentsContainer.AddComponent(new TextDisplayProperties("**Last months**\n" + monthDescription));
+            response.ComponentsContainer.AddComponent(
+                new TextDisplayProperties(context.Localize("profile.lastMonthsHeader") + "\n" + monthDescription));
         }
 
         if (userSettings.UserType != UserType.User)
@@ -1458,26 +1458,24 @@ public class UserBuilder
             var totalTime = TimeService.GetPlayTimeForEnrichedPlays(allPlays);
             if (totalTime.TotalSeconds > 0)
             {
-                yearDescription.AppendLine(
-                    $"**` All`** " +
-                    $"- **{allPlays.Count.Format(context.NumberFormat)}** plays " +
-                    $"- **{StringExtensions.GetLongListeningTimeString(totalTime)}**");
+                yearDescription.AppendLine(context.LocalizeCount("profile.historyAllEntry", allPlays.Count,
+                    ("time", context.Localizer.LongListeningTime(totalTime))));
             }
 
             foreach (var year in yearGroups)
             {
                 var time = TimeService.GetPlayTimeForEnrichedPlays(year);
-                yearDescription.AppendLine(
-                    $"**`{year.Key}`** " +
-                    $"- **{year.Count()}** plays " +
-                    $"- **{StringExtensions.GetLongListeningTimeString(time)}**");
+                yearDescription.AppendLine(context.LocalizeCount("profile.historyEntry", year.Count(),
+                    ("period", year.Key.ToString()),
+                    ("time", context.Localizer.LongListeningTime(time))));
             }
 
             if (yearDescription.Length > 0)
             {
                 anyHistoryStored = true;
                 response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
-                response.ComponentsContainer.AddComponent(new TextDisplayProperties("**All years**\n" + yearDescription));
+                response.ComponentsContainer.AddComponent(
+                    new TextDisplayProperties(context.Localize("profile.allYearsHeader") + "\n" + yearDescription));
             }
         }
         else
@@ -1490,15 +1488,13 @@ public class UserBuilder
                 this._supporterService.SetGuildSupporterPromoCache(context.DiscordGuild?.Id);
                 if (user.UserDiscogs == null)
                 {
-                    response.Embed.AddField("Years",
-                        $"*Want to see an overview of your scrobbles throughout the years? " +
-                        $"[Get .fmbot supporter here.]({Constants.GetSupporterDiscordLink})*");
+                    response.Embed.AddField(context.Localize("profile.yearsFieldTitle"),
+                        context.Localize("profile.yearsSupporterPromo", ("url", Constants.GetSupporterDiscordLink)));
                 }
                 else
                 {
-                    response.Embed.AddField("Years",
-                        $"*Want to see an overview of your scrobbles throughout the years and your Discogs collection? " +
-                        $"[Get .fmbot supporter here.]({Constants.GetSupporterDiscordLink})*");
+                    response.Embed.AddField(context.Localize("profile.yearsFieldTitle"),
+                        context.Localize("profile.yearsSupporterPromoDiscogs", ("url", Constants.GetSupporterDiscordLink)));
                 }
             }
         }
@@ -1507,7 +1503,7 @@ public class UserBuilder
         {
             response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
             response.ComponentsContainer.AddComponent(
-                new TextDisplayProperties("*Sorry, it seems like there is no stored data in .fmbot for this user.*"));
+                new TextDisplayProperties(context.Localize("profile.noDataStored")));
         }
         else
         {
@@ -1522,7 +1518,7 @@ public class UserBuilder
                     case DataSource.MergedDeduplicated:
                         response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
                         response.ComponentsContainer.AddComponent(
-                            new TextDisplayProperties($"{EmojiProperties.Custom(DiscordConstants.Imports).ToDiscordString("imports")} .fmbot imports: {name}"));
+                            new TextDisplayProperties($"{EmojiProperties.Custom(DiscordConstants.Imports).ToDiscordString("imports")} {context.Localize("profile.importsConfigured", ("name", name))}"));
                         break;
                     case DataSource.LastFm:
                     default:
@@ -1534,7 +1530,7 @@ public class UserBuilder
         var actionRow = new ActionRowProperties();
 
         actionRow
-            .WithButton("Profile",
+            .WithButton(context.Localize("profile.buttons.profile"),
                 $"{InteractionConstants.User.Profile}:{user.DiscordUserId}:{context.ContextUser.DiscordUserId}",
                 style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("ℹ"))
             .WithButton("Last.fm",
