@@ -123,6 +123,16 @@ public class Localizer(Language language, NumberFormat numberFormat)
         return timeSettings.Description;
     }
 
+    public string AltPeriodLabel(TimeSettingsModel timeSettings)
+    {
+        if (timeSettings.PeriodLabelKey != null)
+        {
+            return Translate(timeSettings.PeriodLabelKey.Replace("shared.period.", "shared.periodAlt."));
+        }
+
+        return timeSettings.AltDescription;
+    }
+
     public string PeriodLabel(GuildRankingSettings guildListSettings)
     {
         return guildListSettings.TimeSettings != null

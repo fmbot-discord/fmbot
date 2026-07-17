@@ -63,7 +63,7 @@ public class CrownBuilders
 
         if (guild.CrownsDisabled == true)
         {
-            response.Text = "Crown functionality has been disabled in this server.";
+            response.Text = context.Localize("crown.functionalityDisabled");
             response.ResponseType = ResponseType.Text;
             response.CommandResponse = CommandResponse.Disabled;
             return response;
@@ -106,8 +106,9 @@ public class CrownBuilders
 
         if (!artistCrowns.Any(a => a.Active))
         {
-            response.Embed.WithDescription($"No known crowns for the artist `{artistSearch.Artist.ArtistName}`. \n" +
-                                        $"Be the first to claim the crown with `{context.Prefix}whoknows`!");
+            response.Embed.WithDescription(context.Localize("crown.noKnownCrowns",
+                ("artist", artistSearch.Artist.ArtistName),
+                ("command", $"{context.Prefix}whoknows")));
             response.CommandResponse = CommandResponse.NotFound;
             return response;
         }
@@ -121,7 +122,7 @@ public class CrownBuilders
             $"{LastfmUrlExtensions.GetUserUrl(users[currentCrown.UserId].UserNameLastFM)}/library/music/{HttpUtility.UrlEncode(artistSearch.Artist.ArtistName)}";
 
         guildUsers.TryGetValue(currentCrown.UserId, out var currentGuildUser);
-        response.Embed.AddField("Current crown holder", CrownToString(currentGuildUser, users[currentCrown.UserId], currentCrown, context.NumberFormat, userArtistUrl));
+        response.Embed.AddField(context.Localize("crown.fieldCurrentHolder"), CrownToString(currentGuildUser, users[currentCrown.UserId], currentCrown, context, userArtistUrl));
 
         if (artistCrowns.Count > 1)
         {
@@ -134,24 +135,27 @@ public class CrownBuilders
             {
                 guildUsers.TryGetValue(artistCrown.UserId, out var guildUser);
 
-                crownHistory.AppendLine(CrownToString(guildUser, users[artistCrown.UserId], artistCrown, context.NumberFormat));
+                crownHistory.AppendLine(CrownToString(guildUser, users[artistCrown.UserId], artistCrown, context));
             }
-
-            response.Embed.AddField("Crown history", crownHistory.ToString());
 
             if (artistCrowns.Count(w => !w.Active) > 10)
             {
-                crownHistory.AppendLine($"*{artistCrowns.Count(w => !w.Active) - 10} more steals hidden..*");
+                crownHistory.AppendLine(context.LocalizeCount("crown.moreStealsHidden", artistCrowns.Count(w => !w.Active) - 10));
+            }
 
+            response.Embed.AddField(context.Localize("shared.crownHistory"), crownHistory.ToString());
+
+            if (artistCrowns.Count(w => !w.Active) > 10)
+            {
                 var firstCrown = artistCrowns.OrderBy(o => o.Created).First();
 
                 guildUsers.TryGetValue(firstCrown.UserId, out var firstGuildUser);
 
-                response.Embed.AddField("First crownholder", CrownToString(firstGuildUser, users[firstCrown.UserId], firstCrown, context.NumberFormat));
+                response.Embed.AddField(context.Localize("crown.fieldFirstHolder"), CrownToString(firstGuildUser, users[firstCrown.UserId], firstCrown, context));
             }
         }
 
-        response.Embed.WithTitle($"Crown for {currentCrown.ArtistName}");
+        response.Embed.WithTitle(context.Localize("crown.titleFor", ("artist", currentCrown.ArtistName)));
 
         var embedDescription = new StringBuilder();
 
@@ -160,24 +164,17 @@ public class CrownBuilders
         return response;
     }
 
-    private static string CrownToString(FullGuildUser guildUser, User user, UserCrown crown, NumberFormat numberFormat, string url = null)
+    private static string CrownToString(FullGuildUser guildUser, User user, UserCrown crown, ContextModel context, string url = null)
     {
-        var description = new StringBuilder();
+        var userDisplay = url != null
+            ? $"**{StringExtensions.MarkdownLink(guildUser?.UserName ?? user.UserNameLastFM, url)}**"
+            : $"**{guildUser?.UserName ?? user.UserNameLastFM}**";
 
-        description.Append($"**<t:{((DateTimeOffset)crown.Created).ToUnixTimeSeconds()}:D>** to **<t:{((DateTimeOffset)crown.Modified).ToUnixTimeSeconds()}:D>** — ");
-
-        if (url != null)
-        {
-            description.Append($"**{StringExtensions.MarkdownLink(guildUser?.UserName ?? user.UserNameLastFM, url)}** — ");
-        }
-        else
-        {
-            description.Append($"**{guildUser?.UserName ?? user.UserNameLastFM}** — ");
-        }
-
-        description.Append($"*{crown.StartPlaycount.Format(numberFormat)} to {crown.CurrentPlaycount.Format(numberFormat)} plays*");
-
-        return description.ToString();
+        return context.LocalizeCount("crown.historyEntry", crown.CurrentPlaycount,
+            ("from", $"<t:{((DateTimeOffset)crown.Created).ToUnixTimeSeconds()}:D>"),
+            ("to", $"<t:{((DateTimeOffset)crown.Modified).ToUnixTimeSeconds()}:D>"),
+            ("user", userDisplay),
+            ("start", crown.StartPlaycount.Format(context.NumberFormat)));
     }
 
     public async Task<ResponseModel> CrownOverviewAsync(
@@ -193,7 +190,7 @@ public class CrownBuilders
 
         if (guild.CrownsDisabled == true)
         {
-            response.Text = "Crown functionality has been disabled in this server.";
+            response.Text = context.Localize("crown.functionalityDisabled");
             response.ResponseType = ResponseType.Text;
             response.CommandResponse = CommandResponse.Disabled;
             return response;
@@ -202,31 +199,34 @@ public class CrownBuilders
         var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
         var userCrowns = await this._crownService.GetCrownsForUser(guild, userSettings.UserId, crownViewType);
 
-        var crownType = crownViewType == CrownViewType.Stolen ? "Stolen crowns" : "Crowns";
-        var title = userSettings.DifferentUser
-            ? $"{crownType} for {userSettings.UserNameLastFm}, requested by {userTitle}"
-            : $"{crownType} for {userTitle}";
-
-        string noResults;
+        string title;
         if (crownViewType == CrownViewType.Stolen)
         {
-            noResults = $"You or the user you're searching for don't have any crowns that got stolen yet.";
+            title = userSettings.DifferentUser
+                ? context.Localize("crown.stolenTitleOther", ("user", userSettings.UserNameLastFm), ("requester", userTitle))
+                : context.Localize("crown.stolenTitleSelf", ("user", userTitle));
         }
         else
         {
-            noResults = $"You or the user you're searching for don't have any crowns yet. \n\n" +
-                        $"Use `{context.Prefix}whoknows` to start getting crowns!\n\n" +
-                        $"Crowns are rewarded to the #1 listener for an artist with at least {guild.CrownsMinimumPlaycountThreshold ?? Constants.DefaultPlaysForCrown} plays.";
+            title = userSettings.DifferentUser
+                ? context.Localize("crown.overviewTitleOther", ("user", userSettings.UserNameLastFm), ("requester", userTitle))
+                : context.Localize("crown.overviewTitleSelf", ("user", userTitle));
         }
 
+        var noResults = crownViewType == CrownViewType.Stolen
+            ? context.Localize("crown.noStolenCrowns")
+            : context.Localize("crown.noCrownsYet",
+                ("command", $"{context.Prefix}whoknows"),
+                ("threshold", (guild.CrownsMinimumPlaycountThreshold ?? Constants.DefaultPlaysForCrown).Format(context.NumberFormat)));
+
         var viewType =  new StringMenuProperties(InteractionConstants.User.CrownSelectMenu)
-            .WithPlaceholder("Select crown view")
+            .WithPlaceholder(context.Localize("crown.selectViewPlaceholder"))
             .WithMinValues(1)
             .WithMaxValues(1);
 
         foreach (var option in ((CrownViewType[])Enum.GetValues(typeof(CrownViewType))))
         {
-            var name = option.GetAttribute<OptionAttribute>().Name;
+            var name = context.LocalizeOption(option);
             var value = $"{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}-{Enum.GetName(option)}";
 
             var active = option == crownViewType;
@@ -247,16 +247,15 @@ public class CrownBuilders
             var crownPageString = new StringBuilder();
             foreach (var userCrown in crownPage)
             {
-                crownPageString.Append($"{counter}. **{userCrown.ArtistName}** — *{userCrown.CurrentPlaycount.Format(context.NumberFormat)} plays*");
-
-                if (crownViewType != CrownViewType.Stolen)
-                {
-                    crownPageString.Append($" — Claimed <t:{((DateTimeOffset)userCrown.Created).ToUnixTimeSeconds()}:R>");
-                }
-                else
-                {
-                    crownPageString.Append($" — Stolen <t:{((DateTimeOffset)userCrown.Modified).ToUnixTimeSeconds()}:R>");
-                }
+                crownPageString.Append(crownViewType != CrownViewType.Stolen
+                    ? context.LocalizeCount("crown.entryClaimed", userCrown.CurrentPlaycount,
+                        ("rank", counter.ToString()),
+                        ("artist", userCrown.ArtistName),
+                        ("timestamp", $"<t:{((DateTimeOffset)userCrown.Created).ToUnixTimeSeconds()}:R>"))
+                    : context.LocalizeCount("crown.entryStolen", userCrown.CurrentPlaycount,
+                        ("rank", counter.ToString()),
+                        ("artist", userCrown.ArtistName),
+                        ("timestamp", $"<t:{((DateTimeOffset)userCrown.Modified).ToUnixTimeSeconds()}:R>")));
 
                 crownPageString.AppendLine();
 
@@ -294,7 +293,7 @@ public class CrownBuilders
                 container.WithTextDisplay(currentPage.TrimEnd());
                 container.WithSeparator();
                 container.WithTextDisplay(
-                    $"-# Page {p.CurrentPageIndex + 1}/{pageDescriptions.Count} - {userCrowns.Count.Format(context.NumberFormat)} total crowns");
+                    $"-# {context.LocalizeCount("crown.pageCounterTotal", userCrowns.Count, ("page", (p.CurrentPageIndex + 1).ToString()), ("pages", pageDescriptions.Count.ToString()))}");
             }
             else
             {

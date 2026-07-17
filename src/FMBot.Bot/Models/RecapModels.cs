@@ -6,7 +6,7 @@ namespace FMBot.Bot.Models;
 
 public enum RecapPage
 {
-    [Option("Overview", localizationKey: "recap.pages.overview")]
+    [Option("Overview", localizationKey: "shared.overview")]
     Overview = 1,
 
     [Option("Top artists", localizationKey: "recap.pages.topArtists")]

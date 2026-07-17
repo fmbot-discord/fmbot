@@ -501,7 +501,7 @@ public class PlayServiceTest
             StreakEnded = DateTime.UtcNow
         };
 
-        var text = PlayService.StreakToText(streak, NumberFormat.NoSeparator, false);
+        var text = PlayService.StreakToText(streak, new Localizer(Language.English, NumberFormat.NoSeparator), false);
 
         Assert.Multiple(() =>
         {

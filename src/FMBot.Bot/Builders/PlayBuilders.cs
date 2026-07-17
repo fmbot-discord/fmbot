@@ -392,7 +392,7 @@ public class PlayBuilder
             : $"[{userSettings.DisplayName}](<{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}>){userSettings.UserType.UserTypeToIcon()}";
         var embedTitle = !userSettings.DifferentUser
             ? userTitle
-            : context.Localize("fm.titleRequestedBy", ("user", userTitle), ("requester", requesterUserTitle));
+            : context.Localize("shared.requestedByTitle", ("user", userTitle), ("requester", requesterUserTitle));
         // var embed = await this._userService.GetTemplateFmAsync(context.ContextUser.UserId, userSettings, currentTrack,
         //     previousTrack, totalPlaycount, guild, guildUsers);
         // response.Embeds = [embed.EmbedProperties];
@@ -423,7 +423,7 @@ public class PlayBuilder
             currentTrack.TimePlayed < DateTime.UtcNow.AddHours(-2))
         {
             var oosPrefix = useSmallText ? "-# " : "";
-            footerText.Append($"{oosPrefix}{context.Localize("fm.outOfSyncHint", ("command", $"{context.Prefix}outofsync"))}");
+            footerText.Append($"{oosPrefix}{context.Localize("shared.outOfSyncHint", ("command", $"{context.Prefix}outofsync"))}");
         }
 
         List<IActionRowComponentProperties> fmButtonComponents = null;
@@ -1068,8 +1068,8 @@ public class PlayBuilder
 
         if (count == null)
         {
-            response.Text =
-                $"Could not find total count for Last.fm user `{StringExtensions.Sanitize(userSettings.UserNameLastFm)}`.";
+            response.Text = context.Localize("plays.countNotFound",
+                ("user", StringExtensions.Sanitize(userSettings.UserNameLastFm)));
             response.CommandResponse = CommandResponse.NotFound;
             return response;
         }
@@ -1078,8 +1078,8 @@ public class PlayBuilder
             $"{StringExtensions.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()}";
 
         response.Text = timeSettings.TimePeriod == TimePeriod.AllTime
-            ? $"**{userTitle}** has `{count.Format(context.NumberFormat)}` total scrobbles"
-            : $"**{userTitle}** has `{count.Format(context.NumberFormat)}` scrobbles in the {timeSettings.AltDescription}";
+            ? context.LocalizeCount("plays.totalScrobbles", count.Value, ("user", userTitle))
+            : context.LocalizeCount("plays.scrobblesInPeriod", count.Value, ("user", userTitle), ("period", context.Localizer.AltPeriodLabel(timeSettings)));
 
         return response;
     }
@@ -1108,20 +1108,20 @@ public class PlayBuilder
             recentTracks.Content.RecentTracks.FirstOrDefault(), lastPlays);
 
         response.ComponentsContainer.WithAccentColor(DiscordConstants.LastFmColorRed);
-        response.ComponentsContainer.WithTextDisplay(
-            $"### Streak overview for {StringExtensions.MarkdownLink(StringExtensions.Sanitize(userSettings.DisplayName), $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library")}{userSettings.UserType.UserTypeToIcon()}");
+        response.ComponentsContainer.WithTextDisplay(context.Localize("streak.overviewTitle",
+            ("user", $"{StringExtensions.MarkdownLink(StringExtensions.Sanitize(userSettings.DisplayName), $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library")}{userSettings.UserType.UserTypeToIcon()}")));
 
         string emoji = null;
         if (PlayService.StreakExists(streak))
         {
-            var musicStreaks = PlayService.MusicStreaksToText(streak, context.NumberFormat);
+            var musicStreaks = PlayService.MusicStreaksToText(streak, context.Localizer);
             if (musicStreaks != null)
             {
                 response.ComponentsContainer.WithSeparator();
                 response.ComponentsContainer.WithTextDisplay(musicStreaks);
             }
 
-            var genreStreaks = PlayService.GenreStreaksToText(streak, context.NumberFormat);
+            var genreStreaks = PlayService.GenreStreaksToText(streak, context.Localizer);
             if (genreStreaks != null)
             {
                 response.ComponentsContainer.WithSeparator();
@@ -1129,13 +1129,13 @@ public class PlayBuilder
             }
 
             response.ComponentsContainer.WithSeparator();
-            response.ComponentsContainer.WithTextDisplay(PlayService.StreakStartedToText(streak));
+            response.ComponentsContainer.WithTextDisplay(PlayService.StreakStartedToText(streak, context.Localizer));
 
             if (!userSettings.DifferentUser)
             {
                 if (PlayService.ShouldSaveStreak(streak))
                 {
-                    var saved = await this._playService.UpdateOrInsertStreak(streak);
+                    var saved = await this._playService.UpdateOrInsertStreak(streak, context.Localizer);
                     if (saved != null)
                     {
                         response.ComponentsContainer.WithSeparator();
@@ -1146,7 +1146,7 @@ public class PlayBuilder
                 {
                     response.ComponentsContainer.WithSeparator();
                     response.ComponentsContainer.WithTextDisplay(
-                        $"-# Only streaks with {Constants.StreakSaveThreshold} plays or higher are saved.");
+                        $"-# {context.Localize("streak.onlySavedAbove", ("threshold", Constants.StreakSaveThreshold.ToString()))}");
                 }
             }
 
@@ -1165,8 +1165,7 @@ public class PlayBuilder
         else
         {
             response.ComponentsContainer.WithSeparator();
-            response.ComponentsContainer.WithTextDisplay("No active streak found.\n" +
-                                                         "Try scrobbling multiple of the same artist, album, track or genre in a row to get started.");
+            response.ComponentsContainer.WithTextDisplay(context.Localize("streak.noActiveStreakHint"));
         }
 
         if (emoji != null)
@@ -1193,8 +1192,11 @@ public class PlayBuilder
         var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
         var libraryUrl = $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library";
         var title = !userSettings.DifferentUser
-            ? $"### Streak history for {StringExtensions.MarkdownLink(StringExtensions.Sanitize(userTitle), libraryUrl)}"
-            : $"### Streak history for {StringExtensions.MarkdownLink(userSettings.UserNameLastFm, libraryUrl)}, requested by {StringExtensions.Sanitize(userTitle)}";
+            ? context.Localize("streak.historyTitleSelf",
+                ("user", StringExtensions.MarkdownLink(StringExtensions.Sanitize(userTitle), libraryUrl)))
+            : context.Localize("streak.historyTitleOther",
+                ("user", StringExtensions.MarkdownLink(userSettings.UserNameLastFm, libraryUrl)),
+                ("requester", StringExtensions.Sanitize(userTitle)));
 
         if (!string.IsNullOrWhiteSpace(artist))
         {
@@ -1210,8 +1212,8 @@ public class PlayBuilder
         if (!userSettings.DifferentUser)
         {
             var restoreLabel = SupporterService.IsSupporter(context.ContextUser.UserType)
-                ? "Restore past streaks"
-                : "Restore past streaks ⭐";
+                ? context.Localize("streak.buttonRestore")
+                : $"{context.Localize("streak.buttonRestore")} ⭐";
             restoreButton = new ButtonProperties(
                 $"{InteractionConstants.RestoreStreakHistory}:{context.ContextUser.DiscordUserId}",
                 restoreLabel, EmojiProperties.Custom(DiscordConstants.Refresh), ButtonStyle.Secondary);
@@ -1220,17 +1222,17 @@ public class PlayBuilder
             {
                 deleteAllButton = new ButtonProperties(
                     $"{InteractionConstants.DeleteAllStreaks}:{context.ContextUser.DiscordUserId}",
-                    "Delete all streaks", ButtonStyle.Danger);
+                    context.Localize("streak.buttonDeleteAll"), ButtonStyle.Danger);
             }
         }
 
         if (!streaks.Any())
         {
             response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
-            response.ComponentsContainer.WithTextDisplay("No saved streaks found for this user.");
+            response.ComponentsContainer.WithTextDisplay(context.Localize("streak.noSavedStreaks"));
             if (!string.IsNullOrWhiteSpace(artist))
             {
-                response.ComponentsContainer.WithTextDisplay($"-# Filtering to artist '{artist}'");
+                response.ComponentsContainer.WithTextDisplay($"-# {context.Localize("streak.filteringToArtist", ("artist", artist))}");
             }
 
             if (restoreButton != null)
@@ -1255,19 +1257,19 @@ public class PlayBuilder
             {
                 var entry = new StringBuilder();
                 entry.Append($"**{counter}. **");
-                entry.Append($"<t:{((DateTimeOffset)streak.StreakStarted).ToUnixTimeSeconds()}:f>");
-                entry.Append(" until ");
-                entry.Append((streak.StreakEnded - streak.StreakStarted).TotalHours <= 20
-                    ? $"<t:{((DateTimeOffset)streak.StreakEnded).ToUnixTimeSeconds()}:t>"
-                    : $"<t:{((DateTimeOffset)streak.StreakEnded).ToUnixTimeSeconds()}:f>");
+                entry.Append(context.Localize("streak.entryPeriod",
+                    ("from", $"<t:{((DateTimeOffset)streak.StreakStarted).ToUnixTimeSeconds()}:f>"),
+                    ("to", (streak.StreakEnded - streak.StreakStarted).TotalHours <= 20
+                        ? $"<t:{((DateTimeOffset)streak.StreakEnded).ToUnixTimeSeconds()}:t>"
+                        : $"<t:{((DateTimeOffset)streak.StreakEnded).ToUnixTimeSeconds()}:f>")));
 
                 if (editMode && !userSettings.DifferentUser)
                 {
-                    entry.Append($" · Deletion ID: `{streak.UserStreakId}`");
+                    entry.Append($" · {context.Localize("streak.deletionId", ("id", streak.UserStreakId.ToString()))}");
                 }
 
                 entry.AppendLine();
-                entry.Append(PlayService.StreakToText(streak, context.NumberFormat, false));
+                entry.Append(PlayService.StreakToText(streak, context.Localizer, false));
 
                 pageEntries.Add(entry.ToString());
                 counter++;
@@ -1332,13 +1334,13 @@ public class PlayBuilder
             var pageFooter = new StringBuilder();
             if (streakPages.Count > 1)
             {
-                pageFooter.Append($"-# Page {pageNumber}/{streakPages.Count}");
+                pageFooter.Append($"-# {context.Localize("shared.pageCounter", ("page", pageNumber.ToString()), ("pages", streakPages.Count.ToString()))}");
             }
 
             if (!string.IsNullOrWhiteSpace(artist))
             {
                 pageFooter.Append(pageFooter.Length > 0 ? " - " : "-# ");
-                pageFooter.Append($"Filtering to artist '{artist}'");
+                pageFooter.Append(context.Localize("streak.filteringToArtist", ("artist", artist)));
             }
 
             if (editMode)
@@ -1348,7 +1350,7 @@ public class PlayBuilder
                     pageFooter.AppendLine();
                 }
 
-                pageFooter.Append("-# Editmode enabled - Use the trash button to delete streaks");
+                pageFooter.Append($"-# {context.Localize("streak.editModeHint")}");
             }
 
             return pageFooter.Length > 0 ? pageFooter.ToString() : null;
@@ -1426,7 +1428,7 @@ public class PlayBuilder
 
         if (!streaks.Any())
         {
-            response.Embed.WithDescription("No saved streaks found for you.");
+            response.Embed.WithDescription(context.Localize("streak.noSavedStreaksSelf"));
             response.ResponseType = ResponseType.Embed;
             response.CommandResponse = CommandResponse.NotFound;
             return response;
@@ -1437,7 +1439,7 @@ public class PlayBuilder
 
         if (streak == null)
         {
-            response.Embed.WithDescription("Could not find streak to delete.");
+            response.Embed.WithDescription(context.Localize("streak.deleteNotFound"));
             response.ResponseType = ResponseType.Embed;
             response.CommandResponse = CommandResponse.NotFound;
             return response;
@@ -1445,9 +1447,9 @@ public class PlayBuilder
 
         await this._playService.DeleteStreak(streak.UserStreakId);
 
-        response.Embed.WithTitle("🗑 Streak deleted");
-        response.Embed.WithDescription("Successfully deleted the following streak:\n" +
-                                       PlayService.StreakToText(streak, context.NumberFormat, false));
+        response.Embed.WithTitle(context.Localize("streak.deletedTitle"));
+        response.Embed.WithDescription(context.Localize("streak.deletedDescription") + "\n" +
+                                       PlayService.StreakToText(streak, context.Localizer, false));
         response.ResponseType = ResponseType.Embed;
         return response;
     }
@@ -1601,8 +1603,9 @@ public class PlayBuilder
 
         if (count is null or 0)
         {
-            response.Text =
-                $"<@{context.DiscordUser.Id}> No plays found in the {timeSettings.Description} time period.";
+            response.Text = context.Localize("pace.noPlaysInPeriod",
+                ("mention", $"<@{context.DiscordUser.Id}>"),
+                ("period", context.Localizer.PeriodLabel(timeSettings)));
             response.CommandResponse = CommandResponse.NoScrobbles;
             return response;
         }
@@ -1618,30 +1621,35 @@ public class PlayBuilder
 
         var reply = new StringBuilder();
 
-        var determiner = "your";
-        if (userSettings.DifferentUser)
-        {
-            reply.Append(
-                $"<@{context.DiscordUser.Id}> My estimate is that the user '{userSettings.UserNameLastFm.FilterOutMentions()}'");
-            determiner = "their";
-        }
-        else
-        {
-            reply.Append($"<@{context.DiscordUser.Id}> My estimate is that you");
-        }
+        reply.AppendLine(userSettings.DifferentUser
+            ? context.Localize("pace.estimateOther",
+                ("mention", $"<@{context.DiscordUser.Id}>"),
+                ("user", userSettings.UserNameLastFm.FilterOutMentions()),
+                ("goal", goalAmount.Format(context.NumberFormat)),
+                ("date", $"<t:{goalDate.ToUnixEpochDate()}:D>"))
+            : context.Localize("pace.estimateSelf",
+                ("mention", $"<@{context.DiscordUser.Id}>"),
+                ("goal", goalAmount.Format(context.NumberFormat)),
+                ("date", $"<t:{goalDate.ToUnixEpochDate()}:D>")));
 
-        reply.AppendLine(
-            $" will reach **{goalAmount.Format(context.NumberFormat)}** scrobbles on **<t:{goalDate.ToUnixEpochDate()}:D>**.");
+        var avg = Math.Round(avgPerDay.GetValueOrDefault(0), 1).Format(context.NumberFormat);
+        var days = Math.Round(totalDays, 0).ToString();
 
         if (timeSettings.TimePeriod == TimePeriod.AllTime)
         {
-            reply.AppendLine(
-                $"-# *Based on {determiner} alltime average of {Math.Round(avgPerDay.GetValueOrDefault(0), 1).Format(context.NumberFormat)} scrobbles per day — {count.Format(context.NumberFormat)} total in {Math.Round(totalDays, 0)} days*");
+            reply.AppendLine(context.Localize(
+                userSettings.DifferentUser ? "pace.basedOnAlltimeOther" : "pace.basedOnAlltimeSelf",
+                ("avg", avg),
+                ("total", count.Format(context.NumberFormat)),
+                ("days", days)));
         }
         else
         {
-            reply.AppendLine(
-                $"-# *Based on {determiner} average of {Math.Round(avgPerDay.GetValueOrDefault(0), 1).Format(context.NumberFormat)} scrobbles per day in the last {Math.Round(totalDays, 0)} days — {count.Format(context.NumberFormat)} total*");
+            reply.AppendLine(context.Localize(
+                userSettings.DifferentUser ? "pace.basedOnPeriodOther" : "pace.basedOnPeriodSelf",
+                ("avg", avg),
+                ("total", count.Format(context.NumberFormat)),
+                ("days", days)));
         }
 
         response.Text = reply.ToString();
@@ -1676,8 +1684,9 @@ public class PlayBuilder
 
         var userTitle = $"{userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}";
 
-        response.Embed.WithTitle(
-            $"{mileStoneAmount.Format(context.NumberFormat)}{StringExtensions.GetAmountEnd(mileStoneAmount)} scrobble from {userTitle}");
+        response.Embed.WithTitle(context.Localize("milestone.titleScrobbleFrom",
+            ("ordinal", context.Localizer.Ordinal(mileStoneAmount)),
+            ("user", userTitle)));
 
         var databaseAlbum =
             await this._albumService.GetAlbumFromDatabase(mileStonePlay.Content.ArtistName,
@@ -1707,7 +1716,8 @@ public class PlayBuilder
             response.Embed.WithUrl(
                 $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library?from={dateString}&to={dateString}");
 
-            reply.AppendLine($"Date played: **<t:{mileStonePlay.Content.TimePlayed.Value.ToUnixEpochDate()}:D>**");
+            reply.AppendLine(context.Localize("milestone.datePlayed",
+                ("date", $"<t:{mileStonePlay.Content.TimePlayed.Value.ToUnixEpochDate()}:D>")));
 
             response.ReferencedMusic = new ReferencedMusic
             {
@@ -1719,7 +1729,7 @@ public class PlayBuilder
 
         if (isRandom)
         {
-            response.Components = new ActionRowProperties().WithButton("Reroll",
+            response.Components = new ActionRowProperties().WithButton(context.Localize("milestone.buttonReroll"),
                 $"{InteractionConstants.RandomMilestone}:{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}",
                 style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("🎲"));
         }

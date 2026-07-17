@@ -437,10 +437,10 @@ public class ArtistBuilders
 
         var viewingUserId = userSettings.DiscordUserId;
         var navRow = new ActionRowProperties()
-            .WithButton(context.Localize("artist.buttons.overview"),
+            .WithButton(context.Localize("shared.overview"),
                 $"{InteractionConstants.Artist.Overview}:{fullArtist.Id}:{viewingUserId}:{context.ContextUser.DiscordUserId}",
                 style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("\ud83d\udcca"))
-            .WithButton(context.Localize("artist.buttons.tracks"),
+            .WithButton(context.Localize("shared.buttons.tracks"),
                 $"{InteractionConstants.Artist.Tracks}:{fullArtist.Id}:{viewingUserId}:{context.ContextUser.DiscordUserId}:",
                 style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("\ud83c\udfb6"))
             .WithButton(context.Localize("artist.buttons.albums"),
@@ -824,7 +824,7 @@ public class ArtistBuilders
                 ("artist", StringExtensions.Sanitize(artistSearch.Artist.ArtistName))));
 
             var noResultsRow = new ActionRowProperties()
-                .WithButton(context.Localize("artist.buttons.overview"),
+                .WithButton(context.Localize("shared.overview"),
                     $"{InteractionConstants.Artist.Overview}:{dbArtist.Id}:{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}",
                     style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("\ud83d\udcca"));
             response.ComponentsContainer.WithActionRow(noResultsRow);
@@ -905,7 +905,7 @@ public class ArtistBuilders
             response.ComponentsContainer.WithTextDisplay($"-# {footerLines}");
 
             var actionRow = new ActionRowProperties()
-                .WithButton(context.Localize("artist.buttons.overview"), overviewId,
+                .WithButton(context.Localize("shared.overview"), overviewId,
                     style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("\ud83d\udcca"));
             response.ComponentsContainer.WithActionRow(actionRow);
         }
@@ -1095,7 +1095,7 @@ public class ArtistBuilders
             response.ComponentsContainer.WithTextDisplay($"-# {footerLines}");
 
             var actionRow = new ActionRowProperties()
-                .WithButton(context.Localize("artist.buttons.overview"), overviewId,
+                .WithButton(context.Localize("shared.overview"), overviewId,
                     style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("\ud83d\udcca"));
             response.ComponentsContainer.WithActionRow(actionRow);
         }
@@ -1251,7 +1251,7 @@ public class ArtistBuilders
         {
             roleMenu = new RoleMenuProperties(
                     $"{InteractionConstants.ServerArtistsRolePicker}:{(int)guildListSettings.OrderType}:{guildListSettings.TimeDescription}")
-                .WithPlaceholder(context.Localize("server.roleFilterPlaceholder"))
+                .WithPlaceholder(context.Localize("shared.roleFilterPlaceholder"))
                 .WithMinValues(0)
                 .WithMaxValues(25);
         }
@@ -1283,7 +1283,7 @@ public class ArtistBuilders
             var pageFooter = $"-# {footerLabel} - {context.Localize("shared.pageCounter", ("page", (p.CurrentPageIndex + 1).ToString()), ("pages", pageDescriptions.Count.ToString()))}";
             if (roles != null && roles.Any())
             {
-                pageFooter += $"\n-# {context.LocalizeCount("server.roleFilterEnabled", roles.Count)}";
+                pageFooter += $"\n-# {context.LocalizeCount("shared.roleFilterEnabled", roles.Count)}";
             }
             if (footerHint != null)
             {
@@ -1331,7 +1331,7 @@ public class ArtistBuilders
         }
         else
         {
-            userTitle = context.Localize("artist.top.userRequestedBy",
+            userTitle = context.Localize("shared.requestedByTitle",
                 ("user", userSettings.UserNameLastFm),
                 ("requester", await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)));
         }
@@ -1462,7 +1462,7 @@ public class ArtistBuilders
             if (rnd == 1 && !topListSettings.Billboard && context.SelectMenu == null)
             {
                 footer.AppendLine();
-                footer.Append(context.Localize("artist.top.billboardHint"));
+                footer.Append(context.Localize("shared.billboardHint"));
             }
 
             pages.Add(new PageBuilder()
@@ -1870,7 +1870,7 @@ public class ArtistBuilders
         {
             var stolen = crownModel?.Stolen == true;
             response.Components = new ActionRowProperties()
-                .WithButton(context.Localize("artist.whoknows.buttons.crownHistory"),
+                .WithButton(context.Localize("shared.crownHistory"),
                     $"{InteractionConstants.Artist.Crown}:{cachedArtist.Id}:{stolen}",
                     style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("👑"));
         }
@@ -1924,7 +1924,7 @@ public class ArtistBuilders
         var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(context.DiscordGuild);
         if (rnd.Next(0, 10) == 1 && lastIndex < DateTime.UtcNow.AddDays(-180))
         {
-            footer.AppendLine(context.Localize("artist.whoknows.missingMembers",
+            footer.AppendLine(context.Localize("shared.whoknows.missingMembers",
                 ("command", $"{context.Prefix}refreshmembers")));
         }
 
@@ -1962,7 +1962,7 @@ public class ArtistBuilders
         if (artistSearch.LatestScrobble is { NowPlaying: false, TimePlayed: not null } &&
             artistSearch.LatestScrobble.TimePlayed < DateTime.UtcNow.AddHours(-2))
         {
-            footer.AppendLine(context.Localize("artist.whoknows.outOfSync",
+            footer.AppendLine(context.Localize("shared.outOfSyncHint",
                 ("command", $"{context.Prefix}outofsync")));
         }
 
@@ -2014,7 +2014,7 @@ public class ArtistBuilders
             {
                 var allowedRoles =
                     new RoleMenuProperties($"{InteractionConstants.WhoKnowsRolePicker}:{cachedArtist.Id}")
-                        .WithPlaceholder(context.Localize("artist.whoknows.roleFilterPlaceholder"))
+                        .WithPlaceholder(context.Localize("shared.roleFilterPlaceholder"))
                         .WithMinValues(0)
                         .WithMaxValues(25);
 
@@ -2212,7 +2212,7 @@ public class ArtistBuilders
 
         if (context.ContextUser.Friends?.Any() != true)
         {
-            response.Embed.WithDescription(context.Localize("artist.whoknows.noFriendsFound",
+            response.Embed.WithDescription(context.Localize("shared.whoknows.noFriends",
                 ("command", $"{context.Prefix}addfriends {Constants.UserMentionOrLfmUserNameExample.Replace("`", "")}")));
             response.CommandResponse = CommandResponse.NotFound;
             return response;
@@ -2293,7 +2293,7 @@ public class ArtistBuilders
             var globalPlaycount = usersWithArtist.Sum(a => a.Playcount);
             var avgPlaycount = usersWithArtist.Average(a => a.Playcount);
 
-            footer.AppendLine(context.Localize("artist.whoknows.friendsStats",
+            footer.AppendLine(context.Localize("shared.whoknows.friendsStats",
                 ("listeners", context.LocalizeCount("shared.listeners", globalListeners)),
                 ("plays", context.LocalizeCount("shared.plays", globalPlaycount)),
                 ("avg", ((int)avgPlaycount).Format(context.NumberFormat))));

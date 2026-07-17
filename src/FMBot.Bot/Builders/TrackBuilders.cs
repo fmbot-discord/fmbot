@@ -582,7 +582,7 @@ public class TrackBuilders
         if (mode == WhoKnowsResponseMode.Image)
         {
             using var image = await this._puppeteerService.GetWhoKnows("WhoKnows Track",
-                context.Localize("track.whoknows.imageInServer", ("server", context.DiscordGuild.Name)),
+                context.Localize("shared.whoknows.imageInServer", ("server", context.DiscordGuild.Name)),
                 albumCoverUrl, trackName,
                 filteredUsersWithTrack, context.ContextUser.UserId, PrivacyLevel.Server, context.NumberFormat);
 
@@ -611,7 +611,7 @@ public class TrackBuilders
         var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(context.DiscordGuild);
         if (rnd.Next(0, 10) == 1 && lastIndex < DateTime.UtcNow.AddDays(-180))
         {
-            footer.AppendLine(context.Localize("track.whoknows.missingMembers",
+            footer.AppendLine(context.Localize("shared.whoknows.missingMembers",
                 ("command", $"{context.Prefix}refreshmembers")));
         }
 
@@ -623,7 +623,7 @@ public class TrackBuilders
 
         if (filterDisabled)
         {
-            footer.AppendLine(context.Localize("track.whoknows.filtersDisabled"));
+            footer.AppendLine(context.Localize("shared.whoknows.filtersDisabled"));
         }
 
         if (filteredUsersWithTrack.Any() && filteredUsersWithTrack.Count > 1)
@@ -649,7 +649,7 @@ public class TrackBuilders
         if (track.LatestScrobble is { NowPlaying: false, TimePlayed: not null } &&
             track.LatestScrobble.TimePlayed < DateTime.UtcNow.AddHours(-2))
         {
-            footer.AppendLine(context.Localize("track.whoknows.outOfSync",
+            footer.AppendLine(context.Localize("shared.outOfSyncHint",
                 ("command", $"{context.Prefix}outofsync")));
         }
 
@@ -691,7 +691,7 @@ public class TrackBuilders
             if (PublicProperties.PremiumServers.ContainsKey(context.DiscordGuild.Id))
             {
                 var allowedRoles = new RoleMenuProperties($"{InteractionConstants.WhoKnowsTrackRolePicker}:{cachedTrack.Id}")
-                    .WithPlaceholder(context.Localize("track.whoknows.rolePickerPlaceholder"))
+                    .WithPlaceholder(context.Localize("shared.roleFilterPlaceholder"))
                     .WithMinValues(0)
                     .WithMaxValues(25);
 
@@ -718,7 +718,7 @@ public class TrackBuilders
 
         if (context.ContextUser.Friends?.Any() != true)
         {
-            response.Embed.WithDescription(context.Localize("track.whoknows.noFriends",
+            response.Embed.WithDescription(context.Localize("shared.whoknows.noFriends",
                 ("command", $"{context.Prefix}addfriends {Constants.UserMentionOrLfmUserNameExample.Replace("`", "")}")));
             response.CommandResponse = CommandResponse.NotFound;
             return response;
@@ -757,7 +757,7 @@ public class TrackBuilders
         if (mode == WhoKnowsResponseMode.Image)
         {
             using var image = await this._puppeteerService.GetWhoKnows("WhoKnows Track",
-                context.Localize("track.whoknows.imageFromFriends", ("user", userTitle)),
+                context.Localize("shared.whoknows.imageFromFriends", ("user", userTitle)),
                 albumCoverUrl, trackName,
                 usersWithTrack, context.ContextUser.UserId, PrivacyLevel.Server, context.NumberFormat);
 
@@ -786,7 +786,7 @@ public class TrackBuilders
             var globalPlaycount = usersWithTrack.Sum(a => a.Playcount);
             var avgPlaycount = usersWithTrack.Average(a => a.Playcount);
 
-            var friendsStats = context.Localize("track.whoknows.friendsStats",
+            var friendsStats = context.Localize("shared.whoknows.friendsStats",
                 ("listeners", context.LocalizeCount("shared.listeners", globalListeners)),
                 ("plays", context.LocalizeCount("shared.plays", globalPlaycount)),
                 ("avg", ((int)avgPlaycount).Format(context.NumberFormat)));
@@ -902,7 +902,7 @@ public class TrackBuilders
         if (settings.ResponseMode == WhoKnowsResponseMode.Image)
         {
             using var image = await this._puppeteerService.GetWhoKnows("WhoKnows Track",
-                context.Localize("track.whoknows.imageGlobal"),
+                context.Localize("shared.whoknows.imageGlobal"),
                 albumCoverUrl, trackName,
                 filteredUsersWithTrack, context.ContextUser.UserId, privacyLevel, context.NumberFormat,
                 hidePrivateUsers: settings.HidePrivateUsers);
@@ -1198,7 +1198,7 @@ public class TrackBuilders
 
         if (trackSearch.Track.Loved)
         {
-            container.WithTextDisplay($"### ❤️ Track already loved");
+            container.WithTextDisplay(context.Localize("track.love.alreadyLoved"));
             container.WithTextDisplay(trackDescription);
         }
         else
@@ -1208,12 +1208,12 @@ public class TrackBuilders
 
             if (trackLoved)
             {
-                container.WithTextDisplay($"### ❤️ Loved track for {userTitle}");
+                container.WithTextDisplay(context.Localize("track.love.lovedFor", ("user", userTitle)));
                 container.WithTextDisplay(trackDescription);
             }
             else
             {
-                response.Text = "Something went wrong while adding loved track.";
+                response.Text = context.Localize("track.love.error");
                 response.ResponseType = ResponseType.Text;
                 response.CommandResponse = CommandResponse.Error;
                 return response;
@@ -1249,7 +1249,7 @@ public class TrackBuilders
 
         if (!trackSearch.Track.Loved)
         {
-            container.WithTextDisplay($"### 💔 Track wasn't loved");
+            container.WithTextDisplay(context.Localize("track.love.wasntLoved"));
             container.WithTextDisplay(trackDescription);
         }
         else
@@ -1259,12 +1259,12 @@ public class TrackBuilders
 
             if (trackLoved)
             {
-                container.WithTextDisplay($"### 💔 Unloved track for {userTitle}");
+                container.WithTextDisplay(context.Localize("track.love.unlovedFor", ("user", userTitle)));
                 container.WithTextDisplay(trackDescription);
             }
             else
             {
-                response.Text = "Something went wrong while unloving track.";
+                response.Text = context.Localize("track.love.unloveError");
                 response.ResponseType = ResponseType.Text;
                 response.CommandResponse = CommandResponse.Error;
                 return response;
@@ -1305,9 +1305,9 @@ public class TrackBuilders
 
         if (!lovedTracks.Content.RecentTracks.Any())
         {
-            response.Embed.WithDescription(
-                $"The Last.fm user `{userSettings.UserNameLastFm}` has no loved tracks yet! \n" +
-                $"Use `{context.Prefix}love` to add tracks to your list.");
+            response.Embed.WithDescription(context.Localize("track.loved.noneYet",
+                ("user", userSettings.UserNameLastFm),
+                ("command", $"{context.Prefix}love")));
             response.CommandResponse = CommandResponse.NoScrobbles;
             response.ResponseType = ResponseType.Embed;
             return response;
@@ -1316,9 +1316,9 @@ public class TrackBuilders
         var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
         var title = !userSettings.DifferentUser
             ? userTitle
-            : $"{userSettings.UserNameLastFm}, requested by {userTitle}";
+            : context.Localize("track.userRequestedBy", ("name", userSettings.UserNameLastFm), ("user", userTitle));
 
-        response.EmbedAuthor.WithName($"Last loved tracks for {title}");
+        response.EmbedAuthor.WithName(context.Localize("track.loved.titleFor", ("user", title)));
         response.EmbedAuthor.WithUrl(lovedTracks.Content.UserRecentTracksUrl);
 
         if (!userSettings.DifferentUser)
@@ -1328,8 +1328,8 @@ public class TrackBuilders
 
         var firstTrack = lovedTracks.Content.RecentTracks[0];
 
-        var footer =
-            $"{userSettings.UserNameLastFm} has {lovedTracks.Content.TotalAmount.Format(context.NumberFormat)} loved tracks";
+        var footer = context.LocalizeCount("track.loved.footerCount", lovedTracks.Content.TotalAmount,
+            ("user", userSettings.UserNameLastFm));
         DateTime? timePlaying = null;
 
         if (!firstTrack.NowPlaying && firstTrack.TimePlayed.HasValue)
@@ -1339,7 +1339,7 @@ public class TrackBuilders
 
         if (timePlaying.HasValue)
         {
-            footer += " | Last loved track:";
+            footer += $" | {context.Localize("track.loved.lastLoved")}";
         }
 
         var lovedTrackPages = lovedTracks.Content.RecentTracks.ChunkBy(10);
@@ -1492,7 +1492,7 @@ public class TrackBuilders
         {
             roleMenu = new RoleMenuProperties(
                     $"{InteractionConstants.ServerTracksRolePicker}:{(int)guildListSettings.OrderType}:{guildListSettings.TimeDescription}:{guildListSettings.NewSearchValue}")
-                .WithPlaceholder(context.Localize("server.roleFilterPlaceholder"))
+                .WithPlaceholder(context.Localize("shared.roleFilterPlaceholder"))
                 .WithMinValues(0)
                 .WithMaxValues(25);
         }
@@ -1524,7 +1524,7 @@ public class TrackBuilders
             var pageFooter = $"-# {footerLabel} - {context.Localize("shared.pageCounter", ("page", (p.CurrentPageIndex + 1).ToString()), ("pages", pageDescriptions.Count.ToString()))}";
             if (roles != null && roles.Any())
             {
-                pageFooter += $"\n-# {context.LocalizeCount("server.roleFilterEnabled", roles.Count)}";
+                pageFooter += $"\n-# {context.LocalizeCount("shared.roleFilterEnabled", roles.Count)}";
             }
             if (footerHint != null)
             {
@@ -1729,7 +1729,7 @@ public class TrackBuilders
             if (rnd == 1 && !topListSettings.Billboard && context.SelectMenu == null)
             {
                 footer.AppendLine();
-                footer.Append(context.Localize("track.billboardHint"));
+                footer.Append(context.Localize("shared.billboardHint"));
             }
 
             pages.Add(new PageBuilder()
@@ -1823,7 +1823,7 @@ public class TrackBuilders
 
             response.ComponentsContainer.WithTextDisplay(
                 $"### {context.Prefix}scrobble\n" +
-                $"Scrobbles a track on Last.fm. You can search for a track, enter the exact name with separators, scrobble from a Discogs link, or scrobble along with another user.");
+                context.Localize("track.scrobble.helpDescription"));
             response.ComponentsContainer.WithSeparator();
             response.ComponentsContainer.WithTextDisplay(
                 $"`{context.Prefix}sb searchquery`\n" +
@@ -1843,15 +1843,14 @@ public class TrackBuilders
         if (commandExecutedCount > maxCount)
         {
             var reply = new StringBuilder();
-            reply.AppendLine("Please wait before scrobbling to Last.fm again.");
+            reply.AppendLine(context.Localize("track.scrobble.cooldown"));
 
             var globalWhoKnowsCount = await this._userService.GetCommandExecutedAmount(context.ContextUser.UserId,
                 "globalwhoknows", DateTime.UtcNow.AddHours(-3));
             if (globalWhoKnowsCount >= 1)
             {
                 reply.AppendLine();
-                reply.AppendLine(
-                    "Note that users who add fake scrobbles or scrobble from multiple sources at the same time might be subject to removal from Global WhoKnows.");
+                reply.AppendLine(context.Localize("track.scrobble.gwkWarning"));
             }
 
             response.Embed.WithDescription(reply.ToString());
@@ -1887,17 +1886,17 @@ public class TrackBuilders
         if (trackScrobbled.Success && trackScrobbled.Content.Accepted)
         {
             Statistics.LastfmScrobbles.Inc();
-            response.Embed.WithTitle($"Scrobbled track for {userTitle}");
+            response.Embed.WithTitle(context.Localize("track.scrobble.scrobbledFor", ("user", userTitle)));
             response.Embed.WithDescription(LastFmRepository.ResponseTrackToLinkedString(track.Track));
         }
         else if (trackScrobbled.Success && trackScrobbled.Content.Ignored)
         {
-            response.Embed.WithTitle($"Last.fm ignored scrobble for {userTitle}");
+            response.Embed.WithTitle(context.Localize("track.scrobble.ignoredFor", ("user", userTitle)));
             var description = new StringBuilder();
 
             if (!string.IsNullOrWhiteSpace(trackScrobbled.Content.IgnoreMessage))
             {
-                description.AppendLine($"Reason: {trackScrobbled.Content.IgnoreMessage}");
+                description.AppendLine(context.Localize("track.scrobble.ignoreReason", ("reason", trackScrobbled.Content.IgnoreMessage)));
             }
 
             description.AppendLine(LastFmRepository.ResponseTrackToLinkedString(track.Track));
@@ -1906,7 +1905,7 @@ public class TrackBuilders
         }
         else
         {
-            response.Embed.WithDescription("Something went wrong while scrobbling track.");
+            response.Embed.WithDescription(context.Localize("track.scrobble.error"));
             response.Embed.WithColor(DiscordConstants.WarningColorOrange);
             response.CommandResponse = CommandResponse.Error;
         }
