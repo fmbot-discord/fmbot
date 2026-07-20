@@ -65,11 +65,10 @@ public class FriendBuilders
         if (friends?.Any() != true)
         {
             response.ComponentsContainer.AddComponent(new TextDisplayProperties(
-                "We couldn't find any friends. To add friends:\n" +
-                $"`{context.Prefix}friendsadd {Constants.UserMentionOrLfmUserNameExample.Replace("`", "")}`\n\n" +
-                "Or right-click a user, go to apps and click 'Add as friend'.\n\n" +
-                "You can also sync your Last.fm friends — open **Manage** below."));
-            response.ComponentsContainer.AddComponent(FriendButtons());
+                context.Localize("friends.noFriendsFound",
+                    ("command", $"{context.Prefix}friendsadd {Constants.UserMentionOrLfmUserNameExample.Replace("`", "")}"),
+                    ("appCommand", "'Add as friend'"))));
+            response.ComponentsContainer.AddComponent(FriendButtons(context));
             response.CommandResponse = CommandResponse.NotFound;
             return response;
         }
@@ -81,25 +80,15 @@ public class FriendBuilders
         if (visibleFriends.Count == 0)
         {
             response.ComponentsContainer.AddComponent(new TextDisplayProperties(
-                $"You have **{friends.Count}** {StringExtensions.GetFriendsString(friends.Count)}, but none of them are set to show here.\n\n" +
-                "Use **Manage** below to choose who appears in your now playing list."));
-            response.ComponentsContainer.AddComponent(FriendButtons());
+                context.LocalizeCount("friends.noneVisible", friends.Count)));
+            response.ComponentsContainer.AddComponent(FriendButtons(context));
             return response;
         }
 
         var guild = await this._guildService.GetGuildForWhoKnows(context.DiscordGuild?.Id);
 
-        string title;
-        if (visibleFriends.Count > 1)
-        {
-            title = $"Now playing for {visibleFriends.Count} friends from ";
-        }
-        else
-        {
-            title = "Now playing for 1 friend from ";
-        }
-
-        title += await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
+        var title = context.LocalizeCount("friends.nowPlayingTitle", visibleFriends.Count,
+            ("user", await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)));
 
         var totalPlaycount = 0;
         var friendResult = new ConcurrentBag<FriendResult>();
@@ -162,11 +151,11 @@ public class FriendBuilders
             DateTime? timePlayed = null;
             if (!tracks.Success || tracks.Content == null)
             {
-                track = $"Friend could not be retrieved ({tracks.Error})";
+                track = context.Localize("friends.couldNotRetrieve", ("error", $"{tracks.Error}"));
             }
             else if (!tracks.Content.RecentTracks.Any())
             {
-                track = "No scrobbles found.";
+                track = context.Localize("errors.noScrobblesShort");
             }
             else
             {
@@ -180,7 +169,7 @@ public class FriendBuilders
                 else if (lastTrack.TimePlayed.HasValue)
                 {
                     timePlayed = lastTrack.TimePlayed.Value;
-                    track += $" ({StringExtensions.GetTimeAgoShortString(lastTrack.TimePlayed.Value)})";
+                    track += $" ({context.Localizer.TimeAgoShort(lastTrack.TimePlayed.Value)})";
                 }
 
                 Interlocked.Add(ref totalPlaycount, (int)tracks.Content.TotalAmount);
@@ -191,7 +180,7 @@ public class FriendBuilders
         }, maxDegreeOfParallelism: 8);
 
         var friendsFooter =
-            $"-# {totalPlaycount:0} total scrobbles - {friends.Count} total {StringExtensions.GetFriendsString(friends.Count)}";
+            $"-# {context.LocalizeCount("footer.totalScrobbles", totalPlaycount)} - {context.LocalizeCount("friends.totalFriends", friends.Count)}";
 
         var orderedFriends = friendResult
             .OrderByDescending(o => o.TimePlayed)
@@ -206,7 +195,7 @@ public class FriendBuilders
         {
             AddFriendsContent(response.ComponentsContainer, orderedFriends);
             response.ComponentsContainer.AddComponent(new ComponentSectionProperties(
-                new ButtonProperties(InteractionConstants.Friends.Overview, "Manage", ButtonStyle.Secondary))
+                new ButtonProperties(InteractionConstants.Friends.Overview, context.Localize("buttons.manage"), ButtonStyle.Secondary))
             {
                 Components =
                 [
@@ -252,7 +241,7 @@ public class FriendBuilders
                     emote: EmojiProperties.Custom(DiscordConstants.PagesPrevious))
                 .AddNextButton(p, style: ButtonStyle.Secondary,
                     emote: EmojiProperties.Custom(DiscordConstants.PagesNext))
-                .WithButton("Manage", customId: InteractionConstants.Friends.Overview,
+                .WithButton(context.Localize("buttons.manage"), customId: InteractionConstants.Friends.Overview,
                     style: ButtonStyle.Secondary));
 
             return new PageBuilder()
@@ -263,10 +252,10 @@ public class FriendBuilders
         }
     }
 
-    private static ActionRowProperties FriendButtons()
+    private static ActionRowProperties FriendButtons(ContextModel context)
     {
         return new ActionRowProperties()
-            .WithButton("Manage friends",
+            .WithButton(context.Localize("buttons.manageFriends"),
                 customId: InteractionConstants.Friends.Overview,
                 style: ButtonStyle.Secondary);
     }
@@ -284,20 +273,18 @@ public class FriendBuilders
         if (removing)
         {
             response.ComponentsContainer.AddComponent(new TextDisplayProperties(
-                "Please enter at least one friend to remove. For example:\n" +
-                $"`{context.Prefix}removefriend {Constants.UserMentionOrLfmUserNameExample.Replace("`", "")}`\n\n" +
-                "You can use Last.fm usernames, Discord mentions, or Discord IDs. Alternatively you can use the **Manage** button below."));
+                context.Localize("friends.removeInstructions",
+                    ("command", $"{context.Prefix}removefriend {Constants.UserMentionOrLfmUserNameExample.Replace("`", "")}"))));
         }
         else
         {
             response.ComponentsContainer.AddComponent(new TextDisplayProperties(
-                "Please enter at least one friend to add. For example:\n" +
-                $"`{context.Prefix}addfriend {Constants.UserMentionOrLfmUserNameExample.Replace("`", "")}`\n\n" +
-                "You can use Last.fm usernames, Discord mentions, or Discord IDs.\n\n" +
-                "Or right-click a user, go to apps and click 'Add as friend'. You can also sync your Last.fm friends with **Manage** button below."));
+                context.Localize("friends.addInstructions",
+                    ("command", $"{context.Prefix}addfriend {Constants.UserMentionOrLfmUserNameExample.Replace("`", "")}"),
+                    ("appCommand", "'Add as friend'"))));
         }
 
-        response.ComponentsContainer.AddComponent(FriendButtons());
+        response.ComponentsContainer.AddComponent(FriendButtons(context));
 
         return response;
     }
@@ -390,8 +377,7 @@ public class FriendBuilders
 
         if (addedFriendsList.Count > 0)
         {
-            body.AppendLine(
-                $"Successfully added {addedFriendsList.Count} {StringExtensions.GetFriendsString(addedFriendsList.Count)}:");
+            body.AppendLine(context.LocalizeCount("friends.addedFriends", addedFriendsList.Count));
             foreach (var addedFriend in addedFriendsList)
             {
                 body.AppendLine(
@@ -406,8 +392,7 @@ public class FriendBuilders
                 body.AppendLine();
             }
 
-            body.AppendLine(
-                $"Could not add {friendNotFoundList.Count} {StringExtensions.GetFriendsString(friendNotFoundList.Count)}. Ensure they are registered in .fmbot and their Last.fm is not set to private.");
+            body.AppendLine(context.LocalizeCount("friends.couldNotAdd", friendNotFoundList.Count));
             foreach (var notFoundFriend in friendNotFoundList)
             {
                 body.AppendLine($"- *[{notFoundFriend}]({LastfmUrlExtensions.GetUserUrl(notFoundFriend)})*");
@@ -421,8 +406,7 @@ public class FriendBuilders
                 body.AppendLine();
             }
 
-            body.AppendLine(
-                $"You are already friends with these users:");
+            body.AppendLine(context.Localize("friends.alreadyFriends"));
             foreach (var dupeFriend in duplicateFriendsList)
             {
                 body.AppendLine(
@@ -435,18 +419,18 @@ public class FriendBuilders
             response.ComponentsContainer.AddComponent(new TextDisplayProperties(body.ToString().TrimEnd()));
 
             var buttons = new ActionRowProperties()
-                .WithButton("Manage friends", customId: InteractionConstants.Friends.Overview,
+                .WithButton(context.Localize("buttons.manageFriends"), customId: InteractionConstants.Friends.Overview,
                     style: ButtonStyle.Secondary);
             if (addedFriendsList.Count == 1)
             {
-                buttons.WithButton("Change type",
+                buttons.WithButton(context.Localize("buttons.changeType"),
                     customId: $"{InteractionConstants.Friends.Manage}:{addedFriendsList[0].FriendId}:0:add",
                     style: ButtonStyle.Secondary);
             }
             else if (addedFriendsList.Count == 0 && duplicateFriendsList.Count == 1 &&
                      duplicateFriendsList[0].FriendId > 0)
             {
-                buttons.WithButton("Change type",
+                buttons.WithButton(context.Localize("buttons.changeType"),
                     customId: $"{InteractionConstants.Friends.Manage}:{duplicateFriendsList[0].FriendId}:0:add",
                     style: ButtonStyle.Secondary);
             }
@@ -464,7 +448,9 @@ public class FriendBuilders
             if (context.ContextUser.UserType == UserType.User)
             {
                 response.ComponentsContainer.AddComponent(new TextDisplayProperties(
-                    $"**Friend limit reached** — You can't have more than {Constants.MaxFriends} friends. Supporters can add up to {Constants.MaxFriendsSupporter}."));
+                    context.Localize("friends.limitReached",
+                        ("max", Constants.MaxFriends.ToString()),
+                        ("supporterMax", Constants.MaxFriendsSupporter.ToString()))));
                 response.Components = new ActionRowProperties().WithButton(Constants.GetSupporterButton,
                     style: ButtonStyle.Primary,
                     customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "friends-limit"));
@@ -472,7 +458,8 @@ public class FriendBuilders
             else
             {
                 response.ComponentsContainer.AddComponent(new TextDisplayProperties(
-                    $"**Friend limit reached** — You can't have more than {Constants.MaxFriendsSupporter} friends."));
+                    context.Localize("friends.limitReachedSupporter",
+                        ("max", Constants.MaxFriendsSupporter.ToString()))));
             }
         }
 
@@ -481,7 +468,9 @@ public class FriendBuilders
         {
             var userType = context.ContextUser.UserType.ToString().ToLower();
             response.ComponentsContainer.AddComponent(new TextDisplayProperties(
-                $"-# Thank you for being an .fmbot {userType}! You can add up to {Constants.MaxFriendsSupporter} friends."));
+                context.Localize("friends.thanksUserType",
+                    ("userType", userType),
+                    ("max", Constants.MaxFriendsSupporter.ToString()))));
         }
 
         response.ComponentsContainer.WithAccentColor(addedFriendsList.Count > 0
@@ -534,7 +523,7 @@ public class FriendBuilders
 
         if (removedFriendsList.Count > 0)
         {
-            body.AppendLine($"Successfully removed {removedFriendsList.Count} friend(s):");
+            body.AppendLine(context.LocalizeCount("friends.removedFriends", removedFriendsList.Count));
             foreach (var removedFriend in removedFriendsList)
             {
                 body.AppendLine($"- *[{removedFriend}]({LastfmUrlExtensions.GetUserUrl(removedFriend)})*");
@@ -548,7 +537,7 @@ public class FriendBuilders
                 body.AppendLine();
             }
 
-            body.AppendLine($"Could not remove {failedRemoveFriends.Count} friend(s):");
+            body.AppendLine(context.LocalizeCount("friends.couldNotRemove", failedRemoveFriends.Count));
             foreach (var failedRemovedFriend in failedRemoveFriends)
             {
                 body.AppendLine($"- *[{failedRemovedFriend}]({LastfmUrlExtensions.GetUserUrl(failedRemovedFriend)})*");
@@ -558,13 +547,13 @@ public class FriendBuilders
         if (removedFriendsList.Count == 0 && failedRemoveFriends.Count == 0)
         {
             body.AppendLine(contextCommand
-                ? "Could not find that user in your friend list."
-                : "Could not find any friends to remove. Please enter their Last.fm username, mention them or use their Discord id.");
+                ? context.Localize("friends.notInFriendList")
+                : context.Localize("friends.noneToRemove"));
         }
 
         response.ComponentsContainer.AddComponent(new TextDisplayProperties(body.ToString().TrimEnd()));
         response.ComponentsContainer.AddComponent(new ActionRowProperties()
-            .WithButton("Manage friends", customId: InteractionConstants.Friends.Overview,
+            .WithButton(context.Localize("buttons.manageFriends"), customId: InteractionConstants.Friends.Overview,
                 style: ButtonStyle.Secondary));
 
         return response;
@@ -579,7 +568,7 @@ public class FriendBuilders
 
         if (context.DiscordGuild != null)
         {
-            response.Embed.WithDescription("This command is only supported in DMs.");
+            response.Embed.WithDescription(context.Localize("friends.onlyInDms"));
             response.CommandResponse = CommandResponse.OnlySupportedInDm;
             response.ResponseType = ResponseType.Embed;
             return response;
@@ -589,13 +578,13 @@ public class FriendBuilders
 
         if (friended?.Any() != true)
         {
-            response.Embed.WithDescription("It doesn't seem like anyone's added you as a friend yet.");
+            response.Embed.WithDescription(context.Localize("friends.nobodyAddedYou"));
             response.CommandResponse = CommandResponse.NotFound;
             response.ResponseType = ResponseType.Embed;
             return response;
         }
 
-        response.EmbedAuthor.WithName("People who have added you as a friend in .fmbot");
+        response.EmbedAuthor.WithName(context.Localize("friends.friendedTitle"));
 
         var pages = new List<PageBuilder>();
 
@@ -616,7 +605,8 @@ public class FriendBuilders
             pages.Add(new PageBuilder()
                 .WithDescription(friendedPageString.ToString())
                 .WithAuthor(response.EmbedAuthor)
-                .WithFooter($"Page {pageCounter}/{friendedPages.Count} - {friended?.Count} users"));
+                .WithFooter(context.LocalizeCount("friends.friendedPageCounter", friended?.Count ?? 0,
+                    ("page", pageCounter.ToString()), ("pages", friendedPages.Count.ToString()))));
 
             pageCounter++;
         }
@@ -647,21 +637,24 @@ public class FriendBuilders
                 ? DiscordConstants.SuccessColorGreen
                 : DiscordConstants.WarningColorOrange);
 
-        var header = $"-# {friends.Count}/{totalCap} friends · {visibleCount}/{visibleCap} shown in now playing";
+        var header = context.Localize("friends.manageHeader",
+            ("friends", friends.Count.ToString()), ("max", totalCap.ToString()),
+            ("visible", visibleCount.ToString()), ("visibleMax", visibleCap.ToString()));
         if (isSupporter)
         {
-            header += $" · {closeCount}/{Constants.MaxCloseFriends} close friends";
+            header += $" · {context.Localize("friends.manageHeaderCloseFriends",
+                ("close", closeCount.ToString()), ("max", Constants.MaxCloseFriends.ToString()))}";
         }
 
         response.ComponentsContainer.AddComponent(new TextDisplayProperties(
-            "## 👥 Manage friends\n" + header));
+            context.Localize("friends.manageTitle") + "\n" + header));
 
         if (friends.Count == 0)
         {
             response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
             response.ComponentsContainer.AddComponent(new TextDisplayProperties(
-                "You don't have any friends yet. Add some with `addfriends`, or sync them from Last.fm below."));
-            AddLastFmSection(response, note);
+                context.Localize("friends.manageNoFriends", ("command", "addfriends"))));
+            AddLastFmSection(context, response, note);
             return response;
         }
 
@@ -731,22 +724,22 @@ public class FriendBuilders
             response.ComponentsContainer.AddComponent(navRow);
         }
 
-        AddLastFmSection(response, note);
+        AddLastFmSection(context, response, note);
 
         return response;
     }
 
-    private static void AddLastFmSection(ResponseModel response, string note)
+    private static void AddLastFmSection(ContextModel context, ResponseModel response, string note)
     {
         response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
 
-        var text = "**Sync Last.fm friends**";
+        var text = context.Localize("friends.syncSectionTitle");
         text += !string.IsNullOrWhiteSpace(note)
             ? $"\n{note}"
-            : "\n-# People you follow on Last.fm";
+            : $"\n{context.Localize("friends.syncSectionSubtitle")}";
 
         response.ComponentsContainer.AddComponent(new ComponentSectionProperties(
-            new ButtonProperties(InteractionConstants.Friends.Sync, "Sync", ButtonStyle.Secondary))
+            new ButtonProperties(InteractionConstants.Friends.Sync, context.Localize("buttons.sync"), ButtonStyle.Secondary))
         {
             Components =
             [
@@ -762,7 +755,7 @@ public class FriendBuilders
 
         if (friend == null)
         {
-            return "This friend could not be found.";
+            return context.Localize("friends.friendNotFound");
         }
 
         if (friend.FriendType == newType)
@@ -779,24 +772,27 @@ public class FriendBuilders
         {
             if (!isSupporter)
             {
-                return
-                    $"**Close friends are [a Supporter perk]({Constants.GetSupporterOverviewLink}).** They're always visible in WhoKnows no matter their rank, plus in `friendsfm`.";
+                return context.Localize("friends.closeFriendsSupporterPerk",
+                    ("url", Constants.GetSupporterOverviewLink));
             }
 
             if (closeCount >= Constants.MaxCloseFriends)
             {
-                return $"You can have at most **{Constants.MaxCloseFriends}** close friends. Change another close friend's type first.";
+                return context.Localize("friends.closeFriendLimit",
+                    ("max", Constants.MaxCloseFriends.ToString()));
             }
 
             if (visibleCount >= visibleCap)
             {
-                return $"You can show at most **{visibleCap}** friends in your `friendsfm`. Hide another friend first.";
+                return context.Localize("friends.visibleLimit", ("max", visibleCap.ToString()));
             }
         }
         else if (newType == FriendType.VisibleInNowPlaying && visibleCount >= visibleCap)
         {
-            var supporterHint = isSupporter ? "" : $" Supporters can show up to {Constants.MaxVisibleFriendsSupporter}.";
-            return $"You can show at most **{visibleCap}** friends in your `friendsfm`. Hide another friend first.{supporterHint}";
+            var supporterHint = isSupporter
+                ? ""
+                : $" {context.Localize("friends.visibleLimitSupporterHint", ("max", Constants.MaxVisibleFriendsSupporter.ToString()))}";
+            return $"{context.Localize("friends.visibleLimit", ("max", visibleCap.ToString()))}{supporterHint}";
         }
 
         await this._friendsService.SetFriendTypeAsync(friendId, newType);
@@ -810,13 +806,13 @@ public class FriendBuilders
 
         if (friend == null)
         {
-            return "This friend could not be found.";
+            return context.Localize("friends.friendNotFound");
         }
 
         var friendName = friend.FriendUser?.UserNameLastFM ?? friend.LastFMUserName;
         await this._friendsService.RemoveFriendByIdAsync(friendId);
 
-        return $"Removed **{friendName}** from your friends.";
+        return context.Localize("friends.removedFriend", ("name", friendName));
     }
 
     public async Task<(string Note, bool Success)> ApplyFriendTypeSelectionAsync(ContextModel context, int friendId,
@@ -827,7 +823,7 @@ public class FriendBuilders
 
         if (friend == null)
         {
-            return ("This friend could not be found.", false);
+            return (context.Localize("friends.friendNotFound"), false);
         }
 
         var friendName = friend.FriendUser?.UserNameLastFM ?? friend.LastFMUserName;
@@ -835,12 +831,12 @@ public class FriendBuilders
         if (selectedValue == "remove")
         {
             await this._friendsService.RemoveFriendByIdAsync(friendId);
-            return ($"Removed **{friendName}** from your friends.", true);
+            return (context.Localize("friends.removedFriend", ("name", friendName)), true);
         }
 
         if (!int.TryParse(selectedValue, out var typeValue) || !Enum.IsDefined(typeof(FriendType), typeValue))
         {
-            return ("This option could not be processed.", false);
+            return (context.Localize("friends.optionNotProcessed"), false);
         }
 
         var newType = (FriendType)typeValue;
@@ -850,7 +846,8 @@ public class FriendBuilders
             return (error, false);
         }
 
-        return ($"Set **{friendName}** to: {newType.GetAttribute<OptionAttribute>().Name}.", true);
+        return (context.Localize("friends.setFriendType",
+            ("name", friendName), ("type", newType.GetAttribute<OptionAttribute>().Name)), true);
     }
 
     public async Task<(string Note, bool Success)> SyncLastFmFriendsAsync(ContextModel context)
@@ -862,14 +859,14 @@ public class FriendBuilders
         var remainingSlots = totalCap - existingFriends.Count;
         if (remainingSlots <= 0)
         {
-            return ($"You've reached your friend limit of **{totalCap}**, so no Last.fm friends were synced.", false);
+            return (context.Localize("friends.syncLimitReached", ("max", totalCap.ToString())), false);
         }
 
         var friendsResponse = await this._dataSourceFactory.GetFriendsAsync(context.ContextUser.UserNameLastFM);
 
         if (!friendsResponse.Success || friendsResponse.Content?.Friends == null)
         {
-            return ("Last.fm returned an error while fetching your friends. Please try again later.", false);
+            return (context.Localize("friends.syncLastFmError"), false);
         }
 
         var existingNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -897,7 +894,7 @@ public class FriendBuilders
 
         if (toAdd.Count == 0)
         {
-            return ("No friends to add - none of your Last.fm friends use .fmbot, or you've already added the ones that do.", false);
+            return (context.Localize("friends.syncNoneToAdd"), false);
         }
 
         var capped = toAdd.Count > remainingSlots;
@@ -908,12 +905,10 @@ public class FriendBuilders
 
         var added = await this._friendsService.AddLastFmFriendsAsync(context.ContextUser, toAdd, registeredUserIds);
 
-        var note =
-            $"Added **{added}** {StringExtensions.GetFriendsString(added)} from Last.fm. " +
-            "Use ⚙️ to adjust their visibility.";
+        var note = context.LocalizeCount("friends.syncAdded", added);
         if (capped)
         {
-            note += $"\nSome friends weren't added because you reached your limit of **{totalCap}** friends.";
+            note += $"\n{context.Localize("friends.syncCapped", ("max", totalCap.ToString()))}";
         }
 
         return (note, true);
@@ -924,7 +919,7 @@ public class FriendBuilders
         var removed = await this._friendsService.RemoveSyncedLastFmFriendsAsync(context.ContextUser.UserId);
 
         return removed == 0
-            ? ("No synced Last.fm friends to remove.", false)
-            : ($"Removed **{removed}** synced Last.fm {StringExtensions.GetFriendsString(removed)}.", true);
+            ? (context.Localize("friends.syncNoneToRemove"), false)
+            : (context.LocalizeCount("friends.syncRemoved", removed), true);
     }
 }

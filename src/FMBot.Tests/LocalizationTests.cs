@@ -49,7 +49,9 @@ public class LocalizationTests
         "jumble.hints.typeArtistCharacter",
         "jumble.hints.typeAlbumArtistPerson", "jumble.hints.typeAlbumArtistGroup",
         "jumble.hints.typeAlbumArtistOrchestra", "jumble.hints.typeAlbumArtistChoir",
-        "jumble.hints.typeAlbumArtistCharacter"
+        "jumble.hints.typeAlbumArtistCharacter",
+        "pace.basedOnAlltimeSelf", "pace.basedOnAlltimeOther",
+        "pace.basedOnPeriodSelf", "pace.basedOnPeriodOther"
     ];
 
     private static readonly string[] DynamicPluralBaseKeys = [];
@@ -59,7 +61,8 @@ public class LocalizationTests
         ["AlbumBuilders.cs"] = 1,
         ["TrackBuilders.cs"] = 1,
         ["TemplateBuilders.cs"] = 1,
-        ["ContextModel.cs"] = 1
+        ["ContextModel.cs"] = 1,
+        ["PlayBuilders.cs"] = 2
     };
 
     private static IEnumerable<string> TemplateOptionKeys()

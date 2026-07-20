@@ -55,10 +55,12 @@ public class SpotifySlashCommands(
             string reply;
             string querystring;
 
+            var localizer = Localizer.ForGuild(this.Context.Interaction.GuildId, discordLocale: this.Context.Interaction.GuildLocale);
+
             RecentTrack currentTrack = null;
             if (searchValue != null)
             {
-                reply = $"Results for *`{StringExtensions.Sanitize(searchValue)}`*\n";
+                reply = $"{localizer.Translate("spotify.resultsFor", ("query", StringExtensions.Sanitize(searchValue)))}\n";
                 querystring = searchValue;
             }
             else
@@ -77,7 +79,7 @@ public class SpotifySlashCommands(
                 {
                     var errorResponse =
                         GenericEmbedService.RecentScrobbleCallFailedResponse(recentScrobbles,
-                            contextUser.UserNameLastFM, Localizer.ForGuild(this.Context.Interaction.GuildId, discordLocale: this.Context.Interaction.GuildLocale));
+                            contextUser.UserNameLastFM, localizer);
 
                     await this.Context.SendFollowUpResponse(this.Interactivity, errorResponse, userService);
                     await this.Context.LogCommandUsedAsync(errorResponse, userService);
@@ -188,7 +190,7 @@ public class SpotifySlashCommands(
             }
             else
             {
-                response.Text = $"Sorry, Spotify returned no results for *`{StringExtensions.Sanitize(querystring)}`*.";
+                response.Text = localizer.Translate("spotify.noResults", ("query", StringExtensions.Sanitize(querystring)));
                 response.CommandResponse = CommandResponse.NotFound;
                 await this.Context.SendFollowUpResponse(this.Interactivity, response, userService, true);
                 await this.Context.LogCommandUsedAsync(response, userService);

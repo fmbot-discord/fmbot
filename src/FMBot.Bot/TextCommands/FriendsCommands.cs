@@ -203,7 +203,11 @@ public class FriendsCommands(
         {
             await friendsService.RemoveAllFriendsAsync(userSettings.UserId);
 
-            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Removed all your friends." });
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
+            {
+                Content = Localizer.ForGuild(this.Context.Guild?.Id, discordLocale: this.Context.Guild?.PreferredLocale)
+                    .Translate("friends.removedAll")
+            });
             await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
         }
         catch (Exception e)

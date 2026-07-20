@@ -21,10 +21,10 @@ public class CurrentCrownHolderDto
 
 public enum CrownViewType
 {
-    [Option("Active crowns ordered by playcount")]
+    [Option("Active crowns ordered by playcount", localizationKey: "crown.viewPlaycount")]
     Playcount = 1,
-    [Option("Recently obtained crowns")]
+    [Option("Recently obtained crowns", localizationKey: "crown.viewRecent")]
     Recent = 2,
-    [Option("Recently stolen crowns")]
+    [Option("Recently stolen crowns", localizationKey: "crown.viewStolen")]
     Stolen = 3
 }

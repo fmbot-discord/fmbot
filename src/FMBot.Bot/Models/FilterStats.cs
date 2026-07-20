@@ -66,7 +66,7 @@ public class FilterStats
                 description.Append(' ');
             }
 
-            description.Append(localizer.TranslateCount("whoknows.roleFilterEnabled", this.Roles.Count));
+            description.Append(localizer.TranslateCount("shared.roleFilterEnabled", this.Roles.Count));
         }
 
         return description.Length > 0 ?

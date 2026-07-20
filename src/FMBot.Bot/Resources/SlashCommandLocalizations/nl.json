@@ -287,7 +287,7 @@
       "description": "Stel in of albumhoezen bewegen of altijd stilstaan"
     },
     "crown": {
-      "description": "Geschiedenis van een specifieke kroon",
+      "description": "Geschiedenis van een specifieke crown",
       "parameters": {
         "artist": {
           "description": "De artiest die je zoekt (standaard wat je nu speelt)"
@@ -295,13 +295,13 @@
       }
     },
     "crowns": {
-      "description": "Bekijk een lijst met kronen van jou of iemand anders",
+      "description": "Bekijk een lijst met crowns van jou of iemand anders",
       "parameters": {
         "user": {
           "description": "De gebruiker om te tonen (standaard jijzelf)"
         },
         "view": {
-          "description": "Weergave van kronen die je wilt zien"
+          "description": "Weergave van crowns die je wilt zien"
         }
       }
     },
@@ -1181,7 +1181,7 @@
           "description": "Het type reactie dat je wilt - wijzig de standaard met /responsemode"
         },
         "no-filter": {
-          "description": "Schakel serverfilters en kronen uit"
+          "description": "Schakel serverfilters en crowns uit"
         },
         "redirects": {
           "description": "Schakel Last.fm-artiestnaamredirects in of uit (standaard aan)"

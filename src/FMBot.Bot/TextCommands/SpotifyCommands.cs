@@ -113,7 +113,8 @@ public class SpotifyCommands(
                 var rnd = new Random();
                 if (rnd.Next(0, 2) == 1 && string.IsNullOrWhiteSpace(searchValue) && !await userService.HintShownBefore(userSettings.UserId, "spotify"))
                 {
-                    response.Text += $"\n-# *Tip: Search for other songs by simply adding the searchvalue behind {prfx}spotify.*";
+                    var localizer = Localizer.ForGuild(this.Context.Guild?.Id, discordLocale: this.Context.Guild?.PreferredLocale);
+                    response.Text += $"\n{localizer.Translate("spotify.hintTrack", ("command", $"{prfx}spotify"))}";
                     response.HintShown = true;
                 }
 
@@ -125,7 +126,8 @@ public class SpotifyCommands(
             }
             else
             {
-                response.Text = $"Sorry, Spotify returned no results for *`{StringExtensions.Sanitize(querystring)}`*.";
+                response.Text = Localizer.ForGuild(this.Context.Guild?.Id, discordLocale: this.Context.Guild?.PreferredLocale)
+                    .Translate("spotify.noResults", ("query", StringExtensions.Sanitize(querystring)));
                 response.CommandResponse = CommandResponse.NotFound;
             }
 
@@ -204,7 +206,8 @@ public class SpotifyCommands(
                 var rnd = new Random();
                 if (rnd.Next(0, 8) == 1 && string.IsNullOrWhiteSpace(searchValue) && !await userService.HintShownBefore(userSettings.UserId, "spotifyalbum"))
                 {
-                    response.Text += $"\n-# *Tip: Search for other albums by simply adding the searchvalue behind `{prfx}spotifyalbum` (or `.fmspab`).*";
+                    var localizer = Localizer.ForGuild(this.Context.Guild?.Id, discordLocale: this.Context.Guild?.PreferredLocale);
+                    response.Text += $"\n{localizer.Translate("spotify.hintAlbum", ("command", $"{prfx}spotifyalbum"), ("commandAlt", ".fmspab"))}";
                     response.HintShown = true;
                 }
 
@@ -216,7 +219,8 @@ public class SpotifyCommands(
             }
             else
             {
-                response.Text = $"Sorry, Spotify returned no results for *`{StringExtensions.Sanitize(querystring)}`*.";
+                response.Text = Localizer.ForGuild(this.Context.Guild?.Id, discordLocale: this.Context.Guild?.PreferredLocale)
+                    .Translate("spotify.noResults", ("query", StringExtensions.Sanitize(querystring)));
                 response.CommandResponse = CommandResponse.NotFound;
             }
 
@@ -298,7 +302,8 @@ public class SpotifyCommands(
                 var rnd = new Random();
                 if (rnd.Next(0, 8) == 1 && string.IsNullOrWhiteSpace(searchValue) && !await userService.HintShownBefore(userSettings.UserId, "spotifyartist"))
                 {
-                    response.Text += $"\n-# *Tip: Search for other artists by simply adding the searchvalue behind `{prfx}spotifyartist` (or `{prfx}spa`).*";
+                    var localizer = Localizer.ForGuild(this.Context.Guild?.Id, discordLocale: this.Context.Guild?.PreferredLocale);
+                    response.Text += $"\n{localizer.Translate("spotify.hintArtist", ("command", $"{prfx}spotifyartist"), ("commandAlt", $"{prfx}spa"))}";
                     response.HintShown = true;
                 }
 
@@ -306,7 +311,8 @@ public class SpotifyCommands(
             }
             else
             {
-                response.Text = $"Sorry, Spotify returned no results for *`{StringExtensions.Sanitize(querystring)}`*.";
+                response.Text = Localizer.ForGuild(this.Context.Guild?.Id, discordLocale: this.Context.Guild?.PreferredLocale)
+                    .Translate("spotify.noResults", ("query", StringExtensions.Sanitize(querystring)));
                 response.CommandResponse = CommandResponse.NotFound;
             }
 

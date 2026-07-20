@@ -150,7 +150,7 @@ public class UserBuilder
         if (this._timer.CurrentFeatured == null)
         {
             response.ResponseType = ResponseType.Text;
-            response.Text = ".fmbot is still starting up, please try again in a bit..";
+            response.Text = context.Localize("featured.startingUp");
             response.CommandResponse = CommandResponse.Cooldown;
             return response;
         }
@@ -198,14 +198,14 @@ public class UserBuilder
 
                 container.WithSeparator();
                 container.WithTextDisplay(guildUser.DiscordUserId == context.DiscordUser.Id
-                    ? $"🥳 Congratulations, it's you! You'll be featured until <t:{dateValue}:t>."
-                    : $"🥳 Congratulations! This user is in this server as **{StringExtensions.Sanitize(guildUser.UserName)}**.");
+                    ? context.Localize("featured.congratsSelf", ("time", $"<t:{dateValue}:t>"))
+                    : context.Localize("featured.congratsUser", ("user", StringExtensions.Sanitize(guildUser.UserName))));
             }
         }
         else
         {
             container.WithSeparator();
-            container.WithTextDisplay($"-# View your featured history with '{context.Prefix}featuredlog'");
+            container.WithTextDisplay($"-# {context.Localize("featured.viewHistoryHint", ("command", $"{context.Prefix}featuredlog"))}");
         }
 
         response.ReferencedMusic = new ReferencedMusic
@@ -229,7 +229,7 @@ public class UserBuilder
         if (PublicProperties.IssuesAtLastFm)
         {
             container.WithSeparator();
-            container.WithTextDisplay("⚠️ **Note:** [Last.fm](https://twitter.com/lastfmstatus) is currently experiencing issues");
+            container.WithTextDisplay(context.Localize("errors.lastFmExperiencingIssues"));
         }
 
         response.ComponentsContainer = container;
@@ -872,39 +872,40 @@ public class UserBuilder
         switch (view)
         {
             case FeaturedView.Global:
-                title = "🌐 Global featured history";
+                title = context.Localize("featured.log.globalTitle");
                 featuredHistory = await this._featuredService.GetGlobalFeaturedHistory();
                 break;
             case FeaturedView.Server:
                 title = context.DiscordGuild != null
-                    ? $"Members of {StringExtensions.Sanitize(context.DiscordGuild.Name)} featured globally"
-                    : "Members featured globally";
+                    ? context.Localize("featured.log.membersTitle", ("server", StringExtensions.Sanitize(context.DiscordGuild.Name)))
+                    : context.Localize("featured.log.membersTitleNoGuild");
                 featuredHistory = await this._featuredService.GetFeaturedHistoryForGuild(guildUsers);
                 break;
             case FeaturedView.Friends:
                 featuredHistory = await this._featuredService.GetFeaturedHistoryForFriends(context.ContextUser.UserId);
-                title = $"{userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}'s friends featured history";
+                title = context.Localize("featured.log.friendsTitle",
+                    ("user", $"{userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}"));
                 break;
             case FeaturedView.GuildFeatured:
                 title = context.DiscordGuild != null
-                    ? $"{StringExtensions.Sanitize(context.DiscordGuild.Name)}'s server featured history"
-                    : "Server featured history";
+                    ? context.Localize("featured.log.serverTitle", ("server", StringExtensions.Sanitize(context.DiscordGuild.Name)))
+                    : context.Localize("featured.log.serverTitleNoGuild");
                 featuredHistory = dbGuild != null
                     ? await this._featuredService.GetGuildFeaturedHistory(dbGuild.GuildId)
                     : [];
                 break;
             case FeaturedView.GuildFeaturedUser:
-                title = $"{userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}'s server featured history";
+                title = context.Localize("featured.log.serverUserTitle",
+                    ("user", $"{userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}"));
                 featuredHistory = dbGuild != null
                     ? await this._featuredService.GetGuildFeaturedHistoryForUser(dbGuild.GuildId, userSettings.UserId)
                     : [];
 
                 if (featuredHistory.Count >= 1)
                 {
-                    var guildSelf = userSettings.DifferentUser ? "They" : "You";
-                    footer.AppendLine(featuredHistory.Count == 1
-                        ? $"-# {guildSelf} have been server featured once"
-                        : $"-# {guildSelf} have been server featured {featuredHistory.Count} times");
+                    footer.AppendLine(userSettings.DifferentUser
+                        ? $"-# {context.LocalizeCount("featured.log.serverFeaturedOther", featuredHistory.Count)}"
+                        : $"-# {context.LocalizeCount("featured.log.serverFeaturedSelf", featuredHistory.Count)}");
                 }
 
                 break;
@@ -912,15 +913,14 @@ public class UserBuilder
                 featuredHistory =
                     await this._featuredService.GetFeaturedHistoryForUser(userSettings.UserId,
                         userSettings.UserNameLastFm);
-                title = $"{userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}'s featured history";
-
-                var self = userSettings.DifferentUser ? "They" : "You";
+                title = context.Localize("featured.log.userTitle",
+                    ("user", $"{userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}"));
 
                 if (featuredHistory.Count >= 1)
                 {
-                    footer.AppendLine(featuredHistory.Count == 1
-                        ? $"-# {self} have only been featured once. Every hour, that is a chance of 1 in {odds}!"
-                        : $"-# {self} have been featured {featuredHistory.Count} times");
+                    footer.AppendLine(userSettings.DifferentUser
+                        ? $"-# {context.LocalizeCount("featured.log.featuredCountOther", featuredHistory.Count, ("odds", odds.Format(context.NumberFormat)))}"
+                        : $"-# {context.LocalizeCount("featured.log.featuredCountSelf", featuredHistory.Count, ("odds", odds.Format(context.NumberFormat)))}");
                 }
 
                 break;
@@ -934,13 +934,12 @@ public class UserBuilder
         {
             if (SupporterService.IsSupporter(context.ContextUser.UserType))
             {
-                footer.AppendLine(
-                    "-# As a thank you for supporting, you have better odds every first Sunday of the month.");
+                footer.AppendLine($"-# {context.Localize("featured.log.supporterOdds")}");
             }
             else
             {
                 footer.AppendLine(
-                    $"-# Every first Sunday of the month is Supporter Sunday (in {nextSupporterSunday} {StringExtensions.GetDaysString(nextSupporterSunday)}). Check '{context.Prefix}getsupporter' for info.");
+                    $"-# {context.LocalizeCount("featured.log.supporterSundayIn", nextSupporterSunday, ("command", $"{context.Prefix}getsupporter"))}");
             }
         }
 
@@ -949,7 +948,7 @@ public class UserBuilder
             .ToList();
 
         var viewType = new StringMenuProperties(InteractionConstants.FeaturedLog)
-            .WithPlaceholder("Select featured view")
+            .WithPlaceholder(context.Localize("featured.log.selectViewPlaceholder"))
             .WithMinValues(1)
             .WithMaxValues(1);
 
@@ -973,9 +972,11 @@ public class UserBuilder
                 continue;
             }
 
-            viewType.AddOption(new StringMenuSelectOptionProperties(optionAttribute.Name, value)
+            viewType.AddOption(new StringMenuSelectOptionProperties(context.LocalizeOption(option), value)
             {
-                Description = optionAttribute.Description,
+                Description = option is FeaturedView.GuildFeatured or FeaturedView.GuildFeaturedUser
+                    ? context.Localize("featured.log.viewDescServer")
+                    : context.Localize("featured.log.viewDescGlobal"),
                 Default = active
             });
         }
@@ -1001,69 +1002,61 @@ public class UserBuilder
                 switch (view)
                 {
                     case FeaturedView.Global:
-                        description.AppendLine(
-                            "Sorry, nobody has been featured yet.. that is quite strange now that I'm thinking about it 🤨🤨");
+                        description.AppendLine(context.Localize("featured.log.emptyGlobal"));
                         break;
                     case FeaturedView.Server:
-                        description.AppendLine("Sorry, nobody in this server has been featured yet..");
+                        description.AppendLine(context.Localize("featured.log.emptyServer"));
                         break;
                     case FeaturedView.Friends:
-                        description.AppendLine("Sorry, none of your friends have been featured yet..");
+                        description.AppendLine(context.Localize("featured.log.emptyFriends"));
                         break;
                     case FeaturedView.GuildFeatured:
-                        description.AppendLine("This server doesn't have any custom featureds yet..");
+                        description.AppendLine(context.Localize("featured.log.emptyGuildFeatured"));
                         description.AppendLine();
-                        description.AppendLine(
-                            "Server featured is a premium server feature where the bot regularly features someone from this server. Server admins can configure it with `.botbranding`.");
+                        description.AppendLine(context.Localize("featured.log.guildFeaturedExplainer", ("command", ".botbranding")));
                         break;
                     case FeaturedView.GuildFeaturedUser:
                         description.AppendLine(userSettings.DifferentUser
-                            ? "Sorry, they haven't been server featured yet.."
-                            : "Sorry, you haven't been server featured yet..");
+                            ? context.Localize("featured.log.emptyGuildUserOther")
+                            : context.Localize("featured.log.emptyGuildUserSelf"));
                         description.AppendLine();
 
                         var frequencyHours = (int)(dbGuild?.FeaturedFrequency ?? GuildFeaturedFrequency.Hourly);
-                        description.AppendLine(frequencyHours == 1
-                            ? "This server's featured rotates every hour, and every rotation is a chance to get picked. Check back later!"
-                            : $"This server's featured rotates every {frequencyHours} hours, and every rotation is a chance to get picked. Check back later!");
+                        description.AppendLine(context.LocalizeCount("featured.log.rotates", frequencyHours));
                         break;
                     case FeaturedView.User:
                     {
                         if (!userSettings.DifferentUser)
                         {
-                            description.AppendLine("Sorry, you haven't been featured yet... <:404:882220605783560222>");
+                            description.AppendLine(context.Localize("featured.log.emptyUserSelf", ("emote", "<:404:882220605783560222>")));
                             description.AppendLine();
-                            description.AppendLine("But don't give up hope just yet!");
-                            description.AppendLine(
-                                $"Every hour there is a 1 in {odds.Format(context.NumberFormat)} chance that you might be picked.");
+                            description.AppendLine(context.Localize("featured.log.dontGiveUpSelf"));
+                            description.AppendLine(context.Localize("featured.log.hourlyChanceSelf", ("odds", odds.Format(context.NumberFormat))));
 
                             if (context.DiscordGuild?.Id != this._botSettings.Bot.BaseServerId)
                             {
                                 description.AppendLine();
-                                description.AppendLine(
-                                    "Join [our server](https://discord.gg/6y3jJjtDqK) to get pinged if you get featured.");
+                                description.AppendLine(context.Localize("featured.log.joinServerPing"));
                             }
 
                             if (SupporterService.IsSupporter(context.ContextUser.UserType))
                             {
                                 description.AppendLine();
-                                description.AppendLine(
-                                    $"Also, as a thank you for being a supporter you have a higher chance of becoming featured every first Sunday of the month on Supporter Sunday. The next one is in {nextSupporterSunday} {StringExtensions.GetDaysString(nextSupporterSunday)}.");
+                                description.AppendLine(context.LocalizeCount("featured.log.supporterSundayThanks", nextSupporterSunday));
                             }
                             else
                             {
                                 description.AppendLine();
-                                description.AppendLine(
-                                    $"Become an [.fmbot supporter]({Constants.GetSupporterDiscordLink}) and get a higher chance every Supporter Sunday. The next Supporter Sunday is in {nextSupporterSunday} {StringExtensions.GetDaysString(nextSupporterSunday)} (first Sunday of each month).");
+                                description.AppendLine(context.LocalizeCount("featured.log.becomeSupporter", nextSupporterSunday,
+                                    ("url", Constants.GetSupporterDiscordLink)));
                             }
                         }
                         else
                         {
-                            description.AppendLine("Hmm, they haven't been featured yet... <:404:882220605783560222>");
+                            description.AppendLine(context.Localize("featured.log.emptyUserOther", ("emote", "<:404:882220605783560222>")));
                             description.AppendLine();
-                            description.AppendLine("But don't let them give up hope just yet!");
-                            description.AppendLine(
-                                $"Every hour there is a 1 in {odds.Format(context.NumberFormat)} chance that they might be picked.");
+                            description.AppendLine(context.Localize("featured.log.dontGiveUpOther"));
+                            description.AppendLine(context.Localize("featured.log.hourlyChanceOther", ("odds", odds.Format(context.NumberFormat))));
                         }
 
                         break;
@@ -1115,8 +1108,8 @@ public class UserBuilder
                 container.WithSeparator();
 
                 var pageFooter = new StringBuilder();
-                pageFooter.Append($"-# Page {p.CurrentPageIndex + 1}/{featuredPages.Count.Format(context.NumberFormat)}");
-                pageFooter.Append($" - {featuredHistory.Count.Format(context.NumberFormat)} total");
+                pageFooter.Append($"-# {context.Localize("shared.pageCounter", ("page", (p.CurrentPageIndex + 1).ToString()), ("pages", featuredPages.Count.Format(context.NumberFormat)))}");
+                pageFooter.Append($" - {context.LocalizeCount("featured.log.totalCount", featuredHistory.Count)}");
 
                 if (footer.Length > 0)
                 {

@@ -287,7 +287,7 @@
       "description": "Configura si las portadas se animan o se muestran siempre estáticas"
     },
     "crown": {
-      "description": "Historial de una corona concreta",
+      "description": "Historial de una crown concreta",
       "parameters": {
         "artist": {
           "description": "El artista que quieres buscar (por defecto, lo que estás escuchando)"
@@ -295,13 +295,13 @@
       }
     },
     "crowns": {
-      "description": "Ver una lista de tus coronas o las de otra persona",
+      "description": "Ver una lista de tus crowns o las de otra persona",
       "parameters": {
         "user": {
           "description": "El usuario a mostrar (por defecto, tú)"
         },
         "view": {
-          "description": "Vista de coronas que quieres ver"
+          "description": "Vista de crowns que quieres ver"
         }
       }
     },
@@ -1181,7 +1181,7 @@
           "description": "Tipo de respuesta que quieres - cambia el predeterminado con /responsemode"
         },
         "no-filter": {
-          "description": "Desactivar los filtros del servidor y las coronas"
+          "description": "Desactivar los filtros del servidor y las crowns"
         },
         "redirects": {
           "description": "Alternar redirecciones de nombres de artista de Last.fm (activadas por defecto)"

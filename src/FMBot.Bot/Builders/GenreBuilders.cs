@@ -360,7 +360,7 @@ public class GenreBuilders
         }
         if (rnd == 1 && !topListSettings.Billboard && context.SelectMenu == null)
         {
-            footerBase.Append($" · {context.Localize("artist.top.billboardHint")}");
+            footerBase.Append($" · {context.Localize("shared.billboardHint")}");
         }
 
         var footerBaseText = footerBase.ToString();
@@ -1100,7 +1100,7 @@ public class GenreBuilders
 
         if (context.ContextUser.Friends?.Any() != true)
         {
-            response.ComponentsContainer.WithTextDisplay(context.Localize("artist.whoknows.noFriendsFound",
+            response.ComponentsContainer.WithTextDisplay(context.Localize("shared.whoknows.noFriends",
                 ("command", $"{context.Prefix}addfriends {Constants.UserMentionOrLfmUserNameExample.Replace("`", "")}")));
             response.CommandResponse = CommandResponse.NotFound;
             return response;

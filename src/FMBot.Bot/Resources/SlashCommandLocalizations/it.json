@@ -287,7 +287,7 @@
       "description": "Imposta se le copertine degli album sono animate o sempre statiche"
     },
     "crown": {
-      "description": "Cronologia di una corona specifica",
+      "description": "Cronologia di una crown specifica",
       "parameters": {
         "artist": {
           "description": "L'artista da cercare (predefinito: in riproduzione)"
@@ -295,13 +295,13 @@
       }
     },
     "crowns": {
-      "description": "Vedi la lista delle corone tue o di qualcun altro",
+      "description": "Vedi la lista delle crown tue o di qualcun altro",
       "parameters": {
         "user": {
           "description": "L'utente da mostrare (predefinito: te stesso)"
         },
         "view": {
-          "description": "Vista delle corone che vuoi vedere"
+          "description": "Vista delle crown che vuoi vedere"
         }
       }
     },
@@ -1181,7 +1181,7 @@
           "description": "Il tipo di risposta che vuoi - cambia il predefinito con /responsemode"
         },
         "no-filter": {
-          "description": "Disattiva i filtri del server e le corone"
+          "description": "Disattiva i filtri del server e le crown"
         },
         "redirects": {
           "description": "Attiva o disattiva i redirect dei nomi artista di Last.fm (predefinito: attivi)"

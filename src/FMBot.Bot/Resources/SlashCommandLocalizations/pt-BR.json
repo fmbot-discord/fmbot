@@ -287,7 +287,7 @@
       "description": "Define se as capas de álbum são animadas ou sempre estáticas"
     },
     "crown": {
-      "description": "Histórico de uma coroa específica",
+      "description": "Histórico de uma crown específica",
       "parameters": {
         "artist": {
           "description": "O artista a buscar (padrão: o que está tocando)"
@@ -295,13 +295,13 @@
       }
     },
     "crowns": {
-      "description": "Veja a lista de coroas suas ou de outra pessoa",
+      "description": "Veja a lista de crowns suas ou de outra pessoa",
       "parameters": {
         "user": {
           "description": "O usuário a mostrar (padrão: você)"
         },
         "view": {
-          "description": "Visualização de coroas que você quer ver"
+          "description": "Visualização de crowns que você quer ver"
         }
       }
     },
@@ -1181,7 +1181,7 @@
           "description": "O tipo de resposta que você quer - mude o padrão com /responsemode"
         },
         "no-filter": {
-          "description": "Desativar filtros do servidor e coroas"
+          "description": "Desativar filtros do servidor e crowns"
         },
         "redirects": {
           "description": "Ativa/desativa redirecionamentos de nome de artista do Last.fm (padrão: ativado)"

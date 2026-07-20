@@ -437,10 +437,10 @@ public class ArtistBuilders
 
         var viewingUserId = userSettings.DiscordUserId;
         var navRow = new ActionRowProperties()
-            .WithButton(context.Localize("artist.buttons.overview"),
+            .WithButton(context.Localize("shared.overview"),
                 $"{InteractionConstants.Artist.Overview}:{fullArtist.Id}:{viewingUserId}:{context.ContextUser.DiscordUserId}",
                 style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("\ud83d\udcca"))
-            .WithButton(context.Localize("artist.buttons.tracks"),
+            .WithButton(context.Localize("shared.buttons.tracks"),
                 $"{InteractionConstants.Artist.Tracks}:{fullArtist.Id}:{viewingUserId}:{context.ContextUser.DiscordUserId}:",
                 style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("\ud83c\udfb6"))
             .WithButton(context.Localize("artist.buttons.albums"),
@@ -824,7 +824,7 @@ public class ArtistBuilders
                 ("artist", StringExtensions.Sanitize(artistSearch.Artist.ArtistName))));
 
             var noResultsRow = new ActionRowProperties()
-                .WithButton(context.Localize("artist.buttons.overview"),
+                .WithButton(context.Localize("shared.overview"),
                     $"{InteractionConstants.Artist.Overview}:{dbArtist.Id}:{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}",
                     style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("\ud83d\udcca"));
             response.ComponentsContainer.WithActionRow(noResultsRow);
@@ -905,7 +905,7 @@ public class ArtistBuilders
             response.ComponentsContainer.WithTextDisplay($"-# {footerLines}");
 
             var actionRow = new ActionRowProperties()
-                .WithButton(context.Localize("artist.buttons.overview"), overviewId,
+                .WithButton(context.Localize("shared.overview"), overviewId,
                     style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("\ud83d\udcca"));
             response.ComponentsContainer.WithActionRow(actionRow);
         }
@@ -1095,7 +1095,7 @@ public class ArtistBuilders
             response.ComponentsContainer.WithTextDisplay($"-# {footerLines}");
 
             var actionRow = new ActionRowProperties()
-                .WithButton(context.Localize("artist.buttons.overview"), overviewId,
+                .WithButton(context.Localize("shared.overview"), overviewId,
                     style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("\ud83d\udcca"));
             response.ComponentsContainer.WithActionRow(actionRow);
         }
@@ -1251,7 +1251,7 @@ public class ArtistBuilders
         {
             roleMenu = new RoleMenuProperties(
                     $"{InteractionConstants.ServerArtistsRolePicker}:{(int)guildListSettings.OrderType}:{guildListSettings.TimeDescription}")
-                .WithPlaceholder(context.Localize("server.roleFilterPlaceholder"))
+                .WithPlaceholder(context.Localize("shared.roleFilterPlaceholder"))
                 .WithMinValues(0)
                 .WithMaxValues(25);
         }
@@ -1283,7 +1283,7 @@ public class ArtistBuilders
             var pageFooter = $"-# {footerLabel} - {context.Localize("shared.pageCounter", ("page", (p.CurrentPageIndex + 1).ToString()), ("pages", pageDescriptions.Count.ToString()))}";
             if (roles != null && roles.Any())
             {
-                pageFooter += $"\n-# {context.LocalizeCount("server.roleFilterEnabled", roles.Count)}";
+                pageFooter += $"\n-# {context.LocalizeCount("shared.roleFilterEnabled", roles.Count)}";
             }
             if (footerHint != null)
             {
@@ -1331,7 +1331,7 @@ public class ArtistBuilders
         }
         else
         {
-            userTitle = context.Localize("artist.top.userRequestedBy",
+            userTitle = context.Localize("shared.requestedByTitle",
                 ("user", userSettings.UserNameLastFm),
                 ("requester", await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)));
         }
@@ -1462,7 +1462,7 @@ public class ArtistBuilders
             if (rnd == 1 && !topListSettings.Billboard && context.SelectMenu == null)
             {
                 footer.AppendLine();
-                footer.Append(context.Localize("artist.top.billboardHint"));
+                footer.Append(context.Localize("shared.billboardHint"));
             }
 
             pages.Add(new PageBuilder()
@@ -1870,7 +1870,7 @@ public class ArtistBuilders
         {
             var stolen = crownModel?.Stolen == true;
             response.Components = new ActionRowProperties()
-                .WithButton(context.Localize("artist.whoknows.buttons.crownHistory"),
+                .WithButton(context.Localize("shared.crownHistory"),
                     $"{InteractionConstants.Artist.Crown}:{cachedArtist.Id}:{stolen}",
                     style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("👑"));
         }
@@ -1924,7 +1924,7 @@ public class ArtistBuilders
         var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(context.DiscordGuild);
         if (rnd.Next(0, 10) == 1 && lastIndex < DateTime.UtcNow.AddDays(-180))
         {
-            footer.AppendLine(context.Localize("artist.whoknows.missingMembers",
+            footer.AppendLine(context.Localize("shared.whoknows.missingMembers",
                 ("command", $"{context.Prefix}refreshmembers")));
         }
 
@@ -1962,7 +1962,7 @@ public class ArtistBuilders
         if (artistSearch.LatestScrobble is { NowPlaying: false, TimePlayed: not null } &&
             artistSearch.LatestScrobble.TimePlayed < DateTime.UtcNow.AddHours(-2))
         {
-            footer.AppendLine(context.Localize("artist.whoknows.outOfSync",
+            footer.AppendLine(context.Localize("shared.outOfSyncHint",
                 ("command", $"{context.Prefix}outofsync")));
         }
 
@@ -2014,7 +2014,7 @@ public class ArtistBuilders
             {
                 var allowedRoles =
                     new RoleMenuProperties($"{InteractionConstants.WhoKnowsRolePicker}:{cachedArtist.Id}")
-                        .WithPlaceholder(context.Localize("artist.whoknows.roleFilterPlaceholder"))
+                        .WithPlaceholder(context.Localize("shared.roleFilterPlaceholder"))
                         .WithMinValues(0)
                         .WithMaxValues(25);
 
@@ -2212,7 +2212,7 @@ public class ArtistBuilders
 
         if (context.ContextUser.Friends?.Any() != true)
         {
-            response.Embed.WithDescription(context.Localize("artist.whoknows.noFriendsFound",
+            response.Embed.WithDescription(context.Localize("shared.whoknows.noFriends",
                 ("command", $"{context.Prefix}addfriends {Constants.UserMentionOrLfmUserNameExample.Replace("`", "")}")));
             response.CommandResponse = CommandResponse.NotFound;
             return response;
@@ -2293,7 +2293,7 @@ public class ArtistBuilders
             var globalPlaycount = usersWithArtist.Sum(a => a.Playcount);
             var avgPlaycount = usersWithArtist.Average(a => a.Playcount);
 
-            footer.AppendLine(context.Localize("artist.whoknows.friendsStats",
+            footer.AppendLine(context.Localize("shared.whoknows.friendsStats",
                 ("listeners", context.LocalizeCount("shared.listeners", globalListeners)),
                 ("plays", context.LocalizeCount("shared.plays", globalPlaycount)),
                 ("avg", ((int)avgPlaycount).Format(context.NumberFormat))));
@@ -2370,15 +2370,15 @@ public class ArtistBuilders
             if (userSettings.DifferentUser)
             {
                 response.ComponentsContainer.AddComponent(
-                    new TextDisplayProperties("That user doesn't use .fmbot."));
+                    new TextDisplayProperties(context.Localize("taste.userNotFmbot")));
                 response.CommandResponse = CommandResponse.NotFound;
             }
             else
             {
                 response.ComponentsContainer.AddComponent(
-                    new TextDisplayProperties(
-                        $"Please mention someone, enter a Last.fm username or reply to someone to compare your taste with.\n" +
-                        $"-# Example: `{context.Prefix}taste @user` or `{context.Prefix}taste lastfmname`"));
+                    new TextDisplayProperties(context.Localize("taste.mentionPrompt",
+                        ("commandOne", $"{context.Prefix}taste @user"),
+                        ("commandTwo", $"{context.Prefix}taste lastfmname"))));
                 response.CommandResponse = CommandResponse.WrongInput;
             }
 
@@ -2389,8 +2389,8 @@ public class ArtistBuilders
         if (string.Equals(lastfmToCompare, ownLastFmUsername, StringComparison.OrdinalIgnoreCase))
         {
             response.ComponentsContainer.AddComponent(
-                new TextDisplayProperties(
-                    $"You can't compare taste with yourself. Use `{context.Prefix}topartists` to view your own top artists."));
+                new TextDisplayProperties(context.Localize("taste.compareWithSelf",
+                    ("command", $"{context.Prefix}topartists"))));
             response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
             response.CommandResponse = CommandResponse.WrongInput;
             return response;
@@ -2423,7 +2423,7 @@ public class ArtistBuilders
         if (ownArtists.Content.TopArtists == null || ownArtists.Content.TopArtists.Count == 0 ||
             otherArtists.Content.TopArtists == null || otherArtists.Content.TopArtists.Count == 0)
         {
-            response.Text = "Sorry, you or the other user don't have any artist plays in the selected time period.";
+            response.Text = context.Localize("taste.noArtistPlays");
             response.ResponseType = ResponseType.Text;
             response.CommandResponse = CommandResponse.NoScrobbles;
             return response;
@@ -2462,7 +2462,7 @@ public class ArtistBuilders
             OwnName = ownName,
             OtherName = otherName,
             Url = url,
-            TimeDescription = timeSettings.Description,
+            TimeDescription = context.Localizer.PeriodLabel(timeSettings),
             OwnTopArtists = ownTopArtists,
             OtherTopArtists = otherTopArtists,
         };
@@ -2475,7 +2475,8 @@ public class ArtistBuilders
             AccentColor = await UserService.GetAccentColor(context.ContextUser, context.DiscordGuild),
             Amount = amount,
             RawData = rawData,
-            Pages = BuildTastePages(this._artistsService, rawData, amount)
+            Localizer = context.Localizer,
+            Pages = BuildTastePages(this._artistsService, rawData, amount, context.Localizer)
         };
 
         if (timeSettings.TimePeriod == TimePeriod.AllTime)
@@ -2538,30 +2539,33 @@ public class ArtistBuilders
         }
     }
 
-    private static List<TastePageData> BuildTastePages(ArtistsService artistsService, TasteRawData raw, int amount)
+    private static List<TastePageData> BuildTastePages(ArtistsService artistsService, TasteRawData raw, int amount,
+        Localizer localizer)
     {
         var pages = new List<TastePageData>();
         var sanitizedOwnName = StringExtensions.Sanitize(raw.OwnName);
         var sanitizedOtherName = StringExtensions.Sanitize(raw.OtherName);
 
-        var artistTaste = artistsService.GetTableTaste(raw.OwnTopArtists, raw.OtherTopArtists, amount,
-            raw.TimeDescription, raw.OwnUsername, raw.OtherUsername, "Artist");
+        var artistTaste = artistsService.GetTableTaste(raw.OwnTopArtists, raw.OtherTopArtists, amount, localizer,
+            raw.TimeDescription, raw.OwnUsername, raw.OtherUsername,
+            localizer.Translate("taste.columnArtist"), localizer.Translate("taste.noArtistMatches", ("emote", NoMatchesEmote)));
         pages.Add(new TastePageData
         {
-            Label = "Artists",
-            Title = $"Top artist comparison — {sanitizedOwnName} vs {sanitizedOtherName}",
+            Label = localizer.Translate("taste.tabArtists"),
+            Title = localizer.Translate("taste.titleArtists", ("userOne", sanitizedOwnName), ("userTwo", sanitizedOtherName)),
             Content = artistTaste.result,
             Url = raw.Url
         });
 
         if (raw.OwnTopGenres != null && raw.OtherTopGenres != null)
         {
-            var genreTaste = artistsService.GetTableTaste(raw.OwnTopGenres, raw.OtherTopGenres, amount,
-                raw.TimeDescription, raw.OwnUsername, raw.OtherUsername, "Genre");
+            var genreTaste = artistsService.GetTableTaste(raw.OwnTopGenres, raw.OtherTopGenres, amount, localizer,
+                raw.TimeDescription, raw.OwnUsername, raw.OtherUsername,
+                localizer.Translate("taste.columnGenre"), localizer.Translate("taste.noGenreMatches", ("emote", NoMatchesEmote)));
             pages.Add(new TastePageData
             {
-                Label = "Genres",
-                Title = $"Top genre comparison — {sanitizedOwnName} vs {sanitizedOtherName}",
+                Label = localizer.Translate("taste.tabGenres"),
+                Title = localizer.Translate("taste.titleGenres", ("userOne", sanitizedOwnName), ("userTwo", sanitizedOtherName)),
                 Content = genreTaste.result,
                 Url = raw.Url
             });
@@ -2569,12 +2573,13 @@ public class ArtistBuilders
 
         if (raw.OwnTopCountries != null && raw.OtherTopCountries != null)
         {
-            var countryTaste = artistsService.GetTableTaste(raw.OwnTopCountries, raw.OtherTopCountries, amount,
-                raw.TimeDescription, raw.OwnUsername, raw.OtherUsername, "Country");
+            var countryTaste = artistsService.GetTableTaste(raw.OwnTopCountries, raw.OtherTopCountries, amount, localizer,
+                raw.TimeDescription, raw.OwnUsername, raw.OtherUsername,
+                localizer.Translate("taste.columnCountry"), localizer.Translate("taste.noCountryMatches", ("emote", NoMatchesEmote)));
             pages.Add(new TastePageData
             {
-                Label = "Countries",
-                Title = $"Top country comparison — {sanitizedOwnName} vs {sanitizedOtherName}",
+                Label = localizer.Translate("taste.tabCountries"),
+                Title = localizer.Translate("taste.titleCountries", ("userOne", sanitizedOwnName), ("userTwo", sanitizedOtherName)),
                 Content = countryTaste.result,
                 Url = raw.Url
             });
@@ -2582,12 +2587,13 @@ public class ArtistBuilders
 
         if (raw.OwnDiscogsArtists != null && raw.OtherDiscogsArtists != null)
         {
-            var discogsTaste = artistsService.GetTableTaste(raw.OwnDiscogsArtists, raw.OtherDiscogsArtists, amount,
-                raw.TimeDescription, raw.DiscogsOwnUsername, raw.DiscogsOtherUsername, "Artist");
+            var discogsTaste = artistsService.GetTableTaste(raw.OwnDiscogsArtists, raw.OtherDiscogsArtists, amount, localizer,
+                raw.TimeDescription, raw.DiscogsOwnUsername, raw.DiscogsOtherUsername,
+                localizer.Translate("taste.columnArtist"), localizer.Translate("taste.noArtistMatches", ("emote", NoMatchesEmote)));
             pages.Add(new TastePageData
             {
                 Label = "Discogs",
-                Title = $"Top Discogs comparison — {sanitizedOwnName} vs {sanitizedOtherName}",
+                Title = localizer.Translate("taste.titleDiscogs", ("userOne", sanitizedOwnName), ("userTwo", sanitizedOtherName)),
                 Content = discogsTaste.result,
                 Url = raw.DiscogsUrl
             });
@@ -2595,6 +2601,8 @@ public class ArtistBuilders
 
         return pages;
     }
+
+    private const string NoMatchesEmote = "<:404:882220605783560222>";
 
     public static void BuildTastePage(ResponseModel response, TasteCacheModel cacheModel, int pageIndex,
         string cacheKey, ulong ownDiscordId, ulong otherDiscordId, string timePeriodKey, int amount)
@@ -2645,7 +2653,7 @@ public class ArtistBuilders
             return;
         }
 
-        cacheModel.Pages = BuildTastePages(this._artistsService, cacheModel.RawData, newAmount);
+        cacheModel.Pages = BuildTastePages(this._artistsService, cacheModel.RawData, newAmount, cacheModel.Localizer);
         cacheModel.Amount = newAmount;
     }
 
@@ -2655,7 +2663,8 @@ public class ArtistBuilders
         string timePeriodKey,
         int amount,
         int pageIndex,
-        DiscordGuild guild)
+        DiscordGuild guild,
+        Localizer localizer)
     {
         var response = new ResponseModel
         {
@@ -2717,7 +2726,7 @@ public class ArtistBuilders
             OwnName = ownName,
             OtherName = otherName,
             Url = url,
-            TimeDescription = timeSettings.Description,
+            TimeDescription = localizer.PeriodLabel(timeSettings),
             OwnTopArtists = ownArtists.Content.TopArtists.Select(s => new TasteItem(s.ArtistName, s.UserPlaycount)).ToList(),
             OtherTopArtists = otherArtists.Content.TopArtists.Select(s => new TasteItem(s.ArtistName, s.UserPlaycount)).ToList(),
         };
@@ -2730,7 +2739,8 @@ public class ArtistBuilders
             AccentColor = await UserService.GetAccentColor(ownUser, guild),
             Amount = amount,
             RawData = rawData,
-            Pages = BuildTastePages(this._artistsService, rawData, amount)
+            Localizer = localizer,
+            Pages = BuildTastePages(this._artistsService, rawData, amount, localizer)
         };
 
         var cacheKey = Guid.NewGuid().ToString("N")[..8];

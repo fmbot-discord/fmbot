@@ -287,7 +287,7 @@
       "description": "Ustaw, czy okładki albumów są animowane, czy zawsze nieruchome"
     },
     "crown": {
-      "description": "Historia konkretnej korony",
+      "description": "Historia konkretnego crowna",
       "parameters": {
         "artist": {
           "description": "Artysta do wyszukania (domyślnie aktualnie odtwarzany)"
@@ -295,13 +295,13 @@
       }
     },
     "crowns": {
-      "description": "Zobacz swoją lub czyjąś listę koron",
+      "description": "Zobacz swoją lub czyjąś listę crownów",
       "parameters": {
         "user": {
           "description": "Użytkownik do wyświetlenia (domyślnie ty)"
         },
         "view": {
-          "description": "Widok koron do wyświetlenia"
+          "description": "Widok crownów do wyświetlenia"
         }
       }
     },
@@ -1181,7 +1181,7 @@
           "description": "Typ odpowiedzi - domyślny zmienisz przez /responsemode"
         },
         "no-filter": {
-          "description": "Wyłącz filtry serwera i korony"
+          "description": "Wyłącz filtry serwera i crowny"
         },
         "redirects": {
           "description": "Przełącz przekierowania nazw artystów Last.fm (domyślnie włączone)"

@@ -47,7 +47,7 @@ public class GuildBuilders
 
         if (guild.CrownsDisabled == true && guildViewType == GuildViewType.Crowns)
         {
-            response.Text = "Crown functionality has been disabled in this server.";
+            response.Text = context.Localize("crown.functionalityDisabled");
             response.ResponseType = ResponseType.Text;
             response.CommandResponse = CommandResponse.Disabled;
             return response;
@@ -67,9 +67,10 @@ public class GuildBuilders
         {
             case GuildViewType.Overview:
                 {
-                    title = $".fmbot users in {context.DiscordGuild.Name}";
-                    noResults = $"No .fmbot users in this server. \n\n" +
-                                $"Use `{context.Prefix}login` to get started, or try `{context.Prefix}refreshmembers` to refresh the cached memberlist.";
+                    title = context.Localize("members.overviewTitle", ("server", context.DiscordGuild.Name));
+                    noResults = context.Localize("members.overviewNoResults",
+                        ("loginCommand", $"{context.Prefix}login"),
+                        ("refreshCommand", $"{context.Prefix}refreshmembers"));
 
                     var (filterStats, filteredGuildUsers) = WhoKnowsService.FilterGuildUsers(guildUsers, guild, context.ContextUser.UserId);
                     var filterDescription = filterStats.GetFullDescription(context.Localizer);
@@ -92,7 +93,7 @@ public class GuildBuilders
 
                         var footer = new StringBuilder();
                         footer.AppendLine(
-                            $"-# Page {pageCounter}/{userPages.Count} - {guildUsers.Count.Format(context.NumberFormat)} total .fmbot users in this server");
+                            $"-# {context.LocalizeCount("members.overviewPageCounter", guildUsers.Count, ("page", pageCounter.ToString()), ("pages", userPages.Count.ToString()))}");
 
                         if (filterDescription != null)
                         {
@@ -110,8 +111,8 @@ public class GuildBuilders
                     var topCrownUsers = await this._crownService.GetTopCrownUsersForGuild(guild.GuildId);
                     var guildCrownCount = await this._crownService.GetTotalCrownCountForGuild(guild.GuildId);
 
-                    title = $"Users with most crowns in {context.DiscordGuild.Name}";
-                    noResults = $"No top crown users in this server. Use `{context.Prefix}whoknows` to start getting crowns!";
+                    title = context.Localize("members.crownsTitle", ("server", context.DiscordGuild.Name));
+                    noResults = context.Localize("members.crownsNoResults", ("command", $"{context.Prefix}whoknows"));
 
                     var crownPages = topCrownUsers.Chunk(10).ToList();
 
@@ -131,20 +132,20 @@ public class GuildBuilders
                                 name = guildUser.UserName;
                             }
 
-                            crownPageString.Append($"{counter}. **{name ?? crownUser.First().User.UserNameLastFM}**");
-                            crownPageString.Append($" - *{crownUser.Count().Format(context.NumberFormat)} {StringExtensions.GetCrownsString(crownUser.Count())}*");
-                            crownPageString.AppendLine();
+                            crownPageString.AppendLine(context.LocalizeCount("members.crownsEntry", crownUser.Count(),
+                                ("rank", counter.ToString()),
+                                ("user", name ?? crownUser.First().User.UserNameLastFM)));
                             counter++;
                         }
 
                         var footer = new StringBuilder();
                         if (location >= 0)
                         {
-                            footer.AppendLine($"-# Your ranking: #{location + 1}");
+                            footer.AppendLine($"-# {context.Localize("members.yourRanking", ("rank", (location + 1).ToString()))}");
                         }
 
                         footer.AppendLine(
-                            $"-# Page {pageCounter}/{crownPages.Count} - {guildCrownCount.Format(context.NumberFormat)} total active crowns in this server");
+                            $"-# {context.LocalizeCount("members.crownsPageCounter", guildCrownCount, ("page", pageCounter.ToString()), ("pages", crownPages.Count.ToString()))}");
 
                         pageDescriptions.Add(crownPageString.ToString());
                         pageFooters.Add(footer.ToString());
@@ -154,9 +155,8 @@ public class GuildBuilders
                 break;
             case GuildViewType.ListeningTime:
                 {
-                    title = $"Users with most listening time in {context.DiscordGuild.Name}";
-                    noResults = $"No .fmbot users in this server, or nobody listened to music recently. \n\n" +
-                                $"Maybe try `{context.Prefix}refreshmembers` to refresh the cached memberlist.";
+                    title = context.Localize("members.listeningTimeTitle", ("server", context.DiscordGuild.Name));
+                    noResults = context.Localize("members.listeningTimeNoResults", ("command", $"{context.Prefix}refreshmembers"));
 
                     var userPlays = await this._playService.GetGuildUsersPlaysForTimeLeaderBoard(guild.GuildId);
 
@@ -176,22 +176,25 @@ public class GuildBuilders
                         var ltPageString = new StringBuilder();
                         foreach (var user in ltPage)
                         {
-                            ltPageString.AppendLine($"{counter}. **{WhoKnowsService.NameWithLink(user, true)}** - *{user.Name}*");
+                            ltPageString.AppendLine(context.Localize("members.listeningTimeEntry",
+                                ("rank", counter.ToString()),
+                                ("user", WhoKnowsService.NameWithLink(user, true)),
+                                ("time", user.Name)));
                             counter++;
                         }
 
                         var footer = new StringBuilder();
                         if (requestedUser != null && location >= 0)
                         {
-                            footer.AppendLine($"-# Your ranking: #{location + 1} ({requestedUser.DiscordName})");
+                            footer.AppendLine($"-# {context.Localize("members.yourRankingUser", ("rank", (location + 1).ToString()), ("user", requestedUser.DiscordName))}");
                         }
 
                         footer.AppendLine(
-                            $"-# 7 days - From {DateTime.UtcNow.AddDays(-9):MMM dd} to {DateTime.UtcNow.AddDays(-2):MMM dd}");
+                            $"-# {context.Localize("members.listeningTimeRange", ("from", $"{DateTime.UtcNow.AddDays(-9):MMM dd}"), ("to", $"{DateTime.UtcNow.AddDays(-2):MMM dd}"))}");
 
-                        footer.Append($"-# Page {pageCounter}/{ltPages.Count} - ");
-                        footer.Append($"{filteredTopListeningTimeUsers.Count.Format(context.NumberFormat)} users - ");
-                        footer.Append($"{filteredTopListeningTimeUsers.Sum(s => s.Playcount).Format(context.NumberFormat)} total minutes");
+                        footer.Append($"-# {context.Localize("shared.pageCounter", ("page", pageCounter.ToString()), ("pages", ltPages.Count.ToString()))} - ");
+                        footer.Append($"{context.LocalizeCount("shared.users", filteredTopListeningTimeUsers.Count)} - ");
+                        footer.Append(context.LocalizeCount("members.totalMinutes", filteredTopListeningTimeUsers.Sum(s => s.Playcount)));
 
                         if (filterDescription != null)
                         {
@@ -207,9 +210,8 @@ public class GuildBuilders
                 break;
             case GuildViewType.Plays:
                 {
-                    title = $"Users with highest total playcount in {context.DiscordGuild.Name}";
-                    noResults = $"No .fmbot users in this server that we have a total playcount for. \n\n" +
-                                $"Maybe try `{context.Prefix}refreshmembers` to refresh the cached memberlist.";
+                    title = context.Localize("members.playsTitle", ("server", context.DiscordGuild.Name));
+                    noResults = context.Localize("members.playsNoResults", ("command", $"{context.Prefix}refreshmembers"));
 
                     var topPlaycountUsers = await this._playService.GetGuildUsersTotalPlaycount(context.DiscordGuild, guildUsers, guild.GuildId);
 
@@ -226,19 +228,21 @@ public class GuildBuilders
                         var playcountPageString = new StringBuilder();
                         foreach (var user in playcountPage)
                         {
-                            playcountPageString.AppendLine($"{counter}. **{WhoKnowsService.NameWithLink(user, true)}** - *{user.Playcount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(user.Playcount)}*");
+                            playcountPageString.AppendLine(context.LocalizeCount("members.playsEntry", user.Playcount,
+                                ("rank", counter.ToString()),
+                                ("user", WhoKnowsService.NameWithLink(user, true))));
                             counter++;
                         }
 
                         var footer = new StringBuilder();
                         if (requestedUser != null && location >= 0)
                         {
-                            footer.AppendLine($"-# Your ranking: #{location + 1} ({requestedUser.DiscordName})");
+                            footer.AppendLine($"-# {context.Localize("members.yourRankingUser", ("rank", (location + 1).ToString()), ("user", requestedUser.DiscordName))}");
                         }
 
-                        footer.Append($"-# Page {pageCounter}/{playcountPages.Count} - ");
-                        footer.Append($"{filteredPlaycountUsers.Count.Format(context.NumberFormat)} users - ");
-                        footer.Append($"{filteredPlaycountUsers.Sum(s => s.Playcount).Format(context.NumberFormat)} total plays");
+                        footer.Append($"-# {context.Localize("shared.pageCounter", ("page", pageCounter.ToString()), ("pages", playcountPages.Count.ToString()))} - ");
+                        footer.Append($"{context.LocalizeCount("shared.users", filteredPlaycountUsers.Count)} - ");
+                        footer.Append(context.LocalizeCount("members.totalPlays", filteredPlaycountUsers.Sum(s => s.Playcount)));
 
                         if (filterDescription != null)
                         {
@@ -257,13 +261,13 @@ public class GuildBuilders
         }
 
         var viewType = new StringMenuProperties(InteractionConstants.GuildMembers)
-            .WithPlaceholder("Select member view")
+            .WithPlaceholder(context.Localize("members.selectViewPlaceholder"))
             .WithMinValues(1)
             .WithMaxValues(1);
 
         foreach (var option in ((GuildViewType[])Enum.GetValues(typeof(GuildViewType))))
         {
-            var name = option.GetAttribute<OptionAttribute>().Name;
+            var name = context.LocalizeOption(option);
             var value = Enum.GetName(option);
 
             var active = option == guildViewType;

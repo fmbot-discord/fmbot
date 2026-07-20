@@ -78,12 +78,14 @@ public class CountryBuilders(
                     switch (cachedArtist)
                     {
                         case { Mbid: null }:
-                            response.Embed.WithDescription($"Sorry, the artist **{StringExtensions.Sanitize(cachedArtist.Name)}** was not found on MusicBrainz.");
+                            response.Embed.WithDescription(context.Localize("country.artistNotFoundMusicBrainz",
+                                ("artist", StringExtensions.Sanitize(cachedArtist.Name))));
                             response.CommandResponse = CommandResponse.NotFound;
                             response.ResponseType = ResponseType.Embed;
                             return response;
                         case { CountryCode: null }:
-                            response.Embed.WithDescription($"Sorry, the artist **{StringExtensions.Sanitize(cachedArtist.Name)}** does not have a country associated with them on MusicBrainz.");
+                            response.Embed.WithDescription(context.Localize("country.artistNoCountry",
+                                ("artist", StringExtensions.Sanitize(cachedArtist.Name))));
                             response.CommandResponse = CommandResponse.NotFound;
                             response.ResponseType = ResponseType.Embed;
                             return response;
@@ -105,8 +107,9 @@ public class CountryBuilders(
                 {
                     response.Embed.WithDescription(
                         artist == null
-                            ? "Sorry, the country or artist you're searching for does not exist in our database."
-                            : $"Sorry, the artist **{StringExtensions.Sanitize(artist.Name)}** does not have a country associated with them on MusicBrainz.");
+                            ? context.Localize("country.artistOrCountryNotFound")
+                            : context.Localize("country.artistNoCountry",
+                                ("artist", StringExtensions.Sanitize(artist.Name))));
 
                     response.CommandResponse = CommandResponse.NotFound;
                     response.ResponseType = ResponseType.Embed;
@@ -129,8 +132,9 @@ public class CountryBuilders(
 
                 if (foundCountry == null)
                 {
-                    response.Embed.WithDescription(
-                        $"Sorry, the artist **{StringExtensions.Sanitize(artist.Name)}** has a country code (`{StringExtensions.Sanitize(artist.CountryCode)}`) that we couldn't resolve to a country.");
+                    response.Embed.WithDescription(context.Localize("country.unresolvableCountryCode",
+                        ("artist", StringExtensions.Sanitize(artist.Name)),
+                        ("code", StringExtensions.Sanitize(artist.CountryCode))));
                     response.CommandResponse = CommandResponse.NotFound;
                     response.ResponseType = ResponseType.Embed;
                     return response;
@@ -139,7 +143,7 @@ public class CountryBuilders(
                 description.AppendLine(
                     $"### :flag_{foundCountry.Code.ToLower()}: {artist.Name}");
                 description.AppendLine(
-                    $"From **{foundCountry.Name}** ");
+                    context.Localize("country.artistFrom", ("country", foundCountry.Name)) + " ");
 
                 if (artist.Location != null &&
                     !string.Equals(artist.Location, foundCountry.Name, StringComparison.OrdinalIgnoreCase))
@@ -150,8 +154,8 @@ public class CountryBuilders(
 
                 response.Embed.WithDescription(description.ToString());
 
-                response.Embed.WithFooter($"Country source: MusicBrainz\n" +
-                                          $"Add a country to this command to see top artists");
+                response.Embed.WithFooter($"{context.Localize("country.source")}\n" +
+                                          $"{context.Localize("country.footerAddCountry")}");
 
                 response.ResponseType = ResponseType.Embed;
                 return response;
@@ -193,8 +197,9 @@ public class CountryBuilders(
 
                     if (foundCountry == null)
                     {
-                        response.Embed.WithDescription(
-                            $"Sorry, the artist **{StringExtensions.Sanitize(artist.Name)}** has a country code (`{StringExtensions.Sanitize(artist.CountryCode)}`) that we couldn't resolve to a country.");
+                        response.Embed.WithDescription(context.Localize("country.unresolvableCountryCode",
+                            ("artist", StringExtensions.Sanitize(artist.Name)),
+                            ("code", StringExtensions.Sanitize(artist.CountryCode))));
                         response.CommandResponse = CommandResponse.NotFound;
                         response.ResponseType = ResponseType.Embed;
                         return response;
@@ -203,7 +208,7 @@ public class CountryBuilders(
                     description.AppendLine(
                         $"### :flag_{foundCountry.Code.ToLower()}: {artist.Name}");
                     description.AppendLine(
-                        $"From **{foundCountry.Name}** ");
+                        context.Localize("country.artistFrom", ("country", foundCountry.Name)) + " ");
 
                     if (artist.Location != null && !string.Equals(artist.Location, foundCountry.Name,
                             StringComparison.OrdinalIgnoreCase))
@@ -215,8 +220,8 @@ public class CountryBuilders(
                     response.ReferencedMusic = new ReferencedMusic { Artist = artist.Name };
                     response.Embed.WithDescription(description.ToString());
 
-                    response.Embed.WithFooter($"Country source: MusicBrainz\n" +
-                                              $"Add a country to this command to see top artists");
+                    response.Embed.WithFooter($"{context.Localize("country.source")}\n" +
+                                              $"{context.Localize("country.footerAddCountry")}");
 
                     response.ResponseType = ResponseType.Embed;
                     return response;
@@ -224,8 +229,9 @@ public class CountryBuilders(
 
                 response.Embed.WithDescription(
                     artist == null
-                        ? "Sorry, the country or artist you're searching for does not exist in our database."
-                        : $"Sorry, the artist **{StringExtensions.Sanitize(artist.Name)}** does not have a country associated with them on MusicBrainz.");
+                        ? context.Localize("country.artistOrCountryNotFound")
+                        : context.Localize("country.artistNoCountry",
+                            ("artist", StringExtensions.Sanitize(artist.Name))));
                 response.CommandResponse = CommandResponse.NotFound;
                 response.ResponseType = ResponseType.Embed;
                 return response;
@@ -236,9 +242,8 @@ public class CountryBuilders(
 
         if (country == null)
         {
-            response.Embed.WithDescription(
-                "Sorry, we don't have a registered country for the artist you're currently listening to.\n\n" +
-                $"Please try again later or manually enter a country (example: `{context.Prefix}country Netherlands`)");
+            response.Embed.WithDescription(context.Localize("country.noRegisteredCountry",
+                ("command", $"{context.Prefix}country Netherlands")));
             response.CommandResponse = CommandResponse.NotFound;
             response.ResponseType = ResponseType.Embed;
             return response;
@@ -248,7 +253,7 @@ public class CountryBuilders(
 
         if (!countryArtists.Any())
         {
-            response.Embed.WithDescription("Sorry, we couldn't find any top artists for your selected country.");
+            response.Embed.WithDescription(context.Localize("country.noTopArtists"));
             response.CommandResponse = CommandResponse.NotFound;
             response.ResponseType = ResponseType.Embed;
             return response;
@@ -257,7 +262,8 @@ public class CountryBuilders(
         var userTitle = await userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
         var pages = new List<PageBuilder>();
 
-        var title = $":flag_{country.Code.ToLower()}: Top artists from {country.Name} for {userTitle}";
+        var title = context.Localize("country.topArtistsTitle",
+            ("flag", $":flag_{country.Code.ToLower()}:"), ("country", country.Name), ("user", userTitle));
 
         var countryPages = countryArtists.ChunkBy(10);
 
@@ -269,7 +275,7 @@ public class CountryBuilders(
             foreach (var genreArtist in countryPage)
             {
                 countryPageString.AppendLine(
-                    $"{counter}. **{genreArtist.ArtistName}** - *{genreArtist.UserPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(genreArtist.UserPlaycount)}*");
+                    $"{counter}. **{genreArtist.ArtistName}** - *{context.LocalizeCount("shared.plays", genreArtist.UserPlaycount)}*");
                 counter++;
             }
 
@@ -280,8 +286,10 @@ public class CountryBuilders(
                     "<:ukraine:948301778464694272> [Stand For Ukraine](https://standforukraine.com/)");
             }
 
-            var footer = $"Country source: MusicBrainz\n" +
-                         $"Page {pageCounter}/{countryPages.Count} - {countryArtists.Count.Format(context.NumberFormat)} total artists - {countryArtists.Sum(s => s.UserPlaycount).Format(context.NumberFormat)} total scrobbles";
+            var footer = $"{context.Localize("country.source")}\n" +
+                         context.LocalizeCount("country.pageCounterArtists", countryArtists.Count,
+                             ("page", pageCounter.ToString()), ("pages", countryPages.Count.ToString()),
+                             ("scrobbles", context.LocalizeCount("footer.totalScrobbles", countryArtists.Sum(s => s.UserPlaycount))));
 
             pages.Add(new PageBuilder()
                 .WithDescription(countryPageString.ToString())
@@ -315,11 +323,14 @@ public class CountryBuilders(
 
         if (userSettings.DifferentUser)
         {
-            userTitle =
-                $"{userSettings.UserNameLastFm}, requested by {await userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}";
+            userTitle = context.Localize("shared.requestedByTitle",
+                ("user", userSettings.UserNameLastFm),
+                ("requester", await userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)));
         }
 
-        response.EmbedAuthor.WithName($"Top {timeSettings.Description.ToLower()} artist countries for {userTitle}");
+        response.EmbedAuthor.WithName(context.Localize("country.topCountriesTitle",
+            ("period", context.Localizer.PeriodLabel(timeSettings)),
+            ("user", userTitle)));
         response.EmbedAuthor.WithUrl(
             $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library/artists?{timeSettings.UrlParameter}");
 
@@ -359,9 +370,7 @@ public class CountryBuilders(
 
         if (artists.Content.TopArtists == null || !artists.Content.TopArtists.Any())
         {
-            response.Embed.WithDescription(
-                $"Sorry, you or the user you're searching for don't have enough top artists in the selected time period.\n\n" +
-                $"Please try again later or try a different time period.");
+            response.Embed.WithDescription(context.Localize("errors.notEnoughTopArtists"));
             response.Embed.WithColor(DiscordConstants.WarningColorOrange);
             response.CommandResponse = CommandResponse.NoScrobbles;
             response.ResponseType = ResponseType.Embed;
@@ -397,7 +406,7 @@ public class CountryBuilders(
                     .FirstOrDefault(f => validArtists.Contains(f.ArtistName.ToLower()) && f.ArtistImageUrl != null)
                     ?.ArtistImageUrl;
 
-            using var image = await puppeteerService.GetTopList(userTitle, "Top Countries", "countries",
+            using var image = await puppeteerService.GetTopList(userTitle, context.Localize("country.topCountriesImageTitle"), "countries",
                 timeSettings.Description,
                 countries.Count, totalPlays.GetValueOrDefault(), firstArtistImage,
                 countryService.GetTopListForTopCountries(countries), context.NumberFormat);
@@ -422,7 +431,7 @@ public class CountryBuilders(
             foreach (var country in countryPage)
             {
                 var name =
-                    $"**{country.CountryName ?? country.CountryCode}** - *{country.UserPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(country.UserPlaycount)}*";
+                    $"**{country.CountryName ?? country.CountryCode}** - *{context.LocalizeCount("shared.plays", country.UserPlaycount.GetValueOrDefault())}*";
 
                 if (topListSettings.Billboard && previousTopCountries.Any())
                 {
@@ -444,9 +453,10 @@ public class CountryBuilders(
             }
 
             var footer = new StringBuilder();
-            footer.AppendLine("Country source: Musicbrainz");
-            footer.AppendLine($"Ordered by artists per country");
-            footer.AppendLine($"Page {pageCounter}/{countryPages.Count} - {countries.Count} total countries");
+            footer.AppendLine(context.Localize("country.source"));
+            footer.AppendLine(context.Localize("country.orderedByArtists"));
+            footer.AppendLine(context.LocalizeCount("country.pageCounterCountries", countries.Count,
+                ("page", pageCounter.ToString()), ("pages", countryPages.Count.ToString())));
 
             if (topListSettings.Billboard)
             {
@@ -455,7 +465,7 @@ public class CountryBuilders(
 
             if (rnd == 1 && !topListSettings.Billboard && context.SelectMenu == null)
             {
-                footer.AppendLine("View as billboard by adding 'billboard' or 'bb'");
+                footer.AppendLine(context.Localize("shared.billboardHint"));
             }
 
             pages.Add(new PageBuilder()
@@ -485,8 +495,10 @@ public class CountryBuilders(
         var url =
             $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library/artists?{timeSettings.UrlParameter}";
         var embedTitle = new StringBuilder();
-        embedTitle.Append(
-            $"[Top {timeSettings.Description.ToLower()} artist]({url}) countries for {userSettings.DisplayName}");
+        embedTitle.Append(context.Localize("country.chartTitle",
+            ("period", context.Localizer.PeriodLabel(timeSettings)),
+            ("url", url),
+            ("user", userSettings.DisplayName)));
 
         Response<TopArtistList> artists;
 
@@ -524,9 +536,7 @@ public class CountryBuilders(
 
         if (artists.Content.TopArtists == null || artists.Content.TopArtists.Count == 0)
         {
-            response.Embed.WithDescription(
-                $"Sorry, you or the user you're searching for don't have enough top artists in the selected time period.\n\n" +
-                $"Please try again later or try a different time period.");
+            response.Embed.WithDescription(context.Localize("errors.notEnoughTopArtists"));
             response.Embed.WithColor(DiscordConstants.WarningColorOrange);
             response.CommandResponse = CommandResponse.NoScrobbles;
             response.ResponseType = ResponseType.Embed;
@@ -551,7 +561,7 @@ public class CountryBuilders(
         });
 
         var themeMenu = new StringMenuProperties(InteractionConstants.CountryChartTheme)
-            .WithPlaceholder("Change map theme")
+            .WithPlaceholder(context.Localize("country.changeMapTheme"))
             .WithMinValues(1)
             .WithMaxValues(1);
 

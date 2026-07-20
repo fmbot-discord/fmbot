@@ -657,17 +657,17 @@ public class PlayService
         return true;
     }
 
-    public static string StreakToText(UserStreak streak, NumberFormat numberFormat, bool includeStart = true)
+    public static string StreakToText(UserStreak streak, Localizer localizer, bool includeStart = true)
     {
         var description = new StringBuilder();
 
-        var musicStreaks = MusicStreaksToText(streak, numberFormat);
+        var musicStreaks = MusicStreaksToText(streak, localizer);
         if (musicStreaks != null)
         {
             description.Append(musicStreaks);
         }
 
-        var genreStreaks = GenreStreaksToText(streak, numberFormat);
+        var genreStreaks = GenreStreaksToText(streak, localizer);
         if (genreStreaks != null)
         {
             description.Append(genreStreaks);
@@ -675,19 +675,19 @@ public class PlayService
 
         if (description.Length == 0)
         {
-            return "No active streak found.";
+            return localizer.Translate("streak.noActiveStreak");
         }
 
         if (includeStart)
         {
             description.AppendLine();
-            description.AppendLine(StreakStartedToText(streak));
+            description.AppendLine(StreakStartedToText(streak, localizer));
         }
 
         return description.ToString();
     }
 
-    public static string MusicStreaksToText(UserStreak streak, NumberFormat numberFormat)
+    public static string MusicStreaksToText(UserStreak streak, Localizer localizer)
     {
         var description = new StringBuilder();
         if (streak.ArtistName != null && streak.ArtistPlaycount.HasValue)
@@ -696,9 +696,9 @@ public class PlayService
                 ? $"**{streak.ArtistName}**"
                 : $"**[{streak.ArtistName}]({LastfmUrlExtensions.GetArtistUrl(streak.ArtistName)})**";
 
-            description.AppendLine(
-                $"`Artist:` {artistDisplay} - " +
-                $"{GetEmojiForStreakCount(streak.ArtistPlaycount.Value)} {streak.ArtistPlaycount.Format(numberFormat)} {StringExtensions.GetPlaysString(streak.ArtistPlaycount)}");
+            description.AppendLine(localizer.TranslateCount("streak.artistEntry", streak.ArtistPlaycount.Value,
+                ("artist", artistDisplay),
+                ("emoji", GetEmojiForStreakCount(streak.ArtistPlaycount.Value))));
         }
 
         if (streak.AlbumName != null && streak.AlbumPlaycount.HasValue)
@@ -707,9 +707,9 @@ public class PlayService
                 ? $"**{streak.AlbumName}**"
                 : $"**[{streak.AlbumName}](https://www.last.fm/music/{HttpUtility.UrlEncode(streak.ArtistName)}/{HttpUtility.UrlEncode(streak.AlbumName)})**";
 
-            description.AppendLine(
-                $"` Album:` {albumDisplay} - " +
-                $"{GetEmojiForStreakCount(streak.AlbumPlaycount.Value)} {streak.AlbumPlaycount.Format(numberFormat)} {StringExtensions.GetPlaysString(streak.AlbumPlaycount)}");
+            description.AppendLine(localizer.TranslateCount("streak.albumEntry", streak.AlbumPlaycount.Value,
+                ("album", albumDisplay),
+                ("emoji", GetEmojiForStreakCount(streak.AlbumPlaycount.Value))));
         }
 
         if (streak.TrackName != null && streak.TrackPlaycount.HasValue)
@@ -718,15 +718,15 @@ public class PlayService
                 ? $"**{streak.TrackName}**"
                 : $"**[{streak.TrackName}](https://www.last.fm/music/{HttpUtility.UrlEncode(streak.ArtistName)}/_/{HttpUtility.UrlEncode(streak.TrackName)})**";
 
-            description.AppendLine(
-                $"` Track:` {trackDisplay} - " +
-                $"{GetEmojiForStreakCount(streak.TrackPlaycount.Value)} {streak.TrackPlaycount.Format(numberFormat)} {StringExtensions.GetPlaysString(streak.TrackPlaycount)}");
+            description.AppendLine(localizer.TranslateCount("streak.trackEntry", streak.TrackPlaycount.Value,
+                ("track", trackDisplay),
+                ("emoji", GetEmojiForStreakCount(streak.TrackPlaycount.Value))));
         }
 
         return description.Length > 0 ? description.ToString() : null;
     }
 
-    public static string GenreStreaksToText(UserStreak streak, NumberFormat numberFormat)
+    public static string GenreStreaksToText(UserStreak streak, Localizer localizer)
     {
         if (streak.GenreStreaks == null || streak.GenreStreaks.Count == 0)
         {
@@ -736,23 +736,23 @@ public class PlayService
         var description = new StringBuilder();
         foreach (var genreStreak in streak.GenreStreaks.OrderByDescending(o => o.Playcount).Take(3))
         {
-            description.AppendLine(
-                $"` Genre:` **{genreStreak.GenreName.Transform(To.TitleCase)}** - " +
-                $"{GetEmojiForStreakCount(genreStreak.Playcount)} {genreStreak.Playcount.Format(numberFormat)} {StringExtensions.GetPlaysString(genreStreak.Playcount)}");
+            description.AppendLine(localizer.TranslateCount("streak.genreEntry", genreStreak.Playcount,
+                ("genre", genreStreak.GenreName.Transform(To.TitleCase)),
+                ("emoji", GetEmojiForStreakCount(genreStreak.Playcount))));
         }
 
         return description.ToString();
     }
 
-    public static string StreakStartedToText(UserStreak streak)
+    public static string StreakStartedToText(UserStreak streak, Localizer localizer)
     {
         var specifiedDateTime = DateTime.SpecifyKind(streak.StreakStarted, DateTimeKind.Utc);
         var dateValue = ((DateTimeOffset)specifiedDateTime).ToUnixTimeSeconds();
 
-        return $"Streak started <t:{dateValue}:R>.";
+        return localizer.Translate("streak.startedTimestamp", ("timestamp", $"<t:{dateValue}:R>"));
     }
 
-    public async Task<string> UpdateOrInsertStreak(UserStreak currentStreak)
+    public async Task<string> UpdateOrInsertStreak(UserStreak currentStreak, Localizer localizer)
     {
         if (!ShouldSaveStreak(currentStreak))
         {
@@ -769,7 +769,7 @@ public class PlayService
         {
             await db.UserStreaks.AddAsync(currentStreak);
             await db.SaveChangesAsync();
-            return "Streak has been saved!";
+            return localizer.Translate("streak.saved");
         }
 
         existingStreak.ArtistName = currentStreak.ArtistName;
@@ -784,7 +784,7 @@ public class PlayService
         db.Entry(existingStreak).State = EntityState.Modified;
         await db.SaveChangesAsync();
 
-        return "Saved streak has been updated!";
+        return localizer.Translate("streak.updated");
     }
 
     public static List<UserStreak> GetHistoricalStreaks(int userId, ICollection<UserPlay> plays,

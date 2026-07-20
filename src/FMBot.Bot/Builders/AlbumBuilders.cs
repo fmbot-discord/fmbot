@@ -403,7 +403,7 @@ public class AlbumBuilders
         var viewingUserId = userSettings?.DiscordUserId ?? context.ContextUser.DiscordUserId;
         var actionRow = new ActionRowProperties()
             .WithButton(
-                context.Localize("album.buttons.tracks"),
+                context.Localize("shared.buttons.tracks"),
                 $"{InteractionConstants.Album.Tracks}:{databaseAlbum.Id}:{viewingUserId}:{context.ContextUser.DiscordUserId}:",
                 style: ButtonStyle.Secondary,
                 emote: EmojiProperties.Standard("🎶"))
@@ -489,7 +489,7 @@ public class AlbumBuilders
         if (mode == WhoKnowsResponseMode.Image)
         {
             using var image = await this._puppeteerService.GetWhoKnows(context.Localize("album.whoknows.imageHeader"),
-                context.Localize("album.whoknows.imageInServer", ("server", context.DiscordGuild.Name)), albumCoverUrl, fullAlbumName,
+                context.Localize("shared.whoknows.imageInServer", ("server", context.DiscordGuild.Name)), albumCoverUrl, fullAlbumName,
                 filteredUsersWithAlbum, context.ContextUser.UserId, PrivacyLevel.Server, context.NumberFormat);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
@@ -518,7 +518,7 @@ public class AlbumBuilders
         var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(context.DiscordGuild);
         if (rnd.Next(0, 10) == 1 && lastIndex < DateTime.UtcNow.AddDays(-180))
         {
-            footer.AppendLine(context.Localize("album.whoknows.missingMembers",
+            footer.AppendLine(context.Localize("shared.whoknows.missingMembers",
                 ("command", $"{context.Prefix}refreshmembers")));
         }
 
@@ -530,7 +530,7 @@ public class AlbumBuilders
 
         if (filterDisabled)
         {
-            footer.AppendLine(context.Localize("album.whoknows.filtersDisabled"));
+            footer.AppendLine(context.Localize("shared.whoknows.filtersDisabled"));
         }
 
         if (filteredUsersWithAlbum.Any() && filteredUsersWithAlbum.Count > 1)
@@ -556,7 +556,7 @@ public class AlbumBuilders
         if (albumSearch.LatestScrobble is { NowPlaying: false, TimePlayed: not null } &&
             albumSearch.LatestScrobble.TimePlayed < DateTime.UtcNow.AddHours(-2))
         {
-            footer.AppendLine(context.Localize("album.whoknows.outOfSync",
+            footer.AppendLine(context.Localize("shared.outOfSyncHint",
                 ("command", $"{context.Prefix}outofsync")));
         }
 
@@ -602,7 +602,7 @@ public class AlbumBuilders
             if (PublicProperties.PremiumServers.ContainsKey(context.DiscordGuild.Id))
             {
                 var allowedRoles = new RoleMenuProperties($"{InteractionConstants.WhoKnowsAlbumRolePicker}:{databaseAlbum.Id}")
-                    .WithPlaceholder(context.Localize("album.whoknows.rolePickerPlaceholder"))
+                    .WithPlaceholder(context.Localize("shared.roleFilterPlaceholder"))
                     .WithMinValues(0)
                     .WithMaxValues(25);
 
@@ -629,7 +629,7 @@ public class AlbumBuilders
 
         if (context.ContextUser.Friends?.Any() != true)
         {
-            response.Embed.WithDescription(context.Localize("album.whoknows.noFriendsFound",
+            response.Embed.WithDescription(context.Localize("shared.whoknows.noFriends",
                 ("command", $"{context.Prefix}addfriends {Constants.UserMentionOrLfmUserNameExample.Replace("`", "")}")));
             response.CommandResponse = CommandResponse.NotFound;
             return response;
@@ -687,7 +687,7 @@ public class AlbumBuilders
         if (mode == WhoKnowsResponseMode.Image)
         {
             using var image = await this._puppeteerService.GetWhoKnows(context.Localize("album.whoknows.imageHeader"),
-                context.Localize("album.whoknows.imageFromFriends", ("user", userTitle)),
+                context.Localize("shared.whoknows.imageFromFriends", ("user", userTitle)),
                 albumCoverUrl, albumName,
                 usersWithAlbum, context.ContextUser.UserId, PrivacyLevel.Server, context.NumberFormat);
 
@@ -717,7 +717,7 @@ public class AlbumBuilders
             var globalPlaycount = usersWithAlbum.Sum(a => a.Playcount);
             var avgPlaycount = usersWithAlbum.Average(a => a.Playcount);
 
-            footer += "\n" + context.Localize("album.whoknows.friendsStats",
+            footer += "\n" + context.Localize("shared.whoknows.friendsStats",
                 ("listeners", context.LocalizeCount("shared.listeners", globalListeners)),
                 ("plays", context.LocalizeCount("shared.plays", globalPlaycount)),
                 ("avg", ((int)avgPlaycount).Format(context.NumberFormat)));
@@ -837,7 +837,7 @@ public class AlbumBuilders
         if (settings.ResponseMode == WhoKnowsResponseMode.Image)
         {
             using var image = await this._puppeteerService.GetWhoKnows(context.Localize("album.whoknows.imageHeader"),
-                context.Localize("album.whoknows.imageGlobal"),
+                context.Localize("shared.whoknows.imageGlobal"),
                 albumCoverUrl, albumName,
                 filteredUsersWithAlbum, context.ContextUser.UserId, privacyLevel, context.NumberFormat,
                 hidePrivateUsers: settings.HidePrivateUsers);
@@ -1029,7 +1029,7 @@ public class AlbumBuilders
         {
             roleMenu = new RoleMenuProperties(
                     $"{InteractionConstants.ServerAlbumsRolePicker}:{(int)guildListSettings.OrderType}:{guildListSettings.TimeDescription}:{guildListSettings.NewSearchValue}")
-                .WithPlaceholder(context.Localize("server.roleFilterPlaceholder"))
+                .WithPlaceholder(context.Localize("shared.roleFilterPlaceholder"))
                 .WithMinValues(0)
                 .WithMaxValues(25);
         }
@@ -1061,7 +1061,7 @@ public class AlbumBuilders
             var pageFooter = $"-# {footerLabel} - {context.Localize("shared.pageCounter", ("page", (p.CurrentPageIndex + 1).ToString()), ("pages", pageDescriptions.Count.ToString()))}";
             if (roles != null && roles.Any())
             {
-                pageFooter += $"\n-# {context.LocalizeCount("server.roleFilterEnabled", roles.Count)}";
+                pageFooter += $"\n-# {context.LocalizeCount("shared.roleFilterEnabled", roles.Count)}";
             }
             if (footerHint != null)
             {
@@ -1586,7 +1586,7 @@ public class AlbumBuilders
         else
         {
             var requesterTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
-            userTitle = context.Localize("album.topAlbumsRequestedBy",
+            userTitle = context.Localize("shared.requestedByTitle",
                 ("user", userSettings.UserNameLastFm),
                 ("requester", requesterTitle));
             authorName = context.Localize("album.topAlbumsTitleOther",
@@ -1800,7 +1800,7 @@ public class AlbumBuilders
             if (rnd == 1 && !topListSettings.Billboard && context.SelectMenu == null)
             {
                 footer.AppendLine();
-                footer.Append(context.Localize("album.topAlbumsBillboardHint"));
+                footer.Append(context.Localize("shared.billboardHint"));
             }
 
             pages.Add(new PageBuilder()
