@@ -67,15 +67,15 @@ public class YoutubeBuilders
         var youtubeResult = await this._youtubeService.GetSearchResult(searchValue);
         if (youtubeResult?.Id?.VideoId == null)
         {
-            response.Text = "No results have been found for this query.";
+            response.Text = context.Localize("youtube.noResults");
             response.CommandResponse = CommandResponse.NotFound;
             return response;
         }
 
         var name = await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser);
 
-        response.Text =
-            $"{StringExtensions.Sanitize(name)} searched for: `{StringExtensions.Sanitize(searchValue)}`";
+        response.Text = context.Localize("youtube.searchedFor",
+            ("user", StringExtensions.Sanitize(name)), ("query", StringExtensions.Sanitize(searchValue)));
 
         var videoId = youtubeResult.Id.VideoId;
         var video = await this._youtubeService.GetVideoResult(videoId);
@@ -93,14 +93,14 @@ public class YoutubeBuilders
             {
                 response.Text += $"\n<https://youtube.com/watch?v={videoId}>" +
                                  $"\n`{youtubeResult.Snippet.Title}`" +
-                                 $"\n-# *Embed disabled because video is age restricted by YouTube.*";
+                                 $"\n{context.Localize("youtube.embedDisabledAgeRestricted")}";
             }
         }
         else
         {
             response.Text += $"\n<https://youtube.com/watch?v={videoId}>" +
                              $"\n`{youtubeResult.Snippet.Title}`" +
-                             $"\n-# *Embed disabled because user that requested link is not allowed to embed links.*";
+                             $"\n{context.Localize("youtube.embedDisabledNoPermission")}";
         }
 
         var rnd = new Random();
@@ -108,7 +108,7 @@ public class YoutubeBuilders
             !await this._userService.HintShownBefore(context.ContextUser.UserId, "youtube"))
         {
             response.Text +=
-                $"\n-# *Tip: Search for other songs or videos by simply adding the searchvalue behind {context.Prefix}youtube.*";
+                $"\n{context.Localize("youtube.hintSearch", ("command", $"{context.Prefix}youtube"))}";
             response.HintShown = true;
         }
 

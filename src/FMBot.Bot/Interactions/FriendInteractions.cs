@@ -77,10 +77,12 @@ public class FriendInteractions(
             var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
             var friend = await friendsService.GetFriendAsync(int.Parse(friendId));
 
+            var localizer = Localizer.ForGuild(this.Context.Interaction.GuildId, discordLocale: this.Context.Interaction.GuildLocale);
+
             if (friend == null)
             {
                 await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
-                    .WithContent("This friend could not be found.")
+                    .WithContent(localizer.Translate("friends.friendNotFound"))
                     .WithFlags(MessageFlags.Ephemeral)));
                 return;
             }
@@ -88,7 +90,7 @@ public class FriendInteractions(
             if (friend.UserId != contextUser.UserId)
             {
                 await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
-                    .WithContent("Only the person who added this friend can change it.")
+                    .WithContent(localizer.Translate("friends.onlyOwnerCanChange"))
                     .WithFlags(MessageFlags.Ephemeral)));
                 return;
             }
@@ -130,7 +132,8 @@ public class FriendInteractions(
             {
                 var supporterRequired = new ComponentContainerProperties();
                 supporterRequired.AddComponent(new TextDisplayProperties(
-                    "**Close friends are only available for supporters.** Add someone as a close friend to keep them always visible in WhoKnows no matter their rank, plus in `friendsfm`."));
+                    Localizer.ForGuild(this.Context.Interaction.GuildId, discordLocale: this.Context.Interaction.GuildLocale)
+                        .Translate("friends.closeFriendsSupporterOnly")));
                 supporterRequired.AddComponent(new ActionRowProperties().WithButton(Constants.GetSupporterButton,
                     style: ButtonStyle.Primary,
                     customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "friends-closefriend")));

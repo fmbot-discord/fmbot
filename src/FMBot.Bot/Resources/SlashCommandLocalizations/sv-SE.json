@@ -287,7 +287,7 @@
       "description": "Välj om albumomslag animeras eller alltid visas som stillbild"
     },
     "crown": {
-      "description": "Historik för en specifik krona",
+      "description": "Historik för en specifik crown",
       "parameters": {
         "artist": {
           "description": "Artisten du vill söka efter (standard: det som spelas nu)"
@@ -295,13 +295,13 @@
       }
     },
     "crowns": {
-      "description": "Visa en lista med kronor för dig eller någon annan",
+      "description": "Visa en lista med crowns för dig eller någon annan",
       "parameters": {
         "user": {
           "description": "Användaren som ska visas (standard: du själv)"
         },
         "view": {
-          "description": "Vilken vy av kronor du vill se"
+          "description": "Vilken vy av crowns du vill se"
         }
       }
     },
@@ -1181,7 +1181,7 @@
           "description": "Typen av svar du vill ha - ändra standard med /responsemode"
         },
         "no-filter": {
-          "description": "Inaktivera serverfilter och kronor"
+          "description": "Inaktivera serverfilter och crowns"
         },
         "redirects": {
           "description": "Slå av/på Last.fm-omdirigering av artistnamn (standard: på)"

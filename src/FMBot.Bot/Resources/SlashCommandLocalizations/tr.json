@@ -287,7 +287,7 @@
       "description": "Albüm kapakları hareketli mi yoksa hep sabit mi gösterilsin, ayarla"
     },
     "crown": {
-      "description": "Belirli bir tacın geçmişi",
+      "description": "Belirli bir crown'un geçmişi",
       "parameters": {
         "artist": {
           "description": "Aramak istediğin sanatçı (varsayılan: şu an çalan)"
@@ -295,13 +295,13 @@
       }
     },
     "crowns": {
-      "description": "Senin veya başkasının taçlarının listesini görüntüle",
+      "description": "Senin veya başkasının crown'larının listesini görüntüle",
       "parameters": {
         "user": {
           "description": "Gösterilecek kullanıcı (varsayılan: sen)"
         },
         "view": {
-          "description": "Görmek istediğin taç görünümü"
+          "description": "Görmek istediğin crown görünümü"
         }
       }
     },
@@ -1181,7 +1181,7 @@
           "description": "İstediğin yanıt türü - varsayılanı /responsemode ile değiştir"
         },
         "no-filter": {
-          "description": "Sunucu filtrelerini ve taçları devre dışı bırak"
+          "description": "Sunucu filtrelerini ve crown'ları devre dışı bırak"
         },
         "redirects": {
           "description": "Last.fm sanatçı adı yönlendirmelerini aç/kapat (varsayılan: açık)"

@@ -76,6 +76,56 @@ public class Localizer(Language language, NumberFormat numberFormat)
         return Translate("shared.timeAgo.moreThanMonth");
     }
 
+    public string TimeAgoShort(DateTime timeAgo)
+    {
+        var ts = new TimeSpan(Math.Abs(DateTime.UtcNow.Ticks - timeAgo.Ticks));
+        var delta = ts.TotalSeconds;
+
+        if (delta < 60)
+        {
+            return Translate("shared.timeShort.seconds", ("amount", ts.Seconds.ToString()));
+        }
+
+        if (delta < 60 * 2)
+        {
+            return Translate("shared.timeShort.minutes", ("amount", "1"));
+        }
+
+        if (delta < 45 * 60)
+        {
+            return Translate("shared.timeShort.minutes", ("amount", ts.Minutes.ToString()));
+        }
+
+        if (delta < 90 * 60)
+        {
+            return Translate("shared.timeShort.hours", ("amount", "1"));
+        }
+
+        if (delta < 24 * 60 * 60)
+        {
+            return Translate("shared.timeShort.hours", ("amount", ts.Hours.ToString()));
+        }
+
+        if (delta < 48 * 60 * 60)
+        {
+            return Translate("shared.timeShort.yesterday");
+        }
+
+        if (delta < 30 * 24 * 60 * 60)
+        {
+            return Translate("shared.timeShort.days", ("amount", ts.Days.ToString()));
+        }
+
+        if (delta < 12L * 30 * 24 * 60 * 60)
+        {
+            var months = Convert.ToInt32(Math.Floor((double)ts.Days / 30));
+            return Translate("shared.timeShort.months", ("amount", months.ToString()));
+        }
+
+        var years = Convert.ToInt32(Math.Floor((double)ts.Days / 365));
+        return Translate("shared.timeShort.years", ("amount", years.ToString()));
+    }
+
     public string LongListeningTime(TimeSpan timeSpan)
     {
         if (timeSpan.Days >= 1)

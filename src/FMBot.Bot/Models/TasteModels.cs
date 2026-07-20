@@ -41,6 +41,8 @@ public class TasteCacheModel
     public int Amount { get; set; }
 
     public TasteRawData RawData { get; set; }
+
+    public Localizer Localizer { get; set; }
 }
 
 public class TastePageData

@@ -287,7 +287,7 @@
       "description": "Définit si les pochettes d'albums s'animent ou restent fixes"
     },
     "crown": {
-      "description": "Historique d'une couronne spécifique",
+      "description": "Historique d'une crown spécifique",
       "parameters": {
         "artist": {
           "description": "L'artiste à rechercher (par défaut celui en cours d'écoute)"
@@ -295,13 +295,13 @@
       }
     },
     "crowns": {
-      "description": "Liste des couronnes pour toi ou quelqu'un d'autre",
+      "description": "Liste des crowns pour toi ou quelqu'un d'autre",
       "parameters": {
         "user": {
           "description": "L'utilisateur à afficher (toi par défaut)"
         },
         "view": {
-          "description": "Vue des couronnes à afficher"
+          "description": "Vue des crowns à afficher"
         }
       }
     },
@@ -1181,7 +1181,7 @@
           "description": "Le type de réponse souhaité - change la valeur par défaut avec /responsemode"
         },
         "no-filter": {
-          "description": "Désactiver les filtres du serveur et les couronnes"
+          "description": "Désactiver les filtres du serveur et les crowns"
         },
         "redirects": {
           "description": "Activer/désactiver les redirections de nom d'artiste Last.fm (activées par défaut)"

@@ -291,7 +291,8 @@ public class ArtistInteractions(
             var rebuildResponse = await artistBuilders.RebuildTasteAsync(
                 ownDiscordId, otherDiscordId,
                 timePeriodStr, amount,
-                pageIndex, this.Context.Guild);
+                pageIndex, this.Context.Guild,
+                Localizer.ForGuild(this.Context.Interaction.GuildId, discordLocale: this.Context.Interaction.GuildLocale));
 
             await this.Context.UpdateInteractionEmbed(rebuildResponse, defer: false);
         }

@@ -379,7 +379,8 @@ public class ArtistsService
     // Top artists for 2 users
     public (string result, int matches) GetTableTaste(IReadOnlyCollection<TasteItem> leftUserArtists,
         IReadOnlyCollection<TasteItem> rightUserArtists,
-        int amount, string timeDescription, string mainUser, string userToCompare, string type)
+        int amount, Localizer localizer, string timeDescription, string mainUser, string userToCompare,
+        string typeColumn, string noMatches)
     {
         var artistsToShow = ArtistsToShow(leftUserArtists, rightUserArtists);
 
@@ -404,7 +405,7 @@ public class ArtistsService
         }).ToList();
 
         var description = new StringBuilder();
-        description.AppendLine($"{Description(leftUserArtists, timeDescription, artistsToShow)}");
+        description.AppendLine($"{Description(leftUserArtists, localizer, timeDescription, artistsToShow)}");
 
         var filterAmount = 0;
         for (var i = 0; i < 100; i++)
@@ -422,7 +423,7 @@ public class ArtistsService
         {
             var customTable = artists
                 .Take(amount)
-                .ToTasteTable([type, mainUser, "   ", userToCompare],
+                .ToTasteTable([typeColumn, mainUser, "   ", userToCompare],
                     u => u.Artist,
                     u => u.OwnPlaycount,
                     u => GetCompareChar(u.OwnPlaycount, u.OtherPlaycount),
@@ -434,13 +435,13 @@ public class ArtistsService
         else
         {
             description.AppendLine();
-            description.AppendLine($"No {type.ToLower()} matches... <:404:882220605783560222>");
+            description.AppendLine(noMatches);
         }
 
         return (description.ToString(), artistsToShow.Count);
     }
 
-    private static string Description(IEnumerable<TasteItem> mainUserArtists, string timeDescription,
+    private static string Description(IEnumerable<TasteItem> mainUserArtists, Localizer localizer, string timeDescription,
         IReadOnlyCollection<TasteItem> matchedArtists)
     {
         decimal percentage;
@@ -454,10 +455,11 @@ public class ArtistsService
             percentage = ((decimal)matchedArtists.Count / (decimal)mainUserArtists.Count()) * 100;
         }
 
-        var description =
-            $"-# **{matchedArtists.Count()}** ({percentage:0.0}%) out of top **{mainUserArtists.Count()}** {timeDescription.ToLower()} match";
-
-        return description;
+        return localizer.Translate("taste.matchStats",
+            ("matches", matchedArtists.Count.ToString()),
+            ("percentage", percentage.ToString("0.0")),
+            ("total", mainUserArtists.Count().ToString()),
+            ("period", timeDescription));
     }
 
     private static string GetCompareChar(long ownPlaycount, long otherPlaycount)

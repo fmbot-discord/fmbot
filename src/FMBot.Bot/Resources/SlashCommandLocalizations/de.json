@@ -287,7 +287,7 @@
       "description": "Festlegen, ob Albumcover animiert oder immer als Standbild angezeigt werden"
     },
     "crown": {
-      "description": "Verlauf einer bestimmten Krone",
+      "description": "Verlauf einer bestimmten Crown",
       "parameters": {
         "artist": {
           "description": "Der Künstler, den du suchst (Standard: was gerade läuft)"
@@ -295,13 +295,13 @@
       }
     },
     "crowns": {
-      "description": "Liste der Kronen von dir oder jemand anderem ansehen",
+      "description": "Liste der Crowns von dir oder jemand anderem ansehen",
       "parameters": {
         "user": {
           "description": "Der anzuzeigende Nutzer (standardmäßig du selbst)"
         },
         "view": {
-          "description": "Ansicht der Kronen, die du sehen möchtest"
+          "description": "Ansicht der Crowns, die du sehen möchtest"
         }
       }
     },
@@ -1181,7 +1181,7 @@
           "description": "Gewünschter Antworttyp - Standard änderbar mit /responsemode"
         },
         "no-filter": {
-          "description": "Serverfilter und Kronen deaktivieren"
+          "description": "Serverfilter und Crowns deaktivieren"
         },
         "redirects": {
           "description": "Last.fm-Weiterleitungen für Künstlernamen umschalten (Standard: aktiviert)"

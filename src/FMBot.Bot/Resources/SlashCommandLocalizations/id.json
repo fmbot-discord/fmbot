@@ -287,7 +287,7 @@
       "description": "Atur apakah sampul album beranimasi atau selalu tampil diam"
     },
     "crown": {
-      "description": "Riwayat untuk mahkota tertentu",
+      "description": "Riwayat untuk crown tertentu",
       "parameters": {
         "artist": {
           "description": "Artis yang ingin kamu cari (default: yang sedang diputar)"
@@ -295,13 +295,13 @@
       }
     },
     "crowns": {
-      "description": "Lihat daftar mahkota milik kamu atau orang lain",
+      "description": "Lihat daftar crowns milik kamu atau orang lain",
       "parameters": {
         "user": {
           "description": "Pengguna yang ditampilkan (default: kamu sendiri)"
         },
         "view": {
-          "description": "Tampilan mahkota yang ingin kamu lihat"
+          "description": "Tampilan crown yang ingin kamu lihat"
         }
       }
     },
@@ -1181,7 +1181,7 @@
           "description": "Jenis respons yang kamu mau - ubah default dengan /responsemode"
         },
         "no-filter": {
-          "description": "Nonaktifkan filter server dan mahkota"
+          "description": "Nonaktifkan filter server dan crowns"
         },
         "redirects": {
           "description": "Aktifkan/nonaktifkan redirect nama artis Last.fm (default: aktif)"

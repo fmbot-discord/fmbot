@@ -287,7 +287,7 @@
       "description": "Album कवर एनिमेट हों या हमेशा स्थिर दिखें, यह सेट करो"
     },
     "crown": {
-      "description": "किसी क्राउन की हिस्ट्री",
+      "description": "किसी crown की हिस्ट्री",
       "parameters": {
         "artist": {
           "description": "जो artist तुम खोजना चाहते हो (डिफ़ॉल्ट: अभी बज रहा)"
@@ -295,13 +295,13 @@
       }
     },
     "crowns": {
-      "description": "तुम्हारे या किसी और के क्राउन की लिस्ट देखो",
+      "description": "तुम्हारे या किसी और के crowns की लिस्ट देखो",
       "parameters": {
         "user": {
           "description": "जिस यूज़र का डेटा दिखाना है (डिफ़ॉल्ट: तुम खुद)"
         },
         "view": {
-          "description": "क्राउन का कौन सा व्यू देखना है"
+          "description": "crowns का कौन सा व्यू देखना है"
         }
       }
     },
@@ -1181,7 +1181,7 @@
           "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /responsemode से बदलो"
         },
         "no-filter": {
-          "description": "सर्वर फ़िल्टर और क्राउन बंद करो"
+          "description": "सर्वर फ़िल्टर और crowns बंद करो"
         },
         "redirects": {
           "description": "Last.fm artist नाम रीडायरेक्ट चालू/बंद करो (डिफ़ॉल्ट: चालू)"
