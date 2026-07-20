@@ -49,10 +49,12 @@ public class PuppeteerService : IDisposable
         {
             Headless = true,
             ExecutablePath = executablePath,
+            ProtocolTimeout = 30000,
             Args = new[]
             {
                 "--no-sandbox",
-                "--font-render-hinting=none"
+                "--font-render-hinting=none",
+                "--disable-dev-shm-usage"
             }
         });
     }
