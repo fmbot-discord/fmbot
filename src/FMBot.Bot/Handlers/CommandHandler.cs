@@ -410,7 +410,7 @@ public class CommandHandler
             {
                 if (context.Guild == null)
                 {
-                    var dmChannel = await context.User.GetDMChannelAsync();
+                    var dmChannel = await this._userService.GetDmChannel(context.User);
                     await context.Client.Rest.SendMessageAsync(dmChannel.Id, new MessageProperties
                     {
                         Content = Localizer.ForGuild(context.Guild?.Id, discordLocale: context.Guild?.PreferredLocale).Translate("errors.dmNotSupported")

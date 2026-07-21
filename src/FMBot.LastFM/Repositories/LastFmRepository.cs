@@ -514,7 +514,8 @@ public class LastFmRepository : ILastfmRepository
                     ? userCall.Content.User.Image?.First(a => a.Size == "extralarge").Text.Replace("/u/300x300/", "/u/")
                     : null,
                 Type = userCall.Content.User.Type,
-                Subscriber = userCall.Content.User.Subscriber == 1
+                Subscriber = userCall.Content.User.Subscriber == 1,
+                SpotifyExpiryEstimateUnix = userCall.Content.User.SpotifyExpiryEstimate?.Unixtime
             };
     }
 

@@ -133,6 +133,18 @@ public class UserService
         this._cache.Remove(UserLastFmCacheKey(user.UserNameLastFM));
     }
 
+    public async Task<DMChannel> GetDmChannel(NetCord.User discordUser)
+    {
+        var dmChannel = await discordUser.GetDMChannelAsync();
+
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        await db.Users
+            .Where(w => w.DiscordUserId == discordUser.Id && w.DmChannelId != dmChannel.Id)
+            .ExecuteUpdateAsync(s => s.SetProperty(p => p.DmChannelId, dmChannel.Id));
+
+        return dmChannel;
+    }
+
     public static string UserInternalIdCacheKey(int userId)
     {
         return $"user-i{userId}";

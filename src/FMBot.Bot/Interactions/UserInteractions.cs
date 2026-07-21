@@ -409,7 +409,7 @@ public class UserInteractions(
 
                         response = await userBuilder.ListShortcutsAsync(new ContextModel(this.Context,
                             contextUser));
-                        var dmChannel = await this.Context.User.GetDMChannelAsync();
+                        var dmChannel = await userService.GetDmChannel(this.Context.User);
                         await dmChannel.SendMessageAsync(new MessageProperties { Components = response.ComponentsV2 });
                         break;
                     }
@@ -470,7 +470,7 @@ public class UserInteractions(
                             .WithFlags(MessageFlags.Ephemeral)));
 
                         response = UserBuilder.RemoveDataResponse(new ContextModel(this.Context, contextUser));
-                        var dmChannel = await this.Context.User.GetDMChannelAsync();
+                        var dmChannel = await userService.GetDmChannel(this.Context.User);
                         await dmChannel.SendMessageAsync(new MessageProperties
                         {
                             Embeds = [response.Embed],

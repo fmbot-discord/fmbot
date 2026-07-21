@@ -54,6 +54,7 @@ public class TimerService : IDisposable
     private readonly ShortcutService _shortcutService;
     private readonly CrownService _crownService;
     private readonly AutopostService _autopostService;
+    private readonly DmNotificationService _dmNotificationService;
     private readonly IServiceProvider _serviceProvider;
 
     public FeaturedLog CurrentFeatured;
@@ -75,11 +76,13 @@ public class TimerService : IDisposable
         BotListService botListService,
         EurovisionService eurovisionService, ShortcutService shortcutService, CrownService crownService,
         AutopostService autopostService,
+        DmNotificationService dmNotificationService,
         IServiceProvider serviceProvider)
     {
         this._serviceProvider = serviceProvider;
         this._crownService = crownService;
         this._autopostService = autopostService;
+        this._dmNotificationService = dmNotificationService;
         this._client = client;
         this._userService = userService;
         this._indexService = indexService;
@@ -187,6 +190,12 @@ public class TimerService : IDisposable
 
         Log.Information($"RecurringJob: Adding {nameof(RunAutomaticCrownSeeder)}");
         RecurringJob.AddOrUpdate(nameof(RunAutomaticCrownSeeder), () => RunAutomaticCrownSeeder(), "15 * * * *");
+
+        Log.Information($"RecurringJob: Adding {nameof(RefreshSpotifyExpiryEstimates)}");
+        RecurringJob.AddOrUpdate(nameof(RefreshSpotifyExpiryEstimates), () => RefreshSpotifyExpiryEstimates(), "20 * * * *");
+        //
+        // Log.Information($"RecurringJob: Adding {nameof(SendSpotifyExpiryNotifications)}");
+        // RecurringJob.AddOrUpdate(nameof(SendSpotifyExpiryNotifications), () => SendSpotifyExpiryNotifications(), "0 */3 * * *");
 
         var mainGuildConnected = this._client.Any(shard => shard.Cache.Guilds.ContainsKey(ConfigData.Data.Bot.BaseServerId));
         if (mainGuildConnected)
@@ -632,6 +641,16 @@ public class TimerService : IDisposable
     public async Task RunAutomaticCrownSeeder()
     {
         await this._crownService.RunAutomaticCrownSeeder();
+    }
+
+    public async Task RefreshSpotifyExpiryEstimates()
+    {
+        await this._dmNotificationService.RefreshSpotifyExpiryEstimates();
+    }
+
+    public async Task SendSpotifyExpiryNotifications()
+    {
+        await this._dmNotificationService.SendSpotifyExpiryNotifications();
     }
 
     public async Task RunScheduledAutoposts()

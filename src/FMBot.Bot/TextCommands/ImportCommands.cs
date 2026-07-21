@@ -99,7 +99,7 @@ public class ImportCommands(
         try
         {
             var response = await importBuilders.ImportModify(new ContextModel(this.Context, prfx, contextUser), contextUser.UserId);
-            var dmChannel = await this.Context.User.GetDMChannelAsync();
+            var dmChannel = await userService.GetDmChannel(this.Context.User);
             await dmChannel.SendMessageAsync(new MessageProperties
             {
                 Embeds = [response.Embed],

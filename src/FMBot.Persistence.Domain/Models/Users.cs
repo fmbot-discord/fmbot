@@ -49,6 +49,12 @@ public class User
 
     public DateTime? LastUsed { get; set; }
 
+    public DateTime? SpotifyConnectionExpiry { get; set; }
+
+    public DateTime? SpotifyExpiryChecked { get; set; }
+
+    public ulong? DmChannelId { get; set; }
+
     public string[] EmoteReactions { get; set; }
 
     public string TimeZone { get; set; }
@@ -87,4 +93,5 @@ public class User
 
     public ICollection<UserInteraction> Interactions { get; set; }
     public ICollection<UserShortcut> Shortcuts { get; set; }
+    public ICollection<UserDmNotification> DmNotifications { get; set; }
 }

@@ -475,7 +475,7 @@ public class OwnerCommands(
             embed.WithAuthor(".fmbot staff message");
 
             var user = await client.Rest.GetUserAsync(discordUserId);
-            var dmChannel = await user.GetDMChannelAsync();
+            var dmChannel = await userService.GetDmChannel(user);
             await dmChannel.SendMessageAsync(new MessageProperties { Embeds = [embed] });
 
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,

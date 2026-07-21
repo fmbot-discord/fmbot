@@ -492,7 +492,7 @@ public class UserCommands(
             contextUser.FmSetting ??= await fmSettingService.GetOrCreateFmSetting(contextUser.UserId);
             var response = UserBuilder.FmMode(new ContextModel(this.Context, prfx, contextUser), guild);
 
-            var dmChannel = await this.Context.User.GetDMChannelAsync();
+            var dmChannel = await userService.GetDmChannel(this.Context.User);
             if (response.ResponseType == ResponseType.ComponentsV2)
             {
                 await dmChannel.SendMessageAsync(new MessageProperties()
@@ -742,7 +742,7 @@ public class UserCommands(
         }
 
         var response = UserBuilder.RemoveDataResponse(new ContextModel(this.Context, prfx, contextUser));
-        var dmChannel = await this.Context.User.GetDMChannelAsync();
+        var dmChannel = await userService.GetDmChannel(this.Context.User);
         await dmChannel.SendMessageAsync(new MessageProperties().AddEmbeds(response.Embed)
             .WithComponents(response.Components?.Any() == true ? [response.Components] : null));
         await this.Context.LogCommandUsedAsync(response, userService);

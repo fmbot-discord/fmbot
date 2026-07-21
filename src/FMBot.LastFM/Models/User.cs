@@ -42,6 +42,9 @@ internal class UserLfm
     public long Bootstrap { get; set; }
 
     public string Realname { get; set; }
+
+    [JsonPropertyName("spotify_expiry_estimate")]
+    public Registered SpotifyExpiryEstimate { get; set; }
 }
 
 internal class Registered

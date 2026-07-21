@@ -106,7 +106,7 @@ public class DiscogsBuilder
         loginContainer.WithActionRow(new ActionRowProperties().AddComponents(
             new LinkButtonProperties(discogsAuth.LoginUrl, "Login to Discogs")));
 
-        var dmChannel = await context.DiscordUser.GetDMChannelAsync();
+        var dmChannel = await this._userService.GetDmChannel(context.DiscordUser);
         var dm = await dmChannel.SendMessageAsync(new MessageProperties
         {
             Components = [loginContainer],

@@ -83,7 +83,12 @@ public class UserRepository
     {
         Log.Information("UserRepository: Setting user stats for {userId}", user.UserId);
 
-        await using var setIndexTime = new NpgsqlCommand($"UPDATE public.users SET registered_last_fm='{dataSourceUser.Registered:u}', lastfm_pro = '{dataSourceUser.Subscriber}', total_playcount = {dataSourceUser.Playcount} " +
+        var spotifyExpiry = dataSourceUser.SpotifyExpiryEstimateUnix.HasValue
+            ? $"'{DateTime.UnixEpoch.AddSeconds(dataSourceUser.SpotifyExpiryEstimateUnix.Value):u}'"
+            : "NULL";
+
+        await using var setIndexTime = new NpgsqlCommand($"UPDATE public.users SET registered_last_fm='{dataSourceUser.Registered:u}', lastfm_pro = '{dataSourceUser.Subscriber}', total_playcount = {dataSourceUser.Playcount}, " +
+                                                         $"spotify_connection_expiry = {spotifyExpiry}, spotify_expiry_checked = '{DateTime.UtcNow:u}' " +
                                                          $"WHERE user_id = {user.UserId};", connection);
 
         await setIndexTime.ExecuteNonQueryAsync().ConfigureAwait(false);

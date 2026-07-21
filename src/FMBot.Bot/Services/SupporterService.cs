@@ -39,6 +39,7 @@ public class SupporterService
     private readonly IndexService _indexService;
     private readonly ShardedGatewayClient _client;
     private readonly SupporterLinkService.SupporterLinkServiceClient _supporterLinkService;
+    private readonly UserService _userService;
 
     public SupporterService(IDbContextFactory<FMBotDbContext> contextFactory,
         OpenCollectiveService openCollectiveService,
@@ -47,7 +48,8 @@ public class SupporterService
         IndexService indexService,
         DiscordSkuService discordSkuService,
         ShardedGatewayClient client,
-        SupporterLinkService.SupporterLinkServiceClient supporterLinkService)
+        SupporterLinkService.SupporterLinkServiceClient supporterLinkService,
+        UserService userService)
     {
         this._contextFactory = contextFactory;
         this._openCollectiveService = openCollectiveService;
@@ -56,6 +58,7 @@ public class SupporterService
         this._discordSkuService = discordSkuService;
         this._client = client;
         this._supporterLinkService = supporterLinkService;
+        this._userService = userService;
         this._botSettings = botSettings.Value;
     }
 
@@ -134,7 +137,7 @@ public class SupporterService
         return true;
     }
 
-    public static async Task SendSupporterWelcomeMessage(NetCord.User discordUser, bool hasDiscogs, Supporter supporter,
+    public async Task SendSupporterWelcomeMessage(NetCord.User discordUser, bool hasDiscogs, Supporter supporter,
         bool reactivation = false, bool isGifted = false, StripeSupporter stripeSupporter = null)
     {
         var container = new ComponentContainerProperties
@@ -247,7 +250,7 @@ public class SupporterService
                     $"https://discord.gg/fmbot", "Support")));
         }
 
-        var dmChannel = await discordUser.GetDMChannelAsync();
+        var dmChannel = await this._userService.GetDmChannel(discordUser);
         await dmChannel.SendMessageAsync(new MessageProperties
         {
             Components = [container],
@@ -260,7 +263,7 @@ public class SupporterService
             discordUser.Id, reactivation, isGifted, stripeSupporter?.PurchaseSource);
     }
 
-    private static async Task SendGiftPurchaserThankYouMessage(NetCord.User purchaserUser,
+    private async Task SendGiftPurchaserThankYouMessage(NetCord.User purchaserUser,
         StripeSupporter stripeSupporter)
     {
         try
@@ -284,7 +287,7 @@ public class SupporterService
 
             thankYouEmbed.WithDescription(thankYouMessage.ToString());
 
-            var dmChannel = await purchaserUser.GetDMChannelAsync();
+            var dmChannel = await this._userService.GetDmChannel(purchaserUser);
             await dmChannel.SendMessageAsync(new MessageProperties
             {
                 Embeds = [thankYouEmbed]
@@ -297,7 +300,7 @@ public class SupporterService
         }
     }
 
-    public static async Task SendSupporterGoodbyeMessage(NetCord.User discordUser, bool hadImported = false)
+    public async Task SendSupporterGoodbyeMessage(NetCord.User discordUser, bool hadImported = false)
     {
         try
         {
@@ -336,7 +339,7 @@ public class SupporterService
                 .AddComponents(new LinkButtonProperties(
                     "https://discord.gg/fmbot", "Support server")));
 
-            var dmChannel = await discordUser.GetDMChannelAsync();
+            var dmChannel = await this._userService.GetDmChannel(discordUser);
             await dmChannel.SendMessageAsync(new MessageProperties
             {
                 Components = [container],
@@ -1408,7 +1411,7 @@ public class SupporterService
         }
     }
 
-    public static async Task SendPremiumGuildWelcomeMessage(NetCord.User discordUser, string guildName,
+    public async Task SendPremiumGuildWelcomeMessage(NetCord.User discordUser, string guildName,
         ulong discordGuildId)
     {
         var container = new ComponentContainerProperties
@@ -1475,7 +1478,7 @@ public class SupporterService
             ]
         });
 
-        var dmChannel = await discordUser.GetDMChannelAsync();
+        var dmChannel = await this._userService.GetDmChannel(discordUser);
         await dmChannel.SendMessageAsync(new MessageProperties
         {
             Components = [container],
@@ -2256,22 +2259,33 @@ public class SupporterService
 
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
-        var supporter = await db.Supporters.FirstAsync(f => f.DiscordUserId == oldDiscordUserId);
-        supporter.Notes = $"Migrated from {oldDiscordUserId} to {newDiscordUserId}";
-        supporter.DiscordUserId = newDiscordUserId;
-        db.Update(supporter);
+        var supporter = await db.Supporters.FirstOrDefaultAsync(f => f.DiscordUserId == oldDiscordUserId);
+        if (supporter != null)
+        {
+            supporter.Notes = $"Migrated from {oldDiscordUserId} to {newDiscordUserId}";
+            supporter.DiscordUserId = newDiscordUserId;
+            db.Update(supporter);
+        }
+        else
+        {
+            Log.Warning("No supporter record found while migrating from {oldDiscordUserId}", oldDiscordUserId);
+        }
 
         await db.SaveChangesAsync();
         await Task.Delay(200);
 
-        var oldUser = await db.Users.FirstAsync(f => f.DiscordUserId == oldDiscordUserId);
-        if (oldUser.UserType == UserType.Supporter)
+        var oldUser = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == oldDiscordUserId);
+        if (oldUser != null)
         {
-            oldUser.UserType = UserType.User;
+            if (oldUser.UserType == UserType.Supporter)
+            {
+                oldUser.UserType = UserType.User;
+            }
+
+            oldUser.DataSource = DataSource.LastFm;
+            db.Update(oldUser);
         }
 
-        oldUser.DataSource = DataSource.LastFm;
-        db.Update(oldUser);
         await ModifyGuildRole(oldDiscordUserId, false);
 
         var newUser = await db.Users.FirstAsync(f => f.DiscordUserId == newDiscordUserId);
@@ -2281,6 +2295,24 @@ public class SupporterService
         }
 
         db.Update(newUser);
+
+        if (supporter == null)
+        {
+            supporter = new Supporter
+            {
+                DiscordUserId = newDiscordUserId,
+                Name = newUser.UserNameLastFM,
+                Created = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
+                Modified = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
+                Notes = $"Migrated from {oldDiscordUserId}, original supporter record was missing",
+                SupporterMessagesEnabled = true,
+                VisibleInOverview = true,
+                SupporterType = SupporterType.User,
+                SubscriptionType = SubscriptionType.Stripe
+            };
+
+            await db.Supporters.AddAsync(supporter);
+        }
         await ModifyGuildRole(newDiscordUserId);
 
         await db.SaveChangesAsync();
@@ -2324,7 +2356,7 @@ public class SupporterService
                         StripeSubscriptionId = stripeSupporter.StripeSubscriptionId ?? "",
                         OldDiscordUserId = (long)oldDiscordUserId,
                         NewDiscordUserId = (long)newDiscordUserId,
-                        OldLastFmUserName = oldUser.UserNameLastFM,
+                        OldLastFmUserName = oldUser?.UserNameLastFM ?? stripeSupporter.PurchaserLastFmUserName ?? "",
                         NewLastFmUserName = newUser.UserNameLastFM
                     });
             }
@@ -2573,7 +2605,10 @@ public class SupporterService
             .AsQueryable()
             .FirstOrDefaultAsync(f => f.DiscordUserId == id);
 
-        _ = this._indexService.IndexUser(user);
+        if (user != null)
+        {
+            _ = this._indexService.IndexUser(user);
+        }
     }
 
     public async Task<IReadOnlyList<Supporter>> GetAllVisibleSupporters()

@@ -225,7 +225,7 @@ public static class CommandContextExtensions
                     responseMessage = embed;
                     break;
                 case ResponseType.Paginator:
-                    var channel = context.Guild == null ? await context.User.GetDMChannelAsync() : context.Channel;
+                    var channel = context.Guild == null ? await userService.GetDmChannel(context.User) : context.Channel;
                     var componentPaginatorResult = await interactiveService.SendPaginatorAsync(
                         response.ComponentPaginator.Build(),
                         channel,

@@ -2766,11 +2766,17 @@ public class ArtistBuilders
         var bypassCache = false;
         if (!guildUsers.ContainsKey(userSettings.UserId))
         {
-            var guildUser = await context.DiscordGuild.GetUserAsync(userSettings.DiscordUserId);
-            if (guildUser != null)
+            try
             {
-                await this._indexService.AddOrUpdateGuildUser(guildUser, false);
-                bypassCache = true;
+                var guildUser = await context.DiscordGuild.GetUserAsync(userSettings.DiscordUserId);
+                if (guildUser != null)
+                {
+                    await this._indexService.AddOrUpdateGuildUser(guildUser, false);
+                    bypassCache = true;
+                }
+            }
+            catch (RestException)
+            {
             }
         }
 
@@ -2795,6 +2801,23 @@ public class ArtistBuilders
             .ToHashSet();
 
         concurrentNeighbors.TryGetValue(userSettings.UserId, out var self);
+
+        if (self == null && !bypassCache && guildUsers.ContainsKey(userSettings.UserId))
+        {
+            var retryAllTimeTask = this._whoKnowsArtistService.GetAllTimeTopArtistForGuild(guild.GuildId, largeGuild, true);
+            var retryQuarterlyTask = this._whoKnowsArtistService.GetQuarterlyTopArtistForGuild(guild.GuildId, largeGuild, true);
+
+            guildTopAllTime = await retryAllTimeTask;
+            guildTopQuarterly = await retryQuarterlyTask;
+
+            ownAllTime = guildTopAllTime.Where(w => w.UserId == userSettings.UserId).ToList();
+            ownQuarterly = guildTopQuarterly.Where(w => w.UserId == userSettings.UserId).ToList();
+
+            concurrentNeighbors =
+                await this._whoKnowsArtistService.GetAffinity(guildTopAllTime, ownAllTime, guildTopQuarterly, ownQuarterly);
+
+            concurrentNeighbors.TryGetValue(userSettings.UserId, out self);
+        }
 
         if (self == null)
         {
