@@ -47,6 +47,7 @@ namespace FMBot.Persistence.EntityFrameWork
         public virtual DbSet<UserCrown> UserCrowns { get; set; }
         public virtual DbSet<UserStreak> UserStreaks { get; set; }
         public virtual DbSet<UserInteraction> UserInteractions { get; set; }
+        public virtual DbSet<UserDmNotification> UserDmNotifications { get; set; }
         public virtual DbSet<UserToken> UserTokens { get; set; }
         public virtual DbSet<UserShortcut> UserShortcuts { get; set; }
         public virtual DbSet<AiGeneration> AiGenerations { get; set; }
@@ -434,6 +435,18 @@ namespace FMBot.Persistence.EntityFrameWork
 
                 entity.HasOne(u => u.User)
                     .WithMany(a => a.Interactions)
+                    .HasForeignKey(f => f.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<UserDmNotification>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                entity.HasIndex(i => i.UserId);
+
+                entity.HasOne(u => u.User)
+                    .WithMany(a => a.DmNotifications)
                     .HasForeignKey(f => f.UserId)
                     .OnDelete(DeleteBehavior.Cascade);
             });

@@ -361,7 +361,7 @@ public class UserSlashCommands(
         }
 
         var response = UserBuilder.RemoveDataResponse(new ContextModel(this.Context, userSettings));
-        var dmChannel = await this.Context.User.GetDMChannelAsync();
+        var dmChannel = await userService.GetDmChannel(this.Context.User);
         await dmChannel.SendMessageAsync(new MessageProperties
         {
             Embeds = [response.Embed],

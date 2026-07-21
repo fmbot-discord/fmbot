@@ -50,7 +50,7 @@ public class DiscogsSlashCommands(
                 }
 
                 var response = discogsBuilder.DiscogsLoginGetLinkAsync(new ContextModel(this.Context, contextUser));
-                var dmChannel = await this.Context.User.GetDMChannelAsync();
+                var dmChannel = await userService.GetDmChannel(this.Context.User);
                 await dmChannel.SendMessageAsync(new MessageProperties
                 {
                     Components = response.GetComponentsV2(),
@@ -74,7 +74,7 @@ public class DiscogsSlashCommands(
                 }
 
                 var response = DiscogsBuilder.DiscogsManage(new ContextModel(this.Context, contextUser));
-                var manageDmChannel = await this.Context.User.GetDMChannelAsync();
+                var manageDmChannel = await userService.GetDmChannel(this.Context.User);
                 await manageDmChannel.SendMessageAsync(new MessageProperties
                 {
                     Components = response.GetComponentsV2(),

@@ -25,5 +25,7 @@ public class DataSourceUser
     
     public long LfmRegisteredUnix { get; set; }
 
+    public long? SpotifyExpiryEstimateUnix { get; set; }
+
     public string Type { get; set; }
 }

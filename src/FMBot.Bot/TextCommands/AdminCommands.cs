@@ -1526,7 +1526,7 @@ public class AdminCommands(
             var discordUser = await this.Context.GetUserAsync(discordUserId);
             if (discordUser != null && sendDm == null)
             {
-                await SupporterService.SendSupporterWelcomeMessage(discordUser, userSettings.UserDiscogs != null,
+                await supporterService.SendSupporterWelcomeMessage(discordUser, userSettings.UserDiscogs != null,
                     supporter);
 
                 description.AppendLine("✅ Thank you dm sent");
@@ -1589,7 +1589,7 @@ public class AdminCommands(
             {
                 PurchaseSource = source
             };
-            await SupporterService.SendSupporterWelcomeMessage(discordUser, userSettings.UserDiscogs != null,
+            await supporterService.SendSupporterWelcomeMessage(discordUser, userSettings.UserDiscogs != null,
                 supporter, stripeSupporter: stripeSupporter);
 
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "✅ Thank you dm sent" });
@@ -1622,7 +1622,7 @@ public class AdminCommands(
 
             var hasImported = userSettings != null && userSettings.DataSource != DataSource.LastFm;
 
-            await SupporterService.SendSupporterGoodbyeMessage(discordUser, hasImported);
+            await supporterService.SendSupporterGoodbyeMessage(discordUser, hasImported);
 
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "✅ Goodbye dm sent" });
         }
@@ -1734,7 +1734,7 @@ public class AdminCommands(
             var discordUser = await this.Context.GetUserAsync(discordUserId);
             if (discordUser != null && sendDm == null)
             {
-                await SupporterService.SendSupporterGoodbyeMessage(discordUser, hadImported);
+                await supporterService.SendSupporterGoodbyeMessage(discordUser, hadImported);
 
                 description.AppendLine("✅ Goodbye dm sent");
             }
@@ -2623,7 +2623,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
 
                 var guild = await guildService.GetGuildAsync(discordGuildId);
 
-                await SupporterService.SendPremiumGuildWelcomeMessage(this.Context.User, guild?.Name, discordGuildId);
+                await supporterService.SendPremiumGuildWelcomeMessage(this.Context.User, guild?.Name, discordGuildId);
 
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
                     new MessageProperties { Content = $"Sent premium welcome DM for guild `{discordGuildId}` ({guild?.Name ?? "not in db"})" });
@@ -3354,15 +3354,28 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                 var oldUser = await settingService.GetDifferentUser(oldUserId);
                 var newUser = await settingService.GetDifferentUser(newUserId);
 
-                if (oldUser == null || newUser == null)
+                if (newUser == null)
                 {
                     await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
-                        new MessageProperties { Content = "One or both users could not be found. Are you sure they are registered in .fmbot?" });
+                        new MessageProperties { Content = "New user could not be found. Are you sure they are registered in .fmbot?" });
                     await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
                     return;
                 }
 
-                if (oldUser.UserType != UserType.Supporter)
+                ulong oldDiscordUserId;
+                if (oldUser != null)
+                {
+                    oldDiscordUserId = oldUser.DiscordUserId;
+                }
+                else if (!ulong.TryParse(oldUserId.Trim('@', '!', '<', '>', '&'), out oldDiscordUserId))
+                {
+                    await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
+                        new MessageProperties { Content = "Old user could not be found. If their .fmbot account has been deleted, enter their Discord user id." });
+                    await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NotFound }, userService);
+                    return;
+                }
+
+                if (oldUser != null && oldUser.UserType != UserType.Supporter)
                 {
                     await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
                         new MessageProperties { Content = "Old user is not a supporter" });
@@ -3370,7 +3383,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                     return;
                 }
 
-                var stripeSupporter = await supporterService.GetStripeSupporter(oldUser.DiscordUserId);
+                var stripeSupporter = await supporterService.GetStripeSupporter(oldDiscordUserId);
 
                 if (stripeSupporter == null)
                 {
@@ -3381,6 +3394,28 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                     return;
                 }
 
+                if (oldUser == null)
+                {
+                    if (stripeSupporter.PurchaserDiscordUserId != oldDiscordUserId)
+                    {
+                        await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
+                            new MessageProperties
+                                { Content = "Old id matches a gifted subscription, not a purchase. Only purchased subscriptions can be transferred for deleted accounts." });
+                        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
+                        return;
+                    }
+
+                    if (stripeSupporter.EntitlementDeleted ||
+                        (stripeSupporter.DateEnding.HasValue && stripeSupporter.DateEnding <= DateTime.UtcNow))
+                    {
+                        await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
+                            new MessageProperties
+                                { Content = "Old user's Stripe subscription is no longer active, so there is nothing to transfer." });
+                        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
+                        return;
+                    }
+                }
+
                 var embed = new EmbedProperties();
 
                 var stripeDescription = new StringBuilder();
@@ -3389,17 +3424,27 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                 embed.AddField("Stripe details", stripeDescription.ToString());
 
                 var oldUserDescription = new StringBuilder();
-                oldUserDescription.AppendLine($"`{oldUser.DiscordUserId}` - <@{oldUser.DiscordUserId}>");
-                oldUserDescription.AppendLine($"Last.fm: `{oldUser.UserNameLastFM}`");
-                if (oldUser.LastUsed.HasValue)
+                oldUserDescription.AppendLine($"`{oldDiscordUserId}` - <@{oldDiscordUserId}>");
+                if (oldUser != null)
                 {
-                    var specifiedDateTime = DateTime.SpecifyKind(oldUser.LastUsed.Value, DateTimeKind.Utc);
-                    var dateValue = ((DateTimeOffset)specifiedDateTime).ToUnixTimeSeconds();
+                    oldUserDescription.AppendLine($"Last.fm: `{oldUser.UserNameLastFM}`");
+                    if (oldUser.LastUsed.HasValue)
+                    {
+                        var specifiedDateTime = DateTime.SpecifyKind(oldUser.LastUsed.Value, DateTimeKind.Utc);
+                        var dateValue = ((DateTimeOffset)specifiedDateTime).ToUnixTimeSeconds();
 
-                    oldUserDescription.AppendLine($"Last used: <t:{dateValue}:R>.");
+                        oldUserDescription.AppendLine($"Last used: <t:{dateValue}:R>.");
+                    }
+                }
+                else
+                {
+                    oldUserDescription.AppendLine($"Last.fm on purchase: `{stripeSupporter.PurchaserLastFmUserName}`");
+                    oldUserDescription.AppendLine("Account has been deleted from .fmbot.");
                 }
 
-                embed.AddField($"Old user - {oldUser.UserId} {oldUser.UserType.UserTypeToIcon()}",
+                embed.AddField(oldUser != null
+                        ? $"Old user - {oldUser.UserId} {oldUser.UserType.UserTypeToIcon()}"
+                        : "Old user - deleted",
                     oldUserDescription.ToString());
 
                 var newUserDescription = new StringBuilder();
@@ -3416,7 +3461,8 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                 embed.AddField($"New user - {newUser.UserId} {newUser.UserType.UserTypeToIcon()}",
                     newUserDescription.ToString());
 
-                if (!string.Equals(oldUser.UserNameLastFM, newUser.UserNameLastFM, StringComparison.OrdinalIgnoreCase))
+                if (!string.Equals(oldUser?.UserNameLastFM ?? stripeSupporter.PurchaserLastFmUserName,
+                        newUser.UserNameLastFM, StringComparison.OrdinalIgnoreCase))
                 {
                     embed.AddField("⚠️ Warning ⚠️", "Last.fm usernames are different, are you sure?");
                 }
@@ -3425,7 +3471,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                     "This will move over Stripe supporter from one user to another and update their details within the Stripe dashboard. This can take a few seconds to complete.");
 
                 var components = new ActionRowProperties().WithButton("Move supporter",
-                    customId: $"move-supporter:{oldUser.DiscordUserId}:{newUser.DiscordUserId}", style: ButtonStyle.Danger);
+                    customId: $"move-supporter:{oldDiscordUserId}:{newUser.DiscordUserId}", style: ButtonStyle.Danger);
 
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties()
                     .AddEmbeds(embed)

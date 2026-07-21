@@ -293,6 +293,7 @@ public class Startup
             .AddSingleton<GenreService>()
             .AddSingleton<TagService>()
             .AddSingleton<IndexService, IndexService>()
+            .AddSingleton<DmNotificationService>()
             .AddSingleton<ImportService>()
             .AddSingleton<LocalizationService>()
             .AddSingleton<MusicBotService>()
