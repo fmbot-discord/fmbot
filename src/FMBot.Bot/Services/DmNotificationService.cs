@@ -90,7 +90,7 @@ public class DmNotificationService(
                     failed++;
                 }
 
-                await Task.Delay(250);
+                await Task.Delay(600);
             }
 
             Log.Information("DmNotificationService: Refreshed Spotify expiry estimates - {updated} updated, {failed} failed", updated, failed);
