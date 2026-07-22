@@ -117,7 +117,7 @@ public class TrackBuilders
         var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, context.Localizer, searchValue,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
             userId: context.ContextUser.UserId, interactionId: context.InteractionId,
-            referencedMessage: context.ReferencedMessage);
+            referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
 
         if (trackSearch.Track == null)
         {
@@ -544,7 +544,7 @@ public class TrackBuilders
         var track = await this._trackService.SearchTrack(response, context.DiscordUser, context.Localizer, trackValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedTracks: true,
             userId: context.ContextUser.UserId, interactionId: context.InteractionId,
-            referencedMessage: context.ReferencedMessage);
+            referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
         if (track.Track == null)
         {
             return track.Response;
@@ -730,7 +730,7 @@ public class TrackBuilders
         var track = await this._trackService.SearchTrack(response, context.DiscordUser, context.Localizer, trackValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedTracks: true,
             userId: context.ContextUser.UserId, interactionId: context.InteractionId,
-            referencedMessage: context.ReferencedMessage);
+            referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
         if (track.Track == null)
         {
             return track.Response;
@@ -844,7 +844,7 @@ public class TrackBuilders
         var track = await this._trackService.SearchTrack(response, context.DiscordUser, context.Localizer, trackValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedTracks: true,
             userId: context.ContextUser.UserId, interactionId: context.InteractionId,
-            referencedMessage: context.ReferencedMessage);
+            referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
         if (track.Track == null)
         {
             return track.Response;
@@ -1034,7 +1034,7 @@ public class TrackBuilders
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
             otherUserUsername: userSettings.UserNameLastFm, userId: context.ContextUser.UserId,
             interactionId: context.InteractionId,
-            referencedMessage: context.ReferencedMessage);
+            referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
         if (trackSearch.Track == null)
         {
             return trackSearch.Response;
@@ -1085,7 +1085,7 @@ public class TrackBuilders
         var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, context.Localizer, searchValue,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
             userId: context.ContextUser.UserId, interactionId: context.InteractionId,
-            referencedMessage: context.ReferencedMessage);
+            referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
         if (trackSearch.Track == null)
         {
             return trackSearch.Response;
@@ -1149,7 +1149,7 @@ public class TrackBuilders
         var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, context.Localizer, searchValue,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
             userId: context.ContextUser.UserId, interactionId: context.InteractionId,
-            referencedMessage: context.ReferencedMessage);
+            referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
         if (trackSearch.Track == null)
         {
             return trackSearch.Response;
@@ -1184,7 +1184,7 @@ public class TrackBuilders
         var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, context.Localizer, searchValue,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
             userId: context.ContextUser.UserId, interactionId: context.InteractionId,
-            referencedMessage: context.ReferencedMessage);
+            referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
         if (trackSearch.Track == null)
         {
             return trackSearch.Response;
@@ -1235,7 +1235,7 @@ public class TrackBuilders
         var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, context.Localizer, searchValue,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
             userId: context.ContextUser.UserId, interactionId: context.InteractionId,
-            referencedMessage: context.ReferencedMessage);
+            referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
         if (trackSearch.Track == null)
         {
             return trackSearch.Response;
@@ -1869,7 +1869,7 @@ public class TrackBuilders
         var track = await this._trackService.SearchTrack(response, context.DiscordUser, context.Localizer, searchValue,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
             userId: context.ContextUser.UserId, interactionId: context.InteractionId,
-            referencedMessage: context.ReferencedMessage);
+            referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
         if (track.Track == null)
         {
             return track.Response;
@@ -2029,7 +2029,7 @@ public class TrackBuilders
         var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, context.Localizer, searchValue,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
             userId: context.ContextUser.UserId, interactionId: context.InteractionId,
-            referencedMessage: context.ReferencedMessage);
+            referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
 
         if (trackSearch.Track == null)
         {

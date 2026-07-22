@@ -236,7 +236,8 @@ public class SpotifyRemoteSlashCommands(
         string searchValue)
     {
         var trackSearch = await trackService.SearchTrack(new ResponseModel(), this.Context.User, Localizer.ForGuild(this.Context.Interaction.GuildId, discordLocale: this.Context.Interaction.GuildLocale), searchValue,
-            userNameLastFm, sessionKey, userId: userId, useCachedTracks: true);
+            userNameLastFm, sessionKey, userId: userId, useCachedTracks: true,
+            discordGuildId: this.Context.Interaction.GuildId);
 
         if (trackSearch.Track == null)
         {
@@ -260,7 +261,8 @@ public class SpotifyRemoteSlashCommands(
         }
 
         var trackSearch = await trackService.SearchTrack(new ResponseModel(), this.Context.User, Localizer.ForGuild(this.Context.Interaction.GuildId, discordLocale: this.Context.Interaction.GuildLocale), null,
-            userNameLastFm, sessionKey, userId: userId, useCachedTracks: true, referencedMessage: message);
+            userNameLastFm, sessionKey, userId: userId, useCachedTracks: true, referencedMessage: message,
+            discordGuildId: this.Context.Interaction.GuildId);
 
         if (trackSearch.Track == null)
         {

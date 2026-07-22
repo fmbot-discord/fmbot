@@ -127,7 +127,7 @@ public class ArtistBuilders
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
             userId: context.ContextUser.UserId, redirectsEnabled: redirectsEnabled,
             interactionId: context.InteractionId,
-            referencedMessage: context.ReferencedMessage);
+            referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
         if (artistSearch.Artist == null)
         {
             artistSearch.Response.ResponseType = ResponseType.ComponentsV2;
@@ -526,7 +526,7 @@ public class ArtistBuilders
             userId: context.ContextUser.UserId,
             otherUserUsername: userSettings.UserNameLastFm, redirectsEnabled: redirectsEnabled,
             interactionId: context.InteractionId,
-            referencedMessage: context.ReferencedMessage);
+            referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
         if (artistSearch.Artist == null)
         {
             artistSearch.Response.ResponseType = ResponseType.ComponentsV2;
@@ -763,7 +763,7 @@ public class ArtistBuilders
             context.ContextUser.UserNameLastFM,
             context.ContextUser.SessionKeyLastFm, userSettings.UserNameLastFm, true, userSettings.UserId,
             redirectsEnabled: redirectsEnabled, interactionId: context.InteractionId,
-            referencedMessage: context.ReferencedMessage);
+            referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
         if (artistSearch.Artist == null)
         {
             artistSearch.Response.ResponseType = ResponseType.ComponentsV2;
@@ -972,7 +972,7 @@ public class ArtistBuilders
         var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, context.Localizer, searchValue,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, userSettings.UserNameLastFm,
             true, userSettings.UserId, redirectsEnabled: redirectsEnabled, interactionId: context.InteractionId,
-            referencedMessage: context.ReferencedMessage);
+            referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
         if (artistSearch.Artist == null)
         {
             artistSearch.Response.ResponseType = ResponseType.ComponentsV2;
@@ -1662,7 +1662,7 @@ public class ArtistBuilders
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, userSettings.UserNameLastFm,
             userId: context.ContextUser.UserId, redirectsEnabled: redirectsEnabled,
             interactionId: context.InteractionId,
-            referencedMessage: context.ReferencedMessage);
+            referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
         if (artistSearch.Artist == null)
         {
             return artistSearch.Response;
@@ -1718,7 +1718,7 @@ public class ArtistBuilders
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, userSettings.UserNameLastFm,
             userId: context.ContextUser.UserId, redirectsEnabled: redirectsEnabled,
             interactionId: context.InteractionId,
-            referencedMessage: context.ReferencedMessage);
+            referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
         if (artistSearch.Artist == null)
         {
             return artistSearch.Response;
@@ -1817,7 +1817,7 @@ public class ArtistBuilders
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedArtists: true,
             userId: context.ContextUser.UserId, redirectsEnabled: redirectsEnabled,
             interactionId: context.InteractionId,
-            referencedMessage: context.ReferencedMessage);
+            referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
         if (artistSearch.Artist == null)
         {
             return artistSearch.Response;
@@ -2060,7 +2060,7 @@ public class ArtistBuilders
             settings.NewSearchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
             useCachedArtists: true, userId: context.ContextUser.UserId, redirectsEnabled: settings.RedirectsEnabled,
             interactionId: context.InteractionId,
-            referencedMessage: context.ReferencedMessage);
+            referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
         if (artistSearch.Artist == null)
         {
             return artistSearch.Response;
@@ -2222,7 +2222,7 @@ public class ArtistBuilders
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedArtists: true,
             userId: context.ContextUser.UserId, redirectsEnabled: redirectsEnabled,
             interactionId: context.InteractionId,
-            referencedMessage: context.ReferencedMessage);
+            referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
         if (artistSearch.Artist == null)
         {
             return artistSearch.Response;

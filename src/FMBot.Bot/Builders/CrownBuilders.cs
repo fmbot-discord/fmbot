@@ -86,7 +86,7 @@ public class CrownBuilders
         var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, context.Localizer, artistValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
             userId: context.ContextUser.UserId, interactionId: context.InteractionId,
-            referencedMessage: context.ReferencedMessage);
+            referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
         if (artistSearch.Artist == null)
         {
             return artistSearch.Response;
