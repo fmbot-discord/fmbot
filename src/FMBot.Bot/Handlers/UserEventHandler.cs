@@ -69,6 +69,11 @@ public class UserEventHandler
                 await this._supporterService.ModifyGuildRole(socketGuildUser.Id);
             }
 
+            if (await this._supporterService.HasActivePremiumGuildPurchase(socketGuildUser.Id))
+            {
+                await this._supporterService.ModifyPremiumGuildRole(socketGuildUser.Id);
+            }
+
             if (user == null)
             {
                 var webhookClient = Services.Guild.WebhookService.CreateWebhookClientFromUrl(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
