@@ -48,6 +48,7 @@ public class ArtistsService
     private readonly AliasService _aliasService;
     private readonly UserService _userService;
     private readonly ArtistEnrichment.ArtistEnrichmentClient _artistEnrichment;
+    private readonly FeaturedService _featuredService;
 
     public ArtistsService(IDbContextFactory<FMBotDbContext> contextFactory,
         IMemoryCache cache,
@@ -61,7 +62,8 @@ public class ArtistsService
         UpdateService updateService,
         AliasService aliasService,
         UserService userService,
-        ArtistEnrichment.ArtistEnrichmentClient artistEnrichment)
+        ArtistEnrichment.ArtistEnrichmentClient artistEnrichment,
+        FeaturedService featuredService)
     {
         this._contextFactory = contextFactory;
         this._cache = cache;
@@ -75,13 +77,14 @@ public class ArtistsService
         this._aliasService = aliasService;
         this._userService = userService;
         this._artistEnrichment = artistEnrichment;
+        this._featuredService = featuredService;
         this._botSettings = botSettings.Value;
     }
 
     public async Task<ArtistSearch> SearchArtist(ResponseModel response, NetCord.User discordUser, Localizer localizer,
         string artistValues, string lastFmUserName, string sessionKey = null, string otherUserUsername = null,
         bool useCachedArtists = false, int? userId = null, bool redirectsEnabled = true, ulong? interactionId = null,
-        RestMessage referencedMessage = null)
+        RestMessage referencedMessage = null, ulong? discordGuildId = null)
     {
         if (referencedMessage != null && string.IsNullOrWhiteSpace(artistValues))
         {
@@ -104,7 +107,13 @@ public class ArtistsService
 
             if (artistValues.ToLower() == "featured")
             {
-                artistValues = this._timer.CurrentFeatured.ArtistName;
+                var featured = this._timer.CurrentFeatured;
+                if (discordGuildId.HasValue)
+                {
+                    featured = await this._featuredService.GetCurrentGuildFeatured(discordGuildId.Value) ?? featured;
+                }
+
+                artistValues = featured.ArtistName;
             }
 
             int? rndPosition = null;

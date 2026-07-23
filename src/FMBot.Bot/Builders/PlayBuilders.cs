@@ -110,7 +110,7 @@ public class PlayBuilder
         var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, context.Localizer, searchValue,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
             userId: context.ContextUser.UserId, interactionId: context.InteractionId,
-            referencedMessage: context.ReferencedMessage);
+            referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
         if (trackSearch.Track == null)
         {
             return trackSearch.Response;
@@ -207,7 +207,7 @@ public class PlayBuilder
         var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, context.Localizer, searchValue,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
             userId: context.ContextUser.UserId, interactionId: context.InteractionId,
-            referencedMessage: context.ReferencedMessage);
+            referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
         if (trackSearch.Track == null)
         {
             return trackSearch.Response;

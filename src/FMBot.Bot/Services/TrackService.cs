@@ -52,6 +52,7 @@ public class TrackService
     private readonly AliasService _aliasService;
     private readonly UserService _userService;
     private readonly TrackEnrichment.TrackEnrichmentClient _trackEnrichment;
+    private readonly FeaturedService _featuredService;
 
     public TrackService(HttpClient httpClient,
         IDataSourceFactory dataSourceFactory,
@@ -66,7 +67,8 @@ public class TrackService
         UpdateService updateService,
         AliasService aliasService,
         UserService userService,
-        TrackEnrichment.TrackEnrichmentClient trackEnrichment)
+        TrackEnrichment.TrackEnrichmentClient trackEnrichment,
+        FeaturedService featuredService)
     {
         this._dataSourceFactory = dataSourceFactory;
         this._spotifyService = spotifyService;
@@ -82,6 +84,7 @@ public class TrackService
         this._aliasService = aliasService;
         this._userService = userService;
         this._trackEnrichment = trackEnrichment;
+        this._featuredService = featuredService;
     }
 
     public string StoreScrobbleReference(string artistName, string trackName, string albumName, DateTime? timePlayed)
@@ -116,7 +119,8 @@ public class TrackService
 
     public async Task<TrackSearch> SearchTrack(ResponseModel response, NetCord.User discordUser, Localizer localizer,
         string trackValues, string lastFmUserName, string sessionKey = null, string otherUserUsername = null,
-        bool useCachedTracks = false, int? userId = null, ulong? interactionId = null, RestMessage referencedMessage = null)
+        bool useCachedTracks = false, int? userId = null, ulong? interactionId = null, RestMessage referencedMessage = null,
+        ulong? discordGuildId = null)
     {
         string searchValue;
         if (referencedMessage != null && string.IsNullOrWhiteSpace(trackValues))
@@ -137,15 +141,21 @@ public class TrackService
 
             if (searchValue.ToLower() == "featured" || searchValue.ToLower() == ".featured")
             {
-                if (this._timer.CurrentFeatured.TrackName != null)
+                var featured = this._timer.CurrentFeatured;
+                if (discordGuildId.HasValue)
                 {
-                    searchValue =
-                        $"{this._timer.CurrentFeatured.ArtistName} | {this._timer.CurrentFeatured.TrackName}";
+                    featured = await this._featuredService.GetCurrentGuildFeatured(discordGuildId.Value) ?? featured;
                 }
-                else if (this._timer.CurrentFeatured.AlbumName != null)
+
+                if (featured.TrackName != null)
                 {
                     searchValue =
-                        $"{this._timer.CurrentFeatured.ArtistName} {this._timer.CurrentFeatured.AlbumName}";
+                        $"{featured.ArtistName} | {featured.TrackName}";
+                }
+                else if (featured.AlbumName != null)
+                {
+                    searchValue =
+                        $"{featured.ArtistName} {featured.AlbumName}";
                 }
             }
 

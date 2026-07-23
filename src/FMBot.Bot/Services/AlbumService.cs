@@ -48,6 +48,7 @@ public class AlbumService
     private readonly AliasService _aliasService;
     private readonly UserService _userService;
     private readonly AlbumEnrichment.AlbumEnrichmentClient _albumEnrichment;
+    private readonly FeaturedService _featuredService;
 
     public AlbumService(IMemoryCache cache,
         IOptions<BotSettings> botSettings,
@@ -60,7 +61,8 @@ public class AlbumService
         UpdateService updateService,
         AliasService aliasService,
         UserService userService,
-        AlbumEnrichment.AlbumEnrichmentClient albumEnrichment)
+        AlbumEnrichment.AlbumEnrichmentClient albumEnrichment,
+        FeaturedService featuredService)
     {
         this._cache = cache;
         this._dataSourceFactory = dataSourceFactory;
@@ -73,13 +75,14 @@ public class AlbumService
         this._aliasService = aliasService;
         this._userService = userService;
         this._albumEnrichment = albumEnrichment;
+        this._featuredService = featuredService;
         this._botSettings = botSettings.Value;
     }
 
     public async Task<AlbumSearch> SearchAlbum(ResponseModel response, NetCord.User discordUser, Localizer localizer,
         string albumValues, string lastFmUserName, string sessionKey = null,
         string otherUserUsername = null, bool useCachedAlbums = false, int? userId = null, ulong? interactionId = null,
-        RestMessage referencedMessage = null, bool redirectsEnabled = true)
+        RestMessage referencedMessage = null, bool redirectsEnabled = true, ulong? discordGuildId = null)
     {
         string searchValue;
         if (referencedMessage != null && string.IsNullOrWhiteSpace(albumValues))
@@ -100,7 +103,13 @@ public class AlbumService
 
             if (searchValue.ToLower() == "featured")
             {
-                searchValue = $"{this._timer.CurrentFeatured.ArtistName} | {this._timer.CurrentFeatured.AlbumName}";
+                var featured = this._timer.CurrentFeatured;
+                if (discordGuildId.HasValue)
+                {
+                    featured = await this._featuredService.GetCurrentGuildFeatured(discordGuildId.Value) ?? featured;
+                }
+
+                searchValue = $"{featured.ArtistName} | {featured.AlbumName}";
             }
 
             int? rndPosition = null;

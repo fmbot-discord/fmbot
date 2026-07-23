@@ -108,7 +108,7 @@ public class AlbumBuilders
         var albumSearch = await this._albumService.SearchAlbum(response, context.DiscordUser, context.Localizer, searchValue,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
             userId: context.ContextUser.UserId, interactionId: context.InteractionId,
-            referencedMessage: context.ReferencedMessage);
+            referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
         if (albumSearch.Album == null)
         {
             albumSearch.Response.ResponseType = ResponseType.ComponentsV2;
@@ -433,7 +433,7 @@ public class AlbumBuilders
         var albumSearch = await this._albumService.SearchAlbum(response, context.DiscordUser, context.Localizer, albumValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedAlbums: true,
             userId: context.ContextUser.UserId, interactionId: context.InteractionId,
-            referencedMessage: context.ReferencedMessage);
+            referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
         if (albumSearch.Album == null)
         {
             return albumSearch.Response;
@@ -638,7 +638,7 @@ public class AlbumBuilders
         var albumSearch = await this._albumService.SearchAlbum(response, context.DiscordUser, context.Localizer, albumValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedAlbums: true,
             userId: context.ContextUser.UserId, interactionId: context.InteractionId,
-            referencedMessage: context.ReferencedMessage);
+            referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
         if (albumSearch.Album == null)
         {
             return albumSearch.Response;
@@ -774,7 +774,7 @@ public class AlbumBuilders
         var albumSearch = await this._albumService.SearchAlbum(response, context.DiscordUser, context.Localizer, albumValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedAlbums: true,
             userId: context.ContextUser.UserId, interactionId: context.InteractionId,
-            referencedMessage: context.ReferencedMessage);
+            referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
         if (albumSearch.Album == null)
         {
             return albumSearch.Response;
@@ -1102,7 +1102,7 @@ public class AlbumBuilders
         var albumSearch = await this._albumService.SearchAlbum(response, context.DiscordUser, context.Localizer, searchValue,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, userSettings.UserNameLastFm,
             userId: context.ContextUser.UserId, interactionId: context.InteractionId,
-            referencedMessage: context.ReferencedMessage);
+            referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
         if (albumSearch.Album == null)
         {
             albumSearch.Response.ResponseType = ResponseType.ComponentsV2;
@@ -1326,7 +1326,7 @@ public class AlbumBuilders
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
             otherUserUsername: userSettings.UserNameLastFm, userId: context.ContextUser.UserId,
             interactionId: context.InteractionId,
-            referencedMessage: context.ReferencedMessage);
+            referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
         if (albumSearch.Album == null)
         {
             return albumSearch.Response;
@@ -1380,7 +1380,7 @@ public class AlbumBuilders
         var albumSearch = await this._albumService.SearchAlbum(response, context.DiscordUser, context.Localizer, searchValue,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
             useCachedAlbums: false, userId: context.ContextUser.UserId, interactionId: context.InteractionId,
-            referencedMessage: context.ReferencedMessage);
+            referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
         if (albumSearch.Album == null)
         {
             albumSearch.Response.ResponseType = ResponseType.ComponentsV2;

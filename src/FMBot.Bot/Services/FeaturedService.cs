@@ -331,6 +331,23 @@ public class FeaturedService
         };
     }
 
+    public async Task<FeaturedLog> GetCurrentGuildFeatured(ulong discordGuildId)
+    {
+        if (!PublicProperties.PremiumServers.ContainsKey(discordGuildId))
+        {
+            return null;
+        }
+
+        var guild = await this._guildService.GetGuildAsync(discordGuildId);
+        if (guild?.FeaturedMode != GuildFeaturedMode.GuildFeatured)
+        {
+            return null;
+        }
+
+        var guildFeatured = await GetGuildFeaturedForDateTime(guild, DateTime.UtcNow);
+        return guildFeatured is { HasFeatured: true } ? GuildFeaturedToFeaturedLog(guildFeatured) : null;
+    }
+
     public async Task<List<FeaturedLog>> GetGuildFeaturedHistory(int guildId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -387,11 +404,13 @@ public class FeaturedService
 
         try
         {
-            var user = await GetGuildUserToFeatureAsync(guild);
+            var (user, guildUserName) = await GetGuildUserToFeatureAsync(guild);
             if (user == null)
             {
                 return null;
             }
+
+            var featuredUserDisplay = $"**{StringExtensions.Sanitize(guildUserName ?? user.UserNameLastFM)}**";
 
             Log.Information("GuildFeatured: Picked user {userId} / {userNameLastFm} for guild {guildId}",
                 user.UserId, user.UserNameLastFM, guild.GuildId);
@@ -422,7 +441,7 @@ public class FeaturedService
                         {
                             guildFeaturedLog.Description = $"[{track.AlbumName}]({track.TrackUrl}) \n" +
                                                            $"by [{track.ArtistName}]({track.ArtistUrl}) \n\n" +
-                                                           $"{randomAvatarModeDescLinked} from <@{user.DiscordUserId}>";
+                                                           $"{randomAvatarModeDescLinked} from {featuredUserDisplay}";
                             guildFeaturedLog.UserId = user.UserId;
                             guildFeaturedLog.ArtistName = track.ArtistName;
                             guildFeaturedLog.TrackName = track.TrackName;
@@ -464,7 +483,7 @@ public class FeaturedService
                             var artistLink = LastfmUrlExtensions.GetArtistUrl(album.ArtistName);
                             guildFeaturedLog.Description = $"[{album.AlbumName}]({album.AlbumUrl}) \n" +
                                                            $"by [{album.ArtistName}]({artistLink}) \n\n" +
-                                                           $"{randomAvatarModeDescLinked} from <@{user.DiscordUserId}>";
+                                                           $"{randomAvatarModeDescLinked} from {featuredUserDisplay}";
                             guildFeaturedLog.UserId = user.UserId;
                             guildFeaturedLog.AlbumName = album.AlbumName;
                             guildFeaturedLog.ImageUrl = album.AlbumCoverUrl;
@@ -487,7 +506,7 @@ public class FeaturedService
         return null;
     }
 
-    private async Task<User> GetGuildUserToFeatureAsync(Persistence.Domain.Models.Guild guild)
+    private async Task<(User User, string GuildUserName)> GetGuildUserToFeatureAsync(Persistence.Domain.Models.Guild guild)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
@@ -506,7 +525,7 @@ public class FeaturedService
 
         if (eligibleUserIds.Count == 0)
         {
-            return null;
+            return (null, null);
         }
 
         var eligibleUsers = await db.Users
@@ -517,7 +536,7 @@ public class FeaturedService
 
         if (eligibleUsers.Count == 0)
         {
-            return null;
+            return (null, null);
         }
 
         var featuredsToExclude = Math.Min(20, eligibleUsers.Count / 2);
@@ -539,7 +558,9 @@ public class FeaturedService
             users = eligibleUsers;
         }
 
-        return users[RandomNumberGenerator.GetInt32(0, users.Count)];
+        var pickedUser = users[RandomNumberGenerator.GetInt32(0, users.Count)];
+        filteredGuildUsers.TryGetValue(pickedUser.UserId, out var pickedGuildUser);
+        return (pickedUser, pickedGuildUser?.UserName);
     }
 
     private async Task<bool> GuildAlbumNotFeaturedRecently(int guildId, string albumName, string artistName)

@@ -31,6 +31,8 @@ namespace FMBot.Bot.Services;
 
 public class SupporterService
 {
+    private const ulong PremiumGuildPurchaserRoleId = 1529872875366912130;
+
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
     private readonly OpenCollectiveService _openCollectiveService;
     private readonly DiscordSkuService _discordSkuService;
@@ -1382,6 +1384,8 @@ public class SupporterService
             return;
         }
 
+        await ModifyPremiumGuildRole(subscription.PurchaserDiscordUserId.Value);
+
         try
         {
             var guild = await db.Guilds
@@ -2446,6 +2450,75 @@ public class SupporterService
                 Log.Error(e, "Modifying supporter role failed for {id}", discordUserId);
             }
         }
+    }
+
+    public async Task ModifyPremiumGuildRole(ulong discordUserId, bool add = true)
+    {
+        var baseGuild = await this._client.GetGuildAsync(this._botSettings.Bot.BaseServerId);
+
+        if (baseGuild != null)
+        {
+            try
+            {
+                var guildUser = await baseGuild.GetUserAsync(discordUserId);
+                if (guildUser != null)
+                {
+                    if (add)
+                    {
+                        if (guildUser.RoleIds.All(a => a != PremiumGuildPurchaserRoleId))
+                        {
+                            await guildUser.AddRoleAsync(PremiumGuildPurchaserRoleId, new RestRequestProperties
+                            {
+                                AuditLogReason = "Automated Premium server integration"
+                            });
+
+                            Log.Information("Modifying premium guild role succeeded for {id} - added", discordUserId);
+                        }
+                    }
+                    else if (guildUser.RoleIds.Any(a => a == PremiumGuildPurchaserRoleId))
+                    {
+                        await guildUser.RemoveRoleAsync(PremiumGuildPurchaserRoleId, new RestRequestProperties
+                        {
+                            AuditLogReason = "Automated Premium server integration"
+                        });
+
+                        Log.Information("Modifying premium guild role succeeded for {id} - removed", discordUserId);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Error(e, "Modifying premium guild role failed for {id}", discordUserId);
+            }
+        }
+    }
+
+    public async Task UpdatePremiumGuildPurchaserRoles()
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        var subscriptions = await db.PremiumGuildSubscriptions
+            .AsNoTracking()
+            .Where(w => w.PurchaserDiscordUserId != null)
+            .ToListAsync();
+
+        foreach (var purchaser in subscriptions.GroupBy(g => g.PurchaserDiscordUserId.Value))
+        {
+            var active = purchaser.Any(a => !a.EntitlementDeleted &&
+                                            (a.DateEnding == null || a.DateEnding > DateTime.UtcNow));
+
+            await ModifyPremiumGuildRole(purchaser.Key, active);
+        }
+    }
+
+    public async Task<bool> HasActivePremiumGuildPurchase(ulong discordUserId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        return await db.PremiumGuildSubscriptions
+            .AnyAsync(w => w.PurchaserDiscordUserId == discordUserId &&
+                           !w.EntitlementDeleted &&
+                           (w.DateEnding == null || w.DateEnding > DateTime.UtcNow));
     }
 
     private async Task<Supporter> AddDiscordSupporter(ulong id, DiscordEntitlement entitlement)

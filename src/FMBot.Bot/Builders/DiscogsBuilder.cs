@@ -567,7 +567,7 @@ public class DiscogsBuilder
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedArtists: true,
             userId: context.ContextUser.UserId, redirectsEnabled: redirectsEnabled,
             interactionId: context.InteractionId,
-            referencedMessage: context.ReferencedMessage);
+            referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
         if (artistSearch.Artist == null)
         {
             return artistSearch.Response;

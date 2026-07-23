@@ -231,6 +231,9 @@ public class TimerService : IDisposable
         Log.Information($"RecurringJob: Adding {nameof(RemoveLapsedPremiumSettings)}");
         RecurringJob.AddOrUpdate(nameof(RemoveLapsedPremiumSettings), () => RemoveLapsedPremiumSettings(), "45 * * * *");
 
+        Log.Information($"RecurringJob: Adding {nameof(UpdatePremiumGuildPurchaserRoles)}");
+        RecurringJob.AddOrUpdate(nameof(UpdatePremiumGuildPurchaserRoles), () => UpdatePremiumGuildPurchaserRoles(), "50 * * * *");
+
         Log.Information($"RecurringJob: Adding {nameof(PickNewFeatureds)}");
         RecurringJob.AddOrUpdate(nameof(PickNewFeatureds), () => PickNewFeatureds(), "0 12 * * *");
 
@@ -661,6 +664,11 @@ public class TimerService : IDisposable
     public async Task RemoveLapsedPremiumSettings()
     {
         await this._guildService.RemoveLapsedPremiumSettings(this._client);
+    }
+
+    public async Task UpdatePremiumGuildPurchaserRoles()
+    {
+        await this._supporterService.UpdatePremiumGuildPurchaserRoles();
     }
 
     public async Task CheckForNewGuildFeatureds()
