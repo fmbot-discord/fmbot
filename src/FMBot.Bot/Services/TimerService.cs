@@ -191,11 +191,15 @@ public class TimerService : IDisposable
         Log.Information($"RecurringJob: Adding {nameof(RunAutomaticCrownSeeder)}");
         RecurringJob.AddOrUpdate(nameof(RunAutomaticCrownSeeder), () => RunAutomaticCrownSeeder(), "15 * * * *");
 
-        Log.Information($"RecurringJob: Adding {nameof(RefreshSpotifyExpiryEstimates)}");
-        RecurringJob.AddOrUpdate(nameof(RefreshSpotifyExpiryEstimates), () => RefreshSpotifyExpiryEstimates(), "20 * * * *");
-        //
-        // Log.Information($"RecurringJob: Adding {nameof(SendSpotifyExpiryNotifications)}");
-        // RecurringJob.AddOrUpdate(nameof(SendSpotifyExpiryNotifications), () => SendSpotifyExpiryNotifications(), "0 */3 * * *");
+        if (ConfigData.Data.Shards == null ||
+            ConfigData.Data.Shards.MainInstance == true)
+        {
+            Log.Information($"RecurringJob: Adding {nameof(RefreshSpotifyExpiryEstimates)}");
+            RecurringJob.AddOrUpdate(nameof(RefreshSpotifyExpiryEstimates), () => RefreshSpotifyExpiryEstimates(), "20 * * * *");
+            //
+            // Log.Information($"RecurringJob: Adding {nameof(SendSpotifyExpiryNotifications)}");
+            // RecurringJob.AddOrUpdate(nameof(SendSpotifyExpiryNotifications), () => SendSpotifyExpiryNotifications(), "0 */3 * * *");
+        }
 
         var mainGuildConnected = this._client.Any(shard => shard.Cache.Guilds.ContainsKey(ConfigData.Data.Bot.BaseServerId));
         if (mainGuildConnected)

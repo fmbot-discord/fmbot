@@ -65,6 +65,7 @@ public class AdminCommands(
     TrackService trackService,
     WhoKnowsTrackService whoKnowsTrackService,
     TagService tagService,
+    DmNotificationService dmNotificationService,
     IDbContextFactory<FMBotDbContext> contextFactory)
     : BaseCommandModule(botSettings)
 {
@@ -2638,6 +2639,84 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
                 new MessageProperties { Content = "Error: Insufficient rights. Only .fmbot admins can use this command." });
             await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
+        }
+    }
+
+    [Command("sendspotifyexpirydm")]
+    [Summary("Sends the Spotify expiry DM to a specific user")]
+    [Examples("sendspotifyexpirydm 125740103539621888", "sendspotifyexpirydm 125740103539621888 force")]
+    public async Task SendSpotifyExpiryDmAsync(string user = null, string force = null)
+    {
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+        {
+            try
+            {
+                if (!ulong.TryParse(user, out var discordUserId))
+                {
+                    await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
+                        new MessageProperties { Content = "Usage: `.sendspotifyexpirydm \"discord-user-id\"`\nAdd `force` to skip the dedupe and 3-day window checks. The send is always logged, so a forced send still counts as their notification." });
+                    await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
+                    return;
+                }
+
+                _ = this.Context.Channel?.TriggerTypingAsync()!;
+
+                var bypassChecks = string.Equals(force, "force", StringComparison.OrdinalIgnoreCase);
+                var result = await dmNotificationService.SendSpotifyExpiryNotificationToUser(discordUserId, bypassChecks);
+
+                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
+                {
+                    Content = result,
+                    AllowedMentions = AllowedMentionsProperties.None
+                });
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
+            }
+            catch (Exception e)
+            {
+                await this.Context.HandleCommandException(e, userService);
+            }
+        }
+    }
+
+    [Command("sendspotifyexpirybatch")]
+    [Summary("Sends a batch of Spotify expiry DMs to eligible users")]
+    [Examples("sendspotifyexpirybatch 100")]
+    public async Task SendSpotifyExpiryBatchAsync(string batchSize = null)
+    {
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+        {
+            if (!int.TryParse(batchSize, out var sendCap) || sendCap < 1 || sendCap > 5000)
+            {
+                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
+                    new MessageProperties { Content = "Usage: `.sendspotifyexpirybatch \"amount\"` (1-5000)\nSends go out at 1 per second, so a batch of 100 takes a few minutes. A completion message will be posted in this channel." });
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
+                return;
+            }
+
+            var channelId = this.Context.Message.ChannelId;
+            await this.Context.Client.Rest.SendMessageAsync(channelId,
+                new MessageProperties { Content = $"▶️ Starting Spotify expiry DM batch with a cap of {sendCap}..." });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    var result = await dmNotificationService.SendSpotifyExpiryNotifications(sendCap);
+
+                    var content = result == null
+                        ? "❌ Spotify expiry batch did not start: another send is already running."
+                        : $"✅ Spotify expiry batch done. {result.Value.sent} sent, {result.Value.failedSends} failed, {result.Value.skipped} skipped.";
+
+                    await this.Context.Client.Rest.SendMessageAsync(channelId, new MessageProperties { Content = content });
+                }
+                catch (Exception e)
+                {
+                    Log.Error(e, "SendSpotifyExpiryBatch: batch failed");
+                    await this.Context.Client.Rest.SendMessageAsync(channelId,
+                        new MessageProperties { Content = "❌ Spotify expiry batch failed, check the logs." });
+                }
+            });
         }
     }
 

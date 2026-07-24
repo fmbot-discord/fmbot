@@ -445,6 +445,8 @@ namespace FMBot.Persistence.EntityFrameWork
 
                 entity.HasIndex(i => i.UserId);
 
+                entity.HasIndex(i => i.DiscordUserId);
+
                 entity.HasOne(u => u.User)
                     .WithMany(a => a.DmNotifications)
                     .HasForeignKey(f => f.UserId)
