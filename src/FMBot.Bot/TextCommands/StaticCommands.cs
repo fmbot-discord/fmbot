@@ -40,6 +40,7 @@ public class StaticCommands(
     InteractiveService interactivity,
     MusicBotService musicBotService,
     StaticBuilders staticBuilders,
+    SettingService settingService,
     StatusHandler.StatusHandlerClient statusHandler,
     ShardedGatewayClient client)
     : BaseCommandModule(botSettings)
@@ -142,15 +143,21 @@ public class StaticCommands(
 
     [Command("outofsync", "broken", "sync", "fix", "lagging", "stuck")]
     [Summary("Info for what to do when now playing track is lagging behind")]
+    [Options(Constants.UserMentionExample)]
+    [Examples("outofsync", "outofsync @user", "outofsync lfm:fm-bot")]
     [CommandCategories(CommandCategory.Other)]
     public async Task OutOfSyncAsync([CommandParameter(Remainder = true)] string options = null)
     {
         _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
-        var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
-        var response = await staticBuilders.OutOfSync(new ContextModel(this.Context, prfx, userSettings));
+        var userSettings = contextUser != null
+            ? await settingService.GetUser(options, contextUser, this.Context)
+            : null;
+
+        var response = await staticBuilders.OutOfSync(new ContextModel(this.Context, prfx, contextUser), userSettings);
 
         await this.Context.SendResponse(this.Interactivity, response, userService);
         await this.Context.LogCommandUsedAsync(response, userService);

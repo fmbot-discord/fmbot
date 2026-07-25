@@ -43,30 +43,46 @@ public class StaticBuilders
     }
 
     public async Task<ResponseModel> OutOfSync(
-        ContextModel context)
+        ContextModel context,
+        UserSettingsModel userSettings = null)
     {
         var response = new ResponseModel
         {
             ResponseType = ResponseType.ComponentsV2,
         };
 
+        var differentUser = userSettings != null && userSettings.DifferentUser;
+        var userNameLastFm = differentUser ? userSettings.UserNameLastFm : context.ContextUser?.UserNameLastFM;
+
         var container = response.ComponentsContainer;
         container.WithAccentColor(DiscordConstants.InformationColorBlue);
         container.WithTextDisplay(context.Localize("outofsync.title"));
 
         var intro = new StringBuilder();
-        intro.Append(context.Localize("outofsync.intro",
-            ("url", LastfmUrlExtensions.GetUserUrl(context.ContextUser?.UserNameLastFM) ?? "https://last.fm/user/_")));
+        var profileUrl = LastfmUrlExtensions.GetUserUrl(userNameLastFm) ?? "https://last.fm/user/_";
+        if (differentUser)
+        {
+            intro.Append(context.Localize("outofsync.introOther",
+                ("user", StringExtensions.Sanitize(userSettings.DisplayName)),
+                ("url", profileUrl)));
+        }
+        else
+        {
+            intro.Append(context.Localize("outofsync.intro", ("url", profileUrl)));
+        }
 
-        if (context.ContextUser?.UserNameLastFM != null)
+        if (userNameLastFm != null)
         {
             var recentTracks = await this._dataSourceFactory.GetRecentTracksAsync(
-                context.ContextUser.UserNameLastFM, useCache: false, sessionKey: context.ContextUser.SessionKeyLastFm);
+                userNameLastFm, useCache: false,
+                sessionKey: differentUser ? null : context.ContextUser.SessionKeyLastFm);
 
             if (recentTracks.Success && recentTracks.Content?.RecentTracks != null &&
                 recentTracks.Content.RecentTracks.Any(a => a.NowPlaying))
             {
-                intro.Append($" {context.Localize("outofsync.currentlyPlaying")}");
+                intro.Append(differentUser
+                    ? $" {context.Localize("outofsync.currentlyPlayingOther")}"
+                    : $" {context.Localize("outofsync.currentlyPlaying")}");
             }
             else
             {
@@ -81,9 +97,13 @@ public class StaticBuilders
                     var timePlayed = DateTime.SpecifyKind(lastScrobble.TimePlayed.Value, DateTimeKind.Utc);
                     var unixTime = ((DateTimeOffset)timePlayed).ToUnixTimeSeconds();
                     var style = timePlayed > DateTime.UtcNow.AddHours(-12) ? "t" : "f";
-                    intro.Append($" {context.Localize("outofsync.lastScrobble",
-                        ("timestamp", $"<t:{unixTime}:{style}>"),
-                        ("relativeTimestamp", $"<t:{unixTime}:R>"))}");
+                    intro.Append(differentUser
+                        ? $" {context.Localize("outofsync.lastScrobbleOther",
+                            ("timestamp", $"<t:{unixTime}:{style}>"),
+                            ("relativeTimestamp", $"<t:{unixTime}:R>"))}"
+                        : $" {context.Localize("outofsync.lastScrobble",
+                            ("timestamp", $"<t:{unixTime}:{style}>"),
+                            ("relativeTimestamp", $"<t:{unixTime}:R>"))}");
                 }
             }
         }

@@ -52,7 +52,7 @@
         {
           "id": "wrong-songs",
           "title": "Commands showing wrong songs / Spotify not working",
-          "answer": "We get what you're playing directly from your Last.fm profile, so please check there first to see what is showing on [your profile](https://www.last.fm/user/_).\n\nLast.fm sometimes has issues with their Spotify connection. For most people it helps to reconnect Spotify in their [Last.fm application settings](https://www.last.fm/settings/applications).\n\nLast.fm also has [an official guide](https://support.last.fm/t/spotify-has-stopped-scrobbling-what-can-i-do/3184) on how to fix this.\n\n.fmbot is **not** affiliated with Last.fm or Spotify, so we can't fix this for you."
+          "answer": "We get what you're playing directly from your Last.fm profile, so please check there first to see what is showing on [your profile](https://www.last.fm/user/_).\n\nSpotify expires the Last.fm connection every 6 months. Press **Disconnect** and then **Connect** next to 'Spotify Scrobbling' in your [Last.fm application settings](https://www.last.fm/settings/applications). This also fixes most other issues with the Spotify connection.\n\nLast.fm also has [an official guide](https://support.last.fm/t/spotify-has-stopped-scrobbling-what-can-i-do/3184) on how to fix this.\n\n.fmbot is **not** affiliated with Last.fm or Spotify, so we can't fix this for you."
         },
         {
           "id": "playcounts-dont-match",

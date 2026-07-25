@@ -714,6 +714,9 @@
       "parameters": {
         "private": {
           "description": "Only show response to you"
+        },
+        "user": {
+          "description": "The user to check (defaults to self)"
         }
       }
     },

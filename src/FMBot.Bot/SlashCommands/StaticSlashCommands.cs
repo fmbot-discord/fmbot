@@ -14,6 +14,7 @@ namespace FMBot.Bot.SlashCommands;
 public class StaticSlashCommands(
     UserService userService,
     StaticBuilders staticBuilders,
+    SettingService settingService,
     InteractiveService interactivity)
     : ApplicationCommandModule<ApplicationCommandContext>
 {
@@ -31,10 +32,17 @@ public class StaticSlashCommands(
     ])]
     public async Task OutOfSyncAsync(
         [SlashCommandParameter(Name = "private", Description = "Only show response to you")]
-        bool privateResponse = true)
+        bool privateResponse = true,
+        [SlashCommandParameter(Name = "user", Description = "The user to check (defaults to self)")]
+        string user = null)
     {
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
-        var response = await staticBuilders.OutOfSync(new ContextModel(this.Context, contextUser));
+
+        var userSettings = contextUser != null
+            ? await settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true)
+            : null;
+
+        var response = await staticBuilders.OutOfSync(new ContextModel(this.Context, contextUser), userSettings);
 
         await this.Context.SendResponse(this.Interactivity, response, userService, ephemeral: privateResponse);
         await this.Context.LogCommandUsedAsync(response, userService);
