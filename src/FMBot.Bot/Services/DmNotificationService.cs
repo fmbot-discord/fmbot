@@ -26,7 +26,7 @@ public class DmNotificationService(
     private static int _sendRunning;
 
     private const int RefreshBatchSize = 10000;
-    private const int SendCap = 5000;
+    private const int SendCap = 8000;
     private const long SendAdvisoryLockKey = 20260721;
 
     public async Task RefreshSpotifyExpiryEstimates()
@@ -249,7 +249,7 @@ public class DmNotificationService(
                         failedSends++;
                     }
 
-                    await Task.Delay(800);
+                    await Task.Delay(600);
                 }
 
                 Log.Information("DmNotificationService: Spotify expiry notifications done - {sent} sent, {failedSends} failed, {skipped} skipped", sent, failedSends, skipped);
