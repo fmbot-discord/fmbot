@@ -735,7 +735,7 @@
           "description": "Obiettivo di scrobbles da raggiungere"
         },
         "time-period": {
-          "description": "Periodo su cui basare la media dei playcount"
+          "description": "Periodo su cui basare la media degli scrobble"
         },
         "user": {
           "description": "L'utente da mostrare (predefinito: te stesso)"
@@ -746,7 +746,7 @@
       "description": "Mostra il tuo totale di scrobbles per un periodo di tempo specifico",
       "parameters": {
         "time-period": {
-          "description": "Periodo su cui basare la media dei playcount"
+          "description": "Periodo di tempo per cui mostrare gli scrobble"
         },
         "user": {
           "description": "L'utente da mostrare (predefinito: te stesso)"

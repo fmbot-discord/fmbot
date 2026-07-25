@@ -735,7 +735,7 @@
           "description": "Cantidad de scrobbles objetivo"
         },
         "time-period": {
-          "description": "Periodo en el que basar el promedio de plays"
+          "description": "Periodo en el que basar el promedio de scrobbles"
         },
         "user": {
           "description": "El usuario a mostrar (por defecto, tú)"
@@ -746,7 +746,7 @@
       "description": "Muestra tu total de scrobbles en un periodo de tiempo concreto",
       "parameters": {
         "time-period": {
-          "description": "Periodo en el que basar el promedio de plays"
+          "description": "Periodo de los scrobbles a mostrar"
         },
         "user": {
           "description": "El usuario a mostrar (por defecto, tú)"

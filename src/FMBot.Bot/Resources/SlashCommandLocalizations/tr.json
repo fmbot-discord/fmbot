@@ -735,7 +735,7 @@
           "description": "Hedef scrobble sayısı"
         },
         "time-period": {
-          "description": "Ortalama play sayısının temel alınacağı zaman aralığı"
+          "description": "Ortalama scrobble sayısının temel alınacağı zaman aralığı"
         },
         "user": {
           "description": "Gösterilecek kullanıcı (varsayılan: sen)"
@@ -746,7 +746,7 @@
       "description": "Belirli bir zaman aralığındaki toplam scrobble sayını gösterir",
       "parameters": {
         "time-period": {
-          "description": "Ortalama play sayısının temel alınacağı zaman aralığı"
+          "description": "Scrobble'ların gösterileceği zaman aralığı"
         },
         "user": {
           "description": "Gösterilecek kullanıcı (varsayılan: sen)"

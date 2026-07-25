@@ -343,7 +343,7 @@ public class PlaySlashCommands(
     public async Task PaceAsync(
         [SlashCommandParameter(Name = "amount", Description = "Goal scrobble amount")]
         int amount = 1,
-        [SlashCommandParameter(Name = "time-period", Description = "Time period to base average playcount on",
+        [SlashCommandParameter(Name = "time-period", Description = "Time period to base average scrobbles on",
             AutocompleteProviderType = typeof(DateTimeAutoComplete))]
         string timePeriod = null,
         [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
@@ -380,7 +380,7 @@ public class PlaySlashCommands(
         IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task PlaysAsync(
-        [SlashCommandParameter(Name = "time-period", Description = "Time period to base average playcount on",
+        [SlashCommandParameter(Name = "time-period", Description = "Time period to show scrobbles for",
             AutocompleteProviderType = typeof(DateTimeAutoComplete))]
         string timePeriod = null,
         [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]

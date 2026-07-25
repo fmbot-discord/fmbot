@@ -581,7 +581,7 @@ public class TrackBuilders
 
         if (mode == WhoKnowsResponseMode.Image)
         {
-            using var image = await this._puppeteerService.GetWhoKnows("WhoKnows Track",
+            using var image = await this._puppeteerService.GetWhoKnows(context.Localize("track.whoknows.imageHeader"),
                 context.Localize("shared.whoknows.imageInServer", ("server", context.DiscordGuild.Name)),
                 albumCoverUrl, trackName,
                 filteredUsersWithTrack, context.ContextUser.UserId, PrivacyLevel.Server, context.NumberFormat);
@@ -658,7 +658,7 @@ public class TrackBuilders
         if (mode == WhoKnowsResponseMode.Pagination)
         {
             var paginator = WhoKnowsService.CreateWhoKnowsPaginator(filteredUsersWithTrack,
-                context.ContextUser.UserId, PrivacyLevel.Server, context.NumberFormat,
+                context.ContextUser.UserId, PrivacyLevel.Server, context.Localizer,
                 title, footer.ToString(), closeFriendUserIds: closeFriendUserIds);
 
             response.ResponseType = ResponseType.Paginator;
@@ -668,7 +668,7 @@ public class TrackBuilders
 
         var serverUsers =
             WhoKnowsService.WhoKnowsListToString(filteredUsersWithTrack, context.ContextUser.UserId,
-                PrivacyLevel.Server, context.NumberFormat, closeFriendUserIds: closeFriendUserIds);
+                PrivacyLevel.Server, context.Localizer, closeFriendUserIds: closeFriendUserIds);
         if (filteredUsersWithTrack.Count == 0)
         {
             serverUsers = context.Localize("track.whoknows.nobodyInServer");
@@ -756,7 +756,7 @@ public class TrackBuilders
 
         if (mode == WhoKnowsResponseMode.Image)
         {
-            using var image = await this._puppeteerService.GetWhoKnows("WhoKnows Track",
+            using var image = await this._puppeteerService.GetWhoKnows(context.Localize("track.whoknows.imageHeader"),
                 context.Localize("shared.whoknows.imageFromFriends", ("user", userTitle)),
                 albumCoverUrl, trackName,
                 usersWithTrack, context.ContextUser.UserId, PrivacyLevel.Server, context.NumberFormat);
@@ -800,7 +800,7 @@ public class TrackBuilders
         if (mode == WhoKnowsResponseMode.Pagination)
         {
             var paginator = WhoKnowsService.CreateWhoKnowsPaginator(usersWithTrack,
-                context.ContextUser.UserId, PrivacyLevel.Server, context.NumberFormat,
+                context.ContextUser.UserId, PrivacyLevel.Server, context.Localizer,
                 title, footer, closeFriendUserIds: closeFriendUserIds);
 
             response.ResponseType = ResponseType.Paginator;
@@ -810,7 +810,7 @@ public class TrackBuilders
 
         var serverUsers =
             WhoKnowsService.WhoKnowsListToString(usersWithTrack, context.ContextUser.UserId, PrivacyLevel.Server,
-                context.NumberFormat, closeFriendUserIds: closeFriendUserIds);
+                context.Localizer, closeFriendUserIds: closeFriendUserIds);
         if (!usersWithTrack.Any())
         {
             serverUsers = context.Localize("track.whoknows.noFriendsListened");
@@ -901,7 +901,7 @@ public class TrackBuilders
 
         if (settings.ResponseMode == WhoKnowsResponseMode.Image)
         {
-            using var image = await this._puppeteerService.GetWhoKnows("WhoKnows Track",
+            using var image = await this._puppeteerService.GetWhoKnows(context.Localize("track.whoknows.imageHeader"),
                 context.Localize("shared.whoknows.imageGlobal"),
                 albumCoverUrl, trackName,
                 filteredUsersWithTrack, context.ContextUser.UserId, privacyLevel, context.NumberFormat,
@@ -935,7 +935,7 @@ public class TrackBuilders
         if (settings.ResponseMode == WhoKnowsResponseMode.Pagination)
         {
             var paginator = WhoKnowsService.CreateWhoKnowsPaginator(filteredUsersWithTrack,
-                context.ContextUser.UserId, privacyLevel, context.NumberFormat,
+                context.ContextUser.UserId, privacyLevel, context.Localizer,
                 title, footer.ToString(), hidePrivateUsers: settings.HidePrivateUsers,
                 closeFriendUserIds: closeFriendUserIds);
 
@@ -945,7 +945,7 @@ public class TrackBuilders
         }
 
         var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithTrack, context.ContextUser.UserId,
-            privacyLevel, context.NumberFormat, hidePrivateUsers: settings.HidePrivateUsers,
+            privacyLevel, context.Localizer, hidePrivateUsers: settings.HidePrivateUsers,
             closeFriendUserIds: closeFriendUserIds);
         if (!filteredUsersWithTrack.Any())
         {

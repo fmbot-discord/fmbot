@@ -49,12 +49,14 @@ public class LocalizationTests
         "jumble.hints.typeArtistCharacter",
         "jumble.hints.typeAlbumArtistPerson", "jumble.hints.typeAlbumArtistGroup",
         "jumble.hints.typeAlbumArtistOrchestra", "jumble.hints.typeAlbumArtistChoir",
-        "jumble.hints.typeAlbumArtistCharacter",
+        "jumble.hints.typeAlbumArtistCharacter"
+    ];
+
+    private static readonly string[] DynamicPluralBaseKeys =
+    [
         "pace.basedOnAlltimeSelf", "pace.basedOnAlltimeOther",
         "pace.basedOnPeriodSelf", "pace.basedOnPeriodOther"
     ];
-
-    private static readonly string[] DynamicPluralBaseKeys = [];
 
     private static readonly Dictionary<string, int> KnownDynamicCallSites = new()
     {

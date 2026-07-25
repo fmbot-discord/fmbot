@@ -14,6 +14,7 @@ using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
+using FMBot.Domain.Extensions;
 using FMBot.Domain.Flags;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
@@ -464,10 +465,9 @@ public class ArtistsService
             percentage = ((decimal)matchedArtists.Count / (decimal)mainUserArtists.Count()) * 100;
         }
 
-        return localizer.Translate("taste.matchStats",
-            ("matches", matchedArtists.Count.ToString()),
-            ("percentage", percentage.ToString("0.0")),
-            ("total", mainUserArtists.Count().ToString()),
+        return localizer.TranslateCount("taste.matchStats", matchedArtists.Count,
+            ("percentage", percentage.ToString("0.0", CultureInfo.InvariantCulture)),
+            ("total", mainUserArtists.Count().Format(localizer.NumberFormat)),
             ("period", timeDescription));
     }
 

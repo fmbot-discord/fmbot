@@ -735,7 +735,7 @@
           "description": "Target jumlah scrobble"
         },
         "time-period": {
-          "description": "Periode waktu sebagai dasar rata-rata playcount"
+          "description": "Periode waktu sebagai dasar rata-rata scrobbles"
         },
         "user": {
           "description": "Pengguna yang ditampilkan (default: kamu sendiri)"
@@ -746,7 +746,7 @@
       "description": "Menampilkan total scrobbles kamu untuk periode waktu tertentu",
       "parameters": {
         "time-period": {
-          "description": "Periode waktu sebagai dasar rata-rata playcount"
+          "description": "Periode waktu untuk menampilkan scrobbles"
         },
         "user": {
           "description": "Pengguna yang ditampilkan (default: kamu sendiri)"

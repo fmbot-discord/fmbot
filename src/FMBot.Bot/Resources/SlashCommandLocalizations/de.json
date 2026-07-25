@@ -735,7 +735,7 @@
           "description": "Ziel-Anzahl an Scrobbles"
         },
         "time-period": {
-          "description": "Zeitraum als Basis für den durchschnittlichen Playcount"
+          "description": "Zeitraum als Basis für die durchschnittlichen Scrobbles"
         },
         "user": {
           "description": "Der anzuzeigende Nutzer (standardmäßig du selbst)"
@@ -746,7 +746,7 @@
       "description": "Zeigt deine Gesamtzahl an Scrobbles für einen bestimmten Zeitraum",
       "parameters": {
         "time-period": {
-          "description": "Zeitraum als Basis für den durchschnittlichen Playcount"
+          "description": "Zeitraum, für den Scrobbles angezeigt werden"
         },
         "user": {
           "description": "Der anzuzeigende Nutzer (standardmäßig du selbst)"

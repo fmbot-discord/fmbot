@@ -1633,23 +1633,23 @@ public class PlayBuilder
                 ("date", $"<t:{goalDate.ToUnixEpochDate()}:D>")));
 
         var avg = Math.Round(avgPerDay.GetValueOrDefault(0), 1).Format(context.NumberFormat);
-        var days = Math.Round(totalDays, 0).ToString();
+        var days = (long)Math.Round(totalDays, 0);
 
         if (timeSettings.TimePeriod == TimePeriod.AllTime)
         {
-            reply.AppendLine(context.Localize(
+            reply.AppendLine(context.LocalizeCount(
                 userSettings.DifferentUser ? "pace.basedOnAlltimeOther" : "pace.basedOnAlltimeSelf",
+                days,
                 ("avg", avg),
-                ("total", count.Format(context.NumberFormat)),
-                ("days", days)));
+                ("total", count.Format(context.NumberFormat))));
         }
         else
         {
-            reply.AppendLine(context.Localize(
+            reply.AppendLine(context.LocalizeCount(
                 userSettings.DifferentUser ? "pace.basedOnPeriodOther" : "pace.basedOnPeriodSelf",
+                days,
                 ("avg", avg),
-                ("total", count.Format(context.NumberFormat)),
-                ("days", days)));
+                ("total", count.Format(context.NumberFormat))));
         }
 
         response.Text = reply.ToString();

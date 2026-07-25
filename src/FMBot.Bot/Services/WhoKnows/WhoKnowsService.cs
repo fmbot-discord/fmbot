@@ -324,7 +324,7 @@ public class WhoKnowsService
 
         if (context.ContextUser.PrivacyLevel != PrivacyLevel.Global)
         {
-            footer.AppendLine(context.Localize("whoknows.notGloballyVisible", ("prefix", context.Prefix)));
+            footer.AppendLine(context.Localize("whoknows.notGloballyVisible", ("command", $"{context.Prefix}privacy")));
         }
 
         if (settings.HidePrivateUsers)
@@ -348,7 +348,7 @@ public class WhoKnowsService
     }
 
     public static string WhoKnowsListToString(IList<WhoKnowsObjectWithUser> whoKnowsObjects, int requestedUserId,
-        PrivacyLevel minPrivacyLevel, NumberFormat numberFormat, CrownModel crownModel = null,
+        PrivacyLevel minPrivacyLevel, Localizer localizer, CrownModel crownModel = null,
         bool hidePrivateUsers = false, bool doNotLinkEmojis = false, HashSet<int> closeFriendUserIds = null)
     {
         var reply = new StringBuilder();
@@ -391,7 +391,7 @@ public class WhoKnowsService
             string nameWithLink;
             if (minPrivacyLevel == PrivacyLevel.Global && user.PrivacyLevel != PrivacyLevel.Global)
             {
-                nameWithLink = PrivateName();
+                nameWithLink = PrivateName(localizer);
                 if (hidePrivateUsers)
                 {
                     indexNumber += 1;
@@ -406,8 +406,6 @@ public class WhoKnowsService
                     nameWithLink = $"**{nameWithLink}";
                 }
             }
-
-            var playString = StringExtensions.GetPlaysString(user.Playcount);
 
             var positionCounter = $"{spacer}{indexNumber}.";
             positionCounter = user.UserId == requestedUserId
@@ -427,11 +425,11 @@ public class WhoKnowsService
 
             if (user.UserId == requestedUserId)
             {
-                reply.Append($" - {user.Playcount.Format(numberFormat)} {playString}**\n");
+                reply.Append($" - {localizer.TranslateCount("shared.plays", user.Playcount)}**\n");
             }
             else
             {
-                reply.Append($" - **{user.Playcount.Format(numberFormat)}** {playString}\n");
+                reply.Append($" - {localizer.TranslateCount("shared.playsBold", user.Playcount)}\n");
             }
 
             indexNumber += 1;
@@ -478,17 +476,16 @@ public class WhoKnowsService
         foreach (var pinnedUser in pinnedUsers.OrderByDescending(o => o.Playcount))
         {
             var nameWithLink = NameWithLink(pinnedUser, doNotLinkEmojis);
-            var playString = StringExtensions.GetPlaysString(pinnedUser.Playcount);
             var rank = usersToShow.IndexOf(pinnedUser) + 1;
 
             if (pinnedUser.UserId == requestedUserId)
             {
-                reply.Append($"**{spacer}{rank}.  {nameWithLink}  - {pinnedUser.Playcount} {playString}**\n");
+                reply.Append($"**{spacer}{rank}.  {nameWithLink}  - {localizer.TranslateCount("shared.plays", pinnedUser.Playcount)}**\n");
             }
             else
             {
                 reply.Append(
-                    $"{spacer}{rank}.  *{nameWithLink}* - **{pinnedUser.Playcount.Format(numberFormat)}** {playString}\n");
+                    $"{spacer}{rank}.  *{nameWithLink}* - {localizer.TranslateCount("shared.playsBold", pinnedUser.Playcount)}\n");
             }
         }
 
@@ -524,16 +521,16 @@ public class WhoKnowsService
         return nameWithLink;
     }
 
-    private static string PrivateName()
+    private static string PrivateName(Localizer localizer)
     {
-        return "Private user";
+        return localizer.Translate("whoknows.privateUser");
     }
 
     public static ComponentPaginatorBuilder CreateWhoKnowsPaginator(
         IList<WhoKnowsObjectWithUser> whoKnowsObjects,
         int requestedUserId,
         PrivacyLevel minPrivacyLevel,
-        NumberFormat numberFormat,
+        Localizer localizer,
         string title,
         string footerText,
         CrownModel crownModel = null,
@@ -605,7 +602,7 @@ public class WhoKnowsService
                 string nameWithLink;
                 if (minPrivacyLevel == PrivacyLevel.Global && user.PrivacyLevel != PrivacyLevel.Global)
                 {
-                    nameWithLink = "Private user";
+                    nameWithLink = PrivateName(localizer);
                 }
                 else
                 {
@@ -615,8 +612,6 @@ public class WhoKnowsService
                         nameWithLink = $"**{nameWithLink}";
                     }
                 }
-
-                var playString = StringExtensions.GetPlaysString(user.Playcount);
 
                 var positionCounter = $"{indexNumber}.";
                 positionCounter = user.UserId == requestedUserId
@@ -634,12 +629,12 @@ public class WhoKnowsService
 
                 if (user.UserId == requestedUserId)
                 {
-                    description.Append($" - {user.Playcount.Format(numberFormat)} {playString}**\n");
+                    description.Append($" - {localizer.TranslateCount("shared.plays", user.Playcount)}**\n");
                     requestedUserOnPage = true;
                 }
                 else
                 {
-                    description.Append($" - **{user.Playcount.Format(numberFormat)}** {playString}\n");
+                    description.Append($" - {localizer.TranslateCount("shared.playsBold", user.Playcount)}\n");
                 }
 
                 indexNumber++;
@@ -647,7 +642,7 @@ public class WhoKnowsService
 
             if (description.Length == 0)
             {
-                description.Append("No listeners found.");
+                description.Append(localizer.Translate("whoknows.noListenersFound"));
             }
 
             container.WithTextDisplay(description.ToString());
@@ -657,9 +652,8 @@ public class WhoKnowsService
                 container.WithSeparator();
 
                 var reqNameWithLink = NameWithLink(requestedUser, true);
-                var reqPlayString = StringExtensions.GetPlaysString(requestedUser.Playcount);
                 container.WithTextDisplay(
-                    $"**{requestedUserIndex}.  {reqNameWithLink}  - {requestedUser.Playcount.Format(numberFormat)} {reqPlayString}**");
+                    $"**{requestedUserIndex}.  {reqNameWithLink}  - {localizer.TranslateCount("shared.plays", requestedUser.Playcount)}**");
             }
 
             if (pageIndex == 0 && closeFriendUserIds is { Count: > 0 })
@@ -677,9 +671,8 @@ public class WhoKnowsService
                     }
 
                     var cfNameWithLink = NameWithLink(closeFriend, true);
-                    var cfPlayString = StringExtensions.GetPlaysString(closeFriend.Playcount);
                     closeFriendsBuilder.Append(
-                        $"{deduplicated.IndexOf(closeFriend) + 1}.  *{cfNameWithLink}*  - **{closeFriend.Playcount.Format(numberFormat)}** {cfPlayString}\n");
+                        $"{deduplicated.IndexOf(closeFriend) + 1}.  *{cfNameWithLink}*  - {localizer.TranslateCount("shared.playsBold", closeFriend.Playcount)}\n");
                 }
 
                 if (closeFriendsBuilder.Length > 0)
@@ -692,7 +685,8 @@ public class WhoKnowsService
             container.WithSeparator();
 
             var footerBuilder = new StringBuilder();
-            footerBuilder.Append($"{pageIndex + 1}/{pages.Count} pages");
+            footerBuilder.Append(localizer.Translate("shared.pageCounter", ("page", (pageIndex + 1).ToString()),
+                ("pages", pages.Count.ToString())));
 
             if (!string.IsNullOrWhiteSpace(footerText))
             {

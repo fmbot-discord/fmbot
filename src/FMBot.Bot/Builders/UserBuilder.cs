@@ -938,8 +938,9 @@ public class UserBuilder
             }
             else
             {
-                footer.AppendLine(
-                    $"-# {context.LocalizeCount("featured.log.supporterSundayIn", nextSupporterSunday, ("command", $"{context.Prefix}getsupporter"))}");
+                footer.AppendLine(nextSupporterSunday == 0
+                    ? $"-# {context.Localize("featured.log.supporterSundayToday", ("command", $"{context.Prefix}getsupporter"))}"
+                    : $"-# {context.LocalizeCount("featured.log.supporterSundayIn", nextSupporterSunday, ("command", $"{context.Prefix}getsupporter"))}");
             }
         }
 
@@ -1042,13 +1043,18 @@ public class UserBuilder
                             if (SupporterService.IsSupporter(context.ContextUser.UserType))
                             {
                                 description.AppendLine();
-                                description.AppendLine(context.LocalizeCount("featured.log.supporterSundayThanks", nextSupporterSunday));
+                                description.AppendLine(nextSupporterSunday == 0
+                                    ? context.Localize("featured.log.supporterSundayThanksToday")
+                                    : context.LocalizeCount("featured.log.supporterSundayThanks", nextSupporterSunday));
                             }
                             else
                             {
                                 description.AppendLine();
-                                description.AppendLine(context.LocalizeCount("featured.log.becomeSupporter", nextSupporterSunday,
-                                    ("url", Constants.GetSupporterDiscordLink)));
+                                description.AppendLine(nextSupporterSunday == 0
+                                    ? context.Localize("featured.log.becomeSupporterToday",
+                                        ("url", Constants.GetSupporterDiscordLink))
+                                    : context.LocalizeCount("featured.log.becomeSupporter", nextSupporterSunday,
+                                        ("url", Constants.GetSupporterDiscordLink)));
                             }
                         }
                         else
@@ -1260,7 +1266,7 @@ public class UserBuilder
         }
 
         stats.AppendLine(context.Localize("profile.avgScrobblesPerDay",
-            ("average", Math.Round(avgPerDay, 1).Format(context.NumberFormat))));
+            ("avg", Math.Round(avgPerDay, 1).Format(context.NumberFormat))));
 
         stats.AppendLine(context.Localize("profile.avgPerArtist",
             ("albums", Math.Round((double)userInfo.AlbumCount / userInfo.ArtistCount, 1).Format(context.NumberFormat)),

@@ -735,7 +735,7 @@
           "description": "Objectif de scrobbles"
         },
         "time-period": {
-          "description": "Période pour calculer la moyenne de plays"
+          "description": "Période pour calculer la moyenne de scrobbles"
         },
         "user": {
           "description": "L'utilisateur à afficher (toi par défaut)"
@@ -746,7 +746,7 @@
       "description": "Affiche ton total de scrobbles pour une période donnée",
       "parameters": {
         "time-period": {
-          "description": "Période pour calculer la moyenne de plays"
+          "description": "Période des scrobbles à afficher"
         },
         "user": {
           "description": "L'utilisateur à afficher (toi par défaut)"

@@ -735,7 +735,7 @@
           "description": "Målantal scrobbles"
         },
         "time-period": {
-          "description": "Tidsperiod att basera genomsnittligt playcount på"
+          "description": "Tidsperiod att basera genomsnittliga scrobbles på"
         },
         "user": {
           "description": "Användaren som ska visas (standard: du själv)"
@@ -746,7 +746,7 @@
       "description": "Visar ditt totala antal scrobbles för en viss tidsperiod",
       "parameters": {
         "time-period": {
-          "description": "Tidsperiod att basera genomsnittligt playcount på"
+          "description": "Tidsperiod att visa scrobbles för"
         },
         "user": {
           "description": "Användaren som ska visas (standard: du själv)"

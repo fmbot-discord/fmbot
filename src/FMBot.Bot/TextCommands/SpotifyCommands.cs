@@ -207,7 +207,7 @@ public class SpotifyCommands(
                 if (rnd.Next(0, 8) == 1 && string.IsNullOrWhiteSpace(searchValue) && !await userService.HintShownBefore(userSettings.UserId, "spotifyalbum"))
                 {
                     var localizer = Localizer.ForGuild(this.Context.Guild?.Id, discordLocale: this.Context.Guild?.PreferredLocale);
-                    response.Text += $"\n{localizer.Translate("spotify.hintAlbum", ("command", $"{prfx}spotifyalbum"), ("commandAlt", ".fmspab"))}";
+                    response.Text += $"\n{localizer.Translate("spotify.hintAlbum", ("command", $"{prfx}spotifyalbum"), ("commandAlt", $"{prfx}spab"))}";
                     response.HintShown = true;
                 }
 

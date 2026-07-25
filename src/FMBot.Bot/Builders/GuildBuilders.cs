@@ -190,7 +190,8 @@ public class GuildBuilders
                         }
 
                         footer.AppendLine(
-                            $"-# {context.Localize("members.listeningTimeRange", ("from", $"{DateTime.UtcNow.AddDays(-9):MMM dd}"), ("to", $"{DateTime.UtcNow.AddDays(-2):MMM dd}"))}");
+                            $"-# {context.Localize("members.listeningTimeRange", ("from", context.Localizer.FormatMonthDay(DateTime.UtcNow.AddDays(-9))),
+                                ("to", context.Localizer.FormatMonthDay(DateTime.UtcNow.AddDays(-2))))}");
 
                         footer.Append($"-# {context.Localize("shared.pageCounter", ("page", pageCounter.ToString()), ("pages", ltPages.Count.ToString()))} - ");
                         footer.Append($"{context.LocalizeCount("shared.users", filteredTopListeningTimeUsers.Count)} - ");

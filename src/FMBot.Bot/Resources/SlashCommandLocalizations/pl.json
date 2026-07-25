@@ -735,7 +735,7 @@
           "description": "Docelowa liczba scrobbli"
         },
         "time-period": {
-          "description": "Okres do obliczenia średniej liczby playów"
+          "description": "Okres do obliczenia średniej liczby scrobbli"
         },
         "user": {
           "description": "Użytkownik do wyświetlenia (domyślnie ty)"
@@ -746,7 +746,7 @@
       "description": "Pokazuje twoją łączną liczbę scrobbli w danym okresie",
       "parameters": {
         "time-period": {
-          "description": "Okres do obliczenia średniej liczby playów"
+          "description": "Okres, dla którego pokazać scrobble"
         },
         "user": {
           "description": "Użytkownik do wyświetlenia (domyślnie ty)"

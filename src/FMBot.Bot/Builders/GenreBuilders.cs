@@ -1025,7 +1025,7 @@ public class GenreBuilders
         var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(context.DiscordGuild);
         if (rnd.Next(0, 10) == 1 && lastIndex < DateTime.UtcNow.AddDays(-180))
         {
-            footer.AppendLine(context.Localize("whoknows.missingMembersHint", ("prefix", context.Prefix)));
+            footer.AppendLine(context.Localize("shared.whoknows.missingMembers", ("command", $"{context.Prefix}refreshmembers")));
         }
 
         if (filteredUsersWithGenre.Any() && filteredUsersWithGenre.Count > 1)
@@ -1051,7 +1051,7 @@ public class GenreBuilders
         if (mode == WhoKnowsResponseMode.Pagination)
         {
             var paginator = WhoKnowsService.CreateWhoKnowsPaginator(filteredUsersWithGenre,
-                context.ContextUser.UserId, PrivacyLevel.Server, context.NumberFormat,
+                context.ContextUser.UserId, PrivacyLevel.Server, context.Localizer,
                 title, footer.ToString(), closeFriendUserIds: closeFriendUserIds);
 
             response.ResponseType = ResponseType.Paginator;
@@ -1061,7 +1061,7 @@ public class GenreBuilders
 
         var serverUsers =
             WhoKnowsService.WhoKnowsListToString(filteredUsersWithGenre, context.ContextUser.UserId,
-                PrivacyLevel.Server, context.NumberFormat, doNotLinkEmojis: true, closeFriendUserIds: closeFriendUserIds);
+                PrivacyLevel.Server, context.Localizer, doNotLinkEmojis: true, closeFriendUserIds: closeFriendUserIds);
         if (filteredUsersWithGenre.Count == 0)
         {
             serverUsers = context.Localize("genre.whoknows.nobodyInServer");
@@ -1173,7 +1173,7 @@ public class GenreBuilders
         if (mode == WhoKnowsResponseMode.Pagination)
         {
             var paginator = WhoKnowsService.CreateWhoKnowsPaginator(usersWithGenre.ToList(),
-                context.ContextUser.UserId, PrivacyLevel.Server, context.NumberFormat,
+                context.ContextUser.UserId, PrivacyLevel.Server, context.Localizer,
                 title, footer.ToString(), closeFriendUserIds: closeFriendUserIds);
 
             response.ResponseType = ResponseType.Paginator;
@@ -1182,7 +1182,7 @@ public class GenreBuilders
         }
 
         var serverUsers = WhoKnowsService.WhoKnowsListToString(usersWithGenre.ToList(), context.ContextUser.UserId,
-            PrivacyLevel.Server, context.NumberFormat, doNotLinkEmojis: true, closeFriendUserIds: closeFriendUserIds);
+            PrivacyLevel.Server, context.Localizer, doNotLinkEmojis: true, closeFriendUserIds: closeFriendUserIds);
         if (usersWithGenre.Count == 0)
         {
             serverUsers = "None of your friends have listened to this genre.";

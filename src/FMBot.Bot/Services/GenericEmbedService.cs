@@ -315,7 +315,7 @@ public static class GenericEmbedService
                     }
                     else if (message.Equals("Not found"))
                     {
-                        embed.WithDescription(localizer.Translate("errors.lastFmUserNotFound"));
+                        embed.WithDescription(localizer.Translate("errors.lastFmUserNotFound", ("loginCommand", loginCommand)));
                     }
                     else
                     {

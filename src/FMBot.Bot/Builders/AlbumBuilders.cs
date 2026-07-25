@@ -565,7 +565,7 @@ public class AlbumBuilders
         if (mode == WhoKnowsResponseMode.Pagination)
         {
             var paginator = WhoKnowsService.CreateWhoKnowsPaginator(filteredUsersWithAlbum,
-                context.ContextUser.UserId, PrivacyLevel.Server, context.NumberFormat,
+                context.ContextUser.UserId, PrivacyLevel.Server, context.Localizer,
                 title, footer.ToString(), closeFriendUserIds: closeFriendUserIds);
 
             response.ResponseType = ResponseType.Paginator;
@@ -575,7 +575,7 @@ public class AlbumBuilders
 
         var serverUsers =
             WhoKnowsService.WhoKnowsListToString(filteredUsersWithAlbum, context.ContextUser.UserId,
-                PrivacyLevel.Server, context.NumberFormat, closeFriendUserIds: closeFriendUserIds);
+                PrivacyLevel.Server, context.Localizer, closeFriendUserIds: closeFriendUserIds);
         if (filteredUsersWithAlbum.Count == 0)
         {
             serverUsers = context.Localize("album.whoknows.noListeners");
@@ -730,7 +730,7 @@ public class AlbumBuilders
         if (mode == WhoKnowsResponseMode.Pagination)
         {
             var paginator = WhoKnowsService.CreateWhoKnowsPaginator(usersWithAlbum,
-                context.ContextUser.UserId, PrivacyLevel.Server, context.NumberFormat,
+                context.ContextUser.UserId, PrivacyLevel.Server, context.Localizer,
                 title, footer, closeFriendUserIds: closeFriendUserIds);
 
             response.ResponseType = ResponseType.Paginator;
@@ -740,7 +740,7 @@ public class AlbumBuilders
 
         var serverUsers =
             WhoKnowsService.WhoKnowsListToString(usersWithAlbum, context.ContextUser.UserId, PrivacyLevel.Server,
-                context.NumberFormat, closeFriendUserIds: closeFriendUserIds);
+                context.Localizer, closeFriendUserIds: closeFriendUserIds);
         if (usersWithAlbum.Count == 0)
         {
             serverUsers = context.Localize("album.whoknows.noFriendListeners");
@@ -875,7 +875,7 @@ public class AlbumBuilders
         if (settings.ResponseMode == WhoKnowsResponseMode.Pagination)
         {
             var paginator = WhoKnowsService.CreateWhoKnowsPaginator(filteredUsersWithAlbum,
-                context.ContextUser.UserId, privacyLevel, context.NumberFormat,
+                context.ContextUser.UserId, privacyLevel, context.Localizer,
                 title, footer.ToString(), hidePrivateUsers: settings.HidePrivateUsers,
                 closeFriendUserIds: closeFriendUserIds);
 
@@ -885,7 +885,7 @@ public class AlbumBuilders
         }
 
         var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithAlbum, context.ContextUser.UserId,
-            privacyLevel, context.NumberFormat, hidePrivateUsers: settings.HidePrivateUsers,
+            privacyLevel, context.Localizer, hidePrivateUsers: settings.HidePrivateUsers,
             closeFriendUserIds: closeFriendUserIds);
         if (filteredUsersWithAlbum.Count == 0)
         {
@@ -1759,10 +1759,10 @@ public class AlbumBuilders
 
             if (albums.Content.TotalAmount.HasValue && albums.Content.TotalAmount.Value != amount)
             {
-                footer.Append(context.Localize("album.topAlbumsPageCounterTotal",
+                footer.Append(context.LocalizeCount("album.topAlbumsPageCounterTotal",
+                    albums.Content.TotalAmount.Value,
                     ("page", pageCounter.ToString()),
-                    ("pages", albumPages.Count.ToString()),
-                    ("amount", albums.Content.TotalAmount.Value.Format(context.NumberFormat))));
+                    ("pages", albumPages.Count.ToString())));
             }
             else
             {

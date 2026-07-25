@@ -1877,7 +1877,8 @@ public class ArtistBuilders
 
         if (mode == WhoKnowsResponseMode.Image)
         {
-            using var image = await this._puppeteerService.GetWhoKnows("WhoKnows", $"in <b>{context.DiscordGuild.Name}</b>",
+            using var image = await this._puppeteerService.GetWhoKnows("WhoKnows",
+                context.Localize("shared.whoknows.imageInServer", ("server", context.DiscordGuild.Name)),
                 imgUrl, artistSearch.Artist.ArtistName,
                 filteredUsersWithArtist, context.ContextUser.UserId, PrivacyLevel.Server, context.NumberFormat,
                 crownModel?.Crown,
@@ -1971,7 +1972,7 @@ public class ArtistBuilders
         if (mode == WhoKnowsResponseMode.Pagination)
         {
             var paginator = WhoKnowsService.CreateWhoKnowsPaginator(filteredUsersWithArtist,
-                context.ContextUser.UserId, PrivacyLevel.Server, context.NumberFormat,
+                context.ContextUser.UserId, PrivacyLevel.Server, context.Localizer,
                 title, footer.ToString(), crownModel, closeFriendUserIds: closeFriendUserIds);
 
             response.ResponseType = ResponseType.Paginator;
@@ -1980,7 +1981,7 @@ public class ArtistBuilders
         }
 
         var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithArtist, context.ContextUser.UserId,
-            PrivacyLevel.Server, context.NumberFormat, crownModel, closeFriendUserIds: closeFriendUserIds);
+            PrivacyLevel.Server, context.Localizer, crownModel, closeFriendUserIds: closeFriendUserIds);
         if (filteredUsersWithArtist.Count == 0)
         {
             serverUsers = context.Localize("artist.whoknows.nobodyInServer");
@@ -2106,7 +2107,7 @@ public class ArtistBuilders
 
         if (settings.ResponseMode == WhoKnowsResponseMode.Image)
         {
-            using var image = await this._puppeteerService.GetWhoKnows("WhoKnows", $"in <b>.fmbot 🌐</b>", imgUrl,
+            using var image = await this._puppeteerService.GetWhoKnows("WhoKnows", context.Localize("shared.whoknows.imageGlobal"), imgUrl,
                 artistSearch.Artist.ArtistName,
                 filteredUsersWithArtist, context.ContextUser.UserId, privacyLevel, context.NumberFormat,
                 hidePrivateUsers: settings.HidePrivateUsers);
@@ -2162,7 +2163,7 @@ public class ArtistBuilders
         if (settings.ResponseMode == WhoKnowsResponseMode.Pagination)
         {
             var paginator = WhoKnowsService.CreateWhoKnowsPaginator(filteredUsersWithArtist,
-                context.ContextUser.UserId, privacyLevel, context.NumberFormat,
+                context.ContextUser.UserId, privacyLevel, context.Localizer,
                 title, footer.ToString(), hidePrivateUsers: settings.HidePrivateUsers, closeFriendUserIds: closeFriendUserIds);
 
             response.ResponseType = ResponseType.Paginator;
@@ -2171,7 +2172,7 @@ public class ArtistBuilders
         }
 
         var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithArtist, context.ContextUser.UserId,
-            privacyLevel, context.NumberFormat, hidePrivateUsers: settings.HidePrivateUsers, closeFriendUserIds: closeFriendUserIds);
+            privacyLevel, context.Localizer, hidePrivateUsers: settings.HidePrivateUsers, closeFriendUserIds: closeFriendUserIds);
         if (filteredUsersWithArtist.Count == 0)
         {
             serverUsers = context.Localize("artist.whoknows.nobodyGlobal");
@@ -2253,7 +2254,8 @@ public class ArtistBuilders
 
         if (mode == WhoKnowsResponseMode.Image)
         {
-            using var image = await this._puppeteerService.GetWhoKnows("WhoKnows", $"from <b>{userTitle}</b>'s friends",
+            using var image = await this._puppeteerService.GetWhoKnows("WhoKnows",
+                context.Localize("shared.whoknows.imageFromFriends", ("user", userTitle)),
                 imgUrl, artistSearch.Artist.ArtistName,
                 usersWithArtist, context.ContextUser.UserId, PrivacyLevel.Server, context.NumberFormat);
 
@@ -2306,7 +2308,7 @@ public class ArtistBuilders
         if (mode == WhoKnowsResponseMode.Pagination)
         {
             var paginator = WhoKnowsService.CreateWhoKnowsPaginator(usersWithArtist,
-                context.ContextUser.UserId, PrivacyLevel.Server, context.NumberFormat,
+                context.ContextUser.UserId, PrivacyLevel.Server, context.Localizer,
                 title, footer.ToString(), closeFriendUserIds: closeFriendUserIds);
 
             response.ResponseType = ResponseType.Paginator;
@@ -2316,7 +2318,7 @@ public class ArtistBuilders
 
         var serverUsers =
             WhoKnowsService.WhoKnowsListToString(usersWithArtist, context.ContextUser.UserId, PrivacyLevel.Server,
-                context.NumberFormat, closeFriendUserIds: closeFriendUserIds);
+                context.Localizer, closeFriendUserIds: closeFriendUserIds);
         if (usersWithArtist.Count == 0)
         {
             serverUsers = context.Localize("artist.whoknows.nobodyFriends");

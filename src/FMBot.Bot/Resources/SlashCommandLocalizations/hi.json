@@ -735,7 +735,7 @@
           "description": "Scrobbles का लक्ष्य"
         },
         "time-period": {
-          "description": "औसत playcount जिस समय अवधि पर आधारित हो"
+          "description": "औसत scrobbles जिस समय अवधि पर आधारित हों"
         },
         "user": {
           "description": "जिस यूज़र का डेटा दिखाना है (डिफ़ॉल्ट: तुम खुद)"
@@ -746,7 +746,7 @@
       "description": "किसी समय अवधि में तुम्हारे कुल scrobbles दिखाता है",
       "parameters": {
         "time-period": {
-          "description": "औसत playcount जिस समय अवधि पर आधारित हो"
+          "description": "किस समय अवधि के scrobbles दिखाने हैं"
         },
         "user": {
           "description": "जिस यूज़र का डेटा दिखाना है (डिफ़ॉल्ट: तुम खुद)"

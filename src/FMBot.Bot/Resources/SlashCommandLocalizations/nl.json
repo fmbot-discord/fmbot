@@ -735,7 +735,7 @@
           "description": "Doelaantal scrobbles"
         },
         "time-period": {
-          "description": "Periode voor het gemiddelde aantal plays"
+          "description": "Periode voor het gemiddelde aantal scrobbles"
         },
         "user": {
           "description": "De gebruiker om te tonen (standaard jijzelf)"
@@ -746,7 +746,7 @@
       "description": "Toont je totale aantal scrobbles voor een specifieke periode",
       "parameters": {
         "time-period": {
-          "description": "Periode voor het gemiddelde aantal plays"
+          "description": "Periode om scrobbles voor te tonen"
         },
         "user": {
           "description": "De gebruiker om te tonen (standaard jijzelf)"

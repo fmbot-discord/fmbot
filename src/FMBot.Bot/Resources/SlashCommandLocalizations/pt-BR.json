@@ -735,7 +735,7 @@
           "description": "Meta de scrobbles"
         },
         "time-period": {
-          "description": "Período para basear a média de plays"
+          "description": "Período para basear a média de scrobbles"
         },
         "user": {
           "description": "O usuário a mostrar (padrão: você)"
@@ -746,7 +746,7 @@
       "description": "Mostra seu total de scrobbles em um período específico",
       "parameters": {
         "time-period": {
-          "description": "Período para basear a média de plays"
+          "description": "Período para mostrar os scrobbles"
         },
         "user": {
           "description": "O usuário a mostrar (padrão: você)"

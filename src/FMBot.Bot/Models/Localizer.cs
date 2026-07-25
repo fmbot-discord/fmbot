@@ -11,6 +11,8 @@ public class Localizer(Language language, NumberFormat numberFormat)
 {
     public Language Language { get; } = language;
 
+    public NumberFormat NumberFormat { get; } = numberFormat;
+
     public static Localizer ForGuild(ulong? discordGuildId, NumberFormat numberFormat = NumberFormat.NoSeparator, string discordLocale = null)
     {
         return new Localizer(LocalizationService.GetLanguage(discordGuildId, discordLocale), numberFormat);
@@ -24,7 +26,7 @@ public class Localizer(Language language, NumberFormat numberFormat)
     public string TranslateCount(string key, long count, params (string Name, string Value)[] args)
     {
         var translation = LocalizationService.GetPluralTranslation(this.Language, key, GetPluralSuffix(this.Language, count));
-        return Interpolate(translation.Replace("{{count}}", count.Format(numberFormat)), args);
+        return Interpolate(translation.Replace("{{count}}", count.Format(this.NumberFormat)), args);
     }
 
     public string TimeAgo(DateTime timeAgo)
@@ -216,7 +218,7 @@ public class Localizer(Language language, NumberFormat numberFormat)
 
     public string Ordinal(long amount)
     {
-        return Translate(GetOrdinalKey(this.Language, amount), ("count", amount.Format(numberFormat)));
+        return Translate(GetOrdinalKey(this.Language, amount), ("count", amount.Format(this.NumberFormat)));
     }
 
     private static string GetOrdinalKey(Language language, long amount)

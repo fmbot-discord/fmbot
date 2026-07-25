@@ -93,7 +93,8 @@ public class GameBuilders
 
                 if (!premiumGuild)
                 {
-                    limitDescription.AppendLine(context.Localize("jumble.premiumServerUpsell"));
+                    limitDescription.AppendLine(context.Localize("jumble.premiumServerUpsell",
+                        ("premiumLimit", Constants.PremiumServerJumbleDailyLimit.Format(context.NumberFormat))));
                     response.Components.WithButton(context.Localize("buttons.premiumServer"), style: ButtonStyle.Secondary,
                         customId: $"{InteractionConstants.PremiumServer.GetOverview}:jumble-dailylimit");
                 }
@@ -201,7 +202,8 @@ public class GameBuilders
 
                 if (!premiumGuild)
                 {
-                    limitDescription.AppendLine(context.Localize("jumble.premiumServerUpsell"));
+                    limitDescription.AppendLine(context.Localize("jumble.premiumServerUpsell",
+                        ("premiumLimit", Constants.PremiumServerJumbleDailyLimit.Format(context.NumberFormat))));
                     response.Components.WithButton(context.Localize("buttons.premiumServer"), style: ButtonStyle.Secondary,
                         customId: $"{InteractionConstants.PremiumServer.GetOverview}:pixel-dailylimit");
                 }

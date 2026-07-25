@@ -738,7 +738,7 @@
           "description": "Goal scrobble amount"
         },
         "time-period": {
-          "description": "Time period to base average playcount on"
+          "description": "Time period to base average scrobbles on"
         },
         "user": {
           "description": "The user to show (defaults to self)"
@@ -749,7 +749,7 @@
       "description": "Shows your total scrobble count for a specific time period",
       "parameters": {
         "time-period": {
-          "description": "Time period to base average playcount on"
+          "description": "Time period to show scrobbles for"
         },
         "user": {
           "description": "The user to show (defaults to self)"
