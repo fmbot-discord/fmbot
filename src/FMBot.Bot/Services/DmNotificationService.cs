@@ -249,7 +249,7 @@ public class DmNotificationService(
                         failedSends++;
                     }
 
-                    await Task.Delay(1000);
+                    await Task.Delay(800);
                 }
 
                 Log.Information("DmNotificationService: Spotify expiry notifications done - {sent} sent, {failedSends} failed, {skipped} skipped", sent, failedSends, skipped);
