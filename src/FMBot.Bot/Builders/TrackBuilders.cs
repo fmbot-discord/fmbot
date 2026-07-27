@@ -510,8 +510,7 @@ public class TrackBuilders
                 emote: EmojiProperties.Custom(DiscordConstants.PlayPreview));
         }
 
-        if (SupporterService.IsSupporter(context.ContextUser.UserType) &&
-            !string.IsNullOrWhiteSpace(dbTrack?.PlainLyrics))
+        if (!string.IsNullOrWhiteSpace(dbTrack?.PlainLyrics))
         {
             actionRow.WithButton(
                 context.Localize("track.buttons.lyrics"),
