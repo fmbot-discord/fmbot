@@ -198,7 +198,7 @@ public class TimerService : IDisposable
             RecurringJob.AddOrUpdate(nameof(RefreshSpotifyExpiryEstimates), () => RefreshSpotifyExpiryEstimates(), "20 * * * *");
 
             Log.Information($"RecurringJob: Adding {nameof(SendSpotifyExpiryNotifications)}");
-            RecurringJob.AddOrUpdate(nameof(SendSpotifyExpiryNotifications), () => SendSpotifyExpiryNotifications(), "0 */3 * * *");
+            RecurringJob.AddOrUpdate(nameof(SendSpotifyExpiryNotifications), () => SendSpotifyExpiryNotifications(), "30 * * * *");
         }
 
         var mainGuildConnected = this._client.Any(shard => shard.Cache.Guilds.ContainsKey(ConfigData.Data.Bot.BaseServerId));

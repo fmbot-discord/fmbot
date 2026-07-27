@@ -26,7 +26,7 @@ public class DmNotificationService(
     private static int _sendRunning;
 
     private const int RefreshBatchSize = 10000;
-    private const int SendCap = 8000;
+    private const int SendCap = 20000;
     private const long SendAdvisoryLockKey = 20260721;
 
     public async Task RefreshSpotifyExpiryEstimates()
