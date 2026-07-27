@@ -237,6 +237,7 @@
   "shared.whoknows.filtersDisabled": "Filtri disattivati",
   "album.whoknows.serverStats": "Album - {{listeners}} - {{plays}} - {{avg}} di media",
   "shared.outOfSyncHint": "Spotify non traccia correttamente? Controlla '{{command}}'",
+  "shared.spotifyExpiredWarning": "⚠️ La tua connessione Last.fm a Spotify è scaduta. **[Riconnettiti qui.](https://www.last.fm/settings/applications)**",
   "album.whoknows.noListeners": "Nessuno in questo server (nemmeno tu) ha ascoltato questo album.",
   "shared.roleFilterPlaceholder": "Applica filtro ruoli..",
   "shared.whoknows.noFriends": "Non abbiamo trovato nessun amico. Per aggiungere amici:\n`{{command}}`\n\nOppure fai clic destro su un utente, vai su App e clicca 'Add as friend'",

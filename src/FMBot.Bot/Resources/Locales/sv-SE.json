@@ -237,6 +237,7 @@
   "shared.whoknows.filtersDisabled": "Filter inaktiverade",
   "album.whoknows.serverStats": "Album - {{listeners}} - {{plays}} - {{avg}} snitt",
   "shared.outOfSyncHint": "Trackar Spotify inte som den ska? Kolla '{{command}}'",
+  "shared.spotifyExpiredWarning": "⚠️ Din Last.fm-anslutning till Spotify har upphört. **[Återanslut här.](https://www.last.fm/settings/applications)**",
   "album.whoknows.noListeners": "Ingen på den här servern (inte ens du) har lyssnat på det här albumet.",
   "shared.roleFilterPlaceholder": "Tillämpa rollfilter..",
   "shared.whoknows.noFriends": "Vi kunde inte hitta några vänner. Så här lägger du till vänner:\n`{{command}}`\n\nEller högerklicka på en användare, gå till appar och klicka på 'Add as friend'",

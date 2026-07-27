@@ -237,6 +237,7 @@
   "shared.whoknows.filtersDisabled": "फ़िल्टर बंद हैं",
   "album.whoknows.serverStats": "Album - {{listeners}} - {{plays}} - {{avg}} औसत",
   "shared.outOfSyncHint": "Spotify ठीक से track नहीं हो रहा? '{{command}}' देखो",
+  "shared.spotifyExpiredWarning": "⚠️ Spotify के साथ तुम्हारा Last.fm कनेक्शन एक्सपायर हो गया है। **[यहाँ दोबारा कनेक्ट करो।](https://www.last.fm/settings/applications)**",
   "album.whoknows.noListeners": "इस सर्वर में किसी ने भी (तुमने भी नहीं) यह album नहीं सुना।",
   "shared.roleFilterPlaceholder": "रोल फ़िल्टर लगाओ..",
   "shared.whoknows.noFriends": "हमें कोई दोस्त नहीं मिला। दोस्त जोड़ने के लिए:\n`{{command}}`\n\nया किसी यूज़र पर राइट-क्लिक करो, apps में जाओ और 'Add as friend' पर क्लिक करो",

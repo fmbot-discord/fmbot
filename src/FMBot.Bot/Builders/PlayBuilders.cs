@@ -417,10 +417,17 @@ public class PlayBuilder
             footerOptions, userSettings, currentTrack, previousTrack, totalPlaycount, context,
             guild, guildUsers, useSmallText);
 
-        if (!userSettings.DifferentUser &&
-            !currentTrack.NowPlaying &&
-            currentTrack.TimePlayed.HasValue &&
-            currentTrack.TimePlayed < DateTime.UtcNow.AddHours(-2))
+        var showOutOfSyncHint = !userSettings.DifferentUser &&
+                                !currentTrack.NowPlaying &&
+                                currentTrack.TimePlayed.HasValue &&
+                                currentTrack.TimePlayed < DateTime.UtcNow.AddHours(-2);
+
+        var showSpotifyExpiredWarning = showOutOfSyncHint &&
+                                        context.ContextUser.SpotifyConnectionExpiry.HasValue &&
+                                        context.ContextUser.SpotifyConnectionExpiry < DateTime.UtcNow &&
+                                        await SpotifyConnectionStillExpired(context.ContextUser.UserNameLastFM);
+
+        if (showOutOfSyncHint && !showSpotifyExpiredWarning)
         {
             var oosPrefix = useSmallText ? "-# " : "";
             footerText.Append($"{oosPrefix}{context.Localize("shared.outOfSyncHint", ("command", $"{context.Prefix}outofsync"))}");
@@ -491,6 +498,11 @@ public class PlayBuilder
 
                 var formattedFooter = footerText.Length == 0 ? "" : $"{footerText}";
                 fmText += formattedFooter;
+
+                if (showSpotifyExpiredWarning)
+                {
+                    fmText = $"{fmText.TrimEnd()}\n{context.Localize("shared.spotifyExpiredWarning")}";
+                }
 
                 response.ResponseType = ResponseType.Text;
                 response.Text = fmText;
@@ -733,6 +745,12 @@ public class PlayBuilder
                     response.ComponentsContainer.WithActionRow(actionRow);
                 }
 
+                if (showSpotifyExpiredWarning)
+                {
+                    response.ComponentsContainer.WithSeparator();
+                    response.ComponentsContainer.WithTextDisplay(context.Localize("shared.spotifyExpiredWarning"));
+                }
+
                 break;
         }
 
@@ -747,6 +765,30 @@ public class PlayBuilder
         }
 
         return response;
+    }
+
+    private async Task<bool> SpotifyConnectionStillExpired(string lastFmUserName)
+    {
+        var cacheKey = $"spotify-connection-expired-{lastFmUserName.ToLower()}";
+
+        if (this._cache.TryGetValue(cacheKey, out bool cachedExpired))
+        {
+            return cachedExpired;
+        }
+
+        var userInfo = await this._dataSourceFactory.GetLfmUserInfoAsync(lastFmUserName);
+
+        if (userInfo == null)
+        {
+            return false;
+        }
+
+        var expired = userInfo.SpotifyExpiryEstimateUnix.HasValue &&
+                      DateTime.UnixEpoch.AddSeconds(userInfo.SpotifyExpiryEstimateUnix.Value) < DateTime.UtcNow;
+
+        this._cache.Set(cacheKey, expired, TimeSpan.FromHours(1));
+
+        return expired;
     }
 
     private static bool NeedsDbTrack(FmButton buttons)

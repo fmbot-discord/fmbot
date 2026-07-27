@@ -237,6 +237,7 @@
   "shared.whoknows.filtersDisabled": "Filtreler devre dışı",
   "album.whoknows.serverStats": "Albüm - {{listeners}} - {{plays}} - {{avg}} ort.",
   "shared.outOfSyncHint": "Spotify düzgün takip edilmiyor mu? '{{command}}' komutuna göz at",
+  "shared.spotifyExpiredWarning": "⚠️ Spotify ile Last.fm bağlantının süresi doldu. **[Buradan yeniden bağlan.](https://www.last.fm/settings/applications)**",
   "album.whoknows.noListeners": "Bu sunucuda hiç kimse (sen bile) bu albümü dinlememiş.",
   "shared.roleFilterPlaceholder": "Rol filtresi uygula..",
   "shared.whoknows.noFriends": "Hiç arkadaş bulamadık. Arkadaş eklemek için:\n`{{command}}`\n\nVeya bir kullanıcıya sağ tıkla, uygulamalara git ve 'Add as friend' seçeneğine tıkla",

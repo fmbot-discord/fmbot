@@ -237,6 +237,7 @@
   "shared.whoknows.filtersDisabled": "Filters uitgeschakeld",
   "album.whoknows.serverStats": "Album - {{listeners}} - {{plays}} - {{avg}} gem.",
   "shared.outOfSyncHint": "Trackt Spotify niet goed? Check '{{command}}'",
+  "shared.spotifyExpiredWarning": "⚠️ Je Last.fm-verbinding met Spotify is verlopen. **[Verbind hier opnieuw.](https://www.last.fm/settings/applications)**",
   "album.whoknows.noListeners": "Niemand in deze server (zelfs jij niet) heeft naar dit album geluisterd.",
   "shared.roleFilterPlaceholder": "Rolfilter toepassen..",
   "shared.whoknows.noFriends": "We konden geen vrienden vinden. Vrienden toevoegen:\n`{{command}}`\n\nOf rechtsklik op een gebruiker, ga naar apps en klik op 'Add as friend'",

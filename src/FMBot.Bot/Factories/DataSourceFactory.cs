@@ -17,6 +17,8 @@ using FMBot.Persistence.Repositories;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Npgsql;
+using NpgsqlTypes;
+using Serilog;
 
 namespace FMBot.Bot.Factories;
 
@@ -172,6 +174,11 @@ public class DataSourceFactory : IDataSourceFactory
     {
         var user = await this._lastfmRepository.GetLfmUserInfoAsync(lastFmUserName);
 
+        if (user != null)
+        {
+            RefreshStoredLastfmUserInfo(lastFmUserName, user);
+        }
+
         var importUser = await this.GetImportUserForLastFmUserName(lastFmUserName);
 
         if (importUser != null && user != null)
@@ -180,6 +187,47 @@ public class DataSourceFactory : IDataSourceFactory
         }
 
         return user;
+    }
+
+    private void RefreshStoredLastfmUserInfo(string lastFmUserName, DataSourceUser userInfo)
+    {
+        var expiry = userInfo.SpotifyExpiryEstimateUnix.HasValue
+            ? DateTime.UnixEpoch.AddSeconds(userInfo.SpotifyExpiryEstimateUnix.Value)
+            : (DateTime?)null;
+        var lastfmPro = userInfo.Subscriber;
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                var now = DateTime.UtcNow;
+
+                await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+                await connection.OpenAsync();
+
+                await using var command = new NpgsqlCommand(
+                    "UPDATE public.users " +
+                    "SET spotify_connection_expiry = @expiry, spotify_expiry_checked = @now, lastfm_pro = @lastfmPro " +
+                    "WHERE UPPER(user_name_last_fm) = UPPER(@lastFmUserName) " +
+                    "AND (spotify_expiry_checked IS NULL OR spotify_expiry_checked < @staleCutoff);", connection);
+
+                command.Parameters.Add(new NpgsqlParameter("expiry", NpgsqlDbType.TimestampTz)
+                    { Value = (object)expiry ?? DBNull.Value });
+                command.Parameters.Add(new NpgsqlParameter("now", NpgsqlDbType.TimestampTz) { Value = now });
+                command.Parameters.Add(new NpgsqlParameter("lastfmPro", NpgsqlDbType.Boolean) { Value = lastfmPro });
+                command.Parameters.Add(new NpgsqlParameter("lastFmUserName", NpgsqlDbType.Text)
+                    { Value = lastFmUserName });
+                command.Parameters.Add(new NpgsqlParameter("staleCutoff", NpgsqlDbType.TimestampTz)
+                    { Value = now.AddDays(-1) });
+
+                await command.ExecuteNonQueryAsync();
+            }
+            catch (Exception e)
+            {
+                Log.Error(e, "DataSourceFactory: Could not refresh stored Last.fm user info for {lastFmUserName}",
+                    lastFmUserName);
+            }
+        });
     }
 
     public async Task<Response<TrackInfo>> SearchTrackAsync(string searchQuery)

@@ -194,6 +194,7 @@
   "shared.whoknows.filtersDisabled": "Filter dinonaktifkan",
   "album.whoknows.serverStats": "Album - {{listeners}} - {{plays}} - rata-rata {{avg}}",
   "shared.outOfSyncHint": "Spotify tidak terlacak dengan benar? Cek '{{command}}'",
+  "shared.spotifyExpiredWarning": "⚠️ Koneksi Last.fm kamu ke Spotify sudah kedaluwarsa. **[Hubungkan ulang di sini.](https://www.last.fm/settings/applications)**",
   "album.whoknows.noListeners": "Tidak ada seorang pun di server ini (bahkan kamu) yang pernah mendengarkan album ini.",
   "shared.roleFilterPlaceholder": "Terapkan filter role..",
   "shared.whoknows.noFriends": "Kami tidak menemukan teman sama sekali. Untuk menambahkan teman:\n`{{command}}`\n\nAtau klik kanan seorang pengguna, buka apps lalu klik 'Add as friend'",
