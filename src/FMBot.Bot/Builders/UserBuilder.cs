@@ -2224,10 +2224,18 @@ public class UserBuilder
                             ("timestamp", $"<t:{dateValue}:R>")));
                     }
 
+                    var outOfSync = latestScrobble?.TimePlayed < DateTime.UtcNow.AddHours(-2);
+
+                    var spotifyConnectionExpired = outOfSync &&
+                                                   context.ContextUser.SpotifyConnectionExpiry.HasValue &&
+                                                   context.ContextUser.SpotifyConnectionExpiry < DateTime.UtcNow &&
+                                                   await this._userService.SpotifyConnectionStillExpired(
+                                                       context.ContextUser.UserNameLastFM);
+
                     updatedDescription.AppendLine();
-                    if (latestScrobble?.TimePlayed < DateTime.UtcNow.AddHours(-3))
+                    if (spotifyConnectionExpired)
                     {
-                        updatedDescription.AppendLine(context.Localize("update.spotifyConnectionExpired"));
+                        updatedDescription.AppendLine(context.Localize("shared.spotifyExpiredWarning"));
                     }
                     else
                     {

@@ -440,7 +440,6 @@
   "update.fetchingScrobbles": "Mengambil scrobbles terbaru **{{user}}**...",
   "update.nothingNew": "Tidak ada yang baru di [profil Last.fm kamu]({{url}}) sejak terakhir kali kami memeriksa {{timestamp}}.",
   "update.lastScrobble": "Scrobble terakhirmu adalah {{timestamp}}.",
-  "update.spotifyConnectionExpired": "Menggunakan Spotify? Koneksimu ke Last.fm mungkin sudah kedaluwarsa, yang menghentikan scrobbling sepenuhnya. Hubungkan ulang dengan menekan **Disconnect** lalu **Connect** di sebelah 'Spotify Scrobbling' di [pengaturan Last.fm kamu](https://www.last.fm/settings/applications).",
   "update.outOfSyncHint": "Last.fm tidak melacak Spotify kamu dengan benar? Coba instruksi di `{{command}}` untuk bantuan.",
   "update.playcountsUpdated": "✅ Playcount yang di-cache telah diperbarui untuk `{{user}}` berdasarkan {{newScrobbles}}.",
   "update.playcountsUpdatedWithRemoved": "✅ Playcount yang di-cache telah diperbarui untuk `{{user}}` berdasarkan {{newScrobbles}} dan {{removedScrobbles}}.",

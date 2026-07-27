@@ -531,7 +531,6 @@
   "update.fetchingScrobbles": "Récupération des derniers scrobbles de **{{user}}**...",
   "update.nothingNew": "Rien de nouveau trouvé sur [ton profil Last.fm]({{url}}) depuis notre dernière vérification {{timestamp}}.",
   "update.lastScrobble": "Ton dernier scrobble était {{timestamp}}.",
-  "update.spotifyConnectionExpired": "Tu utilises Spotify ? Ta connexion à Last.fm a peut-être expiré, ce qui arrête complètement le scrobbling. Reconnecte-toi en cliquant sur **Disconnect** puis **Connect** à côté de 'Spotify Scrobbling' dans [tes paramètres Last.fm](https://www.last.fm/settings/applications).",
   "update.outOfSyncHint": "Last.fm ne suit pas bien ton Spotify ? Essaie les instructions dans `{{command}}` pour obtenir de l'aide.",
   "update.playcountsUpdated": "✅ Les playcounts en cache de `{{user}}` ont été mis à jour sur la base de {{newScrobbles}}.",
   "update.playcountsUpdatedWithRemoved": "✅ Les playcounts en cache de `{{user}}` ont été mis à jour sur la base de {{newScrobbles}} et {{removedScrobbles}}.",

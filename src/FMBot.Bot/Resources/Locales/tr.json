@@ -531,7 +531,6 @@
   "update.fetchingScrobbles": "**{{user}}** kullanıcısının en son scrobble'ları alınıyor...",
   "update.nothingNew": "Son kontrolümüzden ({{timestamp}}) bu yana [Last.fm profilinde]({{url}}) yeni bir şey bulunamadı.",
   "update.lastScrobble": "Son scrobble'ın: {{timestamp}}.",
-  "update.spotifyConnectionExpired": "Spotify mı kullanıyorsun? Last.fm bağlantının süresi dolmuş olabilir; bu, scrobbling'i tamamen durdurur. Yeniden bağlanmak için [Last.fm ayarlarında](https://www.last.fm/settings/applications) 'Spotify Scrobbling' yanındaki **Disconnect** ve ardından **Connect** düğmelerine bas.",
   "update.outOfSyncHint": "Last.fm, Spotify'ını düzgün takip etmiyor mu? Yardım için `{{command}}` komutundaki yönergeleri dene.",
   "update.playcountsUpdated": "✅ `{{user}}` için önbelleğe alınan play sayıları {{newScrobbles}} temel alınarak güncellendi.",
   "update.playcountsUpdatedWithRemoved": "✅ `{{user}}` için önbelleğe alınan play sayıları {{newScrobbles}} ve {{removedScrobbles}} temel alınarak güncellendi.",

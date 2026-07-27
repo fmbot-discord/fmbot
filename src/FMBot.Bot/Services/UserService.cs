@@ -1897,6 +1897,30 @@ public class UserService
             f.DiscordUserId == discordUserId && f.Service == Shared.Domain.Enums.TokenService.Spotify);
     }
 
+    public async Task<bool> SpotifyConnectionStillExpired(string lastFmUserName)
+    {
+        var cacheKey = $"spotify-connection-expired-{lastFmUserName.ToLower()}";
+
+        if (this._cache.TryGetValue(cacheKey, out bool cachedExpired))
+        {
+            return cachedExpired;
+        }
+
+        var userInfo = await this._dataSourceFactory.GetLfmUserInfoAsync(lastFmUserName);
+
+        if (userInfo == null)
+        {
+            return false;
+        }
+
+        var expired = userInfo.SpotifyExpiryEstimateUnix.HasValue &&
+                      DateTime.UnixEpoch.AddSeconds(userInfo.SpotifyExpiryEstimateUnix.Value) < DateTime.UtcNow;
+
+        this._cache.Set(cacheKey, expired, expired ? TimeSpan.FromMinutes(5) : TimeSpan.FromHours(1));
+
+        return expired;
+    }
+
     public async Task UpdateLinkedRole(ulong discordUserId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
