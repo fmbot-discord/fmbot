@@ -502,7 +502,7 @@ public class PlayBuilder
 
                 if (showSpotifyExpiredWarning)
                 {
-                    fmText = $"{fmText.TrimEnd()}\n{context.Localize("shared.spotifyExpiredWarning")}";
+                    fmText = $"{fmText.TrimEnd()}\n{context.Localize("shared.spotifyExpiredWarning", ("username", context.ContextUser.UserNameLastFM))}";
                 }
 
                 response.ResponseType = ResponseType.Text;
@@ -749,7 +749,8 @@ public class PlayBuilder
                 if (showSpotifyExpiredWarning)
                 {
                     response.ComponentsContainer.WithSeparator();
-                    response.ComponentsContainer.WithTextDisplay(context.Localize("shared.spotifyExpiredWarning"));
+                    response.ComponentsContainer.WithTextDisplay(context.Localize("shared.spotifyExpiredWarning",
+                        ("username", context.ContextUser.UserNameLastFM)));
                 }
 
                 break;

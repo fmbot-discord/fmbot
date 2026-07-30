@@ -2207,6 +2207,7 @@ public class UserBuilder
             var previousUpdateValue = ((DateTimeOffset)previousUpdate).ToUnixTimeSeconds();
 
             updatedDescription.AppendLine(context.Localize("update.nothingNew",
+                ("username", context.ContextUser.UserNameLastFM),
                 ("url", LastfmUrlExtensions.GetUserUrl(context.ContextUser.UserNameLastFM)),
                 ("timestamp", $"<t:{previousUpdateValue}:R>")));
 
@@ -2235,7 +2236,8 @@ public class UserBuilder
                     updatedDescription.AppendLine();
                     if (spotifyConnectionExpired)
                     {
-                        updatedDescription.AppendLine(context.Localize("shared.spotifyExpiredWarning"));
+                        updatedDescription.AppendLine(context.Localize("shared.spotifyExpiredWarning",
+                            ("username", context.ContextUser.UserNameLastFM)));
                     }
                     else
                     {

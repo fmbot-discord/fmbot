@@ -3,9 +3,11 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using FMBot.Bot.Resources;
 using FMBot.Domain.Enums;
+using FMBot.Domain.Models;
 using FMBot.Domain.Interfaces;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -25,8 +27,10 @@ public class DmNotificationService(
     private static int _refreshRunning;
     private static int _sendRunning;
 
-    private const int RefreshBatchSize = 10000;
+    private const int RefreshBatchSize = 20000;
+    private const int RefreshConcurrency = 4;
     private const int SendCap = 20000;
+    private const int PrefetchBufferSize = 8;
     private const long SendAdvisoryLockKey = 20260721;
 
     public async Task RefreshSpotifyExpiryEstimates()
@@ -65,34 +69,37 @@ public class DmNotificationService(
 
             var updated = 0;
             var failed = 0;
-            foreach (var candidate in candidates)
-            {
-                var userInfo = await lastfmRepository.GetLfmUserInfoAsync(candidate.UserNameLastFM);
-
-                if (userInfo != null)
+            await Parallel.ForEachAsync(candidates,
+                new ParallelOptions { MaxDegreeOfParallelism = RefreshConcurrency },
+                async (candidate, cancellationToken) =>
                 {
-                    var expiry = userInfo.SpotifyExpiryEstimateUnix.HasValue
-                        ? DateTime.UnixEpoch.AddSeconds(userInfo.SpotifyExpiryEstimateUnix.Value)
-                        : (DateTime?)null;
+                    var userInfo = await lastfmRepository.GetLfmUserInfoAsync(candidate.UserNameLastFM);
 
-                    await db.Users
-                        .Where(w => w.UserId == candidate.UserId)
-                        .ExecuteUpdateAsync(s => s
-                            .SetProperty(p => p.SpotifyConnectionExpiry, expiry)
-                            .SetProperty(p => p.SpotifyExpiryChecked, DateTime.UtcNow));
-                    updated++;
-                }
-                else
-                {
-                    await db.Users
-                        .Where(w => w.UserId == candidate.UserId)
-                        .ExecuteUpdateAsync(s => s
-                            .SetProperty(p => p.SpotifyExpiryChecked, DateTime.UtcNow));
-                    failed++;
-                }
+                    await using var workerDb = await contextFactory.CreateDbContextAsync(cancellationToken);
+                    if (userInfo != null)
+                    {
+                        var expiry = userInfo.SpotifyExpiryEstimateUnix.HasValue
+                            ? DateTime.UnixEpoch.AddSeconds(userInfo.SpotifyExpiryEstimateUnix.Value)
+                            : (DateTime?)null;
 
-                await Task.Delay(600);
-            }
+                        await workerDb.Users
+                            .Where(w => w.UserId == candidate.UserId)
+                            .ExecuteUpdateAsync(s => s
+                                .SetProperty(p => p.SpotifyConnectionExpiry, expiry)
+                                .SetProperty(p => p.SpotifyExpiryChecked, DateTime.UtcNow), cancellationToken);
+                        Interlocked.Increment(ref updated);
+                    }
+                    else
+                    {
+                        await workerDb.Users
+                            .Where(w => w.UserId == candidate.UserId)
+                            .ExecuteUpdateAsync(s => s
+                                .SetProperty(p => p.SpotifyExpiryChecked, DateTime.UtcNow), cancellationToken);
+                        Interlocked.Increment(ref failed);
+                    }
+
+                    await Task.Delay(600, cancellationToken);
+                });
 
             Log.Information("DmNotificationService: Refreshed Spotify expiry estimates - {updated} updated, {failed} failed", updated, failed);
         }
@@ -143,7 +150,7 @@ public class DmNotificationService(
                                                                  n.Sent >= notifiedCutoff))
                     .OrderByDescending(o => o.SpotifyConnectionExpiry)
                     .Take(sendCap * 2)
-                    .Select(s => new { s.UserId, s.DiscordUserId, s.UserNameLastFM, s.SpotifyConnectionExpiry, s.DmChannelId })
+                    .Select(s => new SpotifyExpiryCandidate(s.UserId, s.DiscordUserId, s.UserNameLastFM, s.SpotifyConnectionExpiry, s.DmChannelId))
                     .ToListAsync();
 
                 candidates = candidates
@@ -174,82 +181,114 @@ public class DmNotificationService(
                 var sent = 0;
                 var skipped = 0;
                 var failedSends = 0;
-                foreach (var candidate in candidates)
+
+                using var prefetchCts = new CancellationTokenSource();
+                var prefetchChannel = System.Threading.Channels.Channel.CreateBounded<(SpotifyExpiryCandidate Candidate, DataSourceUser UserInfo)>(
+                    new BoundedChannelOptions(PrefetchBufferSize) { SingleReader = true, SingleWriter = true });
+
+                var prefetcher = Task.Run(async () =>
                 {
-                    if (sent + failedSends >= sendCap)
+                    try
                     {
-                        Log.Warning("DmNotificationService: Send cap of {cap} reached, {remaining} candidates deferred to next run",
-                            sendCap, candidates.Count - sent - failedSends - skipped);
-                        break;
+                        foreach (var candidate in candidates)
+                        {
+                            var storedExpiryUnix = ((DateTimeOffset)DateTime.SpecifyKind(candidate.SpotifyConnectionExpiry.Value, DateTimeKind.Utc)).ToUnixTimeSeconds();
+                            if (notifiedExpiries.TryGetValue(candidate.DiscordUserId, out var previousExpiries) &&
+                                previousExpiries.Any(a => Math.Abs(a - storedExpiryUnix) < (long)TimeSpan.FromDays(7).TotalSeconds))
+                            {
+                                Interlocked.Increment(ref skipped);
+                                continue;
+                            }
+
+                            prefetchCts.Token.ThrowIfCancellationRequested();
+                            var userInfo = await lastfmRepository.GetLfmUserInfoAsync(candidate.UserNameLastFM);
+                            await prefetchChannel.Writer.WriteAsync((candidate, userInfo), prefetchCts.Token);
+                        }
                     }
-
-                    var storedExpiryUnix = ((DateTimeOffset)DateTime.SpecifyKind(candidate.SpotifyConnectionExpiry.Value, DateTimeKind.Utc)).ToUnixTimeSeconds();
-                    if (notifiedExpiries.TryGetValue(candidate.DiscordUserId, out var previousExpiries) &&
-                        previousExpiries.Any(a => Math.Abs(a - storedExpiryUnix) < (long)TimeSpan.FromDays(7).TotalSeconds))
+                    catch (OperationCanceledException) when (prefetchCts.IsCancellationRequested)
                     {
-                        skipped++;
-                        continue;
                     }
-
-                    var userInfo = await lastfmRepository.GetLfmUserInfoAsync(candidate.UserNameLastFM);
-                    if (userInfo == null)
+                    finally
                     {
-                        skipped++;
-                        continue;
+                        prefetchChannel.Writer.Complete();
                     }
+                });
 
-                    var freshExpiry = userInfo.SpotifyExpiryEstimateUnix.HasValue
-                        ? DateTime.UnixEpoch.AddSeconds(userInfo.SpotifyExpiryEstimateUnix.Value)
-                        : (DateTime?)null;
-
-                    await db.Users
-                        .Where(w => w.UserId == candidate.UserId)
-                        .ExecuteUpdateAsync(s => s
-                            .SetProperty(p => p.SpotifyConnectionExpiry, freshExpiry)
-                            .SetProperty(p => p.SpotifyExpiryChecked, DateTime.UtcNow));
-
-                    if (freshExpiry == null || freshExpiry > DateTime.UtcNow.AddDays(3))
+                try
+                {
+                    await foreach (var (candidate, userInfo) in prefetchChannel.Reader.ReadAllAsync())
                     {
-                        skipped++;
-                        continue;
-                    }
+                        if (sent + failedSends >= sendCap)
+                        {
+                            Log.Warning("DmNotificationService: Send cap of {cap} reached, {remaining} candidates deferred to next run",
+                                sendCap, candidates.Count - sent - failedSends - skipped);
+                            break;
+                        }
 
-                    var expired = freshExpiry < DateTime.UtcNow;
+                        if (userInfo == null)
+                        {
+                            Interlocked.Increment(ref skipped);
+                            continue;
+                        }
 
-                    var notification = new UserDmNotification
-                    {
-                        UserId = candidate.UserId,
-                        DiscordUserId = candidate.DiscordUserId,
-                        Type = UserDmNotificationType.SpotifyExpiryWarning,
-                        Sent = DateTime.UtcNow,
-                        Reference = userInfo.SpotifyExpiryEstimateUnix.Value.ToString(),
-                        Successful = false
-                    };
-                    db.UserDmNotifications.Add(notification);
-                    await db.SaveChangesAsync();
+                        var freshExpiry = userInfo.SpotifyExpiryEstimateUnix.HasValue
+                            ? DateTime.UnixEpoch.AddSeconds(userInfo.SpotifyExpiryEstimateUnix.Value)
+                            : (DateTime?)null;
 
-                    var (successful, dmChannelId) = await SendDm(candidate.UserId, candidate.DiscordUserId, candidate.DmChannelId, BuildSpotifyExpiryMessage(expired));
-
-                    if (dmChannelId != null && dmChannelId != candidate.DmChannelId)
-                    {
                         await db.Users
                             .Where(w => w.UserId == candidate.UserId)
                             .ExecuteUpdateAsync(s => s
-                                .SetProperty(p => p.DmChannelId, dmChannelId));
-                    }
+                                .SetProperty(p => p.SpotifyConnectionExpiry, freshExpiry)
+                                .SetProperty(p => p.SpotifyExpiryChecked, DateTime.UtcNow));
 
-                    if (successful)
-                    {
-                        notification.Successful = true;
+                        if (freshExpiry == null || freshExpiry > DateTime.UtcNow.AddDays(3))
+                        {
+                            Interlocked.Increment(ref skipped);
+                            continue;
+                        }
+
+                        var expired = freshExpiry < DateTime.UtcNow;
+
+                        var notification = new UserDmNotification
+                        {
+                            UserId = candidate.UserId,
+                            DiscordUserId = candidate.DiscordUserId,
+                            Type = UserDmNotificationType.SpotifyExpiryWarning,
+                            Sent = DateTime.UtcNow,
+                            Reference = userInfo.SpotifyExpiryEstimateUnix.Value.ToString(),
+                            Successful = false
+                        };
+                        db.UserDmNotifications.Add(notification);
                         await db.SaveChangesAsync();
-                        sent++;
-                    }
-                    else
-                    {
-                        failedSends++;
-                    }
 
-                    await Task.Delay(600);
+                        var (successful, dmChannelId) = await SendDm(candidate.UserId, candidate.DiscordUserId, candidate.DmChannelId, BuildSpotifyExpiryMessage(expired));
+
+                        if (dmChannelId != null && dmChannelId != candidate.DmChannelId)
+                        {
+                            await db.Users
+                                .Where(w => w.UserId == candidate.UserId)
+                                .ExecuteUpdateAsync(s => s
+                                    .SetProperty(p => p.DmChannelId, dmChannelId));
+                        }
+
+                        if (successful)
+                        {
+                            notification.Successful = true;
+                            await db.SaveChangesAsync();
+                            sent++;
+                        }
+                        else
+                        {
+                            failedSends++;
+                        }
+
+                        await Task.Delay(500);
+                    }
+                }
+                finally
+                {
+                    prefetchCts.Cancel();
+                    await prefetcher;
                 }
 
                 Log.Information("DmNotificationService: Spotify expiry notifications done - {sent} sent, {failedSends} failed, {skipped} skipped", sent, failedSends, skipped);
@@ -438,6 +477,13 @@ public class DmNotificationService(
             return (false, channelId);
         }
     }
+
+    private sealed record SpotifyExpiryCandidate(
+        int UserId,
+        ulong DiscordUserId,
+        string UserNameLastFM,
+        DateTime? SpotifyConnectionExpiry,
+        ulong? DmChannelId);
 
     private static MessageProperties BuildSpotifyExpiryMessage(bool expired)
     {

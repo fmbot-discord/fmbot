@@ -195,7 +195,7 @@ public class TimerService : IDisposable
             ConfigData.Data.Shards.MainInstance == true)
         {
             Log.Information($"RecurringJob: Adding {nameof(RefreshSpotifyExpiryEstimates)}");
-            RecurringJob.AddOrUpdate(nameof(RefreshSpotifyExpiryEstimates), () => RefreshSpotifyExpiryEstimates(), "20 * * * *");
+            RecurringJob.AddOrUpdate(nameof(RefreshSpotifyExpiryEstimates), () => RefreshSpotifyExpiryEstimates(), "*/20 * * * *");
 
             Log.Information($"RecurringJob: Adding {nameof(SendSpotifyExpiryNotifications)}");
             RecurringJob.AddOrUpdate(nameof(SendSpotifyExpiryNotifications), () => SendSpotifyExpiryNotifications(), "30 * * * *");
