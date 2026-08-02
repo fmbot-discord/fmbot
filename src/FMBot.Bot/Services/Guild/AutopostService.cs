@@ -27,6 +27,7 @@ public class AutopostService(
     ShardedGatewayClient client)
 {
     public const int PostDelayHours = 18;
+    private const int PostMinute = 30;
     public const int MaxAutopostsPerGuild = 10;
     private const ulong CommunityServerId = 821660544581763093;
 
@@ -288,7 +289,7 @@ public class AutopostService(
             ? periodEnd.AddMonths(1)
             : periodEnd.AddDays(7);
 
-        return nextPeriodEnd.AddHours(PostDelayHours);
+        return nextPeriodEnd.AddHours(PostDelayHours).AddMinutes(PostMinute);
     }
 
     public static DateTime GetNextScheduledPost(GuildAutopost autopost, DateTime now)
@@ -300,13 +301,13 @@ public class AutopostService(
             return GetNextPost(autopost.Schedule, currentPeriodStart);
         }
 
-        var due = currentPeriodStart.AddHours(PostDelayHours);
+        var due = currentPeriodStart.AddHours(PostDelayHours).AddMinutes(PostMinute);
         if (due > now)
         {
             return due;
         }
 
-        var nextTick = new DateTime(now.Year, now.Month, now.Day, now.Hour, 30, 0, DateTimeKind.Utc);
+        var nextTick = new DateTime(now.Year, now.Month, now.Day, now.Hour, PostMinute, 0, DateTimeKind.Utc);
         if (nextTick <= now)
         {
             nextTick = nextTick.AddHours(1);
