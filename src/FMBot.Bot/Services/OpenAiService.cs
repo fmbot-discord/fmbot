@@ -202,7 +202,12 @@ public class OpenAiService(
         try
         {
             var response =
-                await SendRequest($"Is the username '{username}' offensive? Only reply with 'true' or 'false'.");
+                await SendRequest(
+                    "You check Last.fm usernames before they are shown publicly by a Discord bot. " +
+                    "Reply 'true' only if the username contains a slur, hate speech, an explicit sexual reference, or a clear reference to a tragedy or atrocity. " +
+                    "Mild rudeness, jokes, innuendo, edgy words, drug references or dark humor are all 'false'. " +
+                    "If in doubt, reply 'false'. Only reply with 'true' or 'false'.\n\n" +
+                    $"Username: '{username}'");
 
             var output = response.Output;
             return output != null && output.Contains("true", StringComparison.OrdinalIgnoreCase);
@@ -232,8 +237,11 @@ public class OpenAiService(
             }
 
             var response = await SendRequest(
-                "Is this album offensive or NSFW? Consider the album name, the artist name and the cover image. " +
-                "Only reply with 'true' or 'false'.",
+                "You check whether an album cover is safe to use as the public avatar of a Discord bot. Consider the album name, the artist name and the cover image. " +
+                "Reply 'true' if it contains: nudity (genitalia, anuses or female-presenting nipples), erotic or sexual content, " +
+                "people covered in blood or wounds, gore, hate speech or hate symbols, or slurs in the album or artist name. " +
+                "Parental Advisory stickers, dark or unsettling artwork and profanity that is not a slur are 'false'. " +
+                "If unsure whether any of the above is present, reply 'true'. Only reply with 'true' or 'false'.",
                 userMessage: description.Length > 0 ? description.ToString() : null,
                 imageUrl: string.IsNullOrWhiteSpace(imageUrl) ? null : imageUrl);
 
