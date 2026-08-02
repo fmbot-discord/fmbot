@@ -60,6 +60,11 @@ public class UserEventHandler
     {
         Statistics.DiscordEvents.WithLabels(nameof(UserJoined)).Inc();
 
+        if (PublicProperties.RegisteredUsers.ContainsKey(socketGuildUser.Id))
+        {
+            _ = this._indexService.AddOrUpdateGuildUser(socketGuildUser);
+        }
+
         if (socketGuildUser.GuildId == this._botSettings.Bot.BaseServerId &&
             client.Id == Constants.BotProductionId)
         {

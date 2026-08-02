@@ -664,12 +664,12 @@ public class IndexService
                 .Include(i => i.GuildUsers.Where(w => w.UserId == userId))
                 .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuildUser.GuildId);
 
-            if (guild?.GuildUsers == null || !guild.GuildUsers.Any())
+            if (guild == null)
             {
                 return;
             }
 
-            var existingGuildUser = guild.GuildUsers.FirstOrDefault(f => f.UserId == userId);
+            var existingGuildUser = guild.GuildUsers?.FirstOrDefault(f => f.UserId == userId);
 
             if (existingGuildUser == null)
             {
