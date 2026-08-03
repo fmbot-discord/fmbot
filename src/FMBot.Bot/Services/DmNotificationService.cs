@@ -282,7 +282,7 @@ public class DmNotificationService(
                             failedSends++;
                         }
 
-                        await Task.Delay(500);
+                        await Task.Delay(400);
                     }
                 }
                 finally
