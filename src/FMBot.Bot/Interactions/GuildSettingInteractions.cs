@@ -644,7 +644,7 @@ public class GuildSettingInteractions(
 
     [ComponentInteraction(InteractionConstants.ToggleCommand.ToggleCommandRecommendedChannel)]
     [ServerStaffOnly]
-    public async Task SetRecommendedAlternativeChannel(string channelId, string categoryId)
+    public async Task SetRecommendedAlternativeChannels(string channelId, string categoryId)
     {
         var parsedChannelId = ulong.Parse(channelId);
         var parsedCategoryId = ulong.Parse(categoryId);
@@ -662,8 +662,8 @@ public class GuildSettingInteractions(
         var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
         var selectedChannel = this.Context.Guild.Channels.TryGetValue(parsedChannelId, out var ch) ? ch : null;
 
-        await guildService.SetRecommendedAlternativeChannel(selectedChannel, guild.GuildId,
-            selectedValues.Count > 0 ? selectedValues[0] : null, this.Context.Guild.Id);
+        await guildService.SetRecommendedAlternativeChannels(selectedChannel, guild.GuildId,
+            selectedValues.Count > 0 ? selectedValues.ToArray() : null, this.Context.Guild.Id);
 
         var response = await guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context),
             parsedChannelId, parsedCategoryId, this.Context.User);

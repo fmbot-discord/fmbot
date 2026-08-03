@@ -22,5 +22,5 @@ public class Channel
 
     public FmEmbedType? FmEmbedType { get; set; }
 
-    public ulong? RecommendedAlternativeChannelId { get; set; }
+    public ulong[] RecommendedAlternativeChannelIds { get; set; }
 }

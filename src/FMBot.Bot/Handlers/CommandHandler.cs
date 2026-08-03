@@ -714,8 +714,8 @@ public class CommandHandler
     private async Task<string> GetRecommendedChannelLine(Localizer localizer, ulong channelId)
     {
         var channel = await this._guildService.GetChannel(channelId);
-        return channel?.RecommendedAlternativeChannelId != null
-            ? $"\n{localizer.Translate("errors.tryChannelInstead", ("channel", $"<#{channel.RecommendedAlternativeChannelId.Value}>"))}"
+        return channel?.RecommendedAlternativeChannelIds is { Length: > 0 }
+            ? $"\n{localizer.Translate("errors.tryChannelInstead", ("channel", string.Join(", ", channel.RecommendedAlternativeChannelIds.Select(s => $"<#{s}>"))))}"
             : null;
     }
 

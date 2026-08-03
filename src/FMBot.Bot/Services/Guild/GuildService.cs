@@ -1295,7 +1295,7 @@ public class GuildService(
         await db.SaveChangesAsync();
     }
 
-    public async Task SetRecommendedAlternativeChannel(IGuildChannel discordChannel, int guildId, ulong? recommendedAlternativeChannelId,
+    public async Task SetRecommendedAlternativeChannels(IGuildChannel discordChannel, int guildId, ulong[] recommendedAlternativeChannelIds,
         ulong discordGuildId)
     {
         await using var db = await contextFactory.CreateDbContextAsync();
@@ -1310,7 +1310,7 @@ public class GuildService(
                 DiscordChannelId = discordChannel.Id,
                 Name = discordChannel.Name,
                 GuildId = guildId,
-                RecommendedAlternativeChannelId = recommendedAlternativeChannelId
+                RecommendedAlternativeChannelIds = recommendedAlternativeChannelIds
             };
 
             await db.Channels.AddAsync(newChannel);
@@ -1321,7 +1321,7 @@ public class GuildService(
             return;
         }
 
-        existingChannel.RecommendedAlternativeChannelId = recommendedAlternativeChannelId;
+        existingChannel.RecommendedAlternativeChannelIds = recommendedAlternativeChannelIds;
 
         db.Entry(existingChannel).State = EntityState.Modified;
 

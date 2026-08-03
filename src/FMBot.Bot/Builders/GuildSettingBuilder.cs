@@ -1155,9 +1155,10 @@ public class GuildSettingBuilder(GuildService guildService, IOptions<BotSettings
             container.WithTextDisplay($"**Forced 'fm' mode**\n`{name}`");
         }
 
-        if (channel?.RecommendedAlternativeChannelId != null)
+        if (channel?.RecommendedAlternativeChannelIds is { Length: > 0 })
         {
-            container.WithTextDisplay($"**Recommended alternative channel**\n<#{channel.RecommendedAlternativeChannelId.Value}>");
+            container.WithTextDisplay(
+                $"**Recommended alternative channels**\n{string.Join(", ", channel.RecommendedAlternativeChannelIds.Select(s => $"<#{s}>"))}");
         }
 
         var missingPermissions = GetMissingBotPermissionsInChannel(context.DiscordGuild, selectedChannel);
@@ -1239,23 +1240,23 @@ public class GuildSettingBuilder(GuildService guildService, IOptions<BotSettings
             container.AddComponent(fmType);
         }
 
-        var recommendedChannel = new ChannelMenuProperties(
+        var recommendedChannels = new ChannelMenuProperties(
                 $"{InteractionConstants.ToggleCommand.ToggleCommandRecommendedChannel}:{selectedChannel.Id}:{selectedCategoryId}")
-            .WithPlaceholder("Recommended alternative channel")
+            .WithPlaceholder("Recommended alternative channels")
             .WithMinValues(0)
-            .WithMaxValues(1)
+            .WithMaxValues(5)
             .WithChannelTypes([
                 ChannelType.TextGuildChannel, ChannelType.AnnouncementGuildChannel,
                 ChannelType.PublicGuildThread, ChannelType.PrivateGuildThread,
                 ChannelType.AnnouncementGuildThread
             ]);
 
-        if (channel?.RecommendedAlternativeChannelId != null)
+        if (channel?.RecommendedAlternativeChannelIds is { Length: > 0 })
         {
-            recommendedChannel.DefaultValues = [channel.RecommendedAlternativeChannelId.Value];
+            recommendedChannels.DefaultValues = channel.RecommendedAlternativeChannelIds;
         }
 
-        container.AddComponent(recommendedChannel);
+        container.AddComponent(recommendedChannels);
 
         return response;
     }
