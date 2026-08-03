@@ -59,6 +59,7 @@
   "errors.commandDisabledServer": "El comando que intentas ejecutar ha sido desactivado en este servidor.",
   "errors.commandDisabledChannel": "El comando que intentas ejecutar ha sido desactivado en este canal.",
   "errors.configuredWith": "-# *Configurado con `{{command}}`*",
+  "errors.tryChannelInstead": "Prueba mejor en {{channel}}.",
   "errors.buttonNotForYou": "Oye, este botón no es para ti. Al menos lo intentaste.",
   "errors.lastFmFailureRate": "En la última hora han devuelto un error en el {{percentage}}% de nuestras peticiones.  `{{sparkline}}`",
   "artist.notFoundWithValues": "No se pudo encontrar el artista `{{artist}}`, revisa tu búsqueda e inténtalo de nuevo.",

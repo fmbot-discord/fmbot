@@ -59,6 +59,7 @@
   "errors.commandDisabledServer": "Çalıştırmaya çalıştığın komut bu sunucuda devre dışı bırakıldı.",
   "errors.commandDisabledChannel": "Çalıştırmaya çalıştığın komut bu kanalda devre dışı bırakıldı.",
   "errors.configuredWith": "-# *`{{command}}` ile yapılandırıldı*",
+  "errors.tryChannelInstead": "Bunun yerine {{channel}} kanalını dene.",
   "errors.buttonNotForYou": "Hey, bu düğme senin için değil. En azından denedin.",
   "errors.lastFmFailureRate": "Son bir saatte isteklerimizin %{{percentage}} kadarına hata döndürdüler.  `{{sparkline}}`",
   "artist.notFoundWithValues": "`{{artist}}` sanatçısı bulunamadı, lütfen arama değerlerini kontrol edip tekrar dene.",

@@ -59,6 +59,7 @@
   "errors.commandDisabledServer": "Il comando che stai cercando di eseguire è stato disabilitato in questo server.",
   "errors.commandDisabledChannel": "Il comando che stai cercando di eseguire è stato disabilitato in questo canale.",
   "errors.configuredWith": "-# *Configurato con `{{command}}`*",
+  "errors.tryChannelInstead": "Prova invece in {{channel}}.",
   "errors.buttonNotForYou": "Ehi, questo pulsante non è per te. Almeno ci hai provato.",
   "errors.lastFmFailureRate": "Nell'ultima ora Last.fm ha restituito un errore sul {{percentage}}% delle nostre richieste.  `{{sparkline}}`",
   "artist.notFoundWithValues": "L'artista `{{artist}}` non è stato trovato, controlla i termini di ricerca e riprova.",

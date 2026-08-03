@@ -1155,6 +1155,11 @@ public class GuildSettingBuilder(GuildService guildService, IOptions<BotSettings
             container.WithTextDisplay($"**Forced 'fm' mode**\n`{name}`");
         }
 
+        if (channel?.RecommendedAlternativeChannelId != null)
+        {
+            container.WithTextDisplay($"**Recommended alternative channel**\n<#{channel.RecommendedAlternativeChannelId.Value}>");
+        }
+
         var missingPermissions = GetMissingBotPermissionsInChannel(context.DiscordGuild, selectedChannel);
         if (missingPermissions.Length > 0)
         {
@@ -1221,11 +1226,36 @@ public class GuildSettingBuilder(GuildService guildService, IOptions<BotSettings
         container.WithActionRow(firstRow);
         container.WithActionRow(secondRow);
 
-        if (!botDisabled ||
-            currentToggledCommands != null && currentToggledCommands.Any(a => string.Equals(a, "fm", StringComparison.OrdinalIgnoreCase)))
+        var fmToggled = currentToggledCommands != null &&
+                        currentToggledCommands.Any(a => string.Equals(a, "fm", StringComparison.OrdinalIgnoreCase));
+
+        if (!botDisabled)
+        {
+            fmType.Disabled = fmToggled;
+            container.AddComponent(fmType);
+        }
+        else if (fmToggled)
         {
             container.AddComponent(fmType);
         }
+
+        var recommendedChannel = new ChannelMenuProperties(
+                $"{InteractionConstants.ToggleCommand.ToggleCommandRecommendedChannel}:{selectedChannel.Id}:{selectedCategoryId}")
+            .WithPlaceholder("Recommended alternative channel")
+            .WithMinValues(0)
+            .WithMaxValues(1)
+            .WithChannelTypes([
+                ChannelType.TextGuildChannel, ChannelType.AnnouncementGuildChannel,
+                ChannelType.PublicGuildThread, ChannelType.PrivateGuildThread,
+                ChannelType.AnnouncementGuildThread
+            ]);
+
+        if (channel?.RecommendedAlternativeChannelId != null)
+        {
+            recommendedChannel.DefaultValues = [channel.RecommendedAlternativeChannelId.Value];
+        }
+
+        container.AddComponent(recommendedChannel);
 
         return response;
     }

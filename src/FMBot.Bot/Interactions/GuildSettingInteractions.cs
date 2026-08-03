@@ -642,6 +642,34 @@ public class GuildSettingInteractions(
         await this.Context.UpdateInteractionEmbed(response);
     }
 
+    [ComponentInteraction(InteractionConstants.ToggleCommand.ToggleCommandRecommendedChannel)]
+    [ServerStaffOnly]
+    public async Task SetRecommendedAlternativeChannel(string channelId, string categoryId)
+    {
+        var parsedChannelId = ulong.Parse(channelId);
+        var parsedCategoryId = ulong.Parse(categoryId);
+
+        if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
+        {
+            await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
+            return;
+        }
+
+        var entityMenuInteraction = (EntityMenuInteraction)this.Context.Interaction;
+        var selectedValues = entityMenuInteraction.Data.SelectedValues;
+
+        var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
+        var selectedChannel = this.Context.Guild.Channels.TryGetValue(parsedChannelId, out var ch) ? ch : null;
+
+        await guildService.SetRecommendedAlternativeChannel(selectedChannel, guild.GuildId,
+            selectedValues.Count > 0 ? selectedValues[0] : null, this.Context.Guild.Id);
+
+        var response = await guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context),
+            parsedChannelId, parsedCategoryId, this.Context.User);
+        await this.Context.UpdateInteractionEmbed(response);
+    }
+
     [ComponentInteraction(InteractionConstants.RemoveFmbotActivityThreshold)]
     [ServerStaffOnly]
     public async Task RemoveFmbotActivityThreshold()

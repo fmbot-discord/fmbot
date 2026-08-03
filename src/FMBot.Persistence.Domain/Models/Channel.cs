@@ -21,4 +21,6 @@ public class Channel
     public bool? BotDisabled { get; set; }
 
     public FmEmbedType? FmEmbedType { get; set; }
+
+    public ulong? RecommendedAlternativeChannelId { get; set; }
 }

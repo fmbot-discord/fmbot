@@ -59,6 +59,7 @@
   "errors.commandDisabledServer": "The command you're trying to execute has been disabled in this server.",
   "errors.commandDisabledChannel": "The command you're trying to execute has been disabled in this channel.",
   "errors.configuredWith": "-# *Configured with `{{command}}`*",
+  "errors.tryChannelInstead": "Try {{channel}} instead.",
   "errors.buttonNotForYou": "Hey, this button is not for you. At least you tried.",
   "errors.lastFmFailureRate": "In the last hour they've returned an error on {{percentage}}% of our requests.  `{{sparkline}}`",
   "artist.notFoundWithValues": "Artist `{{artist}}` could not be found, please check your search values and try again.",

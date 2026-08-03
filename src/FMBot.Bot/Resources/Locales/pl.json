@@ -59,6 +59,7 @@
   "errors.commandDisabledServer": "Komenda, której próbujesz użyć, została wyłączona na tym serwerze.",
   "errors.commandDisabledChannel": "Komenda, której próbujesz użyć, została wyłączona na tym kanale.",
   "errors.configuredWith": "-# *Skonfigurowano za pomocą `{{command}}`*",
+  "errors.tryChannelInstead": "Spróbuj zamiast tego na {{channel}}.",
   "errors.buttonNotForYou": "Hej, ten przycisk nie jest dla ciebie. Przynajmniej próba była.",
   "errors.lastFmFailureRate": "W ciągu ostatniej godziny serwis odpowiedział błędem na {{percentage}}% naszych zapytań.  `{{sparkline}}`",
   "artist.notFoundWithValues": "Nie znaleziono artysty `{{artist}}`, sprawdź wyszukiwaną frazę i spróbuj ponownie.",

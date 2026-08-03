@@ -59,6 +59,7 @@
   "errors.commandDisabledServer": "La commande que tu essaies d'exécuter a été désactivée sur ce serveur.",
   "errors.commandDisabledChannel": "La commande que tu essaies d'exécuter a été désactivée dans ce salon.",
   "errors.configuredWith": "-# *Configuré avec `{{command}}`*",
+  "errors.tryChannelInstead": "Essaie plutôt dans {{channel}}.",
   "errors.buttonNotForYou": "Hé, ce bouton n'est pas pour toi. Bien essayé quand même.",
   "errors.lastFmFailureRate": "Au cours de la dernière heure, Last.fm a renvoyé une erreur pour {{percentage}}% de nos requêtes.  `{{sparkline}}`",
   "artist.notFoundWithValues": "L'artiste `{{artist}}` est introuvable, vérifie ta recherche et réessaie.",

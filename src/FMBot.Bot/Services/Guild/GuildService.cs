@@ -1295,6 +1295,41 @@ public class GuildService(
         await db.SaveChangesAsync();
     }
 
+    public async Task SetRecommendedAlternativeChannel(IGuildChannel discordChannel, int guildId, ulong? recommendedAlternativeChannelId,
+        ulong discordGuildId)
+    {
+        await using var db = await contextFactory.CreateDbContextAsync();
+        var existingChannel = await db.Channels
+            .AsQueryable()
+            .FirstOrDefaultAsync(f => f.DiscordChannelId == discordChannel.Id);
+
+        if (existingChannel == null)
+        {
+            var newChannel = new Channel
+            {
+                DiscordChannelId = discordChannel.Id,
+                Name = discordChannel.Name,
+                GuildId = guildId,
+                RecommendedAlternativeChannelId = recommendedAlternativeChannelId
+            };
+
+            await db.Channels.AddAsync(newChannel);
+            await db.SaveChangesAsync();
+
+            await RemoveGuildFromCache(discordGuildId);
+
+            return;
+        }
+
+        existingChannel.RecommendedAlternativeChannelId = recommendedAlternativeChannelId;
+
+        db.Entry(existingChannel).State = EntityState.Modified;
+
+        await RemoveGuildFromCache(discordGuildId);
+
+        await db.SaveChangesAsync();
+    }
+
     public async Task<string[]> EnableChannelCommandsAsync(IGuildChannel discordChannel, List<string> commands,
         ulong discordGuildId)
     {

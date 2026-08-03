@@ -59,6 +59,7 @@
   "errors.commandDisabledServer": "Kommandot du försöker köra har inaktiverats på den här servern.",
   "errors.commandDisabledChannel": "Kommandot du försöker köra har inaktiverats i den här kanalen.",
   "errors.configuredWith": "-# *Konfigurerat med `{{command}}`*",
+  "errors.tryChannelInstead": "Testa i {{channel}} istället.",
   "errors.buttonNotForYou": "Hallå, den här knappen är inte till för dig. Bra försök i alla fall.",
   "errors.lastFmFailureRate": "Under den senaste timmen har de returnerat ett fel på {{percentage}}% av våra förfrågningar.  `{{sparkline}}`",
   "artist.notFoundWithValues": "Artisten `{{artist}}` kunde inte hittas, kontrollera dina söktermer och försök igen.",

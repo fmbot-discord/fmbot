@@ -636,12 +636,14 @@ public class CommandHandler
                 if (!update)
                 {
                     var localizer = Localizer.ForGuild(context.Guild?.Id, discordLocale: context.Guild?.PreferredLocale);
+                    var recommendedChannel = await GetRecommendedChannelLine(localizer, context.Channel.Id);
                     if (toggledChannelCommands != null &&
                         toggledChannelCommands.Any())
                     {
                         _ = (await context.Client.Rest.SendMessageAsync(context.Message.ChannelId, new MessageProperties
                         {
                             Content = localizer.Translate("errors.commandNotEnabledChannel") +
+                                      recommendedChannel +
                                       (isMod ? $"\n{localizer.Translate("errors.configuredWith", ("command", $"{prfx}togglecommand"))}" : null)
                         })).DeleteAfterAsync(8);
                     }
@@ -650,6 +652,7 @@ public class CommandHandler
                         _ = (await context.Client.Rest.SendMessageAsync(context.Message.ChannelId, new MessageProperties
                         {
                             Content = localizer.Translate("errors.botDisabledChannel") +
+                                      recommendedChannel +
                                       (isMod ? $"\n{localizer.Translate("errors.configuredWith", ("command", $"{prfx}togglecommand"))}" : null)
                         })).DeleteAfterAsync(8);
                     }
@@ -690,9 +693,11 @@ public class CommandHandler
                 if (!update)
                 {
                     var localizer = Localizer.ForGuild(context.Guild?.Id, discordLocale: context.Guild?.PreferredLocale);
+                    var recommendedChannel = await GetRecommendedChannelLine(localizer, context.Channel.Id);
                     _ = (await context.Client.Rest.SendMessageAsync(context.Message.ChannelId, new MessageProperties
                     {
                         Content = localizer.Translate("errors.commandDisabledChannel") +
+                                  recommendedChannel +
                                   (isMod ? $"\n{localizer.Translate("errors.configuredWith", ("command", $"{prfx}togglecommand"))}" : null)
                     })).DeleteAfterAsync(8);
 
@@ -704,6 +709,14 @@ public class CommandHandler
         }
 
         return true;
+    }
+
+    private async Task<string> GetRecommendedChannelLine(Localizer localizer, ulong channelId)
+    {
+        var channel = await this._guildService.GetChannel(channelId);
+        return channel?.RecommendedAlternativeChannelId != null
+            ? $"\n{localizer.Translate("errors.tryChannelInstead", ("channel", $"<#{channel.RecommendedAlternativeChannelId.Value}>"))}"
+            : null;
     }
 
     private async Task UserBlockedResponse(CommandContext context, string commandName)

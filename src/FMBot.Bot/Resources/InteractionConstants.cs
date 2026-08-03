@@ -341,6 +341,8 @@ public static class InteractionConstants
 
         public const string ToggleCommandChannelFmType = "toggle-command-fm-mode";
 
+        public const string ToggleCommandRecommendedChannel = "toggle-command-recommended-channel";
+
         public const string ToggleGuildCommandAdd = "toggle-guild-command-add";
         public const string ToggleGuildCommandRemove = "toggle-guild-command-remove";
         public const string ToggleGuildCommandClear = "toggle-guild-command-clear";

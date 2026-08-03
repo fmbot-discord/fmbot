@@ -59,6 +59,7 @@
   "errors.commandDisabledServer": "Het commando dat je probeert uit te voeren is uitgeschakeld in deze server.",
   "errors.commandDisabledChannel": "Het commando dat je probeert uit te voeren is uitgeschakeld in dit kanaal.",
   "errors.configuredWith": "-# *Ingesteld met `{{command}}`*",
+  "errors.tryChannelInstead": "Probeer het in {{channel}}.",
   "errors.buttonNotForYou": "Hé, deze knop is niet voor jou. Leuk geprobeerd.",
   "errors.lastFmFailureRate": "In het afgelopen uur gaven zij op {{percentage}}% van onze verzoeken een foutmelding terug.  `{{sparkline}}`",
   "artist.notFoundWithValues": "Artiest `{{artist}}` kon niet gevonden worden, controleer je zoekterm en probeer het opnieuw.",

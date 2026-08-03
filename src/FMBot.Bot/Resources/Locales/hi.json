@@ -59,6 +59,7 @@
   "errors.commandDisabledServer": "जो कमांड तुम चलाने की कोशिश कर रहे हो उसे इस सर्वर में बंद कर दिया गया है।",
   "errors.commandDisabledChannel": "जो कमांड तुम चलाने की कोशिश कर रहे हो उसे इस चैनल में बंद कर दिया गया है।",
   "errors.configuredWith": "-# *`{{command}}` से कॉन्फ़िगर किया गया*",
+  "errors.tryChannelInstead": "इसके बजाय {{channel}} में आज़माओ।",
   "errors.buttonNotForYou": "अरे, यह बटन तुम्हारे लिए नहीं है। कोशिश अच्छी थी।",
   "errors.lastFmFailureRate": "पिछले एक घंटे में उन्होंने हमारी {{percentage}}% रिक्वेस्ट पर एरर लौटाया है।  `{{sparkline}}`",
   "artist.notFoundWithValues": "Artist `{{artist}}` नहीं मिला, अपनी सर्च वैल्यू जाँचो और दोबारा कोशिश करो।",

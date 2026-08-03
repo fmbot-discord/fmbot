@@ -59,6 +59,7 @@
   "errors.commandDisabledServer": "Perintah yang ingin kamu jalankan telah dinonaktifkan di server ini.",
   "errors.commandDisabledChannel": "Perintah yang ingin kamu jalankan telah dinonaktifkan di channel ini.",
   "errors.configuredWith": "-# *Dikonfigurasi dengan `{{command}}`*",
+  "errors.tryChannelInstead": "Coba di {{channel}}.",
   "errors.buttonNotForYou": "Hei, tombol ini bukan untukmu. Setidaknya kamu sudah mencoba.",
   "errors.lastFmFailureRate": "Dalam satu jam terakhir mereka mengembalikan error pada {{percentage}}% dari permintaan kami.  `{{sparkline}}`",
   "artist.notFoundWithValues": "Artis `{{artist}}` tidak dapat ditemukan, periksa kata pencarianmu dan coba lagi.",

@@ -473,12 +473,14 @@ public class InteractionHandler
                     return true;
                 }
 
+                var localizer = Localizer.ForGuild(context.Interaction.GuildId, discordLocale: context.Interaction.GuildLocale);
+                var recommendedChannel = await GetRecommendedChannelLine(localizer, context.Channel.Id);
                 if (toggledChannelCommands != null &&
                     toggledChannelCommands.Any())
                 {
                     await context.Interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties
                     {
-                        Content = Localizer.ForGuild(context.Interaction.GuildId, discordLocale: context.Interaction.GuildLocale).Translate("errors.commandNotEnabledChannel"),
+                        Content = localizer.Translate("errors.commandNotEnabledChannel") + recommendedChannel,
                         Flags = MessageFlags.Ephemeral
                     }));
                 }
@@ -486,7 +488,7 @@ public class InteractionHandler
                 {
                     await context.Interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties
                     {
-                        Content = Localizer.ForGuild(context.Interaction.GuildId, discordLocale: context.Interaction.GuildLocale).Translate("errors.botDisabledChannel"),
+                        Content = localizer.Translate("errors.botDisabledChannel") + recommendedChannel,
                         Flags = MessageFlags.Ephemeral
                     }));
                 }
@@ -513,9 +515,11 @@ public class InteractionHandler
                 disabledChannelCommands.Any() &&
                 disabledChannelCommands.Any(commandName.Equals))
             {
+                var localizer = Localizer.ForGuild(context.Interaction.GuildId, discordLocale: context.Interaction.GuildLocale);
+                var recommendedChannel = await GetRecommendedChannelLine(localizer, context.Channel.Id);
                 await context.Interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties
                 {
-                    Content = Localizer.ForGuild(context.Interaction.GuildId, discordLocale: context.Interaction.GuildLocale).Translate("errors.commandDisabledChannel"),
+                    Content = localizer.Translate("errors.commandDisabledChannel") + recommendedChannel,
                     Flags = MessageFlags.Ephemeral
                 }));
                 await context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Disabled }, _userService, commandName);
@@ -524,6 +528,14 @@ public class InteractionHandler
         }
 
         return true;
+    }
+
+    private async Task<string> GetRecommendedChannelLine(Localizer localizer, ulong channelId)
+    {
+        var channel = await this._guildService.GetChannel(channelId);
+        return channel?.RecommendedAlternativeChannelId != null
+            ? $"\n{localizer.Translate("errors.tryChannelInstead", ("channel", $"<#{channel.RecommendedAlternativeChannelId.Value}>"))}"
+            : null;
     }
 
     private async Task UserBlockedResponse(ApplicationCommandContext context, string commandName)

@@ -59,6 +59,7 @@
   "errors.commandDisabledServer": "Der Befehl, den du ausführen möchtest, wurde auf diesem Server deaktiviert.",
   "errors.commandDisabledChannel": "Der Befehl, den du ausführen möchtest, wurde in diesem Kanal deaktiviert.",
   "errors.configuredWith": "-# *Konfiguriert mit `{{command}}`*",
+  "errors.tryChannelInstead": "Versuch es stattdessen in {{channel}}.",
   "errors.buttonNotForYou": "Hey, dieser Button ist nicht für dich. Netter Versuch.",
   "errors.lastFmFailureRate": "In der letzten Stunde hat Last.fm bei {{percentage}}% unserer Anfragen einen Fehler zurückgegeben.  `{{sparkline}}`",
   "artist.notFoundWithValues": "Künstler `{{artist}}` konnte nicht gefunden werden, überprüfe deine Suchbegriffe und versuch es erneut.",
