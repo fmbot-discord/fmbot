@@ -334,9 +334,9 @@ public class StaticInteractions(
         try
         {
             var checkoutLink = await supporterService.GetSupporterGiftCheckoutLink(
-                contextUser.DiscordUserId,
+                this.Context.User.Id,
                 this.Context.User.Username,
-                contextUser.UserNameLastFM,
+                contextUser?.UserNameLastFM ?? "",
                 priceId,
                 $"gift-{duration}",
                 recipientDiscordId,

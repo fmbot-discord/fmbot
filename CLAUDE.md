@@ -52,10 +52,14 @@ dotnet ef database update --project ./src/FMBot.Persistence.EntityFrameWork --st
 - **FMBot.Bot** - Main Discord bot application and entry point
 - **FMBot.Persistence.*** - Data layer with EF Core, PostgreSQL, and repository pattern
 - **FMBot.Domain** - Shared domain models and business logic
-- **FMBot.LastFM** - Last.fm API integration and music data services
+- **FMBot.LastFM** / **FMBot.LastFM.Domain** - Last.fm API integration and music data services
 - **FMBot.Images** - Image generation using Puppeteer and SkiaSharp
 - **FMBot.AppleMusic** - Apple Music API integration
 - **FMBot.Discogs** - Discogs API integration for record collections
+- **FMBot.Subscriptions** - Supporter/subscription logic (Stripe, Discord entitlements, OpenCollective)
+- **FMBot.Youtube** / **FMBot.YoutubeSearch** - YouTube search integration
+- **FMBot.BotLists** - Bot list site stat reporting
+- **Shared.Domain** - Contract shared with the web backend (protos, models, enums) — see `../CLAUDE.md`
 - **FMBot.Tests** - NUnit test suite
 
 ### Key Entry Points
