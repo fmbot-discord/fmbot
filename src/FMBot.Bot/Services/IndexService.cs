@@ -18,7 +18,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Npgsql;
-using PostgreSQLCopyHelper;
 using Serilog;
 using User = FMBot.Persistence.Domain.Models.User;
 
@@ -436,50 +435,119 @@ public class IndexService
             })
             .ToListAsync();
 
+        var discordUsersById = discordGuildUsers.DistinctBy(d => d.Id).ToDictionary(d => d.Id);
+        var premiumGuild = PublicProperties.PremiumServers.ContainsKey(discordGuild.Id);
+
         foreach (var user in users)
         {
-            var discordUser = discordGuildUsers.First(f => f.Id == user.User.DiscordUserId);
+            var discordUser = discordUsersById[user.User.DiscordUserId];
 
             user.UserName = discordUser.GetDisplayName();
             user.Bot = discordUser.IsBot;
 
-            if (PublicProperties.PremiumServers.ContainsKey(discordGuild.Id))
+            if (premiumGuild)
             {
-                user.Roles = discordUser.RoleIds.ToArray();
-            }
-
-            if (existingGuild.GuildUsers != null && existingGuild.GuildUsers.Any())
-            {
-                var existingGuildUser = existingGuild.GuildUsers.FirstOrDefault(f => f.UserId == user.UserId);
-                if (existingGuildUser != null)
-                {
-                    user.LastMessage = existingGuildUser.LastMessage;
-                }
+                user.Roles = [.. discordUser.RoleIds];
             }
         }
 
-        var connString = db.Database.GetDbConnection().ConnectionString;
-        var copyHelper = new PostgreSQLCopyHelper<GuildUser>("public", "guild_users")
-            .MapInteger("guild_id", x => x.GuildId)
-            .MapInteger("user_id", x => x.UserId)
-            .MapText("user_name", x => x.UserName)
-            .MapBoolean("bot", x => x.Bot == true)
-            .MapArray("roles", x => x.Roles?.Select(s => (decimal)s).ToArray())
-            .MapTimeStampTz("last_message", x => x.LastMessage.HasValue ? DateTime.SpecifyKind(x.LastMessage.Value, DateTimeKind.Utc) : null);
+        var existingGuildUsers = existingGuild.GuildUsers ?? new List<GuildUser>();
+        var existingByUserId = existingGuildUsers.ToDictionary(d => d.UserId);
 
-        await using var connection = new NpgsqlConnection(connString);
+        var usersToAdd = users
+            .Where(w => !existingByUserId.ContainsKey(w.UserId))
+            .ToList();
+
+        var usersToUpdate = users
+            .Where(w => existingByUserId.TryGetValue(w.UserId, out var existing) &&
+                        (existing.UserName != w.UserName ||
+                         existing.Bot != w.Bot ||
+                         (w.Roles != null && (existing.Roles == null || !existing.Roles.SequenceEqual(w.Roles)))))
+            .ToList();
+
+        var downloadedUserIds = users.Select(s => s.UserId).ToHashSet();
+        var departedUserIds = existingGuildUsers
+            .Where(w => !downloadedUserIds.Contains(w.UserId))
+            .Select(s => s.UserId)
+            .ToArray();
+
+        var removeDeparted = false;
+        if (departedUserIds.Length > 0)
+        {
+            var memberCount = discordGuild.UserCount;
+            try
+            {
+                var currentGuild = await discordGuild.GetAsync(withCounts: true);
+                memberCount = currentGuild.ApproximateUserCount ?? memberCount;
+            }
+            catch (Exception e)
+            {
+                Log.Warning(e,
+                    "GuildUserUpdate: Could not fetch the current member count for guild {guildId}, falling back to the cached count of {cachedCount}",
+                    existingGuild.GuildId, memberCount);
+            }
+
+            removeDeparted = discordGuildUsers.Count > 0 && discordGuildUsers.Count >= memberCount * 0.8;
+
+            if (!removeDeparted)
+            {
+                Log.Warning(
+                    "GuildUserUpdate: Skipping removal of {departedCount} departed members for guild {guildId} - downloaded {downloadedCount} members, Discord reports {reportedCount}",
+                    departedUserIds.Length, existingGuild.GuildId, discordGuildUsers.Count, memberCount);
+            }
+        }
+
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        await using var deleteCurrentUsers = new NpgsqlCommand($"DELETE FROM public.guild_users WHERE guild_id = {existingGuild.GuildId};", connection);
-        await deleteCurrentUsers.ExecuteNonQueryAsync();
+        if (usersToAdd.Count > 0)
+        {
+            const string insertSql = "INSERT INTO guild_users (guild_id, user_id, user_name, bot, roles) " +
+                                     "VALUES (@guildId, @userId, @userName, @bot, @roles) " +
+                                     "ON CONFLICT DO NOTHING";
 
-        await copyHelper.SaveAllAsync(connection, users);
+            await connection.ExecuteAsync(insertSql, usersToAdd.Select(s => new
+            {
+                guildId = s.GuildId,
+                userId = s.UserId,
+                userName = s.UserName,
+                bot = s.Bot == true,
+                roles = s.Roles?.Select(r => (decimal)r).ToArray()
+            }));
+        }
 
-        Log.Information("GuildUserUpdate: Stored guild users for guild with id {guildId}", existingGuild.GuildId);
+        if (usersToUpdate.Count > 0)
+        {
+            const string updateSql = "UPDATE guild_users " +
+                                     "SET user_name = @userName, bot = @bot, roles = @roles " +
+                                     "WHERE guild_id = @guildId AND user_id = @userId";
 
-        await connection.CloseAsync();
+            await connection.ExecuteAsync(updateSql, usersToUpdate.Select(s => new
+            {
+                guildId = s.GuildId,
+                userId = s.UserId,
+                userName = s.UserName,
+                bot = s.Bot == true,
+                roles = s.Roles?.Select(r => (decimal)r).ToArray()
+            }));
+        }
 
-        return users.Count();
+        if (removeDeparted)
+        {
+            const string deleteSql = "DELETE FROM guild_users " +
+                                     "WHERE guild_id = @guildId AND user_id = ANY(@userIds)";
+
+            await connection.ExecuteAsync(deleteSql, new
+            {
+                guildId = existingGuild.GuildId,
+                userIds = departedUserIds
+            });
+        }
+
+        Log.Information("GuildUserUpdate: Stored guild users for guild with id {guildId} - {addedCount} added, {updatedCount} updated, {removedCount} removed",
+            existingGuild.GuildId, usersToAdd.Count, usersToUpdate.Count, removeDeparted ? departedUserIds.Length : 0);
+
+        return users.Count;
     }
 
     public async Task RefreshGuildUsers(NetCord.Gateway.ShardedGatewayClient client, List<ulong> discordGuildIds)
@@ -487,7 +555,7 @@ public class IndexService
         foreach (var discordGuildId in discordGuildIds)
         {
             var discordGuild = client
-                .Select(shard => shard.Cache.Guilds.TryGetValue(discordGuildId, out var cachedGuild) ? cachedGuild : null)
+                .Select(shard => shard.Cache.Guilds.GetValueOrDefault(discordGuildId))
                 .FirstOrDefault(f => f != null);
 
             if (discordGuild == null)
@@ -656,7 +724,7 @@ public class IndexService
                 return;
             }
 
-            this._cache.Set(cacheKey, true, TimeSpan.FromSeconds(2));
+            this._cache.Set(cacheKey, true, TimeSpan.FromSeconds(3));
 
             await using var db = await this._contextFactory.CreateDbContextAsync();
 
