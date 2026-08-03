@@ -586,6 +586,7 @@
   "outofsync.currentlyPlayingOther": "O profildeki son scrobble **şu anda çalıyor**, yani her şey yolunda görünüyor.",
   "outofsync.lastScrobble": "Profilindeki son scrobble: {{timestamp}}, yaklaşık {{relativeTimestamp}}.",
   "outofsync.lastScrobbleOther": "O profildeki son scrobble: {{timestamp}}, yaklaşık {{relativeTimestamp}}.",
+  "outofsync.spotifyExpiredOther": "⚠️ {{user}} kullanıcısının Spotify ile Last.fm bağlantısının süresi doldu. **[Buradan yeniden bağlanabilir.](https://www.last.fm/settings/applications)**",
   "outofsync.notAffiliated": "**.fmbot, Last.fm'in bir parçası değildir**. Senkronizasyon ve scrobbling sorunları Last.fm sorunlarıdır, **.fmbot sorunu değildir**; bu yüzden __bunları senin için düzeltemeyiz__.",
   "outofsync.stoppedScrobblingTitle": "**Spotify scrobbling'i tamamen bıraktı mı?**",
   "outofsync.stoppedScrobblingDescription": "Spotify, Last.fm bağlantısının süresini her 6 ayda bir doldurur. [Last.fm ayarlarında](https://www.last.fm/settings/applications) 'Spotify Scrobbling' yanındaki **Disconnect** ve ardından **Connect** düğmelerine bas.",

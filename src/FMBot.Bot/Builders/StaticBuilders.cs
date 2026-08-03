@@ -104,6 +104,18 @@ public class StaticBuilders
                         : $" {context.Localize("outofsync.lastScrobble",
                             ("timestamp", $"<t:{unixTime}:{style}>"),
                             ("relativeTimestamp", $"<t:{unixTime}:R>"))}");
+
+                    if (timePlayed < DateTime.UtcNow.AddHours(-2) &&
+                        await this._userService.SpotifyConnectionStillExpired(userNameLastFm))
+                    {
+                        intro.AppendLine();
+                        intro.AppendLine();
+                        intro.Append(differentUser
+                            ? context.Localize("outofsync.spotifyExpiredOther",
+                                ("user", StringExtensions.Sanitize(userSettings.DisplayName)))
+                            : context.Localize("shared.spotifyExpiredWarning",
+                                ("username", userNameLastFm)));
+                    }
                 }
             }
         }

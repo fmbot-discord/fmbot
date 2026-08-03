@@ -586,6 +586,7 @@
   "outofsync.currentlyPlayingOther": "उनकी प्रोफ़ाइल पर आख़िरी scrobble **अभी चल रहा है**, तो लगता है सब कुछ ठीक काम कर रहा है।",
   "outofsync.lastScrobble": "तुम्हारी प्रोफ़ाइल पर आख़िरी scrobble {{timestamp}} का था, यानी लगभग {{relativeTimestamp}}।",
   "outofsync.lastScrobbleOther": "उनकी प्रोफ़ाइल पर आख़िरी scrobble {{timestamp}} का था, यानी लगभग {{relativeTimestamp}}।",
+  "outofsync.spotifyExpiredOther": "⚠️ Spotify के साथ {{user}} का Last.fm कनेक्शन एक्सपायर हो गया है। वे इसे **[यहाँ दोबारा कनेक्ट कर सकते हैं।](https://www.last.fm/settings/applications)**",
   "outofsync.notAffiliated": "**.fmbot का Last.fm से कोई संबंध नहीं है**। Sync और scrobbling की दिक्कतें Last.fm की दिक्कतें हैं, **.fmbot की नहीं**, इसलिए __हम उन्हें तुम्हारे लिए ठीक नहीं कर सकते__।",
   "outofsync.stoppedScrobblingTitle": "**Spotify ने scrobbling पूरी तरह बंद कर दी?**",
   "outofsync.stoppedScrobblingDescription": "Spotify हर 6 महीने में Last.fm कनेक्शन एक्सपायर कर देता है। [अपनी Last.fm सेटिंग्स](https://www.last.fm/settings/applications) में 'Spotify Scrobbling' के बगल में **Disconnect** और फिर **Connect** दबाओ।",

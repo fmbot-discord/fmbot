@@ -485,6 +485,7 @@
   "outofsync.currentlyPlayingOther": "Scrobble terakhir di profil itu **sedang diputar**, jadi sepertinya semuanya berjalan baik.",
   "outofsync.lastScrobble": "Scrobble terakhir di profilmu adalah {{timestamp}}, sekitar {{relativeTimestamp}}.",
   "outofsync.lastScrobbleOther": "Scrobble terakhir di profil itu adalah {{timestamp}}, sekitar {{relativeTimestamp}}.",
+  "outofsync.spotifyExpiredOther": "⚠️ Koneksi Last.fm {{user}} ke Spotify sudah kedaluwarsa. Mereka bisa **[menghubungkannya ulang di sini.](https://www.last.fm/settings/applications)**",
   "outofsync.notAffiliated": "**.fmbot tidak berafiliasi dengan Last.fm**. Masalah sinkronisasi dan scrobbling adalah masalah Last.fm dan **bukan masalah .fmbot**, jadi __kami tidak bisa memperbaikinya untukmu__.",
   "outofsync.stoppedScrobblingTitle": "**Spotify berhenti scrobbling sepenuhnya?**",
   "outofsync.stoppedScrobblingDescription": "Spotify membuat koneksi Last.fm kedaluwarsa setiap 6 bulan. Tekan **Disconnect** lalu **Connect** di sebelah 'Spotify Scrobbling' di [pengaturan Last.fm kamu](https://www.last.fm/settings/applications).",

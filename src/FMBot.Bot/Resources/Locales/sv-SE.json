@@ -586,6 +586,7 @@
   "outofsync.currentlyPlayingOther": "Den senaste scrobblen på den profilen **spelas just nu**, så det ser ut som att allt fungerar som det ska.",
   "outofsync.lastScrobble": "Den senaste scrobblen på din profil var {{timestamp}}, ungefär {{relativeTimestamp}}.",
   "outofsync.lastScrobbleOther": "Den senaste scrobblen på den profilen var {{timestamp}}, ungefär {{relativeTimestamp}}.",
+  "outofsync.spotifyExpiredOther": "⚠️ {{user}}s Last.fm-anslutning till Spotify har upphört. Den kan **[återanslutas här.](https://www.last.fm/settings/applications)**",
   "outofsync.notAffiliated": "**.fmbot är inte en del av Last.fm**. Synk- och scrobblingproblem är Last.fm-problem och **inte .fmbot-problem**, så __vi kan inte fixa dem åt dig__.",
   "outofsync.stoppedScrobblingTitle": "**Har Spotify slutat scrobbla helt?**",
   "outofsync.stoppedScrobblingDescription": "Spotify låter kopplingen till Last.fm gå ut var sjätte månad. Tryck på **Disconnect** och sedan **Connect** bredvid 'Spotify Scrobbling' i [dina Last.fm-inställningar](https://www.last.fm/settings/applications).",
