@@ -922,12 +922,8 @@ public class GuildSettingBuilder(GuildService guildService, IOptions<BotSettings
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed
+            ResponseType = ResponseType.ComponentsV2
         };
-
-        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
-        response.Embed.WithTitle($"Toggle server commands - {context.DiscordGuild.Name}");
-        response.Embed.WithFooter("Commands disabled here will be disabled throughout the whole server");
 
         var guild = await guildService.GetGuildAsync(context.DiscordGuild.Id);
         var currentlyDisabled = new StringBuilder();
@@ -949,21 +945,36 @@ public class GuildSettingBuilder(GuildService guildService, IOptions<BotSettings
             }
         }
 
-        response.Embed.AddField("Disabled commands", currentlyDisabled.Length > 0 ? currentlyDisabled.ToString() : "✅ All commands enabled.");
+        var container = response.ComponentsContainer;
+        container.WithAccentColor(DiscordConstants.InformationColorBlue);
 
-        var components = new ActionRowProperties()
-            .WithButton("Add", $"{InteractionConstants.ToggleCommand.ToggleGuildCommandAdd}", style: ButtonStyle.Secondary)
-            .WithButton("Remove", $"{InteractionConstants.ToggleCommand.ToggleGuildCommandRemove}", style: ButtonStyle.Secondary,
-                disabled: currentlyDisabled.Length == 0)
-            .WithButton("Clear", $"{InteractionConstants.ToggleCommand.ToggleGuildCommandClear}", style: ButtonStyle.Secondary,
-                disabled: currentlyDisabled.Length == 0);
+        container.WithTextDisplay($"## Toggle server commands - {context.DiscordGuild.Name}");
+        container.WithSeparator();
 
-        if (lastModifier != null)
+        container.WithTextDisplay(
+            $"**Disabled commands**\n{(currentlyDisabled.Length > 0 ? currentlyDisabled.ToString() : "✅ All commands enabled.")}");
+
+        container.WithTextDisplay(lastModifier != null
+            ? $"-# Last modified by {lastModifier.Username}"
+            : "-# Commands disabled here will be disabled throughout the whole server");
+
+        container.WithSeparator();
+
+        var buttons = new ActionRowProperties();
+        buttons.AddComponents(new ButtonProperties(InteractionConstants.ToggleCommand.ToggleGuildCommandAdd, "Add",
+            ButtonStyle.Secondary));
+        buttons.AddComponents(new ButtonProperties(InteractionConstants.ToggleCommand.ToggleGuildCommandRemove, "Remove",
+            ButtonStyle.Secondary)
         {
-            response.Embed.WithFooter($"Last modified by {lastModifier.Username}");
-        }
+            Disabled = currentlyDisabled.Length == 0
+        });
+        buttons.AddComponents(new ButtonProperties(InteractionConstants.ToggleCommand.ToggleGuildCommandClear, "Clear",
+            ButtonStyle.Secondary)
+        {
+            Disabled = currentlyDisabled.Length == 0
+        });
 
-        response.Components = components;
+        container.WithActionRow(buttons);
 
         return response;
     }
@@ -973,13 +984,16 @@ public class GuildSettingBuilder(GuildService guildService, IOptions<BotSettings
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed
+            ResponseType = ResponseType.ComponentsV2
         };
 
         var selectedChannel = context.DiscordGuild.Channels.TryGetValue(selectedChannelId, out var ch) ? ch : null;
 
-        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
-        response.Embed.WithTitle($"Toggle channel commands - #{selectedChannel?.Name}");
+        var container = response.ComponentsContainer;
+        container.WithAccentColor(DiscordConstants.InformationColorBlue);
+
+        container.WithTextDisplay($"## Toggle channel commands - #{selectedChannel?.Name}");
+        container.WithSeparator();
 
         var footer = new StringBuilder();
 
@@ -1079,7 +1093,10 @@ public class GuildSettingBuilder(GuildService guildService, IOptions<BotSettings
             channelDescription.AppendLine();
         }
 
-        response.Embed.WithDescription(channelDescription.ToString());
+        if (channelDescription.Length > 0)
+        {
+            container.WithTextDisplay(channelDescription.ToString());
+        }
 
         var currentlyDisabled = new StringBuilder();
 
@@ -1118,79 +1135,97 @@ public class GuildSettingBuilder(GuildService guildService, IOptions<BotSettings
 
         if (!botDisabled)
         {
-            response.Embed.AddField("Disabled commands", currentlyDisabled.Length > 0 ? currentlyDisabled.ToString() : "✅ All commands enabled.");
+            container.WithTextDisplay(
+                $"**Disabled commands**\n{(currentlyDisabled.Length > 0 ? currentlyDisabled.ToString() : "✅ All commands enabled.")}");
 
-            if (channel is { FmEmbedType: not null })
-            {
-                var name = channel.FmEmbedType.GetAttribute<OptionAttribute>().Name;
-
-                response.Embed.AddField("Forced 'fm' mode", $"`{name}`");
-            }
-
-            footer.AppendLine("All commands enabled except for those explicitly disabled");
+            footer.AppendLine("-# All commands enabled except for those explicitly disabled");
         }
         else
         {
-            response.Embed.AddField("Enabled commands", currentlyDisabled.Length > 0 ? currentlyDisabled.ToString() : "🚫 All commands disabled.");
+            container.WithTextDisplay(
+                $"**Enabled commands**\n{(currentlyDisabled.Length > 0 ? currentlyDisabled.ToString() : "🚫 All commands disabled.")}");
 
-            if (channel is { FmEmbedType: not null })
-            {
-                var name = channel.FmEmbedType.GetAttribute<OptionAttribute>().Name;
+            footer.AppendLine("-# All commands disabled except for those explicitly enabled");
+        }
 
-                response.Embed.AddField("Forced 'fm' mode", $"`{name}`");
-            }
+        if (channel is { FmEmbedType: not null })
+        {
+            var name = channel.FmEmbedType.GetAttribute<OptionAttribute>().Name;
 
-            footer.AppendLine("All commands disabled except for those explicitly enabled");
+            container.WithTextDisplay($"**Forced 'fm' mode**\n`{name}`");
         }
 
         var missingPermissions = GetMissingBotPermissionsInChannel(context.DiscordGuild, selectedChannel);
         if (missingPermissions.Length > 0)
         {
-            response.Embed.AddField("Missing permissions in this channel", missingPermissions.ToString());
+            container.WithTextDisplay($"**Missing permissions in this channel**\n{missingPermissions}");
         }
+
+        footer.AppendLine("-# Use the up and down selector to browse through channels");
+        if (lastModifier != null)
+        {
+            footer.AppendLine($"-# Last modified by {lastModifier.Username}");
+        }
+
+        container.WithTextDisplay(footer.ToString());
+
+        container.WithSeparator();
 
         var upDisabled = previousCategoryId == 0 || previousChannelId == 0;
         var downDisabled = nextCategoryId == 0 || nextChannelId == 0;
 
-        response.ButtonRows
-            .WithButton(null, $"{InteractionConstants.ToggleCommand.ToggleCommandMove}:{previousChannelId}:{previousCategoryId}:up",
-                style: ButtonStyle.Secondary, emote: EmojiProperties.Custom(DiscordConstants.OneToFiveUp), disabled: upDisabled, row: 0)
-            .WithButton(null, $"{InteractionConstants.ToggleCommand.ToggleCommandMove}:{nextChannelId}:{nextCategoryId}:down", style: ButtonStyle.Secondary,
-                emote: EmojiProperties.Custom(DiscordConstants.OneToFiveDown), disabled: downDisabled, row: 1)
-            .WithButton("Add", $"{InteractionConstants.ToggleCommand.ToggleCommandAdd}:{selectedChannel.Id}:{selectedCategoryId}", style: ButtonStyle.Secondary,
-                row: 0)
-            .WithButton("Remove", $"{InteractionConstants.ToggleCommand.ToggleCommandRemove}:{selectedChannel.Id}:{selectedCategoryId}",
-                style: ButtonStyle.Secondary, disabled: currentlyDisabled.Length == 0, row: 0)
-            .WithButton("Clear", $"{InteractionConstants.ToggleCommand.ToggleCommandClear}:{selectedChannel.Id}:{selectedCategoryId}",
-                style: ButtonStyle.Secondary, disabled: currentlyDisabled.Length == 0, row: 0);
+        var firstRow = new ActionRowProperties();
+        firstRow.AddComponents(new ButtonProperties(
+            $"{InteractionConstants.ToggleCommand.ToggleCommandMove}:{previousChannelId}:{previousCategoryId}:up",
+            EmojiProperties.Custom(DiscordConstants.OneToFiveUp), ButtonStyle.Secondary)
+        {
+            Disabled = upDisabled
+        });
+        firstRow.AddComponents(new ButtonProperties(
+            $"{InteractionConstants.ToggleCommand.ToggleCommandAdd}:{selectedChannel.Id}:{selectedCategoryId}", "Add",
+            ButtonStyle.Secondary));
+        firstRow.AddComponents(new ButtonProperties(
+            $"{InteractionConstants.ToggleCommand.ToggleCommandRemove}:{selectedChannel.Id}:{selectedCategoryId}", "Remove",
+            ButtonStyle.Secondary)
+        {
+            Disabled = currentlyDisabled.Length == 0
+        });
+        firstRow.AddComponents(new ButtonProperties(
+            $"{InteractionConstants.ToggleCommand.ToggleCommandClear}:{selectedChannel.Id}:{selectedCategoryId}", "Clear",
+            ButtonStyle.Secondary)
+        {
+            Disabled = currentlyDisabled.Length == 0
+        });
+
+        var secondRow = new ActionRowProperties();
+        secondRow.AddComponents(new ButtonProperties(
+            $"{InteractionConstants.ToggleCommand.ToggleCommandMove}:{nextChannelId}:{nextCategoryId}:down",
+            EmojiProperties.Custom(DiscordConstants.OneToFiveDown), ButtonStyle.Secondary)
+        {
+            Disabled = downDisabled
+        });
 
         if (!botDisabled)
         {
-            response.StringMenus.Add(fmType);
-
-            response.ButtonRows
-                .WithButton("Disable all commands", $"{InteractionConstants.ToggleCommand.ToggleCommandDisableAll}:{selectedChannel.Id}:{selectedCategoryId}",
-                    style: ButtonStyle.Secondary, row: 1);
+            secondRow.AddComponents(new ButtonProperties(
+                $"{InteractionConstants.ToggleCommand.ToggleCommandDisableAll}:{selectedChannel.Id}:{selectedCategoryId}",
+                "Disable all commands", ButtonStyle.Secondary));
         }
         else
         {
-            if (currentToggledCommands != null && currentToggledCommands.Any(a => string.Equals(a, "fm", StringComparison.OrdinalIgnoreCase)))
-            {
-                response.StringMenus.Add(fmType);
-            }
-
-            response.ButtonRows
-                .WithButton("Enable all commands", $"{InteractionConstants.ToggleCommand.ToggleCommandEnableAll}:{selectedChannel.Id}:{selectedCategoryId}",
-                    style: ButtonStyle.Secondary, row: 1);
+            secondRow.AddComponents(new ButtonProperties(
+                $"{InteractionConstants.ToggleCommand.ToggleCommandEnableAll}:{selectedChannel.Id}:{selectedCategoryId}",
+                "Enable all commands", ButtonStyle.Secondary));
         }
 
-        footer.AppendLine("Use the up and down selector to browse through channels");
-        if (lastModifier != null)
+        container.WithActionRow(firstRow);
+        container.WithActionRow(secondRow);
+
+        if (!botDisabled ||
+            currentToggledCommands != null && currentToggledCommands.Any(a => string.Equals(a, "fm", StringComparison.OrdinalIgnoreCase)))
         {
-            footer.AppendLine($"Last modified by {lastModifier.Username}");
+            container.AddComponent(fmType);
         }
-
-        response.Embed.WithFooter(footer.ToString());
 
         return response;
     }
