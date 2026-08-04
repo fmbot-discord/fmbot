@@ -512,7 +512,8 @@ public class ImportInteractions(
         try
         {
             var supporterRequired =
-                ImportBuilders.ImportSupporterRequired(new ContextModel(this.Context, contextUser));
+                ImportBuilders.ImportSupporterRequired(new ContextModel(this.Context, contextUser),
+                    "onboarding-import");
 
             if (supporterRequired != null)
             {

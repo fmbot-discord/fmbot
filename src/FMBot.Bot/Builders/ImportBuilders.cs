@@ -38,7 +38,7 @@ public class ImportBuilders
         this._importService = importService;
     }
 
-    public static ResponseModel ImportSupporterRequired(ContextModel context)
+    public static ResponseModel ImportSupporterRequired(ContextModel context, string source = "importing")
     {
         var response = new ResponseModel
         {
@@ -54,7 +54,7 @@ public class ImportBuilders
             response.ComponentsContainer.WithSeparator();
             response.ComponentsContainer.AddComponent(new ActionRowProperties()
                 .AddComponents(new ButtonProperties(
-                    InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "importing"),
+                    InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: source),
                     Constants.GetSupporterButton, ButtonStyle.Primary))
                 .AddComponents(new LinkButtonProperties("https://fm.bot/importing/", "Import info")));
 
