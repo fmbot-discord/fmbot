@@ -332,6 +332,14 @@ public class ImportInteractions(
     public async Task SetImport()
     {
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var supporterRequired = ImportBuilders.ImportSupporterRequired(new ContextModel(this.Context, contextUser));
+
+        if (supporterRequired != null)
+        {
+            await this.Context.SendResponse(interactivity, supporterRequired, userService, ephemeral: true);
+            await this.Context.LogCommandUsedAsync(supporterRequired, userService);
+            return;
+        }
 
         var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
         var selectedValue = stringMenuInteraction.Data.SelectedValues[0];
@@ -420,6 +428,15 @@ public class ImportInteractions(
     public async Task ImportManage()
     {
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var supporterRequired = ImportBuilders.ImportSupporterRequired(new ContextModel(this.Context, contextUser));
+
+        if (supporterRequired != null)
+        {
+            await this.Context.SendResponse(interactivity, supporterRequired, userService, ephemeral: true);
+            await this.Context.LogCommandUsedAsync(supporterRequired, userService);
+            return;
+        }
+
         await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
 
         try
@@ -494,6 +511,16 @@ public class ImportInteractions(
 
         try
         {
+            var supporterRequired =
+                ImportBuilders.ImportSupporterRequired(new ContextModel(this.Context, contextUser));
+
+            if (supporterRequired != null)
+            {
+                await this.Context.SendResponse(interactivity, supporterRequired, userService, ephemeral: true);
+                await this.Context.LogCommandUsedAsync(supporterRequired, userService);
+                return;
+            }
+
             var response =
                 ImportBuilders.ImportInstructionsPickSource(new ContextModel(this.Context, contextUser));
 

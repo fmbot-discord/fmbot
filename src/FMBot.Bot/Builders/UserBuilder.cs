@@ -262,7 +262,7 @@ public class UserBuilder
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed
+            ResponseType = ResponseType.ComponentsV2
         };
 
         var reply = new StringBuilder();
@@ -278,14 +278,15 @@ public class UserBuilder
         else
         {
             reply.AppendLine(localizer.Translate("login.reconnect", ("url", link)));
-            reply.AppendLine();
-            reply.AppendLine(localizer.Translate("login.spotifyOutOfSync", ("command", "/outofsync")));
         }
 
-        response.Embed.WithColor(DiscordConstants.LastFmColorRed);
-        response.Embed.WithDescription(reply.ToString());
-        response.Components = new ActionRowProperties()
-            .WithButton(localizer.Translate("buttons.connectLastfmToFmbot"), url: link);
+        response.ComponentsContainer.WithAccentColor(DiscordConstants.LastFmColorRed);
+        response.ComponentsContainer.AddComponent(new TextDisplayProperties(reply.ToString()));
+        response.ComponentsContainer.WithSeparator();
+        response.ComponentsContainer.AddComponent(new ActionRowProperties()
+            .AddComponents(new LinkButtonProperties(link,
+                localizer.Translate("buttons.connectLastfmToFmbot"))));
+
         return response;
     }
 
@@ -300,10 +301,10 @@ public class UserBuilder
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed
+            ResponseType = ResponseType.ComponentsV2
         };
 
-        response.Embed.WithColor(DiscordConstants.SuccessColorGreen);
+        response.ComponentsContainer.WithAccentColor(DiscordConstants.SuccessColorGreen);
         var description = new StringBuilder();
         var userUrl = LastfmUrlExtensions.GetUserUrl(newContextUser.UserNameLastFM);
         switch (loginState)
@@ -330,14 +331,18 @@ public class UserBuilder
         description.AppendLine();
         description.AppendLine(localizer.Translate("login.notAffiliated"));
 
-        response.Components = new ActionRowProperties()
-            .WithButton(localizer.Translate("buttons.settings"), style: ButtonStyle.Secondary,
-                customId: InteractionConstants.User.Settings,
-                emote: EmojiProperties.Standard("⚙️"))
-            .WithButton(localizer.Translate("buttons.addFmbot"),
-                url: "https://discord.com/oauth2/authorize?client_id=356268235697553409");
+        response.ComponentsContainer.AddComponent(new TextDisplayProperties(description.ToString()));
+        response.ComponentsContainer.WithSeparator();
+        response.ComponentsContainer.AddComponent(new ActionRowProperties()
+            .AddComponents(new ButtonProperties(InteractionConstants.User.Settings,
+                localizer.Translate("buttons.settings"), EmojiProperties.Standard("⚙️"), ButtonStyle.Secondary))
+            .AddComponents(new ButtonProperties(InteractionConstants.ImportInstructionsPickSource,
+                localizer.Translate("buttons.importHistory"),
+                EmojiProperties.Custom(DiscordConstants.Imports), ButtonStyle.Secondary))
+            .AddComponents(new LinkButtonProperties(
+                "https://discord.com/oauth2/authorize?client_id=356268235697553409",
+                localizer.Translate("buttons.addFmbot"))));
 
-        response.Embed.WithDescription(description.ToString());
         return response;
     }
 
@@ -345,15 +350,16 @@ public class UserBuilder
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed
+            ResponseType = ResponseType.ComponentsV2
         };
 
-        response.Embed.WithColor(DiscordConstants.WarningColorOrange);
-        response.Embed.WithDescription(localizer.Translate("login.failed"));
-
-        response.Components = new ActionRowProperties()
-            .WithButton(localizer.Translate("buttons.tryAgain"), customId: InteractionConstants.User.Login,
-                style: ButtonStyle.Primary);
+        response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
+        response.ComponentsContainer.AddComponent(
+            new TextDisplayProperties(localizer.Translate("login.failed")));
+        response.ComponentsContainer.WithSeparator();
+        response.ComponentsContainer.AddComponent(new ActionRowProperties()
+            .AddComponents(new ButtonProperties(InteractionConstants.User.Login,
+                localizer.Translate("buttons.tryAgain"), ButtonStyle.Primary)));
 
         return response;
     }
@@ -362,7 +368,7 @@ public class UserBuilder
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed
+            ResponseType = ResponseType.ComponentsV2
         };
 
         var description = new StringBuilder();
@@ -373,12 +379,12 @@ public class UserBuilder
         description.AppendLine("");
         description.AppendLine(localizer.Translate("login.altDeleteNote"));
 
-        response.Embed.WithDescription(description.ToString());
-        response.Embed.WithColor(DiscordConstants.WarningColorOrange);
-
-        response.Components = new ActionRowProperties()
-            .WithButton(localizer.Translate("buttons.manageAlts"), InteractionConstants.ManageAlts.ManageAltsButton,
-                style: ButtonStyle.Primary);
+        response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
+        response.ComponentsContainer.AddComponent(new TextDisplayProperties(description.ToString()));
+        response.ComponentsContainer.WithSeparator();
+        response.ComponentsContainer.AddComponent(new ActionRowProperties()
+            .AddComponents(new ButtonProperties(InteractionConstants.ManageAlts.ManageAltsButton,
+                localizer.Translate("buttons.manageAlts"), ButtonStyle.Primary)));
 
         return response;
     }
@@ -387,21 +393,19 @@ public class UserBuilder
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed
+            ResponseType = ResponseType.ComponentsV2
         };
 
-        response.Embed.WithColor(DiscordConstants.LastFmColorRed);
-        if (alreadyRegistered)
-        {
-            response.Embed.WithDescription(
-                context.Localize("login.alreadyConnected", ("command", $"{context.Prefix}outofsync")));
-        }
-        else
-        {
-            response.Embed.WithDescription(context.Localize("login.welcome"));
-        }
+        response.ComponentsContainer.WithAccentColor(DiscordConstants.LastFmColorRed);
+        response.ComponentsContainer.AddComponent(new TextDisplayProperties(alreadyRegistered
+            ? context.Localize("login.alreadyConnected", ("command", $"{context.Prefix}outofsync"),
+                ("username", StringExtensions.Sanitize(context.ContextUser.UserNameLastFM)),
+                ("url", LastfmUrlExtensions.GetUserUrl(context.ContextUser.UserNameLastFM)))
+            : context.Localize("login.welcome")));
 
-        response.Components = GenericEmbedService.UsernameNotSetErrorComponents(context.Localizer);
+        response.ComponentsContainer.WithSeparator();
+        response.ComponentsContainer.AddComponent(
+            GenericEmbedService.UsernameNotSetErrorComponents(context.Localizer));
 
         return response;
     }

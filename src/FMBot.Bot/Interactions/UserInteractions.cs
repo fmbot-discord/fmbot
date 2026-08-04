@@ -504,9 +504,8 @@ public class UserInteractions(
                     localizer);
 
             await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
-                .WithEmbeds([loginUrlResponse.Embed])
-                .WithComponents(loginUrlResponse.Components?.Any() == true ? [loginUrlResponse.Components] : null)
-                .WithFlags(MessageFlags.Ephemeral)));
+                .WithComponents(loginUrlResponse.GetComponentsV2())
+                .WithFlags(MessageFlags.Ephemeral | MessageFlags.IsComponentsV2)));
             await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.UsernameNotSet }, userService);
 
             var loginResult = await userService.GetAndStoreAuthSession(this.Context.User, token.Content.Token);
@@ -526,8 +525,9 @@ public class UserInteractions(
 
                 await this.Context.Interaction.ModifyResponseAsync(m =>
                 {
-                    m.Components = loginSuccessResponse.Components?.Any() == true ? [loginSuccessResponse.Components] : [];
-                    m.Embeds = [loginSuccessResponse.Embed];
+                    m.Components = loginSuccessResponse.GetComponentsV2() ?? [];
+                    m.Embeds = [];
+                    m.Flags = MessageFlags.IsComponentsV2;
                 });
                 await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
 
@@ -543,8 +543,9 @@ public class UserInteractions(
 
                     await this.Context.Interaction.ModifyResponseAsync(m =>
                     {
-                        m.Components = loginSuccessResponse.Components?.Any() == true ? [loginSuccessResponse.Components] : [];
-                        m.Embeds = [loginSuccessResponse.Embed];
+                        m.Components = loginSuccessResponse.GetComponentsV2() ?? [];
+                        m.Embeds = [];
+                        m.Flags = MessageFlags.IsComponentsV2;
                     });
                 }
 
@@ -576,9 +577,8 @@ public class UserInteractions(
             {
                 var loginFailure = UserBuilder.LoginTooManyAccounts(loginResult.AltCount, localizer);
                 await this.Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
-                    .WithEmbeds([loginFailure.Embed])
-                    .WithComponents(loginFailure.Components?.Any() == true ? [loginFailure.Components] : null)
-                    .WithFlags(MessageFlags.Ephemeral));
+                    .WithComponents(loginFailure.GetComponentsV2())
+                    .WithFlags(MessageFlags.Ephemeral | MessageFlags.IsComponentsV2));
 
                 await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.RateLimited }, userService);
             }
@@ -586,9 +586,8 @@ public class UserInteractions(
             {
                 var loginFailure = UserBuilder.LoginFailure(localizer);
                 await this.Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
-                    .WithEmbeds([loginFailure.Embed])
-                    .WithComponents(loginFailure.Components?.Any() == true ? [loginFailure.Components] : null)
-                    .WithFlags(MessageFlags.Ephemeral));
+                    .WithComponents(loginFailure.GetComponentsV2())
+                    .WithFlags(MessageFlags.Ephemeral | MessageFlags.IsComponentsV2));
 
                 await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
             }

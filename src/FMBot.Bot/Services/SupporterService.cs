@@ -933,11 +933,17 @@ public class SupporterService
 
         if (existingUserCurrency != null)
         {
-            return prices.First(f => f.Currency.Equals(existingUserCurrency, StringComparison.OrdinalIgnoreCase));
+            var existingCurrencyPricing =
+                prices.FirstOrDefault(f => f.Currency.Equals(existingUserCurrency, StringComparison.OrdinalIgnoreCase));
+            if (existingCurrencyPricing != null)
+            {
+                return existingCurrencyPricing;
+            }
         }
 
         return prices.FirstOrDefault(f => userLocale != null && f.Locales.Any(a => a == userLocale)) ??
-               prices.First(p => p.Default);
+               prices.FirstOrDefault(p => p.Default) ??
+               prices.First();
     }
 
     public async Task<OpenCollectiveUser> GetOpenCollectiveSupporter(string openCollectiveId)

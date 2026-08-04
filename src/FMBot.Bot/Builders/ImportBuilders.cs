@@ -42,18 +42,22 @@ public class ImportBuilders
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed
+            ResponseType = ResponseType.ComponentsV2
         };
 
         if (context.ContextUser.UserType == UserType.User)
         {
-            response.Embed.WithDescription($"Only supporters can import and access their Spotify or Apple Music history.");
+            response.ComponentsContainer.WithAccentColor(DiscordConstants.InformationColorBlue);
+            response.ComponentsContainer.AddComponent(new TextDisplayProperties(
+                "Only supporters can import and access their Spotify or Apple Music history in .fmbot."));
 
-            response.Components = new ActionRowProperties()
-                .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
-                    customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "importing"))
-                .WithButton("Import info", url: "https://fm.bot/importing/");
-            response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+            response.ComponentsContainer.WithSeparator();
+            response.ComponentsContainer.AddComponent(new ActionRowProperties()
+                .AddComponents(new ButtonProperties(
+                    InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "importing"),
+                    Constants.GetSupporterButton, ButtonStyle.Primary))
+                .AddComponents(new LinkButtonProperties("https://fm.bot/importing/", "Import info")));
+
             response.CommandResponse = CommandResponse.SupporterRequired;
 
             return response;
@@ -74,6 +78,7 @@ public class ImportBuilders
         response.ComponentsContainer.AddComponent(
             new TextDisplayProperties("What music service history would you like to import?"));
 
+        response.ComponentsContainer.WithSeparator();
         response.ComponentsContainer.AddComponent(new ActionRowProperties()
             .WithButton("Spotify", InteractionConstants.ImportInstructionsSpotify,
                 emote: EmojiProperties.Custom(DiscordConstants.Spotify))

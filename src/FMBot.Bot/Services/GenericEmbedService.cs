@@ -32,9 +32,10 @@ public static class GenericEmbedService
     public static ActionRowProperties UsernameNotSetErrorComponents(Localizer localizer)
     {
         return new ActionRowProperties()
-            .WithButton(localizer.Translate("buttons.signUp"), url: "https://www.last.fm/join")
-            .WithButton(localizer.Translate("buttons.connectLastfm"), style: ButtonStyle.Secondary,
-                customId: InteractionConstants.User.Login);
+            .AddComponents(new LinkButtonProperties("https://www.last.fm/join",
+                localizer.Translate("buttons.signUp")))
+            .AddComponents(new ButtonProperties(InteractionConstants.User.Login,
+                localizer.Translate("buttons.connectLastfm"), ButtonStyle.Secondary));
     }
 
     public static ActionRowProperties ReconnectComponents(Localizer localizer)
