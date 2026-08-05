@@ -1,7 +1,11 @@
 using System.Net.Http;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text.Json;
+using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using static FMBot.Bot.Models.OpenAIModels;
 using FMBot.Domain.Models;
@@ -25,12 +29,37 @@ public class OpenAiService(
     HttpClient httpClient,
     IOptions<BotSettings> botSettings,
     IDbContextFactory<FMBotDbContext> contextFactory,
-    IMemoryCache cache)
+    IMemoryCache cache,
+    CountryService countryService)
 {
     private readonly BotSettings _botSettings = botSettings.Value;
 
+    private const int MinimumDescriptionSourceLength = 150;
+    private const int MaximumDescriptionSourceLength = 2000;
+    private const int MaximumEditorialSourceLength = 1200;
+
+    private static readonly SemaphoreSlim DescriptionConcurrency = new(6, 6);
+
+    private static readonly ConcurrentDictionary<string, Lazy<Task<string>>> DescriptionsInFlight = new();
+
+    private static readonly Regex SentenceEndRegex = new(@"[.!?](\s|$)", RegexOptions.Compiled);
+    private static readonly Regex DescriptionNumberRegex = new(@"\d[\d,.]*", RegexOptions.Compiled);
+    private static readonly Regex NumberSeparatorRegex = new(@"[,.]", RegexOptions.Compiled);
+
+    private static readonly string[] DescriptionForbiddenFragments =
+        ["```", "http", "](", "<", ">", "#", "**"];
+
+    private static readonly string[] DescriptionRefusalPhrases =
+    [
+        "as an ai", "i cannot", "i can't", "i don't have", "i do not have", "not enough information",
+        "insufficient information", "the source text", "the provided", "the metadata"
+    ];
+
+    private static readonly string[] SentenceAbbreviations =
+        ["Mr.", "Mrs.", "Ms.", "Dr.", "St.", "vs.", "feat.", "No.", "Jr.", "Sr.", "U.S.", "etc."];
+
     private async Task<OpenAiResponse> SendRequest(string prompt, string model = "gpt-5.4-mini",
-        string userMessage = null, string imageUrl = null)
+        string userMessage = null, string imageUrl = null, CancellationToken cancellationToken = default)
     {
         var request = new HttpRequestMessage(HttpMethod.Post, "https://api.openai.com/v1/responses");
         request.Headers.Add("Authorization", $"Bearer {this._botSettings.OpenAi.Key}");
@@ -87,10 +116,24 @@ public class OpenAiService(
         };
 
         request.Content = new StringContent(JsonSerializer.Serialize(content), null, "application/json");
-        var response = await httpClient.SendAsync(request);
+        var response = await httpClient.SendAsync(request, cancellationToken);
         Statistics.OpenAiCalls.Inc();
 
-        var responseContent = await response.Content.ReadAsStringAsync();
+        var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            Log.Error("OpenAI: request to {Model} failed with {StatusCode} - {Response}", model,
+                response.StatusCode, responseContent);
+
+            return new OpenAiResponse
+            {
+                Model = model,
+                Prompt = prompt,
+                Usage = new Usage()
+            };
+        }
+
         var responsesModel = JsonSerializer.Deserialize<ResponsesResponse>(responseContent);
 
         return new OpenAiResponse
@@ -360,5 +403,453 @@ public class OpenAiService(
             Log.Error(e, "Recap: Error in OpenAI call");
             return null;
         }
+    }
+
+    public Task<string> GetArtistDescription(Artist dbArtist, ArtistInfo lastFmArtist)
+    {
+        if (dbArtist == null || lastFmArtist == null)
+        {
+            return Task.FromResult(lastFmArtist?.Description);
+        }
+
+        return GetMusicDescription("artist", dbArtist.Id, lastFmArtist.Description, dbArtist.AiDescription,
+            dbArtist.AiDescriptionHash,
+            source => BuildArtistContext(dbArtist, lastFmArtist, source),
+            async (description, hash) =>
+            {
+                dbArtist.AiDescription = description;
+                dbArtist.AiDescriptionHash = hash;
+
+                await using var db = await contextFactory.CreateDbContextAsync();
+
+                var artist = new Artist { Id = dbArtist.Id };
+                db.Artists.Attach(artist);
+                artist.AiDescription = description;
+                artist.AiDescriptionHash = hash;
+                artist.AiDescriptionDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+
+                await db.SaveChangesAsync();
+            });
+    }
+
+    public Task<string> GetAlbumDescription(Album dbAlbum, AlbumInfo lastFmAlbum)
+    {
+        if (dbAlbum == null || lastFmAlbum == null)
+        {
+            return Task.FromResult(lastFmAlbum?.Description);
+        }
+
+        return GetMusicDescription("album", dbAlbum.Id, lastFmAlbum.Description, dbAlbum.AiDescription,
+            dbAlbum.AiDescriptionHash,
+            source => BuildAlbumContext(dbAlbum, lastFmAlbum, source),
+            async (description, hash) =>
+            {
+                dbAlbum.AiDescription = description;
+                dbAlbum.AiDescriptionHash = hash;
+
+                await using var db = await contextFactory.CreateDbContextAsync();
+
+                var album = new Album { Id = dbAlbum.Id };
+                db.Albums.Attach(album);
+                album.AiDescription = description;
+                album.AiDescriptionHash = hash;
+                album.AiDescriptionDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+
+                await db.SaveChangesAsync();
+            });
+    }
+
+    public Task<string> GetTrackDescription(Track dbTrack, TrackInfo lastFmTrack)
+    {
+        if (dbTrack == null || lastFmTrack == null)
+        {
+            return Task.FromResult(lastFmTrack?.Description);
+        }
+
+        return GetMusicDescription("track", dbTrack.Id, lastFmTrack.Description, dbTrack.AiDescription,
+            dbTrack.AiDescriptionHash,
+            source => BuildTrackContext(dbTrack, lastFmTrack, source),
+            async (description, hash) =>
+            {
+                dbTrack.AiDescription = description;
+                dbTrack.AiDescriptionHash = hash;
+
+                await using var db = await contextFactory.CreateDbContextAsync();
+
+                var track = new Track { Id = dbTrack.Id };
+                db.Tracks.Attach(track);
+                track.AiDescription = description;
+                track.AiDescriptionHash = hash;
+                track.AiDescriptionDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+
+                await db.SaveChangesAsync();
+            });
+    }
+
+    private async Task<string> GetMusicDescription(string entityType, int entityId, string lastFmDescription,
+        string storedDescription, string storedHash, Func<string, string> buildContext,
+        Func<string, string, Task> store)
+    {
+        if (string.IsNullOrWhiteSpace(lastFmDescription))
+        {
+            return null;
+        }
+
+        if (entityId == 0)
+        {
+            return lastFmDescription;
+        }
+
+        var source = StringExtensions.StripHtml(lastFmDescription);
+        var sourceHash = HashDescriptionSource(source);
+
+        if (!string.IsNullOrWhiteSpace(storedDescription) && storedHash == sourceHash)
+        {
+            return storedDescription;
+        }
+
+        if (source.Length < MinimumDescriptionSourceLength)
+        {
+            return lastFmDescription;
+        }
+
+        var failedCacheKey = $"ai-desc-failed-{entityType}-{entityId}";
+        if (cache.TryGetValue(failedCacheKey, out _))
+        {
+            return storedDescription ?? lastFmDescription;
+        }
+
+        var generated = await GetOrStartDescription($"{entityType}-{entityId}",
+            () => GenerateMusicDescription(entityType, entityId, source, sourceHash, failedCacheKey, buildContext,
+                store));
+
+        return generated ?? storedDescription ?? lastFmDescription;
+    }
+
+    private async Task<string> GenerateMusicDescription(string entityType, int entityId, string source,
+        string sourceHash, string failedCacheKey, Func<string, string> buildContext, Func<string, string, Task> store)
+    {
+        if (!await DescriptionConcurrency.WaitAsync(TimeSpan.Zero))
+        {
+            Statistics.AiDescriptionGenerations.WithLabels(entityType, "busy").Inc();
+            return null;
+        }
+
+        try
+        {
+            var prompt = await GetMusicDescriptionPrompt();
+            if (prompt == null)
+            {
+                Statistics.AiDescriptionGenerations.WithLabels(entityType, "error").Inc();
+                return null;
+            }
+
+            var groundingContext = buildContext(source);
+
+            using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(6));
+            var response = await SendRequest(prompt.Prompt.Replace("{{entityType}}", entityType), prompt.FreeModel,
+                groundingContext, cancellationToken: cancellationTokenSource.Token);
+
+            if (!TryValidateDescription(response?.Output, groundingContext, out var cleaned, out var reason))
+            {
+                Statistics.AiDescriptionGenerations.WithLabels(entityType, reason).Inc();
+                Log.Warning(
+                    "AiDescription: rejected generation for {EntityType} {EntityId} because of {Reason} - {Output}",
+                    entityType, entityId, reason, response?.Output);
+
+                cache.Set(failedCacheKey, true, TimeSpan.FromHours(6));
+                return null;
+            }
+
+            await store(cleaned, sourceHash);
+
+            Statistics.AiDescriptionGenerations.WithLabels(entityType, "stored").Inc();
+            return cleaned;
+        }
+        catch (OperationCanceledException)
+        {
+            Statistics.AiDescriptionGenerations.WithLabels(entityType, "timeout").Inc();
+            Log.Warning("AiDescription: timed out generating for {EntityType} {EntityId}", entityType, entityId);
+            return null;
+        }
+        catch (Exception e)
+        {
+            Statistics.AiDescriptionGenerations.WithLabels(entityType, "error").Inc();
+            Log.Error(e, "AiDescription: error generating for {EntityType} {EntityId}", entityType, entityId);
+            return null;
+        }
+        finally
+        {
+            DescriptionConcurrency.Release();
+        }
+    }
+
+    private static Task<string> GetOrStartDescription(string key, Func<Task<string>> factory)
+    {
+        var lazy = DescriptionsInFlight.GetOrAdd(key,
+            _ => new Lazy<Task<string>>(factory, LazyThreadSafetyMode.ExecutionAndPublication));
+
+        var task = lazy.Value;
+        _ = task.ContinueWith(completed => DescriptionsInFlight.TryRemove(key, out _), TaskScheduler.Default);
+
+        return task;
+    }
+
+    private async Task<AiPrompt> GetMusicDescriptionPrompt()
+    {
+        const string cacheKey = "ai-prompt-music-description";
+        if (cache.TryGetValue(cacheKey, out AiPrompt cachedPrompt))
+        {
+            return cachedPrompt;
+        }
+
+        await using var db = await contextFactory.CreateDbContextAsync();
+        var prompt = await db.AiPrompts
+            .OrderByDescending(o => o.Version)
+            .FirstOrDefaultAsync(f => f.Type == PromptType.MusicDescription &&
+                                      f.Language == "en-us");
+
+        if (prompt == null)
+        {
+            Log.Warning("AiDescription: no ai_prompts row found for MusicDescription");
+            return null;
+        }
+
+        cache.Set(cacheKey, prompt, TimeSpan.FromMinutes(30));
+
+        return prompt;
+    }
+
+    public static string HashDescriptionSource(string source)
+    {
+        if (string.IsNullOrWhiteSpace(source))
+        {
+            return null;
+        }
+
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(source));
+
+        return Convert.ToHexStringLower(hash.AsSpan(0, 16));
+    }
+
+    private string BuildArtistContext(Artist dbArtist, ArtistInfo lastFmArtist, string source)
+    {
+        var context = new StringBuilder();
+
+        context.AppendLine("ENTITY: artist");
+        context.AppendLine($"NAME: {dbArtist.Name}");
+        context.AppendLine();
+        context.AppendLine("SOURCE (Last.fm biography):");
+        context.AppendLine(StringExtensions.TruncateLongString(source, MaximumDescriptionSourceLength));
+        context.AppendLine();
+        context.AppendLine("METADATA (verified):");
+
+        AppendDescriptionMetadata(context, "Disambiguation", dbArtist.Disambiguation);
+        AppendDescriptionMetadata(context, "Country", CountryNameForCode(dbArtist.CountryCode));
+        AppendDescriptionMetadata(context, "Location", dbArtist.Location);
+        AppendDescriptionMetadata(context, "Type", dbArtist.Type);
+        AppendDescriptionMetadata(context, "Gender", dbArtist.Gender);
+        AppendDescriptionMetadata(context, "Active from", FormatDescriptionDate(dbArtist.StartDate));
+        AppendDescriptionMetadata(context, "Active until", FormatDescriptionDate(dbArtist.EndDate));
+        AppendDescriptionMetadata(context, "Genres", JoinDescriptionValues(dbArtist.ArtistGenres?.Select(s => s.Name)));
+        AppendDescriptionMetadata(context, "Last.fm tags", JoinDescriptionValues(lastFmArtist.Tags?.Select(s => s.Name)));
+
+        return context.ToString();
+    }
+
+    private static string BuildAlbumContext(Album dbAlbum, AlbumInfo lastFmAlbum, string source)
+    {
+        var context = new StringBuilder();
+
+        context.AppendLine("ENTITY: album");
+        context.AppendLine($"NAME: {dbAlbum.Name}");
+        context.AppendLine($"ARTIST: {dbAlbum.ArtistName}");
+        context.AppendLine();
+        context.AppendLine("SOURCE (Last.fm album wiki):");
+        context.AppendLine(StringExtensions.TruncateLongString(source, MaximumDescriptionSourceLength));
+
+        AppendEditorialSource(context, dbAlbum.AppleMusicTagline,
+            dbAlbum.AppleMusicShortDescription ?? dbAlbum.AppleMusicDescription);
+
+        context.AppendLine();
+        context.AppendLine("METADATA (verified):");
+
+        AppendDescriptionMetadata(context, "Release date", dbAlbum.ReleaseDate);
+        AppendDescriptionMetadata(context, "Release date precision", dbAlbum.ReleaseDatePrecision);
+        AppendDescriptionMetadata(context, "Release type", dbAlbum.Type);
+        AppendDescriptionMetadata(context, "Label", dbAlbum.Label);
+        AppendDescriptionMetadata(context, "Last.fm tags", JoinDescriptionValues(lastFmAlbum.Tags?.Select(s => s.Name)));
+        AppendDescriptionMetadata(context, "Tracks",
+            JoinDescriptionValues(lastFmAlbum.AlbumTracks?.Select(s => s.TrackName), 20, "; "));
+
+        return context.ToString();
+    }
+
+    private static string BuildTrackContext(Track dbTrack, TrackInfo lastFmTrack, string source)
+    {
+        var context = new StringBuilder();
+
+        context.AppendLine("ENTITY: track");
+        context.AppendLine($"NAME: {dbTrack.Name}");
+        context.AppendLine($"ARTIST: {dbTrack.ArtistName}");
+
+        if (!string.IsNullOrWhiteSpace(dbTrack.AlbumName))
+        {
+            context.AppendLine($"ALBUM: {dbTrack.AlbumName}");
+        }
+
+        context.AppendLine();
+        context.AppendLine("SOURCE (Last.fm track wiki):");
+        context.AppendLine(StringExtensions.TruncateLongString(source, MaximumDescriptionSourceLength));
+
+        AppendEditorialSource(context, dbTrack.AppleMusicTagline,
+            dbTrack.AppleMusicShortDescription ?? dbTrack.AppleMusicDescription);
+
+        context.AppendLine();
+        context.AppendLine("METADATA (verified):");
+
+        AppendDescriptionMetadata(context, "Disambiguation", dbTrack.Disambiguation);
+        AppendDescriptionMetadata(context, "Duration", FormatDescriptionDuration(dbTrack.DurationMs));
+        AppendDescriptionMetadata(context, "Last.fm tags", JoinDescriptionValues(lastFmTrack.Tags?.Select(s => s.Name)));
+
+        return context.ToString();
+    }
+
+    private static void AppendEditorialSource(StringBuilder context, string tagline, string editorial)
+    {
+        var strippedTagline = StringExtensions.StripHtml(tagline);
+        var strippedEditorial = StringExtensions.StripHtml(editorial);
+
+        if (string.IsNullOrWhiteSpace(strippedTagline) && string.IsNullOrWhiteSpace(strippedEditorial))
+        {
+            return;
+        }
+
+        context.AppendLine();
+        context.AppendLine("SOURCE 2 (Apple Music editorial):");
+
+        if (!string.IsNullOrWhiteSpace(strippedTagline))
+        {
+            context.AppendLine(strippedTagline);
+        }
+
+        if (!string.IsNullOrWhiteSpace(strippedEditorial))
+        {
+            context.AppendLine(StringExtensions.TruncateLongString(strippedEditorial, MaximumEditorialSourceLength));
+        }
+    }
+
+    private static void AppendDescriptionMetadata(StringBuilder context, string label, string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return;
+        }
+
+        context.AppendLine($"{label}: {value}");
+    }
+
+    private static string JoinDescriptionValues(IEnumerable<string> values, int amount = 8, string separator = ", ")
+    {
+        if (values == null)
+        {
+            return null;
+        }
+
+        return string.Join(separator, values.Where(w => !string.IsNullOrWhiteSpace(w)).Take(amount));
+    }
+
+    private static string FormatDescriptionDate(DateTime? date)
+    {
+        return date?.ToString("yyyy-MM-dd");
+    }
+
+    private static string FormatDescriptionDuration(int? durationMs)
+    {
+        if (durationMs is not > 0)
+        {
+            return null;
+        }
+
+        return TimeSpan.FromMilliseconds(durationMs.Value).ToString(@"m\:ss");
+    }
+
+    private string CountryNameForCode(string countryCode)
+    {
+        if (string.IsNullOrWhiteSpace(countryCode))
+        {
+            return null;
+        }
+
+        return countryService.Countries.FirstOrDefault(f => f.Code == countryCode)?.Name;
+    }
+
+    public static bool TryValidateDescription(string raw, string groundingContext, out string cleaned,
+        out string reason)
+    {
+        cleaned = null;
+        reason = "invalid";
+
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return false;
+        }
+
+        var candidate = string.Join(' ', raw.Split((char[])null, StringSplitOptions.RemoveEmptyEntries));
+
+        if (candidate.Length > 1 &&
+            ((candidate[0] == '"' && candidate[^1] == '"') || (candidate[0] == '\'' && candidate[^1] == '\'')))
+        {
+            candidate = candidate[1..^1].Trim();
+        }
+
+        if (candidate.TrimEnd('.', '!').Equals("INSUFFICIENT", StringComparison.OrdinalIgnoreCase))
+        {
+            reason = "insufficient";
+            return false;
+        }
+
+        if (candidate.Length is < 40 or > 400)
+        {
+            return false;
+        }
+
+        if (DescriptionForbiddenFragments.Any(a => candidate.Contains(a, StringComparison.OrdinalIgnoreCase)))
+        {
+            return false;
+        }
+
+        if (DescriptionRefusalPhrases.Any(a => candidate.Contains(a, StringComparison.OrdinalIgnoreCase)))
+        {
+            return false;
+        }
+
+        var forSentenceCount = SentenceAbbreviations.Aggregate(candidate,
+            (current, abbreviation) => current.Replace(abbreviation, "", StringComparison.OrdinalIgnoreCase));
+
+        var sentences = SentenceEndRegex.Matches(forSentenceCount).Count;
+        if (sentences is < 1 or > 3)
+        {
+            return false;
+        }
+
+        var normalizedGrounding = NumberSeparatorRegex.Replace(groundingContext ?? "", "");
+        foreach (Match match in DescriptionNumberRegex.Matches(candidate))
+        {
+            var number = NumberSeparatorRegex.Replace(match.Value, "");
+            if (number.Length < 2)
+            {
+                continue;
+            }
+
+            if (!normalizedGrounding.Contains(number, StringComparison.Ordinal))
+            {
+                return false;
+            }
+        }
+
+        cleaned = candidate.FilterOutMentions().Trim();
+
+        return !string.IsNullOrWhiteSpace(cleaned);
     }
 }

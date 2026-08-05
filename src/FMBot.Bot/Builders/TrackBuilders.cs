@@ -55,6 +55,7 @@ public class TrackBuilders
     private readonly SupporterService _supporterService;
     private readonly EurovisionService _eurovisionService;
     private readonly FriendsService _friendsService;
+    private readonly OpenAiService _openAiService;
 
     public TrackBuilders(UserService userService,
         GuildService guildService,
@@ -78,7 +79,8 @@ public class TrackBuilders
         MusicDataFactory musicDataFactory,
         DiscordSkuService discordSkuService,
         EurovisionService eurovisionService,
-        FriendsService friendsService)
+        FriendsService friendsService,
+        OpenAiService openAiService)
     {
         this._userService = userService;
         this._guildService = guildService;
@@ -103,6 +105,7 @@ public class TrackBuilders
         this._eurovisionService = eurovisionService;
         this._supporterService = supporterService;
         this._friendsService = friendsService;
+        this._openAiService = openAiService;
     }
 
     public async Task<ResponseModel> TrackAsync(
@@ -172,6 +175,8 @@ public class TrackBuilders
         var userTitle = await userTitleTask;
         var featuredHistory = await featuredHistoryTask;
         var databaseAlbum = databaseAlbumTask != null ? await databaseAlbumTask : null;
+
+        var aiDescriptionTask = this._openAiService.GetTrackDescription(dbTrack, trackSearch.Track);
 
         Task<EurovisionEntry> eurovisionTask = null;
         if (dbTrack?.SpotifyId != null)
@@ -268,6 +273,13 @@ public class TrackBuilders
         else
         {
             response.ComponentsContainer.AddComponent(new TextDisplayProperties(headerSection.ToString().TrimEnd()));
+        }
+
+        var trackDescription = await aiDescriptionTask;
+        if (!string.IsNullOrWhiteSpace(trackDescription))
+        {
+            response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
+            response.ComponentsContainer.AddComponent(new TextDisplayProperties(trackDescription));
         }
 
         if (trackSearch.Track.UserPlaycount.HasValue)
@@ -471,12 +483,6 @@ public class TrackBuilders
                 response.ComponentsContainer.AddComponent(
                     new TextDisplayProperties($"<:eurovision:1084971471610323035> Eurovision\n{eurovisionDescription.full}"));
             }
-        }
-
-        if (!string.IsNullOrWhiteSpace(trackSearch.Track.Description))
-        {
-            response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
-            response.ComponentsContainer.AddComponent(new TextDisplayProperties(trackSearch.Track.Description));
         }
 
         var actionRow = new ActionRowProperties();

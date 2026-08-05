@@ -54,6 +54,7 @@ public class AlbumBuilders
     private readonly MusicDataFactory _musicDataFactory;
     private readonly AppleMusicVideoService _appleMusicVideoService;
     private readonly FriendsService _friendsService;
+    private readonly OpenAiService _openAiService;
 
     public AlbumBuilders(UserService userService,
         GuildService guildService,
@@ -73,7 +74,8 @@ public class AlbumBuilders
         WhoKnowsService whoKnowsService,
         FeaturedService featuredService,
         MusicDataFactory musicDataFactory, AppleMusicVideoService appleMusicVideoService,
-        FriendsService friendsService)
+        FriendsService friendsService,
+        OpenAiService openAiService)
     {
         this._userService = userService;
         this._guildService = guildService;
@@ -95,6 +97,7 @@ public class AlbumBuilders
         this._musicDataFactory = musicDataFactory;
         this._appleMusicVideoService = appleMusicVideoService;
         this._friendsService = friendsService;
+        this._openAiService = openAiService;
     }
 
     public async Task<ResponseModel> AlbumAsync(ContextModel context,
@@ -122,6 +125,8 @@ public class AlbumBuilders
         var featuredHistoryTask = this._featuredService.GetAlbumFeaturedHistory(albumSearch.Album.ArtistName, albumSearch.Album.AlbumName);
 
         var databaseAlbum = await databaseAlbumTask;
+
+        var aiDescriptionTask = this._openAiService.GetAlbumDescription(databaseAlbum, albumSearch.Album);
 
         Guild guild = null;
         IDictionary<int, FullGuildUser> guildUsers = null;
@@ -212,7 +217,15 @@ public class AlbumBuilders
             response.ComponentsContainer.AddComponent(new TextDisplayProperties(headerSection.ToString().TrimEnd()));
         }
 
-        // === Section 2: User stats ===
+        // === Section 2: Summary ===
+        var albumDescription = await aiDescriptionTask;
+        if (!string.IsNullOrWhiteSpace(albumDescription))
+        {
+            response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
+            response.ComponentsContainer.AddComponent(new TextDisplayProperties(albumDescription));
+        }
+
+        // === Section 3: User stats ===
         if (albumSearch.Album.UserPlaycount.HasValue)
         {
             var correctPlaycountTask = this._updateService.CorrectUserAlbumPlaycount(context.ContextUser.UserId,
@@ -308,7 +321,7 @@ public class AlbumBuilders
             response.ComponentsContainer.AddComponent(new TextDisplayProperties(userStats.ToString().TrimEnd()));
         }
 
-        // === Section 3: Server + global stats ===
+        // === Section 4: Server + global stats ===
         var statsSection = new StringBuilder();
 
         if (context.DiscordGuild != null)
@@ -368,13 +381,6 @@ public class AlbumBuilders
 
         response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
         response.ComponentsContainer.AddComponent(new TextDisplayProperties(statsSection.ToString().TrimEnd()));
-
-        // === Section 4: Summary ===
-        if (albumSearch.Album.Description != null)
-        {
-            response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
-            response.ComponentsContainer.AddComponent(new TextDisplayProperties(albumSearch.Album.Description));
-        }
 
         // === Section 5: Discogs collection ===
         if (context.ContextUser.UserDiscogs != null && context.ContextUser.DiscogsReleases.Any())

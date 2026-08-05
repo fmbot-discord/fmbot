@@ -23,6 +23,10 @@ public class Track
     public string LastFmDescription { get; set; }
     public DateTime? LastfmDate { get; set; }
 
+    public string AiDescription { get; set; }
+    public string AiDescriptionHash { get; set; }
+    public DateTime? AiDescriptionDate { get; set; }
+
     public string ArtistName { get; set; }
     public string AlbumName { get; set; }
 

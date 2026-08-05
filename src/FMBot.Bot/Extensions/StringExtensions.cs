@@ -127,6 +127,30 @@ public static partial class StringExtensions
     [GeneratedRegex(@"^(#{1,3}|-#)(?= )", RegexOptions.Multiline)]
     private static partial Regex LineStartMarkdownRegex();
 
+    [GeneratedRegex(@"<[^>]{0,200}>")]
+    private static partial Regex HtmlTagRegex();
+
+    [GeneratedRegex(@"[^\S\n]{2,}")]
+    private static partial Regex RepeatedSpaceRegex();
+
+    [GeneratedRegex(@"\n{2,}")]
+    private static partial Regex RepeatedNewLineRegex();
+
+    public static string StripHtml(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return text;
+        }
+
+        var stripped = HtmlTagRegex().Replace(text, " ");
+        stripped = HttpUtility.HtmlDecode(stripped);
+        stripped = RepeatedSpaceRegex().Replace(stripped, " ");
+        stripped = RepeatedNewLineRegex().Replace(stripped, "\n");
+
+        return stripped.Trim();
+    }
+
     public static string Sanitize(string text)
     {
         if (text != null)

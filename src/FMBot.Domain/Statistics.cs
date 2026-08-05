@@ -90,6 +90,13 @@ public static class Statistics
     public static readonly Counter OpenAiCalls = Metrics
         .CreateCounter("openai_api_calls", "Amount of OpenAI API calls");
 
+    public static readonly Counter AiDescriptionGenerations = Metrics
+        .CreateCounter("ai_description_generations", "Amount of AI music description generations",
+            new CounterConfiguration
+            {
+                LabelNames = ["entity", "result"]
+            });
+
     public static readonly Counter AppleMusicApiCalls = Metrics
         .CreateCounter("applemusic_api_calls", "Amount of Apple Music API calls");
 

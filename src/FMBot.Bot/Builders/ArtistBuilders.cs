@@ -63,6 +63,7 @@ public class ArtistBuilders
     private readonly IMemoryCache _cache;
     private readonly FriendsService _friendsService;
     private readonly GraphService _graphService;
+    private readonly OpenAiService _openAiService;
 
 
     public ArtistBuilders(ArtistsService artistsService,
@@ -88,7 +89,8 @@ public class ArtistBuilders
         ShardedGatewayClient client,
         IMemoryCache cache,
         FriendsService friendsService,
-        GraphService graphService)
+        GraphService graphService,
+        OpenAiService openAiService)
     {
         this._artistsService = artistsService;
         this._dataSourceFactory = dataSourceFactory;
@@ -114,6 +116,7 @@ public class ArtistBuilders
         this._cache = cache;
         this._friendsService = friendsService;
         this._graphService = graphService;
+        this._openAiService = openAiService;
     }
 
     public async Task<ResponseModel> ArtistInfoAsync(ContextModel context,
@@ -185,6 +188,9 @@ public class ArtistBuilders
         }
 
         var fullArtist = await fullArtistTask;
+
+        var aiDescriptionTask = this._openAiService.GetArtistDescription(fullArtist, artistSearch.Artist);
+
         var userTitle = await userTitleTask;
         var featuredHistory = await featuredHistoryTask;
         var guildFeaturedHistory = guildFeaturedHistoryTask != null ? await guildFeaturedHistoryTask : null;
@@ -368,6 +374,13 @@ public class ArtistBuilders
             response.ComponentsContainer.AddComponent(new TextDisplayProperties(headerSection.ToString().TrimEnd()));
         }
 
+        var artistDescription = await aiDescriptionTask;
+        if (!string.IsNullOrWhiteSpace(artistDescription))
+        {
+            response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
+            response.ComponentsContainer.AddComponent(new TextDisplayProperties(artistDescription));
+        }
+
         if (userStats != null && (hasMusicBrainzInfo || !showThumbnail))
         {
             response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
@@ -424,12 +437,6 @@ public class ArtistBuilders
 
         response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
         response.ComponentsContainer.AddComponent(new TextDisplayProperties(statsSection.ToString().TrimEnd()));
-
-        if (artistSearch.Artist.Description != null)
-        {
-            response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
-            response.ComponentsContainer.AddComponent(new TextDisplayProperties(artistSearch.Artist.Description));
-        }
 
         if (fullArtist.ArtistGenres != null && fullArtist.ArtistGenres.Any())
         {

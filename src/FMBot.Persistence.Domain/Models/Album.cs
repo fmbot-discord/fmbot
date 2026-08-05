@@ -15,6 +15,10 @@ public class Album
     public string LastFmDescription { get; set; }
     public DateTime? LastfmDate { get; set; }
 
+    public string AiDescription { get; set; }
+    public string AiDescriptionHash { get; set; }
+    public DateTime? AiDescriptionDate { get; set; }
+
     public Guid? Mbid { get; set; }
     public string Upc { get; set; }
     public string Type { get; set; }

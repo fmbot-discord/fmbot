@@ -13,6 +13,10 @@ public class Artist
     public string LastFmDescription { get; set; }
     public DateTime? LastfmDate { get; set; }
 
+    public string AiDescription { get; set; }
+    public string AiDescriptionHash { get; set; }
+    public DateTime? AiDescriptionDate { get; set; }
+
     public string SpotifyImageUrl { get; set; }
     public DateTime? SpotifyImageDate { get; set; }
     public string SpotifyId { get; set; }
