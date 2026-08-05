@@ -38,13 +38,24 @@ public static class GraphExtensions
         ];
     }
 
+    private const float MinimumLineLightness = 40f;
+
     private static async Task<SKColor> GetLineColor(ContextModel context, ResponseModel response)
     {
         var accentColor = response.ComponentsContainer?.AccentColor ??
                           await UserService.GetCustomAccentColor(context.ContextUser, context.DiscordGuild);
 
         return accentColor.HasValue
-            ? new SKColor(accentColor.Value.Red, accentColor.Value.Green, accentColor.Value.Blue)
+            ? Brighten(new SKColor(accentColor.Value.Red, accentColor.Value.Green, accentColor.Value.Blue))
             : GraphColors.FmbotBlue;
+    }
+
+    private static SKColor Brighten(SKColor color)
+    {
+        color.ToHsl(out var hue, out var saturation, out var lightness);
+
+        return lightness >= MinimumLineLightness
+            ? color
+            : SKColor.FromHsl(hue, saturation, MinimumLineLightness);
     }
 }
