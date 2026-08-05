@@ -42,12 +42,14 @@ public class OpenAiService(
 
     private static readonly ConcurrentDictionary<string, Lazy<Task<string>>> DescriptionsInFlight = new();
 
-    private static readonly Regex SentenceEndRegex = new(@"[.!?](\s|$)", RegexOptions.Compiled);
+    private static readonly Regex SentenceEndRegex = new("""[.!?]["'‘’“”»)\]]*(\s|$)""",
+        RegexOptions.Compiled);
+    private static readonly Regex DescriptionHeadingRegex = new(@"(^|\s)(#{1,3}|-#)\s", RegexOptions.Compiled);
     private static readonly Regex DescriptionNumberRegex = new(@"\d[\d,.]*", RegexOptions.Compiled);
     private static readonly Regex NumberSeparatorRegex = new(@"[,.]", RegexOptions.Compiled);
 
     private static readonly string[] DescriptionForbiddenFragments =
-        ["```", "http", "](", "<", ">", "#", "**"];
+        ["```", "http", "](", "<", ">", "**"];
 
     private static readonly string[] DescriptionRefusalPhrases =
     [
@@ -58,7 +60,7 @@ public class OpenAiService(
     private static readonly string[] SentenceAbbreviations =
         ["Mr.", "Mrs.", "Ms.", "Dr.", "St.", "vs.", "feat.", "No.", "Jr.", "Sr.", "U.S.", "etc."];
 
-    private async Task<OpenAiResponse> SendRequest(string prompt, string model = "gpt-5.4-mini",
+    private async Task<OpenAiResponse> SendRequest(string prompt, string model = "gpt-5.6-luna",
         string userMessage = null, string imageUrl = null, CancellationToken cancellationToken = default)
     {
         var request = new HttpRequestMessage(HttpMethod.Post, "https://api.openai.com/v1/responses");
@@ -550,12 +552,22 @@ public class OpenAiService(
             var response = await SendRequest(prompt.Prompt.Replace("{{entityType}}", entityType), prompt.FreeModel,
                 groundingContext, cancellationToken: cancellationTokenSource.Token);
 
-            if (!TryValidateDescription(response?.Output, groundingContext, out var cleaned, out var reason))
+            if (string.IsNullOrWhiteSpace(response?.Output))
+            {
+                Statistics.AiDescriptionGenerations.WithLabels(entityType, "empty").Inc();
+                Log.Warning("AiDescription: empty response generating for {EntityType} {EntityId}", entityType,
+                    entityId);
+
+                cache.Set(failedCacheKey, true, TimeSpan.FromMinutes(15));
+                return null;
+            }
+
+            if (!TryValidateDescription(response.Output, groundingContext, out var cleaned, out var reason))
             {
                 Statistics.AiDescriptionGenerations.WithLabels(entityType, reason).Inc();
                 Log.Warning(
                     "AiDescription: rejected generation for {EntityType} {EntityId} because of {Reason} - {Output}",
-                    entityType, entityId, reason, response?.Output);
+                    entityType, entityId, reason, response.Output);
 
                 cache.Set(failedCacheKey, true, TimeSpan.FromHours(6));
                 return null;
@@ -570,12 +582,16 @@ public class OpenAiService(
         {
             Statistics.AiDescriptionGenerations.WithLabels(entityType, "timeout").Inc();
             Log.Warning("AiDescription: timed out generating for {EntityType} {EntityId}", entityType, entityId);
+
+            cache.Set(failedCacheKey, true, TimeSpan.FromMinutes(15));
             return null;
         }
         catch (Exception e)
         {
             Statistics.AiDescriptionGenerations.WithLabels(entityType, "error").Inc();
             Log.Error(e, "AiDescription: error generating for {EntityType} {EntityId}", entityType, entityId);
+
+            cache.Set(failedCacheKey, true, TimeSpan.FromMinutes(15));
             return null;
         }
         finally
@@ -798,7 +814,8 @@ public class OpenAiService(
         var candidate = string.Join(' ', raw.Split((char[])null, StringSplitOptions.RemoveEmptyEntries));
 
         if (candidate.Length > 1 &&
-            ((candidate[0] == '"' && candidate[^1] == '"') || (candidate[0] == '\'' && candidate[^1] == '\'')))
+            ((candidate[0] == '"' && candidate[^1] == '"') || (candidate[0] == '\'' && candidate[^1] == '\'') ||
+             (candidate[0] == '“' && candidate[^1] == '”')))
         {
             candidate = candidate[1..^1].Trim();
         }
@@ -814,7 +831,8 @@ public class OpenAiService(
             return false;
         }
 
-        if (DescriptionForbiddenFragments.Any(a => candidate.Contains(a, StringComparison.OrdinalIgnoreCase)))
+        if (DescriptionForbiddenFragments.Any(a => candidate.Contains(a, StringComparison.OrdinalIgnoreCase)) ||
+            DescriptionHeadingRegex.IsMatch(candidate))
         {
             return false;
         }

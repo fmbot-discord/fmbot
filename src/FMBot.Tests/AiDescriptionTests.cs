@@ -76,6 +76,50 @@ public class AiDescriptionTests
     }
 
     [Test]
+    public void WrappingCurlyQuotesAreStripped()
+    {
+        var valid = OpenAiService.TryValidateDescription(
+            "“Muse are an English rock band formed in Teignmouth in 1994. They play alternative and progressive " +
+            "rock.”", Grounding, out var cleaned, out _);
+
+        Assert.That(valid, Is.True);
+        Assert.That(cleaned, Does.Not.StartWith("“"));
+        Assert.That(cleaned, Does.Not.EndWith("”"));
+    }
+
+    [Test]
+    public void SentencesEndingInsideCurlyQuotesAreAccepted()
+    {
+        const string grounding =
+            "ENTITY: artist\nNAME: FLO\n\nSOURCE (Last.fm biography):\nFLO are a British R&B trio who debuted in " +
+            "2022 with Cardboard Box. Their 2024 singles include Walk Like This, Caught Up and Check.";
+
+        var valid = OpenAiService.TryValidateDescription(
+            "FLO are a Grammy-nominated British R&B trio who debuted in 2022 with “Cardboard Box.” Their 2024 " +
+            "singles include the TikTok-trending “Walk Like This,” guitar-focused “Caught Up,” and fast-paced pop " +
+            "track “Check.”", grounding, out var cleaned, out _);
+
+        Assert.That(valid, Is.True);
+        Assert.That(cleaned, Does.StartWith("FLO are a Grammy-nominated"));
+    }
+
+    [Test]
+    public void ChartPositionIsNotTreatedAsAHeading()
+    {
+        const string grounding =
+            "ENTITY: album\nNAME: petal\nARTIST: Ariana Grande\n\nSOURCE (Last.fm album wiki):\npetal was " +
+            "co-written and executively produced by Ariana Grande and ILYA. Its lead single Hate That I Made You " +
+            "Love Me debuted at number 1 on the Billboard Hot 100.";
+
+        var valid = OpenAiService.TryValidateDescription(
+            "petal was co-written and executively produced by Ariana Grande and Swedish producer ILYA. Its lead " +
+            "single, “Hate That I Made You Love Me,” debuted at #1 on the Billboard Hot 100.", grounding, out _,
+            out _);
+
+        Assert.That(valid, Is.True);
+    }
+
+    [Test]
     public void NewLinesAreCollapsed()
     {
         var valid = OpenAiService.TryValidateDescription(
