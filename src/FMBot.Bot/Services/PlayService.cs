@@ -1186,6 +1186,18 @@ public class PlayService
             .TimePlayed;
     }
 
+    public async Task<List<DateTime>> GetArtistPlayTimestamps(int userId, string artistName)
+    {
+        var plays = await this.GetAllUserPlays(userId);
+        return plays
+            .Where(w =>
+                w.ArtistName != null &&
+                w.ArtistName.Equals(artistName, StringComparison.OrdinalIgnoreCase))
+            .Select(s => s.TimePlayed)
+            .OrderBy(o => o)
+            .ToList();
+    }
+
     public async Task<DateTime?> GetAlbumFirstPlayDate(int userId, string artistName, string albumName)
     {
         if (albumName == null)

@@ -198,6 +198,7 @@ public class UserService
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         return await db.Users
+            .Include(i => i.FmSetting)
             .Include(i => i.UserDiscogs)
             .Include(i => i.DiscogsReleases)
             .ThenInclude(i => i.Release)
@@ -996,6 +997,7 @@ public class UserService
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var query = db.Users
+            .Include(i => i.FmSetting)
             .Include(i => i.UserDiscogs)
             .Include(i => i.Friends)
             .Include(i => i.FriendedByUsers);
@@ -1020,6 +1022,11 @@ public class UserService
     }
 
     public static async Task<Color> GetAccentColor(User user, NetCord.Gateway.Guild guild)
+    {
+        return await GetCustomAccentColor(user, guild) ?? DiscordConstants.LastFmColorRed;
+    }
+
+    public static async Task<Color?> GetCustomAccentColor(User user, NetCord.Gateway.Guild guild)
     {
         var fmSetting = user.FmSetting;
         if (fmSetting?.AccentColor == FmAccentColor.Custom &&
@@ -1047,7 +1054,7 @@ public class UserService
             }
         }
 
-        return DiscordConstants.LastFmColorRed;
+        return null;
     }
 
     public static Color? GetHighestRoleColor(NetCord.Gateway.Guild guild, NetCord.GuildUser guildUser)

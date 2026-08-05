@@ -291,6 +291,7 @@ public class Startup
             .AddSingleton<FriendsService>()
             .AddSingleton<GameService>()
             .AddSingleton<GenreService>()
+            .AddSingleton<GraphService>()
             .AddSingleton<TagService>()
             .AddSingleton<IndexService, IndexService>()
             .AddSingleton<DmNotificationService>()

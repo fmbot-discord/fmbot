@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -62,6 +62,7 @@ public class ArtistBuilders
     private readonly ShardedGatewayClient _client;
     private readonly IMemoryCache _cache;
     private readonly FriendsService _friendsService;
+    private readonly GraphService _graphService;
 
 
     public ArtistBuilders(ArtistsService artistsService,
@@ -86,7 +87,8 @@ public class ArtistBuilders
         MusicDataFactory musicDataFactory,
         ShardedGatewayClient client,
         IMemoryCache cache,
-        FriendsService friendsService)
+        FriendsService friendsService,
+        GraphService graphService)
     {
         this._artistsService = artistsService;
         this._dataSourceFactory = dataSourceFactory;
@@ -111,6 +113,7 @@ public class ArtistBuilders
         this._client = client;
         this._cache = cache;
         this._friendsService = friendsService;
+        this._graphService = graphService;
     }
 
     public async Task<ResponseModel> ArtistInfoAsync(ContextModel context,
@@ -555,10 +558,11 @@ public class ArtistBuilders
                 ("user", await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)));
         }
 
-        Task<DateTime?> firstPlayTask = null;
+        Task<List<DateTime>> playHistoryTask = null;
+        List<DateTime> playHistory = null;
         if (user.UserType != UserType.User && artistSearch.Artist.UserPlaycount > 0)
         {
-            firstPlayTask = this._playService.GetArtistFirstPlayDate(user.UserId, artistSearch.Artist.ArtistName);
+            playHistoryTask = this._playService.GetArtistPlayTimestamps(user.UserId, artistSearch.Artist.ArtistName);
         }
 
         Task<(int week, int month)> recentPlaycountsTask = null;
@@ -608,12 +612,12 @@ public class ArtistBuilders
                 : context.LocalizeCount("artist.overview.plays",
                     artistSearch.Artist.UserPlaycount.GetValueOrDefault()));
 
-            if (firstPlayTask != null)
+            if (playHistoryTask != null)
             {
-                var firstPlay = await firstPlayTask;
-                if (firstPlay != null)
+                playHistory = await playHistoryTask;
+                if (playHistory.Count > 0)
                 {
-                    var firstListenValue = ((DateTimeOffset)firstPlay).ToUnixTimeSeconds();
+                    var firstListenValue = ((DateTimeOffset)playHistory[0]).ToUnixTimeSeconds();
                     headerSection.AppendLine(context.Localize("artist.discoveredDate",
                         ("date", $"<t:{firstListenValue}:D>")));
                 }
@@ -647,6 +651,11 @@ public class ArtistBuilders
             response.ComponentsContainer.AddComponent(new TextDisplayProperties(headerSection.ToString().TrimEnd()));
         }
 
+        var playHistoryGraph = playHistory is { Count: > 0 }
+            ? await this._graphService.BuildPlayHistoryGraph(context, response, playHistory, "artist-plays.png")
+            : null;
+        var listLength = playHistoryGraph != null ? 5 : 8;
+
         var artistTracksButton = false;
         var artistAlbumsButton = false;
         if (artistSearch.Artist.UserPlaycount > 0)
@@ -663,7 +672,7 @@ public class ArtistBuilders
                     : context.Localize("artist.overview.topTracksSelf"));
 
                 var counter = 1;
-                foreach (var track in topTracks.Take(8))
+                foreach (var track in topTracks.Take(listLength))
                 {
                     topTracksDescription.AppendLine(
                         $"`{counter}`  **{StringExtensions.Sanitize(StringExtensions.TruncateLongString(track.Name, 40))}** - " +
@@ -686,7 +695,7 @@ public class ArtistBuilders
                     : context.Localize("artist.overview.topAlbumsSelf"));
 
                 var counter = 1;
-                foreach (var album in topAlbums.Take(8))
+                foreach (var album in topAlbums.Take(listLength))
                 {
                     topAlbumsDescription.AppendLine(
                         $"`{counter}`  **{StringExtensions.Sanitize(StringExtensions.TruncateLongString(album.Name, 40))}** - " +
@@ -726,9 +735,19 @@ public class ArtistBuilders
             }
         }
 
-        if (fullArtist.ArtistGenres != null && fullArtist.ArtistGenres.Any())
+        if (playHistoryGraph != null)
         {
             response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
+            response.ComponentsContainer.AddComponent(playHistoryGraph);
+        }
+
+        if (fullArtist.ArtistGenres != null && fullArtist.ArtistGenres.Any())
+        {
+            if (playHistoryGraph == null)
+            {
+                response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
+            }
+
             response.ComponentsContainer.AddComponent(new TextDisplayProperties(
                 $"-# {GenreService.GenresToString(fullArtist.ArtistGenres.ToList())}"));
         }

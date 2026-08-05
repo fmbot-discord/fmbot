@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -18,6 +18,8 @@ using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
+using FMBot.Images.Generators;
+using FMBot.Images.Models;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
 using Guild = FMBot.Persistence.Domain.Models.Guild;
@@ -49,6 +51,7 @@ public class UserBuilder
     private readonly ShortcutService _shortcutService;
     private readonly CensorService _censorService;
     private readonly AlbumService _albumService;
+    private readonly GraphService _graphService;
 
     private readonly CommandService<CommandContext> _commands;
 
@@ -70,7 +73,8 @@ public class UserBuilder
         ShortcutService shortcutService,
         CommandService<CommandContext> commands,
         CensorService censorService,
-        AlbumService albumService)
+        AlbumService albumService,
+        GraphService graphService)
     {
         this._userService = userService;
         this._guildService = guildService;
@@ -90,6 +94,7 @@ public class UserBuilder
         this._commands = commands;
         this._censorService = censorService;
         this._albumService = albumService;
+        this._graphService = graphService;
         this._botSettings = botSettings.Value;
     }
 
@@ -1257,16 +1262,21 @@ public class UserBuilder
         var totalDays = (DateTime.UtcNow - age).TotalDays;
         var avgPerDay = userInfo.Playcount / totalDays;
 
-        var allPlays = await this._playService.GetAllUserPlays(userSettings.UserId);
+        MediaGalleryProperties playHistoryGraph = null;
 
         var stats = new StringBuilder();
         if (userSettings.UserType != UserType.User)
         {
+            var allPlays = await this._playService.GetAllUserPlays(userSettings.UserId);
+
             var hasImported = PlayService.UserHasImported(allPlays);
             if (hasImported)
             {
                 stats.AppendLine(context.Localize("profile.importedPlays"));
             }
+
+            playHistoryGraph = await this._graphService.BuildPlayHistoryGraph(context, response,
+                allPlays.Select(s => s.TimePlayed).ToList(), "profile-plays.png", GraphInterval.Month);
         }
 
         stats.AppendLine(context.Localize("profile.avgScrobblesPerDay",
@@ -1285,17 +1295,20 @@ public class UserBuilder
                 ("percentage", Math.Round((double)amount / userInfo.Playcount * 100, 1).Format(context.NumberFormat))));
         }
 
-        var topDay = allPlays.GroupBy(g => g.TimePlayed.DayOfWeek).MaxBy(o => o.Count());
-        if (topDay != null)
-        {
-            stats.AppendLine(context.Localize("profile.mostActiveDay",
-                ("day", context.Localizer.DayName(topDay.Key))));
-        }
-
-        if (stats.Length > 0 && userInfo.Playcount > 0)
+        var showStats = stats.Length > 0 && userInfo.Playcount > 0;
+        if (showStats || playHistoryGraph != null)
         {
             response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
-            response.ComponentsContainer.AddComponent(new TextDisplayProperties(stats.ToString()));
+
+            if (showStats)
+            {
+                response.ComponentsContainer.AddComponent(new TextDisplayProperties(stats.ToString()));
+            }
+
+            if (playHistoryGraph != null)
+            {
+                response.ComponentsContainer.AddComponent(playHistoryGraph);
+            }
         }
 
         var featuredHistory =
