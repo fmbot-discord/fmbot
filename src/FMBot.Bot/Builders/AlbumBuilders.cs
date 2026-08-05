@@ -55,6 +55,7 @@ public class AlbumBuilders
     private readonly AppleMusicVideoService _appleMusicVideoService;
     private readonly FriendsService _friendsService;
     private readonly OpenAiService _openAiService;
+    private readonly GraphService _graphService;
 
     public AlbumBuilders(UserService userService,
         GuildService guildService,
@@ -75,7 +76,8 @@ public class AlbumBuilders
         FeaturedService featuredService,
         MusicDataFactory musicDataFactory, AppleMusicVideoService appleMusicVideoService,
         FriendsService friendsService,
-        OpenAiService openAiService)
+        OpenAiService openAiService,
+        GraphService graphService)
     {
         this._userService = userService;
         this._guildService = guildService;
@@ -98,6 +100,7 @@ public class AlbumBuilders
         this._appleMusicVideoService = appleMusicVideoService;
         this._friendsService = friendsService;
         this._openAiService = openAiService;
+        this._graphService = graphService;
     }
 
     public async Task<ResponseModel> AlbumAsync(ContextModel context,
@@ -225,103 +228,7 @@ public class AlbumBuilders
             response.ComponentsContainer.AddComponent(new TextDisplayProperties(albumDescription));
         }
 
-        // === Section 3: User stats ===
-        if (albumSearch.Album.UserPlaycount.HasValue)
-        {
-            var correctPlaycountTask = this._updateService.CorrectUserAlbumPlaycount(context.ContextUser.UserId,
-                albumSearch.Album.ArtistName,
-                albumSearch.Album.AlbumName, albumSearch.Album.UserPlaycount.Value);
-            var recentPlaycountsTask = this._playService.GetRecentAlbumPlaycounts(
-                context.ContextUser.UserId, albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
-
-            Task<DateTime?> firstPlayTask = null;
-            Task<DateTime?> lastPlayTask = null;
-            if (context.ContextUser.UserType != UserType.User && albumSearch.Album.UserPlaycount > 0)
-            {
-                firstPlayTask = this._playService.GetAlbumFirstPlayDate(context.ContextUser.UserId,
-                    albumSearch.Album.ArtistName, albumSearch.Album.AlbumName);
-                lastPlayTask = this._playService.GetAlbumLastPlayDate(context.ContextUser.UserId,
-                    albumSearch.Album.ArtistName, albumSearch.Album.AlbumName);
-            }
-
-            await correctPlaycountTask;
-            var recentPlaycounts = await recentPlaycountsTask;
-            var userStats = new StringBuilder();
-
-            var playsLine = recentPlaycounts.month > 0
-                ? context.LocalizeCount("album.playsByLastMonth", albumSearch.Album.UserPlaycount.Value,
-                    ("user", userTitle),
-                    ("month", recentPlaycounts.month.Format(context.NumberFormat)))
-                : context.LocalizeCount("album.playsBy", albumSearch.Album.UserPlaycount.Value,
-                    ("user", userTitle));
-
-            userStats.AppendLine(playsLine);
-
-            if (albumSearch.Album.AlbumTracks != null && albumSearch.Album.AlbumTracks.Count != 0 && artistUserTracks.Count != 0)
-            {
-                var listeningTime = await this._timeService.GetAllTimePlayTimeForAlbum(albumSearch.Album.AlbumTracks,
-                    artistUserTracks, albumSearch.Album.UserPlaycount.Value);
-                if (context.ContextUser.TotalPlaycount is > 0 && albumSearch.Album.UserPlaycount is >= 30)
-                {
-                    userStats.Append(context.Localize("album.listeningTimePercentage",
-                        ("time", context.Localizer.LongListeningTime(listeningTime)),
-                        ("percentage", ((decimal)albumSearch.Album.UserPlaycount.Value / context.ContextUser.TotalPlaycount.Value).FormatPercentage(context.NumberFormat))));
-                }
-                else
-                {
-                    userStats.Append(context.Localize("album.listeningTime",
-                        ("time", context.Localizer.LongListeningTime(listeningTime))));
-                }
-                userStats.AppendLine();
-
-                if (albumSearch.Album.AlbumTracks.Count > 1 && SupporterService.IsSupporter(userSettings?.UserType))
-                {
-                    var tracksHeard = albumSearch.Album.AlbumTracks.Count(t =>
-                        artistUserTracks.Any(ut => StringExtensions.SanitizeTrackNameForComparison(t.TrackName)
-                            .Equals(StringExtensions.SanitizeTrackNameForComparison(ut.Name))));
-                    userStats.AppendLine(context.Localize("album.tracksListened",
-                        ("heard", tracksHeard.Format(context.NumberFormat)),
-                        ("total", albumSearch.Album.AlbumTracks.Count.Format(context.NumberFormat))));
-                }
-            }
-
-            if (firstPlayTask != null)
-            {
-                var firstPlay = await firstPlayTask;
-                if (firstPlay != null)
-                {
-                    var firstListenValue = ((DateTimeOffset)firstPlay).ToUnixTimeSeconds();
-                    userStats.AppendLine(context.Localize("album.discovered", ("date", $"<t:{firstListenValue}:D>")));
-                }
-
-                if (lastPlayTask != null)
-                {
-                    var lastPlay = await lastPlayTask;
-                    if (lastPlay != null && (firstPlay == null || lastPlay.Value.Date > firstPlay.Value.Date))
-                    {
-                        var lastListenValue = ((DateTimeOffset)lastPlay).ToUnixTimeSeconds();
-                        userStats.AppendLine(context.Localize("album.lastListened", ("date", $"<t:{lastListenValue}:D>")));
-                    }
-                }
-            }
-            else
-            {
-                var randomHintNumber = new Random().Next(0, Constants.SupporterPromoChance);
-                if (randomHintNumber == 1 &&
-                    this._supporterService.ShowSupporterPromotionalMessage(context.ContextUser.UserType,
-                        context.DiscordGuild?.Id))
-                {
-                    this._supporterService.SetGuildSupporterPromoCache(context.DiscordGuild?.Id);
-                    userStats.AppendLine(context.Localize("album.supporterDiscoveryPromo",
-                        ("url", Constants.GetSupporterOverviewLink)));
-                }
-            }
-
-            response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
-            response.ComponentsContainer.AddComponent(new TextDisplayProperties(userStats.ToString().TrimEnd()));
-        }
-
-        // === Section 4: Server + global stats ===
+        // === Section 3: Server + global stats ===
         var statsSection = new StringBuilder();
 
         if (context.DiscordGuild != null)
@@ -381,6 +288,114 @@ public class AlbumBuilders
 
         response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
         response.ComponentsContainer.AddComponent(new TextDisplayProperties(statsSection.ToString().TrimEnd()));
+
+        // === Section 4: User stats ===
+        if (albumSearch.Album.UserPlaycount.HasValue)
+        {
+            var correctPlaycountTask = this._updateService.CorrectUserAlbumPlaycount(context.ContextUser.UserId,
+                albumSearch.Album.ArtistName,
+                albumSearch.Album.AlbumName, albumSearch.Album.UserPlaycount.Value);
+            var recentPlaycountsTask = this._playService.GetRecentAlbumPlaycounts(
+                context.ContextUser.UserId, albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
+
+            Task<List<DateTime>> playHistoryTask = null;
+            Task<DateTime?> lastPlayTask = null;
+            if (context.ContextUser.UserType != UserType.User && albumSearch.Album.UserPlaycount > 0)
+            {
+                playHistoryTask = this._playService.GetAlbumPlayTimestamps(context.ContextUser.UserId,
+                    albumSearch.Album.ArtistName, albumSearch.Album.AlbumName);
+                lastPlayTask = this._playService.GetAlbumLastPlayDate(context.ContextUser.UserId,
+                    albumSearch.Album.ArtistName, albumSearch.Album.AlbumName);
+            }
+
+            await correctPlaycountTask;
+            var recentPlaycounts = await recentPlaycountsTask;
+            var userStats = new StringBuilder();
+
+            var playsLine = recentPlaycounts.month > 0
+                ? context.LocalizeCount("album.playsByLastMonth", albumSearch.Album.UserPlaycount.Value,
+                    ("user", userTitle),
+                    ("month", recentPlaycounts.month.Format(context.NumberFormat)))
+                : context.LocalizeCount("album.playsBy", albumSearch.Album.UserPlaycount.Value,
+                    ("user", userTitle));
+
+            userStats.AppendLine(playsLine);
+
+            if (albumSearch.Album.AlbumTracks != null && albumSearch.Album.AlbumTracks.Count != 0 && artistUserTracks.Count != 0)
+            {
+                var listeningTime = await this._timeService.GetAllTimePlayTimeForAlbum(albumSearch.Album.AlbumTracks,
+                    artistUserTracks, albumSearch.Album.UserPlaycount.Value);
+                if (context.ContextUser.TotalPlaycount is > 0 && albumSearch.Album.UserPlaycount is >= 30)
+                {
+                    userStats.Append(context.Localize("album.listeningTimePercentage",
+                        ("time", context.Localizer.LongListeningTime(listeningTime)),
+                        ("percentage", ((decimal)albumSearch.Album.UserPlaycount.Value / context.ContextUser.TotalPlaycount.Value).FormatPercentage(context.NumberFormat))));
+                }
+                else
+                {
+                    userStats.Append(context.Localize("album.listeningTime",
+                        ("time", context.Localizer.LongListeningTime(listeningTime))));
+                }
+                userStats.AppendLine();
+
+                if (albumSearch.Album.AlbumTracks.Count > 1 && SupporterService.IsSupporter(userSettings?.UserType))
+                {
+                    var tracksHeard = albumSearch.Album.AlbumTracks.Count(t =>
+                        artistUserTracks.Any(ut => StringExtensions.SanitizeTrackNameForComparison(t.TrackName)
+                            .Equals(StringExtensions.SanitizeTrackNameForComparison(ut.Name))));
+                    userStats.AppendLine(context.Localize("album.tracksListened",
+                        ("heard", tracksHeard.Format(context.NumberFormat)),
+                        ("total", albumSearch.Album.AlbumTracks.Count.Format(context.NumberFormat))));
+                }
+            }
+
+            MediaGalleryProperties playHistoryGraph = null;
+            if (playHistoryTask != null)
+            {
+                var playHistory = await playHistoryTask;
+                var firstPlay = playHistory.Count > 0 ? playHistory[0] : (DateTime?)null;
+                if (firstPlay != null)
+                {
+                    var firstListenValue = ((DateTimeOffset)firstPlay).ToUnixTimeSeconds();
+                    var lastPlay = lastPlayTask != null ? await lastPlayTask : null;
+
+                    if (lastPlay != null && lastPlay.Value.Date > firstPlay.Value.Date)
+                    {
+                        var lastListenValue = ((DateTimeOffset)lastPlay).ToUnixTimeSeconds();
+                        userStats.AppendLine(context.Localize("album.discoveredLast",
+                            ("discovered", $"<t:{firstListenValue}:D>"), ("last", $"<t:{lastListenValue}:D>")));
+                    }
+                    else
+                    {
+                        userStats.AppendLine(context.Localize("album.discovered",
+                            ("date", $"<t:{firstListenValue}:D>")));
+                    }
+                }
+
+                playHistoryGraph = await this._graphService.BuildPlayHistoryGraph(context, response, playHistory,
+                    "album-plays.png");
+            }
+            else
+            {
+                var randomHintNumber = new Random().Next(0, Constants.SupporterPromoChance);
+                if (randomHintNumber == 1 &&
+                    this._supporterService.ShowSupporterPromotionalMessage(context.ContextUser.UserType,
+                        context.DiscordGuild?.Id))
+                {
+                    this._supporterService.SetGuildSupporterPromoCache(context.DiscordGuild?.Id);
+                    userStats.AppendLine(context.Localize("album.supporterDiscoveryPromo",
+                        ("url", Constants.GetSupporterOverviewLink)));
+                }
+            }
+
+            response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
+            response.ComponentsContainer.AddComponent(new TextDisplayProperties(userStats.ToString().TrimEnd()));
+
+            if (playHistoryGraph != null)
+            {
+                response.ComponentsContainer.AddComponent(playHistoryGraph);
+            }
+        }
 
         // === Section 5: Discogs collection ===
         if (context.ContextUser.UserDiscogs != null && context.ContextUser.DiscogsReleases.Any())

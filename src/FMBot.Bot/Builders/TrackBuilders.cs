@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -56,6 +56,7 @@ public class TrackBuilders
     private readonly EurovisionService _eurovisionService;
     private readonly FriendsService _friendsService;
     private readonly OpenAiService _openAiService;
+    private readonly GraphService _graphService;
 
     public TrackBuilders(UserService userService,
         GuildService guildService,
@@ -80,7 +81,8 @@ public class TrackBuilders
         DiscordSkuService discordSkuService,
         EurovisionService eurovisionService,
         FriendsService friendsService,
-        OpenAiService openAiService)
+        OpenAiService openAiService,
+        GraphService graphService)
     {
         this._userService = userService;
         this._guildService = guildService;
@@ -106,6 +108,7 @@ public class TrackBuilders
         this._supporterService = supporterService;
         this._friendsService = friendsService;
         this._openAiService = openAiService;
+        this._graphService = graphService;
     }
 
     public async Task<ResponseModel> TrackAsync(
@@ -142,11 +145,11 @@ public class TrackBuilders
                 trackSearch.Track.ArtistName, trackSearch.Track.AlbumName);
         }
 
-        Task<DateTime?> firstPlayTask = null;
+        Task<List<DateTime>> playHistoryTask = null;
         Task<DateTime?> lastPlayTask = null;
         if (context.ContextUser.UserType != UserType.User && trackSearch.Track.UserPlaycount > 0)
         {
-            firstPlayTask = this._playService.GetTrackFirstPlayDate(context.ContextUser.UserId,
+            playHistoryTask = this._playService.GetTrackPlayTimestamps(context.ContextUser.UserId,
                 trackSearch.Track.ArtistName, trackSearch.Track.TrackName);
             lastPlayTask = this._playService.GetTrackLastPlayDate(context.ContextUser.UserId,
                 trackSearch.Track.ArtistName, trackSearch.Track.TrackName);
@@ -282,84 +285,55 @@ public class TrackBuilders
             response.ComponentsContainer.AddComponent(new TextDisplayProperties(trackDescription));
         }
 
-        if (trackSearch.Track.UserPlaycount.HasValue)
+        var infoSection = new StringBuilder();
+
+        var trackDuration = dbTrack?.DurationMs ?? trackSearch.Track.Duration;
+        if (trackDuration is > 0)
         {
-            var userStats = new StringBuilder();
+            infoSection.AppendLine(context.Localize("track.duration",
+                ("duration", StringExtensions.GetTrackLength(trackDuration.GetValueOrDefault()))));
+        }
 
-            var playsLine = context.LocalizeCount("track.playsByUser", trackSearch.Track.UserPlaycount.Value,
-                ("user", userTitle));
+        if (dbTrack != null && !string.IsNullOrEmpty(dbTrack.SpotifyId))
+        {
+            var pitch = StringExtensions.KeyIntToPitchString(dbTrack.Key.GetValueOrDefault());
 
-            if (recentPlaycountsTask != null)
+            if (dbTrack.Tempo.HasValue)
             {
-                var recentPlaycounts = await recentPlaycountsTask;
-                if (recentPlaycounts.month > 0)
-                {
-                    playsLine = context.LocalizeCount("track.playsByUserLastMonth",
-                        trackSearch.Track.UserPlaycount.Value, ("user", userTitle),
-                        ("month", recentPlaycounts.month.Format(context.NumberFormat)));
-                }
-            }
-
-            userStats.AppendLine(playsLine);
-
-            if (listeningTimeTask != null)
-            {
-                var listeningTime = await listeningTimeTask;
-
-                if (context.ContextUser.TotalPlaycount is > 0 && trackSearch.Track.UserPlaycount is >= 30)
-                {
-                    userStats.Append(context.Localize("track.listeningTimeWithPercentage",
-                        ("time", context.Localizer.LongListeningTime(listeningTime)),
-                        ("percentage", ((decimal)trackSearch.Track.UserPlaycount.Value / context.ContextUser.TotalPlaycount.Value).FormatPercentage(context.NumberFormat))));
-                }
-                else
-                {
-                    userStats.Append(context.Localize("track.listeningTime",
-                        ("time", context.Localizer.LongListeningTime(listeningTime))));
-                }
-
-                userStats.AppendLine();
-            }
-            else if (context.ContextUser.TotalPlaycount is > 0 && trackSearch.Track.UserPlaycount is >= 30)
-            {
-                userStats.AppendLine(context.Localize("track.percentageOfAllPlays",
-                    ("percentage", ((decimal)trackSearch.Track.UserPlaycount.Value / context.ContextUser.TotalPlaycount.Value).FormatPercentage(context.NumberFormat))));
-            }
-
-            if (firstPlayTask != null)
-            {
-                var firstPlay = await firstPlayTask;
-                if (firstPlay != null)
-                {
-                    var firstListenValue = ((DateTimeOffset)firstPlay).ToUnixTimeSeconds();
-                    userStats.AppendLine(context.Localize("track.discovered", ("date", $"<t:{firstListenValue}:D>")));
-                }
-
-                if (lastPlayTask != null)
-                {
-                    var lastPlay = await lastPlayTask;
-                    if (lastPlay != null && (firstPlay == null || lastPlay.Value.Date > firstPlay.Value.Date))
-                    {
-                        var lastListenValue = ((DateTimeOffset)lastPlay).ToUnixTimeSeconds();
-                        userStats.AppendLine(context.Localize("track.lastListened", ("date", $"<t:{lastListenValue}:D>")));
-                    }
-                }
+                infoSection.AppendLine(context.Localize("track.keyBpm",
+                    ("key", pitch), ("bpm", dbTrack.Tempo.Value.ToString("0.0"))));
             }
             else
             {
-                var randomHintNumber = new Random().Next(0, Constants.SupporterPromoChance);
-                if (randomHintNumber == 1 &&
-                    this._supporterService.ShowSupporterPromotionalMessage(context.ContextUser.UserType,
-                        context.DiscordGuild?.Id))
-                {
-                    this._supporterService.SetGuildSupporterPromoCache(context.DiscordGuild?.Id);
-                    userStats.AppendLine(context.Localize("track.supporterDiscoveryPromo",
-                        ("url", Constants.GetSupporterOverviewLink)));
-                }
+                infoSection.AppendLine(context.Localize("track.key", ("key", pitch)));
             }
 
+            if (dbTrack.Danceability.HasValue && dbTrack.Energy.HasValue &&
+                dbTrack.Instrumentalness.HasValue && dbTrack.Acousticness.HasValue &&
+                dbTrack.Speechiness.HasValue && dbTrack.Liveness.HasValue && dbTrack.Valence.HasValue)
+            {
+                var danceability = ((decimal)dbTrack.Danceability).ToString("0%");
+                var energetic = ((decimal)dbTrack.Energy).ToString("0%");
+                var acoustic = ((decimal)dbTrack.Acousticness).ToString("0%");
+                var instrumental = ((decimal)dbTrack.Instrumentalness).ToString("0%");
+                var speechful = ((decimal)dbTrack.Speechiness).ToString("0%");
+                var liveness = ((decimal)dbTrack.Liveness).ToString("0%");
+                var valence = ((decimal)dbTrack.Valence).ToString("0%");
+
+                infoSection.AppendLine(context.Localize("track.danceableEnergetic",
+                    ("danceable", danceability), ("energetic", energetic)));
+                infoSection.AppendLine(context.Localize("track.acousticInstrumental",
+                    ("acoustic", acoustic), ("instrumental", instrumental)));
+                infoSection.AppendLine(context.Localize("track.speechfulLiveness",
+                    ("speechful", speechful), ("liveness", liveness)));
+                infoSection.Append(context.Localize("track.happy", ("happy", valence)));
+            }
+        }
+
+        if (infoSection.Length > 0)
+        {
             response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
-            response.ComponentsContainer.AddComponent(new TextDisplayProperties(userStats.ToString().TrimEnd()));
+            response.ComponentsContainer.AddComponent(new TextDisplayProperties(infoSection.ToString().TrimEnd()));
         }
 
         var statsSection = new StringBuilder();
@@ -421,55 +395,98 @@ public class TrackBuilders
         response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
         response.ComponentsContainer.AddComponent(new TextDisplayProperties(statsSection.ToString().TrimEnd()));
 
-        var infoSection = new StringBuilder();
-
-        var trackDuration = dbTrack?.DurationMs ?? trackSearch.Track.Duration;
-        if (trackDuration is > 0)
+        if (trackSearch.Track.UserPlaycount.HasValue)
         {
-            infoSection.AppendLine(context.Localize("track.duration",
-                ("duration", StringExtensions.GetTrackLength(trackDuration.GetValueOrDefault()))));
-        }
+            var userStats = new StringBuilder();
 
-        if (dbTrack != null && !string.IsNullOrEmpty(dbTrack.SpotifyId))
-        {
-            var pitch = StringExtensions.KeyIntToPitchString(dbTrack.Key.GetValueOrDefault());
+            var playsLine = context.LocalizeCount("track.playsByUser", trackSearch.Track.UserPlaycount.Value,
+                ("user", userTitle));
 
-            if (dbTrack.Tempo.HasValue)
+            if (recentPlaycountsTask != null)
             {
-                infoSection.AppendLine(context.Localize("track.keyBpm",
-                    ("key", pitch), ("bpm", dbTrack.Tempo.Value.ToString("0.0"))));
+                var recentPlaycounts = await recentPlaycountsTask;
+                if (recentPlaycounts.month > 0)
+                {
+                    playsLine = context.LocalizeCount("track.playsByUserLastMonth",
+                        trackSearch.Track.UserPlaycount.Value, ("user", userTitle),
+                        ("month", recentPlaycounts.month.Format(context.NumberFormat)));
+                }
+            }
+
+            userStats.AppendLine(playsLine);
+
+            if (listeningTimeTask != null)
+            {
+                var listeningTime = await listeningTimeTask;
+
+                if (context.ContextUser.TotalPlaycount is > 0 && trackSearch.Track.UserPlaycount is >= 30)
+                {
+                    userStats.Append(context.Localize("track.listeningTimeWithPercentage",
+                        ("time", context.Localizer.LongListeningTime(listeningTime)),
+                        ("percentage", ((decimal)trackSearch.Track.UserPlaycount.Value / context.ContextUser.TotalPlaycount.Value).FormatPercentage(context.NumberFormat))));
+                }
+                else
+                {
+                    userStats.Append(context.Localize("track.listeningTime",
+                        ("time", context.Localizer.LongListeningTime(listeningTime))));
+                }
+
+                userStats.AppendLine();
+            }
+
+            MediaGalleryProperties playHistoryGraph = null;
+            if (playHistoryTask != null)
+            {
+                var playHistory = await playHistoryTask;
+                var firstPlay = playHistory.Count > 0 ? playHistory[0] : (DateTime?)null;
+                if (firstPlay != null)
+                {
+                    var firstListenValue = ((DateTimeOffset)firstPlay).ToUnixTimeSeconds();
+                    var lastPlay = lastPlayTask != null ? await lastPlayTask : null;
+
+                    if (lastPlay != null && lastPlay.Value.Date > firstPlay.Value.Date)
+                    {
+                        var lastListenValue = ((DateTimeOffset)lastPlay).ToUnixTimeSeconds();
+                        userStats.AppendLine(context.Localize("track.discoveredLast",
+                            ("discovered", $"<t:{firstListenValue}:D>"), ("last", $"<t:{lastListenValue}:D>")));
+                    }
+                    else
+                    {
+                        userStats.AppendLine(context.Localize("track.discovered",
+                            ("date", $"<t:{firstListenValue}:D>")));
+                    }
+                }
+
+                playHistoryGraph = await this._graphService.BuildPlayHistoryGraph(context, response, playHistory,
+                    "track-plays.png");
             }
             else
             {
-                infoSection.AppendLine(context.Localize("track.key", ("key", pitch)));
+                var randomHintNumber = new Random().Next(0, Constants.SupporterPromoChance);
+                if (randomHintNumber == 1 &&
+                    this._supporterService.ShowSupporterPromotionalMessage(context.ContextUser.UserType,
+                        context.DiscordGuild?.Id))
+                {
+                    this._supporterService.SetGuildSupporterPromoCache(context.DiscordGuild?.Id);
+                    userStats.AppendLine(context.Localize("track.supporterDiscoveryPromo",
+                        ("url", Constants.GetSupporterOverviewLink)));
+                }
             }
 
-            if (dbTrack.Danceability.HasValue && dbTrack.Energy.HasValue &&
-                dbTrack.Instrumentalness.HasValue && dbTrack.Acousticness.HasValue &&
-                dbTrack.Speechiness.HasValue && dbTrack.Liveness.HasValue && dbTrack.Valence.HasValue)
+            if (listeningTimeTask == null && context.ContextUser.TotalPlaycount is > 0 &&
+                trackSearch.Track.UserPlaycount is >= 30)
             {
-                var danceability = ((decimal)dbTrack.Danceability).ToString("0%");
-                var energetic = ((decimal)dbTrack.Energy).ToString("0%");
-                var acoustic = ((decimal)dbTrack.Acousticness).ToString("0%");
-                var instrumental = ((decimal)dbTrack.Instrumentalness).ToString("0%");
-                var speechful = ((decimal)dbTrack.Speechiness).ToString("0%");
-                var liveness = ((decimal)dbTrack.Liveness).ToString("0%");
-                var valence = ((decimal)dbTrack.Valence).ToString("0%");
-
-                infoSection.AppendLine(context.Localize("track.danceableEnergetic",
-                    ("danceable", danceability), ("energetic", energetic)));
-                infoSection.AppendLine(context.Localize("track.acousticInstrumental",
-                    ("acoustic", acoustic), ("instrumental", instrumental)));
-                infoSection.AppendLine(context.Localize("track.speechfulLiveness",
-                    ("speechful", speechful), ("liveness", liveness)));
-                infoSection.Append(context.Localize("track.happy", ("happy", valence)));
+                userStats.AppendLine(context.Localize("track.percentageOfAllPlays",
+                    ("percentage", ((decimal)trackSearch.Track.UserPlaycount.Value / context.ContextUser.TotalPlaycount.Value).FormatPercentage(context.NumberFormat))));
             }
-        }
 
-        if (infoSection.Length > 0)
-        {
             response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
-            response.ComponentsContainer.AddComponent(new TextDisplayProperties(infoSection.ToString().TrimEnd()));
+            response.ComponentsContainer.AddComponent(new TextDisplayProperties(userStats.ToString().TrimEnd()));
+
+            if (playHistoryGraph != null)
+            {
+                response.ComponentsContainer.AddComponent(playHistoryGraph);
+            }
         }
 
         EurovisionEntry eurovisionEntry = null;

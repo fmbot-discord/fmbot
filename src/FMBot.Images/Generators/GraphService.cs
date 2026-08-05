@@ -288,12 +288,11 @@ public class GraphService
         }
 
         var lastIndex = graph.Points.Count - 1;
-        var ticks = Math.Min(graph.MaxXTicks, graph.Points.Count);
+        var stride = lastIndex / graph.MaxXTicks + 1;
 
         var used = new HashSet<string>();
-        for (var tick = ticks - 1; tick >= 0; tick--)
+        for (var index = lastIndex; index >= 0; index -= stride)
         {
-            var index = (int)Math.Round((double)tick * lastIndex / (ticks - 1));
             var label = FormatDate(graph, graph.Points[index].Date);
 
             if (string.IsNullOrWhiteSpace(label) || !used.Add(label))

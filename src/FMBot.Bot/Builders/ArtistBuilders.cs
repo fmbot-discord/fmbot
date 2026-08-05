@@ -145,11 +145,11 @@ public class ArtistBuilders
         var userTitleTask = this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
         var featuredHistoryTask = this._featuredService.GetArtistFeaturedHistory(artistSearch.Artist.ArtistName);
 
-        Task<DateTime?> firstPlayTask = null;
+        Task<List<DateTime>> playHistoryTask = null;
         Task<DateTime?> lastPlayTask = null;
         if (context.ContextUser.UserType != UserType.User && artistSearch.Artist.UserPlaycount > 0)
         {
-            firstPlayTask = this._playService.GetArtistFirstPlayDate(context.ContextUser.UserId,
+            playHistoryTask = this._playService.GetArtistPlayTimestamps(context.ContextUser.UserId,
                 artistSearch.Artist.ArtistName);
             lastPlayTask = this._playService.GetArtistLastPlayDate(context.ContextUser.UserId,
                 artistSearch.Artist.ArtistName);
@@ -294,6 +294,7 @@ public class ArtistBuilders
             fullArtist.Location != null || fullArtist.Type != null || fullArtist.StartDate.HasValue;
 
         StringBuilder userStats = null;
+        MediaGalleryProperties playHistoryGraph = null;
         if (artistSearch.Artist.UserPlaycount.HasValue)
         {
             var correctPlaycountTask = this._updateService.CorrectUserArtistPlaycount(context.ContextUser.UserId,
@@ -316,30 +317,30 @@ public class ArtistBuilders
 
             userStats.AppendLine(playsLine);
 
-            if (context.ContextUser.TotalPlaycount is > 0 && artistSearch.Artist.UserPlaycount is >= 30)
+            if (playHistoryTask != null)
             {
-                userStats.AppendLine(context.Localize("artist.percentOfAllPlays",
-                    ("percentage", ((decimal)artistSearch.Artist.UserPlaycount.Value / context.ContextUser.TotalPlaycount.Value).FormatPercentage(context.NumberFormat))));
-            }
-
-            if (firstPlayTask != null)
-            {
-                var firstPlay = await firstPlayTask;
+                var playHistory = await playHistoryTask;
+                var firstPlay = playHistory.Count > 0 ? playHistory[0] : (DateTime?)null;
                 if (firstPlay != null)
                 {
                     var firstListenValue = ((DateTimeOffset)firstPlay).ToUnixTimeSeconds();
-                    userStats.AppendLine(context.Localize("artist.discoveredDate", ("date", $"<t:{firstListenValue}:D>")));
-                }
+                    var lastPlay = lastPlayTask != null ? await lastPlayTask : null;
 
-                if (lastPlayTask != null)
-                {
-                    var lastPlay = await lastPlayTask;
-                    if (lastPlay != null && (firstPlay == null || lastPlay.Value.Date > firstPlay.Value.Date))
+                    if (lastPlay != null && lastPlay.Value.Date > firstPlay.Value.Date)
                     {
                         var lastListenValue = ((DateTimeOffset)lastPlay).ToUnixTimeSeconds();
-                        userStats.AppendLine(context.Localize("artist.lastListenedDate", ("date", $"<t:{lastListenValue}:D>")));
+                        userStats.AppendLine(context.Localize("artist.discoveredLastDate",
+                            ("discovered", $"<t:{firstListenValue}:D>"), ("last", $"<t:{lastListenValue}:D>")));
+                    }
+                    else
+                    {
+                        userStats.AppendLine(context.Localize("artist.discoveredDate",
+                            ("date", $"<t:{firstListenValue}:D>")));
                     }
                 }
+
+                playHistoryGraph = await this._graphService.BuildPlayHistoryGraph(context, response, playHistory,
+                    "artist-plays.png");
             }
             else
             {
@@ -354,10 +355,17 @@ public class ArtistBuilders
                 }
             }
 
+            if (context.ContextUser.TotalPlaycount is > 0 && artistSearch.Artist.UserPlaycount is >= 30)
+            {
+                userStats.AppendLine(context.Localize("artist.percentOfAllPlays",
+                    ("percentage", ((decimal)artistSearch.Artist.UserPlaycount.Value / context.ContextUser.TotalPlaycount.Value).FormatPercentage(context.NumberFormat))));
+            }
+
             await correctPlaycountTask;
         }
 
-        if (!hasMusicBrainzInfo && showThumbnail && userStats != null)
+        var userStatsInHeader = !hasMusicBrainzInfo && showThumbnail && userStats != null;
+        if (userStatsInHeader)
         {
             headerSection.AppendLine();
             headerSection.Append(userStats.ToString().TrimEnd());
@@ -374,19 +382,17 @@ public class ArtistBuilders
             response.ComponentsContainer.AddComponent(new TextDisplayProperties(headerSection.ToString().TrimEnd()));
         }
 
+        if (userStatsInHeader && playHistoryGraph != null)
+        {
+            response.ComponentsContainer.AddComponent(playHistoryGraph);
+        }
+
         var artistDescription = await aiDescriptionTask;
         if (!string.IsNullOrWhiteSpace(artistDescription))
         {
             response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
             response.ComponentsContainer.AddComponent(new TextDisplayProperties(artistDescription));
         }
-
-        if (userStats != null && (hasMusicBrainzInfo || !showThumbnail))
-        {
-            response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
-            response.ComponentsContainer.AddComponent(new TextDisplayProperties(userStats.ToString().TrimEnd()));
-        }
-
 
         var statsSection = new StringBuilder();
 
@@ -438,6 +444,17 @@ public class ArtistBuilders
         response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
         response.ComponentsContainer.AddComponent(new TextDisplayProperties(statsSection.ToString().TrimEnd()));
 
+        if (userStats != null && !userStatsInHeader)
+        {
+            response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
+            response.ComponentsContainer.AddComponent(new TextDisplayProperties(userStats.ToString().TrimEnd()));
+
+            if (playHistoryGraph != null)
+            {
+                response.ComponentsContainer.AddComponent(playHistoryGraph);
+            }
+        }
+
         if (fullArtist.ArtistGenres != null && fullArtist.ArtistGenres.Any())
         {
             response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
@@ -446,16 +463,18 @@ public class ArtistBuilders
         }
 
         var viewingUserId = userSettings.DiscordUserId;
-        var navRow = new ActionRowProperties()
-            .WithButton(context.Localize("shared.overview"),
+        var navRow = new ActionRowProperties();
+        navRow.AddComponents(
+            new ButtonProperties(
                 $"{InteractionConstants.Artist.Overview}:{fullArtist.Id}:{viewingUserId}:{context.ContextUser.DiscordUserId}",
-                style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("\ud83d\udcca"))
-            .WithButton(context.Localize("shared.buttons.tracks"),
+                context.Localize("shared.overview"), EmojiProperties.Standard("\ud83d\udcca"),
+                ButtonStyle.Secondary),
+            new ButtonProperties(
                 $"{InteractionConstants.Artist.Tracks}:{fullArtist.Id}:{viewingUserId}:{context.ContextUser.DiscordUserId}:",
-                style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("\ud83c\udfb6"))
-            .WithButton(context.Localize("artist.buttons.albums"),
+                EmojiProperties.Standard("\ud83c\udfb6"), ButtonStyle.Secondary),
+            new ButtonProperties(
                 $"{InteractionConstants.Artist.Albums}:{fullArtist.Id}:{viewingUserId}:{context.ContextUser.DiscordUserId}:",
-                style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("\ud83d\udcbd"));
+                EmojiProperties.Standard("\ud83d\udcbd"), ButtonStyle.Secondary));
         response.ComponentsContainer.WithActionRow(navRow);
 
         var socialRow = new ActionRowProperties();
@@ -565,11 +584,10 @@ public class ArtistBuilders
                 ("user", await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)));
         }
 
-        Task<List<DateTime>> playHistoryTask = null;
-        List<DateTime> playHistory = null;
+        Task<DateTime?> firstPlayTask = null;
         if (user.UserType != UserType.User && artistSearch.Artist.UserPlaycount > 0)
         {
-            playHistoryTask = this._playService.GetArtistPlayTimestamps(user.UserId, artistSearch.Artist.ArtistName);
+            firstPlayTask = this._playService.GetArtistFirstPlayDate(user.UserId, artistSearch.Artist.ArtistName);
         }
 
         Task<(int week, int month)> recentPlaycountsTask = null;
@@ -619,12 +637,12 @@ public class ArtistBuilders
                 : context.LocalizeCount("artist.overview.plays",
                     artistSearch.Artist.UserPlaycount.GetValueOrDefault()));
 
-            if (playHistoryTask != null)
+            if (firstPlayTask != null)
             {
-                playHistory = await playHistoryTask;
-                if (playHistory.Count > 0)
+                var firstPlay = await firstPlayTask;
+                if (firstPlay != null)
                 {
-                    var firstListenValue = ((DateTimeOffset)playHistory[0]).ToUnixTimeSeconds();
+                    var firstListenValue = ((DateTimeOffset)firstPlay).ToUnixTimeSeconds();
                     headerSection.AppendLine(context.Localize("artist.discoveredDate",
                         ("date", $"<t:{firstListenValue}:D>")));
                 }
@@ -658,11 +676,6 @@ public class ArtistBuilders
             response.ComponentsContainer.AddComponent(new TextDisplayProperties(headerSection.ToString().TrimEnd()));
         }
 
-        var playHistoryGraph = playHistory is { Count: > 0 }
-            ? await this._graphService.BuildPlayHistoryGraph(context, response, playHistory, "artist-plays.png")
-            : null;
-        var listLength = playHistoryGraph != null ? 5 : 8;
-
         var artistTracksButton = false;
         var artistAlbumsButton = false;
         if (artistSearch.Artist.UserPlaycount > 0)
@@ -679,7 +692,7 @@ public class ArtistBuilders
                     : context.Localize("artist.overview.topTracksSelf"));
 
                 var counter = 1;
-                foreach (var track in topTracks.Take(listLength))
+                foreach (var track in topTracks.Take(8))
                 {
                     topTracksDescription.AppendLine(
                         $"`{counter}`  **{StringExtensions.Sanitize(StringExtensions.TruncateLongString(track.Name, 40))}** - " +
@@ -702,7 +715,7 @@ public class ArtistBuilders
                     : context.Localize("artist.overview.topAlbumsSelf"));
 
                 var counter = 1;
-                foreach (var album in topAlbums.Take(listLength))
+                foreach (var album in topAlbums.Take(8))
                 {
                     topAlbumsDescription.AppendLine(
                         $"`{counter}`  **{StringExtensions.Sanitize(StringExtensions.TruncateLongString(album.Name, 40))}** - " +
@@ -742,19 +755,9 @@ public class ArtistBuilders
             }
         }
 
-        if (playHistoryGraph != null)
-        {
-            response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
-            response.ComponentsContainer.AddComponent(playHistoryGraph);
-        }
-
         if (fullArtist.ArtistGenres != null && fullArtist.ArtistGenres.Any())
         {
-            if (playHistoryGraph == null)
-            {
-                response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
-            }
-
+            response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
             response.ComponentsContainer.AddComponent(new TextDisplayProperties(
                 $"-# {GenreService.GenresToString(fullArtist.ArtistGenres.ToList())}"));
         }

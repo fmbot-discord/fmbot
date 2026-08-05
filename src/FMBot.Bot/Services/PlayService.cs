@@ -1216,6 +1216,38 @@ public class PlayService
             .TimePlayed;
     }
 
+    public async Task<List<DateTime>> GetAlbumPlayTimestamps(int userId, string artistName, string albumName)
+    {
+        if (albumName == null)
+        {
+            return [];
+        }
+
+        var plays = await this.GetAllUserPlays(userId);
+        return plays
+            .Where(w =>
+                w.ArtistName != null &&
+                w.ArtistName.Equals(artistName, StringComparison.OrdinalIgnoreCase) &&
+                w.AlbumName != null &&
+                w.AlbumName.Equals(albumName, StringComparison.OrdinalIgnoreCase))
+            .Select(s => s.TimePlayed)
+            .OrderBy(o => o)
+            .ToList();
+    }
+
+    public async Task<List<DateTime>> GetTrackPlayTimestamps(int userId, string artistName, string trackName)
+    {
+        var plays = await this.GetAllUserPlays(userId);
+        return plays
+            .Where(w =>
+                w.ArtistName != null &&
+                w.ArtistName.Equals(artistName, StringComparison.OrdinalIgnoreCase) &&
+                w.TrackName.Equals(trackName, StringComparison.OrdinalIgnoreCase))
+            .Select(s => s.TimePlayed)
+            .OrderBy(o => o)
+            .ToList();
+    }
+
     public async Task<DateTime?> GetTrackFirstPlayDate(int userId, string artistName, string trackName)
     {
         var plays = await this.GetAllUserPlays(userId);

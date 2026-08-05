@@ -29,25 +29,13 @@ public static class GraphExtensions
             return null;
         }
 
-        var description = context.Localize(graph.Interval switch
-        {
-            GraphInterval.Year => "shared.playsPerYear",
-            GraphInterval.Month => "shared.playsPerMonth",
-            GraphInterval.Week => "shared.playsPerWeek",
-            _ => "shared.playsPerDay"
-        });
-
         response.Stream = graph.Image;
         response.FileName = fileName;
-        response.FileDescription = description;
 
-        return new MediaGalleryProperties
-        {
+        return
+        [
             new MediaGalleryItemProperties(new ComponentMediaProperties($"attachment://{fileName}"))
-            {
-                Description = description
-            }
-        };
+        ];
     }
 
     private static async Task<SKColor> GetLineColor(ContextModel context, ResponseModel response)

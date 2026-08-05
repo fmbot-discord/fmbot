@@ -49,9 +49,7 @@ public class LocalizationTests
         "jumble.hints.typeArtistCharacter",
         "jumble.hints.typeAlbumArtistPerson", "jumble.hints.typeAlbumArtistGroup",
         "jumble.hints.typeAlbumArtistOrchestra", "jumble.hints.typeAlbumArtistChoir",
-        "jumble.hints.typeAlbumArtistCharacter",
-        "shared.playsPerDay", "shared.playsPerWeek",
-        "shared.playsPerMonth", "shared.playsPerYear"
+        "jumble.hints.typeAlbumArtistCharacter"
     ];
 
     private static readonly string[] DynamicPluralBaseKeys =
@@ -63,7 +61,6 @@ public class LocalizationTests
     private static readonly Dictionary<string, int> KnownDynamicCallSites = new()
     {
         ["AlbumBuilders.cs"] = 1,
-        ["GraphExtensions.cs"] = 1,
         ["TrackBuilders.cs"] = 1,
         ["TemplateBuilders.cs"] = 1,
         ["ContextModel.cs"] = 1,
