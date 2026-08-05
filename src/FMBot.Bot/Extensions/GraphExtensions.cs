@@ -20,7 +20,7 @@ public static class GraphExtensions
     {
         var graph = graphService.RenderPlayHistory(timestamps,
             context.Localizer.Language.GetCultureInfo(),
-            await GetLineColor(context),
+            await GetLineColor(context, response),
             value => value.Format(context.NumberFormat),
             fixedInterval);
 
@@ -50,9 +50,10 @@ public static class GraphExtensions
         };
     }
 
-    private static async Task<SKColor> GetLineColor(ContextModel context)
+    private static async Task<SKColor> GetLineColor(ContextModel context, ResponseModel response)
     {
-        var accentColor = await UserService.GetCustomAccentColor(context.ContextUser, context.DiscordGuild);
+        var accentColor = response.ComponentsContainer?.AccentColor ??
+                          await UserService.GetCustomAccentColor(context.ContextUser, context.DiscordGuild);
 
         return accentColor.HasValue
             ? new SKColor(accentColor.Value.Red, accentColor.Value.Green, accentColor.Value.Blue)

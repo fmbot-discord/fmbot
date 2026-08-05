@@ -1176,7 +1176,8 @@ public class UserBuilder
             userTitle = await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser);
         }
 
-        response.ComponentsContainer.WithAccentColor(DiscordConstants.LastFmColorRed);
+        response.ComponentsContainer.WithAccentColor(
+            await UserService.GetAccentColor(context.ContextUser, context.DiscordGuild));
 
         var initialDescription = new StringBuilder();
 
