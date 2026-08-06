@@ -21,7 +21,7 @@ public class GraphService
     private const float LineWidth = 2.5f;
     private const float DotRadius = 4.5f;
     private const double MinimumPlays = 5;
-    private const int MaxDateTicks = 6;
+    private const int MaxDateTicks = 9;
 
     private static readonly SKColor AxisColor = new(0x8B, 0x9B, 0xA0);
     private static readonly SKColor LabelColor = new(0x93, 0xA1, 0xA6);
