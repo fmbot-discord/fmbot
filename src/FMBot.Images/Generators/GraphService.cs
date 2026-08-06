@@ -322,6 +322,7 @@ public class GraphService
     private static void DrawDateLabels(SKCanvas canvas, LineGraph graph, float[] xPositions, float plotBottom,
         float scale, SKFont font, SKPaint labelPaint)
     {
+        var margin = EdgeMargin * scale;
         var minGap = FontSize * 0.5f * scale;
         var previousRight = float.MinValue;
 
@@ -342,7 +343,7 @@ public class GraphService
 
             var x = xPositions[tick.Index];
             var labelWidth = font.MeasureText(tick.Label, labelPaint);
-            var left = Math.Clamp(x - labelWidth / 2, 0, Math.Max(0, graph.Width - labelWidth));
+            var left = Math.Clamp(x - labelWidth / 2, margin, Math.Max(margin, graph.Width - margin - labelWidth));
 
             if (left < previousRight + minGap)
             {
