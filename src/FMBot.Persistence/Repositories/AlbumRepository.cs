@@ -152,15 +152,16 @@ ORDER BY
 
     -- 2. SCORING: Apply a rebalanced weighted score within each tier
     (
-        -- Holistic similarity on all text fields has the highest weight.
-        similarity(coalesce(name, '') || ' ' || coalesce(artist_name, ''), @searchTerm) * 1.5 +
+        similarity(name, @searchTerm) * 1.0 +
 
-        -- Popularity bonus
-        coalesce(log(popularity + 1), 0) * 0.7 +
+        word_similarity(@searchTerm, name) * 0.5 +
 
-        -- Direct album name similarity
-        similarity(name, @searchTerm) * 0.5
-    ) DESC,
+        word_similarity(@searchTerm, coalesce(name, '') || ' ' || coalesce(artist_name, '')) * 1.0 +
+
+        word_similarity(artist_name, @searchTerm) * 0.5 +
+
+        coalesce(log(popularity + 1), 0) * 1.0
+    ) DESC NULLS LAST,
 
     -- 3. TIE-BREAKERS: Final sorting for records with identical scores
     length(name) ASC,
