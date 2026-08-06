@@ -12,8 +12,8 @@ public partial class SearchBenchmarkTests
 {
     private const string ConnectionStringVariable = "FMBOT_SEARCH_BENCHMARK_DB";
 
-    private const double MinimumAlbumAccuracy = 0.88;
-    private const double MinimumTrackAccuracy = 0.68;
+    private const double MinimumAlbumAccuracy = 0.95;
+    private const double MinimumTrackAccuracy = 0.80;
 
     public record SearchCase(string Query, string ExpectedArtist, string ExpectedName)
     {

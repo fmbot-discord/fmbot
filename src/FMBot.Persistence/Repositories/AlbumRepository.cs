@@ -133,43 +133,81 @@ ORDER BY playcount DESC;";
         return (await connection.QueryAsync<UserAlbumSearchResult>(sql, new { userId, patterns })).ToList();
     }
 
+    private static string BuildAlbumSearchSql(string candidateFilter) => $@"
+SELECT s.*
+FROM public.albums s
+WHERE s.id = (
+    WITH candidates AS MATERIALIZED (
+        SELECT t.id,
+               COALESCE(t.name, ''::citext)::text AS name,
+               COALESCE(t.artist_name, ''::citext)::text AS artist_name,
+               t.popularity,
+               t.artist_id
+        FROM public.albums t
+        WHERE {candidateFilter}
+        ORDER BY t.popularity DESC NULLS LAST
+        LIMIT 3000
+    ), normalised AS (
+        SELECT c.*,
+               btrim(lower(public.f_search_text(c.name))) AS norm_name,
+               btrim(lower(public.f_search_core(c.name))) AS norm_core,
+               btrim(lower(public.f_search_text(c.artist_name))) AS norm_artist
+        FROM candidates c
+    ), pooled AS (
+        SELECT n.*,
+               max(n.popularity) OVER (PARTITION BY n.norm_artist, n.norm_core) AS group_popularity
+        FROM normalised n
+    )
+    SELECT c.id
+    FROM pooled c
+    LEFT JOIN public.artists ar ON ar.id = c.artist_id
+    CROSS JOIN LATERAL (
+        SELECT btrim(lower(public.f_search_text(@searchTerm))) AS norm,
+               btrim(lower(public.f_search_core(@searchTerm))) AS core
+    ) q
+    ORDER BY (
+              2.5 * (CASE WHEN c.norm_artist || ' ' || c.norm_name = q.norm
+                            OR c.norm_name || ' ' || c.norm_artist = q.norm THEN 1 ELSE 0 END)
+            + 1.0 * (CASE WHEN c.norm_core = q.core THEN 1 ELSE 0 END)
+            + 1.0 * similarity(c.norm_core, q.core)
+            + 0.4 * word_similarity(q.core, c.norm_core)
+            + 0.4 * (CASE WHEN c.norm_core LIKE q.core || '%' THEN 1 ELSE 0 END)
+            + 0.5 * word_similarity(@searchTerm, c.name || ' ' || c.artist_name)
+            + 0.4 * word_similarity(c.artist_name, @searchTerm)
+            + 0.3 * (CASE WHEN c.norm_name LIKE '%' || q.norm || '%' THEN 1 ELSE 0 END)
+            + 2.5 * (ln(COALESCE(c.group_popularity, 0) + 1) / 4.6151)
+            + 1.5 * (ln(COALESCE(ar.popularity, 0) + 1) / 4.6151)
+        ) DESC NULLS LAST, length(c.name) ASC
+    LIMIT 1
+);";
+
+    private const string AlbumSearchMatch =
+        "public.f_search_vector((COALESCE(t.name, ''::citext) || ' '::citext || COALESCE(t.artist_name, ''::citext))::text) " +
+        "@@ public.f_search_query(@searchTerm)";
+
+    private static readonly string[] AlbumSearchStages =
+    [
+        BuildAlbumSearchSql($"{AlbumSearchMatch} AND t.popularity IS NOT NULL"),
+        BuildAlbumSearchSql($"{AlbumSearchMatch} AND (t.popularity IS NOT NULL OR t.artist_id IS NOT NULL)"),
+        BuildAlbumSearchSql(
+            "to_tsvector('english', (COALESCE(t.name, ''::citext) || ' '::citext || COALESCE(t.artist_name, ''::citext))::text) " +
+            "@@ plainto_tsquery('english', @searchTerm)")
+    ];
+
     public static async Task<Album> SearchAlbum(string searchTerm, NpgsqlConnection connection)
     {
-        const string sql = @"
-SELECT
-    *
-FROM
-    public.albums
-WHERE
-    to_tsvector('english', coalesce(name, '') || ' ' || coalesce(artist_name, '')) @@ plainto_tsquery('english', @searchTerm)
-ORDER BY
-    -- 1. TIERING: Prioritize albums with complete data
-    (CASE
-        WHEN spotify_id IS NOT NULL AND apple_music_id IS NOT NULL AND popularity IS NOT NULL THEN 0 -- Tier 1: Highest quality
-        WHEN spotify_id IS NOT NULL OR apple_music_id IS NOT NULL THEN 1 -- Tier 2: Good quality
-        ELSE 2 -- Tier 3: Everything else
-    END) ASC,
-
-    -- 2. SCORING: Apply a rebalanced weighted score within each tier
-    (
-        similarity(name, @searchTerm) * 1.0 +
-
-        word_similarity(@searchTerm, name) * 0.5 +
-
-        word_similarity(@searchTerm, coalesce(name, '') || ' ' || coalesce(artist_name, '')) * 1.0 +
-
-        word_similarity(artist_name, @searchTerm) * 0.5 +
-
-        coalesce(log(popularity + 1), 0) * 1.0
-    ) DESC NULLS LAST,
-
-    -- 3. TIE-BREAKERS: Final sorting for records with identical scores
-    length(name) ASC,
-    release_date DESC NULLS LAST
-LIMIT 1;";
-
         DefaultTypeMap.MatchNamesWithUnderscores = true;
-        return await connection.QueryFirstOrDefaultAsync<Album>(sql, new { searchTerm });
+
+        foreach (var stage in AlbumSearchStages)
+        {
+            var album = await connection.QueryFirstOrDefaultAsync<Album>(stage, new { searchTerm });
+            if (album != null)
+            {
+                return album;
+            }
+        }
+
+        return null;
     }
 
     public static async Task GetAlbumCovers(List<TopAlbum> topAlbums,
