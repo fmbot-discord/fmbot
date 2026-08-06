@@ -243,7 +243,7 @@ public class GuildBuilders
 
                         footer.Append($"-# {context.Localize("shared.pageCounter", ("page", pageCounter.ToString()), ("pages", playcountPages.Count.ToString()))} - ");
                         footer.Append($"{context.LocalizeCount("shared.users", filteredPlaycountUsers.Count)} - ");
-                        footer.Append(context.LocalizeCount("members.totalPlays", filteredPlaycountUsers.Sum(s => s.Playcount)));
+                        footer.Append(context.LocalizeCount("members.totalPlays", filteredPlaycountUsers.Sum(s => (long)s.Playcount)));
 
                         if (filterDescription != null)
                         {
