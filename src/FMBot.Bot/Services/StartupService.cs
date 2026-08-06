@@ -99,6 +99,7 @@ public class StartupService
 
         var databaseTask = Task.Run(EnsureDatabaseUpdated);
         var lastFmTask = TestLastFmApi();
+        var premiumGuilds = this.CachePremiumGuilds();
 
         Log.Information("Loading interaction modules");
         this._appCommands.AddModules(typeof(Program).Assembly);
@@ -119,6 +120,7 @@ public class StartupService
 
         await cachesTask;
         await lastFmTask;
+        await premiumGuilds;
 
         var gateway = await this._client.Rest.GetGatewayBotAsync();
         Log.Information("Gateway: connects left {connectsLeft} - reset after {resetAfter} - recommended shards {shardCount}",
@@ -130,9 +132,7 @@ public class StartupService
         InitializeHangfireConfig();
         this._timerService.QueueJobs();
 
-        this.StartMetricsPusher();
-
-        const int warmupDelay = 15;
+        const int warmupDelay = 20;
 
         if (ConfigData.Data.Shards == null || ConfigData.Data.Shards.MainInstance == true)
         {
@@ -142,10 +142,9 @@ public class StartupService
 
         BackgroundJob.Schedule(() => this.CacheSlashCommandIds(), TimeSpan.FromSeconds(warmupDelay));
         BackgroundJob.Schedule(() => this._timerService.UpdateStatus(), TimeSpan.FromSeconds(warmupDelay));
+        BackgroundJob.Schedule(() => this.StartMetricsPusher(), TimeSpan.FromSeconds(warmupDelay));
 
-        await Task.WhenAll(
-            this.CachePremiumGuilds(),
-            this.CacheDiscordUserIds());
+        await this.CacheDiscordUserIds();
     }
 
     private async Task LoadInitialCaches(Task databaseTask)
@@ -243,7 +242,7 @@ public class StartupService
         }
     }
 
-    private void StartMetricsPusher()
+    public void StartMetricsPusher()
     {
         if (string.IsNullOrWhiteSpace(this._botSettings.Bot.MetricsPusherName) ||
             string.IsNullOrWhiteSpace(this._botSettings.Bot.MetricsPusherEndpoint))
