@@ -1695,6 +1695,13 @@ public class ArtistBuilders
             return artistSearch.Response;
         }
 
+        Task<List<DateTime>> playHistoryTask = null;
+        if (context.ContextUser.UserType != UserType.User && artistSearch.Artist.UserPlaycount > 0)
+        {
+            playHistoryTask = this._playService.GetArtistPlayTimestamps(userSettings.UserId,
+                artistSearch.Artist.ArtistName);
+        }
+
         var reply = context.LocalizeCount("artist.plays.userPlays",
             artistSearch.Artist.UserPlaycount.GetValueOrDefault(),
             ("user", $"{StringExtensions.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()}"),
@@ -1714,7 +1721,21 @@ public class ArtistBuilders
                 ("month", context.LocalizeCount("shared.plays", recentArtistPlaycounts.month)))}";
         }
 
-        response.Text = reply;
+        var playHistoryGraph = playHistoryTask != null
+            ? await this._graphService.BuildPlayHistoryGraph(context, response, await playHistoryTask,
+                "artist-plays.png", height: GraphExtensions.CompactGraphHeight)
+            : null;
+
+        if (playHistoryGraph != null)
+        {
+            response.ResponseType = ResponseType.ComponentsV2;
+            response.TopLevelComponents.Add(new TextDisplayProperties(reply));
+            response.TopLevelComponents.Add(playHistoryGraph);
+        }
+        else
+        {
+            response.Text = reply;
+        }
 
         return response;
     }

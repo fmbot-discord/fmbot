@@ -14,15 +14,19 @@ namespace FMBot.Bot.Extensions;
 
 public static class GraphExtensions
 {
+    public const int DefaultGraphHeight = 165;
+    public const int CompactGraphHeight = 115;
+
     public static async Task<MediaGalleryProperties> BuildPlayHistoryGraph(this GraphService graphService,
         ContextModel context, ResponseModel response, ICollection<DateTime> timestamps, string fileName,
-        GraphInterval? fixedInterval = null)
+        GraphInterval? fixedInterval = null, int height = DefaultGraphHeight)
     {
         var graph = graphService.RenderPlayHistory(timestamps,
             context.Localizer.Language.GetCultureInfo(),
             await GetLineColor(context, response),
             value => value.Format(context.NumberFormat),
-            fixedInterval);
+            fixedInterval,
+            height: height);
 
         if (graph == null)
         {

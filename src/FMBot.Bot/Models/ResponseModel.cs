@@ -20,6 +20,7 @@ public class ResponseModel
         this.Components = [];
         this.ButtonRows = [];
         this.ComponentsV2 = [];
+        this.TopLevelComponents = [];
         this.ComponentsContainer = new ComponentContainerProperties();
         this.StringMenus = [];
         this.Spoiler = false;
@@ -37,6 +38,8 @@ public class ResponseModel
 
     public List<ActionRowProperties> ComponentsV2 { get; set; }
 
+    public List<IMessageComponentProperties> TopLevelComponents { get; set; }
+
     public ComponentContainerProperties ComponentsContainer { get; set; }
 
     public IMessageComponentProperties[] GetComponentsV2()
@@ -47,6 +50,12 @@ public class ResponseModel
         if (ComponentsContainer?.Any() == true)
         {
             components.Add(ComponentsContainer);
+        }
+
+        // Add components that live outside of a container
+        if (TopLevelComponents?.Count > 0)
+        {
+            components.AddRange(TopLevelComponents);
         }
 
         // Add all ComponentsV2 action rows
