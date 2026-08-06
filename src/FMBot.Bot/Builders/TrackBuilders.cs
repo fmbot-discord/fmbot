@@ -145,21 +145,21 @@ public class TrackBuilders
                 trackSearch.Track.ArtistName, trackSearch.Track.AlbumName);
         }
 
-        Task<List<DateTime>> playHistoryTask = null;
-        Task<DateTime?> lastPlayTask = null;
+        Task<PlayHistorySummary> playHistoryTask = null;
         if (context.ContextUser.UserType != UserType.User && trackSearch.Track.UserPlaycount > 0)
         {
-            playHistoryTask = this._playService.GetTrackPlayTimestamps(context.ContextUser.UserId,
-                trackSearch.Track.ArtistName, trackSearch.Track.TrackName);
-            lastPlayTask = this._playService.GetTrackLastPlayDate(context.ContextUser.UserId,
+            playHistoryTask = this._playService.GetTrackPlayHistory(context.ContextUser.UserId,
                 trackSearch.Track.ArtistName, trackSearch.Track.TrackName);
         }
 
         Task<(int week, int month)> recentPlaycountsTask = null;
         if (trackSearch.Track.UserPlaycount.HasValue)
         {
-            recentPlaycountsTask = this._playService.GetRecentTrackPlaycounts(context.ContextUser.UserId,
-                trackSearch.Track.TrackName, trackSearch.Track.ArtistName);
+            if (playHistoryTask == null)
+            {
+                recentPlaycountsTask = this._playService.GetRecentTrackPlaycounts(context.ContextUser.UserId,
+                    trackSearch.Track.TrackName, trackSearch.Track.ArtistName);
+            }
 
             _ = this._updateService.CorrectUserTrackPlaycount(context.ContextUser.UserId,
                 trackSearch.Track.ArtistName,
@@ -402,15 +402,15 @@ public class TrackBuilders
             var playsLine = context.LocalizeCount("track.playsByUser", trackSearch.Track.UserPlaycount.Value,
                 ("user", userTitle));
 
-            if (recentPlaycountsTask != null)
+            var playHistory = playHistoryTask != null ? await playHistoryTask : null;
+            var monthPlays = playHistory?.MonthPlays ??
+                             (recentPlaycountsTask != null ? (await recentPlaycountsTask).month : 0);
+
+            if (monthPlays > 0)
             {
-                var recentPlaycounts = await recentPlaycountsTask;
-                if (recentPlaycounts.month > 0)
-                {
-                    playsLine = context.LocalizeCount("track.playsByUserLastMonth",
-                        trackSearch.Track.UserPlaycount.Value, ("user", userTitle),
-                        ("month", recentPlaycounts.month.Format(context.NumberFormat)));
-                }
+                playsLine = context.LocalizeCount("track.playsByUserLastMonth",
+                    trackSearch.Track.UserPlaycount.Value, ("user", userTitle),
+                    ("month", monthPlays.Format(context.NumberFormat)));
             }
 
             userStats.AppendLine(playsLine);
@@ -435,14 +435,13 @@ public class TrackBuilders
             }
 
             MediaGalleryProperties playHistoryGraph = null;
-            if (playHistoryTask != null)
+            if (playHistory != null)
             {
-                var playHistory = await playHistoryTask;
-                var firstPlay = playHistory.Count > 0 ? playHistory[0] : (DateTime?)null;
+                var firstPlay = playHistory.FirstPlay;
                 if (firstPlay != null)
                 {
                     var firstListenValue = ((DateTimeOffset)firstPlay).ToUnixTimeSeconds();
-                    var lastPlay = lastPlayTask != null ? await lastPlayTask : null;
+                    var lastPlay = playHistory.LastPlay;
 
                     if (lastPlay != null && lastPlay.Value.Date > firstPlay.Value.Date)
                     {
@@ -457,8 +456,8 @@ public class TrackBuilders
                     }
                 }
 
-                playHistoryGraph = await this._graphService.BuildPlayHistoryGraph(context, response, playHistory,
-                    "track-plays.png");
+                playHistoryGraph = await this._graphService.BuildPlayHistoryGraph(context, response,
+                    playHistory.DailyPlays, "track-plays.png");
             }
             else
             {
@@ -1062,10 +1061,10 @@ public class TrackBuilders
             return trackSearch.Response;
         }
 
-        Task<List<DateTime>> playHistoryTask = null;
+        Task<PlayHistorySummary> playHistoryTask = null;
         if (context.ContextUser.UserType != UserType.User && trackSearch.Track.UserPlaycount > 0)
         {
-            playHistoryTask = this._playService.GetTrackPlayTimestamps(userSettings.UserId,
+            playHistoryTask = this._playService.GetTrackPlayHistory(userSettings.UserId,
                 trackSearch.Track.ArtistName, trackSearch.Track.TrackName);
         }
 
@@ -1087,9 +1086,13 @@ public class TrackBuilders
             await this._updateService.UpdateUser(new UpdateUserQueueItem(userSettings.UserId));
         }
 
-        var recentTrackPlaycounts =
-            await this._playService.GetRecentTrackPlaycounts(userSettings.UserId, trackSearch.Track.TrackName,
+        var playHistory = playHistoryTask != null ? await playHistoryTask : null;
+
+        (int week, int month) recentTrackPlaycounts = playHistory != null
+            ? (playHistory.WeekPlays, playHistory.MonthPlays)
+            : await this._playService.GetRecentTrackPlaycounts(userSettings.UserId, trackSearch.Track.TrackName,
                 trackSearch.Track.ArtistName);
+
         if (recentTrackPlaycounts.month != 0)
         {
             reply += $"\n{context.Localize("shared.recentWeekMonthPlays",
@@ -1097,8 +1100,8 @@ public class TrackBuilders
                 ("month", context.LocalizeCount("shared.plays", recentTrackPlaycounts.month)))}";
         }
 
-        var playHistoryGraph = playHistoryTask != null
-            ? await this._graphService.BuildPlayHistoryGraph(context, response, await playHistoryTask,
+        var playHistoryGraph = playHistory != null
+            ? await this._graphService.BuildPlayHistoryGraph(context, response, playHistory.DailyPlays,
                 "track-plays.png", height: GraphExtensions.CompactGraphHeight)
             : null;
 

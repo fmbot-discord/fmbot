@@ -18,16 +18,36 @@ public static class GraphExtensions
     public const int CompactGraphHeight = 115;
 
     public static async Task<MediaGalleryProperties> BuildPlayHistoryGraph(this GraphService graphService,
-        ContextModel context, ResponseModel response, ICollection<DateTime> timestamps, string fileName,
+        ContextModel context, ResponseModel response, IReadOnlyList<DayPlayCount> dailyPlays, string fileName,
         GraphInterval? fixedInterval = null, int height = DefaultGraphHeight)
     {
-        var graph = graphService.RenderPlayHistory(timestamps,
+        if (dailyPlays == null || dailyPlays.Count == 0)
+        {
+            return null;
+        }
+
+        var points = new List<GraphPoint>(dailyPlays.Count);
+        foreach (var day in dailyPlays)
+        {
+            points.Add(new GraphPoint
+            {
+                Date = day.Day,
+                Value = day.Plays
+            });
+        }
+
+        var graph = graphService.RenderPlayHistory(points,
             context.Localizer.Language.GetCultureInfo(),
             await GetLineColor(context, response),
             value => value.Format(context.NumberFormat),
             fixedInterval,
             height: height);
 
+        return AttachGraph(response, graph, fileName);
+    }
+
+    private static MediaGalleryProperties AttachGraph(ResponseModel response, PlayHistoryGraph graph, string fileName)
+    {
         if (graph == null)
         {
             return null;

@@ -278,25 +278,7 @@ public class PlayService
 
     public async Task<(int week, int month)> GetRecentTrackPlaycounts(int userId, string trackName, string artistName)
     {
-        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
-        await connection.OpenAsync();
-
-        var weekAgo = DateTime.UtcNow.AddDays(-7);
-        var monthAgo = DateTime.UtcNow.AddMonths(-1);
-
-        var importUser = await UserRepository.GetImportUserForUserId(userId, connection);
-        var plays = await PlayRepository.GetUserPlays(userId, connection, importUser?.DataSource ?? DataSource.LastFm,
-            start: monthAgo);
-
-        return (
-            plays.Count(c =>
-                c.TimePlayed >= weekAgo &&
-                string.Equals(c.ArtistName, artistName, StringComparison.OrdinalIgnoreCase) &&
-                string.Equals(c.TrackName, trackName, StringComparison.OrdinalIgnoreCase)),
-            plays.Count(c =>
-                c.TimePlayed >= monthAgo &&
-                string.Equals(c.ArtistName, artistName, StringComparison.OrdinalIgnoreCase) &&
-                string.Equals(c.TrackName, trackName, StringComparison.OrdinalIgnoreCase)));
+        return await GetRecentEntityPlaycounts(userId, artistName, null, trackName);
     }
 
     public async Task<int> GetWeekAlbumPlaycountAsync(int userId, string albumName, string artistName)
@@ -309,25 +291,7 @@ public class PlayService
 
     public async Task<(int week, int month)> GetRecentAlbumPlaycounts(int userId, string albumName, string artistName)
     {
-        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
-        await connection.OpenAsync();
-
-        var weekAgo = DateTime.UtcNow.AddDays(-7);
-        var monthAgo = DateTime.UtcNow.AddMonths(-1);
-
-        var importUser = await UserRepository.GetImportUserForUserId(userId, connection);
-        var plays = await PlayRepository.GetUserPlays(userId, connection, importUser?.DataSource ?? DataSource.LastFm,
-            start: monthAgo);
-
-        return (
-            plays.Count(c =>
-                c.TimePlayed >= weekAgo &&
-                string.Equals(c.ArtistName, artistName, StringComparison.OrdinalIgnoreCase) &&
-                string.Equals(c.AlbumName, albumName, StringComparison.OrdinalIgnoreCase)),
-            plays.Count(c =>
-                c.TimePlayed >= monthAgo &&
-                string.Equals(c.ArtistName, artistName, StringComparison.OrdinalIgnoreCase) &&
-                string.Equals(c.AlbumName, albumName, StringComparison.OrdinalIgnoreCase)));
+        return await GetRecentEntityPlaycounts(userId, artistName, albumName, null);
     }
 
     public async Task<int> GetArtistPlaycountForTimePeriodAsync(int userId, string artistName, int daysToGoBack = 7)
@@ -343,6 +307,12 @@ public class PlayService
 
     public async Task<(int week, int month)> GetRecentArtistPlaycounts(int userId, string artistName)
     {
+        return await GetRecentEntityPlaycounts(userId, artistName, null, null);
+    }
+
+    private async Task<(int week, int month)> GetRecentEntityPlaycounts(int userId, string artistName,
+        string albumName, string trackName)
+    {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
@@ -350,15 +320,10 @@ public class PlayService
         var monthAgo = DateTime.UtcNow.AddMonths(-1);
 
         var importUser = await UserRepository.GetImportUserForUserId(userId, connection);
-        var plays = await PlayRepository.GetUserPlays(userId, connection, importUser?.DataSource ?? DataSource.LastFm,
-            start: monthAgo);
+        var playcounts = await PlayRepository.GetRecentEntityPlaycounts(userId, connection,
+            importUser?.DataSource ?? DataSource.LastFm, artistName, albumName, trackName, weekAgo, monthAgo);
 
-        return (
-            plays.Count(c =>
-                c.TimePlayed >= weekAgo && string.Equals(c.ArtistName, artistName, StringComparison.OrdinalIgnoreCase)),
-            plays.Count(c =>
-                c.TimePlayed >= monthAgo &&
-                string.Equals(c.ArtistName, artistName, StringComparison.OrdinalIgnoreCase)));
+        return playcounts == null ? (0, 0) : (playcounts.Week, playcounts.Month);
     }
 
     public async Task<List<UserStreak>> GetStreaks(int userId)
@@ -1186,16 +1151,9 @@ public class PlayService
             .TimePlayed;
     }
 
-    public async Task<List<DateTime>> GetArtistPlayTimestamps(int userId, string artistName)
+    public async Task<PlayHistorySummary> GetArtistPlayHistory(int userId, string artistName)
     {
-        var plays = await this.GetAllUserPlays(userId);
-        return plays
-            .Where(w =>
-                w.ArtistName != null &&
-                w.ArtistName.Equals(artistName, StringComparison.OrdinalIgnoreCase))
-            .Select(s => s.TimePlayed)
-            .OrderBy(o => o)
-            .ToList();
+        return await GetEntityPlayHistory(userId, artistName, null, null);
     }
 
     public async Task<DateTime?> GetAlbumFirstPlayDate(int userId, string artistName, string albumName)
@@ -1216,36 +1174,100 @@ public class PlayService
             .TimePlayed;
     }
 
-    public async Task<List<DateTime>> GetAlbumPlayTimestamps(int userId, string artistName, string albumName)
+    public async Task<PlayHistorySummary> GetAlbumPlayHistory(int userId, string artistName, string albumName)
     {
         if (albumName == null)
         {
-            return [];
+            return new PlayHistorySummary();
         }
 
-        var plays = await this.GetAllUserPlays(userId);
-        return plays
-            .Where(w =>
-                w.ArtistName != null &&
-                w.ArtistName.Equals(artistName, StringComparison.OrdinalIgnoreCase) &&
-                w.AlbumName != null &&
-                w.AlbumName.Equals(albumName, StringComparison.OrdinalIgnoreCase))
-            .Select(s => s.TimePlayed)
-            .OrderBy(o => o)
-            .ToList();
+        return await GetEntityPlayHistory(userId, artistName, albumName, null);
     }
 
-    public async Task<List<DateTime>> GetTrackPlayTimestamps(int userId, string artistName, string trackName)
+    public async Task<PlayHistorySummary> GetTrackPlayHistory(int userId, string artistName, string trackName)
     {
-        var plays = await this.GetAllUserPlays(userId);
-        return plays
-            .Where(w =>
-                w.ArtistName != null &&
-                w.ArtistName.Equals(artistName, StringComparison.OrdinalIgnoreCase) &&
-                w.TrackName.Equals(trackName, StringComparison.OrdinalIgnoreCase))
-            .Select(s => s.TimePlayed)
-            .OrderBy(o => o)
-            .ToList();
+        return await GetEntityPlayHistory(userId, artistName, null, trackName);
+    }
+
+    public async Task<UserPlayHistory> GetUserPlayHistory(int userId)
+    {
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        var now = DateTime.UtcNow;
+
+        var importUser = await UserRepository.GetImportUserForUserId(userId, connection);
+        var days = await PlayRepository.GetUserPlayDays(userId, connection,
+            importUser?.DataSource ?? DataSource.LastFm, null, null, null, now, now, null);
+
+        var dailyPlays = new List<DayPlayCount>(days.Count);
+        var importedDays = 0;
+
+        foreach (var day in days)
+        {
+            dailyPlays.Add(new DayPlayCount(day.Day, day.Plays));
+
+            if (day.LastFmPlays > ImportedDayPlayThreshold)
+            {
+                importedDays++;
+            }
+        }
+
+        return new UserPlayHistory
+        {
+            DailyPlays = dailyPlays,
+            HasImported = importedDays >= ImportedDayCountThreshold
+        };
+    }
+
+    private async Task<PlayHistorySummary> GetEntityPlayHistory(int userId, string artistName, string albumName,
+        string trackName)
+    {
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        var weekAgo = DateTime.UtcNow.AddDays(-7);
+        var monthAgo = DateTime.UtcNow.AddMonths(-1);
+
+        var importUser = await UserRepository.GetImportUserForUserId(userId, connection);
+        var dataSource = importUser?.DataSource ?? DataSource.LastFm;
+
+        var lastPlayTime = await PlayRepository.GetLastPlayTime(userId, connection, dataSource);
+        var lastPlayCutoff = lastPlayTime - LastListenedExclusionWindow;
+
+        var days = await PlayRepository.GetUserPlayDays(userId, connection, dataSource, artistName, albumName,
+            trackName, weekAgo, monthAgo, lastPlayCutoff);
+
+        if (days.Count == 0)
+        {
+            return new PlayHistorySummary();
+        }
+
+        var dailyPlays = new List<DayPlayCount>(days.Count);
+        var weekPlays = 0;
+        var monthPlays = 0;
+        DateTime? lastPlay = null;
+
+        foreach (var day in days)
+        {
+            dailyPlays.Add(new DayPlayCount(day.Day, day.Plays));
+            weekPlays += day.WeekPlays;
+            monthPlays += day.MonthPlays;
+
+            if (day.LastPlay.HasValue)
+            {
+                lastPlay = day.LastPlay;
+            }
+        }
+
+        return new PlayHistorySummary
+        {
+            DailyPlays = dailyPlays,
+            FirstPlay = days[0].FirstPlay,
+            LastPlay = lastPlay,
+            WeekPlays = weekPlays,
+            MonthPlays = monthPlays
+        };
     }
 
     public async Task<DateTime?> GetTrackFirstPlayDate(int userId, string artistName, string trackName)
@@ -1729,6 +1751,9 @@ public class PlayService
         return userPlays;
     }
 
+    private const int ImportedDayPlayThreshold = 2500;
+    private const int ImportedDayCountThreshold = 7;
+
     public async Task<bool> UserHasImportedLastFm(int userId)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
@@ -1744,15 +1769,7 @@ public class PlayService
         return plays
             .Where(w => w.PlaySource == PlaySource.LastFm)
             .GroupBy(g => g.TimePlayed.Date)
-            .Count(w => w.Count() > 2500) >= 7;
-    }
-
-    public static bool UserHasImported(IEnumerable<UserPlay> userPlays)
-    {
-        return userPlays
-            .Where(w => w.PlaySource == PlaySource.LastFm)
-            .GroupBy(g => g.TimePlayed.Date)
-            .Count(w => w.Count() > 2500) >= 7;
+            .Count(w => w.Count() > ImportedDayPlayThreshold) >= ImportedDayCountThreshold;
     }
 
     public Task<ICollection<UserPlay>> GetAllUserPlays(int userId, bool finalizeImport = true)

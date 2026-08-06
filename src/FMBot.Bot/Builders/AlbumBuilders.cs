@@ -295,27 +295,32 @@ public class AlbumBuilders
             var correctPlaycountTask = this._updateService.CorrectUserAlbumPlaycount(context.ContextUser.UserId,
                 albumSearch.Album.ArtistName,
                 albumSearch.Album.AlbumName, albumSearch.Album.UserPlaycount.Value);
-            var recentPlaycountsTask = this._playService.GetRecentAlbumPlaycounts(
-                context.ContextUser.UserId, albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
-
-            Task<List<DateTime>> playHistoryTask = null;
-            Task<DateTime?> lastPlayTask = null;
+            Task<PlayHistorySummary> playHistoryTask = null;
             if (context.ContextUser.UserType != UserType.User && albumSearch.Album.UserPlaycount > 0)
             {
-                playHistoryTask = this._playService.GetAlbumPlayTimestamps(context.ContextUser.UserId,
-                    albumSearch.Album.ArtistName, albumSearch.Album.AlbumName);
-                lastPlayTask = this._playService.GetAlbumLastPlayDate(context.ContextUser.UserId,
+                playHistoryTask = this._playService.GetAlbumPlayHistory(context.ContextUser.UserId,
                     albumSearch.Album.ArtistName, albumSearch.Album.AlbumName);
             }
 
+            Task<(int week, int month)> recentPlaycountsTask = null;
+            if (playHistoryTask == null)
+            {
+                recentPlaycountsTask = this._playService.GetRecentAlbumPlaycounts(
+                    context.ContextUser.UserId, albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
+            }
+
             await correctPlaycountTask;
-            var recentPlaycounts = await recentPlaycountsTask;
+
+            var playHistory = playHistoryTask != null ? await playHistoryTask : null;
+            var monthPlays = playHistory?.MonthPlays ??
+                             (recentPlaycountsTask != null ? (await recentPlaycountsTask).month : 0);
+
             var userStats = new StringBuilder();
 
-            var playsLine = recentPlaycounts.month > 0
+            var playsLine = monthPlays > 0
                 ? context.LocalizeCount("album.playsByLastMonth", albumSearch.Album.UserPlaycount.Value,
                     ("user", userTitle),
-                    ("month", recentPlaycounts.month.Format(context.NumberFormat)))
+                    ("month", monthPlays.Format(context.NumberFormat)))
                 : context.LocalizeCount("album.playsBy", albumSearch.Album.UserPlaycount.Value,
                     ("user", userTitle));
 
@@ -350,14 +355,13 @@ public class AlbumBuilders
             }
 
             MediaGalleryProperties playHistoryGraph = null;
-            if (playHistoryTask != null)
+            if (playHistory != null)
             {
-                var playHistory = await playHistoryTask;
-                var firstPlay = playHistory.Count > 0 ? playHistory[0] : (DateTime?)null;
+                var firstPlay = playHistory.FirstPlay;
                 if (firstPlay != null)
                 {
                     var firstListenValue = ((DateTimeOffset)firstPlay).ToUnixTimeSeconds();
-                    var lastPlay = lastPlayTask != null ? await lastPlayTask : null;
+                    var lastPlay = playHistory.LastPlay;
 
                     if (lastPlay != null && lastPlay.Value.Date > firstPlay.Value.Date)
                     {
@@ -372,8 +376,8 @@ public class AlbumBuilders
                     }
                 }
 
-                playHistoryGraph = await this._graphService.BuildPlayHistoryGraph(context, response, playHistory,
-                    "album-plays.png");
+                playHistoryGraph = await this._graphService.BuildPlayHistoryGraph(context, response,
+                    playHistory.DailyPlays, "album-plays.png");
             }
             else
             {
@@ -1353,10 +1357,10 @@ public class AlbumBuilders
             return albumSearch.Response;
         }
 
-        Task<List<DateTime>> playHistoryTask = null;
+        Task<PlayHistorySummary> playHistoryTask = null;
         if (context.ContextUser.UserType != UserType.User && albumSearch.Album.UserPlaycount > 0)
         {
-            playHistoryTask = this._playService.GetAlbumPlayTimestamps(userSettings.UserId,
+            playHistoryTask = this._playService.GetAlbumPlayHistory(userSettings.UserId,
                 albumSearch.Album.ArtistName, albumSearch.Album.AlbumName);
         }
 
@@ -1378,9 +1382,13 @@ public class AlbumBuilders
             await this._updateService.UpdateUser(new UpdateUserQueueItem(userSettings.UserId));
         }
 
-        var recentAlbumPlaycounts =
-            await this._playService.GetRecentAlbumPlaycounts(userSettings.UserId, albumSearch.Album.AlbumName,
+        var playHistory = playHistoryTask != null ? await playHistoryTask : null;
+
+        (int week, int month) recentAlbumPlaycounts = playHistory != null
+            ? (playHistory.WeekPlays, playHistory.MonthPlays)
+            : await this._playService.GetRecentAlbumPlaycounts(userSettings.UserId, albumSearch.Album.AlbumName,
                 albumSearch.Album.ArtistName);
+
         if (recentAlbumPlaycounts.month != 0)
         {
             reply += $"\n{context.Localize("shared.recentWeekMonthPlays",
@@ -1388,8 +1396,8 @@ public class AlbumBuilders
                 ("month", context.LocalizeCount("shared.plays", recentAlbumPlaycounts.month)))}";
         }
 
-        var playHistoryGraph = playHistoryTask != null
-            ? await this._graphService.BuildPlayHistoryGraph(context, response, await playHistoryTask,
+        var playHistoryGraph = playHistory != null
+            ? await this._graphService.BuildPlayHistoryGraph(context, response, playHistory.DailyPlays,
                 "album-plays.png", height: GraphExtensions.CompactGraphHeight)
             : null;
 

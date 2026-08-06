@@ -102,20 +102,20 @@ public static class GraphSeries
         };
     }
 
-    public static List<GraphPoint> FromTimestamps(IEnumerable<DateTime> timestamps, GraphInterval interval,
+    public static List<GraphPoint> FromDailyCounts(IEnumerable<GraphPoint> dailyCounts, GraphInterval interval,
         DateTime from, DateTime to)
     {
-        var counts = new Dictionary<DateTime, int>();
-        foreach (var timestamp in timestamps)
+        var counts = new Dictionary<DateTime, double>();
+        foreach (var day in dailyCounts)
         {
-            if (timestamp < from || timestamp > to)
+            if (day.Date < from.Date || day.Date > to.Date)
             {
                 continue;
             }
 
-            var bucket = StartOfInterval(timestamp, interval);
+            var bucket = StartOfInterval(day.Date, interval);
             counts.TryGetValue(bucket, out var existing);
-            counts[bucket] = existing + 1;
+            counts[bucket] = existing + day.Value;
         }
 
         var points = new List<GraphPoint>();

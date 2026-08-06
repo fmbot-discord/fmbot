@@ -256,6 +256,103 @@ ORDER BY time_played DESC;";
         return (await connection.QueryAsync<UserPlaySearchResult>(sql, new { userId, patterns })).ToList();
     }
 
+    public record UserPlayDay(DateTime Day, int Plays, int LastFmPlays, DateTime FirstPlay, DateTime? LastPlay,
+        int WeekPlays, int MonthPlays);
+
+    public static async Task<DateTime?> GetLastPlayTime(int userId, NpgsqlConnection connection,
+        DataSource dataSource)
+    {
+        var sql = GetUserPlaysSqlString("SELECT time_played ", dataSource);
+
+        return await connection.QueryFirstOrDefaultAsync<DateTime?>(sql, new
+        {
+            userId,
+            limit = 1
+        });
+    }
+
+    public static async Task<IReadOnlyList<UserPlayDay>> GetUserPlayDays(int userId, NpgsqlConnection connection,
+        DataSource dataSource, string artistName, string albumName, string trackName, DateTime weekAgo,
+        DateTime monthAgo, DateTime? lastPlayCutoff)
+    {
+        const string initialSql =
+            "SELECT (date_trunc('day', time_played AT TIME ZONE 'UTC')) AT TIME ZONE 'UTC' AS day, " +
+            "COUNT(*)::int AS plays, " +
+            "(COUNT(*) FILTER (WHERE play_source = 0))::int AS last_fm_plays, " +
+            "MIN(time_played) AS first_play, " +
+            "MAX(CASE WHEN time_played < @lastPlayCutoff THEN time_played END) AS last_play, " +
+            "(COUNT(*) FILTER (WHERE time_played >= @weekAgo))::int AS week_plays, " +
+            "(COUNT(*) FILTER (WHERE time_played >= @monthAgo))::int AS month_plays ";
+
+        var sql = GetUserPlaysSqlString(initialSql, dataSource);
+
+        if (artistName != null)
+        {
+            sql += " AND UPPER(artist_name) = UPPER(CAST(@artistName AS CITEXT)) ";
+        }
+
+        if (albumName != null)
+        {
+            sql += " AND UPPER(album_name) = UPPER(CAST(@albumName AS CITEXT)) ";
+        }
+
+        if (trackName != null)
+        {
+            sql += " AND UPPER(track_name) = UPPER(CAST(@trackName AS CITEXT)) ";
+        }
+
+        sql += " GROUP BY 1 ORDER BY 1 ";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        return
+        [
+            .. await connection.QueryAsync<UserPlayDay>(sql, new
+            {
+                userId,
+                artistName,
+                albumName,
+                trackName,
+                weekAgo,
+                monthAgo,
+                lastPlayCutoff
+            })
+        ];
+    }
+
+    public record RecentPlaycounts(int Week, int Month);
+
+    public static async Task<RecentPlaycounts> GetRecentEntityPlaycounts(int userId, NpgsqlConnection connection,
+        DataSource dataSource, string artistName, string albumName, string trackName, DateTime weekAgo,
+        DateTime monthAgo)
+    {
+        const string initialSql = "SELECT (COUNT(*) FILTER (WHERE time_played >= @weekAgo))::int AS week, " +
+                                  "COUNT(*)::int AS month ";
+
+        var sql = GetUserPlaysSqlString(initialSql, dataSource, monthAgo) +
+                  " AND UPPER(artist_name) = UPPER(CAST(@artistName AS CITEXT)) ";
+
+        if (albumName != null)
+        {
+            sql += " AND UPPER(album_name) = UPPER(CAST(@albumName AS CITEXT)) ";
+        }
+
+        if (trackName != null)
+        {
+            sql += " AND UPPER(track_name) = UPPER(CAST(@trackName AS CITEXT)) ";
+        }
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        return await connection.QueryFirstOrDefaultAsync<RecentPlaycounts>(sql, new
+        {
+            userId,
+            artistName,
+            albumName,
+            trackName,
+            weekAgo,
+            start = monthAgo
+        });
+    }
+
     private static string GetUserPlaysSqlString(string initialSql, DataSource dataSource, DateTime? start = null,
         DateTime? end = null)
     {

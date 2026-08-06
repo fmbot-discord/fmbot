@@ -1268,16 +1268,15 @@ public class UserBuilder
         var stats = new StringBuilder();
         if (userSettings.UserType != UserType.User)
         {
-            var allPlays = await this._playService.GetAllUserPlays(userSettings.UserId);
+            var playHistory = await this._playService.GetUserPlayHistory(userSettings.UserId);
 
-            var hasImported = PlayService.UserHasImported(allPlays);
-            if (hasImported)
+            if (playHistory.HasImported)
             {
                 stats.AppendLine(context.Localize("profile.importedPlays"));
             }
 
             playHistoryGraph = await this._graphService.BuildPlayHistoryGraph(context, response,
-                allPlays.Select(s => s.TimePlayed).ToList(), "profile-plays.png", GraphInterval.Month);
+                playHistory.DailyPlays, "profile-plays.png", GraphInterval.Month);
         }
 
         stats.AppendLine(context.Localize("profile.avgScrobblesPerDay",

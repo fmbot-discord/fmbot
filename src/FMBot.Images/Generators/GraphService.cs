@@ -51,22 +51,31 @@ public class GraphService
         return typeface;
     }
 
-    public PlayHistoryGraph RenderPlayHistory(ICollection<DateTime> timestamps, CultureInfo culture, SKColor lineColor,
-        Func<double, string> valueLabel, GraphInterval? fixedInterval = null, int width = 660, int height = 165)
+    public PlayHistoryGraph RenderPlayHistory(IReadOnlyList<GraphPoint> dailyPlays, CultureInfo culture,
+        SKColor lineColor, Func<double, string> valueLabel, GraphInterval? fixedInterval = null, int width = 660,
+        int height = 165)
     {
-        if (timestamps == null || timestamps.Count == 0)
+        if (dailyPlays == null || dailyPlays.Count == 0)
         {
             return null;
         }
 
         var until = DateTime.UtcNow;
-        var earliest = timestamps.Min();
-        var interval = fixedInterval ?? GraphSeries.PickInterval(earliest, until, timestamps.Count);
+        var earliest = dailyPlays[0].Date;
+
+        var totalPlays = 0d;
+        foreach (var day in dailyPlays)
+        {
+            totalPlays += day.Value;
+        }
+
+        var interval = fixedInterval ?? GraphSeries.PickInterval(earliest, until,
+            totalPlays >= int.MaxValue ? int.MaxValue : (int)totalPlays);
 
         var earliestStart = GraphSeries.EarliestStart(until, interval);
         var from = GraphSeries.LimitToMaxPoints(earliest < earliestStart ? earliest : earliestStart, until, interval);
 
-        var points = GraphSeries.FromTimestamps(timestamps, interval, from, until);
+        var points = GraphSeries.FromDailyCounts(dailyPlays, interval, from, until);
 
         if (interval != GraphInterval.Day && points.Count > 3)
         {
@@ -104,7 +113,7 @@ public class GraphService
             };
     }
 
-    public MemoryStream RenderLineGraph(LineGraph graph)
+    private MemoryStream RenderLineGraph(LineGraph graph)
     {
         try
         {

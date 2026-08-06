@@ -145,18 +145,15 @@ public class ArtistBuilders
         var userTitleTask = this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
         var featuredHistoryTask = this._featuredService.GetArtistFeaturedHistory(artistSearch.Artist.ArtistName);
 
-        Task<List<DateTime>> playHistoryTask = null;
-        Task<DateTime?> lastPlayTask = null;
+        Task<PlayHistorySummary> playHistoryTask = null;
         if (context.ContextUser.UserType != UserType.User && artistSearch.Artist.UserPlaycount > 0)
         {
-            playHistoryTask = this._playService.GetArtistPlayTimestamps(context.ContextUser.UserId,
-                artistSearch.Artist.ArtistName);
-            lastPlayTask = this._playService.GetArtistLastPlayDate(context.ContextUser.UserId,
+            playHistoryTask = this._playService.GetArtistPlayHistory(context.ContextUser.UserId,
                 artistSearch.Artist.ArtistName);
         }
 
         Task<(int week, int month)> recentPlaycountsTask = null;
-        if (artistSearch.Artist.UserPlaycount.HasValue)
+        if (playHistoryTask == null && artistSearch.Artist.UserPlaycount.HasValue)
         {
             recentPlaycountsTask = this._playService.GetRecentArtistPlaycounts(context.ContextUser.UserId,
                 artistSearch.Artist.ArtistName);
@@ -304,27 +301,26 @@ public class ArtistBuilders
             var playsLine = context.LocalizeCount("artist.playsBy", artistSearch.Artist.UserPlaycount.Value,
                 ("user", userTitle));
 
-            if (recentPlaycountsTask != null)
+            var playHistory = playHistoryTask != null ? await playHistoryTask : null;
+            var monthPlays = playHistory?.MonthPlays ??
+                             (recentPlaycountsTask != null ? (await recentPlaycountsTask).month : 0);
+
+            if (monthPlays > 0)
             {
-                var recentPlaycounts = await recentPlaycountsTask;
-                if (recentPlaycounts.month > 0)
-                {
-                    playsLine = context.LocalizeCount("artist.playsByLastMonth",
-                        artistSearch.Artist.UserPlaycount.Value, ("user", userTitle),
-                        ("lastMonth", recentPlaycounts.month.Format(context.NumberFormat)));
-                }
+                playsLine = context.LocalizeCount("artist.playsByLastMonth",
+                    artistSearch.Artist.UserPlaycount.Value, ("user", userTitle),
+                    ("lastMonth", monthPlays.Format(context.NumberFormat)));
             }
 
             userStats.AppendLine(playsLine);
 
-            if (playHistoryTask != null)
+            if (playHistory != null)
             {
-                var playHistory = await playHistoryTask;
-                var firstPlay = playHistory.Count > 0 ? playHistory[0] : (DateTime?)null;
+                var firstPlay = playHistory.FirstPlay;
                 if (firstPlay != null)
                 {
                     var firstListenValue = ((DateTimeOffset)firstPlay).ToUnixTimeSeconds();
-                    var lastPlay = lastPlayTask != null ? await lastPlayTask : null;
+                    var lastPlay = playHistory.LastPlay;
 
                     if (lastPlay != null && lastPlay.Value.Date > firstPlay.Value.Date)
                     {
@@ -339,8 +335,8 @@ public class ArtistBuilders
                     }
                 }
 
-                playHistoryGraph = await this._graphService.BuildPlayHistoryGraph(context, response, playHistory,
-                    "artist-plays.png");
+                playHistoryGraph = await this._graphService.BuildPlayHistoryGraph(context, response,
+                    playHistory.DailyPlays, "artist-plays.png");
             }
             else
             {
@@ -1695,10 +1691,10 @@ public class ArtistBuilders
             return artistSearch.Response;
         }
 
-        Task<List<DateTime>> playHistoryTask = null;
+        Task<PlayHistorySummary> playHistoryTask = null;
         if (context.ContextUser.UserType != UserType.User && artistSearch.Artist.UserPlaycount > 0)
         {
-            playHistoryTask = this._playService.GetArtistPlayTimestamps(userSettings.UserId,
+            playHistoryTask = this._playService.GetArtistPlayHistory(userSettings.UserId,
                 artistSearch.Artist.ArtistName);
         }
 
@@ -1712,8 +1708,12 @@ public class ArtistBuilders
             await this._updateService.UpdateUser(new UpdateUserQueueItem(userSettings.UserId));
         }
 
-        var recentArtistPlaycounts =
-            await this._playService.GetRecentArtistPlaycounts(userSettings.UserId, artistSearch.Artist.ArtistName);
+        var playHistory = playHistoryTask != null ? await playHistoryTask : null;
+
+        (int week, int month) recentArtistPlaycounts = playHistory != null
+            ? (playHistory.WeekPlays, playHistory.MonthPlays)
+            : await this._playService.GetRecentArtistPlaycounts(userSettings.UserId, artistSearch.Artist.ArtistName);
+
         if (recentArtistPlaycounts.month != 0)
         {
             reply += $"\n{context.Localize("shared.recentWeekMonthPlays",
@@ -1721,8 +1721,8 @@ public class ArtistBuilders
                 ("month", context.LocalizeCount("shared.plays", recentArtistPlaycounts.month)))}";
         }
 
-        var playHistoryGraph = playHistoryTask != null
-            ? await this._graphService.BuildPlayHistoryGraph(context, response, await playHistoryTask,
+        var playHistoryGraph = playHistory != null
+            ? await this._graphService.BuildPlayHistoryGraph(context, response, playHistory.DailyPlays,
                 "artist-plays.png", height: GraphExtensions.CompactGraphHeight)
             : null;
 
