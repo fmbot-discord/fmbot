@@ -8,7 +8,11 @@ public static class Statistics
         .CreateGauge("discord_server_count", "Total count of all servers the bot is in");
 
     public static readonly Gauge ConnectedDiscordServerCount = Metrics
-        .CreateGauge("discord_connected_server_count", "Total count of all servers the bot is connected to");
+        .CreateGauge("discord_connected_server_count", "Total count of all servers the bot is connected to",
+            new GaugeConfiguration
+            {
+                SuppressInitialValue = true
+            });
 
 
     public static readonly Counter LastfmApiCalls = Metrics
@@ -238,5 +242,9 @@ public static class Statistics
         });
 
     public static readonly Gauge DiscordCachedGuildsTotal = Metrics
-        .CreateGauge("discord_cached_guilds_total", "Total number of guilds cached across all shards");
+        .CreateGauge("discord_cached_guilds_total", "Total number of guilds cached across all shards",
+            new GaugeConfiguration
+            {
+                SuppressInitialValue = true
+            });
 }
