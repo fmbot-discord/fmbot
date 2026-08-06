@@ -15,7 +15,7 @@ namespace FMBot.Bot.Extensions;
 public static class GraphExtensions
 {
     public const int DefaultGraphHeight = 165;
-    public const int CompactGraphHeight = 115;
+    public const int CompactGraphHeight = 110;
 
     public static async Task<MediaGalleryProperties> BuildPlayHistoryGraph(this GraphService graphService,
         ContextModel context, ResponseModel response, IReadOnlyList<DayPlayCount> dailyPlays, string fileName,

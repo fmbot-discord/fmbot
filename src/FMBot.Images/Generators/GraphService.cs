@@ -16,6 +16,7 @@ public class GraphService
     private const float PaddingRight = EdgeMargin + DotRadius;
     private const float AxisHeight = FontSize * 1.6f;
     private const float LabelSpacing = 7f;
+    private const float TickLength = 5f;
     private const float LabelBaseline = FontSize * 1.33f;
     private const float LabelCenter = FontSize * 0.33f;
     private const float LineWidth = 2.5f;
@@ -306,7 +307,7 @@ public class GraphService
             canvas.DrawCircle(xPositions[^1], yPositions[^1], DotRadius * scale, dotPaint);
         }
 
-        DrawDateLabels(canvas, graph, xPositions, plotBottom, scale, font, labelPaint, axisPaint);
+        DrawDateLabels(canvas, graph, xPositions, plotBottom, scale, font, labelPaint);
 
         using var image = surface.Snapshot();
         using var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
@@ -319,11 +320,18 @@ public class GraphService
     }
 
     private static void DrawDateLabels(SKCanvas canvas, LineGraph graph, float[] xPositions, float plotBottom,
-        float scale, SKFont font, SKPaint labelPaint, SKPaint axisPaint)
+        float scale, SKFont font, SKPaint labelPaint)
     {
-        var lastIndex = graph.Points.Count - 1;
         var minGap = FontSize * 0.5f * scale;
         var previousRight = float.MinValue;
+
+        using var tickPaint = new SKPaint
+        {
+            IsAntialias = true,
+            Style = SKPaintStyle.Stroke,
+            StrokeWidth = scale,
+            Color = AxisColor.WithAlpha(160)
+        };
 
         foreach (var tick in graph.Ticks)
         {
@@ -332,25 +340,18 @@ public class GraphService
                 continue;
             }
 
-            var align = tick.Index == 0 ? SKTextAlign.Left :
-                tick.Index == lastIndex ? SKTextAlign.Right : SKTextAlign.Center;
-
             var x = xPositions[tick.Index];
             var labelWidth = font.MeasureText(tick.Label, labelPaint);
-            var left = align switch
-            {
-                SKTextAlign.Left => x,
-                SKTextAlign.Right => x - labelWidth,
-                _ => x - labelWidth / 2
-            };
+            var left = Math.Clamp(x - labelWidth / 2, 0, Math.Max(0, graph.Width - labelWidth));
 
             if (left < previousRight + minGap)
             {
                 continue;
             }
 
-            canvas.DrawLine(x, plotBottom, x, plotBottom + 4 * scale, axisPaint);
-            canvas.DrawShapedText(tick.Label, x, plotBottom + LabelBaseline * scale, align, font, labelPaint);
+            canvas.DrawLine(x, plotBottom, x, plotBottom + TickLength * scale, tickPaint);
+            canvas.DrawShapedText(tick.Label, left, plotBottom + LabelBaseline * scale, SKTextAlign.Left, font,
+                labelPaint);
 
             previousRight = left + labelWidth;
         }
