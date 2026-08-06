@@ -90,6 +90,11 @@ public class GraphService
 
         var points = GraphSeries.FromDailyCounts(dailyPlays, interval, from, until);
 
+        if (!windowFrom.HasValue)
+        {
+            TrimLeadingEmpty(points, GraphSeries.EarliestStart(until, interval));
+        }
+
         if (points.Count < 3 || points.Count(w => w.Value > 0) < 2 || points.Sum(s => s.Value) < MinimumPlays)
         {
             return null;
@@ -119,6 +124,23 @@ public class GraphService
                 Image = image,
                 Interval = interval
             };
+    }
+
+    private static void TrimLeadingEmpty(List<GraphPoint> points, DateTime keepFrom)
+    {
+        var firstWithPlays = points.FindIndex(f => f.Value > 0);
+        if (firstWithPlays <= 0)
+        {
+            return;
+        }
+
+        var guaranteed = points.FindIndex(f => f.Date >= keepFrom);
+        var trim = guaranteed < 0 ? firstWithPlays : Math.Min(firstWithPlays, guaranteed);
+
+        if (trim > 0)
+        {
+            points.RemoveRange(0, trim);
+        }
     }
 
     private MemoryStream RenderLineGraph(LineGraph graph)
@@ -300,6 +322,8 @@ public class GraphService
         float scale, SKFont font, SKPaint labelPaint, SKPaint axisPaint)
     {
         var lastIndex = graph.Points.Count - 1;
+        var minGap = FontSize * 0.5f * scale;
+        var previousRight = float.MinValue;
 
         foreach (var tick in graph.Ticks)
         {
@@ -311,10 +335,24 @@ public class GraphService
             var align = tick.Index == 0 ? SKTextAlign.Left :
                 tick.Index == lastIndex ? SKTextAlign.Right : SKTextAlign.Center;
 
-            canvas.DrawLine(xPositions[tick.Index], plotBottom, xPositions[tick.Index], plotBottom + 4 * scale,
-                axisPaint);
-            canvas.DrawShapedText(tick.Label, xPositions[tick.Index], plotBottom + LabelBaseline * scale, align, font,
-                labelPaint);
+            var x = xPositions[tick.Index];
+            var labelWidth = font.MeasureText(tick.Label, labelPaint);
+            var left = align switch
+            {
+                SKTextAlign.Left => x,
+                SKTextAlign.Right => x - labelWidth,
+                _ => x - labelWidth / 2
+            };
+
+            if (left < previousRight + minGap)
+            {
+                continue;
+            }
+
+            canvas.DrawLine(x, plotBottom, x, plotBottom + 4 * scale, axisPaint);
+            canvas.DrawShapedText(tick.Label, x, plotBottom + LabelBaseline * scale, align, font, labelPaint);
+
+            previousRight = left + labelWidth;
         }
     }
 

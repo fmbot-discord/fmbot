@@ -113,6 +113,12 @@ public static class GraphTicks
             ticks.Add(new GraphTick(index, label(points[index].Date)));
         }
 
+        if (ticks.Count >= 3 && ticks[0].Index == 0 &&
+            (ticks[1].Index - ticks[0].Index) * 2 < ticks[2].Index - ticks[1].Index)
+        {
+            ticks.RemoveAt(0);
+        }
+
         return ticks;
     }
 
@@ -190,6 +196,7 @@ public static class GraphSeries
 {
     private const int MaxDailyPoints = 62;
     private const int MaxPoints = 140;
+    private const int MaxRenderPoints = 320;
 
     public static GraphInterval PickInterval(DateTime from, DateTime to, int sampleCount = int.MaxValue)
     {
@@ -271,7 +278,7 @@ public static class GraphSeries
 
     public static DateTime LimitToMaxPoints(DateTime from, DateTime to, GraphInterval interval)
     {
-        var maxBuckets = interval == GraphInterval.Day ? MaxDailyPoints : MaxPoints;
+        var maxBuckets = interval == GraphInterval.Day ? MaxDailyPoints : MaxRenderPoints;
         var oldest = AddIntervals(StartOfInterval(to, interval), interval, -(maxBuckets - 1));
 
         return from < oldest ? oldest : from;
