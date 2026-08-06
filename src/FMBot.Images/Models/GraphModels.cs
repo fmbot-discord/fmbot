@@ -204,7 +204,7 @@ public static class GraphSeries
 
         var interval = days <= MaxDailyPoints ? GraphInterval.Day :
             days / 7 <= MaxPoints ? GraphInterval.Week :
-            days / 30.44 <= MaxPoints ? GraphInterval.Month : GraphInterval.Year;
+            days / 30.44 <= MaxRenderPoints ? GraphInterval.Month : GraphInterval.Year;
 
         while (interval < GraphInterval.Year && BucketCount(days, interval) > sampleCount)
         {
