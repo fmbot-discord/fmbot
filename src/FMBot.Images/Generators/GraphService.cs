@@ -20,6 +20,8 @@ public class GraphService
     private const float LabelCenter = FontSize * 0.33f;
     private const float LineWidth = 2.5f;
     private const float DotRadius = 4.5f;
+    private const double MinimumPlays = 5;
+    private const int MaxDateTicks = 6;
 
     private static readonly SKColor AxisColor = new(0x8B, 0x9B, 0xA0);
     private static readonly SKColor LabelColor = new(0x93, 0xA1, 0xA6);
@@ -52,16 +54,17 @@ public class GraphService
     }
 
     public PlayHistoryGraph RenderPlayHistory(IReadOnlyList<GraphPoint> dailyPlays, CultureInfo culture,
-        SKColor lineColor, Func<double, string> valueLabel, GraphInterval? fixedInterval = null, int width = 660,
-        int height = 165)
+        SKColor lineColor, Func<double, string> valueLabel, GraphInterval? fixedInterval = null,
+        DateTime? windowFrom = null, DateTime? windowUntil = null, int width = 660, int height = 165)
     {
         if (dailyPlays == null || dailyPlays.Count == 0)
         {
             return null;
         }
 
-        var until = DateTime.UtcNow;
-        var earliest = dailyPlays[0].Date;
+        var now = DateTime.UtcNow;
+        var until = windowUntil.HasValue && windowUntil.Value < now ? windowUntil.Value : now;
+        var earliest = windowFrom ?? dailyPlays[0].Date;
 
         var totalPlays = 0d;
         foreach (var day in dailyPlays)
@@ -72,26 +75,31 @@ public class GraphService
         var interval = fixedInterval ?? GraphSeries.PickInterval(earliest, until,
             totalPlays >= int.MaxValue ? int.MaxValue : (int)totalPlays);
 
-        var earliestStart = GraphSeries.EarliestStart(until, interval);
-        var from = GraphSeries.LimitToMaxPoints(earliest < earliestStart ? earliest : earliestStart, until, interval);
+        if (!windowFrom.HasValue)
+        {
+            var earliestStart = GraphSeries.EarliestStart(until, interval);
+            earliest = earliest < earliestStart ? earliest : earliestStart;
+        }
+
+        var from = GraphSeries.LimitToMaxPoints(earliest, until, interval);
+
+        if (interval != GraphInterval.Day)
+        {
+            (from, until) = GraphSeries.TrimToWholeIntervals(from, until, interval);
+        }
 
         var points = GraphSeries.FromDailyCounts(dailyPlays, interval, from, until);
 
-        if (interval != GraphInterval.Day && points.Count > 3)
-        {
-            points.RemoveAt(points.Count - 1);
-        }
-
-        if (points.Count < 3 || points.Count(w => w.Value > 0) < 2)
+        if (points.Count < 3 || points.Count(w => w.Value > 0) < 2 || points.Sum(s => s.Value) < MinimumPlays)
         {
             return null;
         }
 
         var typeface = GetTypeface();
-        var dateLabel = GraphLabels.ForInterval(interval, culture);
-        if (points.Any(a => !typeface.ContainsGlyphs(dateLabel(a.Date))))
+        var ticks = GraphTicks.Plan(points, MaxDateTicks, culture);
+        if (ticks.Any(a => !typeface.ContainsGlyphs(a.Label)))
         {
-            dateLabel = GraphLabels.ForInterval(interval, CultureInfo.InvariantCulture);
+            ticks = GraphTicks.Plan(points, MaxDateTicks, CultureInfo.InvariantCulture);
         }
 
         var image = RenderLineGraph(new LineGraph
@@ -101,7 +109,7 @@ public class GraphService
             Height = height,
             LineColor = lineColor,
             ValueLabel = valueLabel,
-            DateLabel = dateLabel
+            Ticks = ticks
         });
 
         return image == null
@@ -291,29 +299,21 @@ public class GraphService
     private static void DrawDateLabels(SKCanvas canvas, LineGraph graph, float[] xPositions, float plotBottom,
         float scale, SKFont font, SKPaint labelPaint, SKPaint axisPaint)
     {
-        if (graph.Points.Count < 2 || graph.MaxXTicks < 2)
-        {
-            return;
-        }
-
         var lastIndex = graph.Points.Count - 1;
-        var stride = lastIndex / graph.MaxXTicks + 1;
 
-        var used = new HashSet<string>();
-        for (var index = lastIndex; index >= 0; index -= stride)
+        foreach (var tick in graph.Ticks)
         {
-            var label = FormatDate(graph, graph.Points[index].Date);
-
-            if (string.IsNullOrWhiteSpace(label) || !used.Add(label))
+            if (string.IsNullOrWhiteSpace(tick.Label))
             {
                 continue;
             }
 
-            var align = index == 0 ? SKTextAlign.Left :
-                index == lastIndex ? SKTextAlign.Right : SKTextAlign.Center;
+            var align = tick.Index == 0 ? SKTextAlign.Left :
+                tick.Index == lastIndex ? SKTextAlign.Right : SKTextAlign.Center;
 
-            canvas.DrawLine(xPositions[index], plotBottom, xPositions[index], plotBottom + 4 * scale, axisPaint);
-            canvas.DrawShapedText(label, xPositions[index], plotBottom + LabelBaseline * scale, align, font,
+            canvas.DrawLine(xPositions[tick.Index], plotBottom, xPositions[tick.Index], plotBottom + 4 * scale,
+                axisPaint);
+            canvas.DrawShapedText(tick.Label, xPositions[tick.Index], plotBottom + LabelBaseline * scale, align, font,
                 labelPaint);
         }
     }
@@ -338,13 +338,6 @@ public class GraphService
         return graph.ValueLabel != null
             ? graph.ValueLabel(value)
             : value.ToString("0.##", CultureInfo.InvariantCulture);
-    }
-
-    private static string FormatDate(LineGraph graph, DateTime date)
-    {
-        return graph.DateLabel != null
-            ? graph.DateLabel(date)
-            : date.ToString("d MMM", CultureInfo.InvariantCulture);
     }
 
     private static (double Min, double Max, double Step) NiceAxis(double dataMin, double dataMax, int maxTicks,

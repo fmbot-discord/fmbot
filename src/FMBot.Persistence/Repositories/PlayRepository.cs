@@ -273,7 +273,7 @@ ORDER BY time_played DESC;";
 
     public static async Task<IReadOnlyList<UserPlayDay>> GetUserPlayDays(int userId, NpgsqlConnection connection,
         DataSource dataSource, string artistName, string albumName, string trackName, DateTime weekAgo,
-        DateTime monthAgo, DateTime? lastPlayCutoff)
+        DateTime monthAgo, DateTime? lastPlayCutoff, DateTime? start = null, DateTime? end = null)
     {
         const string initialSql =
             "SELECT (date_trunc('day', time_played AT TIME ZONE 'UTC')) AT TIME ZONE 'UTC' AS day, " +
@@ -284,7 +284,7 @@ ORDER BY time_played DESC;";
             "(COUNT(*) FILTER (WHERE time_played >= @weekAgo))::int AS week_plays, " +
             "(COUNT(*) FILTER (WHERE time_played >= @monthAgo))::int AS month_plays ";
 
-        var sql = GetUserPlaysSqlString(initialSql, dataSource);
+        var sql = GetUserPlaysSqlString(initialSql, dataSource, start, end);
 
         if (artistName != null)
         {
@@ -314,7 +314,9 @@ ORDER BY time_played DESC;";
                 trackName,
                 weekAgo,
                 monthAgo,
-                lastPlayCutoff
+                lastPlayCutoff,
+                start,
+                end
             })
         ];
     }

@@ -1189,7 +1189,7 @@ public class PlayService
         return await GetEntityPlayHistory(userId, artistName, null, trackName);
     }
 
-    public async Task<UserPlayHistory> GetUserPlayHistory(int userId)
+    public async Task<UserPlayHistory> GetUserPlayHistory(int userId, DateTime? from = null, DateTime? until = null)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
@@ -1198,7 +1198,7 @@ public class PlayService
 
         var importUser = await UserRepository.GetImportUserForUserId(userId, connection);
         var days = await PlayRepository.GetUserPlayDays(userId, connection,
-            importUser?.DataSource ?? DataSource.LastFm, null, null, null, now, now, null);
+            importUser?.DataSource ?? DataSource.LastFm, null, null, null, now, now, null, from, until);
 
         var dailyPlays = new List<DayPlayCount>(days.Count);
         var importedDays = 0;

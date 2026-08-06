@@ -52,6 +52,7 @@ public class PlayBuilder
     private readonly AlbumService _albumService;
     private readonly PuppeteerService _puppeteerService;
     private readonly ArtistsService _artistsService;
+    private readonly GraphService _graphService;
     private readonly IMemoryCache _cache;
     private readonly BotSettings _botSettings;
 
@@ -74,6 +75,7 @@ public class PlayBuilder
         AlbumService albumService,
         PuppeteerService puppeteerService,
         ArtistsService artistsService,
+        GraphService graphService,
         IMemoryCache cache,
         IOptions<BotSettings> botSettings)
     {
@@ -93,6 +95,7 @@ public class PlayBuilder
         this._albumService = albumService;
         this._puppeteerService = puppeteerService;
         this._artistsService = artistsService;
+        this._graphService = graphService;
         this._cache = cache;
         this._botSettings = botSettings.Value;
     }
@@ -1083,6 +1086,15 @@ public class PlayBuilder
             ResponseType = ResponseType.Text
         };
 
+        var allTime = timeSettings.TimePeriod == TimePeriod.AllTime;
+
+        Task<UserPlayHistory> playHistoryTask = null;
+        if (context.ContextUser.UserType != UserType.User)
+        {
+            playHistoryTask = this._playService.GetUserPlayHistory(userSettings.UserId,
+                allTime ? null : timeSettings.StartDateTime, allTime ? null : timeSettings.EndDateTime);
+        }
+
         var count = await this._dataSourceFactory.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm,
             timeSettings.TimeFrom, userSettings.SessionKeyLastFm, timeSettings.TimeUntil);
 
@@ -1097,9 +1109,29 @@ public class PlayBuilder
         var userTitle =
             $"{StringExtensions.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()}";
 
-        response.Text = timeSettings.TimePeriod == TimePeriod.AllTime
+        var reply = allTime
             ? context.LocalizeCount("plays.totalScrobbles", count.Value, ("user", userTitle))
             : context.LocalizeCount("plays.scrobblesInPeriod", count.Value, ("user", userTitle), ("period", context.Localizer.AltPeriodLabel(timeSettings)));
+
+        var playHistory = playHistoryTask != null ? await playHistoryTask : null;
+
+        var playHistoryGraph = playHistory != null
+            ? await this._graphService.BuildPlayHistoryGraph(context, response, playHistory.DailyPlays,
+                "plays.png", height: GraphExtensions.CompactGraphHeight,
+                windowFrom: allTime ? null : timeSettings.StartDateTime,
+                windowUntil: allTime ? null : timeSettings.EndDateTime)
+            : null;
+
+        if (playHistoryGraph != null)
+        {
+            response.ResponseType = ResponseType.ComponentsV2;
+            response.TopLevelComponents.Add(new TextDisplayProperties(reply));
+            response.TopLevelComponents.Add(playHistoryGraph);
+        }
+        else
+        {
+            response.Text = reply;
+        }
 
         return response;
     }

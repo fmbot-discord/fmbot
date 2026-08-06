@@ -19,7 +19,8 @@ public static class GraphExtensions
 
     public static async Task<MediaGalleryProperties> BuildPlayHistoryGraph(this GraphService graphService,
         ContextModel context, ResponseModel response, IReadOnlyList<DayPlayCount> dailyPlays, string fileName,
-        GraphInterval? fixedInterval = null, int height = DefaultGraphHeight)
+        GraphInterval? fixedInterval = null, int height = DefaultGraphHeight, DateTime? windowFrom = null,
+        DateTime? windowUntil = null)
     {
         if (dailyPlays == null || dailyPlays.Count == 0)
         {
@@ -41,6 +42,8 @@ public static class GraphExtensions
             await GetLineColor(context, response),
             value => value.Format(context.NumberFormat),
             fixedInterval,
+            windowFrom,
+            windowUntil,
             height: height);
 
         return AttachGraph(response, graph, fileName);
