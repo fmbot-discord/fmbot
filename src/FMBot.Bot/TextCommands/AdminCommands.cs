@@ -2113,17 +2113,30 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
 
         if (type == "buysupporter")
         {
-            var description = new StringBuilder();
-            description.AppendLine(
-                "Use the button below to get started.");
-            this._embed.WithDescription(description.ToString());
+            var containers = new List<ComponentContainerProperties>
+            {
+                new()
+                {
+                    AccentColor = DiscordConstants.InformationColorBlue,
+                    Components =
+                    [
+                        new TextDisplayProperties("Use the button below to purchase."),
+                        new ComponentSeparatorProperties(),
+                        new ActionRowProperties().AddComponents(
+                            new ButtonProperties(
+                                InteractionConstants.SupporterLinks.GeneratePurchaseButtons(true, false, false,
+                                    source: "embedpromo"),
+                                "Get .fmbot supporter", ButtonStyle.Primary))
+                    ]
+                }
+            };
 
-            var components = new ActionRowProperties().WithButton("Get .fmbot supporter", style: ButtonStyle.Primary,
-                customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(true, false, false,
-                    source: "embedpromo"));
-            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties()
-                .AddEmbeds(this._embed)
-                .WithComponents([components]));
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
+            {
+                Components = containers,
+                Flags = MessageFlags.IsComponentsV2,
+                AllowedMentions = AllowedMentionsProperties.None
+            });
         }
 
         if (type == "buylifetime")
