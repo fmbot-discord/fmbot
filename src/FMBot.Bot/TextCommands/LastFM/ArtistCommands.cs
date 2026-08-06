@@ -45,7 +45,7 @@ public class ArtistCommands(
         "artist Gamma Intel")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Artists)]
-    [SupporterEnhanced("Supporters can see the date they first discovered an artist")]
+    [SupporterEnhanced("Supporters can see the date they first discovered an artist and a graph of their listening history")]
     public async Task ArtistAsync([CommandParameter(Remainder = true)] string artistValues = null)
     {
         _ = this.Context.Channel?.TriggerTypingAsync()!;
@@ -175,6 +175,7 @@ public class ArtistCommands(
         "artistplays Mall Grab @user")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Artists)]
+    [SupporterEnhanced("Supporters get a graph of their listening history for the artist")]
     public async Task ArtistPlaysAsync([CommandParameter(Remainder = true)] string artistValues = null)
     {
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);

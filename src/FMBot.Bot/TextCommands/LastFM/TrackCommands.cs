@@ -51,7 +51,7 @@ public class TrackCommands(
         "track Crystal Waters | Gypsy Woman (She's Homeless) - Radio Edit")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks)]
-    [SupporterEnhanced("Supporters can see the date they first discovered a track")]
+    [SupporterEnhanced("Supporters can see the date they first discovered a track and a graph of their listening history")]
     public async Task TrackAsync([CommandParameter(Remainder = true)] string trackValues = null)
     {
         try
@@ -84,6 +84,7 @@ public class TrackCommands(
         "trackplays Cocteau Twins | Heaven or Las Vegas @user")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks)]
+    [SupporterEnhanced("Supporters get a graph of their listening history for the track")]
     public async Task TrackPlaysAsync([CommandParameter(Remainder = true)] string trackValues = null)
     {
         _ = this.Context.Channel?.TriggerTypingAsync()!;

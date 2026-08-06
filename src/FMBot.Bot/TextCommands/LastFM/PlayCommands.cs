@@ -461,6 +461,7 @@ public class PlayCommands(
     [Examples("p", "plays", "plays @frikandel", "plays monthly")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Other)]
+    [SupporterEnhanced("Supporters get a graph of their listening history")]
     public async Task PlaysAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);

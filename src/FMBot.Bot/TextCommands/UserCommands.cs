@@ -70,7 +70,7 @@ public class UserCommands(
     [Summary("Displays user stats related to Last.fm and .fmbot")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Other)]
-    [SupporterEnhanced("Get more insights and an overview of all your years")]
+    [SupporterEnhanced("Supporters get a graph of their listening history, more insights and an overview of all their years")]
     public async Task StatsAsync([CommandParameter(Remainder = true)] string userOptions = null)
     {
         _ = this.Context.Channel?.TriggerTypingAsync()!;

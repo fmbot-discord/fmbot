@@ -42,7 +42,7 @@ public class AlbumCommands(
         "ab Boy Harsher | Yr Body Is Nothing")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Albums)]
-    [SupporterEnhanced("Supporters can see the date they first discovered an album")]
+    [SupporterEnhanced("Supporters can see the date they first discovered an album and a graph of their listening history")]
     public async Task AlbumAsync([CommandParameter(Remainder = true)] string albumValues = null)
     {
         try
@@ -77,6 +77,7 @@ public class AlbumCommands(
         "abp The Beatles | Yesterday @user")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Albums)]
+    [SupporterEnhanced("Supporters get a graph of their listening history for the album")]
     public async Task AlbumPlaysAsync([CommandParameter(Remainder = true)] string albumValues = null)
     {
         _ = this.Context.Channel?.TriggerTypingAsync()!;
