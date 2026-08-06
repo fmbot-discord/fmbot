@@ -243,16 +243,6 @@ public class ArtistBuilders
                 : context.Localize("artist.fromLocation", ("location", fullArtist.Location)));
         }
 
-        if (fullArtist.Type != null)
-        {
-            headerSection.Append($"{fullArtist.Type}");
-            if (fullArtist.Gender != null)
-            {
-                headerSection.Append($" - {fullArtist.Gender}");
-            }
-            headerSection.AppendLine();
-        }
-
         if (fullArtist.StartDate.HasValue && !fullArtist.EndDate.HasValue)
         {
             var specifiedDateTime = DateTime.SpecifyKind(fullArtist.StartDate.Value, DateTimeKind.Utc);
@@ -288,6 +278,16 @@ public class ArtistBuilders
                     ("birthday", ArtistsService.IsArtistBirthday(fullArtist.StartDate))));
                 headerSection.AppendLine(context.Localize("artist.stopped", ("date", $"<t:{endDateValue}:D>")));
             }
+        }
+
+        if (fullArtist.Type != null)
+        {
+            headerSection.Append($"-# {fullArtist.Type}");
+            if (fullArtist.Gender != null)
+            {
+                headerSection.Append($" - {fullArtist.Gender}");
+            }
+            headerSection.AppendLine();
         }
 
         var hasMusicBrainzInfo = !string.IsNullOrWhiteSpace(fullArtist.Disambiguation) ||
@@ -478,26 +478,24 @@ public class ArtistBuilders
         response.ComponentsContainer.WithActionRow(navRow);
 
         var socialRow = new ActionRowProperties();
-        var hasSocialLinks = false;
 
         if (context.ContextUser.RymEnabled == true && fullArtist.ArtistLinks != null &&
             fullArtist.ArtistLinks.Any(a => a.Type == LinkType.RateYourMusic))
         {
             var rym = fullArtist.ArtistLinks.First(f => f.Type == LinkType.RateYourMusic);
-            socialRow.WithButton(emote: EmojiProperties.Custom(DiscordConstants.RateYourMusic), url: rym.Url);
-            hasSocialLinks = true;
+            socialRow.AddComponents(
+                new LinkButtonProperties(rym.Url, EmojiProperties.Custom(DiscordConstants.RateYourMusic)));
         }
         else if (fullArtist.SpotifyId != null)
         {
-            socialRow.WithButton(
-                emote: EmojiProperties.Custom(DiscordConstants.Spotify),
-                url: $"https://open.spotify.com/artist/{fullArtist.SpotifyId}");
-            hasSocialLinks = true;
+            socialRow.AddComponents(new LinkButtonProperties(
+                $"https://open.spotify.com/artist/{fullArtist.SpotifyId}",
+                EmojiProperties.Custom(DiscordConstants.Spotify)));
 
             if (fullArtist.AppleMusicUrl != null)
             {
-                socialRow.WithButton(
-                    emote: EmojiProperties.Custom(DiscordConstants.AppleMusic), url: fullArtist.AppleMusicUrl);
+                socialRow.AddComponents(new LinkButtonProperties(fullArtist.AppleMusicUrl,
+                    EmojiProperties.Custom(DiscordConstants.AppleMusic)));
             }
         }
 
@@ -506,33 +504,33 @@ public class ArtistBuilders
             var instagram = fullArtist.ArtistLinks.FirstOrDefault(f => f.Type == LinkType.Instagram);
             if (instagram != null && socialRow.Components.Count() < 5)
             {
-                socialRow.WithButton(emote: EmojiProperties.Custom(DiscordConstants.Instagram), url: instagram.Url);
-                hasSocialLinks = true;
+                socialRow.AddComponents(new LinkButtonProperties(instagram.Url,
+                    EmojiProperties.Custom(DiscordConstants.Instagram)));
             }
 
             var twitter = fullArtist.ArtistLinks.FirstOrDefault(f => f.Type == LinkType.Twitter);
             if (twitter != null && socialRow.Components.Count() < 5)
             {
-                socialRow.WithButton(emote: EmojiProperties.Custom(DiscordConstants.Twitter), url: twitter.Url);
-                hasSocialLinks = true;
+                socialRow.AddComponents(new LinkButtonProperties(twitter.Url,
+                    EmojiProperties.Custom(DiscordConstants.Twitter)));
             }
 
             var tiktok = fullArtist.ArtistLinks.FirstOrDefault(f => f.Type == LinkType.TikTok);
             if (tiktok != null && socialRow.Components.Count() < 5)
             {
-                socialRow.WithButton(emote: EmojiProperties.Custom(DiscordConstants.TikTok), url: tiktok.Url);
-                hasSocialLinks = true;
+                socialRow.AddComponents(new LinkButtonProperties(tiktok.Url,
+                    EmojiProperties.Custom(DiscordConstants.TikTok)));
             }
 
             var bandcamp = fullArtist.ArtistLinks.FirstOrDefault(f => f.Type == LinkType.Bandcamp);
             if (bandcamp != null && socialRow.Components.Count() < 5)
             {
-                socialRow.WithButton(emote: EmojiProperties.Custom(DiscordConstants.Bandcamp), url: bandcamp.Url);
-                hasSocialLinks = true;
+                socialRow.AddComponents(new LinkButtonProperties(bandcamp.Url,
+                    EmojiProperties.Custom(DiscordConstants.Bandcamp)));
             }
         }
 
-        if (hasSocialLinks)
+        if (socialRow.Components.Any())
         {
             response.ComponentsContainer.WithActionRow(socialRow);
         }
