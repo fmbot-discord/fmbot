@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services;
 using FMBot.Domain.Extensions;
-using FMBot.Domain.Models;
 using FMBot.Images.Generators;
 using FMBot.Images.Models;
 using NetCord.Rest;
@@ -14,7 +13,7 @@ namespace FMBot.Bot.Extensions;
 
 public static class GraphExtensions
 {
-    public const int DefaultGraphHeight = 165;
+    private const int DefaultGraphHeight = 165;
     public const int CompactGraphHeight = 110;
 
     public static async Task<MediaGalleryProperties> BuildPlayHistoryGraph(this GraphService graphService,

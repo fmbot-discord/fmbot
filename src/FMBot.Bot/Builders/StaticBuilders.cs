@@ -171,7 +171,7 @@ public class StaticBuilders
         if (expandWithPerks)
         {
             container.WithTextDisplay("**📈 Expanded commands & stats**\n" +
-                                      "-# Get expanded `.profile`, `.recap`, `.overview` and `.recent` commands, see all `.artistalbums` and `.artisttracks` results, and view lyrics right inside .fmbot.");
+                                      "-# Get expanded `.profile`, `.recap`, `.overview` and `.recent` commands, enable visual graphs, see all `.artistalbums` and `.artisttracks` results, and view lyrics right inside .fmbot.");
 
             container.WithTextDisplay("**<:history:1131511469096312914> Import your history**\n" +
                                       "-# Import and access your full Spotify and Apple Music history together with your Last.fm data for the most accurate playcounts, listening time, and insights.");

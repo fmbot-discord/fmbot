@@ -181,7 +181,8 @@ public class SupporterService
 
         var expandedCommands = new StringBuilder();
         expandedCommands.AppendLine("### 📈 Expanded commands with more statistics");
-        expandedCommands.AppendLine("- `.profile` & `.recap` — Expanded profile with more insights and stats");
+        expandedCommands.AppendLine("- `.artist`, `.album`, `.track` and `.profile` — See visual graphs and see listening time");
+        expandedCommands.AppendLine("- `.artistplays`, `.albumplays`, `.trackplays` & `.plays` — See visual graphs");
         expandedCommands.AppendLine("- `.overview` & `.recent` — See your lifetime listening history");
         expandedCommands.AppendLine("- `.artistalbums` & `.artisttracks` — See all results, even outside of your top 5000/6000");
         expandedCommands.AppendLine("- `.lyrics` — View lyrics for a track");
