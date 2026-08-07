@@ -556,7 +556,7 @@ public class UserCommands(
         await this.Context.LogCommandUsedAsync(response, userService);
     }
 
-    [Command("mode", "md")]
+    [Command("mode", "md", "customize")]
     [UsernameSetRequired]
     [ExcludeFromHelp]
     public async Task PickModeAsync([CommandParameter(Remainder = true)] string _ = null)
