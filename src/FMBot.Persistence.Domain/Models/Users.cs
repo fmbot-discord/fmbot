@@ -31,6 +31,8 @@ public class User
 
     public bool? MusicBotTrackingDisabled { get; set; }
 
+    public bool? CorrectionsDisabled { get; set; }
+
     public ResponseMode? Mode { get; set; }
 
     public WhoKnowsResponseMode? WhoKnowsMode { get; set; }

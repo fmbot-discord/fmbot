@@ -515,6 +515,9 @@ public class LastFmRepository : ILastfmRepository
                     : null,
                 Type = userCall.Content.User.Type,
                 Subscriber = userCall.Content.User.Subscriber == 1,
+                CorrectionsDisabled = userCall.Content.User.Corrections.HasValue
+                    ? userCall.Content.User.Corrections == 0
+                    : (bool?)null,
                 SpotifyExpiryEstimateUnix = userCall.Content.User.SpotifyExpiryEstimate?.Unixtime
             };
     }

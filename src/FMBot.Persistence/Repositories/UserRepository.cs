@@ -87,8 +87,12 @@ public class UserRepository
             ? $"'{DateTime.UnixEpoch.AddSeconds(dataSourceUser.SpotifyExpiryEstimateUnix.Value):u}'"
             : "NULL";
 
+        var correctionsDisabled = dataSourceUser.CorrectionsDisabled.HasValue
+            ? $"'{dataSourceUser.CorrectionsDisabled.Value}'"
+            : "NULL";
+
         await using var setIndexTime = new NpgsqlCommand($"UPDATE public.users SET registered_last_fm='{dataSourceUser.Registered:u}', lastfm_pro = '{dataSourceUser.Subscriber}', total_playcount = {dataSourceUser.Playcount}, " +
-                                                         $"spotify_connection_expiry = {spotifyExpiry}, spotify_expiry_checked = '{DateTime.UtcNow:u}' " +
+                                                         $"spotify_connection_expiry = {spotifyExpiry}, spotify_expiry_checked = '{DateTime.UtcNow:u}', corrections_disabled = {correctionsDisabled} " +
                                                          $"WHERE user_id = {user.UserId};", connection);
 
         await setIndexTime.ExecuteNonQueryAsync().ConfigureAwait(false);

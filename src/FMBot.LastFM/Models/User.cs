@@ -27,6 +27,8 @@ internal class UserLfm
 
     public long Subscriber { get; set; }
 
+    public long? Corrections { get; set; }
+
     public Uri Url { get; set; }
 
     public string Country { get; set; }

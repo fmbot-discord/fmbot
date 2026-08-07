@@ -14,6 +14,8 @@ public class DataSourceUser
 
     public bool Subscriber { get; set; }
 
+    public bool? CorrectionsDisabled { get; set; }
+
     public string Url { get; set; }
 
     public string Country { get; set; }

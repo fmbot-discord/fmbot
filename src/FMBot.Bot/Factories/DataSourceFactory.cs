@@ -195,6 +195,7 @@ public class DataSourceFactory : IDataSourceFactory
             ? DateTime.UnixEpoch.AddSeconds(userInfo.SpotifyExpiryEstimateUnix.Value)
             : (DateTime?)null;
         var lastfmPro = userInfo.Subscriber;
+        var correctionsDisabled = userInfo.CorrectionsDisabled;
 
         _ = Task.Run(async () =>
         {
@@ -207,18 +208,16 @@ public class DataSourceFactory : IDataSourceFactory
 
                 await using var command = new NpgsqlCommand(
                     "UPDATE public.users " +
-                    "SET spotify_connection_expiry = @expiry, spotify_expiry_checked = @now, lastfm_pro = @lastfmPro " +
-                    "WHERE UPPER(user_name_last_fm) = UPPER(@lastFmUserName) " +
-                    "AND (spotify_expiry_checked IS NULL OR spotify_expiry_checked < @staleCutoff);", connection);
+                    "SET spotify_connection_expiry = @expiry, spotify_expiry_checked = @now, lastfm_pro = @lastfmPro, corrections_disabled = @correctionsDisabled " +
+                    "WHERE UPPER(user_name_last_fm) = UPPER(@lastFmUserName) ", connection);
 
                 command.Parameters.Add(new NpgsqlParameter("expiry", NpgsqlDbType.TimestampTz)
                     { Value = (object)expiry ?? DBNull.Value });
                 command.Parameters.Add(new NpgsqlParameter("now", NpgsqlDbType.TimestampTz) { Value = now });
                 command.Parameters.Add(new NpgsqlParameter("lastfmPro", NpgsqlDbType.Boolean) { Value = lastfmPro });
+                command.Parameters.Add(new NpgsqlParameter<bool?>("correctionsDisabled", correctionsDisabled));
                 command.Parameters.Add(new NpgsqlParameter("lastFmUserName", NpgsqlDbType.Text)
                     { Value = lastFmUserName });
-                command.Parameters.Add(new NpgsqlParameter("staleCutoff", NpgsqlDbType.TimestampTz)
-                    { Value = now.AddDays(-1) });
 
                 await command.ExecuteNonQueryAsync();
             }

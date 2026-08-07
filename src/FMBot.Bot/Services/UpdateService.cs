@@ -424,7 +424,9 @@ SELECT 3 AS Type, user_track_id AS Id, artist_name, name, playcount FROM public.
 
         foreach (var artist in newScrobbles.GroupBy(g => g.ArtistName.ToLower()))
         {
-            var alias = await this._aliasService.GetAlias(artist.Key.ToLower());
+            var alias = user.CorrectionsDisabled != true
+                ? await this._aliasService.GetAlias(artist.Key.ToLower())
+                : null;
 
             var artistName = artist.First().ArtistName;
             if (alias != null && !alias.Options.HasFlag(AliasOption.DisableInPlays))
@@ -491,7 +493,9 @@ SELECT 3 AS Type, user_track_id AS Id, artist_name, name, playcount FROM public.
                          AlbumName = x.AlbumName.ToLower()
                      }))
         {
-            var alias = await this._aliasService.GetAlias(album.Key.ArtistName.ToLower());
+            var alias = user.CorrectionsDisabled != true
+                ? await this._aliasService.GetAlias(album.Key.ArtistName.ToLower())
+                : null;
 
             var artistName = album.First().ArtistName;
             if (alias != null && !alias.Options.HasFlag(AliasOption.DisableInPlays))
@@ -562,7 +566,9 @@ SELECT 3 AS Type, user_track_id AS Id, artist_name, name, playcount FROM public.
                      TrackName = x.TrackName.ToLower()
                  }))
         {
-            var alias = await this._aliasService.GetAlias(track.Key.ArtistName.ToLower());
+            var alias = user.CorrectionsDisabled != true
+                ? await this._aliasService.GetAlias(track.Key.ArtistName.ToLower())
+                : null;
 
             var artistName = track.First().ArtistName;
             if (alias != null && !alias.Options.HasFlag(AliasOption.DisableInPlays))
