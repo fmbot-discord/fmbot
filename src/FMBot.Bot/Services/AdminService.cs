@@ -439,29 +439,4 @@ public class AdminService
 
         await db.SaveChangesAsync();
     }
-
-    public async Task<bool?> ToggleSpecialGuildAsync(NetCord.Gateway.Guild guild)
-    {
-        await using var db = await this._contextFactory.CreateDbContextAsync();
-        var existingGuild = await db.Guilds
-            .AsQueryable()
-            .FirstAsync(f => f.DiscordGuildId == guild.Id);
-
-        existingGuild.Name = guild.Name;
-
-        if (existingGuild.SpecialGuild == true)
-        {
-            existingGuild.SpecialGuild = false;
-        }
-        else
-        {
-            existingGuild.SpecialGuild = true;
-        }
-
-        db.Entry(existingGuild).State = EntityState.Modified;
-
-        await db.SaveChangesAsync();
-
-        return existingGuild.SpecialGuild;
-    }
 }

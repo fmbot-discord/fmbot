@@ -345,10 +345,10 @@ public class AdminCommands(
             {
                 var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
 
-                if (guild.SpecialGuild != true)
+                if (guild.GuildFlags?.HasFlag(GuildFlags.StaffCommandsAvailable) != true)
                 {
                     await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
-                        new MessageProperties { Content = "This command can only be used in special guilds." });
+                        new MessageProperties { Content = "This command can only be used in servers with the StaffCommandsAvailable flag." });
                     await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
                     return;
                 }
@@ -1163,10 +1163,10 @@ public class AdminCommands(
         {
             var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
 
-            if (guild.SpecialGuild != true)
+            if (guild.GuildFlags?.HasFlag(GuildFlags.StaffCommandsAvailable) != true)
             {
                 await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
-                    new MessageProperties { Content = "This command can only be used in special guilds." });
+                    new MessageProperties { Content = "This command can only be used in servers with the StaffCommandsAvailable flag." });
                 await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
                 return;
             }

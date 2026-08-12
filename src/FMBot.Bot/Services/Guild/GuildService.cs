@@ -156,9 +156,9 @@ public class GuildService(
 
         return await db.Guilds
             .AsNoTracking()
-            .Where(w => w.SpecialGuild == true ||
-                        (w.GuildFlags.HasValue && (w.GuildFlags.Value.HasFlag(GuildFlags.LegacyWhoKnowsWhitelist) ||
-                                                   w.GuildFlags.Value.HasFlag(GuildFlags.PremiumServerTester))) ||
+            .Where(w => (w.GuildFlags.HasValue && (w.GuildFlags.Value.HasFlag(GuildFlags.LegacyWhoKnowsWhitelist) ||
+                                                   w.GuildFlags.Value.HasFlag(GuildFlags.PremiumServerTester) ||
+                                                   w.GuildFlags.Value.HasFlag(GuildFlags.StaffCommandsAvailable))) ||
                         paidGuildIds.Contains(w.DiscordGuildId))
             .ToListAsync();
     }

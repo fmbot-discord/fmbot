@@ -248,33 +248,6 @@ public class OwnerCommands(
         }
     }
 
-    [Command("togglespecialguild")]
-    [Summary("Makes the server a special server")]
-    [GuildOnly]
-    public async Task ToggleSpecialGuildAsync()
-    {
-        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
-        {
-            var specialGuild = await adminService.ToggleSpecialGuildAsync(this.Context.Guild);
-
-            if (specialGuild == true)
-            {
-                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "This is now a special guild!!1!" });
-            }
-            else
-            {
-                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Not a special guild anymore :(" });
-            }
-
-            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
-        }
-        else
-        {
-            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "Only .fmbot owners can execute this command." });
-            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
-        }
-    }
-
     [Command("premiumserverstatus", "premiumguildstatus")]
     [Summary("Shows premium server subscription status for a server")]
     public async Task PremiumServerStatusAsync([CommandParameter(Remainder = true)] string guildId = null)
