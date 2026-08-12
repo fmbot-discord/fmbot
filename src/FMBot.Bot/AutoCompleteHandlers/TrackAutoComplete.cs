@@ -76,28 +76,7 @@ public class TrackAutoComplete : IAutocompleteProvider<AutocompleteInteractionCo
                     .Select(s => s.Name)
                     .Take(3));
 
-                results.ReplaceOrAddToList(trackResults
-                    .Where(w => w.Artist.StartsWith(searchValue, StringComparison.OrdinalIgnoreCase))
-                    .Take(2)
-                    .Select(s => s.Name));
-
-                results.ReplaceOrAddToList(trackResults
-                    .Where(w => w.Popularity != null && w.Popularity > 60 &&
-                                w.Name.Contains(searchValue, StringComparison.OrdinalIgnoreCase))
-                    .Take(2)
-                    .Select(s => s.Name));
-
-                results.ReplaceOrAddToList(trackResults
-                    .Where(w => w.Name.StartsWith(searchValue, StringComparison.OrdinalIgnoreCase))
-                    .Take(4)
-                    .Select(s => s.Name));
-
-
-                results.ReplaceOrAddToList(trackResults
-                    .Where(w => w.Name.Contains(searchValue, StringComparison.OrdinalIgnoreCase))
-                    .Take(2)
-                    .Select(s => s.Name));
-
+                results.ReplaceOrAddToList(trackResults.Select(s => s.Name));
             }
             catch (Exception e)
             {

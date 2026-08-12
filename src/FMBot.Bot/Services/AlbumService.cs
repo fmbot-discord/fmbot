@@ -983,7 +983,7 @@ public class AlbumService
         catch (Exception e)
         {
             Log.Error(e, "Error in {method}", nameof(SearchThroughAlbums));
-            throw;
+            return [];
         }
     }
 

@@ -1068,7 +1068,7 @@ public class TrackService
         catch (Exception e)
         {
             Log.Error(e, "Error in {method}", nameof(SearchThroughTracks));
-            throw;
+            return [];
         }
     }
 }

@@ -76,27 +76,7 @@ public class AlbumAutoComplete : IAutocompleteProvider<AutocompleteInteractionCo
                     .Select(s => s.Name)
                     .Take(3));
 
-                results.ReplaceOrAddToList(albumResults
-                    .Where(w => w.Artist.StartsWith(searchValue, StringComparison.OrdinalIgnoreCase))
-                    .Take(2)
-                    .Select(s => s.Name));
-
-                results.ReplaceOrAddToList(albumResults
-                    .Where(w => w.Popularity != null && w.Popularity > 60 &&
-                                w.Name.Contains(searchValue, StringComparison.OrdinalIgnoreCase))
-                    .Take(2)
-                    .Select(s => s.Name));
-
-                results.ReplaceOrAddToList(albumResults
-                    .Where(w => w.Name.StartsWith(searchValue, StringComparison.OrdinalIgnoreCase))
-                    .Take(4)
-                    .Select(s => s.Name));
-
-
-                results.ReplaceOrAddToList(albumResults
-                    .Where(w => w.Name.Contains(searchValue, StringComparison.OrdinalIgnoreCase))
-                    .Take(2)
-                    .Select(s => s.Name));
+                results.ReplaceOrAddToList(albumResults.Select(s => s.Name));
             }
             catch (Exception e)
             {
