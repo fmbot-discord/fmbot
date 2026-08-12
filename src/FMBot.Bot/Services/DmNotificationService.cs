@@ -45,7 +45,7 @@ public class DmNotificationService(
         {
             var now = DateTime.UtcNow;
             var activeCutoff = now.AddMonths(-6);
-            var staleCutoff = now.AddDays(-30);
+            var staleCutoff = now.AddDays(-150);
 
             await using var db = await contextFactory.CreateDbContextAsync();
 
