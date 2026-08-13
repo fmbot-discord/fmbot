@@ -779,7 +779,7 @@ public class SupporterService
         }
     }
 
-    public async Task<Supporter> AddSupporter(ulong id, string name, string notes)
+    public async Task<Supporter> AddLifetimeSupporter(ulong id, string name, string notes)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var user = await db.Users
@@ -789,19 +789,42 @@ public class SupporterService
         user.UserType = UserType.Supporter;
         db.Update(user);
 
+        var now = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+
         var supporterToAdd = new Supporter
         {
             Name = name,
-            Created = DateTime.UtcNow,
+            Created = now,
+            Modified = now,
             Notes = notes,
             SupporterMessagesEnabled = true,
             VisibleInOverview = true,
-            SupporterType = SupporterType.User
+            SupporterType = SupporterType.User,
+            DiscordUserId = id,
+            SubscriptionType = SubscriptionType.LifetimeStripeManual,
+            LastPayment = now
         };
 
         await db.Supporters.AddAsync(supporterToAdd);
 
         await db.SaveChangesAsync();
+
+        try
+        {
+            var supporterAuditLogChannel =
+                WebhookService.CreateWebhookClientFromUrl(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
+
+            var embed = new EmbedProperties().WithDescription(
+                $"Added lifetime supporter {id} - <@{id}>\n" +
+                $"*{notes}*");
+            await supporterAuditLogChannel.ExecuteAsync(new WebhookMessageProperties { Embeds = [embed] });
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Failed to send lifetime supporter audit log for {discordUserId}", id);
+        }
+
+        Log.Information("Added lifetime supporter for {discordUserId}", id);
 
         return supporterToAdd;
     }
@@ -2042,7 +2065,9 @@ public class SupporterService
             .AsQueryable()
             .FirstOrDefaultAsync(w =>
                 w.DiscordUserId == discordUserId &&
-                (w.SubscriptionType == SubscriptionType.Discord || w.SubscriptionType == SubscriptionType.Stripe) &&
+                (w.SubscriptionType == SubscriptionType.Discord || w.SubscriptionType == SubscriptionType.Stripe ||
+                 w.SubscriptionType == SubscriptionType.LifetimeOpenCollective ||
+                 w.SubscriptionType == SubscriptionType.LifetimeStripeManual) &&
                 w.Expired != true);
 
         if (activeSupporter == null)
@@ -2090,7 +2115,9 @@ public class SupporterService
             .AsQueryable()
             .Where(w =>
                 w.DiscordUserId != null &&
-                (w.SubscriptionType == SubscriptionType.Discord || w.SubscriptionType == SubscriptionType.Stripe) &&
+                (w.SubscriptionType == SubscriptionType.Discord || w.SubscriptionType == SubscriptionType.Stripe ||
+                 w.SubscriptionType == SubscriptionType.LifetimeOpenCollective ||
+                 w.SubscriptionType == SubscriptionType.LifetimeStripeManual) &&
                 w.Expired != true)
             .ToListAsync();
 
@@ -2412,7 +2439,7 @@ public class SupporterService
         }
     }
 
-    public async Task ModifyGuildRole(ulong discordUserId, bool add = true)
+    public async Task<bool> ModifyGuildRole(ulong discordUserId, bool add = true)
     {
         var baseGuild = await this._client.GetGuildAsync(this._botSettings.Bot.BaseServerId);
 
@@ -2435,9 +2462,9 @@ public class SupporterService
                             });
 
                             Log.Information("Modifying supporter role succeeded for {id} - added", discordUserId);
-
-                            return;
                         }
+
+                        return true;
                     }
                     else if (supporterRole.Key != 0)
                     {
@@ -2448,7 +2475,7 @@ public class SupporterService
 
                         Log.Information("Modifying supporter role succeeded for {id} - removed", discordUserId);
 
-                        return;
+                        return true;
                     }
                 }
             }
@@ -2457,6 +2484,8 @@ public class SupporterService
                 Log.Error(e, "Modifying supporter role failed for {id}", discordUserId);
             }
         }
+
+        return false;
     }
 
     public async Task ModifyPremiumGuildRole(ulong discordUserId, bool add = true)

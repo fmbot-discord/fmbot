@@ -1758,17 +1758,16 @@ public class AdminCommands(
         }
     }
 
-    [Command("addsupporterclassic")]
-    [Examples("addsupporter \"125740103539621888\" \"Drasil\" \"lifetime supporter\"",
-        "addsupporter \"278633844763262976\" \"Aetheling\" \"monthly supporter (perm at 28-11-2021)\"")]
-    public async Task AddSupporterClassicAsync(string user = null, string name = null, string internalNotes = null)
+    [Command("addlifetimesupporter", "addsupporterclassic")]
+    [Examples("addlifetimesupporter 125740103539621888 Drasil Lifetime giveaway winner")]
+    public async Task AddLifetimeSupporterAsync(string user = null, string name = null,
+        [CommandParameter(Remainder = true)] string internalNotes = null)
     {
-        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
         {
-            var formatError = "Make sure to follow the correct format when adding a supporter\n" +
-                              "Examples: \n" +
-                              "`.addsupporter \"125740103539621888\" \"Drasil\" \"lifetime supporter\"`\n" +
-                              "`.addsupporter \"278633844763262976\" \"Aetheling\" \"monthly supporter (perm at 28-11-2021)\"`";
+            var formatError = "Make sure to follow the correct format when adding a lifetime supporter\n" +
+                              "Example: \n" +
+                              "`.addlifetimesupporter 125740103539621888 Drasil Lifetime giveaway winner`";
 
             if (string.IsNullOrEmpty(user) || string.IsNullOrEmpty(internalNotes) || string.IsNullOrEmpty(name) ||
                 user == "help")
@@ -1785,7 +1784,8 @@ public class AdminCommands(
                 return;
             }
 
-            var userSettings = await userService.GetUserAsync(userId);
+            _ = this.Context.Channel?.TriggerTypingAsync()!;
+            var userSettings = await userService.GetUserWithDiscogs(userId);
 
             if (userSettings == null)
             {
@@ -1803,12 +1803,43 @@ public class AdminCommands(
                 return;
             }
 
-            await supporterService.AddSupporter(userSettings.DiscordUserId, name, internalNotes);
+            var supporter = await supporterService.AddLifetimeSupporter(userSettings.DiscordUserId, name, internalNotes);
 
-            this._embed.WithDescription("Supporter added.\n" +
-                                        $"User id: {user} | <@{user}>\n" +
-                                        $"Name: **{name}**\n" +
-                                        $"Internal notes: `{internalNotes}`");
+            var addedRole = await supporterService.ModifyGuildRole(userSettings.DiscordUserId);
+
+            this._embed.WithTitle("Added lifetime supporter");
+
+            var description = new StringBuilder();
+            description.AppendLine($"User id: {user} | <@{user}>\n" +
+                                   $"Name: **{name}**\n" +
+                                   $"Subscription type: `{Enum.GetName(supporter.SubscriptionType.GetValueOrDefault())}`\n" +
+                                   $"Internal notes: `{internalNotes}`");
+
+            description.AppendLine();
+            description.AppendLine(addedRole ? "✅ Supporter role added" : "❌ Unable to add supporter role");
+
+            var discordUser = await this.Context.GetUserAsync(userSettings.DiscordUserId);
+            if (discordUser != null)
+            {
+                try
+                {
+                    await supporterService.SendSupporterWelcomeMessage(discordUser, userSettings.UserDiscogs != null,
+                        supporter);
+
+                    description.AppendLine("✅ Thank you dm sent");
+                }
+                catch (Exception e)
+                {
+                    Log.Error(e, "Sending supporter welcome dm failed for {id}", userSettings.DiscordUserId);
+                    description.AppendLine("❌ Unable to send thank you dm");
+                }
+            }
+            else
+            {
+                description.AppendLine("❌ Unable to send thank you dm");
+            }
+
+            this._embed.WithDescription(description.ToString());
 
             this._embed.WithFooter("Command not intended for use in public channels");
 
