@@ -6,7 +6,6 @@ using FMBot.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using Serilog;
 
 namespace FMBot.Bot.Services;
 
@@ -25,21 +24,13 @@ public class PrefixService : IPrefixService
 
     public void StorePrefix(string prefix, ulong key)
     {
-        if (ServerPrefixes.ContainsKey(key))
+        if (prefix == null)
         {
-            var oldPrefix = GetPrefix(key);
-            if (!ServerPrefixes.TryUpdate(key, prefix, oldPrefix))
-            {
-                Log.Warning($"Failed to update custom prefix {prefix} with the key: {key} from the dictionary");
-            }
-
+            RemovePrefix(key);
             return;
         }
 
-        if (!ServerPrefixes.TryAdd(key, prefix))
-        {
-            Log.Warning($"Failed to add custom prefix {prefix} with the key: {key} from the dictionary");
-        }
+        ServerPrefixes[key] = prefix;
     }
 
 
@@ -50,21 +41,13 @@ public class PrefixService : IPrefixService
             return this._botSettings.Bot.Prefix;
         }
 
-        return !ServerPrefixes.ContainsKey(key.Value) ? this._botSettings.Bot.Prefix : ServerPrefixes[key.Value];
+        return ServerPrefixes.TryGetValue(key.Value, out var prefix) ? prefix : this._botSettings.Bot.Prefix;
     }
 
 
     public void RemovePrefix(ulong key)
     {
-        if (!ServerPrefixes.ContainsKey(key))
-        {
-            return;
-        }
-
-        if (!ServerPrefixes.TryRemove(key, out var removedPrefix))
-        {
-            Log.Warning($"Failed to remove custom prefix {removedPrefix} with the key: {key} from the dictionary");
-        }
+        ServerPrefixes.TryRemove(key, out _);
     }
 
 
