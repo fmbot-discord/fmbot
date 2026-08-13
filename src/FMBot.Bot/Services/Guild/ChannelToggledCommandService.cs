@@ -1,45 +1,25 @@
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
-using Serilog;
 
 namespace FMBot.Bot.Services.Guild;
 
-public class ChannelToggledCommandService
+public class ChannelToggledCommandService(IDbContextFactory<FMBotDbContext> contextFactory)
 {
-    private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
-
     private static readonly ConcurrentDictionary<ulong, string[]> ChannelDisabledCommands = new();
-
-    public ChannelToggledCommandService(IDbContextFactory<FMBotDbContext> contextFactory)
-    {
-        this._contextFactory = contextFactory;
-    }
 
     private static void StoreToggledCommands(string[] commands, ulong key)
     {
-        if (ChannelDisabledCommands.ContainsKey(key))
+        if (commands == null)
         {
-            if (commands == null)
-            {
-                RemoveToggledCommands(key);
-            }
-
-            var oldDisabledCommands = GetToggledCommands(key);
-            if (!ChannelDisabledCommands.TryUpdate(key, commands, oldDisabledCommands))
-            {
-                Log.Information($"Failed to update disabled channel commands {commands} with the key: {key} from the dictionary");
-            }
-
+            RemoveToggledCommands(key);
             return;
         }
 
-        if (!ChannelDisabledCommands.TryAdd(key, commands))
-        {
-            Log.Information($"Failed to add disabled channel commands {commands} with the key: {key} from the dictionary");
-        }
+        ChannelDisabledCommands[key] = commands;
     }
 
     public static string[] GetToggledCommands(ulong? key)
@@ -49,26 +29,18 @@ public class ChannelToggledCommandService
             return null;
         }
 
-        return !ChannelDisabledCommands.ContainsKey(key.Value) ? null : ChannelDisabledCommands[key.Value];
+        return ChannelDisabledCommands.GetValueOrDefault(key.Value);
     }
 
 
     private static void RemoveToggledCommands(ulong key)
     {
-        if (!ChannelDisabledCommands.ContainsKey(key))
-        {
-            return;
-        }
-
-        if (!ChannelDisabledCommands.TryRemove(key, out var removedDisabledCommands))
-        {
-            Log.Information($"Failed to remove custom disabled channel commands {removedDisabledCommands} with the key: {key} from the dictionary");
-        }
+        ChannelDisabledCommands.TryRemove(key, out _);
     }
 
     public async Task LoadAllToggledCommands()
     {
-        await using var db = await this._contextFactory.CreateDbContextAsync();
+        await using var db = await contextFactory.CreateDbContextAsync();
         var channels = await db
             .Channels
             .AsQueryable()
@@ -83,7 +55,7 @@ public class ChannelToggledCommandService
 
     public async Task RemoveToggledCommandsForGuild(ulong discordGuildId)
     {
-        await using var db = await this._contextFactory.CreateDbContextAsync();
+        await using var db = await contextFactory.CreateDbContextAsync();
         var guild = await db
             .Guilds
             .Include(i => i.Channels)
@@ -101,7 +73,7 @@ public class ChannelToggledCommandService
 
     public async Task ReloadToggledCommands(ulong discordGuildId)
     {
-        await using var db = await this._contextFactory.CreateDbContextAsync();
+        await using var db = await contextFactory.CreateDbContextAsync();
         var guild = await db
             .Guilds
             .Include(i => i.Channels)

@@ -1,45 +1,25 @@
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
-using Serilog;
 
 namespace FMBot.Bot.Services.Guild;
 
-public class GuildDisabledCommandService
+public class GuildDisabledCommandService(IDbContextFactory<FMBotDbContext> contextFactory)
 {
-    private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
-
     private static readonly ConcurrentDictionary<ulong, string[]> GuildToggledCommands = new();
-
-    public GuildDisabledCommandService(IDbContextFactory<FMBotDbContext> contextFactory)
-    {
-        this._contextFactory = contextFactory;
-    }
 
     public static void StoreDisabledCommands(string[] commands, ulong key)
     {
-        if (GuildToggledCommands.ContainsKey(key))
+        if (commands == null)
         {
-            if (commands == null)
-            {
-                RemoveDisabledCommands(key);
-            }
-
-            var oldDisabledCommands = GetToggledCommands(key);
-            if (!GuildToggledCommands.TryUpdate(key, commands, oldDisabledCommands))
-            {
-                Log.Information($"Failed to update disabled guild commands {commands} with the key: {key} from the dictionary");
-            }
-
+            RemoveDisabledCommands(key);
             return;
         }
 
-        if (!GuildToggledCommands.TryAdd(key, commands))
-        {
-            Log.Information($"Failed to add disabled guild commands {commands} with the key: {key} from the dictionary");
-        }
+        GuildToggledCommands[key] = commands;
     }
 
 
@@ -50,27 +30,19 @@ public class GuildDisabledCommandService
             return null;
         }
 
-        return !GuildToggledCommands.ContainsKey(key.Value) ? null : GuildToggledCommands[key.Value];
+        return GuildToggledCommands.GetValueOrDefault(key.Value);
     }
 
 
     private static void RemoveDisabledCommands(ulong key)
     {
-        if (!GuildToggledCommands.ContainsKey(key))
-        {
-            return;
-        }
-
-        if (!GuildToggledCommands.TryRemove(key, out var removedDisabledCommands))
-        {
-            Log.Information($"Failed to remove custom disabled guild commands {removedDisabledCommands} with the key: {key} from the dictionary");
-        }
+        GuildToggledCommands.TryRemove(key, out _);
     }
 
 
     public async Task LoadAllDisabledCommands()
     {
-        await using var db = await this._contextFactory.CreateDbContextAsync();
+        await using var db = await contextFactory.CreateDbContextAsync();
         var servers = await db.Guilds
             .Where(w => w.DisabledCommands != null)
             .ToListAsync();
@@ -87,7 +59,7 @@ public class GuildDisabledCommandService
 
     public async Task ReloadDisabledCommands(ulong discordGuildId)
     {
-        await using var db = await this._contextFactory.CreateDbContextAsync();
+        await using var db = await contextFactory.CreateDbContextAsync();
         var server = await db.Guilds
             .Where(w => w.DiscordGuildId == discordGuildId)
             .FirstOrDefaultAsync();
