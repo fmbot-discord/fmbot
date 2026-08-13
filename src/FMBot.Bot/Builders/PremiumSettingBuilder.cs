@@ -27,7 +27,6 @@ public class PremiumSettingBuilder(
     SupporterService supporterService,
     ShortcutService shortcutService,
     CensorService censorService,
-    AutopostService autopostService,
     CommandService<CommandContext> commands,
     HttpClient httpClient)
 {
@@ -317,28 +316,28 @@ public class PremiumSettingBuilder(
 
     private static void AppendPerkPitchList(StringBuilder description)
     {
-        description.AppendLine("👑 **Automatic crownseeder** — seed crowns daily, weekly or monthly");
-        description.AppendLine("📊 **Scheduled server recaps** — weekly or monthly top charts, posted automatically");
-        description.AppendLine("🤖 **Custom bot branding** — set a custom avatar for .fmbot");
-        description.AppendLine("⭐ **Server featured** — a rotating featured based on your own server's members");
+        description.AppendLine("👑 **Automatic crownseeder**: seed crowns daily, weekly or monthly");
+        description.AppendLine("📊 **Scheduled server recaps**: weekly or monthly top charts, posted automatically");
+        description.AppendLine("🤖 **Custom bot branding**: set a custom avatar for .fmbot");
+        description.AppendLine("⭐ **Server featured**: a rotating featured based on your own server's members");
         description.AppendLine("🎮 **60 daily Jumble and Pixel games** for every member");
         description.AppendLine("📜 **Lyrics unlocked** for every member");
-        description.AppendLine("⌨️ **Server-wide shortcuts** — shared text command shortcuts for everyone");
-        description.AppendLine("⚙️ **Role filters and server activity threshold** — control who appears in server-wide charts");
-        description.AppendLine("🛡️ **Bot management roles** — let trusted roles manage .fmbot");
+        description.AppendLine("⌨️ **Server-wide shortcuts**: shared text command shortcuts for everyone");
+        description.AppendLine("⚙️ **Role filters and server activity threshold**: control who appears in server-wide charts");
+        description.AppendLine("🛡️ **Bot management roles**: let trusted roles manage .fmbot");
     }
 
     private static void AppendPerkListWithCommands(StringBuilder description)
     {
-        description.AppendLine("👑 **Automatic crownseeder** — crownseeder setting in `/configuration`");
-        description.AppendLine("📊 **Scheduled server recaps** — `.serverrecap`");
-        description.AppendLine("🤖 **Custom bot branding** — `.botbranding`");
-        description.AppendLine("⭐ **Server featured** — member-based avatar rotation, set in `.botbranding`");
+        description.AppendLine("👑 **Automatic crownseeder**: crownseeder setting in `/configuration`");
+        description.AppendLine("📊 **Scheduled server recaps**: `.serverrecap`");
+        description.AppendLine("🤖 **Custom bot branding**: `.botbranding`");
+        description.AppendLine("⭐ **Server featured**: member-based avatar rotation, set in `.botbranding`");
         description.AppendLine("🎮 **60 daily Jumble and Pixel games** for every member");
         description.AppendLine("📜 **Lyrics unlocked** for every member");
-        description.AppendLine("⌨️ **Server-wide shortcuts** — `.servershortcuts`");
-        description.AppendLine("⚙️ **Role filters** — `.allowedroles`, `.blockedroles`, `.serveractivitythreshold`");
-        description.AppendLine("🛡️ **Bot management roles** — `.botmanagementroles`");
+        description.AppendLine("⌨️ **Server-wide shortcuts**: `.servershortcuts`");
+        description.AppendLine("⚙️ **Role filters**: `.allowedroles`, `.blockedroles`, `.serveractivitythreshold`");
+        description.AppendLine("🛡️ **Bot management roles**: `.botmanagementroles`");
     }
 
     private static string BuildPremiumFooter(NetCord.User lastModifier, string firstLine = "-# ✨ Premium server")
@@ -348,297 +347,157 @@ public class PremiumSettingBuilder(
             : firstLine;
     }
 
-    public async Task<ResponseModel> GetPremiumServerSettings(ContextModel context,
-        List<SettingsTab> availableTabs = null)
+    private static string FormatRoleList(NetCord.Gateway.Guild discordGuild, ulong[] roleIds)
     {
-        var response = new ResponseModel
-        {
-            ResponseType = ResponseType.ComponentsV2
-        };
-
-        var guild = await guildService.GetGuildAsync(context.DiscordGuild.Id);
-        var showTabRow = availableTabs is { Count: > 1 };
-
-        var container = response.ComponentsContainer;
-        container.WithAccentColor(DiscordConstants.InformationColorBlue);
-
-        container.WithTextDisplay($"## ✨ Premium server — {guild.Name}");
-        container.WithSeparator();
-
-        if (PublicProperties.PremiumServers.ContainsKey(context.DiscordGuild.Id))
-        {
-            var shortcuts = await shortcutService.GetGuildShortcuts(guild);
-
-            var crownSeeder = guild.AutomaticCrownSeeder.HasValue
-                ? $"Crowns are automatically seeded {guild.AutomaticCrownSeeder.Value.ToString().ToLower()}."
-                : "Not scheduled yet.";
-            container.WithTextDisplay($"**👑 Automatic crownseeder**\n{crownSeeder}\n-# Crownseeder setting in `/configuration`");
-
-            var autoposts = await autopostService.GetAutopostsForGuild(guild.GuildId);
-            var autopostDisplay = autoposts.Count > 0
-                ? $"{autoposts.Count} {(autoposts.Count == 1 ? "autopost" : "autoposts")} configured."
-                : "Not set up yet.";
-            container.WithTextDisplay($"**📊 Server autoposts**\n{autopostDisplay}\n-# `.autoposts`");
-
-            var featuredMode = guild.FeaturedMode ?? GuildFeaturedMode.GlobalFeatured;
-            container.WithTextDisplay($"**🤖 Custom bot branding**\nCurrent mode: {GetFeaturedModeName(featuredMode)}.\n-# `.botbranding`");
-
-            container.WithTextDisplay("**🎮 Games and 📜 lyrics**\nEvery member gets 60 daily Jumble and Pixel games and access to `.lyrics`.");
-
-            container.WithTextDisplay($"**⌨️ Server-wide shortcuts**\n{shortcuts.Count}/10 shortcut slots used.\n-# `.servershortcuts`");
-
-            var filtering = new StringBuilder();
-            filtering.AppendLine($"**{guild.AllowedRoles?.Length ?? 0}** allowed, **{guild.BlockedRoles?.Length ?? 0}** blocked and **{guild.BotManagementRoles?.Length ?? 0}** bot management roles set.");
-            filtering.AppendLine(guild.UserActivityThresholdDays.HasValue
-                ? $"Server activity threshold set to **{guild.UserActivityThresholdDays.Value}** days."
-                : "No server activity threshold set.");
-            container.WithTextDisplay($"**⚙️ Role filters and activity threshold**\n{filtering}" +
-                                      "-# `.allowedroles` · `.blockedroles` · `.botmanagementroles` · `.serveractivitythreshold`");
-
-            container.WithSeparator();
-            container.WithActionRow(new ActionRowProperties()
-                .WithButton("Manage Premium server", $"{InteractionConstants.PremiumServer.GetOverview}:settings",
-                    style: ButtonStyle.Secondary));
-        }
-        else
-        {
-            var pitch = new StringBuilder();
-            pitch.AppendLine("Improve the .fmbot experience in your community and unlock perks for everyone:");
-            pitch.AppendLine();
-            AppendPerkPitchList(pitch);
-            container.WithTextDisplay(pitch.ToString());
-
-            container.WithSeparator();
-            container.WithActionRow(new ActionRowProperties()
-                .WithButton("Get Premium server", $"{InteractionConstants.PremiumServer.GetOverview}:settings",
-                    style: ButtonStyle.Primary));
-        }
-
-        if (showTabRow)
-        {
-            container.WithActionRow(GuildSettingBuilder.BuildSettingsTabRow(availableTabs, SettingsTab.Premium,
-                context.DiscordUser.Id));
-        }
-
-        return response;
+        var existing = ExistingRoles(discordGuild, roleIds);
+        return existing.Length == 0
+            ? null
+            : string.Join(" ", existing.Select(s => $"<@&{s}>"));
     }
 
-    public async Task<ResponseModel> AllowedRoles(ContextModel context, NetCord.User lastModifier = null)
+    /// Deleted roles must be filtered out: Discord rejects a menu whose default values
+    /// reference a role that no longer exists.
+    private static ulong[] ExistingRoles(NetCord.Gateway.Guild discordGuild, ulong[] roleIds)
     {
-        var response = new ResponseModel
+        return roleIds == null
+            ? []
+            : roleIds.Where(w => discordGuild.Roles.ContainsKey(w)).Take(25).ToArray();
+    }
+
+    public static void AppendAllowedRoles(ComponentContainerProperties container, ContextModel context,
+        Guild guild, bool isPremium)
+    {
+        var description = new StringBuilder();
+        description.AppendLine("**Allowed roles** - show only users with these specific roles");
+
+        var pickedRoles = FormatRoleList(context.DiscordGuild, guild.AllowedRoles);
+        if (pickedRoles != null)
         {
-            ResponseType = ResponseType.ComponentsV2
-        };
+            description.AppendLine();
+            description.Append(pickedRoles);
+        }
 
-        var guild = await guildService.GetGuildAsync(context.DiscordGuild.Id);
-
-        var allowedRoles = new RoleMenuProperties(InteractionConstants.SetAllowedRoleMenu)
+        container.WithTextDisplay(description.ToString());
+        var roleMenu = new RoleMenuProperties(InteractionConstants.SetAllowedRoleMenu)
             .WithPlaceholder("Pick allowed roles")
             .WithMinValues(0)
-            .WithMaxValues(25);
+            .WithMaxValues(25)
+            .WithDisabled(!isPremium);
+        roleMenu.DefaultValues = ExistingRoles(context.DiscordGuild, guild.AllowedRoles);
 
-        var container = response.ComponentsContainer;
-        container.WithAccentColor(DiscordConstants.InformationColorBlue);
+        container.AddComponent(roleMenu);
+    }
 
-        container.WithTextDisplay("## Set server allowed roles");
-        container.WithSeparator();
-
+    public static void AppendBlockedRoles(ComponentContainerProperties container, ContextModel context,
+        Guild guild, bool isPremium)
+    {
         var description = new StringBuilder();
-        description.AppendLine("Select the roles that you want to be visible in .fmbot.");
-        description.AppendLine("This affects WhoKnows, but also all server-wide charts and other commands.");
-        description.AppendLine();
+        description.AppendLine("**Blocked roles** - always hide users with these specific roles");
 
-        if (guild.AllowedRoles != null && guild.AllowedRoles.Any())
+        var pickedRoles = FormatRoleList(context.DiscordGuild, guild.BlockedRoles);
+        if (pickedRoles != null)
         {
-            description.AppendLine($"**Picked roles:**");
-            foreach (var roleId in guild.AllowedRoles)
-            {
-                var role = await context.DiscordGuild.GetRoleAsync(roleId);
-                if (role != null)
-                {
-                    description.AppendLine($"- <@&{roleId}>");
-                }
-            }
-        }
-        else
-        {
-            description.AppendLine($"Picked roles: None");
+            description.AppendLine();
+            description.Append(pickedRoles);
         }
 
         container.WithTextDisplay(description.ToString());
-        container.AddComponent(allowedRoles);
-
-        var footerFirstLine = guild.GuildFlags.HasValue && guild.GuildFlags.Value.HasFlag(GuildFlags.LegacyWhoKnowsWhitelist)
-            ? "-# ✨ Grandfathered allowed roles access"
-            : "-# ✨ Premium server";
-
-        container.WithSeparator();
-        container.WithTextDisplay(BuildPremiumFooter(lastModifier, footerFirstLine));
-
-        return response;
-    }
-
-    public async Task<ResponseModel> BlockedRoles(ContextModel context, NetCord.User lastModifier = null)
-    {
-        var response = new ResponseModel
-        {
-            ResponseType = ResponseType.ComponentsV2
-        };
-
-        var guild = await guildService.GetGuildAsync(context.DiscordGuild.Id);
-
-        var blockedRoles = new RoleMenuProperties(InteractionConstants.SetBlockedRoleMenu)
+        var roleMenu = new RoleMenuProperties(InteractionConstants.SetBlockedRoleMenu)
             .WithPlaceholder("Pick blocked roles")
             .WithMinValues(0)
-            .WithMaxValues(25);
+            .WithMaxValues(25)
+            .WithDisabled(!isPremium);
+        roleMenu.DefaultValues = ExistingRoles(context.DiscordGuild, guild.BlockedRoles);
 
-        var container = response.ComponentsContainer;
-        container.WithAccentColor(DiscordConstants.InformationColorBlue);
-
-        container.WithTextDisplay("## Set server blocked roles");
-        container.WithSeparator();
-
-        var description = new StringBuilder();
-        description.AppendLine("Select the roles that you want to be blocked in .fmbot.");
-        description.AppendLine("This affects WhoKnows, but also all server-wide charts and other commands.");
-        description.AppendLine();
-
-        if (guild.BlockedRoles != null && guild.BlockedRoles.Any())
-        {
-            description.AppendLine($"**Picked roles:**");
-            foreach (var roleId in guild.BlockedRoles)
-            {
-                var role = await context.DiscordGuild.GetRoleAsync(roleId);
-                if (role != null)
-                {
-                    description.AppendLine($"- <@&{roleId}>");
-                }
-            }
-        }
-        else
-        {
-            description.AppendLine($"Picked roles: None");
-        }
-
-        container.WithTextDisplay(description.ToString());
-        container.AddComponent(blockedRoles);
-
-        container.WithSeparator();
-        container.WithTextDisplay(BuildPremiumFooter(lastModifier));
-
-        return response;
+        container.AddComponent(roleMenu);
     }
 
-    public async Task<ResponseModel> BotManagementRoles(ContextModel context, NetCord.User lastModifier = null)
+    public static void AppendBotManagementRoles(ComponentContainerProperties container, ContextModel context,
+        Persistence.Domain.Models.Guild guild, bool isPremium)
     {
-        var response = new ResponseModel
+        var description = new StringBuilder();
+        description.AppendLine("**Bot management roles**");
+        description.AppendLine("Who is allowed to configure .fmbot.");
+
+        var pickedRoles = FormatRoleList(context.DiscordGuild, guild.BotManagementRoles);
+        if (pickedRoles != null)
         {
-            ResponseType = ResponseType.ComponentsV2
-        };
+            description.AppendLine(pickedRoles);
+        }
 
-        var guild = await guildService.GetGuildAsync(context.DiscordGuild.Id);
+        description.Append(
+            "-# These roles can change every setting except this one, block members and manage crowns. " +
+            "Only members with `Administrator` or `Ban Members` can change this list.");
 
-        var botManagementRoles = new RoleMenuProperties(InteractionConstants.SetBotManagementRoleMenu)
+        container.WithTextDisplay(description.ToString());
+        var roleMenu = new RoleMenuProperties(InteractionConstants.SetBotManagementRoleMenu)
             .WithPlaceholder("Pick bot management roles")
             .WithMinValues(0)
-            .WithMaxValues(25);
+            .WithMaxValues(25)
+            .WithDisabled(!isPremium);
+        roleMenu.DefaultValues = ExistingRoles(context.DiscordGuild, guild.BotManagementRoles);
 
-        var container = response.ComponentsContainer;
-        container.WithAccentColor(DiscordConstants.InformationColorBlue);
-
-        container.WithTextDisplay("## Set bot management roles");
-        container.WithSeparator();
-
-        var description = new StringBuilder();
-        description.AppendLine("Select the roles that are allowed to change .fmbot settings on this server.");
-        description.AppendLine();
-        description.AppendLine("Users with these roles will be able to:");
-        description.AppendLine("- Change all bot settings (except for this one)");
-        description.AppendLine("- Block and unblock users");
-        description.AppendLine("- Run crownseeder");
-        description.AppendLine("- Manage crowns");
-        description.AppendLine();
-
-        if (guild.BotManagementRoles != null && guild.BotManagementRoles.Any())
-        {
-            description.AppendLine($"**Picked roles:**");
-            foreach (var roleId in guild.BotManagementRoles)
-            {
-                var role = await context.DiscordGuild.GetRoleAsync(roleId);
-                if (role != null)
-                {
-                    description.AppendLine($"- <@&{roleId}>");
-                }
-            }
-        }
-        else
-        {
-            description.AppendLine($"Picked roles: None");
-        }
-
-        container.WithTextDisplay(description.ToString());
-        container.AddComponent(botManagementRoles);
-
-        container.WithSeparator();
-        container.WithTextDisplay(BuildPremiumFooter(lastModifier));
-
-        return response;
+        container.AddComponent(roleMenu);
     }
 
-    public async Task<ResponseModel> SetGuildActivityThreshold(ContextModel context, NetCord.User lastModifier = null)
+    public static void AppendServerActivityThreshold(ComponentContainerProperties container,
+        Guild guild, IDictionary<int, FullGuildUser> guildUsers, bool isPremium)
     {
-        var response = new ResponseModel
-        {
-            ResponseType = ResponseType.ComponentsV2
-        };
-
-        var container = response.ComponentsContainer;
-        container.WithAccentColor(DiscordConstants.InformationColorBlue);
-
-        container.WithTextDisplay("## Set server activity threshold");
-        container.WithSeparator();
-
         var description = new StringBuilder();
+        description.AppendLine("**Inactive in this server**");
+        description.Append("Hides members who haven't sent messages in this server in a while. ");
 
-        description.AppendLine($"Setting a WhoKnows activity threshold will filter out people who have not talked in your server for a certain amount of days. " +
-                               $"A user counts as active as soon as they talk in a channel in which .fmbot has access.");
-        description.AppendLine();
-        description.AppendLine("This filtering applies to all server-wide commands. " +
-                           "The bot only starts tracking user activity after Premium Server has been activated. Any messages before that time are not included.");
-        description.AppendLine();
-
-        var guild = await guildService.GetGuildAsync(context.DiscordGuild.Id);
-
-        var components = new ActionRowProperties();
-
+        ButtonProperties button;
         if (!guild.UserActivityThresholdDays.HasValue)
         {
-            description.AppendLine("There is currently no server activity threshold enabled.");
-            description.AppendLine("To enable, click the button below and enter the amount of days.");
-            components.WithButton("Set server activity threshold", InteractionConstants.SetGuildActivityThreshold, style: ButtonStyle.Secondary);
+            description.Append("Currently off.");
+            button = new ButtonProperties(InteractionConstants.SetGuildActivityThreshold, "Set", ButtonStyle.Secondary)
+            {
+                Disabled = !isPremium
+            };
         }
         else
         {
-            var guildMembers = await guildService.GetGuildUsers(context.DiscordGuild.Id);
-
-            description.AppendLine($"✅ Enabled.");
-            description.AppendLine($"Anyone who hasn't talked in the last **{guild.UserActivityThresholdDays.Value}** days is currently filtered out.");
+            description.AppendLine(
+                $"Currently hiding anyone who hasn't sent a message in **{guild.UserActivityThresholdDays.Value}** days.");
 
             var filterDate = DateTime.UtcNow.AddDays(-guild.UserActivityThresholdDays.Value);
-            var activeUserCount = guildMembers.Count(w => w.Value.LastMessage != null && w.Value.LastMessage >= filterDate);
+            var activeUserCount =
+                guildUsers?.Count(w => w.Value.LastMessage != null && w.Value.LastMessage >= filterDate) ?? 0;
 
-            description.AppendLine($"The bot has seen **{activeUserCount}** {StringExtensions.GetUsersString(activeUserCount)} talk in this time period.");
+            description.AppendLine();
+            description.Append(
+                $".fmbot has seen **{activeUserCount}** {StringExtensions.GetUsersString(activeUserCount)} talk in this timeframe. " +
+                "Activity is only tracked from the moment Premium server was activated.");
 
-            components.WithButton("Remove server activity threshold", $"{InteractionConstants.RemoveGuildActivityThreshold}", style: ButtonStyle.Secondary);
+            button = new ButtonProperties(InteractionConstants.RemoveGuildActivityThreshold, "Remove",
+                ButtonStyle.Secondary)
+            {
+                Disabled = !isPremium
+            };
         }
 
-        container.WithTextDisplay(description.ToString());
-        container.WithActionRow(components);
+        container.AddComponent(new ComponentSectionProperties(button)
+        {
+            Components = [new TextDisplayProperties(description.ToString())]
+        });
+    }
 
-        container.WithSeparator();
-        container.WithTextDisplay(BuildPremiumFooter(lastModifier));
+    public const string GetPremiumButtonLabel = "Get Premium server";
 
-        return response;
+    /// Every "this is locked behind Premium server" block renders through here so the
+    /// heading, button label and source naming stay identical across settings panels.
+    public static ComponentSectionProperties BuildPremiumUpsell(string source, string feature, string benefit)
+    {
+        return new ComponentSectionProperties(new ButtonProperties(
+            $"{InteractionConstants.PremiumServer.GetOverview}:{source}", GetPremiumButtonLabel,
+            ButtonStyle.Primary))
+        {
+            Components =
+            [
+                new TextDisplayProperties($"✨ **{feature}**\nAvailable with Premium server.\n-# {benefit}")
+            ]
+        };
     }
 
     public async Task<ResponseModel> BotBranding(ContextModel context, NetCord.User lastModifier = null)
@@ -662,9 +521,9 @@ public class PremiumSettingBuilder(
         description.AppendLine("Give .fmbot a custom look in this server.");
         description.AppendLine();
         description.AppendLine("**Branding modes:**");
-        description.AppendLine("- **Global featured** — The default look, with the avatar following the global hourly featured");
-        description.AppendLine("- **Custom avatar** — Your own fixed logo or image, which never rotates");
-        description.AppendLine("- **Server featured** — The avatar follows a rotating featured based on the members of this server");
+        description.AppendLine("- **Global featured**: the default look, with the avatar following the global hourly featured");
+        description.AppendLine("- **Custom avatar**: your own fixed logo or image, which never rotates");
+        description.AppendLine("- **Server featured**: the avatar follows a rotating featured based on the members of this server");
         description.AppendLine();
         description.AppendLine($"**Current mode:** {GetFeaturedModeName(featuredMode)}");
 
@@ -734,7 +593,7 @@ public class PremiumSettingBuilder(
         return response;
     }
 
-    private static string GetFeaturedModeName(GuildFeaturedMode featuredMode)
+    public static string GetFeaturedModeName(GuildFeaturedMode featuredMode)
     {
         return featuredMode switch
         {

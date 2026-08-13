@@ -10,6 +10,7 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
 using NetCord.Services.Commands;
@@ -44,7 +45,7 @@ public class UserGuildSettingCommands(
         try
         {
             var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
-            var response = await guildSettingBuilder.SetFmbotActivityThreshold(new ContextModel(this.Context, prfx));
+            var response = await guildSettingBuilder.ServerSettingsSection(new ContextModel(this.Context, prfx), GuildSettingSection.MemberFilters);
 
             await this.Context.SendResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);

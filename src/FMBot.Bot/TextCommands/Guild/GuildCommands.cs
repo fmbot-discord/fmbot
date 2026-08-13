@@ -12,6 +12,7 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
@@ -136,7 +137,8 @@ public class GuildCommands(
         _ = this.Context.Channel?.TriggerTypingAsync()!;
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        var response = await guildSettingBuilder.GuildMode(new ContextModel(this.Context, prfx));
+        var response = await guildSettingBuilder.ServerSettingsSection(new ContextModel(this.Context, prfx), GuildSettingSection.General,
+            showForcedFmType: true);
 
         await this.Context.SendResponse(this.Interactivity, response, userService);
         await this.Context.LogCommandUsedAsync(response, userService);
@@ -152,7 +154,7 @@ public class GuildCommands(
         _ = this.Context.Channel?.TriggerTypingAsync()!;
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        var response = await guildSettingBuilder.GuildLanguage(new ContextModel(this.Context, prfx));
+        var response = await guildSettingBuilder.ServerSettingsSection(new ContextModel(this.Context, prfx), GuildSettingSection.General);
 
         await this.Context.SendResponse(this.Interactivity, response, userService);
         await this.Context.LogCommandUsedAsync(response, userService);
@@ -286,7 +288,7 @@ public class GuildCommands(
         try
         {
             var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
-            var response = await guildSettingBuilder.SetPrefix(new ContextModel(this.Context, prfx));
+            var response = await guildSettingBuilder.ServerSettingsSection(new ContextModel(this.Context, prfx), GuildSettingSection.General);
 
             await this.Context.SendResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);

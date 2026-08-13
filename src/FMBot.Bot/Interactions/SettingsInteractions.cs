@@ -17,7 +17,6 @@ namespace FMBot.Bot.Interactions;
 public class SettingsInteractions(
     UserService userService,
     GuildSettingBuilder guildSettingBuilder,
-    PremiumSettingBuilder premiumSettingBuilder,
     InteractiveService interactivity)
     : ComponentInteractionModule<ComponentInteractionContext>
 {
@@ -46,6 +45,13 @@ public class SettingsInteractions(
             var context = new ContextModel(this.Context, contextUser);
 
             var availableTabs = await guildSettingBuilder.GetAvailableSettingsTabs(context);
+
+            // The Premium tab was merged into the server panel. Old messages can still carry its button.
+            if (tab == SettingsTab.Premium)
+            {
+                tab = SettingsTab.Server;
+            }
+
             if (!availableTabs.Contains(tab))
             {
                 await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
@@ -58,7 +64,6 @@ public class SettingsInteractions(
             {
                 SettingsTab.Server => await guildSettingBuilder.GetGuildSettings(context,
                     this.Context.Interaction.AppPermissions, availableTabs),
-                SettingsTab.Premium => await premiumSettingBuilder.GetPremiumServerSettings(context, availableTabs),
                 _ => UserBuilder.GetUserSettings(context, availableTabs)
             };
 

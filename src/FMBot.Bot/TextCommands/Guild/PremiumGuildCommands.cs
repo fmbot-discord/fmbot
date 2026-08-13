@@ -18,7 +18,6 @@ using NetCord.Services.Commands;
 
 namespace FMBot.Bot.TextCommands.Guild;
 
-[ExcludeFromHelp]
 [ModuleName("Premium server settings")]
 public class PremiumGuildCommands(
     IOptions<BotSettings> botSettings,
@@ -63,7 +62,6 @@ public class PremiumGuildCommands(
     [Command("botbranding", "custombranding", "botavatar", "customlogo", "serverfeatured", "localfeatured")]
     [Summary("Give the bot a custom look in this server")]
     [GuildOnly]
-    [ExcludeFromHelp]
     public async Task BotBrandingAsync([CommandParameter(Remainder = true)] string unused = null)
     {
         if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
@@ -161,117 +159,47 @@ public class PremiumGuildCommands(
     [Command("allowedroles", "wkwhitelist", "wkroles", "whoknowswhitelist", "whoknowsroles")]
     [Summary("Sets roles that are allowed to be in server-wide charts")]
     [GuildOnly]
-    [ExcludeFromHelp]
     [RequiresIndex]
-    public async Task SetAllowedRoles([CommandParameter(Remainder = true)] string unused = null)
+    public Task SetAllowedRoles([CommandParameter(Remainder = true)] string unused = null)
     {
-        if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
-        {
-            var premiumRequiredResponse = PremiumSettingBuilder.PremiumServerRequired("allowedroles-text",
-                "**Role filters** let you choose which roles show up in .fmbot's server-wide charts.");
-            await this.Context.SendResponse(this.Interactivity, premiumRequiredResponse, userService);
-            await this.Context.LogCommandUsedAsync(premiumRequiredResponse, userService);
-            return;
-        }
-
-        try
-        {
-            var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
-
-            var response = await premiumSettingBuilder.AllowedRoles(new ContextModel(this.Context, prfx));
-
-            await this.Context.SendResponse(this.Interactivity, response, userService);
-            await this.Context.LogCommandUsedAsync(response, userService);
-        }
-        catch (Exception e)
-        {
-            await this.Context.HandleCommandException(e, userService);
-        }
+        return OpenMemberFilters();
     }
 
     [Command("blockedroles", "wkwblacklist", "wkblocklist", "whoknowsblaccklist", "whoknowsblocklist")]
     [Summary("Sets roles that are blocked from server-wide charts")]
     [GuildOnly]
-    [ExcludeFromHelp]
     [RequiresIndex]
-    public async Task SetBlockedRoles([CommandParameter(Remainder = true)] string unused = null)
+    public Task SetBlockedRoles([CommandParameter(Remainder = true)] string unused = null)
     {
-        if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
-        {
-            var premiumRequiredResponse = PremiumSettingBuilder.PremiumServerRequired("blockedroles-text",
-                "**Role filters** let you choose which roles show up in .fmbot's server-wide charts.");
-            await this.Context.SendResponse(this.Interactivity, premiumRequiredResponse, userService);
-            await this.Context.LogCommandUsedAsync(premiumRequiredResponse, userService);
-            return;
-        }
-
-        try
-        {
-            var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
-
-            var response = await premiumSettingBuilder.BlockedRoles(new ContextModel(this.Context, prfx));
-
-            await this.Context.SendResponse(this.Interactivity, response, userService);
-            await this.Context.LogCommandUsedAsync(response, userService);
-        }
-        catch (Exception e)
-        {
-            await this.Context.HandleCommandException(e, userService);
-        }
+        return OpenMemberFilters();
     }
 
     [Command("botmanagementroles", "managementroles", "staffroles", "adminroles", "modroles", "botroles", "botmangementroles")]
     [Summary("Sets roles that are allowed to manage .fmbot in this server")]
     [GuildOnly]
-    [ExcludeFromHelp]
     [RequiresIndex]
-    public async Task SetBotManagementRoles([CommandParameter(Remainder = true)] string unused = null)
+    public Task SetBotManagementRoles([CommandParameter(Remainder = true)] string unused = null)
     {
-        if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
-        {
-            var premiumRequiredResponse = PremiumSettingBuilder.PremiumServerRequired("botmanagementroles-text",
-                "**Bot management roles** let you choose who can manage and configure .fmbot in this server.");
-            await this.Context.SendResponse(this.Interactivity, premiumRequiredResponse, userService);
-            await this.Context.LogCommandUsedAsync(premiumRequiredResponse, userService);
-            return;
-        }
-
-        try
-        {
-            var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
-
-            var response = await premiumSettingBuilder.BotManagementRoles(new ContextModel(this.Context, prfx));
-
-            await this.Context.SendResponse(this.Interactivity, response, userService);
-            await this.Context.LogCommandUsedAsync(response, userService);
-        }
-        catch (Exception e)
-        {
-            await this.Context.HandleCommandException(e, userService);
-        }
+        return OpenMemberFilters();
     }
 
     [Command("serveractivitythreshold", "activitythreshold", "guildactivitythreshold", "activitytreshold")]
-    [Summary("Sets roles that are allowed to manage .fmbot in this server")]
+    [Summary("Filters members who haven't talked in this server out of server-wide commands")]
     [GuildOnly]
-    [ExcludeFromHelp]
     [RequiresIndex]
-    public async Task SetGuildActivityThreshold([CommandParameter(Remainder = true)] string unused = null)
+    public Task SetGuildActivityThreshold([CommandParameter(Remainder = true)] string unused = null)
     {
-        if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
-        {
-            var premiumRequiredResponse = PremiumSettingBuilder.PremiumServerRequired("serveractivitythreshold-text",
-                "**Server activity threshold** filters inactive members who haven't sent messages in a while out of server-wide commands.");
-            await this.Context.SendResponse(this.Interactivity, premiumRequiredResponse, userService);
-            await this.Context.LogCommandUsedAsync(premiumRequiredResponse, userService);
-            return;
-        }
+        return OpenMemberFilters();
+    }
 
+    private async Task OpenMemberFilters()
+    {
         try
         {
             var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
-            var response = await premiumSettingBuilder.SetGuildActivityThreshold(new ContextModel(this.Context, prfx));
+            var response = await guildSettingBuilder.ServerSettingsSection(new ContextModel(this.Context, prfx),
+                GuildSettingSection.MemberFilters);
 
             await this.Context.SendResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);

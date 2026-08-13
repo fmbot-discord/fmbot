@@ -22,7 +22,14 @@ using NetCord.Services;
 
 namespace FMBot.Bot.Builders;
 
-public class GuildSettingBuilder(GuildService guildService, IOptions<BotSettings> botSettings, AdminService adminService, ShardedGatewayClient client)
+public class GuildSettingBuilder(
+    GuildService guildService,
+    IOptions<BotSettings> botSettings,
+    AdminService adminService,
+    ShardedGatewayClient client,
+    ShortcutService shortcutService,
+    AutopostService autopostService,
+    SupporterService supporterService)
 {
     private readonly BotSettings _botSettings = botSettings.Value;
 
@@ -36,7 +43,6 @@ public class GuildSettingBuilder(GuildService guildService, IOptions<BotSettings
             await UserIsAllowed(context))
         {
             tabs.Add(SettingsTab.Server);
-            tabs.Add(SettingsTab.Premium);
         }
 
         return tabs;
@@ -59,6 +65,39 @@ public class GuildSettingBuilder(GuildService guildService, IOptions<BotSettings
         return tabRow;
     }
 
+    public static ActionRowProperties BuildBackRow(ulong discordUserId)
+    {
+        return new ActionRowProperties()
+            .WithButton("← Back to server settings",
+                customId: $"{InteractionConstants.Settings.ServerHome}:{discordUserId}",
+                style: ButtonStyle.Secondary);
+    }
+
+    private static ButtonProperties BuildSectionButton(GuildSettingSection section, ulong discordUserId)
+    {
+        return new ButtonProperties(
+            $"{InteractionConstants.Settings.ServerSection}:{(int)section}:{discordUserId}",
+            section.GetAttribute<OptionAttribute>().Name,
+            ButtonStyle.Secondary);
+    }
+
+    private static ButtonProperties BuildSettingButton(GuildSetting setting, ulong discordUserId, string label = null,
+        bool disabled = false)
+    {
+        return new ButtonProperties(
+            $"{InteractionConstants.Settings.ServerSettingOpen}:{(int)setting}:{discordUserId}",
+            label ?? setting.GetAttribute<OptionAttribute>().Name,
+            ButtonStyle.Secondary)
+        {
+            Disabled = disabled
+        };
+    }
+
+    public static GuildSettingSection GetSectionForSetting(GuildSetting setting)
+    {
+        return setting.GetAttribute<SettingSectionAttribute>()?.Section ?? GuildSettingSection.General;
+    }
+
     public async Task<ResponseModel> GetGuildSettings(ContextModel context, Permissions channelPermissions,
         List<SettingsTab> availableTabs = null)
     {
@@ -69,121 +108,139 @@ public class GuildSettingBuilder(GuildService guildService, IOptions<BotSettings
 
         var guild = await guildService.GetGuildAsync(context.DiscordGuild.Id);
         var guildUsers = await guildService.GetGuildUsers(context.DiscordGuild.Id);
+        var isPremium = PublicProperties.PremiumServers.ContainsKey(context.DiscordGuild.Id);
+        var userId = context.DiscordUser.Id;
 
         var showTabRow = availableTabs is { Count: > 1 };
 
         var container = response.ComponentsContainer;
         container.WithAccentColor(DiscordConstants.InformationColorBlue);
 
-        container.WithTextDisplay($"## .fmbot server settings — {guild.Name}");
+        container.WithTextDisplay($"## .fmbot server settings · {guild.Name}");
+        container.WithSeparator();
+
+        var general = new StringBuilder();
+        general.AppendLine("**General**");
+        general.Append($"Prefix `{guild.Prefix ?? this._botSettings.Bot.Prefix}`");
+        general.Append(guild.Prefix == null ? " (default) · " : " · ");
+        general.Append(guild.Language.HasValue
+            ? $"Language {guild.Language.Value.GetAttribute<OptionAttribute>().Name}"
+            : "Language English (default)");
+        general.AppendLine();
+        general.Append(guild.EmoteReactions is { Length: > 0 }
+            ? $"{guild.EmoteReactions.Length} emote reactions"
+            : "No emote reactions");
+        if (guild.FmEmbedType.HasValue)
+        {
+            general.Append(
+                $" · Forced `fm` type: {guild.FmEmbedType.Value.GetAttribute<OptionAttribute>().Name}");
+        }
+
+        container.AddComponent(new ComponentSectionProperties(
+            BuildSectionButton(GuildSettingSection.General, userId))
+        {
+            Components = [new TextDisplayProperties(general.ToString())]
+        });
 
         container.WithSeparator();
 
-        var settings = new StringBuilder();
-
-        settings.Append("Text command prefix: ");
-        if (guild.Prefix != null)
+        var memberFilters = new StringBuilder();
+        memberFilters.AppendLine("**Who appears in server charts**");
+        if (isPremium)
         {
-            settings.Append($"`{guild.Prefix}`");
-        }
-        else
-        {
-            settings.Append($"`{this._botSettings.Bot.Prefix}` (default)");
+            memberFilters.AppendLine(
+                $"{guild.AllowedRoles?.Length ?? 0} allowed roles · {guild.BlockedRoles?.Length ?? 0} blocked roles · " +
+                $"{guild.BotManagementRoles?.Length ?? 0} bot management roles");
         }
 
-        settings.AppendLine();
-        settings.Append("Language: ");
-        if (guild.Language.HasValue)
+        memberFilters.Append(
+            $"{guildUsers?.Count(c => c.Value.BlockedFromWhoKnows) ?? 0} members blocked");
+        memberFilters.Append(guild.ActivityThresholdDays.HasValue
+            ? $" · Inactive on .fmbot: {guild.ActivityThresholdDays.Value} days"
+            : " · Inactive on .fmbot: off");
+        if (isPremium)
         {
-            settings.Append($"`{guild.Language.Value.GetAttribute<OptionAttribute>().Name}`");
-        }
-        else
-        {
-            settings.Append("`English` (default)");
-        }
-
-        container.WithTextDisplay(settings.ToString());
-
-        var whoKnowsSettings = new StringBuilder();
-
-        whoKnowsSettings.AppendLine(
-            $"**{guildUsers?.Count(c => c.Value.BlockedFromWhoKnows) ?? 0}** users blocked from WhoKnows and server charts.");
-
-        if (guild.ActivityThresholdDays.HasValue)
-        {
-            whoKnowsSettings.Append($"Users must have used .fmbot in the last **{guild.ActivityThresholdDays}** days to be visible.");
-        }
-        else
-        {
-            whoKnowsSettings.AppendLine("There is no activity requirement set for being visible.");
+            memberFilters.Append(guild.UserActivityThresholdDays.HasValue
+                ? $" · Inactive in this server: {guild.UserActivityThresholdDays.Value} days"
+                : " · Inactive in this server: off");
         }
 
-        container.WithTextDisplay($"**WhoKnows settings**\n{whoKnowsSettings}");
+        container.AddComponent(new ComponentSectionProperties(
+            BuildSectionButton(GuildSettingSection.MemberFilters, userId))
+        {
+            Components = [new TextDisplayProperties(memberFilters.ToString())]
+        });
 
-        var crownSettings = new StringBuilder();
+        container.WithSeparator();
+
+        var crowns = new StringBuilder();
+        crowns.AppendLine("**Crowns**");
         if (guild.CrownsDisabled == true)
         {
-            crownSettings.Append("Crown functionality has been disabled on this server.");
+            crowns.Append("Crown functionality is disabled on this server.");
         }
         else
         {
-            crownSettings.AppendLine(
-                "Users earn crowns whenever they're the #1 user for an artist. ");
-
-            crownSettings.AppendLine(
-                $"**{guildUsers?.Count(c => c.Value.BlockedFromCrowns) ?? 0}** users are blocked from earning crowns.");
-
-            crownSettings.AppendLine();
-
-            crownSettings.Append(
-                $"The minimum playcount for a crown is set to **{guild.CrownsMinimumPlaycountThreshold ?? Constants.DefaultPlaysForCrown}** or higher");
-
-            if (guild.CrownsMinimumPlaycountThreshold == null)
+            crowns.Append(
+                $"Enabled · minimum {guild.CrownsMinimumPlaycountThreshold ?? Constants.DefaultPlaysForCrown} plays");
+            crowns.Append(guild.CrownsMinimumPlaycountThreshold == null ? " (default)" : "");
+            crowns.AppendLine($" · {guildUsers?.Count(c => c.Value.BlockedFromCrowns) ?? 0} members crownblocked");
+            crowns.Append(guild.CrownsActivityThresholdDays.HasValue
+                ? $"Inactive on .fmbot: {guild.CrownsActivityThresholdDays.Value} days"
+                : "Inactive on .fmbot: off");
+            if (isPremium)
             {
-                crownSettings.Append(
-                    " (default)");
-            }
-
-            crownSettings.Append(". ");
-
-            if (guild.CrownsActivityThresholdDays.HasValue)
-            {
-                crownSettings.Append($"Users must have used .fmbot in the last **{guild.CrownsActivityThresholdDays}** days to earn crowns.");
-            }
-            else
-            {
-                crownSettings.Append("There is no activity requirement set for earning crowns.");
+                crowns.Append(guild.AutomaticCrownSeeder.HasValue
+                    ? $" · Auto-seeding: {guild.AutomaticCrownSeeder.Value.ToString().ToLower()}"
+                    : " · Auto-seeding: off");
             }
         }
 
-        container.WithTextDisplay($"**Crown settings**\n{crownSettings}");
-
-        var emoteReactions = new StringBuilder();
-        if (guild.EmoteReactions == null || !guild.EmoteReactions.Any())
+        container.AddComponent(new ComponentSectionProperties(
+            BuildSectionButton(GuildSettingSection.Crowns, userId))
         {
-            emoteReactions.AppendLine("No automatic reactions enabled for `fm` and `featured`.");
+            Components = [new TextDisplayProperties(crowns.ToString())]
+        });
+
+        container.WithSeparator();
+
+        var commands = new StringBuilder();
+        commands.AppendLine("**Commands & channels**");
+        commands.Append(guild.DisabledCommands is { Length: > 0 }
+            ? $"{guild.DisabledCommands.Length} commands disabled server-wide"
+            : "All commands enabled server-wide");
+        if (isPremium)
+        {
+            var shortcuts = await shortcutService.GetGuildShortcuts(guild);
+            commands.AppendLine();
+            commands.Append($"{shortcuts.Count}/10 server shortcuts used");
         }
-        else
+
+        container.AddComponent(new ComponentSectionProperties(
+            BuildSectionButton(GuildSettingSection.Commands, userId))
         {
-            emoteReactions.Append("Automatic `fm` and `featured` reactions:");
-            foreach (var reaction in guild.EmoteReactions)
-            {
-                emoteReactions.Append($"{reaction} ");
-            }
-        }
+            Components = [new TextDisplayProperties(commands.ToString())]
+        });
 
-        container.WithTextDisplay($"**Emote reactions**\n{emoteReactions}");
-
-        if (guild.DisabledCommands != null && guild.DisabledCommands.Any())
+        if (isPremium)
         {
-            var disabledCommands = new StringBuilder();
-            disabledCommands.Append($"Disabled commands: ");
-            foreach (var disabledCommand in guild.DisabledCommands)
-            {
-                disabledCommands.Append($"`{disabledCommand}` ");
-            }
+            container.WithSeparator();
 
-            container.WithTextDisplay($"**Server-wide disabled commands**\n{disabledCommands}");
+            var autoposts = await autopostService.GetAutopostsForGuild(guild.GuildId);
+
+            var automation = new StringBuilder();
+            automation.AppendLine("**Automation & branding**");
+            automation.Append(autoposts.Count > 0
+                ? $"{autoposts.Count} {(autoposts.Count == 1 ? "autopost" : "autoposts")} configured"
+                : "No autoposts configured");
+            automation.Append(
+                $" · Branding: {PremiumSettingBuilder.GetFeaturedModeName(guild.FeaturedMode ?? GuildFeaturedMode.GlobalFeatured)}");
+
+            container.AddComponent(new ComponentSectionProperties(
+                BuildSectionButton(GuildSettingSection.Automation, userId))
+            {
+                Components = [new TextDisplayProperties(automation.ToString())]
+            });
         }
 
         var missingPermissions = new StringBuilder();
@@ -217,8 +274,13 @@ public class GuildSettingBuilder(GuildService guildService, IOptions<BotSettings
             missingPermissions.AppendLine();
             missingPermissions.AppendLine(
                 "These are missing in this channel. We recommend granting them server-wide via `Server Settings` > `Roles` so all .fmbot commands work everywhere.");
+            container.WithSeparator();
             container.WithTextDisplay($"**Missing permissions in this channel**\n{missingPermissions}");
         }
+
+        container.WithSeparator();
+        container.AddComponent(await BuildPremiumStatusSection(context, guild, isPremium));
+        container.WithSeparator();
 
         var footer = new StringBuilder();
         footer.Append($"-# {guild.DiscordGuildId}");
@@ -229,21 +291,6 @@ public class GuildSettingBuilder(GuildService guildService, IOptions<BotSettings
 
         container.WithTextDisplay(footer.ToString());
 
-        var guildSettings = new StringMenuProperties(InteractionConstants.GuildSetting)
-            .WithPlaceholder("Select setting you want to change")
-            .WithMaxValues(1);
-
-        foreach (var setting in ((GuildSetting[])Enum.GetValues(typeof(GuildSetting))))
-        {
-            var name = setting.GetAttribute<OptionAttribute>().Name;
-            var description = setting.GetAttribute<OptionAttribute>().Description;
-            var value = Enum.GetName(setting);
-
-            guildSettings.AddOption(name, $"gs-view-{value}", description: description);
-        }
-
-        container.AddComponents(guildSettings);
-
         if (showTabRow)
         {
             container.WithActionRow(BuildSettingsTabRow(availableTabs, SettingsTab.Server, context.DiscordUser.Id));
@@ -252,214 +299,501 @@ public class GuildSettingBuilder(GuildService guildService, IOptions<BotSettings
         return response;
     }
 
-    public async Task<ResponseModel> SetPrefix(ContextModel context, NetCord.User lastModifier = null)
+    private async Task<ComponentSectionProperties> BuildPremiumStatusSection(ContextModel context,
+        Persistence.Domain.Models.Guild guild, bool isPremium)
+    {
+        var premium = new StringBuilder();
+
+        if (isPremium)
+        {
+            var subscription = await supporterService.GetPremiumGuildSubscription(context.DiscordGuild.Id);
+
+            premium.AppendLine("✨ **Premium server**");
+            premium.Append("Active");
+            if (subscription?.DateEnding != null)
+            {
+                premium.Append(
+                    $" until at least <t:{((DateTimeOffset)subscription.DateEnding.Value).ToUnixTimeSeconds()}:D>");
+            }
+
+            premium.Append(". ");
+            premium.Append("All Premium server perks are unlocked for this server.");
+
+            return new ComponentSectionProperties(new ButtonProperties(
+                $"{InteractionConstants.PremiumServer.GetOverview}:settings", "Manage Premium server", ButtonStyle.Secondary))
+            {
+                Components = [new TextDisplayProperties(premium.ToString())]
+            };
+        }
+
+        premium.AppendLine("✨ **Premium server**");
+        premium.Append(
+            "-# Unlock role filters, scheduled autoposts, custom bot branding, automatic crownseeding, server shortcuts and more");
+
+        return new ComponentSectionProperties(new ButtonProperties(
+            $"{InteractionConstants.PremiumServer.GetOverview}:settings", PremiumSettingBuilder.GetPremiumButtonLabel, ButtonStyle.Primary))
+        {
+            Components = [new TextDisplayProperties(premium.ToString())]
+        };
+    }
+
+    public async Task<ResponseModel> ServerSettingsSection(ContextModel context, GuildSettingSection section,
+        bool showForcedFmType = false)
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed,
+            ResponseType = ResponseType.ComponentsV2
         };
 
-        response.Embed.WithTitle("Set text command prefix");
-        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
-
-        var description = new StringBuilder();
         var guild = await guildService.GetGuildAsync(context.DiscordGuild.Id);
+        var isPremium = PublicProperties.PremiumServers.ContainsKey(context.DiscordGuild.Id);
+        var userId = context.DiscordUser.Id;
 
-        var prefix = guild.Prefix ?? this._botSettings.Bot.Prefix;
+        var container = response.ComponentsContainer;
+        container.WithAccentColor(DiscordConstants.InformationColorBlue);
 
-        description.AppendLine();
-        description.AppendLine($"Current prefix: `{prefix}`");
-        description.AppendLine();
-        description.AppendLine("Examples:");
-        description.AppendLine($"`{prefix}fm`");
-        description.AppendLine($"`{prefix}whoknows`");
-        description.AppendLine();
-
-        var components = new ActionRowProperties();
-
-        if (guild.Prefix != null &&
-            guild.Prefix != this._botSettings.Bot.Prefix)
+        switch (section)
         {
-            description.AppendLine("This server has set up a custom prefix for .fmbot text commands. " +
-                                   $"Most people are used to having this bot with the `{this._botSettings.Bot.Prefix}` prefix, so consider informing your users.");
-            components.WithButton("Remove text command prefix", $"{InteractionConstants.RemovePrefix}", style: ButtonStyle.Secondary);
-        }
-        else
-        {
-            description.AppendLine("This is the default .fmbot prefix.");
-            components.WithButton("Set text command prefix", InteractionConstants.SetPrefix, style: ButtonStyle.Secondary);
-        }
-
-        response.Embed.WithDescription(description.ToString());
-
-        if (lastModifier != null)
-        {
-            response.Embed.WithFooter($"Last modified by {lastModifier.Username}");
+            case GuildSettingSection.General:
+                BuildGeneralSection(container, context, guild, showForcedFmType);
+                break;
+            case GuildSettingSection.MemberFilters:
+                await BuildMemberFiltersSection(container, context, guild, userId, isPremium);
+                break;
+            case GuildSettingSection.Crowns:
+                await BuildCrownsSection(container, context, guild, userId, isPremium);
+                break;
+            case GuildSettingSection.Commands:
+                await BuildCommandsSection(container, guild, userId, isPremium);
+                break;
+            case GuildSettingSection.Automation:
+                await BuildAutomationSection(container, guild, userId, isPremium);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(section), section, null);
         }
 
-        response.Components = components;
+        container.WithSeparator();
+        container.WithActionRow(BuildBackRow(userId));
 
         return response;
     }
 
-    public async Task<ResponseModel> SetFmbotActivityThreshold(ContextModel context, NetCord.User lastModifier = null)
+    private void BuildGeneralSection(ComponentContainerProperties container, ContextModel context,
+        Persistence.Domain.Models.Guild guild, bool showForcedFmType)
     {
-        var response = new ResponseModel
+        var textPrefix = guild.Prefix ?? this._botSettings.Bot.Prefix;
+
+        container.WithTextDisplay($"## General · {guild.Name}");
+        container.WithTextDisplay("How .fmbot talks and looks in this server.");
+        container.WithSeparator();
+
+        var prefix = new StringBuilder();
+        var prefixIsCustom = guild.Prefix != null && guild.Prefix != this._botSettings.Bot.Prefix;
+        var activePrefix = guild.Prefix ?? this._botSettings.Bot.Prefix;
+
+        prefix.AppendLine("**Text command prefix**");
+        prefix.Append("What members type before a text command. ");
+        prefix.AppendLine(guild.Prefix != null
+            ? $"Currently `{guild.Prefix}`."
+            : $"Currently `{this._botSettings.Bot.Prefix}` (default).");
+        prefix.AppendLine();
+        prefix.Append($"Examples: `{activePrefix}fm` and `{activePrefix}whoknows`");
+
+        if (prefixIsCustom)
         {
-            ResponseType = ResponseType.Embed,
-        };
+            prefix.AppendLine();
+            prefix.Append(
+                $"Most people know .fmbot with the `{this._botSettings.Bot.Prefix}` prefix, so consider informing your members.");
+        }
 
-        response.Embed.WithTitle("Set .fmbot activity threshold");
-        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
-
-        var description = new StringBuilder();
-
-        description.AppendLine(
-            $"Setting a WhoKnows activity threshold will filter out people who have not used .fmbot in a certain amount of days from all server-wide commands. " +
-            $"A user counts as active as soon as they use .fmbot anywhere.");
-        description.AppendLine();
-        description.AppendLine("This filtering applies to all server-wide commands.");
-        description.AppendLine();
-
-        var guild = await guildService.GetGuildAsync(context.DiscordGuild.Id);
-
-        var components = new ActionRowProperties();
-
-        if (!guild.ActivityThresholdDays.HasValue)
+        container.AddComponent(new ComponentSectionProperties(new ButtonProperties(
+            prefixIsCustom ? InteractionConstants.RemovePrefix : InteractionConstants.SetPrefix,
+            prefixIsCustom ? "Remove" : "Set", ButtonStyle.Secondary))
         {
-            description.AppendLine("There is currently no .fmbot activity threshold enabled.");
-            description.AppendLine("To enable, click the button below and enter the amount of days.");
-            components.WithButton("Set activity threshold", InteractionConstants.SetFmbotActivityThreshold, style: ButtonStyle.Secondary);
+            Components = [new TextDisplayProperties(prefix.ToString())]
+        });
+
+        container.WithSeparator();
+
+        var language = new StringBuilder();
+        language.AppendLine("**Server language**");
+        language.Append("The language .fmbot replies in here. ");
+        language.AppendLine(guild.Language.HasValue
+            ? $"Currently **{guild.Language.Value.GetAttribute<OptionAttribute>().Name}**."
+            : "Currently **English** (default).");
+        language.Append(
+            "-# Translations are in beta and might be incomplete. De-select to go back to the default.");
+
+        container.WithTextDisplay(language.ToString());
+
+        var languageMenu = new StringMenuProperties(InteractionConstants.GuildLanguageSetting)
+            .WithPlaceholder("Server language")
+            .WithMinValues(0)
+            .WithMaxValues(1);
+
+        foreach (var option in Enum.GetValues<Language>())
+        {
+            languageMenu.AddOption(option.GetAttribute<OptionAttribute>().Name, Enum.GetName(option),
+                description: option.GetAttribute<OptionAttribute>().Description,
+                isDefault: guild.Language == option);
+        }
+
+        container.AddComponent(languageMenu);
+
+        if (guild.FmEmbedType.HasValue || showForcedFmType)
+        {
+            container.WithSeparator();
+
+            var embedType = new StringBuilder();
+            embedType.AppendLine("**Forced `fm` type**");
+            embedType.Append("Overrides the layout every member picked themselves. ");
+            embedType.AppendLine(guild.FmEmbedType.HasValue
+                ? $"Currently **{guild.FmEmbedType.Value.GetAttribute<OptionAttribute>().Name}**."
+                : "Currently **none**. Every member uses their own `fmmode`.");
+            embedType.Append(
+                "-# Not recommended. Most members prefer their own `fmmode`, so leave this off unless you have a reason. " +
+                $"De-select to disable, or use `{textPrefix}togglecommand` to set it for one channel instead.");
+
+            container.WithTextDisplay(embedType.ToString());
+
+            var fmTypeMenu = new StringMenuProperties(InteractionConstants.FmGuildSettingType)
+                .WithPlaceholder("Forced server 'fm' mode")
+                .WithMinValues(0)
+                .WithMaxValues(1);
+
+            foreach (var option in Enum.GetValues<FmEmbedType>()
+                         .OrderBy(o => o.GetAttribute<OptionOrderAttribute>().Order))
+            {
+                fmTypeMenu.AddOption(option.GetAttribute<OptionAttribute>().Name, Enum.GetName(option),
+                    description: option.GetAttribute<OptionAttribute>().Description,
+                    isDefault: guild.FmEmbedType == option);
+            }
+
+            container.AddComponent(fmTypeMenu);
+        }
+
+        container.WithSeparator();
+
+        var reactions = new StringBuilder();
+        reactions.AppendLine("**Emote reactions**");
+        reactions.Append("Reactions added automatically to `fm` and `featured`. ");
+        if (guild.EmoteReactions is { Length: > 0 })
+        {
+            reactions.Append("Currently: ");
+            foreach (var reaction in guild.EmoteReactions)
+            {
+                reactions.Append($"{reaction} ");
+            }
+
+            reactions.AppendLine();
         }
         else
         {
-            description.AppendLine($"✅ Enabled.");
-            description.AppendLine($"Anyone who hasn't used .fmbot in the last **{guild.ActivityThresholdDays.Value}** days is currently filtered out.");
-            components.WithButton("Remove activity threshold", $"{InteractionConstants.RemoveFmbotActivityThreshold}", style: ButtonStyle.Secondary);
+            reactions.AppendLine("Currently off.");
         }
 
-        response.Embed.WithDescription(description.ToString());
+        reactions.AppendLine();
+        reactions.AppendLine(
+            $"Set with `{textPrefix}serverreactions 😀 😯 🥵` (space between each emoji), or without emojis to disable.");
 
-        if (lastModifier != null)
-        {
-            response.Embed.WithFooter($"Last modified by {lastModifier.Username}");
-        }
-
-        response.Components = components;
-
-        return response;
+        container.WithTextDisplay(reactions.ToString());
     }
 
-    public async Task<ResponseModel> SetCrownActivityThreshold(ContextModel context, NetCord.User lastModifier = null)
+    private async Task BuildMemberFiltersSection(ComponentContainerProperties container, ContextModel context,
+        Persistence.Domain.Models.Guild guild, ulong userId, bool isPremium)
     {
-        var response = new ResponseModel
+        var guildUsers = await guildService.GetGuildUsers(context.DiscordGuild.Id);
+        var textPrefix = guild.Prefix ?? this._botSettings.Bot.Prefix;
+
+        container.WithTextDisplay($"## Who appears in server charts · {guild.Name}");
+        container.WithTextDisplay(
+            "Controls which members show up in WhoKnows, server charts and every other server-wide command.");
+        container.WithSeparator();
+
+        var fmbotActivity = new StringBuilder();
+        fmbotActivity.AppendLine("**Inactive on .fmbot**");
+        fmbotActivity.Append("Hides members who haven't used .fmbot in a while. ");
+        fmbotActivity.Append(guild.ActivityThresholdDays.HasValue
+            ? $"Currently hiding anyone who hasn't used .fmbot in **{guild.ActivityThresholdDays.Value}** days.\n-# A member counts as active as soon as they use .fmbot anywhere."
+            : "Currently off.");
+
+        container.AddComponent(new ComponentSectionProperties(new ButtonProperties(
+            guild.ActivityThresholdDays.HasValue
+                ? InteractionConstants.RemoveFmbotActivityThreshold
+                : InteractionConstants.SetFmbotActivityThreshold,
+            guild.ActivityThresholdDays.HasValue ? "Remove" : "Set", ButtonStyle.Secondary))
         {
-            ResponseType = ResponseType.Embed,
-        };
+            Components = [new TextDisplayProperties(fmbotActivity.ToString())]
+        });
 
-        response.Embed.WithTitle("👑 Set crown activity threshold");
-        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+        container.WithSeparator();
 
-        var description = new StringBuilder();
+        var blockedMembers = new StringBuilder();
+        blockedMembers.AppendLine("**Blocked members**");
+        blockedMembers.Append("Members you manually hid from server-wide commands. ");
+        blockedMembers.AppendLine(
+            $"Currently **{guildUsers?.Count(c => c.Value.BlockedFromWhoKnows) ?? 0}** blocked.");
+        blockedMembers.Append(
+            $"-# Add with `{textPrefix}block`, remove with `{textPrefix}unblock`.");
 
-        description.AppendLine(
-            $"Setting a crown activity threshold will filter out people who have not used .fmbot in a certain amount of days from earning crowns. " +
-            $"A user counts as active as soon as they use the bot anywhere.");
-        description.AppendLine();
+        container.AddComponent(new ComponentSectionProperties(
+            BuildSettingButton(GuildSetting.WhoKnowsBlockedUsers, userId, "View"))
+        {
+            Components = [new TextDisplayProperties(blockedMembers.ToString())]
+        });
 
-        var guild = await guildService.GetGuildAsync(context.DiscordGuild.Id);
+        container.WithSeparator();
+
+        PremiumSettingBuilder.AppendAllowedRoles(container, context, guild, isPremium);
+        container.WithSeparator();
+
+        PremiumSettingBuilder.AppendBlockedRoles(container, context, guild, isPremium);
+        container.WithSeparator();
+
+        PremiumSettingBuilder.AppendServerActivityThreshold(container, guild, guildUsers, isPremium);
+        container.WithSeparator();
+
+        PremiumSettingBuilder.AppendBotManagementRoles(container, context, guild, isPremium);
+
+        if (!isPremium)
+        {
+            container.WithSeparator();
+            container.AddComponent(PremiumSettingBuilder.BuildPremiumUpsell("memberfilters-settings",
+                "Role filters and Discord activity filtering",
+                "Filter server charts down to the roles you pick, hide members who've gone quiet, " +
+                "and let trusted roles manage .fmbot"));
+        }
+    }
+
+    private async Task BuildCrownsSection(ComponentContainerProperties container, ContextModel context,
+        Persistence.Domain.Models.Guild guild, ulong userId, bool isPremium)
+    {
+        var guildUsers = await guildService.GetGuildUsers(context.DiscordGuild.Id);
+        var textPrefix = guild.Prefix ?? this._botSettings.Bot.Prefix;
         var crownsDisabled = guild.CrownsDisabled == true;
 
-        var components = new ActionRowProperties();
+        container.WithTextDisplay($"## Crowns · {guild.Name}");
+        container.WithTextDisplay(
+            "Members earn a crown whenever they're the #1 listener for an artist in this server.");
+        container.WithSeparator();
 
-        if (!guild.CrownsActivityThresholdDays.HasValue)
+        var functionality = new StringBuilder();
+        functionality.AppendLine("**Crown functionality**");
+        functionality.Append("Whether crowns can be earned in this server. ");
+        functionality.Append(crownsDisabled
+            ? "Currently **disabled**.\n-# Crown history is preserved, but not visible."
+            : "Currently **enabled**.");
+
+        container.AddComponent(new ComponentSectionProperties(new ButtonProperties(
+            crownsDisabled ? InteractionConstants.ToggleCrowns.Enable : InteractionConstants.ToggleCrowns.Disable,
+            crownsDisabled ? "Enable" : "Disable", ButtonStyle.Secondary))
         {
-            description.AppendLine("There is currently no crown activity threshold enabled.");
-            description.AppendLine("To enable, click the button below and enter the amount of days.");
-            components.WithButton("Set crown activity threshold", InteractionConstants.SetCrownActivityThreshold, style: ButtonStyle.Secondary,
-                disabled: crownsDisabled);
-        }
-        else
+            Components = [new TextDisplayProperties(functionality.ToString())]
+        });
+
+        container.WithSeparator();
+
+        var minPlaycount = new StringBuilder();
+        minPlaycount.AppendLine("**Minimum playcount**");
+        minPlaycount.Append("How many plays a crown needs. ");
+        minPlaycount.Append(guild.CrownsMinimumPlaycountThreshold.HasValue
+            ? $"Currently **{guild.CrownsMinimumPlaycountThreshold.Value}** plays or more."
+            : $"Currently **{Constants.DefaultPlaysForCrown}** plays or more (default).");
+
+        container.AddComponent(new ComponentSectionProperties(new ButtonProperties(
+            guild.CrownsMinimumPlaycountThreshold.HasValue
+                ? InteractionConstants.RemoveCrownMinPlaycount
+                : InteractionConstants.SetCrownMinPlaycount,
+            guild.CrownsMinimumPlaycountThreshold.HasValue ? "Remove" : "Set",
+            ButtonStyle.Secondary)
         {
-            description.AppendLine($"✅ Enabled.");
-            description.AppendLine($"Anyone who hasn't used .fmbot in the last **{guild.CrownsActivityThresholdDays.Value}** days can't earn crowns.");
-            components.WithButton("Remove crown activity threshold", $"{InteractionConstants.RemoveCrownActivityThreshold}", style: ButtonStyle.Secondary,
-                disabled: crownsDisabled);
-        }
-
-        if (crownsDisabled)
+            Disabled = crownsDisabled
+        })
         {
-            description.AppendLine();
-            description.AppendLine("⚠️ Note: Crown functionality is disabled in this server.");
-        }
+            Components = [new TextDisplayProperties(minPlaycount.ToString())]
+        });
 
-        response.Embed.WithDescription(description.ToString());
+        container.WithSeparator();
 
-        if (lastModifier != null)
+        var crownActivity = new StringBuilder();
+        crownActivity.AppendLine("**Crown inactivity filter**");
+        crownActivity.Append("Blocks crowns for members who haven't used .fmbot in a while. ");
+        crownActivity.Append(guild.CrownsActivityThresholdDays.HasValue
+            ? $"Currently blocking anyone who hasn't used .fmbot in **{guild.CrownsActivityThresholdDays.Value}** days.\n-# A member counts as active as soon as they use .fmbot anywhere."
+            : "Currently off.");
+
+        container.AddComponent(new ComponentSectionProperties(new ButtonProperties(
+            guild.CrownsActivityThresholdDays.HasValue
+                ? InteractionConstants.RemoveCrownActivityThreshold
+                : InteractionConstants.SetCrownActivityThreshold,
+            guild.CrownsActivityThresholdDays.HasValue ? "Remove" : "Set", ButtonStyle.Secondary)
         {
-            response.Embed.WithFooter($"Last modified by {lastModifier.Username}");
+            Disabled = crownsDisabled
+        })
+        {
+            Components = [new TextDisplayProperties(crownActivity.ToString())]
+        });
+
+        container.WithSeparator();
+
+        var crownBlocked = new StringBuilder();
+        crownBlocked.AppendLine("**Crownblocked members**");
+        crownBlocked.Append("Members who can't earn crowns. ");
+        crownBlocked.AppendLine(
+            $"Currently **{guildUsers?.Count(c => c.Value.BlockedFromCrowns) ?? 0}** crownblocked.");
+        crownBlocked.Append($"-# Add with `{textPrefix}crownblock`, remove with `{textPrefix}unblock`.");
+
+        container.AddComponent(new ComponentSectionProperties(
+            BuildSettingButton(GuildSetting.CrownBlockedUsers, userId, "View"))
+        {
+            Components = [new TextDisplayProperties(crownBlocked.ToString())]
+        });
+
+        container.WithSeparator();
+
+        var seeder = new StringBuilder();
+        seeder.AppendLine("**Crownseeder**");
+        seeder.AppendLine("Generates or updates every crown in this server at once.");
+        if (isPremium)
+        {
+            seeder.AppendLine(guild.AutomaticCrownSeeder.HasValue
+                ? $"Automatic seeding currently runs **{guild.AutomaticCrownSeeder.Value.ToString().ToLower()}**."
+                : "Automatic seeding is currently off.");
         }
 
-        response.Components = components;
+        seeder.Append(
+            "-# Members claim crowns themselves by running `whoknows`. Only server staff can seed them all at once.");
 
-        return response;
+        container.AddComponent(new ComponentSectionProperties(
+            BuildSettingButton(GuildSetting.CrownSeeder, userId, "Open", crownsDisabled))
+        {
+            Components = [new TextDisplayProperties(seeder.ToString().TrimEnd())]
+        });
     }
 
-    public async Task<ResponseModel> SetCrownMinPlaycount(ContextModel context, NetCord.User lastModifier = null)
+    private async Task BuildCommandsSection(ComponentContainerProperties container,
+        Persistence.Domain.Models.Guild guild, ulong userId, bool isPremium)
     {
-        var response = new ResponseModel
+        container.WithTextDisplay($"## Commands & channels · {guild.Name}");
+        container.WithTextDisplay("Where .fmbot commands work, and what members can run.");
+        container.WithSeparator();
+
+        var guildCommands = new StringBuilder();
+        guildCommands.AppendLine("**Disabled server commands**");
+        guildCommands.Append("Commands turned off everywhere in this server. ");
+        if (guild.DisabledCommands is { Length: > 0 })
         {
-            ResponseType = ResponseType.Embed,
-        };
+            guildCommands.Append("Currently: ");
+            foreach (var disabledCommand in guild.DisabledCommands.Take(32))
+            {
+                guildCommands.Append($"`{disabledCommand}` ");
+            }
 
-        response.Embed.WithTitle("Set minimum playcount for crowns");
-        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
-
-        var description = new StringBuilder();
-
-        description.AppendLine($"A crown is something someone earns when they're the #1 listener for an artist on a server. ");
-        description.AppendLine();
-        description.AppendLine($"By default crowns are only applied when someone has **{Constants.DefaultPlaysForCrown}** plays or more, " +
-                               $"but you can customize that amount in this command.");
-        description.AppendLine();
-
-        var guild = await guildService.GetGuildAsync(context.DiscordGuild.Id);
-        var crownsDisabled = guild.CrownsDisabled == true;
-
-        var components = new ActionRowProperties();
-
-        if (!guild.CrownsMinimumPlaycountThreshold.HasValue)
-        {
-            description.AppendLine($"Minimum playcount is set to default ({Constants.DefaultPlaysForCrown}).");
-            description.AppendLine("To change this, click the button below and enter the minimum amount of plays.");
-            components.WithButton("Set minimum crown playcount ", InteractionConstants.SetCrownMinPlaycount, style: ButtonStyle.Secondary,
-                disabled: crownsDisabled);
+            if (guild.DisabledCommands.Length > 32)
+            {
+                guildCommands.Append($"and {guild.DisabledCommands.Length - 32} more");
+            }
         }
         else
         {
-            description.AppendLine($"✅ Custom minimum playcount set.");
-            description.AppendLine($"Minimum playcount for crowns is set to **{guild.CrownsMinimumPlaycountThreshold.Value}**.");
-            components.WithButton("Revert to default", $"{InteractionConstants.RemoveCrownMinPlaycount}", style: ButtonStyle.Secondary,
-                disabled: crownsDisabled);
+            guildCommands.Append("Currently none. Every command is enabled.");
         }
 
-        if (crownsDisabled)
+        container.AddComponent(new ComponentSectionProperties(
+            BuildSettingButton(GuildSetting.DisabledGuildCommands, userId, "Manage"))
         {
-            description.AppendLine();
-            description.AppendLine("⚠️ Note: Crown functionality is disabled in this server.");
-        }
+            Components = [new TextDisplayProperties(guildCommands.ToString())]
+        });
 
-        response.Embed.WithDescription(description.ToString());
+        container.WithSeparator();
 
-        if (lastModifier != null)
+        var channelCommands = new StringBuilder();
+        channelCommands.AppendLine("**Channel commands**");
+        channelCommands.AppendLine(
+            "Turns .fmbot or single commands off per channel, and sets a per-channel `fm` type.");
+        channelCommands.AppendLine("-# Opens for the channel you're in. Switch channels from there.");
+        channelCommands.Append(
+            $"-# Set an `fm` cooldown for a channel with `{guild.Prefix ?? this._botSettings.Bot.Prefix}cooldown`.");
+
+        container.AddComponent(new ComponentSectionProperties(
+            BuildSettingButton(GuildSetting.DisabledCommands, userId, "Manage"))
         {
-            response.Embed.WithFooter($"Last modified by {lastModifier.Username}");
+            Components = [new TextDisplayProperties(channelCommands.ToString())]
+        });
+
+        container.WithSeparator();
+
+        if (isPremium)
+        {
+            var shortcuts = await shortcutService.GetGuildShortcuts(guild);
+
+            var shortcutText = new StringBuilder();
+            shortcutText.AppendLine("**Server shortcuts**");
+            shortcutText.Append("Shared text command shortcuts for everyone here. ");
+            shortcutText.Append($"Currently **{shortcuts.Count}**/10 slots used.");
+
+            container.AddComponent(new ComponentSectionProperties(
+                BuildSettingButton(GuildSetting.ServerShortcuts, userId, "Manage"))
+            {
+                Components = [new TextDisplayProperties(shortcutText.ToString())]
+            });
         }
-
-        response.Components = components;
-
-        return response;
+        else
+        {
+            container.AddComponent(PremiumSettingBuilder.BuildPremiumUpsell("commands-settings",
+                "Server shortcuts",
+                "Shared text command shortcuts that work for everyone in this server"));
+        }
     }
+
+    private async Task BuildAutomationSection(ComponentContainerProperties container,
+        Persistence.Domain.Models.Guild guild, ulong userId, bool isPremium)
+    {
+        container.WithTextDisplay($"## Automation & branding · {guild.Name}");
+        container.WithTextDisplay("What .fmbot posts on its own, and how it looks doing it.");
+        container.WithSeparator();
+
+        if (!isPremium)
+        {
+            container.AddComponent(PremiumSettingBuilder.BuildPremiumUpsell("automation-settings",
+                "Autoposts and bot branding",
+                "Scheduled recaps and top charts, a custom bot avatar, and a featured rotation built from your own members"));
+            return;
+        }
+
+        var autoposts = await autopostService.GetAutopostsForGuild(guild.GuildId);
+
+        var autopostText = new StringBuilder();
+        autopostText.AppendLine("**Server autoposts**");
+        autopostText.Append("Posts recaps and top charts on a schedule. ");
+        autopostText.Append(autoposts.Count > 0
+            ? $"Currently **{autoposts.Count}** {(autoposts.Count == 1 ? "autopost" : "autoposts")}."
+            : "Currently none.");
+
+        container.AddComponent(new ComponentSectionProperties(
+            BuildSettingButton(GuildSetting.ServerAutoposts, userId, "Manage"))
+        {
+            Components = [new TextDisplayProperties(autopostText.ToString())]
+        });
+
+        container.WithSeparator();
+
+        var branding = new StringBuilder();
+        branding.AppendLine("**Bot branding**");
+        branding.Append("Gives .fmbot a custom look in this server. ");
+        branding.AppendLine(
+            $"Currently **{PremiumSettingBuilder.GetFeaturedModeName(guild.FeaturedMode ?? GuildFeaturedMode.GlobalFeatured)}**.");
+        branding.Append(
+            "-# Set a custom avatar, or rotate a featured built from your own members.");
+
+        container.AddComponent(new ComponentSectionProperties(
+            BuildSettingButton(GuildSetting.BotBranding, userId, "Manage"))
+        {
+            Components = [new TextDisplayProperties(branding.ToString())]
+        });
+    }
+
 
     public async Task<ResponseModel> CrownSeeder(ContextModel context)
     {
@@ -490,15 +824,18 @@ public class GuildSettingBuilder(GuildService guildService, IOptions<BotSettings
         var components = new ActionRowProperties();
         components.WithButton("Run crownseeder", $"{InteractionConstants.RunCrownseeder}", style: ButtonStyle.Secondary, disabled: crownsDisabled);
 
+        var isPremium = PublicProperties.PremiumServers.ContainsKey(context.DiscordGuild.Id);
+
         StringMenuProperties scheduleMenu = null;
-        if (PublicProperties.PremiumServers.ContainsKey(context.DiscordGuild.Id))
+        if (isPremium)
         {
             description.AppendLine();
             description.AppendLine(guild.AutomaticCrownSeeder.HasValue
-                ? $"✨ Automatic crownseeder is enabled and runs **{guild.AutomaticCrownSeeder.Value.ToString().ToLower()}**."
-                : "✨ You can also let the crownseeder run automatically on a schedule.");
+                ? $"Automatic crownseeder is enabled and runs **{guild.AutomaticCrownSeeder.Value.ToString().ToLower()}**."
+                : "You can also let the crownseeder run automatically on a schedule.");
 
             scheduleMenu = BuildCrownSeederScheduleMenu(guild);
+            scheduleMenu.WithDisabled(crownsDisabled);
         }
 
         if (crownsDisabled)
@@ -514,6 +851,14 @@ public class GuildSettingBuilder(GuildService guildService, IOptions<BotSettings
         }
 
         container.WithActionRow(components);
+
+        if (!isPremium)
+        {
+            container.WithSeparator();
+            container.AddComponent(PremiumSettingBuilder.BuildPremiumUpsell("crownseeder-settings",
+                "Automatic crownseeding",
+                "Seed this server's crowns daily, weekly or monthly instead of running it by hand"));
+        }
 
         return response;
     }
@@ -569,11 +914,11 @@ public class GuildSettingBuilder(GuildService guildService, IOptions<BotSettings
             var automaticCrownseeder = new StringBuilder();
             if (guild.AutomaticCrownSeeder.HasValue)
             {
-                automaticCrownseeder.AppendLine($"✨ Automatic crownseeder is enabled and runs **{guild.AutomaticCrownSeeder.Value.ToString().ToLower()}**.");
+                automaticCrownseeder.AppendLine($"Automatic crownseeder is enabled and runs **{guild.AutomaticCrownSeeder.Value.ToString().ToLower()}**.");
             }
             else
             {
-                automaticCrownseeder.AppendLine("✨ You can also let the crownseeder run automatically on a schedule.");
+                automaticCrownseeder.AppendLine("You can also let the crownseeder run automatically on a schedule.");
                 scheduleMenu = BuildCrownSeederScheduleMenu(guild);
             }
 
@@ -583,15 +928,9 @@ public class GuildSettingBuilder(GuildService guildService, IOptions<BotSettings
         else
         {
             container.WithSeparator();
-            container.AddComponent(new ComponentSectionProperties(
-                new ButtonProperties($"{InteractionConstants.PremiumServer.GetOverview}:crownseeder-run",
-                    "Premium server", ButtonStyle.Secondary))
-            {
-                Components =
-                [
-                    new TextDisplayProperties("✨ Running this manually every time? Premium server can seed crowns automatically, daily, weekly or monthly.")
-                ]
-            });
+            container.AddComponent(PremiumSettingBuilder.BuildPremiumUpsell("crownseeder-run",
+                "Automatic crownseeding",
+                "Running this manually every time? Premium server can seed crowns daily, weekly or monthly"));
         }
 
         if (scheduleMenu != null)
@@ -781,143 +1120,6 @@ public class GuildSettingBuilder(GuildService guildService, IOptions<BotSettings
         return response;
     }
 
-    public async Task<ResponseModel> GuildMode(ContextModel context, NetCord.User lastModifier = null)
-    {
-        var response = new ResponseModel
-        {
-            ResponseType = ResponseType.Embed,
-        };
-
-        var guild = await guildService.GetGuildAsync(context.DiscordGuild.Id);
-
-        var fmType = new StringMenuProperties(InteractionConstants.FmGuildSettingType)
-            .WithPlaceholder("Forced server 'fm' mode")
-            .WithMinValues(0)
-            .WithMaxValues(1);
-
-        foreach (var option in ((FmEmbedType[])Enum.GetValues(typeof(FmEmbedType))).OrderBy(o => o.GetAttribute<OptionOrderAttribute>().Order))
-        {
-            var name = option.GetAttribute<OptionAttribute>().Name;
-            var optionDescription = option.GetAttribute<OptionAttribute>().Description;
-            var value = Enum.GetName(option);
-
-            var selected = value == guild.FmEmbedType.ToString();
-            fmType.AddOption(name, value, description: optionDescription, isDefault: selected);
-        }
-
-        response.Embed.WithTitle("Set server 'fm' mode");
-
-        var description = new StringBuilder();
-        description.AppendLine("Select a forced mode for the `fm` command for everyone in this server.");
-        description.AppendLine("This will override whatever mode a user has set themselves.");
-        description.AppendLine();
-        description.AppendLine("To disable, simply de-select the mode you have selected.");
-        description.AppendLine();
-        description.AppendLine("Use `togglecommand` to configure this per-channel.");
-        description.AppendLine();
-
-        if (guild.FmEmbedType.HasValue)
-        {
-            description.AppendLine($"Current mode: **{guild.FmEmbedType}**.");
-        }
-        else
-        {
-            description.AppendLine($"Current mode: None");
-        }
-
-        response.Embed.WithDescription(description.ToString());
-        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
-
-        if (lastModifier != null)
-        {
-            response.Embed.WithFooter($"Last modified by {lastModifier.Username}");
-        }
-
-        response.StringMenus.Add(fmType);
-
-        return response;
-    }
-
-    public async Task<ResponseModel> GuildLanguage(ContextModel context, NetCord.User lastModifier = null)
-    {
-        var response = new ResponseModel
-        {
-            ResponseType = ResponseType.Embed,
-        };
-
-        var guild = await guildService.GetGuildAsync(context.DiscordGuild.Id);
-
-        var languageMenu = new StringMenuProperties(InteractionConstants.GuildLanguageSetting)
-            .WithPlaceholder("Server language")
-            .WithMinValues(0)
-            .WithMaxValues(1);
-
-        foreach (var option in Enum.GetValues<Language>())
-        {
-            var name = option.GetAttribute<OptionAttribute>().Name;
-            var optionDescription = option.GetAttribute<OptionAttribute>().Description;
-            var value = Enum.GetName(option);
-
-            var selected = value == guild.Language.ToString();
-            languageMenu.AddOption(name, value, description: optionDescription, isDefault: selected);
-        }
-
-        response.Embed.WithTitle("Set server language");
-
-        var description = new StringBuilder();
-        description.AppendLine("Select the language for .fmbot responses in this server.");
-        description.AppendLine();
-        description.AppendLine("Translations are in beta and might be incomplete. Untranslated text will show in English. Some terms might remain English for consistency reasons.");
-        description.AppendLine();
-        description.AppendLine("To use the default again, simply de-select the language you have selected.");
-        description.AppendLine();
-
-        if (guild.Language.HasValue)
-        {
-            description.AppendLine($"Current language: **{guild.Language.Value.GetAttribute<OptionAttribute>().Name}**.");
-        }
-        else
-        {
-            description.AppendLine("Current language: **English** (default)");
-        }
-
-        response.Embed.WithDescription(description.ToString());
-        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
-
-        if (lastModifier != null)
-        {
-            response.Embed.WithFooter($"Last modified by {lastModifier.Username}");
-        }
-
-        response.StringMenus.Add(languageMenu);
-
-        return response;
-    }
-
-    public static ResponseModel GuildReactionsAsync(ContextModel context, string prfx)
-    {
-        var response = new ResponseModel
-        {
-            ResponseType = ResponseType.Embed
-        };
-
-        var description = new StringBuilder();
-        description.Append(
-            $"Use the `{prfx}serverreactions` command for automatic emoji reacts for `fm` and `featured`. ");
-        description.AppendLine("To disable, use without any emojis.");
-        description.AppendLine();
-        description.AppendLine("Make sure that you have a space between each emoji.");
-        description.AppendLine();
-        description.AppendLine("Examples:");
-        description.AppendLine($"`{prfx}serverreactions :PagChomp: :PensiveBlob:`");
-        description.AppendLine($"`{prfx}serverreactions 😀 😯 🥵`");
-
-        response.Embed.WithDescription(description.ToString());
-        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
-
-        return response;
-    }
-
     public async Task<ResponseModel> ToggleGuildCommand(ContextModel context, NetCord.User lastModifier = null)
     {
         var response = new ResponseModel
@@ -997,106 +1199,10 @@ public class GuildSettingBuilder(GuildService guildService, IOptions<BotSettings
 
         var footer = new StringBuilder();
 
-        var channelDescription = new StringBuilder();
-
-        var categories = context.DiscordGuild.Channels.Values
-            .OfType<CategoryGuildChannel>()
-            .OrderBy(c => c.Position)
-            .ToList();
-
-        ulong previousChannelId = 0;
-        ulong previousCategoryId = 0;
-        ulong nextChannelId = 0;
-        ulong nextCategoryId = 0;
-
         var channel = await guildService.GetChannel(selectedChannel.Id);
         var botDisabled = channel?.BotDisabled == true;
 
-        for (var i = 0; i < categories.Count; i++)
-        {
-            var previousCategory = categories.OrderBy(o => o.Position).ElementAtOrDefault(i - 1);
-            var currentCategory = categories.OrderBy(o => o.Position).ElementAt(i);
-            var nextCategory = categories.OrderBy(o => o.Position).ElementAtOrDefault(i + 1);
-
-            if (currentCategory is not CategoryGuildChannel currentSocketCategory)
-            {
-                break;
-            }
-
-            var categoryChannels = currentSocketCategory.GetCategoryChannelPositions(context.DiscordGuild);
-
-            if (!selectedCategoryId.HasValue && categoryChannels.Any(a => a.Key.Id == selectedChannelId))
-            {
-                selectedCategoryId = currentCategory.Id;
-            }
-
-            if (selectedCategoryId == currentCategory.Id)
-            {
-                channelDescription.AppendLine($"***`{currentCategory.Name.ToUpper()}`*** - {categoryChannels.Count}");
-
-                for (var j = 0; j < categoryChannels.Count; j++)
-                {
-                    var previousChannel = categoryChannels.Keys.ElementAtOrDefault(j - 1);
-                    var currentChannel = categoryChannels.Keys.ElementAt(j);
-                    var nextChannel = categoryChannels.Keys.ElementAtOrDefault(j + 1);
-
-                    if (currentChannel.Id == selectedChannelId)
-                    {
-                        if (previousChannel != null)
-                        {
-                            channelDescription.AppendLine(
-                                $"{EmojiProperties.Custom(DiscordConstants.OneToFiveUp).ToDiscordString("one_to_five_up")} **<#{previousChannel.Id}>**");
-                        }
-
-                        channelDescription.AppendLine(
-                            $"{EmojiProperties.Custom(DiscordConstants.SamePosition).ToDiscordString("same_position")} **<#{currentChannel.Id}>** **<**");
-
-                        if (nextChannel != null)
-                        {
-                            channelDescription.AppendLine(
-                                $"{EmojiProperties.Custom(DiscordConstants.OneToFiveDown).ToDiscordString("one_to_five_down")} **<#{nextChannel.Id}>**");
-                        }
-
-                        if (previousChannel != null)
-                        {
-                            previousChannelId = previousChannel.Id;
-                            previousCategoryId = currentCategory.Id;
-                        }
-                        else if (previousCategory is CategoryGuildChannel previousSocketCategory)
-                        {
-                            var previousCategoryChannels = previousSocketCategory.GetCategoryChannelPositions(context.DiscordGuild);
-                            if (previousCategoryChannels.Keys.Any())
-                            {
-                                previousCategoryId = previousSocketCategory.Id;
-                                previousChannelId = previousCategoryChannels.Keys.Last().Id;
-                            }
-                        }
-
-                        if (nextChannel != null)
-                        {
-                            nextChannelId = nextChannel.Id;
-                            nextCategoryId = currentCategory.Id;
-                        }
-                        else if (nextCategory is CategoryGuildChannel nextSocketCategory)
-                        {
-                            var nextCategoryChannels = nextSocketCategory.GetCategoryChannelPositions(context.DiscordGuild);
-                            if (nextCategoryChannels.Keys.Any())
-                            {
-                                nextCategoryId = nextSocketCategory.Id;
-                                nextChannelId = nextCategoryChannels.Keys.First().Id;
-                            }
-                        }
-                    }
-                }
-            }
-
-            channelDescription.AppendLine();
-        }
-
-        if (channelDescription.Length > 0)
-        {
-            container.WithTextDisplay(channelDescription.ToString());
-        }
+        selectedCategoryId ??= (selectedChannel as TextGuildChannel)?.ParentId;
 
         var currentlyDisabled = new StringBuilder();
 
@@ -1167,7 +1273,6 @@ public class GuildSettingBuilder(GuildService guildService, IOptions<BotSettings
             container.WithTextDisplay($"**Missing permissions in this channel**\n{missingPermissions}");
         }
 
-        footer.AppendLine("-# Use the up and down selector to browse through channels");
         if (lastModifier != null)
         {
             footer.AppendLine($"-# Last modified by {lastModifier.Username}");
@@ -1177,16 +1282,7 @@ public class GuildSettingBuilder(GuildService guildService, IOptions<BotSettings
 
         container.WithSeparator();
 
-        var upDisabled = previousCategoryId == 0 || previousChannelId == 0;
-        var downDisabled = nextCategoryId == 0 || nextChannelId == 0;
-
         var firstRow = new ActionRowProperties();
-        firstRow.AddComponents(new ButtonProperties(
-            $"{InteractionConstants.ToggleCommand.ToggleCommandMove}:{previousChannelId}:{previousCategoryId}:up",
-            EmojiProperties.Custom(DiscordConstants.OneToFiveUp), ButtonStyle.Secondary)
-        {
-            Disabled = upDisabled
-        });
         firstRow.AddComponents(new ButtonProperties(
             $"{InteractionConstants.ToggleCommand.ToggleCommandAdd}:{selectedChannel.Id}:{selectedCategoryId}", "Add",
             ButtonStyle.Secondary));
@@ -1203,29 +1299,33 @@ public class GuildSettingBuilder(GuildService guildService, IOptions<BotSettings
             Disabled = currentlyDisabled.Length == 0
         });
 
-        var secondRow = new ActionRowProperties();
-        secondRow.AddComponents(new ButtonProperties(
-            $"{InteractionConstants.ToggleCommand.ToggleCommandMove}:{nextChannelId}:{nextCategoryId}:down",
-            EmojiProperties.Custom(DiscordConstants.OneToFiveDown), ButtonStyle.Secondary)
-        {
-            Disabled = downDisabled
-        });
-
         if (!botDisabled)
         {
-            secondRow.AddComponents(new ButtonProperties(
+            firstRow.AddComponents(new ButtonProperties(
                 $"{InteractionConstants.ToggleCommand.ToggleCommandDisableAll}:{selectedChannel.Id}:{selectedCategoryId}",
                 "Disable all commands", ButtonStyle.Secondary));
         }
         else
         {
-            secondRow.AddComponents(new ButtonProperties(
+            firstRow.AddComponents(new ButtonProperties(
                 $"{InteractionConstants.ToggleCommand.ToggleCommandEnableAll}:{selectedChannel.Id}:{selectedCategoryId}",
                 "Enable all commands", ButtonStyle.Secondary));
         }
 
+        var channelPicker = new ChannelMenuProperties(InteractionConstants.ToggleCommand.ToggleCommandPickChannel)
+            .WithPlaceholder("Pick a channel")
+            .WithMinValues(1)
+            .WithMaxValues(1)
+            .WithChannelTypes([
+                ChannelType.TextGuildChannel, ChannelType.AnnouncementGuildChannel,
+                ChannelType.PublicGuildThread, ChannelType.PrivateGuildThread,
+                ChannelType.AnnouncementGuildThread
+            ]);
+        channelPicker.DefaultValues = [selectedChannel.Id];
+
+        container.AddComponent(channelPicker);
+
         container.WithActionRow(firstRow);
-        container.WithActionRow(secondRow);
 
         var fmToggled = currentToggledCommands != null &&
                         currentToggledCommands.Any(a => string.Equals(a, "fm", StringComparison.OrdinalIgnoreCase));
@@ -1263,51 +1363,15 @@ public class GuildSettingBuilder(GuildService guildService, IOptions<BotSettings
 
     public async Task<ResponseModel> ToggleCrowns(ContextModel context, bool? disabled = null)
     {
-        var response = new ResponseModel
-        {
-            ResponseType = ResponseType.Embed,
-        };
-
-        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
-
         if (disabled.HasValue)
         {
             await guildService.ToggleCrownsAsync(context.DiscordGuild, disabled.Value);
         }
 
-        var guild = await guildService.GetGuildAsync(context.DiscordGuild.Id);
-        var crownsDisabled = guild.CrownsDisabled == true;
-
-        var description = new StringBuilder();
-        if (crownsDisabled)
-        {
-            response.Embed.WithTitle("Enabling crowns on this server");
-            description.AppendLine($"Crown functionality is disabled on this server. ");
-            description.AppendLine();
-            description.AppendLine("Use the button below to re-enable crowns.");
-
-            response.Components =
-                new ActionRowProperties().WithButton("Enable crowns", $"{InteractionConstants.ToggleCrowns.Enable}", style: ButtonStyle.Secondary);
-        }
-        else
-        {
-            response.Embed.WithTitle("Disabling crowns on this server");
-            description.AppendLine(
-                $"Crowns can be earned when someone is the #1 listener for an artist and has {guild.CrownsMinimumPlaycountThreshold ?? Constants.DefaultPlaysForCrown} plays or more. ");
-            description.AppendLine();
-            description.AppendLine(
-                "Use the button below to disable crown functionality server-wide. Crown history will be preserved, but it will no longer be visible.");
-
-            response.Components =
-                new ActionRowProperties().WithButton("Disable crowns", $"{InteractionConstants.ToggleCrowns.Disable}", style: ButtonStyle.Secondary);
-        }
-
-        response.Embed.WithDescription(description.ToString());
-
-        return response;
+        return await ServerSettingsSection(context, GuildSettingSection.Crowns);
     }
 
-    private StringBuilder GetMissingBotPermissionsInChannel(NetCord.Gateway.Guild guild, IGuildChannel channel)
+    private StringBuilder GetMissingBotPermissionsInChannel(Guild guild, IGuildChannel channel)
     {
         var missing = new StringBuilder();
         if (guild == null || channel == null)
