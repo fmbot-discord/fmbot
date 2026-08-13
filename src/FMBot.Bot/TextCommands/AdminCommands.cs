@@ -2652,8 +2652,10 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
     }
 
     [Command("sendpremiumwelcome")]
-    [Summary("Sends the premium server welcome DM to yourself for testing")]
-    public async Task SendPremiumWelcome([CommandParameter(Remainder = true)] string guildId = null)
+    [Summary("Sends the premium server welcome DM to yourself or another user")]
+    [Examples("sendpremiumwelcome 821660544581763093", "sendpremiumwelcome 821660544581763093 125740103539621888")]
+    public async Task SendPremiumWelcome(string guildId = null,
+        [CommandParameter(Remainder = true)] string user = null)
     {
         if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
@@ -2662,16 +2664,39 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                 if (!ulong.TryParse(guildId, out var discordGuildId))
                 {
                     await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
-                        new MessageProperties { Content = "Enter a valid guild id. Usage: `.sendpremiumwelcome 821660544581763093`" });
+                        new MessageProperties { Content = "Enter a valid guild id. Usage: `.sendpremiumwelcome 821660544581763093 125740103539621888`\nLeave the user id out to send the DM to yourself." });
                     return;
+                }
+
+                var targetUser = this.Context.User;
+                if (user != null)
+                {
+                    if (!ulong.TryParse(user, out var discordUserId))
+                    {
+                        await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
+                            new MessageProperties { Content = "Enter a valid user id. Usage: `.sendpremiumwelcome 821660544581763093 125740103539621888`" });
+                        return;
+                    }
+
+                    targetUser = await this.Context.Client.Rest.GetUserAsync(discordUserId);
+
+                    if (targetUser == null)
+                    {
+                        await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
+                            new MessageProperties { Content = $"Could not find Discord user `{discordUserId}`." });
+                        return;
+                    }
                 }
 
                 var guild = await guildService.GetGuildAsync(discordGuildId);
 
-                await supporterService.SendPremiumGuildWelcomeMessage(this.Context.User, guild?.Name, discordGuildId);
+                await supporterService.SendPremiumGuildWelcomeMessage(targetUser, guild?.Name, discordGuildId);
 
-                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
-                    new MessageProperties { Content = $"Sent premium welcome DM for guild `{discordGuildId}` ({guild?.Name ?? "not in db"})" });
+                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
+                {
+                    Content = $"Sent premium welcome DM to `{targetUser.Username}` ({targetUser.Id}) for guild `{discordGuildId}` ({guild?.Name ?? "not in db"})",
+                    AllowedMentions = AllowedMentionsProperties.None
+                });
             }
             catch (Exception e)
             {
