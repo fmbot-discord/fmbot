@@ -63,6 +63,17 @@ public class BottedCheckTopTrack
     public int? DurationMs { get; set; }
 }
 
+public class WhoKnowsArtistContext
+{
+    public Persistence.Domain.Models.Guild Guild { get; set; }
+
+    public IDictionary<int, FullGuildUser> GuildUsers { get; set; }
+
+    public List<WhoKnowsObjectWithUser> FilteredUsersWithArtist { get; set; }
+
+    public FilterStats FilterStats { get; set; }
+}
+
 public class WhoKnowsSettings
 {
     public bool HidePrivateUsers { get; set; }

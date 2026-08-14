@@ -287,10 +287,13 @@
       "description": "Imposta se le copertine degli album sono animate o sempre statiche"
     },
     "crown": {
-      "description": "Cronologia di una crown specifica",
+      "description": "Chi detiene la crown di un artista e se puoi rubarla",
       "parameters": {
         "artist": {
           "description": "L'artista da cercare (predefinito: in riproduzione)"
+        },
+        "user": {
+          "description": "L'utente da confrontare con chi detiene la crown (predefinito: te stesso)"
         }
       }
     },

@@ -1181,6 +1181,21 @@ public class GuildSettingBuilder(
         return response;
     }
 
+    public static IGuildChannel GetChannelOrThread(Guild discordGuild, ulong channelId)
+    {
+        if (discordGuild == null)
+        {
+            return null;
+        }
+
+        if (discordGuild.Channels.TryGetValue(channelId, out var guildChannel))
+        {
+            return guildChannel;
+        }
+
+        return discordGuild.ActiveThreads.TryGetValue(channelId, out var guildThread) ? guildThread : null;
+    }
+
     public async Task<ResponseModel> ToggleChannelCommand(ContextModel context, ulong selectedChannelId, ulong? selectedCategoryId = null,
         NetCord.User lastModifier = null)
     {
@@ -1189,12 +1204,22 @@ public class GuildSettingBuilder(
             ResponseType = ResponseType.ComponentsV2
         };
 
-        var selectedChannel = context.DiscordGuild.Channels.TryGetValue(selectedChannelId, out var ch) ? ch : null;
+        var selectedChannel = GetChannelOrThread(context.DiscordGuild, selectedChannelId);
 
         var container = response.ComponentsContainer;
+
+        if (selectedChannel == null)
+        {
+            container.WithAccentColor(DiscordConstants.WarningColorOrange);
+            container.WithTextDisplay(
+                "Could not find that channel. It might have been deleted, or .fmbot might not have access to it.");
+            response.CommandResponse = CommandResponse.NotFound;
+            return response;
+        }
+
         container.WithAccentColor(DiscordConstants.InformationColorBlue);
 
-        container.WithTextDisplay($"## Toggle channel commands - #{selectedChannel?.Name}");
+        container.WithTextDisplay($"## Toggle channel commands - #{selectedChannel.Name}");
         container.WithSeparator();
 
         var footer = new StringBuilder();
@@ -1223,7 +1248,7 @@ public class GuildSettingBuilder(
             }
         }
 
-        var fmType = new StringMenuProperties($"{InteractionConstants.ToggleCommand.ToggleCommandChannelFmType}:{selectedChannel.Id}:{selectedCategoryId}")
+        var fmType = new StringMenuProperties($"{InteractionConstants.ToggleCommand.ToggleCommandChannelFmType}:{selectedChannel.Id}:{selectedCategoryId.GetValueOrDefault()}")
             .WithPlaceholder("Forced channel 'fm' mode")
             .WithMinValues(0)
             .WithMaxValues(1);
@@ -1284,16 +1309,16 @@ public class GuildSettingBuilder(
 
         var firstRow = new ActionRowProperties();
         firstRow.AddComponents(new ButtonProperties(
-            $"{InteractionConstants.ToggleCommand.ToggleCommandAdd}:{selectedChannel.Id}:{selectedCategoryId}", "Add",
+            $"{InteractionConstants.ToggleCommand.ToggleCommandAdd}:{selectedChannel.Id}:{selectedCategoryId.GetValueOrDefault()}", "Add",
             ButtonStyle.Secondary));
         firstRow.AddComponents(new ButtonProperties(
-            $"{InteractionConstants.ToggleCommand.ToggleCommandRemove}:{selectedChannel.Id}:{selectedCategoryId}", "Remove",
+            $"{InteractionConstants.ToggleCommand.ToggleCommandRemove}:{selectedChannel.Id}:{selectedCategoryId.GetValueOrDefault()}", "Remove",
             ButtonStyle.Secondary)
         {
             Disabled = currentlyDisabled.Length == 0
         });
         firstRow.AddComponents(new ButtonProperties(
-            $"{InteractionConstants.ToggleCommand.ToggleCommandClear}:{selectedChannel.Id}:{selectedCategoryId}", "Clear",
+            $"{InteractionConstants.ToggleCommand.ToggleCommandClear}:{selectedChannel.Id}:{selectedCategoryId.GetValueOrDefault()}", "Clear",
             ButtonStyle.Secondary)
         {
             Disabled = currentlyDisabled.Length == 0
@@ -1302,13 +1327,13 @@ public class GuildSettingBuilder(
         if (!botDisabled)
         {
             firstRow.AddComponents(new ButtonProperties(
-                $"{InteractionConstants.ToggleCommand.ToggleCommandDisableAll}:{selectedChannel.Id}:{selectedCategoryId}",
+                $"{InteractionConstants.ToggleCommand.ToggleCommandDisableAll}:{selectedChannel.Id}:{selectedCategoryId.GetValueOrDefault()}",
                 "Disable all commands", ButtonStyle.Secondary));
         }
         else
         {
             firstRow.AddComponents(new ButtonProperties(
-                $"{InteractionConstants.ToggleCommand.ToggleCommandEnableAll}:{selectedChannel.Id}:{selectedCategoryId}",
+                $"{InteractionConstants.ToggleCommand.ToggleCommandEnableAll}:{selectedChannel.Id}:{selectedCategoryId.GetValueOrDefault()}",
                 "Enable all commands", ButtonStyle.Secondary));
         }
 
@@ -1341,7 +1366,7 @@ public class GuildSettingBuilder(
         }
 
         var recommendedChannels = new ChannelMenuProperties(
-                $"{InteractionConstants.ToggleCommand.ToggleCommandRecommendedChannel}:{selectedChannel.Id}:{selectedCategoryId}")
+                $"{InteractionConstants.ToggleCommand.ToggleCommandRecommendedChannel}:{selectedChannel.Id}:{selectedCategoryId.GetValueOrDefault()}")
             .WithPlaceholder("Recommended alternative channels")
             .WithMinValues(0)
             .WithMaxValues(5)

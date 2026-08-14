@@ -287,10 +287,13 @@
       "description": "Albüm kapakları hareketli mi yoksa hep sabit mi gösterilsin, ayarla"
     },
     "crown": {
-      "description": "Belirli bir crown'un geçmişi",
+      "description": "Bir sanatçının crown'unu kimin tuttuğu ve onu çalıp çalamayacağın",
       "parameters": {
         "artist": {
           "description": "Aramak istediğin sanatçı (varsayılan: şu an çalan)"
+        },
+        "user": {
+          "description": "Crown sahibiyle karşılaştırılacak kullanıcı (varsayılan: sen)"
         }
       }
     },

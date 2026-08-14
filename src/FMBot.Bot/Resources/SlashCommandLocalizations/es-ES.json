@@ -287,10 +287,13 @@
       "description": "Configura si las portadas se animan o se muestran siempre estáticas"
     },
     "crown": {
-      "description": "Historial de una crown concreta",
+      "description": "Quién tiene la crown de un artista y si puedes robarla",
       "parameters": {
         "artist": {
           "description": "El artista que quieres buscar (por defecto, lo que estás escuchando)"
+        },
+        "user": {
+          "description": "El usuario a comparar con quien tiene la crown (por defecto, tú)"
         }
       }
     },

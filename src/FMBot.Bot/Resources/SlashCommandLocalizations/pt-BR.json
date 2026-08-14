@@ -287,10 +287,13 @@
       "description": "Define se as capas de álbum são animadas ou sempre estáticas"
     },
     "crown": {
-      "description": "Histórico de uma crown específica",
+      "description": "Quem tem a crown de um artista e se você pode roubá-la",
       "parameters": {
         "artist": {
           "description": "O artista a buscar (padrão: o que está tocando)"
+        },
+        "user": {
+          "description": "O usuário a comparar com quem tem a crown (padrão: você)"
         }
       }
     },

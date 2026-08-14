@@ -287,10 +287,13 @@
       "description": "Välj om albumomslag animeras eller alltid visas som stillbild"
     },
     "crown": {
-      "description": "Historik för en specifik crown",
+      "description": "Vem som har crownen för en artist, och om du kan stjäla den",
       "parameters": {
         "artist": {
           "description": "Artisten du vill söka efter (standard: det som spelas nu)"
+        },
+        "user": {
+          "description": "Användaren att jämföra med crown-innehavaren (standard: dig själv)"
         }
       }
     },

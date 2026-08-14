@@ -100,6 +100,11 @@ public class GuildSettingInteractions(
             ModalFactory.CreateSetCrownMinPlaycountModal($"{InteractionConstants.SetCrownMinPlaycountModal}:{message.Id}")));
     }
 
+    private static ulong? ParseCategoryId(string categoryId)
+    {
+        return ulong.TryParse(categoryId, out var parsed) && parsed != 0 ? parsed : null;
+    }
+
     [ComponentInteraction(InteractionConstants.ToggleCommand.ToggleCommandAdd)]
     [ServerStaffOnly]
     public async Task AddDisabledChannelCommandButton(string channelId, string categoryId)
@@ -249,16 +254,19 @@ public class GuildSettingInteractions(
     {
         var command = this.Context.GetModalValue("command");
         var parsedChannelId = ulong.Parse(channelId);
-        var parsedCategoryId = ulong.Parse(categoryId);
+        var parsedCategoryId = ParseCategoryId(categoryId);
 
-        var channels = await this.Context.Guild.GetChannelsAsync();
-        var selectedChannel = channels.FirstOrDefault(f => f.Id == parsedChannelId);
-        var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
+        var selectedChannel = GuildSettingBuilder.GetChannelOrThread(this.Context.Guild, parsedChannelId);
 
-        await guildService.DisableChannelCommandsAsync(selectedChannel, guild.GuildId,
-            new List<string> { ResolveCommandName(command) }, this.Context.Guild.Id);
+        if (selectedChannel != null)
+        {
+            var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
 
-        await channelToggledCommandService.ReloadToggledCommands(this.Context.Guild.Id);
+            await guildService.DisableChannelCommandsAsync(selectedChannel, guild.GuildId,
+                new List<string> { ResolveCommandName(command) }, this.Context.Guild.Id);
+
+            await channelToggledCommandService.ReloadToggledCommands(this.Context.Guild.Id);
+        }
 
         var response = await guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context), parsedChannelId, parsedCategoryId);
         await this.Context.UpdateMessageEmbed(response, messageId);
@@ -269,15 +277,17 @@ public class GuildSettingInteractions(
     {
         var command = this.Context.GetModalValue("command");
         var parsedChannelId = ulong.Parse(channelId);
-        var parsedCategoryId = ulong.Parse(categoryId);
+        var parsedCategoryId = ParseCategoryId(categoryId);
 
-        var channels = await this.Context.Guild.GetChannelsAsync();
-        var selectedChannel = channels.FirstOrDefault(f => f.Id == parsedChannelId);
+        var selectedChannel = GuildSettingBuilder.GetChannelOrThread(this.Context.Guild, parsedChannelId);
 
-        await guildService.EnableChannelCommandsAsync(selectedChannel, ResolveCommandNames(command),
-            this.Context.Guild.Id);
+        if (selectedChannel != null)
+        {
+            await guildService.EnableChannelCommandsAsync(selectedChannel, ResolveCommandNames(command),
+                this.Context.Guild.Id);
 
-        await channelToggledCommandService.ReloadToggledCommands(this.Context.Guild.Id);
+            await channelToggledCommandService.ReloadToggledCommands(this.Context.Guild.Id);
+        }
 
         var response = await guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context), parsedChannelId, parsedCategoryId);
         await this.Context.UpdateMessageEmbed(response, messageId);
@@ -688,7 +698,7 @@ public class GuildSettingInteractions(
     public async Task SetChannelEmbedType(string channelId, string categoryId)
     {
         var parsedChannelId = ulong.Parse(channelId);
-        var parsedCategoryId = ulong.Parse(categoryId);
+        var parsedCategoryId = ParseCategoryId(categoryId);
 
         if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
         {
@@ -701,16 +711,19 @@ public class GuildSettingInteractions(
         var selectedValues = stringMenuInteraction.Data.SelectedValues;
 
         var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
-        var selectedChannel = this.Context.Guild.Channels.TryGetValue(parsedChannelId, out var ch) ? ch : null;
+        var selectedChannel = GuildSettingBuilder.GetChannelOrThread(this.Context.Guild, parsedChannelId);
 
-        if (selectedValues.Count > 0 && Enum.TryParse(selectedValues[0], out FmEmbedType embedType))
+        if (selectedChannel != null)
         {
-            await guildService.SetChannelEmbedType(selectedChannel, guild.GuildId, embedType,
-                this.Context.Guild.Id);
-        }
-        else
-        {
-            await guildService.SetChannelEmbedType(selectedChannel, guild.GuildId, null, this.Context.Guild.Id);
+            if (selectedValues.Count > 0 && Enum.TryParse(selectedValues[0], out FmEmbedType embedType))
+            {
+                await guildService.SetChannelEmbedType(selectedChannel, guild.GuildId, embedType,
+                    this.Context.Guild.Id);
+            }
+            else
+            {
+                await guildService.SetChannelEmbedType(selectedChannel, guild.GuildId, null, this.Context.Guild.Id);
+            }
         }
 
         var response = await guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context),
@@ -723,7 +736,7 @@ public class GuildSettingInteractions(
     public async Task SetRecommendedAlternativeChannels(string channelId, string categoryId)
     {
         var parsedChannelId = ulong.Parse(channelId);
-        var parsedCategoryId = ulong.Parse(categoryId);
+        var parsedCategoryId = ParseCategoryId(categoryId);
 
         if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
         {
@@ -736,10 +749,13 @@ public class GuildSettingInteractions(
         var selectedValues = entityMenuInteraction.Data.SelectedValues;
 
         var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
-        var selectedChannel = this.Context.Guild.Channels.TryGetValue(parsedChannelId, out var ch) ? ch : null;
+        var selectedChannel = GuildSettingBuilder.GetChannelOrThread(this.Context.Guild, parsedChannelId);
 
-        await guildService.SetRecommendedAlternativeChannels(selectedChannel, guild.GuildId,
-            selectedValues.Count > 0 ? selectedValues.ToArray() : null, this.Context.Guild.Id);
+        if (selectedChannel != null)
+        {
+            await guildService.SetRecommendedAlternativeChannels(selectedChannel, guild.GuildId,
+                selectedValues.Count > 0 ? selectedValues.ToArray() : null, this.Context.Guild.Id);
+        }
 
         var response = await guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context),
             parsedChannelId, parsedCategoryId, this.Context.User);
@@ -798,14 +814,16 @@ public class GuildSettingInteractions(
     public async Task ClearDisabledChannelCommand(string channelId, string categoryId)
     {
         var parsedChannelId = ulong.Parse(channelId);
-        var parsedCategoryId = ulong.Parse(categoryId);
+        var parsedCategoryId = ParseCategoryId(categoryId);
 
-        var channels = await this.Context.Guild.GetChannelsAsync();
-        var selectedChannel = channels.FirstOrDefault(f => f.Id == parsedChannelId);
+        var selectedChannel = GuildSettingBuilder.GetChannelOrThread(this.Context.Guild, parsedChannelId);
 
-        await guildService.ClearDisabledChannelCommandsAsync(selectedChannel, this.Context.Guild.Id);
+        if (selectedChannel != null)
+        {
+            await guildService.ClearDisabledChannelCommandsAsync(selectedChannel, this.Context.Guild.Id);
 
-        await channelToggledCommandService.ReloadToggledCommands(this.Context.Guild.Id);
+            await channelToggledCommandService.ReloadToggledCommands(this.Context.Guild.Id);
+        }
 
         var response = await guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context),
             parsedChannelId, parsedCategoryId, this.Context.User);
@@ -817,13 +835,16 @@ public class GuildSettingInteractions(
     public async Task DisableChannel(string channelId, string categoryId)
     {
         var parsedChannelId = ulong.Parse(channelId);
-        var parsedCategoryId = ulong.Parse(categoryId);
+        var parsedCategoryId = ParseCategoryId(categoryId);
 
         var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
-        var selectedChannel = this.Context.Guild.Channels.TryGetValue(parsedChannelId, out var ch) ? ch : null;
+        var selectedChannel = GuildSettingBuilder.GetChannelOrThread(this.Context.Guild, parsedChannelId);
 
-        await guildService.DisableChannelAsync(selectedChannel, guild.GuildId, this.Context.Guild.Id);
-        await disabledChannelService.ReloadDisabledChannels(this.Context.Guild.Id);
+        if (selectedChannel != null)
+        {
+            await guildService.DisableChannelAsync(selectedChannel, guild.GuildId, this.Context.Guild.Id);
+            await disabledChannelService.ReloadDisabledChannels(this.Context.Guild.Id);
+        }
 
         var response = await guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context),
             parsedChannelId, parsedCategoryId, this.Context.User);
@@ -835,12 +856,15 @@ public class GuildSettingInteractions(
     public async Task EnableChannel(string channelId, string categoryId)
     {
         var parsedChannelId = ulong.Parse(channelId);
-        var parsedCategoryId = ulong.Parse(categoryId);
+        var parsedCategoryId = ParseCategoryId(categoryId);
 
-        var selectedChannel = this.Context.Guild.Channels.TryGetValue(parsedChannelId, out var ch) ? ch : null;
+        var selectedChannel = GuildSettingBuilder.GetChannelOrThread(this.Context.Guild, parsedChannelId);
 
-        await guildService.EnableChannelAsync(selectedChannel, this.Context.Guild.Id);
-        await disabledChannelService.ReloadDisabledChannels(this.Context.Guild.Id);
+        if (selectedChannel != null)
+        {
+            await guildService.EnableChannelAsync(selectedChannel, this.Context.Guild.Id);
+            await disabledChannelService.ReloadDisabledChannels(this.Context.Guild.Id);
+        }
 
         var response = await guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context),
             parsedChannelId, parsedCategoryId, this.Context.User);

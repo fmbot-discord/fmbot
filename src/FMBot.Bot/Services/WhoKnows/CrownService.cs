@@ -195,6 +195,7 @@ public class CrownService(
             return new CrownModel
             {
                 Crown = newCrown,
+                PreviousCrown = currentCrownHolder,
                 CrownResult = $"Crown stolen by {topUser.DiscordName} with `{topUser.Playcount}` plays! \n" +
                               $"*Previous owner: {currentCrownHolderName ?? crownUser.UserNameLastFM} with `{currentCrownHolder.CurrentPlaycount}` plays*.",
                 CrownHtmlResult = $"Crown stolen by <b>{topUser.DiscordName}</b> with <b>{topUser.Playcount} plays</b>! " +
@@ -233,6 +234,7 @@ public class CrownService(
                 return new Models.CrownModel
                 {
                     Crown = newCrown,
+                    Claimed = true,
                     CrownResult = $"Crown claimed by {topUser.DiscordName}!",
                     CrownHtmlResult = $"Crown claimed by <b>{topUser.DiscordName}</b>!"
                 };

@@ -287,10 +287,13 @@
       "description": "Ustaw, czy okładki albumów są animowane, czy zawsze nieruchome"
     },
     "crown": {
-      "description": "Historia konkretnego crowna",
+      "description": "Kto ma crowna dla artysty i czy możesz go ukraść",
       "parameters": {
         "artist": {
           "description": "Artysta do wyszukania (domyślnie aktualnie odtwarzany)"
+        },
+        "user": {
+          "description": "Użytkownik do porównania z posiadaczem crowna (domyślnie ty)"
         }
       }
     },
