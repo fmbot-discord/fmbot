@@ -121,14 +121,16 @@ public class CrownBuilders
             var minPlaycount = whoKnowsContext.Guild.CrownsMinimumPlaycountThreshold ?? Constants.DefaultPlaysForCrown;
 
             var noCrownsDescription = new StringBuilder();
-            noCrownsDescription.AppendLine(context.Localize("crown.noKnownCrowns",
+            noCrownsDescription.Append(context.Localize("crown.noKnownCrowns",
                 ("artist", artistSearch.Artist.ArtistName),
+                ("url", LastfmUrlExtensions.GetArtistUrl(artistSearch.Artist.ArtistName)),
                 ("threshold", minPlaycount.Format(context.NumberFormat))));
 
             var contextUserPlaycount = artistSearch.Artist.UserPlaycount ?? 0;
             if (contextUserPlaycount > 0 && contextUserPlaycount < minPlaycount)
             {
-                noCrownsDescription.AppendLine(context.Localize("crown.needMorePlays",
+                noCrownsDescription.Append(' ');
+                noCrownsDescription.Append(context.Localize("crown.needMorePlays",
                     ("plays", context.LocalizeCount("shared.plays", minPlaycount - contextUserPlaycount))));
             }
 

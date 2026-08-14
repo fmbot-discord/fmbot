@@ -904,7 +904,7 @@
   "shared.periodAlt.twoYear": "ces 2 dernières années",
   "shared.periodAlt.overall": "au total",
   "crown.functionalityDisabled": "La fonctionnalité des crowns a été désactivée sur ce serveur.",
-  "crown.noKnownCrowns": "Aucune crown connue pour l'artiste `{{artist}}`. \nSois le premier à la réclamer — les crowns vont à l'auditeur #1 avec au moins {{threshold}} plays.",
+  "crown.noKnownCrowns": "Aucune crown connue pour l'artiste **[{{artist}}]({{url}})**.\n\nLes crowns vont à l'auditeur #1 avec au moins {{threshold}} plays.",
   "crown.needMorePlays": "Il te manque encore {{plays}} pour la crown.",
   "crown.fieldCurrentHolder": "Détenteur actuel de la crown",
   "crown.fieldFirstHolder": "Premier détenteur de la crown",
