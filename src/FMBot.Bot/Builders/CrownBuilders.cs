@@ -118,9 +118,21 @@ public class CrownBuilders
 
         if (!artistCrowns.Any(a => a.Active))
         {
-            response.Embed.WithDescription(context.Localize("crown.noKnownCrowns",
+            var minPlaycount = whoKnowsContext.Guild.CrownsMinimumPlaycountThreshold ?? Constants.DefaultPlaysForCrown;
+
+            var noCrownsDescription = new StringBuilder();
+            noCrownsDescription.AppendLine(context.Localize("crown.noKnownCrowns",
                 ("artist", artistSearch.Artist.ArtistName),
-                ("command", $"{context.Prefix}whoknows")));
+                ("threshold", minPlaycount.Format(context.NumberFormat))));
+
+            var contextUserPlaycount = artistSearch.Artist.UserPlaycount ?? 0;
+            if (contextUserPlaycount > 0 && contextUserPlaycount < minPlaycount)
+            {
+                noCrownsDescription.AppendLine(context.Localize("crown.needMorePlays",
+                    ("plays", context.LocalizeCount("shared.plays", minPlaycount - contextUserPlaycount))));
+            }
+
+            response.Embed.WithDescription(noCrownsDescription.ToString());
             response.CommandResponse = CommandResponse.NotFound;
             return response;
         }
