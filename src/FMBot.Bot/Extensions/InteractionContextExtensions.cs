@@ -118,18 +118,12 @@ public static class InteractionContextExtensions
     {
         private void LogCommandUsed(CommandResponse commandResponse = CommandResponse.Ok)
         {
-            string commandName = null;
-            if (context.Interaction is MessageComponentInteraction messageComponent)
+            var commandName = context.Interaction switch
             {
-                var customId = messageComponent.Data?.CustomId;
-
-                var parts = customId.Split('-');
-
-                if (parts.Length >= 2)
-                {
-                    commandName = parts[0] + '-' + parts[1];
-                }
-            }
+                MessageComponentInteraction messageComponent => FlowCommands.GetBaseId(messageComponent.Data?.CustomId),
+                ModalInteraction modalInteraction => FlowCommands.GetBaseId(modalInteraction.Data?.CustomId),
+                _ => null
+            };
 
             var responseTimeMs = (long)(DateTimeOffset.UtcNow - Snowflake.Timestamp(context.Interaction.Id)).TotalMilliseconds;
 
@@ -153,39 +147,54 @@ public static class InteractionContextExtensions
 
         public async Task LogCommandUsedAsync(ResponseModel response,
             UserService userService,
-            string commandName = null)
+            string commandName = null,
+            string flowCommand = null)
         {
             // 1. Serilog logging + in-memory dictionary
             context.LogCommandUsed(response.CommandResponse);
 
             // 2. Database storage - always happens
-            var resolvedCommandName = commandName;
-            if (resolvedCommandName == null && context.Interaction is MessageComponentInteraction messageComponent)
+            string customIdBase = null;
+            ulong? hostMessageId = null;
+            if (context.Interaction is MessageComponentInteraction messageComponent)
             {
-                var customId = messageComponent.Data?.CustomId;
-                {
-                    var parts = customId.Split('-');
-                    if (parts.Length >= 2)
-                    {
-                        resolvedCommandName = parts[0] + '-' + parts[1];
-                    }
-                }
+                customIdBase = FlowCommands.GetBaseId(messageComponent.Data?.CustomId);
+                hostMessageId = messageComponent.Message?.Id;
+            }
+            else if (context.Interaction is ModalInteraction modalInteraction)
+            {
+                customIdBase = FlowCommands.GetBaseId(modalInteraction.Data?.CustomId);
+                hostMessageId = modalInteraction.Message?.Id;
             }
 
-            var type = context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
-                       !context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall)
-                ? UserInteractionType.SlashCommandUser
-                : UserInteractionType.SlashCommandGuild;
+            var flowTarget = flowCommand ?? (customIdBase == null
+                ? null
+                : FlowCommands.Targets.GetValueOrDefault(customIdBase));
+
+            var type = context.Interaction is ModalInteraction
+                ? UserInteractionType.Modal
+                : flowTarget != null
+                    ? UserInteractionType.FlowCommand
+                    : UserInteractionType.Component;
+
+            if (flowTarget != null)
+            {
+                Statistics.FlowCommandsExecuted
+                    .WithLabels(flowTarget, customIdBase ?? "unknown", response.CommandResponse.ToString())
+                    .Inc();
+            }
 
             await userService.InsertAndCompleteInteractionAsync(
                 context.Interaction.Id,
                 context.User.Id,
-                resolvedCommandName,
+                commandName ?? customIdBase,
                 response.CommandResponse,
                 context.Guild?.Id,
                 context.Channel?.Id,
                 type,
-                referencedMusic: response.ReferencedMusic);
+                commandContent: flowTarget,
+                referencedMusic: response.ReferencedMusic,
+                hostMessageId: hostMessageId);
         }
 
         public string GetModalValue(string customId)

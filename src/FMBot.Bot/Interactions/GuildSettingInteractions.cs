@@ -544,7 +544,24 @@ public class GuildSettingInteractions(
                 break;
         }
 
-        await this.Context.LogCommandUsedAsync(response, userService);
+        await this.Context.LogCommandUsedAsync(response, userService,
+            flowCommand: GetSubSettingFlowTarget(guildSetting));
+    }
+
+    private static string GetSubSettingFlowTarget(GuildSetting guildSetting)
+    {
+        return guildSetting switch
+        {
+            GuildSetting.WhoKnowsBlockedUsers => "blockedusers",
+            GuildSetting.CrownBlockedUsers => "crownblockedusers",
+            GuildSetting.CrownSeeder => "crownseeder",
+            GuildSetting.DisabledCommands => "togglecommand",
+            GuildSetting.DisabledGuildCommands => "toggleservercommand",
+            GuildSetting.ServerShortcuts => "servershortcuts",
+            GuildSetting.ServerAutoposts => "autoposts",
+            GuildSetting.BotBranding => "botbranding",
+            _ => "configuration"
+        };
     }
 
     [ComponentInteraction(InteractionConstants.RunCrownseeder)]

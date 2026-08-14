@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Frozen;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -28,6 +29,9 @@ public class StaticInteractions(
     IPrefixService prefixService)
     : ComponentInteractionModule<ComponentInteractionContext>
 {
+    private static readonly FrozenSet<string> NonCommandSources =
+        new[] { "rulespromo", "embedpromo", "goodbye-resubscribe" }.ToFrozenSet();
+
     [ComponentInteraction(InteractionConstants.SupporterLinks.GetPurchaseButtons)]
     [UserSessionRequired]
     public async Task SupporterButtonsWithSource(string newResponse, string expandWithPerks, string showExpandButton,
@@ -41,7 +45,8 @@ public class StaticInteractions(
                 showExpandButton.Equals("true", StringComparison.OrdinalIgnoreCase),
                 userLocale: this.Context.Interaction.UserLocale, source: source);
 
-            if (newResponse.Equals("true", StringComparison.OrdinalIgnoreCase))
+            var isNewResponse = newResponse.Equals("true", StringComparison.OrdinalIgnoreCase);
+            if (isNewResponse)
             {
                 await this.Context.SendResponse(interactivity, response, userService, true);
             }
@@ -50,7 +55,8 @@ public class StaticInteractions(
                 await this.Context.UpdateInteractionEmbed(response, interactivity);
             }
 
-            await this.Context.LogCommandUsedAsync(response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService,
+                flowCommand: isNewResponse && !NonCommandSources.Contains(source) ? "getsupporter" : null);
         }
         catch (Exception e)
         {

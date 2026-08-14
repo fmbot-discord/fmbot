@@ -399,7 +399,8 @@ public class UserService
         string commandContent = null,
         Dictionary<string, string> commandOptions = null,
         string errorReference = null,
-        ReferencedMusic referencedMusic = null)
+        ReferencedMusic referencedMusic = null,
+        ulong? hostMessageId = null)
     {
         PublicProperties.UsedCommandDiscordUserIds.TryAdd(discordId, discordUserId);
 
@@ -438,6 +439,7 @@ public class UserService
                 DiscordGuildId = guildId,
                 DiscordChannelId = channelId,
                 DiscordId = discordId,
+                HostMessageId = hostMessageId,
                 Type = type,
                 Response = commandResponse,
                 ErrorReferenceId = errorReference,

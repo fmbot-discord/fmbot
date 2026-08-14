@@ -108,7 +108,8 @@ public class GameInteractions(
 
             var responseId = await this.Context.SendFollowUpResponse(interactivity, response, userService,
                 ephemeral: response.CommandResponse != CommandResponse.Ok);
-            await this.Context.LogCommandUsedAsync(response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService,
+                flowCommand: jumbleTypeEnum == JumbleType.Artist ? "jumble" : "pixel");
             Statistics.JumblesPlayed.WithLabels(nameof(jumbleTypeEnum)).Inc();
 
             if (response.CommandResponse == CommandResponse.Ok)

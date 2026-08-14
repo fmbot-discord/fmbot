@@ -68,7 +68,8 @@ public class SettingsInteractions(
             };
 
             await this.Context.UpdateInteractionEmbed(response, interactivity, false);
-            await this.Context.LogCommandUsedAsync(response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService,
+                flowCommand: tab == SettingsTab.Server ? "configuration" : "settings");
         }
         catch (Exception e)
         {

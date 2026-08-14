@@ -481,12 +481,33 @@ public class UserInteractions(
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
+
+                await this.Context.LogCommandUsedAsync(response, userService,
+                    flowCommand: GetUserSettingFlowTarget(userSetting));
             }
         }
         catch (Exception e)
         {
             await this.Context.HandleCommandException(e, userService, deferFirst: true);
         }
+    }
+
+    private static string GetUserSettingFlowTarget(UserSetting userSetting)
+    {
+        return userSetting switch
+        {
+            UserSetting.Privacy => "privacy",
+            UserSetting.FmMode => "fmmode",
+            UserSetting.WkMode => "responsemode",
+            UserSetting.CoverType => "covermode",
+            UserSetting.BotScrobbling => "botscrobbling",
+            UserSetting.SpotifyImport => "import manage",
+            UserSetting.CommandShortcuts => "shortcuts",
+            UserSetting.OutOfSync => "outofsync",
+            UserSetting.LinkedRoles => "linkedroles",
+            UserSetting.DeleteAccount => "remove",
+            _ => null
+        };
     }
 
     [ComponentInteraction(InteractionConstants.User.Login)]
