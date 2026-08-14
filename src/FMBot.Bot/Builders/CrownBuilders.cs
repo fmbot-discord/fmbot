@@ -133,11 +133,15 @@ public class CrownBuilders
         response.Embed.WithDescription(CrownDuelToString(context, whoKnowsContext, currentCrown,
             challengerSettings?.UserId ?? context.ContextUser.UserId, crownModel, artistSearch.Artist.ArtistName));
 
-        var userArtistUrl =
-            $"{LastfmUrlExtensions.GetUserUrl(users[currentCrown.UserId].UserNameLastFM)}/library/music/{HttpUtility.UrlEncode(artistSearch.Artist.ArtistName)}";
+        if (currentCrown.StartPlaycount != currentCrown.CurrentPlaycount ||
+            currentCrown.Created.Date < DateTime.UtcNow.Date)
+        {
+            var userArtistUrl =
+                $"{LastfmUrlExtensions.GetUserUrl(users[currentCrown.UserId].UserNameLastFM)}/library/music/{HttpUtility.UrlEncode(artistSearch.Artist.ArtistName)}";
 
-        whoKnowsContext.GuildUsers.TryGetValue(currentCrown.UserId, out var currentGuildUser);
-        response.Embed.AddField(context.Localize("crown.fieldCurrentHolder"), CrownToString(currentGuildUser, users[currentCrown.UserId], currentCrown, context, userArtistUrl));
+            whoKnowsContext.GuildUsers.TryGetValue(currentCrown.UserId, out var currentGuildUser);
+            response.Embed.AddField(context.Localize("crown.fieldCurrentHolder"), CrownToString(currentGuildUser, users[currentCrown.UserId], currentCrown, context, userArtistUrl));
+        }
 
         if (artistCrowns.Count > 1)
         {
