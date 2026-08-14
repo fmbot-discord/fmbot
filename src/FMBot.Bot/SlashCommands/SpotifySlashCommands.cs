@@ -48,7 +48,8 @@ public class SpotifySlashCommands(
         bool privateResponse = false)
     {
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
-        await RespondAsync(InteractionCallback.DeferredMessage());
+        await RespondAsync(
+            InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
 
         try
         {
