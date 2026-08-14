@@ -529,6 +529,9 @@ public class GuildSettingBuilder(
 
         container.WithSeparator();
 
+        PremiumSettingBuilder.AppendServerActivityThreshold(container, guild, guildUsers, isPremium);
+        container.WithSeparator();
+
         var blockedMembers = new StringBuilder();
         blockedMembers.AppendLine("**Blocked members**");
         blockedMembers.Append("Members you manually hid from server-wide commands. ");
@@ -549,9 +552,6 @@ public class GuildSettingBuilder(
         container.WithSeparator();
 
         PremiumSettingBuilder.AppendBlockedRoles(container, context, guild, isPremium);
-        container.WithSeparator();
-
-        PremiumSettingBuilder.AppendServerActivityThreshold(container, guild, guildUsers, isPremium);
         container.WithSeparator();
 
         PremiumSettingBuilder.AppendBotManagementRoles(container, context, guild, isPremium);

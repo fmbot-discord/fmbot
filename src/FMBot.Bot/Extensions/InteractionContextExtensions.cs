@@ -797,10 +797,26 @@ public static class InteractionContextExtensions
         public async Task UpdateMessageEmbed(ResponseModel response,
             string messageId, bool interactionEdit = false, bool defer = true)
         {
-            var parsedMessageId = ulong.Parse(messageId);
-            var msg = await context.Interaction.Channel.GetMessageAsync(parsedMessageId);
+            RestMessage msg = null;
+            if (!context.RespondsThroughInteraction(interactionEdit))
+            {
+                msg = await context.Interaction.Channel.GetMessageAsync(ulong.Parse(messageId));
+            }
 
-            await context.ModifyMessage(msg, response, defer);
+            await context.ModifyMessage(msg, response, defer, interactionEdit);
+        }
+
+        private bool RespondsThroughInteraction(bool interactionEdit)
+        {
+            if (interactionEdit || context.Interaction is MessageComponentInteraction or ModalInteraction)
+            {
+                return true;
+            }
+
+            return context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType
+                       .UserInstall) &&
+                   !context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType
+                       .GuildInstall);
         }
 
         public async Task ModifyComponents(RestMessage message,
@@ -860,15 +876,7 @@ public static class InteractionContextExtensions
                 }
                 : [];
 
-            var isUserInstalledApp =
-                context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
-                !context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall);
-
-            // For component interactions (buttons, select menus, modals), always use ModifyResponseAsync
-            // since we typically defer first and need to complete the deferred response
-            var isComponentInteraction = context.Interaction is MessageComponentInteraction or ModalInteraction;
-
-            if (isUserInstalledApp || interactionEdit || isComponentInteraction)
+            if (context.RespondsThroughInteraction(interactionEdit))
             {
                 await context.Interaction.ModifyResponseAsync(m =>
                 {
