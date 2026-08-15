@@ -560,7 +560,7 @@ public class GuildSettingInteractions(
             GuildSetting.ServerShortcuts => "servershortcuts",
             GuildSetting.ServerAutoposts => "autoposts",
             GuildSetting.BotBranding => "botbranding",
-            _ => "configuration"
+            _ => null
         };
     }
 
