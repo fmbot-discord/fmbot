@@ -287,10 +287,13 @@
       "description": "Atur apakah sampul album beranimasi atau selalu tampil diam"
     },
     "crown": {
-      "description": "Riwayat untuk crown tertentu",
+      "description": "Siapa pemegang crown untuk artis, dan bisakah kamu mencurinya",
       "parameters": {
         "artist": {
           "description": "Artis yang ingin kamu cari (default: yang sedang diputar)"
+        },
+        "user": {
+          "description": "Pengguna yang dibandingkan dengan pemegang crown (default: kamu sendiri)"
         }
       }
     },

@@ -60,7 +60,7 @@ public class CrownCommands(
     }
 
     [Command("crown", "cw")]
-    [Summary("Shows crown history for the artist you're currently listening to or searching for")]
+    [Summary("Shows who holds the crown for an artist, and whether you can steal it")]
     [UsernameSetRequired]
     [GuildOnly]
     [RequiresIndex]
@@ -70,12 +70,14 @@ public class CrownCommands(
         _ = this.Context.Channel?.TriggerTypingAsync()!;
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var challengerSettings = await settingService.GetUser(artistValues, contextUser, this.Context);
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
         var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
 
         try
         {
-            var response = await crownBuilders.CrownAsync(new ContextModel(this.Context, prfx, contextUser), guild, artistValues);
+            var response = await crownBuilders.CrownAsync(new ContextModel(this.Context, prfx, contextUser), guild,
+                challengerSettings.NewSearchValue, challengerSettings);
 
             await this.Context.SendResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);

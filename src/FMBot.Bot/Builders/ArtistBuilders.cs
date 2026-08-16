@@ -1883,31 +1883,17 @@ public class ArtistBuilders
             imgUrl = null;
         }
 
-        var contextGuild = await this._guildService.GetGuildForWhoKnows(context.DiscordGuild.Id);
-        var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
-
-        var usersWithArtist = await this._whoKnowsArtistService.GetIndexedUsersForArtist(context.DiscordGuild,
-            guildUsers, contextGuild.GuildId, artistSearch.Artist.ArtistName);
-
-        var discordGuildUser = await context.DiscordGuild.GetCachedGuildUserAsync(context.ContextUser.DiscordUserId);
-        await this._indexService.GetOrAddUserToGuild(guildUsers, contextGuild, discordGuildUser, context.ContextUser);
-        await this._indexService.UpdateGuildUser(guildUsers, discordGuildUser, context.ContextUser.UserId,
-            contextGuild);
-
-        usersWithArtist = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithArtist, context.ContextUser,
-            artistSearch.Artist.ArtistName, context.DiscordGuild, artistSearch.Artist.UserPlaycount);
-
-        var (filterStats, filteredUsersWithArtist) =
-            WhoKnowsService.FilterWhoKnowsObjects(usersWithArtist, guildUsers, contextGuild, context.ContextUser.UserId,
-                roles, filterDisabled);
+        var whoKnowsContext = await this._whoKnowsArtistService.GetFilteredUsersForArtist(context.DiscordGuild,
+            context.ContextUser, artistSearch.Artist.ArtistName, artistSearch.Artist.UserPlaycount, roles,
+            filterDisabled);
 
         CrownModel crownModel = null;
-        if (contextGuild.CrownsDisabled != true && filteredUsersWithArtist.Count >= 1 && !displayRoleSelector &&
-            redirectsEnabled && !filterDisabled)
+        if (whoKnowsContext.Guild.CrownsDisabled != true && whoKnowsContext.FilteredUsersWithArtist.Count >= 1 &&
+            !displayRoleSelector && redirectsEnabled && !filterDisabled)
         {
             crownModel =
-                await this._crownService.GetAndUpdateCrownForArtist(filteredUsersWithArtist, guildUsers,
-                    contextGuild, artistSearch.Artist.ArtistName);
+                await this._crownService.GetAndUpdateCrownForArtist(whoKnowsContext.FilteredUsersWithArtist,
+                    whoKnowsContext.GuildUsers, whoKnowsContext.Guild, artistSearch.Artist.ArtistName);
             if (crownModel?.Stolen == true)
             {
                 showCrownButton = true;
@@ -1928,7 +1914,8 @@ public class ArtistBuilders
             using var image = await this._puppeteerService.GetWhoKnows("WhoKnows",
                 context.Localize("shared.whoknows.imageInServer", ("server", context.DiscordGuild.Name)),
                 imgUrl, artistSearch.Artist.ArtistName,
-                filteredUsersWithArtist, context.ContextUser.UserId, PrivacyLevel.Server, context.NumberFormat,
+                whoKnowsContext.FilteredUsersWithArtist, context.ContextUser.UserId, PrivacyLevel.Server,
+                context.NumberFormat,
                 crownModel?.Crown,
                 crownModel?.CrownHtmlResult);
 
@@ -1977,7 +1964,7 @@ public class ArtistBuilders
                 ("command", $"{context.Prefix}refreshmembers")));
         }
 
-        var filterDescription = filterStats.GetFullDescription(context.Localizer);
+        var filterDescription = whoKnowsContext.FilterStats.GetFullDescription(context.Localizer);
         if (filterDescription != null)
         {
             footer.AppendLine(filterDescription);
@@ -1988,11 +1975,11 @@ public class ArtistBuilders
             footer.AppendLine(context.Localize("artist.whoknows.filtersDisabled"));
         }
 
-        if (filteredUsersWithArtist.Any() && filteredUsersWithArtist.Count > 1)
+        if (whoKnowsContext.FilteredUsersWithArtist.Any() && whoKnowsContext.FilteredUsersWithArtist.Count > 1)
         {
-            var serverListeners = filteredUsersWithArtist.DistinctBy(d => d.UserId).Count(c => c.Playcount > 0);
-            var serverPlaycount = filteredUsersWithArtist.DistinctBy(d => d.UserId).Sum(a => a.Playcount);
-            var avgServerPlaycount = filteredUsersWithArtist.DistinctBy(d => d.UserId).Average(a => a.Playcount);
+            var serverListeners = whoKnowsContext.FilteredUsersWithArtist.DistinctBy(d => d.UserId).Count(c => c.Playcount > 0);
+            var serverPlaycount = whoKnowsContext.FilteredUsersWithArtist.DistinctBy(d => d.UserId).Sum(a => a.Playcount);
+            var avgServerPlaycount = whoKnowsContext.FilteredUsersWithArtist.DistinctBy(d => d.UserId).Average(a => a.Playcount);
 
             footer.AppendLine(context.Localize("artist.whoknows.serverStats",
                 ("listeners", context.LocalizeCount("shared.listeners", serverListeners)),
@@ -2001,7 +1988,7 @@ public class ArtistBuilders
         }
 
         var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingArtist(context.Localizer, context.ContextUser.UserId,
-            guildUsers, contextGuild, artistSearch.Artist.ArtistName);
+            whoKnowsContext.GuildUsers, whoKnowsContext.Guild, artistSearch.Artist.ArtistName);
 
         if (guildAlsoPlaying != null)
         {
@@ -2019,7 +2006,7 @@ public class ArtistBuilders
 
         if (mode == WhoKnowsResponseMode.Pagination)
         {
-            var paginator = WhoKnowsService.CreateWhoKnowsPaginator(filteredUsersWithArtist,
+            var paginator = WhoKnowsService.CreateWhoKnowsPaginator(whoKnowsContext.FilteredUsersWithArtist,
                 context.ContextUser.UserId, PrivacyLevel.Server, context.Localizer,
                 title, footer.ToString(), crownModel, closeFriendUserIds: closeFriendUserIds);
 
@@ -2028,9 +2015,10 @@ public class ArtistBuilders
             return response;
         }
 
-        var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithArtist, context.ContextUser.UserId,
+        var serverUsers = WhoKnowsService.WhoKnowsListToString(whoKnowsContext.FilteredUsersWithArtist,
+            context.ContextUser.UserId,
             PrivacyLevel.Server, context.Localizer, crownModel, closeFriendUserIds: closeFriendUserIds);
-        if (filteredUsersWithArtist.Count == 0)
+        if (whoKnowsContext.FilteredUsersWithArtist.Count == 0)
         {
             serverUsers = context.Localize("artist.whoknows.nobodyInServer");
         }

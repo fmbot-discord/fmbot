@@ -310,7 +310,8 @@ public class InteractionHandler
             context.Guild,
             context.Interaction,
             attributes,
-            response => context.LogCommandUsedAsync(response, this._userService, customId));
+            response => context.LogCommandUsedAsync(response, this._userService,
+                FlowCommands.GetBaseId(customId)));
     }
 
     private Task<bool> CheckAttributes(ApplicationCommandContext context,

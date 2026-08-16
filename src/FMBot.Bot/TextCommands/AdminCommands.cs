@@ -377,12 +377,29 @@ public class AdminCommands(
 
                     foreach (var log in logPage)
                     {
-                        if (log.Type is UserInteractionType.SlashCommandGuild or UserInteractionType.SlashCommandUser)
+                        switch (log.Type)
                         {
-                            description.Append($"/");
+                            case UserInteractionType.SlashCommandGuild:
+                            case UserInteractionType.SlashCommandUser:
+                                description.Append("/");
+                                break;
+                            case UserInteractionType.Component:
+                                description.Append("🔘 ");
+                                break;
+                            case UserInteractionType.FlowCommand:
+                                description.Append("↪️ ");
+                                break;
+                            case UserInteractionType.Modal:
+                                description.Append("📝 ");
+                                break;
                         }
 
                         description.Append($"**{log.CommandName}** - <t:{log.Timestamp.ToUnixEpochDate()}:R>");
+
+                        if (log.Type == UserInteractionType.FlowCommand && log.CommandContent != null)
+                        {
+                            description.Append($" → **{log.CommandContent}**");
+                        }
 
                         if (log.ErrorReferenceId != null)
                         {

@@ -710,14 +710,41 @@ public class PremiumSettingInteractions(
         }
     }
 
+    private async Task<bool> RoleFilterAccessAllowed(bool managersAllowed = true)
+    {
+        if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context), managersAllowed))
+        {
+            await GuildSettingBuilder.UserNotAllowedResponse(this.Context, managersAllowed);
+            await this.Context.LogCommandUsedAsync(
+                new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
+            return false;
+        }
+
+        if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
+        {
+            var premiumRequiredResponse = PremiumSettingBuilder.PremiumServerRequired("rolefilter-settings",
+                PremiumSettingBuilder.RoleFilterFeatureDescription);
+            await this.Context.SendResponse(interactivity, premiumRequiredResponse, userService, true);
+            await this.Context.LogCommandUsedAsync(premiumRequiredResponse, userService);
+            return false;
+        }
+
+        return true;
+    }
+
+    private async Task RefreshMemberFilters()
+    {
+        var response = await guildSettingBuilder.ServerSettingsSection(new ContextModel(this.Context),
+            GuildSettingSection.MemberFilters);
+        await this.Context.UpdateInteractionEmbed(response);
+    }
+
     [ComponentInteraction(InteractionConstants.SetAllowedRoleMenu)]
     [ServerStaffOnly]
     public async Task SetGuildAllowedRoles()
     {
-        if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
+        if (!await RoleFilterAccessAllowed())
         {
-            await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
-            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             return;
         }
 
@@ -726,18 +753,15 @@ public class PremiumSettingInteractions(
 
         await guildService.ChangeGuildAllowedRoles(this.Context.Guild, selectedRoleIds.ToArray());
 
-        var response = await premiumSettingBuilder.AllowedRoles(new ContextModel(this.Context), this.Context.User);
-        await this.Context.UpdateInteractionEmbed(response);
+        await RefreshMemberFilters();
     }
 
     [ComponentInteraction(InteractionConstants.SetBlockedRoleMenu)]
     [ServerStaffOnly]
     public async Task SetGuildBlockedRoles()
     {
-        if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
+        if (!await RoleFilterAccessAllowed())
         {
-            await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
-            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             return;
         }
 
@@ -746,7 +770,25 @@ public class PremiumSettingInteractions(
 
         await guildService.ChangeGuildBlockedRoles(this.Context.Guild, selectedRoleIds.ToArray());
 
-        var response = await premiumSettingBuilder.BlockedRoles(new ContextModel(this.Context), this.Context.User);
+        await RefreshMemberFilters();
+    }
+
+    [ComponentInteraction(InteractionConstants.SetCrownRoleMenu)]
+    [ServerStaffOnly]
+    public async Task SetGuildCrownRoles()
+    {
+        if (!await RoleFilterAccessAllowed())
+        {
+            return;
+        }
+
+        var entityMenuInteraction = (EntityMenuInteraction)this.Context.Interaction;
+        var selectedRoleIds = entityMenuInteraction.Data.SelectedValues;
+
+        await guildService.ChangeGuildCrownRoles(this.Context.Guild, selectedRoleIds.ToArray());
+
+        var response = await guildSettingBuilder.ServerSettingsSection(new ContextModel(this.Context),
+            GuildSettingSection.Crowns);
         await this.Context.UpdateInteractionEmbed(response);
     }
 
@@ -754,10 +796,8 @@ public class PremiumSettingInteractions(
     [ServerStaffOnly]
     public async Task SetBotManagementRoles()
     {
-        if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context), managersAllowed: false))
+        if (!await RoleFilterAccessAllowed(managersAllowed: false))
         {
-            await GuildSettingBuilder.UserNotAllowedResponse(this.Context, managersAllowed: false);
-            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             return;
         }
 
@@ -766,18 +806,21 @@ public class PremiumSettingInteractions(
 
         await guildService.ChangeGuildBotManagementRoles(this.Context.Guild, selectedRoleIds.ToArray());
 
-        var response = await premiumSettingBuilder.BotManagementRoles(new ContextModel(this.Context), this.Context.User);
-        await this.Context.UpdateInteractionEmbed(response);
+        await RefreshMemberFilters();
     }
 
     [ComponentInteraction(InteractionConstants.RemoveGuildActivityThreshold)]
     [ServerStaffOnly]
     public async Task RemoveGuildActivityThreshold()
     {
+        if (!await RoleFilterAccessAllowed())
+        {
+            return;
+        }
+
         await guildService.SetGuildActivityThresholdDaysAsync(this.Context.Guild, null);
 
-        var response = await premiumSettingBuilder.SetGuildActivityThreshold(new ContextModel(this.Context), this.Context.User);
-        await this.Context.UpdateInteractionEmbed(response);
+        await RefreshMemberFilters();
     }
 
     [ComponentInteraction(InteractionConstants.SetGuildActivityThreshold)]
@@ -790,6 +833,11 @@ public class PremiumSettingInteractions(
             return;
         }
 
+        if (!await RoleFilterAccessAllowed())
+        {
+            return;
+        }
+
         await RespondAsync(InteractionCallback.Modal(
             ModalFactory.CreateSetGuildActivityThresholdModal($"{InteractionConstants.SetGuildActivityThresholdModal}:{message.Id}")));
     }
@@ -798,9 +846,8 @@ public class PremiumSettingInteractions(
     [ServerStaffOnly]
     public async Task SetGuildActivityThreshold(string messageId)
     {
-        if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
+        if (!await RoleFilterAccessAllowed())
         {
-            await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
             return;
         }
 
@@ -816,7 +863,8 @@ public class PremiumSettingInteractions(
 
         await guildService.SetGuildActivityThresholdDaysAsync(this.Context.Guild, result);
 
-        var response = await premiumSettingBuilder.SetGuildActivityThreshold(new ContextModel(this.Context), this.Context.User);
+        var response = await guildSettingBuilder.ServerSettingsSection(new ContextModel(this.Context),
+            GuildSettingSection.MemberFilters);
         await this.Context.UpdateMessageEmbed(response, messageId);
     }
 }

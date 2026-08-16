@@ -287,10 +287,13 @@
       "description": "Set whether album covers animate or always show as still"
     },
     "crown": {
-      "description": "History for a specific crown",
+      "description": "Who holds the crown for an artist, and can you steal it",
       "parameters": {
         "artist": {
           "description": "The artist you want to search for (defaults to currently playing)"
+        },
+        "user": {
+          "description": "The user to compare against the crown holder (defaults to self)"
         }
       }
     },

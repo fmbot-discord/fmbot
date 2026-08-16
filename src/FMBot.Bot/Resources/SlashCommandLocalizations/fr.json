@@ -287,10 +287,13 @@
       "description": "Définit si les pochettes d'albums s'animent ou restent fixes"
     },
     "crown": {
-      "description": "Historique d'une crown spécifique",
+      "description": "Qui détient la crown d'un artiste et si tu peux la voler",
       "parameters": {
         "artist": {
           "description": "L'artiste à rechercher (par défaut celui en cours d'écoute)"
+        },
+        "user": {
+          "description": "L'utilisateur à comparer au détenteur de la crown (par défaut toi-même)"
         }
       }
     },

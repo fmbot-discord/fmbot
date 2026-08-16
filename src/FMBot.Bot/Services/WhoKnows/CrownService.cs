@@ -58,6 +58,21 @@ public class CrownService(
         //        .ToList();
         //}
 
+        if (guild.CrownRoles is { Length: > 0 } &&
+            PublicProperties.PremiumServers.ContainsKey(guild.DiscordGuildId))
+        {
+            var crownRoles = guild.CrownRoles.ToHashSet();
+
+            eligibleUsers = eligibleUsers
+                .Where(w =>
+                {
+                    var userRoles = w.Roles ??
+                                    (guildUsers.TryGetValue(w.UserId, out var guildUser) ? guildUser.Roles : null);
+                    return userRoles != null && userRoles.Any(a => crownRoles.Contains(a));
+                })
+                .ToList();
+        }
+
         var eligibleUserIds = eligibleUsers
             .Select(s => s.UserId)
             .Distinct()
@@ -195,6 +210,7 @@ public class CrownService(
             return new CrownModel
             {
                 Crown = newCrown,
+                PreviousCrown = currentCrownHolder,
                 CrownResult = $"Crown stolen by {topUser.DiscordName} with `{topUser.Playcount}` plays! \n" +
                               $"*Previous owner: {currentCrownHolderName ?? crownUser.UserNameLastFM} with `{currentCrownHolder.CurrentPlaycount}` plays*.",
                 CrownHtmlResult = $"Crown stolen by <b>{topUser.DiscordName}</b> with <b>{topUser.Playcount} plays</b>! " +
@@ -233,6 +249,7 @@ public class CrownService(
                 return new Models.CrownModel
                 {
                     Crown = newCrown,
+                    Claimed = true,
                     CrownResult = $"Crown claimed by {topUser.DiscordName}!",
                     CrownHtmlResult = $"Crown claimed by <b>{topUser.DiscordName}</b>!"
                 };
@@ -347,6 +364,11 @@ public class CrownService(
             sql.Append("AND NOT (COALESCE(gu.roles, '{}') && @blockedRoles) ");
         }
 
+        if (premiumGuild && guild.CrownRoles != null && guild.CrownRoles.Any())
+        {
+            sql.Append("AND gu.roles && @crownRoles ");
+        }
+
         sql.Append("ORDER BY ua.name, ua.playcount DESC;");
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
@@ -360,7 +382,8 @@ public class CrownService(
             guildId = guild.GuildId,
             minPlaycount,
             allowedRoles = guild.AllowedRoles?.Select(s => (long)s).ToArray(),
-            blockedRoles = guild.BlockedRoles?.Select(s => (long)s).ToArray()
+            blockedRoles = guild.BlockedRoles?.Select(s => (long)s).ToArray(),
+            crownRoles = guild.CrownRoles?.Select(s => (long)s).ToArray()
         });
 
         try

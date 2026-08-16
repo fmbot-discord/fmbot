@@ -287,10 +287,13 @@
       "description": "Festlegen, ob Albumcover animiert oder immer als Standbild angezeigt werden"
     },
     "crown": {
-      "description": "Verlauf einer bestimmten Crown",
+      "description": "Wer die Crown für einen Künstler hält und ob du sie stehlen kannst",
       "parameters": {
         "artist": {
           "description": "Der Künstler, den du suchst (Standard: was gerade läuft)"
+        },
+        "user": {
+          "description": "Der Nutzer, den du mit dem Crown-Halter vergleichst (Standard: du selbst)"
         }
       }
     },

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FMBot.Persistence.EntityFrameWork.Migrations
 {
     [DbContext(typeof(FMBotDbContext))]
-    partial class FMBotDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260814140954_AddUserInteractionHostMessageId")]
+    partial class AddUserInteractionHostMessageId
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1262,10 +1265,6 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                     b.PrimitiveCollection<decimal[]>("BotManagementRoles")
                         .HasColumnType("numeric(20,0)[]")
                         .HasColumnName("bot_management_roles");
-
-                    b.PrimitiveCollection<decimal[]>("CrownRoles")
-                        .HasColumnType("numeric(20,0)[]")
-                        .HasColumnName("crown_roles");
 
                     b.Property<int?>("CrownsActivityThresholdDays")
                         .HasColumnType("integer")

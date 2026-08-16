@@ -25,7 +25,7 @@ public class CrownSlashCommands(
     private InteractiveService Interactivity { get; } = interactivity;
 
 
-    [SlashCommand("crown", "History for a specific crown",
+    [SlashCommand("crown", "Who holds the crown for an artist, and can you steal it",
         Contexts = [InteractionContextType.Guild],
         IntegrationTypes = [ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
@@ -33,16 +33,20 @@ public class CrownSlashCommands(
         [SlashCommandParameter(Name = "artist",
             Description = "The artist you want to search for (defaults to currently playing)",
             AutocompleteProviderType = typeof(ArtistAutoComplete))]
-        string name = null)
+        string name = null,
+        [SlashCommandParameter(Name = "user", Description = "The user to compare against the crown holder (defaults to self)")]
+        string user = null)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var challengerSettings = await settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
         var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
 
         try
         {
-            var response = await crownBuilders.CrownAsync(new ContextModel(this.Context, contextUser), guild, name);
+            var response = await crownBuilders.CrownAsync(new ContextModel(this.Context, contextUser), guild, name,
+                challengerSettings);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);

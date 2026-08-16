@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Dapper;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
+using FMBot.Bot.Services.Guild;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -24,14 +25,46 @@ public class WhoKnowsArtistService
     private readonly BotSettings _botSettings;
     private readonly GenreService _genreService;
     private readonly CountryService _countryService;
+    private readonly GuildService _guildService;
+    private readonly IndexService _indexService;
 
-    public WhoKnowsArtistService(IMemoryCache cache, IDbContextFactory<FMBotDbContext> contextFactory, IOptions<BotSettings> botSettings, GenreService genreService, CountryService countryService)
+    public WhoKnowsArtistService(IMemoryCache cache, IDbContextFactory<FMBotDbContext> contextFactory, IOptions<BotSettings> botSettings, GenreService genreService, CountryService countryService, GuildService guildService, IndexService indexService)
     {
         this._cache = cache;
         this._contextFactory = contextFactory;
         this._genreService = genreService;
         this._countryService = countryService;
+        this._guildService = guildService;
+        this._indexService = indexService;
         this._botSettings = botSettings.Value;
+    }
+
+    public async Task<WhoKnowsArtistContext> GetFilteredUsersForArtist(NetCord.Gateway.Guild discordGuild,
+        User contextUser, string artistName, long? contextUserPlaycount, List<ulong> roles = null,
+        bool filterDisabled = false)
+    {
+        var guild = await this._guildService.GetGuildForWhoKnows(discordGuild.Id);
+        var guildUsers = await this._guildService.GetGuildUsers(discordGuild.Id);
+
+        var usersWithArtist = await GetIndexedUsersForArtist(discordGuild, guildUsers, guild.GuildId, artistName);
+
+        var discordGuildUser = await discordGuild.GetCachedGuildUserAsync(contextUser.DiscordUserId);
+        await this._indexService.GetOrAddUserToGuild(guildUsers, guild, discordGuildUser, contextUser);
+        await this._indexService.UpdateGuildUser(guildUsers, discordGuildUser, contextUser.UserId, guild);
+
+        usersWithArtist = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithArtist, contextUser, artistName,
+            discordGuild, contextUserPlaycount);
+
+        var (filterStats, filteredUsersWithArtist) = WhoKnowsService.FilterWhoKnowsObjects(usersWithArtist, guildUsers,
+            guild, contextUser.UserId, roles, filterDisabled);
+
+        return new WhoKnowsArtistContext
+        {
+            Guild = guild,
+            GuildUsers = guildUsers,
+            FilteredUsersWithArtist = filteredUsersWithArtist,
+            FilterStats = filterStats
+        };
     }
 
     public async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForArtist(NetCord.Gateway.Guild discordGuild,

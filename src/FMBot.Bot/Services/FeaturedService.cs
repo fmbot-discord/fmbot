@@ -513,12 +513,10 @@ public class FeaturedService
         var guildUsers = await this._guildService.GetGuildUsers(guild.DiscordGuildId);
         var (_, filteredGuildUsers) = WhoKnowsService.FilterGuildUsers(guildUsers, guild, 0);
 
-        var hasActivityThreshold = guild.ActivityThresholdDays.HasValue || guild.UserActivityThresholdDays.HasValue;
         var filterDate = DateTime.UtcNow.AddDays(-5);
         var eligibleUserIds = filteredGuildUsers.Values
             .Where(w => w.Bot != true &&
-                        (hasActivityThreshold ||
-                         (w.LastUsed != null && w.LastUsed > filterDate) ||
+                        ((w.LastUsed != null && w.LastUsed > filterDate) ||
                          (w.LastMessage != null && w.LastMessage > filterDate)))
             .Select(s => s.UserId)
             .ToList();

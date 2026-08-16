@@ -122,6 +122,14 @@ public static class Statistics
                 LabelNames = ["name", "integration_type"]
             });
 
+    public static readonly Counter FlowCommandsExecuted = Metrics
+        .CreateCounter("bot_flow_commands_executed",
+            "Amount of flow commands executed, where a component on a command response runs a different command",
+            new CounterConfiguration
+            {
+                LabelNames = ["name", "component", "response"]
+            });
+
 
     public static readonly Histogram TextCommandHandlerDuration = Metrics
         .CreateHistogram("bot_text_command_handler_duration", "Histogram of text command handler duration");

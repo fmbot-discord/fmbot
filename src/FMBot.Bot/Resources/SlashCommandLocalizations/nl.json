@@ -287,10 +287,13 @@
       "description": "Stel in of albumhoezen bewegen of altijd stilstaan"
     },
     "crown": {
-      "description": "Geschiedenis van een specifieke crown",
+      "description": "Wie de crown voor een artiest heeft, en of jij hem kunt stelen",
       "parameters": {
         "artist": {
           "description": "De artiest die je zoekt (standaard wat je nu speelt)"
+        },
+        "user": {
+          "description": "De gebruiker die je vergelijkt met de crown-houder (standaard jezelf)"
         }
       }
     },

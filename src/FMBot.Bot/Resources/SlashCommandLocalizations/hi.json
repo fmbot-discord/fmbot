@@ -287,10 +287,13 @@
       "description": "Album कवर एनिमेट हों या हमेशा स्थिर दिखें, यह सेट करो"
     },
     "crown": {
-      "description": "किसी crown की हिस्ट्री",
+      "description": "किसी artist का crown किसके पास है, और क्या तुम उसे चुरा सकते हो",
       "parameters": {
         "artist": {
           "description": "जो artist तुम खोजना चाहते हो (डिफ़ॉल्ट: अभी बज रहा)"
+        },
+        "user": {
+          "description": "जिस user की तुलना crown होल्डर से करनी है (डिफ़ॉल्ट: तुम)"
         }
       }
     },

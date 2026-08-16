@@ -27,6 +27,9 @@ public static class InteractionConstants
     public static class Settings
     {
         public const string Tab = "settings-tab";
+        public const string ServerSection = "server-settings-section";
+        public const string ServerHome = "server-settings-home";
+        public const string ServerSettingOpen = "server-settings-open";
     }
 
     public const string FmPrivacySetting = "fm-gwk-privacy";
@@ -72,6 +75,7 @@ public static class InteractionConstants
     public const string SetAllowedRoleMenu = "guild-allowed-roles-menu";
     public const string SetBlockedRoleMenu = "guild-blocked-roles-menu";
     public const string SetBotManagementRoleMenu = "guild-bot-management-roles-menu";
+    public const string SetCrownRoleMenu = "guild-crown-roles-menu";
 
     public const string SetGuildActivityThreshold = "set-guild-activity-threshold";
     public const string SetGuildActivityThresholdModal = "set-guild-activity-threshold-modal";
@@ -328,7 +332,7 @@ public static class InteractionConstants
 
     public static class ToggleCommand
     {
-        public const string ToggleCommandMove = "toggle-command-move";
+        public const string ToggleCommandPickChannel = "toggle-command-pick-channel";
         public const string ToggleCommandAdd = "toggle-command-add";
         public const string ToggleCommandRemove = "toggle-command-remove";
         public const string ToggleCommandClear = "toggle-command-clear";

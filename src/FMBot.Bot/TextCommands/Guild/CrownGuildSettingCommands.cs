@@ -11,6 +11,7 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
 using NetCord.Services.Commands;
@@ -47,7 +48,7 @@ public class CrownGuildSettingCommands(
         try
         {
             var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
-            var response = await guildSettingBuilder.SetCrownMinPlaycount(new ContextModel(this.Context, prfx));
+            var response = await guildSettingBuilder.ServerSettingsSection(new ContextModel(this.Context, prfx), GuildSettingSection.Crowns);
 
             await this.Context.SendResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);
@@ -69,7 +70,28 @@ public class CrownGuildSettingCommands(
         try
         {
             var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
-            var response = await guildSettingBuilder.SetCrownActivityThreshold(new ContextModel(this.Context, prfx));
+            var response = await guildSettingBuilder.ServerSettingsSection(new ContextModel(this.Context, prfx), GuildSettingSection.Crowns);
+
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
+    [Command("crownroles", "crownrole", "cwroles", "cwrole", "crownallowedroles")]
+    [Summary("Sets roles that are allowed to earn crowns in your server")]
+    [GuildOnly]
+    [RequiresIndex]
+    [CommandCategories(CommandCategory.Crowns, CommandCategory.ServerSettings)]
+    public async Task SetCrownRolesAsync([CommandParameter(Remainder = true)] string _ = null)
+    {
+        try
+        {
+            var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+            var response = await guildSettingBuilder.ServerSettingsSection(new ContextModel(this.Context, prfx), GuildSettingSection.Crowns);
 
             await this.Context.SendResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);
