@@ -75,6 +75,7 @@ public static class InteractionConstants
     public const string SetAllowedRoleMenu = "guild-allowed-roles-menu";
     public const string SetBlockedRoleMenu = "guild-blocked-roles-menu";
     public const string SetBotManagementRoleMenu = "guild-bot-management-roles-menu";
+    public const string SetCrownRoleMenu = "guild-crown-roles-menu";
 
     public const string SetGuildActivityThreshold = "set-guild-activity-threshold";
     public const string SetGuildActivityThresholdModal = "set-guild-activity-threshold-modal";

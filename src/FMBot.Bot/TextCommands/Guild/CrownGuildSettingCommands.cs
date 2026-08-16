@@ -81,6 +81,27 @@ public class CrownGuildSettingCommands(
         }
     }
 
+    [Command("crownroles", "crownrole", "cwroles", "cwrole", "crownallowedroles")]
+    [Summary("Sets roles that are allowed to earn crowns in your server")]
+    [GuildOnly]
+    [RequiresIndex]
+    [CommandCategories(CommandCategory.Crowns, CommandCategory.ServerSettings)]
+    public async Task SetCrownRolesAsync([CommandParameter(Remainder = true)] string _ = null)
+    {
+        try
+        {
+            var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+            var response = await guildSettingBuilder.ServerSettingsSection(new ContextModel(this.Context, prfx), GuildSettingSection.Crowns);
+
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
     [Command("crownblock", "crownblockuser", "crownban", "cwblock", "cwban", "crownbanuser", "crownbanmember")]
     [Summary("Block a user from gaining any crowns in your server")]
     [Options(Constants.UserMentionExample)]

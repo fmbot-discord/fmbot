@@ -37,6 +37,8 @@ public class Guild
 
     public bool? CrownsDisabled { get; set; }
 
+    public ulong[] CrownRoles { get; set; }
+
     public ulong[] AllowedRoles { get; set; }
     public ulong[] BlockedRoles { get; set; }
     public ulong[] BotManagementRoles { get; set; }

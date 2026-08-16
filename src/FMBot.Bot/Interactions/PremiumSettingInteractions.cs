@@ -773,6 +773,25 @@ public class PremiumSettingInteractions(
         await RefreshMemberFilters();
     }
 
+    [ComponentInteraction(InteractionConstants.SetCrownRoleMenu)]
+    [ServerStaffOnly]
+    public async Task SetGuildCrownRoles()
+    {
+        if (!await RoleFilterAccessAllowed())
+        {
+            return;
+        }
+
+        var entityMenuInteraction = (EntityMenuInteraction)this.Context.Interaction;
+        var selectedRoleIds = entityMenuInteraction.Data.SelectedValues;
+
+        await guildService.ChangeGuildCrownRoles(this.Context.Guild, selectedRoleIds.ToArray());
+
+        var response = await guildSettingBuilder.ServerSettingsSection(new ContextModel(this.Context),
+            GuildSettingSection.Crowns);
+        await this.Context.UpdateInteractionEmbed(response);
+    }
+
     [ComponentInteraction(InteractionConstants.SetBotManagementRoleMenu)]
     [ServerStaffOnly]
     public async Task SetBotManagementRoles()

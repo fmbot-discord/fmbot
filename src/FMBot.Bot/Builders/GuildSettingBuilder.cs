@@ -190,6 +190,13 @@ public class GuildSettingBuilder(
                 : "Inactive on .fmbot: off");
             if (isPremium)
             {
+                var existingCrownRoles =
+                    guild.CrownRoles?.Count(c => context.DiscordGuild.Roles.ContainsKey(c)) ?? 0;
+                crowns.Append(guild.CrownRoles is { Length: > 0 }
+                    ? existingCrownRoles > 0
+                        ? $" · {existingCrownRoles} crown roles"
+                        : " · Crown roles: configured roles deleted"
+                    : " · Crown roles: off");
                 crowns.Append(guild.AutomaticCrownSeeder.HasValue
                     ? $" · Auto-seeding: {guild.AutomaticCrownSeeder.Value.ToString().ToLower()}"
                     : " · Auto-seeding: off");
@@ -634,6 +641,17 @@ public class GuildSettingBuilder(
         {
             Components = [new TextDisplayProperties(crownActivity.ToString())]
         });
+
+        container.WithSeparator();
+
+        PremiumSettingBuilder.AppendCrownRoles(container, context, guild, isPremium, crownsDisabled);
+
+        if (!isPremium)
+        {
+            container.AddComponent(PremiumSettingBuilder.BuildPremiumUpsell("crownroles-settings",
+                "Crown roles",
+                "Limit crowns to the roles you pick, so only the members you trust can claim them"));
+        }
 
         container.WithSeparator();
 

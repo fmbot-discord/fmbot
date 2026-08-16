@@ -31,7 +31,8 @@ public class PremiumSettingBuilder(
     HttpClient httpClient)
 {
     public const string RoleFilterFeatureDescription =
-        "**Role filtering** filters server charts down to members with the roles you pick. " +
+        "**Role filtering** filters server charts down to members with the roles you pick, " +
+        "and can limit crowns to those roles. " +
         "See what specific parts of your community are listening to.";
 
     public async Task<ResponseModel> PremiumServerOverview(ContextModel context, string userLocale,
@@ -336,7 +337,8 @@ public class PremiumSettingBuilder(
         description.AppendLine("🎮 **60 daily Jumble and Pixel games** for every member");
         description.AppendLine("📜 **Lyrics unlocked** for every member");
         description.AppendLine("⌨️ **Server-wide shortcuts**: `.servershortcuts`");
-        description.AppendLine("⚙️ **Role filters**: `.allowedroles`, `.blockedroles`, `.serveractivitythreshold`");
+        description.AppendLine(
+            "⚙️ **Role filters**: `.allowedroles`, `.blockedroles`, `.crownroles`, `.serveractivitythreshold`");
         description.AppendLine("🛡️ **Bot management roles**: `.botmanagementroles`");
     }
 
@@ -408,6 +410,43 @@ public class PremiumSettingBuilder(
             .WithMaxValues(25)
             .WithDisabled(!isPremium);
         roleMenu.DefaultValues = ExistingRoles(context.DiscordGuild, guild.BlockedRoles);
+
+        container.AddComponent(roleMenu);
+    }
+
+    public static void AppendCrownRoles(ComponentContainerProperties container, ContextModel context,
+        Guild guild, bool isPremium, bool crownsDisabled)
+    {
+        var description = new StringBuilder();
+        description.AppendLine("**Crown roles**");
+        description.Append("Only members with these roles can earn crowns. ");
+
+        var pickedRoles = FormatRoleList(context.DiscordGuild, guild.CrownRoles);
+        if (pickedRoles != null)
+        {
+            description.AppendLine("Currently:");
+            description.AppendLine(pickedRoles);
+        }
+        else if (guild.CrownRoles is { Length: > 0 })
+        {
+            description.AppendLine(
+                "The configured roles no longer exist in this server, so nobody can earn crowns. Pick new roles or clear the menu to turn this off.");
+        }
+        else
+        {
+            description.AppendLine("Currently off - everyone can earn crowns.");
+        }
+
+        description.Append(
+            "-# Members without these roles still show up in WhoKnows, they just can't claim or keep a crown.");
+
+        container.WithTextDisplay(description.ToString());
+        var roleMenu = new RoleMenuProperties(InteractionConstants.SetCrownRoleMenu)
+            .WithPlaceholder("Pick crown roles")
+            .WithMinValues(0)
+            .WithMaxValues(25)
+            .WithDisabled(!isPremium || crownsDisabled);
+        roleMenu.DefaultValues = ExistingRoles(context.DiscordGuild, guild.CrownRoles);
 
         container.AddComponent(roleMenu);
     }

@@ -453,6 +453,23 @@ public class GuildService(
         await RemoveGuildFromCache(discordGuild.Id);
     }
 
+    public async Task ChangeGuildCrownRoles(NetCord.Gateway.Guild discordGuild, ulong[] crownRoles)
+    {
+        await using var db = await contextFactory.CreateDbContextAsync();
+        var existingGuild = await db.Guilds
+            .AsQueryable()
+            .FirstAsync(f => f.DiscordGuildId == discordGuild.Id);
+
+        existingGuild.Name = discordGuild.Name;
+        existingGuild.CrownRoles = crownRoles;
+
+        db.Entry(existingGuild).State = EntityState.Modified;
+
+        await db.SaveChangesAsync();
+
+        await RemoveGuildFromCache(discordGuild.Id);
+    }
+
     public async Task ChangeGuildBotManagementRoles(NetCord.Gateway.Guild discordGuild, ulong[] botManagementRoles)
     {
         await using var db = await contextFactory.CreateDbContextAsync();
