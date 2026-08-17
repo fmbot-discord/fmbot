@@ -904,6 +904,8 @@
   "shared.periodAlt.twoYear": "in de afgelopen 2 jaar",
   "shared.periodAlt.overall": "in totaal",
   "crown.functionalityDisabled": "Crown-functionaliteit is uitgeschakeld in deze server.",
+  "crown.notEligibleCrownRole": "Je hebt geen van de crown-rollen in deze server, dus je kunt geen crowns verdienen.",
+  "crown.notEligibleCrownblocked": "Je bent geblokkeerd voor crowns in deze server.",
   "crown.noKnownCrowns": "Geen bekende crowns voor de artiest **[{{artist}}]({{url}})**.\n\nCrowns gaan naar de #1 luisteraar met minstens {{threshold}} plays.",
   "crown.needMorePlays": "Je zit nog {{plays}} van de crown af.",
   "crown.fieldCurrentHolder": "Huidige crown-houder",

@@ -101,6 +101,21 @@ public class CrownBuilders
         var whoKnowsContext = await this._whoKnowsArtistService.GetFilteredUsersForArtist(context.DiscordGuild,
             context.ContextUser, artistSearch.Artist.ArtistName, artistSearch.Artist.UserPlaycount);
 
+        var contextUserRoles = whoKnowsContext.FilteredUsersWithArtist
+            .FirstOrDefault(f => f.UserId == context.ContextUser.UserId)?.Roles;
+        var crownEligibility = CrownService.GetCrownEligibility(whoKnowsContext.Guild, whoKnowsContext.GuildUsers,
+            context.ContextUser.UserId, contextUserRoles);
+
+        switch (crownEligibility)
+        {
+            case CrownService.CrownEligibility.Crownblocked:
+                response.Embed.WithFooter(context.Localize("crown.notEligibleCrownblocked"));
+                break;
+            case CrownService.CrownEligibility.MissingCrownRole:
+                response.Embed.WithFooter(context.Localize("crown.notEligibleCrownRole"));
+                break;
+        }
+
         CrownModel crownModel = null;
         if (whoKnowsContext.FilteredUsersWithArtist.Count >= 1)
         {

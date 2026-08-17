@@ -904,6 +904,8 @@
   "shared.periodAlt.twoYear": "ces 2 dernières années",
   "shared.periodAlt.overall": "au total",
   "crown.functionalityDisabled": "La fonctionnalité des crowns a été désactivée sur ce serveur.",
+  "crown.notEligibleCrownRole": "Tu n'as aucun des rôles crown de ce serveur, tu ne peux donc pas obtenir de crowns.",
+  "crown.notEligibleCrownblocked": "Tu es bloqué des crowns sur ce serveur.",
   "crown.noKnownCrowns": "Aucune crown connue pour l'artiste **[{{artist}}]({{url}})**.\n\nLes crowns vont à l'auditeur #1 avec au moins {{threshold}} plays.",
   "crown.needMorePlays": "Il te manque encore {{plays}} pour la crown.",
   "crown.fieldCurrentHolder": "Détenteur actuel de la crown",
