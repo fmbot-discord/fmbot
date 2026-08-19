@@ -878,7 +878,7 @@ public class TimerService : IDisposable
 
                 foreach (var guild in shard.Cache.Guilds.Values)
                 {
-                    shardCachedUsers += guild.Users?.Count ?? 0;
+                    shardCachedUsers += guild.Users.Count;
                 }
 
                 totalCachedUsers += shardCachedUsers;

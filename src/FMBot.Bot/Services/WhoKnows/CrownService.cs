@@ -430,9 +430,9 @@ public class CrownService(
         {
             guildId = guild.GuildId,
             minPlaycount,
-            allowedRoles = guild.AllowedRoles?.Select(s => (long)s).ToArray(),
-            blockedRoles = guild.BlockedRoles?.Select(s => (long)s).ToArray(),
-            crownRoles = guild.CrownRoles?.Select(s => (long)s).ToArray()
+            allowedRoles = guild.AllowedRoles?.Select(s => (decimal)s).ToArray(),
+            blockedRoles = guild.BlockedRoles?.Select(s => (decimal)s).ToArray(),
+            crownRoles = guild.CrownRoles?.Select(s => (decimal)s).ToArray()
         });
 
         try
