@@ -58,18 +58,12 @@ public class CrownService(
         //        .ToList();
         //}
 
-        if (guild.CrownRoles is { Length: > 0 } &&
-            PublicProperties.PremiumServers.ContainsKey(guild.DiscordGuildId))
+        if (CrownRolesActive(guild))
         {
             var crownRoles = guild.CrownRoles.ToHashSet();
 
             eligibleUsers = eligibleUsers
-                .Where(w =>
-                {
-                    var userRoles = w.Roles ??
-                                    (guildUsers.TryGetValue(w.UserId, out var guildUser) ? guildUser.Roles : null);
-                    return userRoles != null && userRoles.Any(a => crownRoles.Contains(a));
-                })
+                .Where(w => HasCrownRole(crownRoles, guildUsers, w.UserId, w.Roles))
                 .ToList();
         }
 
@@ -83,15 +77,24 @@ public class CrownService(
                         (guild.CrownsMinimumPlaycountThreshold.HasValue ? w.Playcount >= guild.CrownsMinimumPlaycountThreshold : w.Playcount >= Constants.DefaultPlaysForCrown))
             .MaxBy(o => o.Playcount);
 
-        if (topUser == null)
-        {
-            return null;
-        }
-
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
         var currentCrownHolder = await GetCurrentCrownHolder(connection, guild.GuildId, artistName);
+
+        if (topUser == null)
+        {
+            if (currentCrownHolder != null && CrownHolderNoLongerAllowed(guildUsers, currentCrownHolder.UserId))
+            {
+                currentCrownHolder.Active = false;
+                currentCrownHolder.Modified = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+
+                await UpdateCrown(connection, currentCrownHolder.CrownId, currentCrownHolder);
+            }
+
+            return null;
+        }
+
         WhoKnowsObjectWithUser currentCrownHolderUser = null;
         if (currentCrownHolder != null)
         {
@@ -270,6 +273,52 @@ public class CrownService(
         return null;
     }
 
+    public enum CrownEligibility
+    {
+        Eligible,
+        Crownblocked,
+        MissingCrownRole
+    }
+
+    public static CrownEligibility GetCrownEligibility(Persistence.Domain.Models.Guild guild,
+        IDictionary<int, FullGuildUser> guildUsers, int userId, ulong[] roles = null)
+    {
+        if (guildUsers.TryGetValue(userId, out var guildUser) && guildUser.BlockedFromCrowns)
+        {
+            return CrownEligibility.Crownblocked;
+        }
+
+        if (CrownRolesActive(guild) && !HasCrownRole(guild.CrownRoles.ToHashSet(), guildUsers, userId, roles))
+        {
+            return CrownEligibility.MissingCrownRole;
+        }
+
+        return CrownEligibility.Eligible;
+    }
+
+    private static bool CrownRolesActive(Persistence.Domain.Models.Guild guild)
+    {
+        return guild.CrownRoles is { Length: > 0 } &&
+               PublicProperties.PremiumServers.ContainsKey(guild.DiscordGuildId);
+    }
+
+    private static bool HasCrownRole(HashSet<ulong> crownRoles, IDictionary<int, FullGuildUser> guildUsers, int userId,
+        ulong[] roles)
+    {
+        var userRoles = roles ?? (guildUsers.TryGetValue(userId, out var guildUser) ? guildUser.Roles : null);
+        return userRoles != null && userRoles.Any(crownRoles.Contains);
+    }
+
+    private static bool CrownHolderNoLongerAllowed(IDictionary<int, FullGuildUser> guildUsers, int crownHolderUserId)
+    {
+        if (guildUsers.Count == 0)
+        {
+            return false;
+        }
+
+        return !guildUsers.TryGetValue(crownHolderUserId, out var crownHolder) || crownHolder.BlockedFromCrowns;
+    }
+
     private static async Task<UserCrown> GetCurrentCrownHolder(NpgsqlConnection connection, int guildId, string artistName)
     {
         const string sql = "SELECT * FROM public.user_crowns AS uc " +
@@ -381,9 +430,9 @@ public class CrownService(
         {
             guildId = guild.GuildId,
             minPlaycount,
-            allowedRoles = guild.AllowedRoles?.Select(s => (long)s).ToArray(),
-            blockedRoles = guild.BlockedRoles?.Select(s => (long)s).ToArray(),
-            crownRoles = guild.CrownRoles?.Select(s => (long)s).ToArray()
+            allowedRoles = guild.AllowedRoles?.Select(s => (decimal)s).ToArray(),
+            blockedRoles = guild.BlockedRoles?.Select(s => (decimal)s).ToArray(),
+            crownRoles = guild.CrownRoles?.Select(s => (decimal)s).ToArray()
         });
 
         try

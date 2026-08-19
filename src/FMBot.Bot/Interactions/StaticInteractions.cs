@@ -68,48 +68,63 @@ public class StaticInteractions(
     [UserSessionRequired]
     public async Task GetSupporterLink(string type, string source)
     {
-        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
-        var existingStripeSupporter = await supporterService.GetStripeSupporter(contextUser.DiscordUserId);
-
-        var pricing =
-            await supporterService.GetPricing(this.Context.Interaction.UserLocale,
-                existingStripeSupporter?.Currency);
-
-        var link = await supporterService.GetSupporterCheckoutLink(this.Context.User.Id,
-            this.Context.User.Username, contextUser.UserNameLastFM, type, pricing, existingStripeSupporter, source);
-
-        var components = new ActionRowProperties().WithButton($"Complete purchase", url: link,
-            emote: EmojiProperties.Standard("⭐"));
-
-        var embed = new EmbedProperties();
-        embed.WithColor(DiscordConstants.InformationColorBlue);
-        var description = new StringBuilder();
-        description.AppendLine($"**Click the unique link below to purchase supporter!**");
-        if (type == "yearly")
+        try
         {
-            description.AppendLine($"-# {pricing.YearlySummary}");
-        }
-        else if (type == "lifetime")
-        {
-            description.AppendLine($"-# {pricing.LifetimeSummary}");
-        }
-        else
-        {
-            description.AppendLine($"-# {pricing.MonthlySummary}");
-        }
+            await this.Context.Interaction.SendResponseAsync(
+                InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
 
-        if (SupporterService.IsSupporter(contextUser.UserType))
-        {
-            embed.AddField("⚠️ Note", "You currently already have access to supporter on your .fmbot account.");
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+            var existingStripeSupporter = await supporterService.GetStripeSupporter(contextUser.DiscordUserId);
+
+            var pricing =
+                await supporterService.GetPricing(this.Context.Interaction.UserLocale,
+                    existingStripeSupporter?.Currency);
+
+            var link = await supporterService.GetSupporterCheckoutLink(this.Context.User.Id,
+                this.Context.User.Username, contextUser.UserNameLastFM, type, pricing, existingStripeSupporter,
+                source);
+
+            var components = new ActionRowProperties().WithButton($"Complete purchase", url: link,
+                emote: EmojiProperties.Standard("⭐"));
+
+            var embed = new EmbedProperties();
+            embed.WithColor(DiscordConstants.InformationColorBlue);
+            var description = new StringBuilder();
+            description.AppendLine($"**Click the unique link below to purchase supporter!**");
+            if (type == "yearly")
+            {
+                description.AppendLine($"-# {pricing.YearlySummary}");
+            }
+            else if (type == "lifetime")
+            {
+                description.AppendLine($"-# {pricing.LifetimeSummary}");
+            }
+            else
+            {
+                description.AppendLine($"-# {pricing.MonthlySummary}");
+            }
+
+            if (SupporterService.IsSupporter(contextUser.UserType))
+            {
+                embed.AddField("⚠️ Note",
+                    "You currently already have access to supporter on your .fmbot account.");
+            }
+
+            embed.WithDescription(description.ToString());
+
+            await this.Context.Interaction.ModifyResponseAsync(m =>
+            {
+                m.Embeds = [embed];
+                m.Components = [components];
+            });
+
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok },
+                userService);
         }
-
-        embed.WithDescription(description.ToString());
-
-        await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
-            .WithEmbeds([embed])
-            .WithComponents([components])
-            .WithFlags(MessageFlags.Ephemeral)));
-        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService, deferFirst: false);
+        }
     }
 
     [ComponentInteraction(InteractionConstants.SupporterLinks.GetLifetimePromoLink)]
@@ -275,21 +290,34 @@ public class StaticInteractions(
     [UserSessionRequired]
     public async Task GetManageLink()
     {
-        var stripeSupporter = await supporterService.GetStripeSupporter(this.Context.User.Id);
-        var stripeManageLink = await supporterService.GetSupporterManageLink(stripeSupporter);
+        try
+        {
+            await this.Context.Interaction.SendResponseAsync(
+                InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
 
-        var embed = new EmbedProperties();
-        embed.WithDescription($"**Click the unique link below to manage your supporter.**");
-        embed.WithColor(DiscordConstants.InformationColorBlue);
+            var stripeSupporter = await supporterService.GetStripeSupporter(this.Context.User.Id);
+            var stripeManageLink = await supporterService.GetSupporterManageLink(stripeSupporter);
 
-        var components = new ActionRowProperties()
-            .WithButton("Manage subscription", url: stripeManageLink, emote: EmojiProperties.Standard("⭐"));
+            var embed = new EmbedProperties();
+            embed.WithDescription($"**Click the unique link below to manage your supporter.**");
+            embed.WithColor(DiscordConstants.InformationColorBlue);
 
-        await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
-            .WithEmbeds([embed])
-            .WithComponents([components])
-            .WithFlags(MessageFlags.Ephemeral)));
-        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
+            var components = new ActionRowProperties()
+                .WithButton("Manage subscription", url: stripeManageLink, emote: EmojiProperties.Standard("⭐"));
+
+            await this.Context.Interaction.ModifyResponseAsync(m =>
+            {
+                m.Embeds = [embed];
+                m.Components = [components];
+            });
+
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok },
+                userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService, deferFirst: false);
+        }
     }
 
     [ComponentInteraction("gift-supporter-purchase")]

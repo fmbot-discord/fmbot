@@ -904,6 +904,8 @@
   "shared.periodAlt.twoYear": "de senaste 2 åren",
   "shared.periodAlt.overall": "genom tiderna",
   "crown.functionalityDisabled": "Crown-funktionen har inaktiverats på den här servern.",
+  "crown.notEligibleCrownRole": "Du har ingen av crown-rollerna i den här servern, så du kan inte få crowns.",
+  "crown.notEligibleCrownblocked": "Du är blockerad från crowns i den här servern.",
   "crown.noKnownCrowns": "Inga kända crowns för artisten **[{{artist}}]({{url}})**.\n\nCrowns går till #1-lyssnaren med minst {{threshold}} plays.",
   "crown.needMorePlays": "Du är {{plays}} från att ta crownen.",
   "crown.fieldCurrentHolder": "Nuvarande crown-ägare",

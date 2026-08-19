@@ -904,6 +904,8 @@
   "shared.periodAlt.twoYear": "last two years",
   "shared.periodAlt.overall": "all-time",
   "crown.functionalityDisabled": "Crown functionality has been disabled in this server.",
+  "crown.notEligibleCrownRole": "You don't have one of the crown roles in this server, so you can't earn crowns.",
+  "crown.notEligibleCrownblocked": "You're blocked from earning crowns in this server.",
   "crown.noKnownCrowns": "No known crowns for the artist **[{{artist}}]({{url}})**.\n\nCrowns go to the #1 listener with at least {{threshold}} plays.",
   "crown.needMorePlays": "You're still {{plays}} away from claiming the crown.",
   "crown.fieldCurrentHolder": "Current crown holder",

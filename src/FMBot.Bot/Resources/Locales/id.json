@@ -774,6 +774,8 @@
   "shared.periodAlt.twoYear": "dalam 2 tahun terakhir",
   "shared.periodAlt.overall": "sepanjang masa",
   "crown.functionalityDisabled": "Fungsi crown telah dinonaktifkan di server ini.",
+  "crown.notEligibleCrownRole": "Kamu tidak punya salah satu crown role di server ini, jadi kamu tidak bisa mendapatkan crown.",
+  "crown.notEligibleCrownblocked": "Kamu diblokir dari crown di server ini.",
   "crown.noKnownCrowns": "Tidak ada crown yang diketahui untuk artis **[{{artist}}]({{url}})**.\n\nCrown diberikan kepada pendengar #1 dengan minimal {{threshold}} plays.",
   "crown.needMorePlays": "Kamu kurang {{plays}} lagi untuk mendapatkan crown.",
   "crown.fieldCurrentHolder": "Pemegang crown saat ini",

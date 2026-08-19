@@ -904,6 +904,8 @@
   "shared.periodAlt.twoYear": "पिछले 2 सालों में",
   "shared.periodAlt.overall": "ऑल-टाइम में",
   "crown.functionalityDisabled": "इस सर्वर में crown फ़ीचर बंद कर दिया गया है।",
+  "crown.notEligibleCrownRole": "इस सर्वर में तुम्हारे पास crown roles में से कोई नहीं है, इसलिए तुम crowns नहीं जीत सकते।",
+  "crown.notEligibleCrownblocked": "इस सर्वर में तुम्हें crowns से ब्लॉक किया गया है।",
   "crown.noKnownCrowns": "artist **[{{artist}}]({{url}})** के लिए कोई crown नहीं है।\n\ncrown उस #1 श्रोता को मिलता है जिसके कम से कम {{threshold}} plays हों।",
   "crown.needMorePlays": "crown पाने के लिए तुम्हें {{plays}} और चाहिए।",
   "crown.fieldCurrentHolder": "मौजूदा crown होल्डर",

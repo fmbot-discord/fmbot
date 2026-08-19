@@ -904,6 +904,8 @@
   "shared.periodAlt.twoYear": "son 2 yılda",
   "shared.periodAlt.overall": "tüm zamanlarda",
   "crown.functionalityDisabled": "Crown özelliği bu sunucuda devre dışı bırakıldı.",
+  "crown.notEligibleCrownRole": "Bu sunucudaki crown rollerinden hiçbirine sahip değilsin, bu yüzden crown kazanamazsın.",
+  "crown.notEligibleCrownblocked": "Bu sunucuda crown kazanman engellendi.",
   "crown.noKnownCrowns": "**[{{artist}}]({{url}})** sanatçısı için bilinen crown yok.\n\nCrown'lar en az {{threshold}} play'i olan #1 dinleyiciye gider.",
   "crown.needMorePlays": "Crown'u almana {{plays}} kaldı.",
   "crown.fieldCurrentHolder": "Mevcut crown sahibi",

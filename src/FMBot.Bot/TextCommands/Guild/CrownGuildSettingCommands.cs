@@ -264,7 +264,7 @@ public class CrownGuildSettingCommands(
                 await msg.ModifyAsync(x =>
                 {
                     x.Embeds = [this._embed];
-                    x.Components = [new ActionRowProperties()];
+                    x.Components = [];
                     x.AllowedMentions = AllowedMentionsProperties.None;
                 });
             }
@@ -274,7 +274,7 @@ public class CrownGuildSettingCommands(
                 await msg.ModifyAsync(x =>
                 {
                     x.Embeds = [this._embed];
-                    x.Components = [new ActionRowProperties()];
+                    x.Components = [];
                     x.AllowedMentions = AllowedMentionsProperties.None;
                 });
             }
