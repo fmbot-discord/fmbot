@@ -122,9 +122,16 @@ public class StartupService
         await lastFmTask;
         await premiumGuilds;
 
-        var gateway = await this._client.Rest.GetGatewayBotAsync();
-        Log.Information("Gateway: connects left {connectsLeft} - reset after {resetAfter} - recommended shards {shardCount}",
-            gateway.SessionStartLimit.Remaining, gateway.SessionStartLimit.ResetAfter, gateway.ShardCount);
+        try
+        {
+            var gateway = await this._client.Rest.GetGatewayBotAsync();
+            Log.Information("Gateway: connects left {connectsLeft} - reset after {resetAfter} - recommended shards {shardCount}",
+                gateway.SessionStartLimit.Remaining, gateway.SessionStartLimit.ResetAfter, gateway.ShardCount);
+        }
+        catch (Exception e)
+        {
+            Log.Warning(e, "Could not fetch gateway bot info");
+        }
 
         await this._timerService.UpdateHealthCheck();
         await this.RegisterSlashCommands();
@@ -278,8 +285,15 @@ public class StartupService
     {
         Log.Information("Starting slash command registration");
 
-        Log.Information("Registering slash commands globally");
-        await this._appCommands.RegisterCommandsAsync(this._client.Rest, ConfigData.Data.Discord.ApplicationId.GetValueOrDefault());
+        try
+        {
+            Log.Information("Registering slash commands globally");
+            await this._appCommands.RegisterCommandsAsync(this._client.Rest, ConfigData.Data.Discord.ApplicationId.GetValueOrDefault());
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Slash command registration failed");
+        }
     }
 
     private static void PrepareCacheFolder()
