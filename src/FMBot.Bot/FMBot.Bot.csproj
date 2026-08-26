@@ -35,7 +35,7 @@
         </PackageReference>
         <PackageReference Include="Hangfire.Core" Version="1.8.24" />
         <PackageReference Include="Hangfire.MemoryStorage" Version="1.8.1.2" />
-        <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" Version="8.3.1.5" />
+        <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" Version="14.2.1.2" />
         <PackageReference Include="Humanizer.Core" Version="3.0.10" />
         <PackageReference Include="MetaBrainz.MusicBrainz" Version="8.0.1" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.11">
@@ -65,10 +65,10 @@
         <PackageReference Include="Serilog.Sinks.Async" Version="2.1.0" />
         <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
         <PackageReference Include="Serilog.Sinks.Seq" Version="9.1.0" />
-        <PackageReference Include="SkiaSharp" Version="3.119.4" />
-        <PackageReference Include="SkiaSharp.HarfBuzz" Version="3.119.4" />
-        <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="3.119.4" />
-        <PackageReference Include="SkiaSharp.Views.Desktop.Common" Version="3.119.4" />
+        <PackageReference Include="SkiaSharp" Version="4.151.1" />
+        <PackageReference Include="SkiaSharp.HarfBuzz" Version="4.151.1" />
+        <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="4.151.1" />
+        <PackageReference Include="SkiaSharp.Views.Desktop.Common" Version="4.151.1" />
         <PackageReference Include="SpotifyAPI.Web" Version="7.4.2" />
         <PackageReference Include="SpotifyAPI.Web.Auth" Version="7.4.2" />
         <PackageReference Include="System.Drawing.Common" Version="10.0.11" />

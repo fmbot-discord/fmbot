@@ -29,6 +29,8 @@ public class ChartService
     private readonly GenreService _genreService;
 
     private readonly string _fontPath;
+
+    private readonly Lazy<SKTypeface> _typeface;
     private readonly string _workSansFontPath;
     private readonly string _loadingErrorImagePath;
     private readonly string _unknownImagePath;
@@ -53,6 +55,7 @@ public class ChartService
         }
 
         this._fontPath = Path.Combine(cachePath, "sourcehansans-medium.otf");
+        this._typeface = new Lazy<SKTypeface>(() => SKTypeface.FromFile(this._fontPath));
         this._workSansFontPath = Path.Combine(cachePath, "worksans-regular.otf");
         this._loadingErrorImagePath = Path.Combine(cachePath, "loading-error.png");
         this._unknownImagePath = Path.Combine(cachePath, "unknown.png");
@@ -107,16 +110,10 @@ public class ChartService
     {
         try
         {
-            var largerImages = true;
-            var chartImageHeight = 300;
-            var chartImageWidth = 300;
-
-            if (chart.ImagesNeeded > 40)
-            {
-                largerImages = false;
-                chartImageHeight = 180;
-                chartImageWidth = 180;
-            }
+            var cellSize = GetCellSize(chart.Width, chart.Height);
+            var chartImageHeight = cellSize;
+            var chartImageWidth = cellSize;
+            var scale = cellSize / (float)BaseCellSize;
 
             if (!chart.ArtistChart)
             {
@@ -139,7 +136,7 @@ public class ChartService
 
                     var localPath = AlbumUrlToCacheFilePath(album.AlbumName, album.ArtistName);
 
-                    if (localPath != null && File.Exists(localPath) && cacheEnabled)
+                    if (localPath != null && cacheEnabled && CachedCoverIsUsable(localPath, cellSize))
                     {
                         chartImage = SKBitmap.Decode(localPath);
                         Statistics.LastfmCachedImageCalls.Inc();
@@ -180,7 +177,7 @@ public class ChartService
 
                             if (validImage && cacheEnabled)
                             {
-                                await SaveImageToCache(chartImage, localPath);
+                                await SaveCoverToCache(chartImage, localPath);
                             }
                         }
                         else
@@ -203,7 +200,7 @@ public class ChartService
                         index,
                         chartImageHeight,
                         chartImageWidth,
-                        largerImages,
+                        scale,
                         validImage,
                         topName: chart.FilteredArtist == null ? album.ArtistName : album.AlbumName,
                         bottomName: chart.FilteredArtist == null ? album.AlbumName : null,
@@ -232,7 +229,7 @@ public class ChartService
 
                     var localPath = ArtistUrlToCacheFilePath(artist.ArtistName);
 
-                    if (File.Exists(localPath) && cacheEnabled)
+                    if (cacheEnabled && CachedCoverIsUsable(localPath, cellSize))
                     {
                         chartImage = SKBitmap.Decode(localPath);
                     }
@@ -262,7 +259,7 @@ public class ChartService
 
                             if (validImage && cacheEnabled)
                             {
-                                await SaveImageToCache(chartImage, localPath);
+                                await SaveCoverToCache(chartImage, localPath);
                             }
                         }
                         else
@@ -285,7 +282,7 @@ public class ChartService
                         index,
                         chartImageHeight,
                         chartImageWidth,
-                        largerImages,
+                        scale,
                         validImage,
                         topName: artist.ArtistName,
                         nsfw: nsfw,
@@ -328,7 +325,8 @@ public class ChartService
                 }
 
                 canvas.DrawBitmap(chartImage.Image,
-                    SKRect.Create(offset, offsetTop, chartImage.Image.Width, chartImage.Image.Height));
+                    SKRect.Create(offset, offsetTop, chartImage.Image.Width, chartImage.Image.Height),
+                    new SKSamplingOptions());
 
 
                 if (i == (chart.Width - 1) || i - (chart.Width) * heightRow == chart.Width - 1)
@@ -395,6 +393,91 @@ public class ChartService
         return Convert.ToHexString(bytes, 0, 8).ToLowerInvariant();
     }
 
+    public const int ChartQuality = 98;
+    public const int BaseCellSize = 300;
+    public const int MaxCellSize = 600;
+    public const int MaxChartSize = 3000;
+    public const int MaxCachedCoverSize = 640;
+    private const int CachedCoverQuality = 98;
+
+    public static int GetCellSize(int width, int height)
+    {
+        var longestSide = Math.Max(1, Math.Max(width, height));
+        return Math.Clamp(MaxChartSize / longestSide, BaseCellSize, MaxCellSize);
+    }
+
+    public static async Task SaveCoverToCache(SKBitmap cover, string localPath, bool overwrite = false)
+    {
+        if (!overwrite && CachedCoverIsAtLeast(localPath, cover.Width, cover.Height))
+        {
+            return;
+        }
+
+        var bitmap = cover;
+        var longestSide = Math.Max(cover.Width, cover.Height);
+        if (longestSide > MaxCachedCoverSize)
+        {
+            var ratio = MaxCachedCoverSize / (float)longestSide;
+            var info = new SKImageInfo(Math.Max(1, (int)(cover.Width * ratio)), Math.Max(1, (int)(cover.Height * ratio)));
+            bitmap = cover.Resize(info, new SKSamplingOptions(SKCubicResampler.Mitchell));
+        }
+
+        try
+        {
+            using var image = SKImage.FromBitmap(bitmap);
+            using var data = image.Encode(SKEncodedImageFormat.Webp, CachedCoverQuality);
+            await using var stream = File.Create(localPath);
+            data.SaveTo(stream);
+        }
+        finally
+        {
+            if (!ReferenceEquals(bitmap, cover))
+            {
+                bitmap.Dispose();
+            }
+        }
+    }
+
+    private static bool CachedCoverIsUsable(string localPath, int cellSize)
+    {
+        if (!File.Exists(localPath))
+        {
+            return false;
+        }
+
+        using var codec = SKCodec.Create(localPath);
+        if (codec == null)
+        {
+            return false;
+        }
+
+        return codec.EncodedFormat == SKEncodedImageFormat.Webp ||
+               (codec.Info.Width >= cellSize && codec.Info.Height >= cellSize);
+    }
+
+    private static bool CachedCoverIsAtLeast(string localPath, int width, int height)
+    {
+        if (!File.Exists(localPath))
+        {
+            return false;
+        }
+
+        using var codec = SKCodec.Create(localPath);
+        if (codec == null)
+        {
+            return false;
+        }
+
+        if (codec.EncodedFormat != SKEncodedImageFormat.Webp)
+        {
+            return false;
+        }
+
+        var cappedWidth = Math.Min(width, MaxCachedCoverSize);
+        var cappedHeight = Math.Min(height, MaxCachedCoverSize);
+        return codec.Info.Width >= cappedWidth && codec.Info.Height >= cappedHeight;
+    }
+
     public static async Task SaveImageToCache(SKBitmap chartImage, string localPath)
     {
         using var image = SKImage.FromBitmap(chartImage);
@@ -408,7 +491,7 @@ public class ChartService
     {
         stream.Position = 0;
 
-        if (File.Exists(cacheFilePath))
+        if (format != SKEncodedImageFormat.Png && File.Exists(cacheFilePath))
         {
             File.Delete(cacheFilePath);
             await Task.Delay(100);
@@ -419,7 +502,7 @@ public class ChartService
             using var chartImage = SKBitmap.Decode(stream);
             if (chartImage != null)
             {
-                await SaveImageToCache(chartImage, cacheFilePath);
+                await SaveCoverToCache(chartImage, cacheFilePath, overwrite: true);
             }
         }
         else
@@ -440,7 +523,7 @@ public class ChartService
         int index,
         int chartImageHeight,
         int chartImageWidth,
-        bool largerImages,
+        float scale,
         bool validImage,
         string bottomName = null,
         string topName = null,
@@ -489,7 +572,7 @@ public class ChartService
         switch (chart.TitleSetting)
         {
             case TitleSetting.Titles:
-                AddTitleToChartImage(chartImage, largerImages, topName, bottomName);
+                AddTitleToChartImage(chartImage, scale, topName, bottomName);
                 break;
             case TitleSetting.TitlesDisabled:
                 break;
@@ -549,15 +632,15 @@ public class ChartService
         return sorted;
     }
 
-    private void AddTitleToChartImage(SKBitmap chartImage, bool largerImages, string topName = null,
+    private void AddTitleToChartImage(SKBitmap chartImage, float scale, string topName = null,
         string bottomName = null)
     {
         var textColor = chartImage.GetTextColor();
         var rectangleColor = textColor == SKColors.Black ? SKColors.White : SKColors.Black;
 
-        using var typeface = SKTypeface.FromFile(this._fontPath);
+        var typeface = this._typeface.Value;
 
-        var textSize = largerImages ? 17 : 12;
+        var textSize = 17 * scale;
 
         using var font = new SKFont(typeface)
         {
@@ -573,7 +656,7 @@ public class ChartService
         if ((bottomName != null && font.MeasureText(bottomName, textPaint) > chartImage.Width) ||
             (topName != null && font.MeasureText(topName, textPaint) > chartImage.Width))
         {
-            font.Size -= largerImages ? 5 : 2;
+            font.Size -= 5 * scale;
         }
 
         using var rectanglePaint = new SKPaint
@@ -606,23 +689,23 @@ public class ChartService
         }
 
         var rectangleLeft = (chartImage.Width - Math.Max(bottomNameBounds.Width, topNameBounds.Width)) / 2 -
-                            (largerImages ? 6 : 3);
+                            6 * scale;
         var rectangleRight = (chartImage.Width + Math.Max(bottomNameBounds.Width, topNameBounds.Width)) / 2 +
-                             (largerImages ? 6 : 3);
+                             6 * scale;
 
         var rectangleTop = bottomName != null
-            ? chartImage.Height - (largerImages ? 44 : 30)
-            : chartImage.Height - (largerImages ? 23 : 16);
+            ? chartImage.Height - 44 * scale
+            : chartImage.Height - 23 * scale;
         var rectangleBottom = chartImage.Height - 1;
 
         var backgroundRectangle = new SKRect(rectangleLeft, rectangleTop, rectangleRight, rectangleBottom);
 
-        bitmapCanvas.DrawRoundRect(backgroundRectangle, 4, 4, rectanglePaint);
+        bitmapCanvas.DrawRoundRect(backgroundRectangle, 4 * scale, 4 * scale, rectanglePaint);
 
         if (topName != null)
         {
             var yTopName = -topNameBounds.Top + chartImage.Height -
-                           (bottomName != null ? (largerImages ? 39 : 26) : (largerImages ? 20 : 13));
+                           (bottomName != null ? 39 : 20) * scale;
 
             bitmapCanvas.DrawShapedText(topName, (float)chartImage.Width / 2, yTopName, SKTextAlign.Center, font,
                 textPaint);
@@ -630,7 +713,7 @@ public class ChartService
 
         if (bottomName != null)
         {
-            var yBottomName = -bottomNameBounds.Top + chartImage.Height - (largerImages ? 20 : 13);
+            var yBottomName = -bottomNameBounds.Top + chartImage.Height - 20 * scale;
 
             bitmapCanvas.DrawShapedText(bottomName, (float)chartImage.Width / 2, yBottomName, SKTextAlign.Center, font,
                 textPaint);

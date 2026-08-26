@@ -255,20 +255,21 @@ public class GraphService
         canvas.DrawLine(plotLeft, plotTop, plotLeft, plotBottom, axisPaint);
         canvas.DrawLine(plotLeft, plotBottom, plotRight, plotBottom, axisPaint);
 
-        using var linePath = new SKPath();
-        linePath.MoveTo(xPositions[0], yPositions[0]);
+        using var pathBuilder = new SKPathBuilder();
+        pathBuilder.MoveTo(xPositions[0], yPositions[0]);
         for (var i = 1; i < xPositions.Length; i++)
         {
-            linePath.LineTo(xPositions[i], yPositions[i]);
+            pathBuilder.LineTo(xPositions[i], yPositions[i]);
         }
+
+        using var linePath = pathBuilder.Snapshot();
 
         if (graph.ShowArea)
         {
-            using var areaPath = new SKPath();
-            areaPath.AddPath(linePath);
-            areaPath.LineTo(xPositions[^1], plotBottom);
-            areaPath.LineTo(xPositions[0], plotBottom);
-            areaPath.Close();
+            pathBuilder.LineTo(xPositions[^1], plotBottom);
+            pathBuilder.LineTo(xPositions[0], plotBottom);
+            pathBuilder.Close();
+            using var areaPath = pathBuilder.Detach();
 
             using var areaShader = SKShader.CreateLinearGradient(
                 new SKPoint(plotLeft, plotTop),

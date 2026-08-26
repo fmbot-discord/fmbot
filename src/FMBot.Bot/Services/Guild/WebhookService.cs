@@ -502,7 +502,7 @@ public class WebhookService
             var localPath = ChartService.AlbumUrlToCacheFilePath(albumName, artistName);
             if (File.Exists(localPath))
             {
-                imageData = await File.ReadAllBytesAsync(localPath);
+                imageData = ConvertWebPToPng(await File.ReadAllBytesAsync(localPath));
             }
         }
 
@@ -538,7 +538,7 @@ public class WebhookService
             var canvas = surface.Canvas;
             using (var image = SKImage.FromEncodedData(webpData))
             {
-                canvas.DrawImage(image, 0, 0);
+                canvas.DrawImage(image, 0, 0, new SKSamplingOptions());
             }
 
             using (var image = surface.Snapshot())
