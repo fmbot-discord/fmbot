@@ -233,9 +233,6 @@ public class PremiumSettingInteractions(
                 return;
             }
 
-            var components = new ActionRowProperties().WithButton("Complete purchase", url: checkout.CheckoutLink,
-                emote: EmojiProperties.Standard("✨"));
-
             var embed = new EmbedProperties();
             embed.WithColor(DiscordConstants.InformationColorBlue);
 
@@ -244,12 +241,13 @@ public class PremiumSettingInteractions(
             description.AppendLine(type.Equals("yearly", StringComparison.OrdinalIgnoreCase)
                 ? $"-# {pricing.YearlySummary}"
                 : $"-# {pricing.MonthlySummary}");
+            var components = SupporterService.BuildCheckoutComponents("Complete purchase", checkout.CheckoutLink, description);
             embed.WithDescription(description.ToString());
 
             await this.Context.Interaction.ModifyResponseAsync(m =>
             {
                 m.Embeds = [embed];
-                m.Components = [components];
+                m.Components = components;
             });
 
             await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);

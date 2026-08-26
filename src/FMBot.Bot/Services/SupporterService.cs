@@ -116,6 +116,18 @@ public class SupporterService
         return null;
     }
 
+    public static ActionRowProperties[] BuildCheckoutComponents(string label, string url, StringBuilder description)
+    {
+        if (url.Length <= 512)
+        {
+            return [new ActionRowProperties().WithButton(label, url: url)];
+        }
+
+        description.AppendLine();
+        description.AppendLine($"[{label}]({url})");
+        return [];
+    }
+
     public static bool IsSupporter(UserType? userType)
     {
         return userType != null && userType != UserType.User;
