@@ -124,7 +124,7 @@ public class SupporterService
         }
 
         description.AppendLine();
-        description.AppendLine($"[{label}]({url})");
+        description.AppendLine($"**[{label}]({url})** ↗");
         return [];
     }
 
