@@ -84,9 +84,6 @@ public class StaticInteractions(
                 this.Context.User.Username, contextUser.UserNameLastFM, type, pricing, existingStripeSupporter,
                 source);
 
-            var components = new ActionRowProperties().WithButton($"Complete purchase", url: link,
-                emote: EmojiProperties.Standard("⭐"));
-
             var embed = new EmbedProperties();
             embed.WithColor(DiscordConstants.InformationColorBlue);
             var description = new StringBuilder();
@@ -110,12 +107,13 @@ public class StaticInteractions(
                     "You currently already have access to supporter on your .fmbot account.");
             }
 
+            var components = SupporterService.BuildCheckoutComponents("Complete purchase", link, description);
             embed.WithDescription(description.ToString());
 
             await this.Context.Interaction.ModifyResponseAsync(m =>
             {
                 m.Embeds = [embed];
-                m.Components = [components];
+                m.Components = components;
             });
 
             await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok },
@@ -153,9 +151,6 @@ public class StaticInteractions(
                 currency,
                 existingStripeSupporter?.StripeCustomerId);
 
-            var components = new ActionRowProperties().WithButton("Complete purchase", url: link,
-                emote: EmojiProperties.Standard("⭐"));
-
             var embed = new EmbedProperties();
             embed.WithColor(DiscordConstants.InformationColorBlue);
             var description = new StringBuilder();
@@ -167,12 +162,13 @@ public class StaticInteractions(
                 embed.AddField("⚠️ Note", "You currently already have access to supporter. Please cancel your subscription after your purchase.");
             }
 
+            var components = SupporterService.BuildCheckoutComponents("Complete purchase", link, description);
             embed.WithDescription(description.ToString());
 
             await this.Context.Interaction.ModifyResponseAsync(m =>
             {
                 m.Embeds = [embed];
-                m.Components = [components];
+                m.Components = components;
             });
 
             await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
@@ -389,16 +385,14 @@ public class StaticInteractions(
             description.AppendLine(
                 $"**Click the unique link below to complete your gift purchase for {recipientUser.UserNameLastFM}**");
             description.AppendLine($"-# {summary}");
+            var components = SupporterService.BuildCheckoutComponents("Complete purchase", checkoutLink, description);
             var embed = new EmbedProperties()
                 .WithDescription(description.ToString())
                 .WithColor(DiscordConstants.InformationColorBlue);
 
-            var components = new ActionRowProperties()
-                .WithButton("Complete purchase", url: checkoutLink, emote: EmojiProperties.Standard("🎁"));
-
             await Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
                 .WithEmbeds([embed])
-                .WithComponents([components])
+                .WithComponents(components)
                 .WithFlags(MessageFlags.Ephemeral));
             await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
         }
