@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
@@ -115,178 +116,73 @@ public class ChartService
             var chartImageWidth = cellSize;
             var scale = cellSize / (float)BaseCellSize;
 
+            using var semaphore = new SemaphoreSlim(MaxConcurrentCoverLoads);
+
             if (!chart.ArtistChart)
             {
-                foreach (var album in chart.Albums)
+                var covers = await Task.WhenAll(chart.Albums.Select(async album =>
                 {
-                    var censor = false;
-                    var cacheEnabled = true;
-                    var censorResult = await this._censorService.AlbumResult(album.AlbumName, album.ArtistName);
-
-                    if (censorResult == CensorService.CensorResult.NotSafe)
+                    await semaphore.WaitAsync();
+                    try
                     {
-                        cacheEnabled = false;
-                        censor = true;
+                        return await LoadAlbumCoverAsync(album, cellSize);
                     }
-
-                    var nsfw = censorResult == CensorService.CensorResult.Nsfw;
-
-                    SKBitmap chartImage;
-                    var validImage = true;
-
-                    var localPath = AlbumUrlToCacheFilePath(album.AlbumName, album.ArtistName);
-
-                    if (localPath != null && cacheEnabled && CachedCoverIsUsable(localPath, cellSize))
+                    finally
                     {
-                        chartImage = SKBitmap.Decode(localPath);
-                        Statistics.LastfmCachedImageCalls.Inc();
+                        semaphore.Release();
                     }
-                    else
-                    {
-                        if (album.AlbumCoverUrl != null)
-                        {
-                            var albumCoverUrl = album.AlbumCoverUrl;
+                }));
 
-                            if (albumCoverUrl.Contains("lastfm.freetls.fastly.net"))
-                            {
-                                albumCoverUrl = albumCoverUrl.Replace("/770x0/", "/");
-                            }
+                for (var index = 0; index < chart.Albums.Count; index++)
+                {
+                    var album = chart.Albums[index];
+                    var cover = covers[index];
 
-                            try
-                            {
-                                var bytes = await this._client.GetByteArrayAsync(albumCoverUrl);
-
-                                Statistics.LastfmImageCalls.Inc();
-
-                                await using var stream = new MemoryStream(bytes);
-                                chartImage = SKBitmap.Decode(stream);
-                            }
-                            catch (Exception e)
-                            {
-                                Log.Error(e, "Error while loading image for generated chart - {albumCoverUrl}", albumCoverUrl);
-                                chartImage = SKBitmap.Decode(this._loadingErrorImagePath);
-                                validImage = false;
-                            }
-
-                            if (chartImage == null)
-                            {
-                                Log.Error("Error while loading image for generated chart (chartimg null)");
-                                chartImage = SKBitmap.Decode(this._loadingErrorImagePath);
-                                validImage = false;
-                            }
-
-                            if (validImage && cacheEnabled)
-                            {
-                                await SaveCoverToCache(chartImage, localPath);
-                            }
-                        }
-                        else
-                        {
-                            chartImage = SKBitmap.Decode(this._unknownImagePath);
-                            validImage = false;
-                        }
-                    }
-
-                    if (censor)
-                    {
-                        chartImage = SKBitmap.Decode(this._censoredImagePath);
-                        validImage = false;
-                    }
-
-                    var index = chart.Albums.IndexOf(album);
                     chart.FileDescription.Append($"#{index + 1} {album.AlbumName} by {album.ArtistName}, ");
                     AddImageToChart(chart,
-                        chartImage,
+                        cover.Image,
                         index,
                         chartImageHeight,
                         chartImageWidth,
                         scale,
-                        validImage,
+                        cover.ValidImage,
                         topName: chart.FilteredArtist == null ? album.ArtistName : album.AlbumName,
                         bottomName: chart.FilteredArtist == null ? album.AlbumName : null,
-                        nsfw: nsfw,
-                        censored: censor);
+                        nsfw: cover.Nsfw,
+                        censored: cover.Censored);
                 }
             }
             else
             {
-                foreach (var artist in chart.Artists)
+                var covers = await Task.WhenAll(chart.Artists.Select(async artist =>
                 {
-                    var censor = false;
-                    var cacheEnabled = true;
-                    var censorResult = await this._censorService.ArtistResult(artist.ArtistName);
-
-                    if (censorResult == CensorService.CensorResult.NotSafe)
+                    await semaphore.WaitAsync();
+                    try
                     {
-                        cacheEnabled = false;
-                        censor = true;
+                        return await LoadArtistImageAsync(artist, cellSize);
                     }
-
-                    var nsfw = censorResult == CensorService.CensorResult.Nsfw;
-
-                    SKBitmap chartImage;
-                    var validImage = true;
-
-                    var localPath = ArtistUrlToCacheFilePath(artist.ArtistName);
-
-                    if (cacheEnabled && CachedCoverIsUsable(localPath, cellSize))
+                    finally
                     {
-                        chartImage = SKBitmap.Decode(localPath);
+                        semaphore.Release();
                     }
-                    else
-                    {
-                        if (artist.ArtistImageUrl != null)
-                        {
-                            try
-                            {
-                                var bytes = await this._client.GetByteArrayAsync(artist.ArtistImageUrl);
-                                await using var stream = new MemoryStream(bytes);
-                                chartImage = SKBitmap.Decode(stream);
-                            }
-                            catch (Exception e)
-                            {
-                                Log.Error(e, "Error while loading image for generated artist chart");
-                                chartImage = SKBitmap.Decode(this._loadingErrorImagePath);
-                                validImage = false;
-                            }
+                }));
 
-                            if (chartImage == null)
-                            {
-                                Log.Error("Error while loading image for generated artist chart (chartimg null)");
-                                chartImage = SKBitmap.Decode(this._loadingErrorImagePath);
-                                validImage = false;
-                            }
+                for (var index = 0; index < chart.Artists.Count; index++)
+                {
+                    var artist = chart.Artists[index];
+                    var cover = covers[index];
 
-                            if (validImage && cacheEnabled)
-                            {
-                                await SaveCoverToCache(chartImage, localPath);
-                            }
-                        }
-                        else
-                        {
-                            chartImage = SKBitmap.Decode(this._unknownArtistImagePath);
-                            validImage = false;
-                        }
-                    }
-
-                    if (censor)
-                    {
-                        chartImage = SKBitmap.Decode(this._censoredImagePath);
-                        validImage = false;
-                    }
-
-                    var index = chart.Artists.IndexOf(artist);
                     chart.FileDescription.Append($"#{index + 1} {artist.ArtistName}, ");
                     AddImageToChart(chart,
-                        chartImage,
+                        cover.Image,
                         index,
                         chartImageHeight,
                         chartImageWidth,
                         scale,
-                        validImage,
+                        cover.ValidImage,
                         topName: artist.ArtistName,
-                        nsfw: nsfw,
-                        censored: censor);
+                        nsfw: cover.Nsfw,
+                        censored: cover.Censored);
                 }
             }
 
@@ -371,6 +267,132 @@ public class ChartService
         }
     }
 
+    private const int MaxConcurrentCoverLoads = 4;
+
+    private record LoadedCover(SKBitmap Image, bool ValidImage, bool Nsfw, bool Censored);
+
+    private async Task<LoadedCover> LoadAlbumCoverAsync(TopAlbum album, int cellSize)
+    {
+        var censorResult = await this._censorService.AlbumResult(album.AlbumName, album.ArtistName);
+        var censor = censorResult == CensorService.CensorResult.NotSafe;
+        var nsfw = censorResult == CensorService.CensorResult.Nsfw;
+
+        if (censor)
+        {
+            return new LoadedCover(SKBitmap.Decode(this._censoredImagePath), false, nsfw, true);
+        }
+
+        var localPath = AlbumUrlToCacheFilePath(album.AlbumName, album.ArtistName);
+        var (image, validImage) = await LoadCoverAsync(
+            album.AlbumCoverUrl?.Replace("/770x0/", "/"), localPath, cellSize, this._unknownImagePath);
+
+        return new LoadedCover(image, validImage, nsfw, false);
+    }
+
+    private async Task<LoadedCover> LoadArtistImageAsync(TopArtist artist, int cellSize)
+    {
+        var censorResult = await this._censorService.ArtistResult(artist.ArtistName);
+        var censor = censorResult == CensorService.CensorResult.NotSafe;
+        var nsfw = censorResult == CensorService.CensorResult.Nsfw;
+
+        if (censor)
+        {
+            return new LoadedCover(SKBitmap.Decode(this._censoredImagePath), false, nsfw, true);
+        }
+
+        var localPath = ArtistUrlToCacheFilePath(artist.ArtistName);
+        var (image, validImage) = await LoadCoverAsync(
+            artist.ArtistImageUrl, localPath, cellSize, this._unknownArtistImagePath);
+
+        return new LoadedCover(image, validImage, nsfw, false);
+    }
+
+    private async Task<(SKBitmap Image, bool ValidImage)> LoadCoverAsync(string url, string localPath, int cellSize,
+        string unknownImagePath)
+    {
+        var cached = CachedCoverIsUsable(localPath, cellSize) ? SKBitmap.Decode(localPath) : null;
+        if (cached != null)
+        {
+            Statistics.LastfmCachedImageCalls.Inc();
+            return (cached, true);
+        }
+
+        if (url == null)
+        {
+            return (SKBitmap.Decode(unknownImagePath), false);
+        }
+
+        var (fetched, fromCache) = await FetchCoverAsync(url, localPath);
+        if (fetched == null)
+        {
+            return (SKBitmap.Decode(this._loadingErrorImagePath), false);
+        }
+
+        if (!fromCache)
+        {
+            await SaveCoverToCache(fetched, localPath);
+        }
+
+        return (fetched, true);
+    }
+
+    private static readonly Regex LastfmImageUrlRegex =
+        new(@"^(https://[a-z-]*lastfm[a-z-]*\.freetls\.fastly\.net/i/u/)([0-9a-f]+\.[a-z]+)$", RegexOptions.Compiled);
+
+    private static IEnumerable<string> CoverUrlCandidates(string url)
+    {
+        yield return url;
+
+        var match = LastfmImageUrlRegex.Match(url);
+        if (match.Success)
+        {
+            yield return $"{match.Groups[1].Value}ar0/{match.Groups[2].Value}";
+        }
+    }
+
+    private async Task<(SKBitmap Bitmap, bool FromCache)> FetchCoverAsync(string url, string localPath)
+    {
+        foreach (var candidate in CoverUrlCandidates(url))
+        {
+            try
+            {
+                var bytes = await this._client.GetByteArrayAsync(candidate);
+
+                if (candidate.Contains("freetls.fastly.net"))
+                {
+                    Statistics.LastfmImageCalls.Inc();
+                }
+
+                await using var stream = new MemoryStream(bytes);
+                var bitmap = SKBitmap.Decode(stream);
+                if (bitmap != null)
+                {
+                    return (bitmap, false);
+                }
+
+                Log.Information("Could not decode image for generated chart - {url}", candidate);
+            }
+            catch (Exception e)
+            {
+                Log.Information("Error while loading image for generated chart - {url} - {error}", candidate,
+                    e.Message);
+            }
+        }
+
+        if (localPath != null && File.Exists(localPath))
+        {
+            var cached = SKBitmap.Decode(localPath);
+            if (cached != null)
+            {
+                Log.Information("Using cached image after failed fetch for generated chart - {url}", url);
+                return (cached, true);
+            }
+        }
+
+        Log.Error("Could not load image for generated chart - {url}", url);
+        return (null, false);
+    }
+
     public static string AlbumUrlToCacheFilePath(string albumName, string artistName, string extension = ".png")
     {
         var hash = HashString($"{albumName}--{artistName}");
@@ -394,16 +416,18 @@ public class ChartService
     }
 
     public const int ChartQuality = 98;
+    public const int MaxImages = 225;
     public const int BaseCellSize = 300;
+    public const int MinCellSize = 200;
     public const int MaxCellSize = 600;
     public const int MaxChartSize = 3000;
     public const int MaxCachedCoverSize = 640;
-    private const int CachedCoverQuality = 98;
+    private const int CachedCoverQuality = 100;
 
     public static int GetCellSize(int width, int height)
     {
         var longestSide = Math.Max(1, Math.Max(width, height));
-        return Math.Clamp(MaxChartSize / longestSide, BaseCellSize, MaxCellSize);
+        return Math.Clamp(MaxChartSize / longestSide, MinCellSize, MaxCellSize);
     }
 
     public static async Task SaveCoverToCache(SKBitmap cover, string localPath, bool overwrite = false)
@@ -422,12 +446,28 @@ public class ChartService
             bitmap = cover.Resize(info, new SKSamplingOptions(SKCubicResampler.Mitchell));
         }
 
+        var tempPath = $"{localPath}.{Guid.NewGuid():N}.tmp";
         try
         {
             using var image = SKImage.FromBitmap(bitmap);
             using var data = image.Encode(SKEncodedImageFormat.Webp, CachedCoverQuality);
-            await using var stream = File.Create(localPath);
-            data.SaveTo(stream);
+            await using (var stream = File.Create(tempPath))
+            {
+                data.SaveTo(stream);
+            }
+
+            File.Move(tempPath, localPath, overwrite: true);
+        }
+        catch (Exception e)
+        {
+            Log.Warning(e, "Could not write cover to cache - {localPath}", localPath);
+            try
+            {
+                File.Delete(tempPath);
+            }
+            catch
+            {
+            }
         }
         finally
         {

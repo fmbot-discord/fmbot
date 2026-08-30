@@ -91,10 +91,11 @@ public class ChartBuilders
             ResponseType = ResponseType.ImageWithEmbed,
         };
 
-        if (chartSettings.ImagesNeeded > 100)
+        if (chartSettings.ImagesNeeded > ChartService.MaxImages)
         {
             return BuildChartValidationError(context,
-                context.Localize("chart.tooManyImages"),
+                context.Localize("chart.tooManyImages", ("max", ChartService.MaxImages.ToString()),
+                    ("size", $"{(int)Math.Sqrt(ChartService.MaxImages)}x{(int)Math.Sqrt(ChartService.MaxImages)}")),
                 InteractionConstants.Chart.AlbumType, chartSettings, userSettings.UserNameLastFm);
         }
 
@@ -415,10 +416,11 @@ public class ChartBuilders
             ResponseType = ResponseType.ImageWithEmbed,
         };
 
-        if (chartSettings.ImagesNeeded > 100)
+        if (chartSettings.ImagesNeeded > ChartService.MaxImages)
         {
             return BuildChartValidationError(context,
-                context.Localize("chart.tooManyImages"),
+                context.Localize("chart.tooManyImages", ("max", ChartService.MaxImages.ToString()),
+                    ("size", $"{(int)Math.Sqrt(ChartService.MaxImages)}x{(int)Math.Sqrt(ChartService.MaxImages)}")),
                 InteractionConstants.Chart.ArtistType, chartSettings, userSettings.UserNameLastFm);
         }
 

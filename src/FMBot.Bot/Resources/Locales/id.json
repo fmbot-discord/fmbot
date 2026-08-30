@@ -490,7 +490,7 @@
   "outofsync.stillNotWorkingTitle": "**Masih tidak berfungsi setelah menghubungkan ulang?**",
   "outofsync.stillNotWorkingDescription": "Coba mulai ulang klien Spotify kamu. Terkadang ada juga masalah lain dengan Last.fm atau Spotify yang bisa menyebabkan ini. Untuk daftar lengkap semua solusi, silakan cek **[panduan di forum dukungan Last.fm](https://support.last.fm/t/spotify-has-stopped-scrobbling-what-can-i-do/3184)**.",
   "outofsync.lastfmIssuesNote": "**Catatan:**\n⚠️ [Last.fm](https://twitter.com/lastfmstatus) sedang mengalami gangguan, jadi langkah-langkah di atas mungkin tidak berhasil. .fmbot tidak berafiliasi dengan Last.fm.",
-  "chart.tooManyImages": "Kamu tidak bisa membuat chart dengan lebih dari 100 gambar (10x10).\nSilakan coba ukuran yang lebih kecil.",
+  "chart.tooManyImages": "Kamu tidak bisa membuat chart dengan lebih dari {{max}} gambar ({{size}}).\nSilakan coba ukuran yang lebih kecil.",
   "chart.notEnoughAlbumsArtist": "Album yang di-scrobble tidak cukup ({{amount}} dari {{required}} yang dibutuhkan) dari **[{{artist}}]({{url}})** dalam periode waktu {{period}}.",
   "chart.tryDifferentArtistFilter": "Coba chart yang lebih kecil, periode waktu yang lebih besar ({{periods}}), atau hapus filter artisnya.",
   "chart.notEnoughAlbumsGenre_other": "Album yang di-scrobble tidak cukup ({{amount}} dari {{required}} yang dibutuhkan) dalam genre **{{genres}}** dalam periode waktu {{period}}.",
