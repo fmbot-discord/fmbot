@@ -43,6 +43,8 @@ using NetCord.Logging;
 using NetCord.Services.ApplicationCommands;
 using NetCord.Services.Commands;
 using NetCord.Services.ComponentInteractions;
+using Prometheus;
+using System.Diagnostics.Metrics;
 using GatewayIntents = NetCord.Gateway.GatewayIntents;
 
 namespace FMBot.Bot;
@@ -74,6 +76,8 @@ public class Startup
     {
         ConfigureLogging();
 
+        ConfigureMeterAdapter();
+
         var services = new ServiceCollection();
         ConfigureServices(services);
 
@@ -85,6 +89,22 @@ public class Startup
         StartBackgroundJobServer();
 
         await Task.Delay(-1); // Keep the program alive
+    }
+
+    private static void ConfigureMeterAdapter()
+    {
+        Metrics.ConfigureMeterAdapter(options =>
+        {
+            options.InstrumentFilterPredicate = static instrument =>
+                instrument.Meter.Name is not "NetCord.Gateway.GatewayClient" ||
+                instrument.Name is not ("gateway.received.bytes.compressed"
+                    or "gateway.received.bytes.uncompressed");
+
+            options.ResolveHistogramBuckets = static instrument =>
+                instrument is Instrument<double> { Advice.HistogramBucketBoundaries: { Count: > 0 } boundaries }
+                    ? [.. boundaries]
+                    : MeterAdapterOptions.DefaultHistogramBuckets;
+        });
     }
 
     private void ConfigureLogging()
