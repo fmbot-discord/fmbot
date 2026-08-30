@@ -999,7 +999,7 @@ public class GameService(
             await using var stream = new MemoryStream(bytes);
             coverImage = SKBitmap.Decode(stream);
 
-            await ChartService.SaveImageToCache(coverImage, localPath);
+            await ChartService.SaveCoverToCache(coverImage, localPath);
         }
 
         cache.Set(CacheKeyForJumbleSessionImage(sessionId), coverImage, TimeSpan.FromMinutes(2));

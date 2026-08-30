@@ -396,7 +396,7 @@ public class TimerService : IDisposable
             {
                 var problematicShards = this._client
                     .Where(s => s.Status != WebSocketStatus.Ready)
-                    .Select(s => $"Shard {s.Id}: {s.Status}")
+                    .Select(s => $"Shard {s.Shard?.Id.ToString() ?? "?"}: {s.Status}")
                     .ToList();
 
                 Log.Warning("Not all shards connected: {problematicShards}", string.Join(", ", problematicShards));

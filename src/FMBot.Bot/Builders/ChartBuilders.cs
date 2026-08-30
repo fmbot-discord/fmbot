@@ -91,10 +91,11 @@ public class ChartBuilders
             ResponseType = ResponseType.ImageWithEmbed,
         };
 
-        if (chartSettings.ImagesNeeded > 100)
+        if (chartSettings.ImagesNeeded > ChartService.MaxImages)
         {
             return BuildChartValidationError(context,
-                context.Localize("chart.tooManyImages"),
+                context.Localize("chart.tooManyImages", ("max", ChartService.MaxImages.ToString()),
+                    ("size", $"{(int)Math.Sqrt(ChartService.MaxImages)}x{(int)Math.Sqrt(ChartService.MaxImages)}")),
                 InteractionConstants.Chart.AlbumType, chartSettings, userSettings.UserNameLastFm);
         }
 
@@ -335,7 +336,7 @@ public class ChartBuilders
 
         response.FileDescription = StringExtensions.TruncateLongString(chartSettings.FileDescription.ToString(), 1024);
         response.FileName =
-            $"album-chart-{chartSettings.Width}w-{chartSettings.Height}h-{chartSettings.TimeSettings.TimePeriod}-{userSettings.UserNameLastFm}.png";
+            $"album-chart-{chartSettings.Width}w-{chartSettings.Height}h-{chartSettings.TimeSettings.TimePeriod}-{userSettings.UserNameLastFm}.webp";
 
         var mediaGallery =
             new MediaGalleryItemProperties(new ComponentMediaProperties($"attachment://{response.FileName}"))
@@ -380,7 +381,7 @@ public class ChartBuilders
             response.ComponentsContainer.AddComponent(new TextDisplayProperties(footerText));
         }
 
-        var encoded = chart.Encode(SKEncodedImageFormat.Png, 100);
+        var encoded = chart.Encode(SKEncodedImageFormat.Webp, ChartService.ChartQuality);
         response.Stream = encoded.AsStream(true);
         response.ResponseType = ResponseType.ComponentsV2;
         response.ComponentsContainer.WithAccentColor(DiscordConstants.LastFmColorRed);
@@ -415,10 +416,11 @@ public class ChartBuilders
             ResponseType = ResponseType.ImageWithEmbed,
         };
 
-        if (chartSettings.ImagesNeeded > 100)
+        if (chartSettings.ImagesNeeded > ChartService.MaxImages)
         {
             return BuildChartValidationError(context,
-                context.Localize("chart.tooManyImages"),
+                context.Localize("chart.tooManyImages", ("max", ChartService.MaxImages.ToString()),
+                    ("size", $"{(int)Math.Sqrt(ChartService.MaxImages)}x{(int)Math.Sqrt(ChartService.MaxImages)}")),
                 InteractionConstants.Chart.ArtistType, chartSettings, userSettings.UserNameLastFm);
         }
 
@@ -557,7 +559,7 @@ public class ChartBuilders
 
         response.FileDescription = StringExtensions.TruncateLongString(chartSettings.FileDescription.ToString(), 1024);
         response.FileName =
-            $"artist-chart-{chartSettings.Width}w-{chartSettings.Height}h-{chartSettings.TimeSettings.TimePeriod}-{userSettings.UserNameLastFm}.png";
+            $"artist-chart-{chartSettings.Width}w-{chartSettings.Height}h-{chartSettings.TimeSettings.TimePeriod}-{userSettings.UserNameLastFm}.webp";
 
         var mediaGallery =
             new MediaGalleryItemProperties(new ComponentMediaProperties($"attachment://{response.FileName}"))
@@ -596,7 +598,7 @@ public class ChartBuilders
             response.ComponentsContainer.AddComponent(new TextDisplayProperties(footer.ToString()));
         }
 
-        var encoded = chart.Encode(SKEncodedImageFormat.Png, 100);
+        var encoded = chart.Encode(SKEncodedImageFormat.Webp, ChartService.ChartQuality);
         response.Stream = encoded.AsStream(true);
         response.ResponseType = ResponseType.ComponentsV2;
         response.ComponentsContainer.WithAccentColor(DiscordConstants.LastFmColorRed);

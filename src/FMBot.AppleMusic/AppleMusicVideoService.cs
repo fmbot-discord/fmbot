@@ -47,9 +47,10 @@ public class AppleMusicVideoService
             }
         };
 
+        var started = false;
         try
         {
-            ffmpegProcess.Start();
+            started = ffmpegProcess.Start();
 
             var outputTask = ffmpegProcess.StandardOutput.BaseStream.CopyToAsync(webpStream);
 
@@ -92,7 +93,7 @@ public class AppleMusicVideoService
         }
         finally
         {
-            if (!ffmpegProcess.HasExited)
+            if (started && !ffmpegProcess.HasExited)
             {
                 ffmpegProcess.Kill();
             }

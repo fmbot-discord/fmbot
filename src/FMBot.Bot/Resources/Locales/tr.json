@@ -591,7 +591,7 @@
   "outofsync.stillNotWorkingTitle": "**Yeniden bağlandıktan sonra hâlâ çalışmıyor mu?**",
   "outofsync.stillNotWorkingDescription": "Spotify istemcini yeniden başlatmayı dene. Bazen buna Last.fm veya Spotify'daki başka sorunlar da neden olabilir. Tüm çözümlerin kapsamlı listesi için **[Last.fm destek forumlarındaki rehbere](https://support.last.fm/t/spotify-has-stopped-scrobbling-what-can-i-do/3184)** göz at.",
   "outofsync.lastfmIssuesNote": "**Not:**\n⚠️ [Last.fm](https://twitter.com/lastfmstatus) şu anda sorun yaşıyor, bu yüzden yukarıdaki adımlar işe yaramayabilir. .fmbot, Last.fm'in bir parçası değildir.",
-  "chart.tooManyImages": "100'den fazla görsel (10x10) içeren bir chart oluşturamazsın.\nLütfen daha küçük bir boyut dene.",
+  "chart.tooManyImages": "{{max}}'ten fazla görsel ({{size}}) içeren bir chart oluşturamazsın.\nLütfen daha küçük bir boyut dene.",
   "chart.notEnoughAlbumsArtist": "Seçilen zaman aralığında ({{period}}) **[{{artist}}]({{url}})** sanatçısından yeterli scrobble'lanmış albüm yok (gereken: {{required}}, mevcut: {{amount}}).",
   "chart.tryDifferentArtistFilter": "Daha küçük bir chart veya daha geniş bir zaman aralığı ({{periods}}) dene ya da sanatçı filtresini kaldır.",
   "chart.notEnoughAlbumsGenre_one": "Seçilen zaman aralığında ({{period}}) **{{genres}}** türünde yeterli scrobble'lanmış albüm yok (gereken: {{required}}, mevcut: {{amount}}).",

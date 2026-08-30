@@ -591,7 +591,7 @@
   "outofsync.stillNotWorkingTitle": "**Ainda não funciona depois de reconectar?**",
   "outofsync.stillNotWorkingDescription": "Tente reiniciar seu cliente do Spotify. Às vezes também há outros problemas com o Last.fm ou o Spotify que podem causar isso. Para uma lista completa de todas as soluções, confira **[o guia nos fóruns de suporte do Last.fm](https://support.last.fm/t/spotify-has-stopped-scrobbling-what-can-i-do/3184)**.",
   "outofsync.lastfmIssuesNote": "**Observação:**\n⚠️ O [Last.fm](https://twitter.com/lastfmstatus) está enfrentando problemas no momento, então os passos listados acima podem não funcionar. O .fmbot não é afiliado ao Last.fm.",
-  "chart.tooManyImages": "Você não pode criar um chart com mais de 100 imagens (10x10).\nTente um tamanho menor.",
+  "chart.tooManyImages": "Você não pode criar um chart com mais de {{max}} imagens ({{size}}).\nTente um tamanho menor.",
   "chart.notEnoughAlbumsArtist": "Você não tem álbuns suficientes com scrobbles ({{amount}} de {{required}} necessários) de **[{{artist}}]({{url}})** no período {{period}}.",
   "chart.tryDifferentArtistFilter": "Tente um chart menor, um período maior ({{periods}}) ou remova o filtro de artista.",
   "chart.notEnoughAlbumsGenre_one": "Você não tem álbuns suficientes com scrobbles ({{amount}} de {{required}} necessários) no gênero **{{genres}}** no período {{period}}.",

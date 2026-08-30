@@ -690,11 +690,9 @@ public class AlbumService
         try
         {
             var processedUrl = albumCoverUrl;
-            if (processedUrl.Contains("lastfm.freetls.fastly.net") &&
-                !processedUrl.Contains("/300x300/"))
+            if (processedUrl.Contains("lastfm.freetls.fastly.net"))
             {
-                processedUrl = processedUrl.Replace("/770x0/", "/");
-                processedUrl = processedUrl.Replace("/i/u/", "/i/u/300x300/");
+                processedUrl = processedUrl.Replace("/770x0/", "/").Replace("/300x300/", "/");
             }
 
             await using var imageStream = await this._dataSourceFactory.GetAlbumImageAsStreamAsync(processedUrl);

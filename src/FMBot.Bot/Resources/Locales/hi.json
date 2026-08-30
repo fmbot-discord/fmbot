@@ -591,7 +591,7 @@
   "outofsync.stillNotWorkingTitle": "**दोबारा कनेक्ट करने के बाद भी काम नहीं कर रहा?**",
   "outofsync.stillNotWorkingDescription": "अपना Spotify क्लाइंट रीस्टार्ट करके देखो। कभी-कभी Last.fm या Spotify की दूसरी दिक्कतें भी इसकी वजह हो सकती हैं। सभी समाधानों की पूरी लिस्ट के लिए **[Last.fm सपोर्ट फ़ोरम की गाइड](https://support.last.fm/t/spotify-has-stopped-scrobbling-what-can-i-do/3184)** देखो।",
   "outofsync.lastfmIssuesNote": "**नोट:**\n⚠️ [Last.fm](https://twitter.com/lastfmstatus) में अभी दिक्कतें चल रही हैं, इसलिए ऊपर दिए गए स्टेप्स शायद काम न करें। .fmbot का Last.fm से कोई संबंध नहीं है।",
-  "chart.tooManyImages": "तुम 100 से ज़्यादा इमेज (10x10) वाला चार्ट नहीं बना सकते।\nछोटा साइज़ आज़माओ।",
+  "chart.tooManyImages": "तुम {{max}} से ज़्यादा इमेज ({{size}}) वाला चार्ट नहीं बना सकते।\nछोटा साइज़ आज़माओ।",
   "chart.notEnoughAlbumsArtist": "इस समय अवधि ({{period}}) में **[{{artist}}]({{url}})** के पर्याप्त scrobble किए गए albums नहीं हैं (ज़रूरी {{required}} में से {{amount}})।",
   "chart.tryDifferentArtistFilter": "छोटा चार्ट या बड़ी समय अवधि ({{periods}}) आज़माओ, या artist फ़िल्टर हटा दो।",
   "chart.notEnoughAlbumsGenre_one": "इस समय अवधि ({{period}}) में **{{genres}}** genre में पर्याप्त scrobble किए गए albums नहीं हैं (ज़रूरी {{required}} में से {{amount}})।",

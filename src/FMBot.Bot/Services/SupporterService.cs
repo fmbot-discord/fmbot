@@ -2534,6 +2534,10 @@ public class SupporterService
                     }
                 }
             }
+            catch (RestException e) when (e.Error?.Code == 10007)
+            {
+                Log.Debug("Modifying premium guild role skipped for {id} - not in base server", discordUserId);
+            }
             catch (Exception e)
             {
                 Log.Error(e, "Modifying premium guild role failed for {id}", discordUserId);
