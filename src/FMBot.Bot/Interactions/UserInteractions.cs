@@ -795,14 +795,28 @@ public class UserInteractions(
 
             if (accentColor == FmAccentColor.Custom)
             {
+                userSettings.FmSetting ??= await fmSettingService.GetOrCreateFmSetting(userSettings.UserId);
                 await RespondAsync(InteractionCallback.Modal(
-                    ModalFactory.CreateCustomColorModal(InteractionConstants.FmCommand.FmSettingCustomColorModal)));
+                    ModalFactory.CreateCustomColorModal(InteractionConstants.FmCommand.FmSettingCustomColorModal,
+                        userSettings.FmSetting?.CustomColor)));
                 return;
             }
 
             await fmSettingService.SetAccentColor(userSettings, accentColor);
             await RefreshFmModeEmbed();
         }
+    }
+
+    [ComponentInteraction(InteractionConstants.FmCommand.FmSettingEditCustomColor)]
+    [UsernameSetRequired]
+    public async Task EditCustomColor()
+    {
+        var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
+        userSettings.FmSetting ??= await fmSettingService.GetOrCreateFmSetting(userSettings.UserId);
+
+        await RespondAsync(InteractionCallback.Modal(
+            ModalFactory.CreateCustomColorModal(InteractionConstants.FmCommand.FmSettingCustomColorModal,
+                userSettings.FmSetting?.CustomColor)));
     }
 
     [ComponentInteraction(InteractionConstants.FmCommand.FmSettingCustomColorModal)]
@@ -1223,14 +1237,28 @@ public class UserInteractions(
 
             if (accentColor == FmAccentColor.Custom)
             {
+                userSettings.FmSetting ??= await fmSettingService.GetOrCreateFmSetting(userSettings.UserId);
                 await RespondAsync(InteractionCallback.Modal(
-                    ModalFactory.CreateCustomColorModal(InteractionConstants.GraphSettingCustomColorModal)));
+                    ModalFactory.CreateCustomColorModal(InteractionConstants.GraphSettingCustomColorModal,
+                        userSettings.FmSetting?.CustomColor)));
                 return;
             }
 
             await fmSettingService.SetAccentColor(userSettings, accentColor);
             await RefreshGraphModeEmbed();
         }
+    }
+
+    [ComponentInteraction(InteractionConstants.GraphSettingEditCustomColor)]
+    [UsernameSetRequired]
+    public async Task EditGraphCustomColor()
+    {
+        var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
+        userSettings.FmSetting ??= await fmSettingService.GetOrCreateFmSetting(userSettings.UserId);
+
+        await RespondAsync(InteractionCallback.Modal(
+            ModalFactory.CreateCustomColorModal(InteractionConstants.GraphSettingCustomColorModal,
+                userSettings.FmSetting?.CustomColor)));
     }
 
     [ComponentInteraction(InteractionConstants.GraphSettingCustomColorModal)]

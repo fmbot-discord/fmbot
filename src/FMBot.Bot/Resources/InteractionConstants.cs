@@ -19,6 +19,7 @@ public static class InteractionConstants
         public const string FmSettingButtonsSupporter = "fm-buttons-menu-supporter";
         public const string FmSettingPrivateButtons = "fm-private-buttons-menu";
         public const string FmSettingCustomColorModal = "fm-custom-color-modal";
+        public const string FmSettingEditCustomColor = "fm-edit-custom-color";
     }
 
     public const string GuildSetting = "guild-setting-picker";
@@ -68,6 +69,7 @@ public static class InteractionConstants
     public const string GraphTypeChange = "graph-type-pick";
     public const string GraphSettingAccentColor = "graph-accent-color-menu";
     public const string GraphSettingCustomColorModal = "graph-custom-color-modal";
+    public const string GraphSettingEditCustomColor = "graph-edit-custom-color";
 
     public const string RemoveFmbotAccount = "remove-account-confirm";
     public const string RemoveFmbotAccountModal = "remove-account-confirm-modal";

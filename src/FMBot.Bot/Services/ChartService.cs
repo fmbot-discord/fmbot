@@ -421,13 +421,20 @@ public class ChartService
     public const int MinCellSize = 200;
     public const int MaxCellSize = 600;
     public const int MaxChartSize = 3000;
+    public const int MaxPixelDimension = 16000;
     public const int MaxCachedCoverSize = 640;
     private const int CachedCoverQuality = 100;
 
     public static int GetCellSize(int width, int height)
     {
         var longestSide = Math.Max(1, Math.Max(width, height));
-        return Math.Clamp(MaxChartSize / longestSide, MinCellSize, MaxCellSize);
+        var cellSize = Math.Clamp(MaxChartSize / longestSide, MinCellSize, MaxCellSize);
+        if (longestSide * cellSize > MaxPixelDimension)
+        {
+            cellSize = Math.Max(1, MaxPixelDimension / longestSide);
+        }
+
+        return cellSize;
     }
 
     public static async Task SaveCoverToCache(SKBitmap cover, string localPath, bool overwrite = false)
@@ -612,7 +619,11 @@ public class ChartService
         switch (chart.TitleSetting)
         {
             case TitleSetting.Titles:
-                AddTitleToChartImage(chartImage, scale, topName, bottomName);
+                if (scale >= 0.4f)
+                {
+                    AddTitleToChartImage(chartImage, scale, topName, bottomName);
+                }
+
                 break;
             case TitleSetting.TitlesDisabled:
                 break;
@@ -998,7 +1009,7 @@ public class ChartService
         string option)
     {
         var changed = false;
-        var matchFound = Regex.IsMatch(option, "^([1-9]|[1-4][0-9]|50)x([1-9]|[1-9]|[1-4][0-9]|50)$",
+        var matchFound = Regex.IsMatch(option, "^([1-9][0-9]{0,2})x([1-9][0-9]{0,2})$",
             RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(300));
         if (matchFound)
         {

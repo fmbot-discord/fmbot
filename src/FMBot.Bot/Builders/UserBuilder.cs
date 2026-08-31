@@ -469,7 +469,16 @@ public class UserBuilder
             int.TryParse(fmSetting.CustomColor.TrimStart('#'), NumberStyles.HexNumber, null, out var customRgb))
         {
             container.AccentColor = new Color(customRgb);
-            container.WithTextDisplay($"**Embed color** — Currently `{fmSetting.CustomColor.FilterOutMentions()}`");
+            container.AddComponent(new ComponentSectionProperties(
+                new ButtonProperties(InteractionConstants.FmCommand.FmSettingEditCustomColor, "Edit color",
+                    ButtonStyle.Secondary))
+            {
+                Components =
+                [
+                    new TextDisplayProperties(
+                        $"**Embed color** — Currently `{fmSetting.CustomColor.FilterOutMentions()}`")
+                ]
+            });
         }
         else
         {
@@ -828,8 +837,17 @@ public class UserBuilder
             int.TryParse(fmSetting.CustomColor.TrimStart('#'), NumberStyles.HexNumber, null, out var customRgb))
         {
             container.AccentColor = new Color(customRgb);
-            container.WithTextDisplay($"**Accent color** — Currently `{fmSetting.CustomColor.FilterOutMentions()}`\n" +
-                                      "-# Also used for your embed colors");
+            container.AddComponent(new ComponentSectionProperties(
+                new ButtonProperties(InteractionConstants.GraphSettingEditCustomColor, "Edit color",
+                    ButtonStyle.Secondary))
+            {
+                Components =
+                [
+                    new TextDisplayProperties(
+                        $"**Accent color** — Currently `{fmSetting.CustomColor.FilterOutMentions()}`\n" +
+                        "-# Also used for your embed colors")
+                ]
+            });
         }
         else
         {
