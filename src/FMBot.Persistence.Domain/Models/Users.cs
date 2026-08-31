@@ -39,6 +39,8 @@ public class User
 
     public CoverType? CoverType { get; set; }
 
+    public GraphType? GraphType { get; set; }
+
     public PrivacyLevel PrivacyLevel { get; set; }
 
     public DateTime? LastIndexed { get; set; }

@@ -1,4 +1,5 @@
 using System.Globalization;
+using FMBot.Domain.Models;
 using SkiaSharp;
 
 namespace FMBot.Images.Models;
@@ -25,6 +26,8 @@ public class LineGraph
     public int Height { get; init; } = 220;
 
     public SKColor LineColor { get; init; } = GraphColors.FmbotBlue;
+
+    public GraphType Style { get; init; } = GraphType.Line;
 
     public bool ZeroBased { get; init; } = true;
     public bool IntegerValues { get; init; } = true;
@@ -68,7 +71,8 @@ public static class GraphTicks
         (GraphTickUnit.Year, 1), (GraphTickUnit.Year, 2), (GraphTickUnit.Year, 5), (GraphTickUnit.Year, 10)
     ];
 
-    public static List<GraphTick> Plan(IReadOnlyList<GraphPoint> points, int maxTicks, CultureInfo culture)
+    public static List<GraphTick> Plan(IReadOnlyList<GraphPoint> points, int maxTicks, CultureInfo culture,
+        GraphInterval? interval = null)
     {
         if (points.Count < 2 || maxTicks < 2)
         {
@@ -81,6 +85,16 @@ public static class GraphTicks
         var step = Steps[^1];
         foreach (var candidate in Steps)
         {
+            if (interval == GraphInterval.Year && candidate.Unit != GraphTickUnit.Year)
+            {
+                continue;
+            }
+
+            if (interval == GraphInterval.Month && candidate.Unit == GraphTickUnit.Day)
+            {
+                continue;
+            }
+
             if (CountBoundaries(first, last, candidate) <= maxTicks)
             {
                 step = candidate;
@@ -197,14 +211,20 @@ public static class GraphSeries
     private const int MaxDailyPoints = 62;
     private const int MaxPoints = 140;
     private const int MaxRenderPoints = 320;
+    private const int MaxBarPoints = 40;
 
-    public static GraphInterval PickInterval(DateTime from, DateTime to, int sampleCount = int.MaxValue)
+    public static GraphInterval PickInterval(DateTime from, DateTime to, int sampleCount = int.MaxValue,
+        GraphType style = GraphType.Line)
     {
         var days = (to.Date - from.Date).TotalDays + 1;
 
-        var interval = days <= MaxDailyPoints ? GraphInterval.Day :
-            days / 7 <= MaxPoints ? GraphInterval.Week :
-            days / 30.44 <= MaxRenderPoints ? GraphInterval.Month : GraphInterval.Year;
+        var maxDaily = style == GraphType.Bar ? MaxBarPoints : MaxDailyPoints;
+        var maxWeekly = style == GraphType.Bar ? MaxBarPoints : MaxPoints;
+        var maxMonthly = style == GraphType.Bar ? MaxBarPoints : MaxRenderPoints;
+
+        var interval = days <= maxDaily ? GraphInterval.Day :
+            days / 7 <= maxWeekly ? GraphInterval.Week :
+            days / 30.44 <= maxMonthly ? GraphInterval.Month : GraphInterval.Year;
 
         while (interval < GraphInterval.Year && BucketCount(days, interval) > sampleCount)
         {
@@ -276,9 +296,14 @@ public static class GraphSeries
         return (from, to);
     }
 
-    public static DateTime LimitToMaxPoints(DateTime from, DateTime to, GraphInterval interval)
+    public static DateTime LimitToMaxPoints(DateTime from, DateTime to, GraphInterval interval,
+        GraphType style = GraphType.Line)
     {
-        var maxBuckets = interval == GraphInterval.Day ? MaxDailyPoints : MaxRenderPoints;
+        var maxBuckets = style == GraphType.Bar
+            ? MaxBarPoints
+            : interval == GraphInterval.Day
+                ? MaxDailyPoints
+                : MaxRenderPoints;
         var oldest = AddIntervals(StartOfInterval(to, interval), interval, -(maxBuckets - 1));
 
         return from < oldest ? oldest : from;

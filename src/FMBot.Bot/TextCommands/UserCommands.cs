@@ -556,6 +556,25 @@ public class UserCommands(
         await this.Context.LogCommandUsedAsync(response, userService);
     }
 
+    [Command("graphmode", "graphtype", "graphs")]
+    [Summary("Change how your listening history graphs look, or turn them off.")]
+    [Examples("graphmode")]
+    [UsernameSetRequired]
+    [CommandCategories(CommandCategory.UserSettings)]
+    [SupporterExclusive("Only supporters can see listening history graphs and change how they look")]
+    public async Task GraphModeAsync([CommandParameter(Remainder = true)] string _ = null)
+    {
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+
+        contextUser.FmSetting ??= await fmSettingService.GetOrCreateFmSetting(contextUser.UserId);
+
+        var response = UserBuilder.GraphMode(new ContextModel(this.Context, prfx, contextUser));
+
+        await this.Context.SendResponse(this.Interactivity, response, userService);
+        await this.Context.LogCommandUsedAsync(response, userService);
+    }
+
     [Command("mode", "md", "customize")]
     [UsernameSetRequired]
     [ExcludeFromHelp]

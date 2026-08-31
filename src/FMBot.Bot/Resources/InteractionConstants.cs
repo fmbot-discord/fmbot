@@ -64,6 +64,10 @@ public static class InteractionConstants
     public const string CoverTypeSetting = "cover-type-set";
     public const string ResponseModeChange = "response-mode-pick";
     public const string CoverTypeChange = "cover-type-pick";
+    public const string GraphTypeSetting = "graph-type-set";
+    public const string GraphTypeChange = "graph-type-pick";
+    public const string GraphSettingAccentColor = "graph-accent-color-menu";
+    public const string GraphSettingCustomColorModal = "graph-custom-color-modal";
 
     public const string RemoveFmbotAccount = "remove-account-confirm";
     public const string RemoveFmbotAccountModal = "remove-account-confirm-modal";

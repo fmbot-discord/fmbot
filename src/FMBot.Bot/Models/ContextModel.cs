@@ -4,6 +4,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Services;
 using FMBot.Domain.Attributes;
 using FMBot.Domain.Enums;
+using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
@@ -26,6 +27,7 @@ public class ContextModel
         this.SlashCommand = false;
         this.InteractionId = context.Message.Id;
         this.ReferencedMessage = context.Message.ReferencedMessage;
+        this.GraphType = contextUser?.GraphType;
     }
 
     public ContextModel(ApplicationCommandContext context, User contextUser = null, NetCord.User discordContextUser = null)
@@ -39,6 +41,7 @@ public class ContextModel
         this.ContextUser = contextUser;
         this.SlashCommand = true;
         this.InteractionId = context.Interaction.Id;
+        this.GraphType = contextUser?.GraphType;
     }
 
     public ContextModel(ComponentInteractionContext context, User contextUser = null, NetCord.User discordContextUser = null)
@@ -52,6 +55,7 @@ public class ContextModel
         this.ContextUser = contextUser;
         this.SlashCommand = true;
         this.InteractionId = context.Interaction.Id;
+        this.GraphType = contextUser?.GraphType;
     }
 
     public bool SlashCommand { get; set; }
@@ -70,6 +74,8 @@ public class ContextModel
     public StringMenuProperties SelectMenu { get; set; }
 
     public User ContextUser { get; set; }
+
+    public GraphType? GraphType { get; set; }
 
     public NumberFormat NumberFormat { get; set; }
 

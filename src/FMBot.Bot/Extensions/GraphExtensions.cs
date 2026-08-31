@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services;
 using FMBot.Domain.Extensions;
+using FMBot.Domain.Models;
 using FMBot.Images.Generators;
 using FMBot.Images.Models;
 using NetCord.Rest;
@@ -26,6 +27,12 @@ public static class GraphExtensions
             return null;
         }
 
+        var graphType = context.GraphType ?? GraphType.Line;
+        if (graphType == GraphType.Off)
+        {
+            return null;
+        }
+
         var points = new List<GraphPoint>(dailyPlays.Count);
         foreach (var day in dailyPlays)
         {
@@ -43,7 +50,8 @@ public static class GraphExtensions
             fixedInterval,
             windowFrom,
             windowUntil,
-            height: height);
+            height: height,
+            style: graphType);
 
         return AttachGraph(response, graph, fileName);
     }

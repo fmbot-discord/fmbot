@@ -1588,6 +1588,21 @@ public class UserService
         RemoveUserFromCache(user);
     }
 
+    public async Task SetGraphType(User userToUpdate, GraphType graphType)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var user = await db.Users.FirstAsync(f => f.UserId == userToUpdate.UserId);
+
+        user.GraphType = graphType;
+
+        db.Update(user);
+        db.Entry(user).State = EntityState.Modified;
+
+        await db.SaveChangesAsync();
+
+        RemoveUserFromCache(user);
+    }
+
     public async Task SetCoverType(User userToUpdate, CoverType coverType)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
