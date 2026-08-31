@@ -267,7 +267,7 @@ public class PlaySlashCommands(
         }
     }
 
-    [SlashCommand("streakhistory", "Shows you or someone else's streak history",
+    [SlashCommand("streaks", "Shows you or someone else's streak history",
         Contexts =
             [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild],
         IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
@@ -548,7 +548,7 @@ public class PlaySlashCommands(
         [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
         string user = null,
         [SlashCommandParameter(Name = "mode",
-            Description = "The type of response you want - change default with /responsemode")]
+            Description = "The type of response you want - change default with /mode")]
         ResponseMode? mode = null,
         [SlashCommandParameter(Name = "size", Description = "Amount of listening gaps to show per page")]
         EmbedSize? embedSize = null,

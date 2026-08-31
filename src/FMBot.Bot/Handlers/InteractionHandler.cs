@@ -114,7 +114,8 @@ public class InteractionHandler
             var context = new ApplicationCommandContext(slashCommand, client);
             var contextUser = await this._userService.GetUserAsync(context.User.Id);
 
-            var commandName = slashCommand.Data.Name;
+            var registeredCommandName = slashCommand.Data.Name;
+            var commandName = SlashCommandCanonicalNames.Resolve(registeredCommandName);
 
             if (contextUser?.Blocked == true)
             {
@@ -124,7 +125,7 @@ public class InteractionHandler
 
             // Look up command info for attribute checking
             var commandInfo = _appCommands.GetCommands()
-                .FirstOrDefault(c => c.Name.Equals(commandName, StringComparison.OrdinalIgnoreCase));
+                .FirstOrDefault(c => c.Name.Equals(registeredCommandName, StringComparison.OrdinalIgnoreCase));
 
             if (!await CommandEnabled(context, commandName))
             {

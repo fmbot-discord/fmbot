@@ -283,9 +283,6 @@
         }
       }
     },
-    "covermode": {
-      "description": "Albüm kapakları hareketli mi yoksa hep sabit mi gösterilsin, ayarla"
-    },
     "crown": {
       "description": "Bir sanatçının crown'unu kimin tuttuğu ve onu çalıp çalamayacağın",
       "parameters": {
@@ -315,7 +312,7 @@
       "description": "⭐ Yakın zamanda keşfettiğin sanatçıları gösterir",
       "parameters": {
         "mode": {
-          "description": "İstediğin yanıt türü - varsayılanı /responsemode ile değiştir"
+          "description": "İstediğin yanıt türü - varsayılanı /mode ile değiştir"
         },
         "private": {
           "description": "Yanıtı yalnızca sana göster"
@@ -378,23 +375,23 @@
         }
       }
     },
-    "fmmode": {
-      "description": "'/fm' düzenini değiştirir"
+    "mode": {
+      "description": "'/fm' düzenini, yanıt modunu ve albüm kapağı türünü özelleştir"
     },
-    "frequently-asked": {
+    "faq": {
       "description": ".fmbot hakkında sık sorulan sorular"
     },
     "friendsfm": {
       "description": "Arkadaşlarını ve ne dinlediklerini gösterir"
     },
-    "friendswhoknow": {
+    "fwk": {
       "description": "Arkadaşlarından kimlerin bir sanatçıyı dinlediğini gösterir",
       "parameters": {
         "artist": {
           "description": "Aramak istediğin sanatçı (varsayılan: şu an çalan)"
         },
         "mode": {
-          "description": "İstediğin yanıt türü - varsayılanı /responsemode ile değiştir"
+          "description": "İstediğin yanıt türü - varsayılanı /mode ile değiştir"
         },
         "private": {
           "description": "Yanıtı yalnızca sana göster"
@@ -411,7 +408,7 @@
           "description": "Aramak istediğin albüm (varsayılan: şu an çalan)"
         },
         "mode": {
-          "description": "İstediğin yanıt türü - varsayılanı /responsemode ile değiştir"
+          "description": "İstediğin yanıt türü - varsayılanı /mode ile değiştir"
         },
         "private": {
           "description": "Yanıtı yalnızca sana göster"
@@ -422,7 +419,7 @@
       "description": "Arkadaşlarından kimlerin bir türü dinlediğini gösterir",
       "parameters": {
         "mode": {
-          "description": "İstediğin yanıt türü - varsayılanı /responsemode ile değiştir"
+          "description": "İstediğin yanıt türü - varsayılanı /mode ile değiştir"
         },
         "private": {
           "description": "Yanıtı yalnızca sana göster"
@@ -436,7 +433,7 @@
       "description": "Arkadaşlarından kimler bir parçayı biliyor",
       "parameters": {
         "mode": {
-          "description": "İstediğin yanıt türü - varsayılanı /responsemode ile değiştir"
+          "description": "İstediğin yanıt türü - varsayılanı /mode ile değiştir"
         },
         "private": {
           "description": "Yanıtı yalnızca sana göster"
@@ -450,7 +447,7 @@
       "description": "⭐ Bir dinleme arasından sonra geri döndüğün müzikler",
       "parameters": {
         "mode": {
-          "description": "İstediğin yanıt türü - varsayılanı /responsemode ile değiştir"
+          "description": "İstediğin yanıt türü - varsayılanı /mode ile değiştir"
         },
         "private": {
           "description": "Yanıtı yalnızca sana göster"
@@ -488,7 +485,7 @@
         }
       }
     },
-    "globalwhoknows": {
+    "gwk": {
       "description": ".fmbot genelinde bir sanatçıyı hangi kullanıcıların dinlediğini gösterir",
       "parameters": {
         "artist": {
@@ -498,7 +495,7 @@
           "description": "Gizli kullanıcıları gizle veya göster"
         },
         "mode": {
-          "description": "İstediğin yanıt türü - varsayılanı /responsemode ile değiştir"
+          "description": "İstediğin yanıt türü - varsayılanı /mode ile değiştir"
         },
         "redirects": {
           "description": "Last.fm sanatçı adı yönlendirmelerini aç/kapat (varsayılan: açık)"
@@ -515,7 +512,7 @@
           "description": "Gizli kullanıcıları gizle veya göster"
         },
         "mode": {
-          "description": "İstediğin yanıt türü - varsayılanı /responsemode ile değiştir"
+          "description": "İstediğin yanıt türü - varsayılanı /mode ile değiştir"
         }
       }
     },
@@ -526,7 +523,7 @@
           "description": "Gizli kullanıcıları gizle veya göster"
         },
         "mode": {
-          "description": "İstediğin yanıt türü - varsayılanı /responsemode ile değiştir"
+          "description": "İstediğin yanıt türü - varsayılanı /mode ile değiştir"
         },
         "track": {
           "description": "Aramak istediğin parça (varsayılan: şu an çalan)"
@@ -831,9 +828,6 @@
         }
       }
     },
-    "responsemode": {
-      "description": "Varsayılan whoknows ve top liste modunu değiştirir"
-    },
     "scrobble": {
       "description": "Last.fm'de bir parçayı scrobble'lar",
       "parameters": {
@@ -954,7 +948,7 @@
         }
       }
     },
-    "streakhistory": {
+    "streaks": {
       "description": "Senin veya başkasının seri geçmişini gösterir",
       "parameters": {
         "artist": {
@@ -967,9 +961,6 @@
           "description": "Gösterilecek kullanıcı (varsayılan: sen)"
         }
       }
-    },
-    "supporters": {
-      "description": "⭐ Tüm mevcut supporter'ları gösterir"
     },
     "taste": {
       "description": "Top sanatçılarını, türlerini ve ülkelerini başka bir kullanıcıyla karşılaştırır",
@@ -1004,7 +995,7 @@
               "description": "Single'ları sonuçlardan gizle"
             },
             "mode": {
-              "description": "İstediğin yanıt türü - varsayılanı /responsemode ile değiştir"
+              "description": "İstediğin yanıt türü - varsayılanı /mode ile değiştir"
             },
             "private": {
               "description": "Yanıtı yalnızca sana göster"
@@ -1033,7 +1024,7 @@
               "description": "Discogs koleksiyonundaki top sanatçıları göster"
             },
             "mode": {
-              "description": "İstediğin yanıt türü - varsayılanı /responsemode ile değiştir"
+              "description": "İstediğin yanıt türü - varsayılanı /mode ile değiştir"
             },
             "private": {
               "description": "Yanıtı yalnızca sana göster"
@@ -1056,7 +1047,7 @@
               "description": "Top ülkeleri billboard tarzında göster"
             },
             "mode": {
-              "description": "İstediğin yanıt türü - varsayılanı /responsemode ile değiştir"
+              "description": "İstediğin yanıt türü - varsayılanı /mode ile değiştir"
             },
             "private": {
               "description": "Yanıtı yalnızca sana göster"
@@ -1079,7 +1070,7 @@
               "description": "Top türleri billboard tarzında göster"
             },
             "mode": {
-              "description": "İstediğin yanıt türü - varsayılanı /responsemode ile değiştir"
+              "description": "İstediğin yanıt türü - varsayılanı /mode ile değiştir"
             },
             "private": {
               "description": "Yanıtı yalnızca sana göster"
@@ -1102,7 +1093,7 @@
               "description": "Top parçaları billboard tarzında göster"
             },
             "mode": {
-              "description": "İstediğin yanıt türü - varsayılanı /responsemode ile değiştir"
+              "description": "İstediğin yanıt türü - varsayılanı /mode ile değiştir"
             },
             "private": {
               "description": "Yanıtı yalnızca sana göster"
@@ -1174,14 +1165,14 @@
         }
       }
     },
-    "whoknows": {
+    "wk": {
       "description": "Sunucunda bir sanatçıyı hangi kullanıcıların dinlediğini gösterir",
       "parameters": {
         "artist": {
           "description": "Aramak istediğin sanatçı (varsayılan: şu an çalan)"
         },
         "mode": {
-          "description": "İstediğin yanıt türü - varsayılanı /responsemode ile değiştir"
+          "description": "İstediğin yanıt türü - varsayılanı /mode ile değiştir"
         },
         "no-filter": {
           "description": "Sunucu filtrelerini ve crown'ları devre dışı bırak"
@@ -1201,7 +1192,7 @@
           "description": "Aramak istediğin albüm (varsayılan: şu an çalan)"
         },
         "mode": {
-          "description": "İstediğin yanıt türü - varsayılanı /responsemode ile değiştir"
+          "description": "İstediğin yanıt türü - varsayılanı /mode ile değiştir"
         },
         "no-filter": {
           "description": "Sunucu filtrelerini devre dışı bırak"
@@ -1215,7 +1206,7 @@
       "description": "Sunucunda bir türü hangi kullanıcıların dinlediğini gösterir",
       "parameters": {
         "mode": {
-          "description": "İstediğin yanıt türü - varsayılanı /responsemode ile değiştir"
+          "description": "İstediğin yanıt türü - varsayılanı /mode ile değiştir"
         },
         "search": {
           "description": "Görüntülemek istediğin tür veya sanatçı"
@@ -1226,7 +1217,7 @@
       "description": "Sunucunda bir parçayı hangi kullanıcıların dinlediğini gösterir",
       "parameters": {
         "mode": {
-          "description": "İstediğin yanıt türü - varsayılanı /responsemode ile değiştir"
+          "description": "İstediğin yanıt türü - varsayılanı /mode ile değiştir"
         },
         "no-filter": {
           "description": "Sunucu filtrelerini devre dışı bırak"

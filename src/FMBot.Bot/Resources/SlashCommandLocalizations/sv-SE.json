@@ -283,9 +283,6 @@
         }
       }
     },
-    "covermode": {
-      "description": "Välj om albumomslag animeras eller alltid visas som stillbild"
-    },
     "crown": {
       "description": "Vem som har crownen för en artist, och om du kan stjäla den",
       "parameters": {
@@ -315,7 +312,7 @@
       "description": "⭐ Visar artister du nyligen har upptäckt",
       "parameters": {
         "mode": {
-          "description": "Typen av svar du vill ha - ändra standard med /responsemode"
+          "description": "Typen av svar du vill ha - ändra standard med /mode"
         },
         "private": {
           "description": "Visa svaret endast för dig"
@@ -378,23 +375,23 @@
         }
       }
     },
-    "fmmode": {
-      "description": "Ändrar layouten för '/fm'"
+    "mode": {
+      "description": "Anpassa layouten för '/fm', ditt svarsläge och typen av albumomslag"
     },
-    "frequently-asked": {
+    "faq": {
       "description": "Vanliga frågor om .fmbot"
     },
     "friendsfm": {
       "description": "Visar dina vänner och vad de lyssnar på"
     },
-    "friendswhoknow": {
+    "fwk": {
       "description": "Visar vilka av dina vänner som lyssnar på en artist",
       "parameters": {
         "artist": {
           "description": "Artisten du vill söka efter (standard: det som spelas nu)"
         },
         "mode": {
-          "description": "Typen av svar du vill ha - ändra standard med /responsemode"
+          "description": "Typen av svar du vill ha - ändra standard med /mode"
         },
         "private": {
           "description": "Visa svaret endast för dig"
@@ -411,7 +408,7 @@
           "description": "Albumet du vill söka efter (standard: det som spelas nu)"
         },
         "mode": {
-          "description": "Typen av svar du vill ha - ändra standard med /responsemode"
+          "description": "Typen av svar du vill ha - ändra standard med /mode"
         },
         "private": {
           "description": "Visa svaret endast för dig"
@@ -422,7 +419,7 @@
       "description": "Visar vilka av dina vänner som lyssnar på en genre",
       "parameters": {
         "mode": {
-          "description": "Typen av svar du vill ha - ändra standard med /responsemode"
+          "description": "Typen av svar du vill ha - ändra standard med /mode"
         },
         "private": {
           "description": "Visa svaret endast för dig"
@@ -436,7 +433,7 @@
       "description": "Vilka av dina vänner som känner till en låt",
       "parameters": {
         "mode": {
-          "description": "Typen av svar du vill ha - ändra standard med /responsemode"
+          "description": "Typen av svar du vill ha - ändra standard med /mode"
         },
         "private": {
           "description": "Visa svaret endast för dig"
@@ -450,7 +447,7 @@
       "description": "⭐ Musik du har återvänt till efter ett uppehåll i lyssnandet",
       "parameters": {
         "mode": {
-          "description": "Typen av svar du vill ha - ändra standard med /responsemode"
+          "description": "Typen av svar du vill ha - ändra standard med /mode"
         },
         "private": {
           "description": "Visa svaret endast för dig"
@@ -488,7 +485,7 @@
         }
       }
     },
-    "globalwhoknows": {
+    "gwk": {
       "description": "Visar vilka andra användare i .fmbot som lyssnar på en artist",
       "parameters": {
         "artist": {
@@ -498,7 +495,7 @@
           "description": "Dölj eller visa privata användare"
         },
         "mode": {
-          "description": "Typen av svar du vill ha - ändra standard med /responsemode"
+          "description": "Typen av svar du vill ha - ändra standard med /mode"
         },
         "redirects": {
           "description": "Slå av/på Last.fm-omdirigering av artistnamn (standard: på)"
@@ -515,7 +512,7 @@
           "description": "Dölj eller visa privata användare"
         },
         "mode": {
-          "description": "Typen av svar du vill ha - ändra standard med /responsemode"
+          "description": "Typen av svar du vill ha - ändra standard med /mode"
         }
       }
     },
@@ -526,7 +523,7 @@
           "description": "Dölj eller visa privata användare"
         },
         "mode": {
-          "description": "Typen av svar du vill ha - ändra standard med /responsemode"
+          "description": "Typen av svar du vill ha - ändra standard med /mode"
         },
         "track": {
           "description": "Låten du vill söka efter (standard: det som spelas nu)"
@@ -831,9 +828,6 @@
         }
       }
     },
-    "responsemode": {
-      "description": "Ändrar ditt standardläge för whoknows och topplistor"
-    },
     "scrobble": {
       "description": "Scrobblar en låt på Last.fm",
       "parameters": {
@@ -954,7 +948,7 @@
         }
       }
     },
-    "streakhistory": {
+    "streaks": {
       "description": "Visar din eller någon annans streak-historik",
       "parameters": {
         "artist": {
@@ -967,9 +961,6 @@
           "description": "Användaren som ska visas (standard: du själv)"
         }
       }
-    },
-    "supporters": {
-      "description": "⭐ Visar alla nuvarande supporters"
     },
     "taste": {
       "description": "Jämför dina Top-artister, genrer och länder med en annan användares",
@@ -1004,7 +995,7 @@
               "description": "Dölj singlar i resultaten"
             },
             "mode": {
-              "description": "Typen av svar du vill ha - ändra standard med /responsemode"
+              "description": "Typen av svar du vill ha - ändra standard med /mode"
             },
             "private": {
               "description": "Visa svaret endast för dig"
@@ -1033,7 +1024,7 @@
               "description": "Visa Top-artister i Discogs-samlingen"
             },
             "mode": {
-              "description": "Typen av svar du vill ha - ändra standard med /responsemode"
+              "description": "Typen av svar du vill ha - ändra standard med /mode"
             },
             "private": {
               "description": "Visa svaret endast för dig"
@@ -1056,7 +1047,7 @@
               "description": "Visa Top-länder i billboard-stil"
             },
             "mode": {
-              "description": "Typen av svar du vill ha - ändra standard med /responsemode"
+              "description": "Typen av svar du vill ha - ändra standard med /mode"
             },
             "private": {
               "description": "Visa svaret endast för dig"
@@ -1079,7 +1070,7 @@
               "description": "Visa Top-genrer i billboard-stil"
             },
             "mode": {
-              "description": "Typen av svar du vill ha - ändra standard med /responsemode"
+              "description": "Typen av svar du vill ha - ändra standard med /mode"
             },
             "private": {
               "description": "Visa svaret endast för dig"
@@ -1102,7 +1093,7 @@
               "description": "Visa Top-låtar i billboard-stil"
             },
             "mode": {
-              "description": "Typen av svar du vill ha - ändra standard med /responsemode"
+              "description": "Typen av svar du vill ha - ändra standard med /mode"
             },
             "private": {
               "description": "Visa svaret endast för dig"
@@ -1174,14 +1165,14 @@
         }
       }
     },
-    "whoknows": {
+    "wk": {
       "description": "Visar vilka andra användare på din server som lyssnar på en artist",
       "parameters": {
         "artist": {
           "description": "Artisten du vill söka efter (standard: det som spelas nu)"
         },
         "mode": {
-          "description": "Typen av svar du vill ha - ändra standard med /responsemode"
+          "description": "Typen av svar du vill ha - ändra standard med /mode"
         },
         "no-filter": {
           "description": "Inaktivera serverfilter och crowns"
@@ -1201,7 +1192,7 @@
           "description": "Albumet du vill söka efter (standard: det som spelas nu)"
         },
         "mode": {
-          "description": "Typen av svar du vill ha - ändra standard med /responsemode"
+          "description": "Typen av svar du vill ha - ändra standard med /mode"
         },
         "no-filter": {
           "description": "Inaktivera serverfilter"
@@ -1215,7 +1206,7 @@
       "description": "Visar vilka andra användare på din server som lyssnar på en genre",
       "parameters": {
         "mode": {
-          "description": "Typen av svar du vill ha - ändra standard med /responsemode"
+          "description": "Typen av svar du vill ha - ändra standard med /mode"
         },
         "search": {
           "description": "Genren eller artisten du vill visa"
@@ -1226,7 +1217,7 @@
       "description": "Visar vilka andra användare på din server som lyssnar på en låt",
       "parameters": {
         "mode": {
-          "description": "Typen av svar du vill ha - ändra standard med /responsemode"
+          "description": "Typen av svar du vill ha - ändra standard med /mode"
         },
         "no-filter": {
           "description": "Inaktivera serverfilter"

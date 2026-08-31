@@ -183,7 +183,7 @@ public class UserSlashCommands(
         await this.Context.LogCommandUsedAsync(response, userService);
     }
 
-    [SlashCommand("fmmode", "Changes your '/fm' layout", Contexts =
+    [SlashCommand("mode", "Customize your '/fm' layout, response mode and album cover type", Contexts =
     [
         InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,
         InteractionContextType.Guild
@@ -193,38 +193,11 @@ public class UserSlashCommands(
         ApplicationIntegrationType.UserInstall
     ])]
     [UsernameSetRequired]
-    public async Task FmModeSlashAsync()
-    {
-        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
-        var guild = await guildService.GetGuildAsync(this.Context.Guild?.Id);
-
-        contextUser.FmSetting ??= await fmSettingService.GetOrCreateFmSetting(contextUser.UserId);
-
-        var response = UserBuilder.FmMode(new ContextModel(this.Context, contextUser), guild);
-
-        await this.Context.SendResponse(this.Interactivity, response, userService, ephemeral: true);
-        await this.Context.LogCommandUsedAsync(response, userService);
-    }
-
-    [SlashCommand("responsemode", "Changes your default whoknows and top list mode")]
-    [UsernameSetRequired]
-    public async Task ResponseModeSlashAsync()
+    public async Task ModeSlashAsync()
     {
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
-        var response = UserBuilder.ResponseMode(new ContextModel(this.Context, contextUser));
-
-        await this.Context.SendResponse(this.Interactivity, response, userService, ephemeral: true);
-        await this.Context.LogCommandUsedAsync(response, userService);
-    }
-
-    [SlashCommand("covermode", "Set whether album covers animate or always show as still")]
-    [UsernameSetRequired]
-    public async Task CoverModeSlashAsync()
-    {
-        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
-
-        var response = UserBuilder.CoverMode(new ContextModel(this.Context, contextUser));
+        var response = UserBuilder.ModePick(new ContextModel(this.Context, contextUser));
 
         await this.Context.SendResponse(this.Interactivity, response, userService, ephemeral: true);
         await this.Context.LogCommandUsedAsync(response, userService);

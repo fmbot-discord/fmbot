@@ -518,7 +518,7 @@ public class UserCommands(
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
                 new MessageProperties
                 {
-                    Content = "An error occurred while trying to send a DM. You may have DMs disabled. \nTry using the slash command version `/fmmode` instead."
+                    Content = "An error occurred while trying to send a DM. You may have DMs disabled. \nTry using the slash command version `/mode` instead."
                 });
             await this.Context.HandleCommandException(e, userService, sendReply: false);
         }
@@ -696,7 +696,7 @@ public class UserCommands(
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
                 new MessageProperties
                 {
-                    Content = "An error occurred while trying to send a DM. You may have DMs disabled. \nTry using the slash command version `/fmmode` instead."
+                    Content = "An error occurred while trying to send a DM. You may have DMs disabled. \nTry using the slash command version `/mode` instead."
                 });
             await this.Context.HandleCommandException(e, userService, sendReply: false);
         }
