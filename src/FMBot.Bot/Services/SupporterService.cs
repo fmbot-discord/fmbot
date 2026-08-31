@@ -205,7 +205,7 @@ public class SupporterService
         customization.AppendLine($"### {EmojiProperties.Custom(DiscordConstants.Shortcut).ToDiscordString("shortcuts")} More customization");
         customization.AppendLine("- `.friends` — Add close friends that'll always be visible in WhoKnows regardless of their position");
         customization.AppendLine($"- `.shortcuts` — Configure shortcuts to easily access your favorite text commands");
-        customization.AppendLine($"- `/fmmode` — Expand your `fm` footer with more and exclusive customization");
+        customization.AppendLine($"- `/mode` — Expand your `fm` footer with more and exclusive customization");
         customization.AppendLine($"- `.userreactions` — Set your own emote reactions used globally");
         container.AddComponent(new TextDisplayProperties(customization.ToString()));
         container.AddComponent(new ComponentSeparatorProperties());
@@ -404,7 +404,7 @@ public class SupporterService
                     if ((user.FmSetting?.FooterOptions ?? FmFooterOption.TotalScrobbles) == FmFooterOption.TotalScrobbles)
                     {
                         message =
-                            $"*⚙️ Customize your `{prfx}fm` command with the new `/fmmode` command. Enable custom buttons, colors, footer options and more.*";
+                            $"*⚙️ Customize your `{prfx}fm` command with the new `/mode` command. Enable custom buttons, colors, footer options and more.*";
                         break;
                     }
 
@@ -581,7 +581,7 @@ public class SupporterService
                 case 28:
                 {
                     message =
-                        $"*📚 Configure what type of top list and WhoKnows responses you get with `/responsemode`*";
+                        $"*📚 Configure what type of top list and WhoKnows responses you get with `/mode`*";
 
                     break;
                 }
@@ -602,7 +602,7 @@ public class SupporterService
                     if ((user.FmSetting?.FooterOptions ?? FmFooterOption.TotalScrobbles) == FmFooterOption.TotalScrobbles)
                     {
                         message =
-                            $"*⭐ Customize your `{prfx}fm` with the custom footer options. Get started by using `/fmmode`.*";
+                            $"*⭐ Customize your `{prfx}fm` with the custom footer options. Get started by using `/mode`.*";
                     }
 
                     break;

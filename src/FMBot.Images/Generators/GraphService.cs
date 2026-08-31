@@ -1,4 +1,5 @@
 using System.Globalization;
+using FMBot.Domain.Models;
 using FMBot.Images.Models;
 using Serilog;
 using SkiaSharp;
@@ -56,7 +57,8 @@ public class GraphService
 
     public PlayHistoryGraph RenderPlayHistory(IReadOnlyList<GraphPoint> dailyPlays, CultureInfo culture,
         SKColor lineColor, Func<double, string> valueLabel, GraphInterval? fixedInterval = null,
-        DateTime? windowFrom = null, DateTime? windowUntil = null, int width = 660, int height = 165)
+        DateTime? windowFrom = null, DateTime? windowUntil = null, int width = 660, int height = 165,
+        GraphType style = GraphType.Line)
     {
         if (dailyPlays == null || dailyPlays.Count == 0)
         {
@@ -73,8 +75,17 @@ public class GraphService
             totalPlays += day.Value;
         }
 
-        var interval = fixedInterval ?? GraphSeries.PickInterval(earliest, until,
-            totalPlays >= int.MaxValue ? int.MaxValue : (int)totalPlays);
+        var sampleCount = totalPlays >= int.MaxValue ? int.MaxValue : (int)totalPlays;
+        var interval = fixedInterval ?? GraphSeries.PickInterval(earliest, until, sampleCount, style);
+
+        if (style == GraphType.Bar && fixedInterval.HasValue)
+        {
+            var barInterval = GraphSeries.PickInterval(earliest, until, sampleCount, style);
+            if (barInterval > interval)
+            {
+                interval = barInterval;
+            }
+        }
 
         if (!windowFrom.HasValue)
         {
@@ -82,9 +93,9 @@ public class GraphService
             earliest = earliest < earliestStart ? earliest : earliestStart;
         }
 
-        var from = GraphSeries.LimitToMaxPoints(earliest, until, interval);
+        var from = GraphSeries.LimitToMaxPoints(earliest, until, interval, style);
 
-        if (interval != GraphInterval.Day)
+        if (interval != GraphInterval.Day && style != GraphType.Bar)
         {
             (from, until) = GraphSeries.TrimToWholeIntervals(from, until, interval);
         }
@@ -102,10 +113,10 @@ public class GraphService
         }
 
         var typeface = GetTypeface();
-        var ticks = GraphTicks.Plan(points, MaxDateTicks, culture);
+        var ticks = GraphTicks.Plan(points, MaxDateTicks, culture, interval);
         if (ticks.Any(a => !typeface.ContainsGlyphs(a.Label)))
         {
-            ticks = GraphTicks.Plan(points, MaxDateTicks, CultureInfo.InvariantCulture);
+            ticks = GraphTicks.Plan(points, MaxDateTicks, CultureInfo.InvariantCulture, interval);
         }
 
         var image = RenderLineGraph(new LineGraph
@@ -115,7 +126,8 @@ public class GraphService
             Height = height,
             LineColor = lineColor,
             ValueLabel = valueLabel,
-            Ticks = ticks
+            Ticks = ticks,
+            Style = style
         });
 
         return image == null
@@ -213,11 +225,14 @@ public class GraphService
         }
 
         var range = axis.Max - axis.Min;
+        var barStyle = graph.Style == GraphType.Bar;
         var xPositions = new float[graph.Points.Count];
         var yPositions = new float[graph.Points.Count];
         for (var i = 0; i < graph.Points.Count; i++)
         {
-            xPositions[i] = plotLeft + (float)i / (graph.Points.Count - 1) * plotWidth;
+            xPositions[i] = barStyle
+                ? plotLeft + (i + 0.5f) / graph.Points.Count * plotWidth
+                : plotLeft + (float)i / (graph.Points.Count - 1) * plotWidth;
             yPositions[i] = plotTop + (float)(1 - (graph.Points[i].Value - axis.Min) / range) * plotHeight;
         }
 
@@ -254,6 +269,14 @@ public class GraphService
 
         canvas.DrawLine(plotLeft, plotTop, plotLeft, plotBottom, axisPaint);
         canvas.DrawLine(plotLeft, plotBottom, plotRight, plotBottom, axisPaint);
+
+        if (barStyle)
+        {
+            DrawBars(canvas, graph, xPositions, yPositions, plotBottom, plotWidth, scale);
+            DrawDateLabels(canvas, graph, xPositions, plotBottom, scale, font, labelPaint);
+
+            return EncodeSurface(surface);
+        }
 
         using var pathBuilder = new SKPathBuilder();
         pathBuilder.MoveTo(xPositions[0], yPositions[0]);
@@ -310,6 +333,11 @@ public class GraphService
 
         DrawDateLabels(canvas, graph, xPositions, plotBottom, scale, font, labelPaint);
 
+        return EncodeSurface(surface);
+    }
+
+    private static MemoryStream EncodeSurface(SKSurface surface)
+    {
         using var image = surface.Snapshot();
         using var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
 
@@ -318,6 +346,58 @@ public class GraphService
         stream.Position = 0;
 
         return stream;
+    }
+
+    private static void DrawBars(SKCanvas canvas, LineGraph graph, float[] xPositions, float[] yPositions, float plotBottom, float plotWidth, float scale)
+    {
+        var slot = plotWidth / graph.Points.Count;
+        var barWidth = Math.Max(Math.Min(slot * 0.8f, slot - scale), scale);
+        var capHeight = LineWidth * scale;
+        var cornerRadius = Math.Min(2.5f * scale, barWidth / 2);
+
+        using var fillPaint = new SKPaint
+        {
+            IsAntialias = true,
+            Style = SKPaintStyle.Fill
+        };
+        using var capPaint = new SKPaint
+        {
+            IsAntialias = true,
+            Style = SKPaintStyle.Fill,
+            Color = graph.LineColor
+        };
+
+        for (var i = 0; i < graph.Points.Count; i++)
+        {
+            if (graph.Points[i].Value <= 0)
+            {
+                continue;
+            }
+
+            var top = Math.Min(yPositions[i], plotBottom - capHeight);
+            var rect = new SKRect(xPositions[i] - barWidth / 2, top, xPositions[i] + barWidth / 2, plotBottom);
+
+            using var roundRect = new SKRoundRect();
+            roundRect.SetRectRadii(rect,
+            [
+                new SKPoint(cornerRadius, cornerRadius), new SKPoint(cornerRadius, cornerRadius),
+                new SKPoint(0, 0), new SKPoint(0, 0)
+            ]);
+
+            using var fillShader = SKShader.CreateLinearGradient(
+                new SKPoint(0, top),
+                new SKPoint(0, plotBottom),
+                [graph.LineColor.WithAlpha(130), graph.LineColor.WithAlpha(35)],
+                SKShaderTileMode.Clamp);
+            fillPaint.Shader = fillShader;
+
+            canvas.DrawRoundRect(roundRect, fillPaint);
+
+            canvas.Save();
+            canvas.ClipRect(new SKRect(rect.Left, rect.Top, rect.Right, rect.Top + capHeight));
+            canvas.DrawRoundRect(roundRect, capPaint);
+            canvas.Restore();
+        }
     }
 
     private static void DrawDateLabels(SKCanvas canvas, LineGraph graph, float[] xPositions, float plotBottom,

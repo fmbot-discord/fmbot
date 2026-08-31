@@ -518,7 +518,7 @@ public class UserCommands(
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
                 new MessageProperties
                 {
-                    Content = "An error occurred while trying to send a DM. You may have DMs disabled. \nTry using the slash command version `/fmmode` instead."
+                    Content = "An error occurred while trying to send a DM. You may have DMs disabled. \nTry using the slash command version `/mode` instead."
                 });
             await this.Context.HandleCommandException(e, userService, sendReply: false);
         }
@@ -551,6 +551,25 @@ public class UserCommands(
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
         var response = UserBuilder.CoverMode(new ContextModel(this.Context, prfx, contextUser));
+
+        await this.Context.SendResponse(this.Interactivity, response, userService);
+        await this.Context.LogCommandUsedAsync(response, userService);
+    }
+
+    [Command("graphmode", "graphtype", "graphs")]
+    [Summary("Change how your listening history graphs look, or turn them off.")]
+    [Examples("graphmode")]
+    [UsernameSetRequired]
+    [CommandCategories(CommandCategory.UserSettings)]
+    [SupporterExclusive("Only supporters can see listening history graphs and change how they look")]
+    public async Task GraphModeAsync([CommandParameter(Remainder = true)] string _ = null)
+    {
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+
+        contextUser.FmSetting ??= await fmSettingService.GetOrCreateFmSetting(contextUser.UserId);
+
+        var response = UserBuilder.GraphMode(new ContextModel(this.Context, prfx, contextUser));
 
         await this.Context.SendResponse(this.Interactivity, response, userService);
         await this.Context.LogCommandUsedAsync(response, userService);
@@ -696,7 +715,7 @@ public class UserCommands(
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
                 new MessageProperties
                 {
-                    Content = "An error occurred while trying to send a DM. You may have DMs disabled. \nTry using the slash command version `/fmmode` instead."
+                    Content = "An error occurred while trying to send a DM. You may have DMs disabled. \nTry using the slash command version `/mode` instead."
                 });
             await this.Context.HandleCommandException(e, userService, sendReply: false);
         }

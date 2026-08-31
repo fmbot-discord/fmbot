@@ -283,9 +283,6 @@
         }
       }
     },
-    "covermode": {
-      "description": "Atur apakah sampul album beranimasi atau selalu tampil diam"
-    },
     "crown": {
       "description": "Siapa pemegang crown untuk artis, dan bisakah kamu mencurinya",
       "parameters": {
@@ -315,7 +312,7 @@
       "description": "⭐ Menampilkan artis yang baru kamu temukan",
       "parameters": {
         "mode": {
-          "description": "Jenis respons yang kamu mau - ubah default dengan /responsemode"
+          "description": "Jenis respons yang kamu mau - ubah default dengan /mode"
         },
         "private": {
           "description": "Hanya tampilkan respons ke kamu"
@@ -378,23 +375,23 @@
         }
       }
     },
-    "fmmode": {
-      "description": "Mengubah tata letak '/fm' kamu"
+    "mode": {
+      "description": "Sesuaikan tata letak '/fm', mode respons, dan tipe sampul album kamu"
     },
-    "frequently-asked": {
+    "faq": {
       "description": "Pertanyaan yang sering diajukan tentang .fmbot"
     },
     "friendsfm": {
       "description": "Menampilkan teman-temanmu dan apa yang mereka dengarkan"
     },
-    "friendswhoknow": {
+    "fwk": {
       "description": "Menampilkan siapa dari temanmu yang mendengarkan suatu artis",
       "parameters": {
         "artist": {
           "description": "Artis yang ingin kamu cari (default: yang sedang diputar)"
         },
         "mode": {
-          "description": "Jenis respons yang kamu mau - ubah default dengan /responsemode"
+          "description": "Jenis respons yang kamu mau - ubah default dengan /mode"
         },
         "private": {
           "description": "Hanya tampilkan respons ke kamu"
@@ -411,7 +408,7 @@
           "description": "Album yang ingin kamu cari (default: yang sedang diputar)"
         },
         "mode": {
-          "description": "Jenis respons yang kamu mau - ubah default dengan /responsemode"
+          "description": "Jenis respons yang kamu mau - ubah default dengan /mode"
         },
         "private": {
           "description": "Hanya tampilkan respons ke kamu"
@@ -422,7 +419,7 @@
       "description": "Menampilkan siapa dari temanmu yang mendengarkan suatu genre",
       "parameters": {
         "mode": {
-          "description": "Jenis respons yang kamu mau - ubah default dengan /responsemode"
+          "description": "Jenis respons yang kamu mau - ubah default dengan /mode"
         },
         "private": {
           "description": "Hanya tampilkan respons ke kamu"
@@ -436,7 +433,7 @@
       "description": "Siapa dari temanmu yang tahu suatu lagu",
       "parameters": {
         "mode": {
-          "description": "Jenis respons yang kamu mau - ubah default dengan /responsemode"
+          "description": "Jenis respons yang kamu mau - ubah default dengan /mode"
         },
         "private": {
           "description": "Hanya tampilkan respons ke kamu"
@@ -450,7 +447,7 @@
       "description": "⭐ Musik yang kamu dengarkan lagi setelah jeda",
       "parameters": {
         "mode": {
-          "description": "Jenis respons yang kamu mau - ubah default dengan /responsemode"
+          "description": "Jenis respons yang kamu mau - ubah default dengan /mode"
         },
         "private": {
           "description": "Hanya tampilkan respons ke kamu"
@@ -488,7 +485,7 @@
         }
       }
     },
-    "globalwhoknows": {
+    "gwk": {
       "description": "Menampilkan pengguna lain yang mendengarkan suatu artis di .fmbot",
       "parameters": {
         "artist": {
@@ -498,7 +495,7 @@
           "description": "Sembunyikan atau tampilkan pengguna privat"
         },
         "mode": {
-          "description": "Jenis respons yang kamu mau - ubah default dengan /responsemode"
+          "description": "Jenis respons yang kamu mau - ubah default dengan /mode"
         },
         "redirects": {
           "description": "Aktifkan/nonaktifkan redirect nama artis Last.fm (default: aktif)"
@@ -515,7 +512,7 @@
           "description": "Sembunyikan atau tampilkan pengguna privat"
         },
         "mode": {
-          "description": "Jenis respons yang kamu mau - ubah default dengan /responsemode"
+          "description": "Jenis respons yang kamu mau - ubah default dengan /mode"
         }
       }
     },
@@ -526,7 +523,7 @@
           "description": "Sembunyikan atau tampilkan pengguna privat"
         },
         "mode": {
-          "description": "Jenis respons yang kamu mau - ubah default dengan /responsemode"
+          "description": "Jenis respons yang kamu mau - ubah default dengan /mode"
         },
         "track": {
           "description": "Lagu yang ingin kamu cari (default: yang sedang diputar)"
@@ -831,9 +828,6 @@
         }
       }
     },
-    "responsemode": {
-      "description": "Mengubah mode default whoknows dan daftar top kamu"
-    },
     "scrobble": {
       "description": "Scrobble sebuah lagu di Last.fm",
       "parameters": {
@@ -954,7 +948,7 @@
         }
       }
     },
-    "streakhistory": {
+    "streaks": {
       "description": "Menampilkan riwayat streak kamu atau orang lain",
       "parameters": {
         "artist": {
@@ -967,9 +961,6 @@
           "description": "Pengguna yang ditampilkan (default: kamu sendiri)"
         }
       }
-    },
-    "supporters": {
-      "description": "⭐ Menampilkan semua supporter saat ini"
     },
     "taste": {
       "description": "Membandingkan top artis, genre, dan negara kamu dengan pengguna lain",
@@ -1004,7 +995,7 @@
               "description": "Sembunyikan single dari hasil"
             },
             "mode": {
-              "description": "Jenis respons yang kamu mau - ubah default dengan /responsemode"
+              "description": "Jenis respons yang kamu mau - ubah default dengan /mode"
             },
             "private": {
               "description": "Hanya tampilkan respons ke kamu"
@@ -1033,7 +1024,7 @@
               "description": "Tampilkan top artis di koleksi Discogs"
             },
             "mode": {
-              "description": "Jenis respons yang kamu mau - ubah default dengan /responsemode"
+              "description": "Jenis respons yang kamu mau - ubah default dengan /mode"
             },
             "private": {
               "description": "Hanya tampilkan respons ke kamu"
@@ -1056,7 +1047,7 @@
               "description": "Tampilkan top negara gaya billboard"
             },
             "mode": {
-              "description": "Jenis respons yang kamu mau - ubah default dengan /responsemode"
+              "description": "Jenis respons yang kamu mau - ubah default dengan /mode"
             },
             "private": {
               "description": "Hanya tampilkan respons ke kamu"
@@ -1079,7 +1070,7 @@
               "description": "Tampilkan top genre gaya billboard"
             },
             "mode": {
-              "description": "Jenis respons yang kamu mau - ubah default dengan /responsemode"
+              "description": "Jenis respons yang kamu mau - ubah default dengan /mode"
             },
             "private": {
               "description": "Hanya tampilkan respons ke kamu"
@@ -1102,7 +1093,7 @@
               "description": "Tampilkan top lagu gaya billboard"
             },
             "mode": {
-              "description": "Jenis respons yang kamu mau - ubah default dengan /responsemode"
+              "description": "Jenis respons yang kamu mau - ubah default dengan /mode"
             },
             "private": {
               "description": "Hanya tampilkan respons ke kamu"
@@ -1174,14 +1165,14 @@
         }
       }
     },
-    "whoknows": {
+    "wk": {
       "description": "Menampilkan pengguna lain yang mendengarkan suatu artis di servermu",
       "parameters": {
         "artist": {
           "description": "Artis yang ingin kamu cari (default: yang sedang diputar)"
         },
         "mode": {
-          "description": "Jenis respons yang kamu mau - ubah default dengan /responsemode"
+          "description": "Jenis respons yang kamu mau - ubah default dengan /mode"
         },
         "no-filter": {
           "description": "Nonaktifkan filter server dan crowns"
@@ -1201,7 +1192,7 @@
           "description": "Album yang ingin kamu cari (default: yang sedang diputar)"
         },
         "mode": {
-          "description": "Jenis respons yang kamu mau - ubah default dengan /responsemode"
+          "description": "Jenis respons yang kamu mau - ubah default dengan /mode"
         },
         "no-filter": {
           "description": "Nonaktifkan filter server"
@@ -1215,7 +1206,7 @@
       "description": "Menampilkan pengguna lain yang mendengarkan suatu genre di servermu",
       "parameters": {
         "mode": {
-          "description": "Jenis respons yang kamu mau - ubah default dengan /responsemode"
+          "description": "Jenis respons yang kamu mau - ubah default dengan /mode"
         },
         "search": {
           "description": "Genre atau artis yang ingin kamu lihat"
@@ -1226,7 +1217,7 @@
       "description": "Menampilkan pengguna lain yang mendengarkan suatu lagu di servermu",
       "parameters": {
         "mode": {
-          "description": "Jenis respons yang kamu mau - ubah default dengan /responsemode"
+          "description": "Jenis respons yang kamu mau - ubah default dengan /mode"
         },
         "no-filter": {
           "description": "Nonaktifkan filter server"

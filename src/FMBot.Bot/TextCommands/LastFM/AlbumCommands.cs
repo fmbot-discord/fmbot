@@ -169,7 +169,7 @@ public class AlbumCommands(
         }
     }
 
-    [Command("whoknowsalbum", "wa", "wka", "wkab", "wab", "wkab", "wkal", "wkalbum")]
+    [Command("whoknowsalbum", "wa", "wka", "wkab", "wab", "wkal", "wkalbum")]
     [Summary("Shows what other users listen to an album in your server")]
     [Options("Response mode: `image`, `embed` or `pages`",
         "Role filter: `rolefilter` / `rf` (Premium server)",

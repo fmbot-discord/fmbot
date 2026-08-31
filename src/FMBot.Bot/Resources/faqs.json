@@ -9,7 +9,7 @@
         {
           "id": "how-to-get-started",
           "title": "How do I get started?",
-          "answer": "This bot uses your music history for various commands. For this we use a website called [Last.fm](https://last.fm). This site allows you to track your music history [from various platforms](https://www.last.fm/about/trackmymusic).\n\n**New to Last.fm?**\n1. Create a [Last.fm account](https://last.fm/join)\n2. Connect it to [your music platform](https://www.last.fm/about/trackmymusic) - Quick link [for Spotify here](https://www.last.fm/settings/applications)\n3. Use any .fmbot command, like `/fm` or `/whoknows`\n4. Press 'Connect Last.fm account' and follow the instructions\n5. Done! You can now use .fmbot.\n\nWhile we require a Last.fm account, the bot is not affiliated with Last.fm."
+          "answer": "This bot uses your music history for various commands. For this we use a website called [Last.fm](https://last.fm). This site allows you to track your music history [from various platforms](https://www.last.fm/about/trackmymusic).\n\n**New to Last.fm?**\n1. Create a [Last.fm account](https://last.fm/join)\n2. Connect it to [your music platform](https://www.last.fm/about/trackmymusic) - Quick link [for Spotify here](https://www.last.fm/settings/applications)\n3. Use any .fmbot command, like `/fm` or `/wk`\n4. Press 'Connect Last.fm account' and follow the instructions\n5. Done! You can now use .fmbot.\n\nWhile we require a Last.fm account, the bot is not affiliated with Last.fm."
         },
         {
           "id": "how-to-add",

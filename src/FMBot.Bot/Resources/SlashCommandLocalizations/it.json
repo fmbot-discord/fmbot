@@ -283,9 +283,6 @@
         }
       }
     },
-    "covermode": {
-      "description": "Imposta se le copertine degli album sono animate o sempre statiche"
-    },
     "crown": {
       "description": "Chi detiene la crown di un artista e se puoi rubarla",
       "parameters": {
@@ -315,7 +312,7 @@
       "description": "⭐ Mostra gli artisti che hai scoperto di recente",
       "parameters": {
         "mode": {
-          "description": "Il tipo di risposta che vuoi - cambia il predefinito con /responsemode"
+          "description": "Il tipo di risposta che vuoi - cambia il predefinito con /mode"
         },
         "private": {
           "description": "Mostra la risposta solo a te"
@@ -378,23 +375,23 @@
         }
       }
     },
-    "fmmode": {
-      "description": "Cambia il layout del tuo '/fm'"
+    "mode": {
+      "description": "Personalizza il layout del tuo '/fm', la modalità di risposta e il tipo di copertina"
     },
-    "frequently-asked": {
+    "faq": {
       "description": "Domande frequenti su .fmbot"
     },
     "friendsfm": {
       "description": "Mostra i tuoi amici e cosa stanno ascoltando"
     },
-    "friendswhoknow": {
+    "fwk": {
       "description": "Mostra quali dei tuoi amici ascoltano un artista",
       "parameters": {
         "artist": {
           "description": "L'artista da cercare (predefinito: in riproduzione)"
         },
         "mode": {
-          "description": "Il tipo di risposta che vuoi - cambia il predefinito con /responsemode"
+          "description": "Il tipo di risposta che vuoi - cambia il predefinito con /mode"
         },
         "private": {
           "description": "Mostra la risposta solo a te"
@@ -411,7 +408,7 @@
           "description": "L'album da cercare (predefinito: in riproduzione)"
         },
         "mode": {
-          "description": "Il tipo di risposta che vuoi - cambia il predefinito con /responsemode"
+          "description": "Il tipo di risposta che vuoi - cambia il predefinito con /mode"
         },
         "private": {
           "description": "Mostra la risposta solo a te"
@@ -422,7 +419,7 @@
       "description": "Mostra quali dei tuoi amici ascoltano un genere",
       "parameters": {
         "mode": {
-          "description": "Il tipo di risposta che vuoi - cambia il predefinito con /responsemode"
+          "description": "Il tipo di risposta che vuoi - cambia il predefinito con /mode"
         },
         "private": {
           "description": "Mostra la risposta solo a te"
@@ -436,7 +433,7 @@
       "description": "Quali dei tuoi amici conoscono un brano",
       "parameters": {
         "mode": {
-          "description": "Il tipo di risposta che vuoi - cambia il predefinito con /responsemode"
+          "description": "Il tipo di risposta che vuoi - cambia il predefinito con /mode"
         },
         "private": {
           "description": "Mostra la risposta solo a te"
@@ -450,7 +447,7 @@
       "description": "⭐ Musica che hai ripreso ad ascoltare dopo una pausa",
       "parameters": {
         "mode": {
-          "description": "Il tipo di risposta che vuoi - cambia il predefinito con /responsemode"
+          "description": "Il tipo di risposta che vuoi - cambia il predefinito con /mode"
         },
         "private": {
           "description": "Mostra la risposta solo a te"
@@ -488,7 +485,7 @@
         }
       }
     },
-    "globalwhoknows": {
+    "gwk": {
       "description": "Mostra quali altri utenti ascoltano un artista in .fmbot",
       "parameters": {
         "artist": {
@@ -498,7 +495,7 @@
           "description": "Nascondi o mostra gli utenti privati"
         },
         "mode": {
-          "description": "Il tipo di risposta che vuoi - cambia il predefinito con /responsemode"
+          "description": "Il tipo di risposta che vuoi - cambia il predefinito con /mode"
         },
         "redirects": {
           "description": "Attiva o disattiva i redirect dei nomi artista di Last.fm (predefinito: attivi)"
@@ -515,7 +512,7 @@
           "description": "Nascondi o mostra gli utenti privati"
         },
         "mode": {
-          "description": "Il tipo di risposta che vuoi - cambia il predefinito con /responsemode"
+          "description": "Il tipo di risposta che vuoi - cambia il predefinito con /mode"
         }
       }
     },
@@ -526,7 +523,7 @@
           "description": "Nascondi o mostra gli utenti privati"
         },
         "mode": {
-          "description": "Il tipo di risposta che vuoi - cambia il predefinito con /responsemode"
+          "description": "Il tipo di risposta che vuoi - cambia il predefinito con /mode"
         },
         "track": {
           "description": "Il brano da cercare (predefinito: in riproduzione)"
@@ -831,9 +828,6 @@
         }
       }
     },
-    "responsemode": {
-      "description": "Cambia la modalità predefinita per whoknows e le top list"
-    },
     "scrobble": {
       "description": "Scrobbla un brano su Last.fm",
       "parameters": {
@@ -954,7 +948,7 @@
         }
       }
     },
-    "streakhistory": {
+    "streaks": {
       "description": "Mostra la cronologia delle streak tua o di qualcun altro",
       "parameters": {
         "artist": {
@@ -967,9 +961,6 @@
           "description": "L'utente da mostrare (predefinito: te stesso)"
         }
       }
-    },
-    "supporters": {
-      "description": "⭐ Mostra tutti i supporter attuali"
     },
     "taste": {
       "description": "Confronta i tuoi top artisti, generi e paesi con quelli di un altro utente",
@@ -1004,7 +995,7 @@
               "description": "Nascondi i singoli dai risultati"
             },
             "mode": {
-              "description": "Il tipo di risposta che vuoi - cambia il predefinito con /responsemode"
+              "description": "Il tipo di risposta che vuoi - cambia il predefinito con /mode"
             },
             "private": {
               "description": "Mostra la risposta solo a te"
@@ -1033,7 +1024,7 @@
               "description": "Mostra i top artisti nella collezione Discogs"
             },
             "mode": {
-              "description": "Il tipo di risposta che vuoi - cambia il predefinito con /responsemode"
+              "description": "Il tipo di risposta che vuoi - cambia il predefinito con /mode"
             },
             "private": {
               "description": "Mostra la risposta solo a te"
@@ -1056,7 +1047,7 @@
               "description": "Mostra i top paesi in stile billboard"
             },
             "mode": {
-              "description": "Il tipo di risposta che vuoi - cambia il predefinito con /responsemode"
+              "description": "Il tipo di risposta che vuoi - cambia il predefinito con /mode"
             },
             "private": {
               "description": "Mostra la risposta solo a te"
@@ -1079,7 +1070,7 @@
               "description": "Mostra i top generi in stile billboard"
             },
             "mode": {
-              "description": "Il tipo di risposta che vuoi - cambia il predefinito con /responsemode"
+              "description": "Il tipo di risposta che vuoi - cambia il predefinito con /mode"
             },
             "private": {
               "description": "Mostra la risposta solo a te"
@@ -1102,7 +1093,7 @@
               "description": "Mostra i top brani in stile billboard"
             },
             "mode": {
-              "description": "Il tipo di risposta che vuoi - cambia il predefinito con /responsemode"
+              "description": "Il tipo di risposta che vuoi - cambia il predefinito con /mode"
             },
             "private": {
               "description": "Mostra la risposta solo a te"
@@ -1174,14 +1165,14 @@
         }
       }
     },
-    "whoknows": {
+    "wk": {
       "description": "Mostra quali altri utenti ascoltano un artista nel tuo server",
       "parameters": {
         "artist": {
           "description": "L'artista da cercare (predefinito: in riproduzione)"
         },
         "mode": {
-          "description": "Il tipo di risposta che vuoi - cambia il predefinito con /responsemode"
+          "description": "Il tipo di risposta che vuoi - cambia il predefinito con /mode"
         },
         "no-filter": {
           "description": "Disattiva i filtri del server e le crown"
@@ -1201,7 +1192,7 @@
           "description": "L'album da cercare (predefinito: in riproduzione)"
         },
         "mode": {
-          "description": "Il tipo di risposta che vuoi - cambia il predefinito con /responsemode"
+          "description": "Il tipo di risposta che vuoi - cambia il predefinito con /mode"
         },
         "no-filter": {
           "description": "Disattiva i filtri del server"
@@ -1215,7 +1206,7 @@
       "description": "Mostra quali altri utenti ascoltano un genere nel tuo server",
       "parameters": {
         "mode": {
-          "description": "Il tipo di risposta che vuoi - cambia il predefinito con /responsemode"
+          "description": "Il tipo di risposta che vuoi - cambia il predefinito con /mode"
         },
         "search": {
           "description": "Il genere o l'artista che vuoi vedere"
@@ -1226,7 +1217,7 @@
       "description": "Mostra quali altri utenti ascoltano un brano nel tuo server",
       "parameters": {
         "mode": {
-          "description": "Il tipo di risposta che vuoi - cambia il predefinito con /responsemode"
+          "description": "Il tipo di risposta che vuoi - cambia il predefinito con /mode"
         },
         "no-filter": {
           "description": "Disattiva i filtri del server"

@@ -16,9 +16,9 @@ public class ChartSizeAutoComplete : IAutocompleteProvider<AutocompleteInteracti
     {
         this._allPossibleCombinations = new List<string>();
 
-        for (var i = 1; i <= 50; i++)
+        for (var i = 1; i <= FMBot.Bot.Services.ChartService.MaxImages; i++)
         {
-            for (var j = 1; j <= 50 && i * j <= 100; j++)
+            for (var j = 1; j <= FMBot.Bot.Services.ChartService.MaxImages && i * j <= FMBot.Bot.Services.ChartService.MaxImages; j++)
             {
                 this._allPossibleCombinations.Add($"{i}x{j}");
             }

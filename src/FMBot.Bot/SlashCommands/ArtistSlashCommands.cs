@@ -217,7 +217,7 @@ public class ArtistSlashCommands(
         Monthly = 2
     }
 
-    [SlashCommand("whoknows", "Shows what other users listen to an artist in your server",
+    [SlashCommand("wk", "Shows what other users listen to an artist in your server",
         Contexts = [InteractionContextType.Guild],
         IntegrationTypes = [ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
@@ -226,7 +226,7 @@ public class ArtistSlashCommands(
         [SlashCommandParameter(Name = "artist", Description = "The artist you want to search for (defaults to currently playing)",
             AutocompleteProviderType = typeof(ArtistAutoComplete))]
         string name = null,
-        [SlashCommandParameter(Name = "mode", Description = "The type of response you want - change default with /responsemode")]
+        [SlashCommandParameter(Name = "mode", Description = "The type of response you want - change default with /mode")]
         WhoKnowsResponseMode? mode = null,
         [SlashCommandParameter(Name = "role-picker", Description = "Display a rolepicker to filter with roles")]
         bool displayRoleFilter = false,
@@ -265,7 +265,7 @@ public class ArtistSlashCommands(
         }
     }
 
-    [SlashCommand("friendswhoknow", "Shows who of your friends listen to an artist",
+    [SlashCommand("fwk", "Shows who of your friends listen to an artist",
         Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild],
         IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
@@ -274,7 +274,7 @@ public class ArtistSlashCommands(
         [SlashCommandParameter(Name = "artist", Description = "The artist you want to search for (defaults to currently playing)",
             AutocompleteProviderType = typeof(ArtistAutoComplete))]
         string name = null,
-        [SlashCommandParameter(Name = "mode", Description = "The type of response you want - change default with /responsemode")]
+        [SlashCommandParameter(Name = "mode", Description = "The type of response you want - change default with /mode")]
         WhoKnowsResponseMode? mode = null,
         [SlashCommandParameter(Name = "private", Description = "Only show response to you")]
         bool privateResponse = false,
@@ -301,7 +301,7 @@ public class ArtistSlashCommands(
         }
     }
 
-    [SlashCommand("globalwhoknows", "Shows what other users listen to an artist in .fmbot",
+    [SlashCommand("gwk", "Shows what other users listen to an artist in .fmbot",
         Contexts = [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild],
         IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
@@ -310,7 +310,7 @@ public class ArtistSlashCommands(
         [SlashCommandParameter(Name = "artist", Description = "The artist you want to search for (defaults to currently playing)",
             AutocompleteProviderType = typeof(ArtistAutoComplete))]
         string name = null,
-        [SlashCommandParameter(Name = "mode", Description = "The type of response you want - change default with /responsemode")]
+        [SlashCommandParameter(Name = "mode", Description = "The type of response you want - change default with /mode")]
         WhoKnowsResponseMode? mode = null,
         [SlashCommandParameter(Name = "hide-private", Description = "Hide or show private users")]
         bool hidePrivate = false,
@@ -353,7 +353,7 @@ public class ArtistSlashCommands(
         string timePeriod = null,
         [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
         string user = null,
-        [SlashCommandParameter(Name = "mode", Description = "The type of response you want - change default with /responsemode")]
+        [SlashCommandParameter(Name = "mode", Description = "The type of response you want - change default with /mode")]
         ResponseMode? mode = null,
         [SlashCommandParameter(Name = "size", Description = "Amount of artist discoveries to show per page")]
         EmbedSize? embedSize = null,

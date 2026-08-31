@@ -283,9 +283,6 @@
         }
       }
     },
-    "covermode": {
-      "description": "Album कवर एनिमेट हों या हमेशा स्थिर दिखें, यह सेट करो"
-    },
     "crown": {
       "description": "किसी artist का crown किसके पास है, और क्या तुम उसे चुरा सकते हो",
       "parameters": {
@@ -315,7 +312,7 @@
       "description": "⭐ हाल में डिस्कवर किए गए artists दिखाता है",
       "parameters": {
         "mode": {
-          "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /responsemode से बदलो"
+          "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /mode से बदलो"
         },
         "private": {
           "description": "जवाब सिर्फ़ तुम्हें दिखे"
@@ -378,23 +375,23 @@
         }
       }
     },
-    "fmmode": {
-      "description": "तुम्हारा '/fm' लेआउट बदलता है"
+    "mode": {
+      "description": "अपना '/fm' लेआउट, रिस्पॉन्स मोड और album कवर टाइप बदलो"
     },
-    "frequently-asked": {
+    "faq": {
       "description": ".fmbot के बारे में अक्सर पूछे जाने वाले सवाल"
     },
     "friendsfm": {
       "description": "तुम्हारे दोस्त और वे क्या सुन रहे हैं, यह दिखाता है"
     },
-    "friendswhoknow": {
+    "fwk": {
       "description": "तुम्हारे कौन से दोस्त किसी artist को सुनते हैं",
       "parameters": {
         "artist": {
           "description": "जो artist तुम खोजना चाहते हो (डिफ़ॉल्ट: अभी बज रहा)"
         },
         "mode": {
-          "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /responsemode से बदलो"
+          "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /mode से बदलो"
         },
         "private": {
           "description": "जवाब सिर्फ़ तुम्हें दिखे"
@@ -411,7 +408,7 @@
           "description": "जो album तुम खोजना चाहते हो (डिफ़ॉल्ट: अभी बज रहा)"
         },
         "mode": {
-          "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /responsemode से बदलो"
+          "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /mode से बदलो"
         },
         "private": {
           "description": "जवाब सिर्फ़ तुम्हें दिखे"
@@ -422,7 +419,7 @@
       "description": "तुम्हारे कौन से दोस्त किसी genre को सुनते हैं",
       "parameters": {
         "mode": {
-          "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /responsemode से बदलो"
+          "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /mode से बदलो"
         },
         "private": {
           "description": "जवाब सिर्फ़ तुम्हें दिखे"
@@ -436,7 +433,7 @@
       "description": "तुम्हारे कौन से दोस्त किसी track को जानते हैं",
       "parameters": {
         "mode": {
-          "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /responsemode से बदलो"
+          "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /mode से बदलो"
         },
         "private": {
           "description": "जवाब सिर्फ़ तुम्हें दिखे"
@@ -450,7 +447,7 @@
       "description": "⭐ वह म्यूज़िक जिस पर तुम कुछ समय के गैप के बाद लौटे हो",
       "parameters": {
         "mode": {
-          "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /responsemode से बदलो"
+          "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /mode से बदलो"
         },
         "private": {
           "description": "जवाब सिर्फ़ तुम्हें दिखे"
@@ -488,7 +485,7 @@
         }
       }
     },
-    "globalwhoknows": {
+    "gwk": {
       "description": ".fmbot में कौन से यूज़र किसी artist को सुनते हैं",
       "parameters": {
         "artist": {
@@ -498,7 +495,7 @@
           "description": "प्राइवेट यूज़र छिपाओ या दिखाओ"
         },
         "mode": {
-          "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /responsemode से बदलो"
+          "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /mode से बदलो"
         },
         "redirects": {
           "description": "Last.fm artist नाम रीडायरेक्ट चालू/बंद करो (डिफ़ॉल्ट: चालू)"
@@ -515,7 +512,7 @@
           "description": "प्राइवेट यूज़र छिपाओ या दिखाओ"
         },
         "mode": {
-          "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /responsemode से बदलो"
+          "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /mode से बदलो"
         }
       }
     },
@@ -526,7 +523,7 @@
           "description": "प्राइवेट यूज़र छिपाओ या दिखाओ"
         },
         "mode": {
-          "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /responsemode से बदलो"
+          "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /mode से बदलो"
         },
         "track": {
           "description": "जो track तुम खोजना चाहते हो (डिफ़ॉल्ट: अभी बज रहा)"
@@ -831,9 +828,6 @@
         }
       }
     },
-    "responsemode": {
-      "description": "तुम्हारा डिफ़ॉल्ट whoknows और top लिस्ट मोड बदलता है"
-    },
     "scrobble": {
       "description": "Last.fm पर एक track scrobble करता है",
       "parameters": {
@@ -954,7 +948,7 @@
         }
       }
     },
-    "streakhistory": {
+    "streaks": {
       "description": "तुम्हारी या किसी और की स्ट्रीक हिस्ट्री दिखाता है",
       "parameters": {
         "artist": {
@@ -967,9 +961,6 @@
           "description": "जिस यूज़र का डेटा दिखाना है (डिफ़ॉल्ट: तुम खुद)"
         }
       }
-    },
-    "supporters": {
-      "description": "⭐ सभी मौजूदा supporters दिखाता है"
     },
     "taste": {
       "description": "तुम्हारे top artists, genres और देशों की किसी और यूज़र से तुलना करता है",
@@ -1004,7 +995,7 @@
               "description": "नतीजों से सिंगल्स छिपाओ"
             },
             "mode": {
-              "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /responsemode से बदलो"
+              "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /mode से बदलो"
             },
             "private": {
               "description": "जवाब सिर्फ़ तुम्हें दिखे"
@@ -1033,7 +1024,7 @@
               "description": "Discogs कलेक्शन के top artists दिखाओ"
             },
             "mode": {
-              "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /responsemode से बदलो"
+              "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /mode से बदलो"
             },
             "private": {
               "description": "जवाब सिर्फ़ तुम्हें दिखे"
@@ -1056,7 +1047,7 @@
               "description": "Top देश billboard स्टाइल में दिखाओ"
             },
             "mode": {
-              "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /responsemode से बदलो"
+              "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /mode से बदलो"
             },
             "private": {
               "description": "जवाब सिर्फ़ तुम्हें दिखे"
@@ -1079,7 +1070,7 @@
               "description": "Top genres billboard स्टाइल में दिखाओ"
             },
             "mode": {
-              "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /responsemode से बदलो"
+              "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /mode से बदलो"
             },
             "private": {
               "description": "जवाब सिर्फ़ तुम्हें दिखे"
@@ -1102,7 +1093,7 @@
               "description": "Top tracks billboard स्टाइल में दिखाओ"
             },
             "mode": {
-              "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /responsemode से बदलो"
+              "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /mode से बदलो"
             },
             "private": {
               "description": "जवाब सिर्फ़ तुम्हें दिखे"
@@ -1174,14 +1165,14 @@
         }
       }
     },
-    "whoknows": {
+    "wk": {
       "description": "तुम्हारे सर्वर में कौन से यूज़र किसी artist को सुनते हैं",
       "parameters": {
         "artist": {
           "description": "जो artist तुम खोजना चाहते हो (डिफ़ॉल्ट: अभी बज रहा)"
         },
         "mode": {
-          "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /responsemode से बदलो"
+          "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /mode से बदलो"
         },
         "no-filter": {
           "description": "सर्वर फ़िल्टर और crowns बंद करो"
@@ -1201,7 +1192,7 @@
           "description": "जो album तुम खोजना चाहते हो (डिफ़ॉल्ट: अभी बज रहा)"
         },
         "mode": {
-          "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /responsemode से बदलो"
+          "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /mode से बदलो"
         },
         "no-filter": {
           "description": "सर्वर फ़िल्टर बंद करो"
@@ -1215,7 +1206,7 @@
       "description": "तुम्हारे सर्वर में कौन से यूज़र किसी genre को सुनते हैं",
       "parameters": {
         "mode": {
-          "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /responsemode से बदलो"
+          "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /mode से बदलो"
         },
         "search": {
           "description": "जो genre या artist तुम देखना चाहते हो"
@@ -1226,7 +1217,7 @@
       "description": "तुम्हारे सर्वर में कौन से यूज़र किसी track को सुनते हैं",
       "parameters": {
         "mode": {
-          "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /responsemode से बदलो"
+          "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /mode से बदलो"
         },
         "no-filter": {
           "description": "सर्वर फ़िल्टर बंद करो"

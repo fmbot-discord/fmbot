@@ -469,7 +469,16 @@ public class UserBuilder
             int.TryParse(fmSetting.CustomColor.TrimStart('#'), NumberStyles.HexNumber, null, out var customRgb))
         {
             container.AccentColor = new Color(customRgb);
-            container.WithTextDisplay($"**Embed color** — Currently `{fmSetting.CustomColor.FilterOutMentions()}`");
+            container.AddComponent(new ComponentSectionProperties(
+                new ButtonProperties(InteractionConstants.FmCommand.FmSettingEditCustomColor, "Edit color",
+                    ButtonStyle.Secondary))
+            {
+                Components =
+                [
+                    new TextDisplayProperties(
+                        $"**Embed color** — Currently `{fmSetting.CustomColor.FilterOutMentions()}`")
+                ]
+            });
         }
         else
         {
@@ -778,6 +787,121 @@ public class UserBuilder
         return response;
     }
 
+    public static ResponseModel GraphMode(ContextModel context)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.ComponentsV2,
+        };
+
+        var isSupporter = SupporterService.IsSupporter(context.ContextUser.UserType);
+        var fmSetting = context.ContextUser.FmSetting;
+
+        var container = response.ComponentsContainer;
+        container.WithAccentColor(DiscordConstants.InformationColorBlue);
+
+        container.WithTextDisplay("### Configuring your graphs\n" +
+                                  "Graphs show your listening history on the `artist`, `album`, `track`, `profile` and all `plays` commands.");
+
+        container.WithSeparator();
+        container.WithTextDisplay("**Graph type**");
+
+        var graphTypeMenu = new StringMenuProperties(InteractionConstants.GraphTypeSetting)
+            .WithPlaceholder(isSupporter ? "Select graph type" : "⭐ Supporter-only option")
+            .WithDisabled(!isSupporter)
+            .WithMinValues(1)
+            .WithMaxValues(1);
+
+        foreach (var option in Enum.GetValues<GraphType>())
+        {
+            var name = option.GetAttribute<OptionAttribute>().Name;
+            var optionDescription = option.GetAttribute<OptionAttribute>().Description;
+            var value = Enum.GetName(option);
+
+            var active = isSupporter && (context.ContextUser.GraphType ?? GraphType.Line) == option;
+
+            graphTypeMenu.AddOption(new StringMenuSelectOptionProperties(name, value)
+            {
+                Description = optionDescription,
+                Default = active
+            });
+        }
+
+        container.AddComponents(graphTypeMenu);
+
+        container.WithSeparator();
+
+        if (fmSetting?.AccentColor == FmAccentColor.Custom &&
+            isSupporter &&
+            !string.IsNullOrWhiteSpace(fmSetting.CustomColor) &&
+            int.TryParse(fmSetting.CustomColor.TrimStart('#'), NumberStyles.HexNumber, null, out var customRgb))
+        {
+            container.AccentColor = new Color(customRgb);
+            container.AddComponent(new ComponentSectionProperties(
+                new ButtonProperties(InteractionConstants.GraphSettingEditCustomColor, "Edit color",
+                    ButtonStyle.Secondary))
+            {
+                Components =
+                [
+                    new TextDisplayProperties(
+                        $"**Accent color** — Currently `{fmSetting.CustomColor.FilterOutMentions()}`\n" +
+                        "-# Also used for your embed colors")
+                ]
+            });
+        }
+        else
+        {
+            container.WithTextDisplay("**Accent color**\n" +
+                                      "-# Also used for your embed colors");
+        }
+
+        var accentColorMenu = new StringMenuProperties(InteractionConstants.GraphSettingAccentColor)
+            .WithPlaceholder("Select accent color")
+            .WithMinValues(1)
+            .WithMaxValues(1);
+
+        foreach (var option in Enum.GetValues<FmAccentColor>())
+        {
+            var name = option.GetAttribute<OptionAttribute>().Name;
+            var optionDescription = option.GetAttribute<OptionAttribute>().Description;
+            var value = Enum.GetName(option);
+            var active = fmSetting?.AccentColor == option;
+            accentColorMenu.AddOption(new StringMenuSelectOptionProperties(name, value)
+            {
+                Description = optionDescription,
+                Default = active
+            });
+        }
+
+        container.AddComponents(accentColorMenu);
+
+        if (isSupporter)
+        {
+            container.WithSeparator();
+            container.WithTextDisplay(
+                "-# You can also switch per command by adding `bargraph`, `linegraph` or `nograph`.");
+        }
+        else
+        {
+            var getSupporter = new ComponentSectionProperties(new ButtonProperties(
+                InteractionConstants.SupporterLinks.GeneratePurchaseButtons(true, false,
+                    false, source: "graphmode"),
+                "Get supporter", ButtonStyle.Primary))
+            {
+                Components =
+                [
+                    new TextDisplayProperties(
+                        "⭐ Unlock graphs with .fmbot supporter\n" +
+                        "-# See your listening history over time as a line or bar graph")
+                ]
+            };
+            container.WithSeparator();
+            container.AddComponents(getSupporter);
+        }
+
+        return response;
+    }
+
     public static ResponseModel ModePick(ContextModel context)
     {
         var response = new ResponseModel
@@ -814,6 +938,15 @@ public class UserBuilder
             Components =
             [
                 new TextDisplayProperties("**Album cover type**\nChanges whether album covers animate or always show as still")
+            ]
+        });
+        container.WithSeparator();
+        container.AddComponent(new ComponentSectionProperties(
+            new ButtonProperties(InteractionConstants.GraphTypeChange, "Customize", ButtonStyle.Primary))
+        {
+            Components =
+            [
+                new TextDisplayProperties("**Graphs** ⭐\nChanges how your listening history graphs look, or turns them off")
             ]
         });
 

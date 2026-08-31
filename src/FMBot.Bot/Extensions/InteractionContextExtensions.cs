@@ -39,7 +39,7 @@ public static class InteractionContextExtensions
         {
             var commandName = context.Interaction switch
             {
-                SlashCommandInteraction slashCommand => slashCommand.Data.Name,
+                SlashCommandInteraction slashCommand => SlashCommandCanonicalNames.Resolve(slashCommand.Data.Name),
                 UserCommandInteraction userCommand => userCommand.Data.Name,
                 MessageCommandInteraction messageCommand => messageCommand.Data.Name,
                 _ => null
@@ -75,7 +75,7 @@ public static class InteractionContextExtensions
             // 2. Database storage - always happens
             var resolvedCommandName = commandName ?? context.Interaction switch
             {
-                SlashCommandInteraction slashCommand => slashCommand.Data.Name,
+                SlashCommandInteraction slashCommand => SlashCommandCanonicalNames.Resolve(slashCommand.Data.Name),
                 UserCommandInteraction userCommand => userCommand.Data.Name,
                 MessageCommandInteraction messageCommand => messageCommand.Data.Name,
                 _ => null
@@ -272,14 +272,16 @@ public static class InteractionContextExtensions
 
         var commandName = context.Interaction switch
         {
-            SlashCommandInteraction slashCommand => slashCommand.Data.Name,
+            SlashCommandInteraction slashCommand => SlashCommandCanonicalNames.Resolve(slashCommand.Data.Name),
             UserCommandInteraction userCommand => userCommand.Data.Name,
             MessageComponentInteraction messageComponent => messageComponent.Data?.CustomId,
             ModalInteraction modalInteraction => modalInteraction.Data?.CustomId,
             _ => "Interaction"
         };
 
-        var displayCommandName = commandName?.Split(':')[0];
+        var displayCommandName = context.Interaction is SlashCommandInteraction typedSlashCommand
+            ? typedSlashCommand.Data.Name
+            : commandName?.Split(':')[0];
 
         Log.Error(exception,
             "InteractionUsed: Error {referenceId} | {discordUserName} / {discordUserId} | {guildName} / {guildId} | {commandResponse} ({message}) | {messageContent}",

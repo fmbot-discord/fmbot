@@ -67,16 +67,6 @@ public class StaticSlashCommands(
         await this.Context.LogCommandUsedAsync(response, userService);
     }
 
-    [SlashCommand("supporters", "⭐ Shows all current supporters")]
-    public async Task SupportersAsync()
-    {
-        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
-        var response = await staticBuilders.SupportersAsync(new ContextModel(this.Context, contextUser));
-
-        await this.Context.SendResponse(this.Interactivity, response, userService);
-        await this.Context.LogCommandUsedAsync(response, userService);
-    }
-
     [SlashCommand("giftsupporter", "🎁 Gift supporter to another user", Contexts =
     [
         InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,
@@ -107,7 +97,7 @@ public class StaticSlashCommands(
         }
     }
 
-    [SlashCommand("frequently-asked", "Frequently asked questions about .fmbot", Contexts =
+    [SlashCommand("faq", "Frequently asked questions about .fmbot", Contexts =
     [
         InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,
         InteractionContextType.Guild

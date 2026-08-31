@@ -44,7 +44,7 @@ public class TopSlashCommands(
         [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
         string user = null,
         [SlashCommandParameter(Name = "mode",
-            Description = "The type of response you want - change default with /responsemode")]
+            Description = "The type of response you want - change default with /mode")]
         ResponseMode? mode = null,
         [SlashCommandParameter(Name = "size", Description = "Amount of artists to show")]
         EmbedSize? embedSize = null,
@@ -94,7 +94,7 @@ public class TopSlashCommands(
         [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
         string user = null,
         [SlashCommandParameter(Name = "mode",
-            Description = "The type of response you want - change default with /responsemode")]
+            Description = "The type of response you want - change default with /mode")]
         ResponseMode? mode = null,
         [SlashCommandParameter(Name = "size", Description = "Amount of albums to show")]
         EmbedSize? embedSize = null,
@@ -138,7 +138,7 @@ public class TopSlashCommands(
         [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
         string user = null,
         [SlashCommandParameter(Name = "mode",
-            Description = "The type of response you want - change default with /responsemode")]
+            Description = "The type of response you want - change default with /mode")]
         ResponseMode? mode = null,
         [SlashCommandParameter(Name = "size", Description = "Amount of tracks to show")]
         EmbedSize? embedSize = null,
@@ -175,7 +175,7 @@ public class TopSlashCommands(
         [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
         string user = null,
         [SlashCommandParameter(Name = "mode",
-            Description = "The type of response you want - change default with /responsemode")]
+            Description = "The type of response you want - change default with /mode")]
         ResponseMode? mode = null,
         [SlashCommandParameter(Name = "size", Description = "Amount of genres to show")]
         EmbedSize? embedSize = null,
@@ -212,7 +212,7 @@ public class TopSlashCommands(
         [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
         string user = null,
         [SlashCommandParameter(Name = "mode",
-            Description = "The type of response you want - change default with /responsemode")]
+            Description = "The type of response you want - change default with /mode")]
         ResponseMode? mode = null,
         [SlashCommandParameter(Name = "size", Description = "Amount of countries to show")]
         EmbedSize? embedSize = null,

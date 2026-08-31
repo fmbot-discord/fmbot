@@ -283,9 +283,6 @@
         }
       }
     },
-    "covermode": {
-      "description": "Définit si les pochettes d'albums s'animent ou restent fixes"
-    },
     "crown": {
       "description": "Qui détient la crown d'un artiste et si tu peux la voler",
       "parameters": {
@@ -315,7 +312,7 @@
       "description": "⭐ Affiche les artistes que tu as découverts récemment",
       "parameters": {
         "mode": {
-          "description": "Le type de réponse souhaité - change la valeur par défaut avec /responsemode"
+          "description": "Le type de réponse souhaité - change la valeur par défaut avec /mode"
         },
         "private": {
           "description": "N'afficher la réponse qu'à toi"
@@ -378,23 +375,23 @@
         }
       }
     },
-    "fmmode": {
-      "description": "Modifie la mise en page de ton '/fm'"
+    "mode": {
+      "description": "Personnalise la mise en page de ton '/fm', ton mode de réponse et le type de pochette"
     },
-    "frequently-asked": {
+    "faq": {
       "description": "Questions fréquentes sur .fmbot"
     },
     "friendsfm": {
       "description": "Affiche tes amis et ce qu'ils écoutent"
     },
-    "friendswhoknow": {
+    "fwk": {
       "description": "Affiche lesquels de tes amis écoutent un artiste",
       "parameters": {
         "artist": {
           "description": "L'artiste à rechercher (par défaut celui en cours d'écoute)"
         },
         "mode": {
-          "description": "Le type de réponse souhaité - change la valeur par défaut avec /responsemode"
+          "description": "Le type de réponse souhaité - change la valeur par défaut avec /mode"
         },
         "private": {
           "description": "N'afficher la réponse qu'à toi"
@@ -411,7 +408,7 @@
           "description": "L'album à rechercher (par défaut celui en cours d'écoute)"
         },
         "mode": {
-          "description": "Le type de réponse souhaité - change la valeur par défaut avec /responsemode"
+          "description": "Le type de réponse souhaité - change la valeur par défaut avec /mode"
         },
         "private": {
           "description": "N'afficher la réponse qu'à toi"
@@ -422,7 +419,7 @@
       "description": "Affiche lesquels de tes amis écoutent un genre",
       "parameters": {
         "mode": {
-          "description": "Le type de réponse souhaité - change la valeur par défaut avec /responsemode"
+          "description": "Le type de réponse souhaité - change la valeur par défaut avec /mode"
         },
         "private": {
           "description": "N'afficher la réponse qu'à toi"
@@ -436,7 +433,7 @@
       "description": "Lesquels de tes amis connaissent un titre",
       "parameters": {
         "mode": {
-          "description": "Le type de réponse souhaité - change la valeur par défaut avec /responsemode"
+          "description": "Le type de réponse souhaité - change la valeur par défaut avec /mode"
         },
         "private": {
           "description": "N'afficher la réponse qu'à toi"
@@ -450,7 +447,7 @@
       "description": "⭐ La musique à laquelle tu reviens après une pause d'écoute",
       "parameters": {
         "mode": {
-          "description": "Le type de réponse souhaité - change la valeur par défaut avec /responsemode"
+          "description": "Le type de réponse souhaité - change la valeur par défaut avec /mode"
         },
         "private": {
           "description": "N'afficher la réponse qu'à toi"
@@ -488,7 +485,7 @@
         }
       }
     },
-    "globalwhoknows": {
+    "gwk": {
       "description": "Affiche quels autres utilisateurs écoutent un artiste dans .fmbot",
       "parameters": {
         "artist": {
@@ -498,7 +495,7 @@
           "description": "Masquer ou afficher les utilisateurs privés"
         },
         "mode": {
-          "description": "Le type de réponse souhaité - change la valeur par défaut avec /responsemode"
+          "description": "Le type de réponse souhaité - change la valeur par défaut avec /mode"
         },
         "redirects": {
           "description": "Activer/désactiver les redirections de nom d'artiste Last.fm (activées par défaut)"
@@ -515,7 +512,7 @@
           "description": "Masquer ou afficher les utilisateurs privés"
         },
         "mode": {
-          "description": "Le type de réponse souhaité - change la valeur par défaut avec /responsemode"
+          "description": "Le type de réponse souhaité - change la valeur par défaut avec /mode"
         }
       }
     },
@@ -526,7 +523,7 @@
           "description": "Masquer ou afficher les utilisateurs privés"
         },
         "mode": {
-          "description": "Le type de réponse souhaité - change la valeur par défaut avec /responsemode"
+          "description": "Le type de réponse souhaité - change la valeur par défaut avec /mode"
         },
         "track": {
           "description": "Le titre à rechercher (par défaut celui en cours d'écoute)"
@@ -831,9 +828,6 @@
         }
       }
     },
-    "responsemode": {
-      "description": "Modifie ton mode par défaut pour whoknows et les tops"
-    },
     "scrobble": {
       "description": "Scrobble un titre sur Last.fm",
       "parameters": {
@@ -954,7 +948,7 @@
         }
       }
     },
-    "streakhistory": {
+    "streaks": {
       "description": "Affiche ton historique de séries ou celui de quelqu'un d'autre",
       "parameters": {
         "artist": {
@@ -967,9 +961,6 @@
           "description": "L'utilisateur à afficher (toi par défaut)"
         }
       }
-    },
-    "supporters": {
-      "description": "⭐ Affiche tous les supporters actuels"
     },
     "taste": {
       "description": "Compare tes top artistes, genres et pays à ceux d'un autre utilisateur",
@@ -1004,7 +995,7 @@
               "description": "Masquer les singles des résultats"
             },
             "mode": {
-              "description": "Le type de réponse souhaité - change la valeur par défaut avec /responsemode"
+              "description": "Le type de réponse souhaité - change la valeur par défaut avec /mode"
             },
             "private": {
               "description": "N'afficher la réponse qu'à toi"
@@ -1033,7 +1024,7 @@
               "description": "Afficher les top artistes de la collection Discogs"
             },
             "mode": {
-              "description": "Le type de réponse souhaité - change la valeur par défaut avec /responsemode"
+              "description": "Le type de réponse souhaité - change la valeur par défaut avec /mode"
             },
             "private": {
               "description": "N'afficher la réponse qu'à toi"
@@ -1056,7 +1047,7 @@
               "description": "Afficher le top pays façon billboard"
             },
             "mode": {
-              "description": "Le type de réponse souhaité - change la valeur par défaut avec /responsemode"
+              "description": "Le type de réponse souhaité - change la valeur par défaut avec /mode"
             },
             "private": {
               "description": "N'afficher la réponse qu'à toi"
@@ -1079,7 +1070,7 @@
               "description": "Afficher le top genres façon billboard"
             },
             "mode": {
-              "description": "Le type de réponse souhaité - change la valeur par défaut avec /responsemode"
+              "description": "Le type de réponse souhaité - change la valeur par défaut avec /mode"
             },
             "private": {
               "description": "N'afficher la réponse qu'à toi"
@@ -1102,7 +1093,7 @@
               "description": "Afficher le top titres façon billboard"
             },
             "mode": {
-              "description": "Le type de réponse souhaité - change la valeur par défaut avec /responsemode"
+              "description": "Le type de réponse souhaité - change la valeur par défaut avec /mode"
             },
             "private": {
               "description": "N'afficher la réponse qu'à toi"
@@ -1174,14 +1165,14 @@
         }
       }
     },
-    "whoknows": {
+    "wk": {
       "description": "Affiche quels autres utilisateurs de ton serveur écoutent un artiste",
       "parameters": {
         "artist": {
           "description": "L'artiste à rechercher (par défaut celui en cours d'écoute)"
         },
         "mode": {
-          "description": "Le type de réponse souhaité - change la valeur par défaut avec /responsemode"
+          "description": "Le type de réponse souhaité - change la valeur par défaut avec /mode"
         },
         "no-filter": {
           "description": "Désactiver les filtres du serveur et les crowns"
@@ -1201,7 +1192,7 @@
           "description": "L'album à rechercher (par défaut celui en cours d'écoute)"
         },
         "mode": {
-          "description": "Le type de réponse souhaité - change la valeur par défaut avec /responsemode"
+          "description": "Le type de réponse souhaité - change la valeur par défaut avec /mode"
         },
         "no-filter": {
           "description": "Désactiver les filtres du serveur"
@@ -1215,7 +1206,7 @@
       "description": "Affiche quels autres utilisateurs de ton serveur écoutent un genre",
       "parameters": {
         "mode": {
-          "description": "Le type de réponse souhaité - change la valeur par défaut avec /responsemode"
+          "description": "Le type de réponse souhaité - change la valeur par défaut avec /mode"
         },
         "search": {
           "description": "Le genre ou l'artiste à afficher"
@@ -1226,7 +1217,7 @@
       "description": "Affiche quels autres utilisateurs de ton serveur écoutent un titre",
       "parameters": {
         "mode": {
-          "description": "Le type de réponse souhaité - change la valeur par défaut avec /responsemode"
+          "description": "Le type de réponse souhaité - change la valeur par défaut avec /mode"
         },
         "no-filter": {
           "description": "Désactiver les filtres du serveur"

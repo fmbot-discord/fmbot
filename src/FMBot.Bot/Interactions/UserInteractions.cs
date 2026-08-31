@@ -795,14 +795,28 @@ public class UserInteractions(
 
             if (accentColor == FmAccentColor.Custom)
             {
+                userSettings.FmSetting ??= await fmSettingService.GetOrCreateFmSetting(userSettings.UserId);
                 await RespondAsync(InteractionCallback.Modal(
-                    ModalFactory.CreateCustomColorModal(InteractionConstants.FmCommand.FmSettingCustomColorModal)));
+                    ModalFactory.CreateCustomColorModal(InteractionConstants.FmCommand.FmSettingCustomColorModal,
+                        userSettings.FmSetting?.CustomColor)));
                 return;
             }
 
             await fmSettingService.SetAccentColor(userSettings, accentColor);
             await RefreshFmModeEmbed();
         }
+    }
+
+    [ComponentInteraction(InteractionConstants.FmCommand.FmSettingEditCustomColor)]
+    [UsernameSetRequired]
+    public async Task EditCustomColor()
+    {
+        var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
+        userSettings.FmSetting ??= await fmSettingService.GetOrCreateFmSetting(userSettings.UserId);
+
+        await RespondAsync(InteractionCallback.Modal(
+            ModalFactory.CreateCustomColorModal(InteractionConstants.FmCommand.FmSettingCustomColorModal,
+                userSettings.FmSetting?.CustomColor)));
     }
 
     [ComponentInteraction(InteractionConstants.FmCommand.FmSettingCustomColorModal)]
@@ -1141,6 +1155,157 @@ public class UserInteractions(
                 .WithEmbeds([embed])
                 .WithFlags(MessageFlags.Ephemeral)));
             await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.GraphTypeChange)]
+    [UsernameSetRequired]
+    public async Task GraphTypePickAsync()
+    {
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        contextUser.FmSetting ??= await fmSettingService.GetOrCreateFmSetting(contextUser.UserId);
+
+        var response = UserBuilder.GraphMode(new ContextModel(this.Context, contextUser));
+
+        await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
+        await this.Context.LogCommandUsedAsync(response, userService);
+    }
+
+    [ComponentInteraction(InteractionConstants.GraphTypeSetting)]
+    [UsernameSetRequired]
+    public async Task SetGraphTypeAsync()
+    {
+        var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
+
+        var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
+        var selectedValue = stringMenuInteraction.Data.SelectedValues[0];
+
+        if (Enum.TryParse(selectedValue, out GraphType graphType))
+        {
+            if (userSettings.UserType == UserType.User)
+            {
+                await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                    .WithEmbeds([
+                        new EmbedProperties()
+                            .WithDescription("This setting is only available for .fmbot supporters.")
+                            .WithColor(DiscordConstants.WarningColorOrange)
+                    ])
+                    .WithComponents([
+                        new ActionRowProperties()
+                            .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
+                                customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(
+                                    source: "graph-type"))
+                    ])
+                    .WithFlags(MessageFlags.Ephemeral)));
+                return;
+            }
+
+            await userService.SetGraphType(userSettings, graphType);
+            await RefreshGraphModeEmbed();
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.GraphSettingAccentColor)]
+    [UsernameSetRequired]
+    public async Task SetGraphAccentColor()
+    {
+        var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
+
+        var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
+        var selectedValue = stringMenuInteraction.Data.SelectedValues[0];
+
+        if (Enum.TryParse(selectedValue, out FmAccentColor accentColor))
+        {
+            var supporterOnly = accentColor.GetAttribute<OptionAttribute>().SupporterOnly;
+            if (supporterOnly && userSettings.UserType == UserType.User)
+            {
+                await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                    .WithEmbeds([
+                        new EmbedProperties()
+                            .WithDescription("This option is only available for .fmbot supporters.")
+                            .WithColor(DiscordConstants.WarningColorOrange)
+                    ])
+                    .WithComponents([
+                        new ActionRowProperties()
+                            .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
+                                customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(
+                                    source: "graph-accentcolor"))
+                    ])
+                    .WithFlags(MessageFlags.Ephemeral)));
+                return;
+            }
+
+            if (accentColor == FmAccentColor.Custom)
+            {
+                userSettings.FmSetting ??= await fmSettingService.GetOrCreateFmSetting(userSettings.UserId);
+                await RespondAsync(InteractionCallback.Modal(
+                    ModalFactory.CreateCustomColorModal(InteractionConstants.GraphSettingCustomColorModal,
+                        userSettings.FmSetting?.CustomColor)));
+                return;
+            }
+
+            await fmSettingService.SetAccentColor(userSettings, accentColor);
+            await RefreshGraphModeEmbed();
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.GraphSettingEditCustomColor)]
+    [UsernameSetRequired]
+    public async Task EditGraphCustomColor()
+    {
+        var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
+        userSettings.FmSetting ??= await fmSettingService.GetOrCreateFmSetting(userSettings.UserId);
+
+        await RespondAsync(InteractionCallback.Modal(
+            ModalFactory.CreateCustomColorModal(InteractionConstants.GraphSettingCustomColorModal,
+                userSettings.FmSetting?.CustomColor)));
+    }
+
+    [ComponentInteraction(InteractionConstants.GraphSettingCustomColorModal)]
+    [UsernameSetRequired]
+    public async Task SetGraphCustomColorModal()
+    {
+        var hexValue = this.Context.GetModalValue("hex_color")?.Trim();
+
+        if (string.IsNullOrEmpty(hexValue) || !Regex.IsMatch(hexValue, @"^#?[0-9A-Fa-f]{3,6}$"))
+        {
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithEmbeds([
+                    new EmbedProperties()
+                        .WithDescription("Invalid hex color. Please use a format like `#FF5733` or `FF5733`.")
+                        .WithColor(DiscordConstants.WarningColorOrange)
+                ])
+                .WithFlags(MessageFlags.Ephemeral)));
+            return;
+        }
+
+        await this.Context.Interaction.SendResponseAsync(InteractionCallback.DeferredModifyMessage);
+
+        if (!hexValue.StartsWith('#'))
+        {
+            hexValue = $"#{hexValue}";
+        }
+
+        var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
+        await fmSettingService.SetAccentColor(userSettings, FmAccentColor.Custom, hexValue);
+
+        await RefreshGraphModeEmbed(deferred: true);
+    }
+
+    private async Task RefreshGraphModeEmbed(bool deferred = false)
+    {
+        var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
+        userSettings.FmSetting ??= await fmSettingService.GetOrCreateFmSetting(userSettings.UserId);
+        var response = UserBuilder.GraphMode(new ContextModel(this.Context, userSettings));
+
+        if (deferred)
+        {
+            await this.Context.Interaction.ModifyResponseAsync(m =>
+                m.Components = response.GetComponentsV2());
+        }
+        else
+        {
+            await this.Context.UpdateInteractionEmbed(response);
         }
     }
 

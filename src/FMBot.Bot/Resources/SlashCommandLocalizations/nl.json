@@ -283,9 +283,6 @@
         }
       }
     },
-    "covermode": {
-      "description": "Stel in of albumhoezen bewegen of altijd stilstaan"
-    },
     "crown": {
       "description": "Wie de crown voor een artiest heeft, en of jij hem kunt stelen",
       "parameters": {
@@ -315,7 +312,7 @@
       "description": "⭐ Toont artiesten die je onlangs hebt ontdekt",
       "parameters": {
         "mode": {
-          "description": "Het type reactie dat je wilt - wijzig de standaard met /responsemode"
+          "description": "Het type reactie dat je wilt - wijzig de standaard met /mode"
         },
         "private": {
           "description": "Toon de reactie alleen aan jou"
@@ -378,23 +375,23 @@
         }
       }
     },
-    "fmmode": {
-      "description": "Wijzigt de lay-out van je '/fm'"
+    "mode": {
+      "description": "Pas je '/fm'-lay-out, weergavemodus en type albumhoes aan"
     },
-    "frequently-asked": {
+    "faq": {
       "description": "Veelgestelde vragen over .fmbot"
     },
     "friendsfm": {
       "description": "Toont je vrienden en waar ze naar luisteren"
     },
-    "friendswhoknow": {
+    "fwk": {
       "description": "Toont welke van je vrienden naar een artiest luisteren",
       "parameters": {
         "artist": {
           "description": "De artiest die je zoekt (standaard wat je nu speelt)"
         },
         "mode": {
-          "description": "Het type reactie dat je wilt - wijzig de standaard met /responsemode"
+          "description": "Het type reactie dat je wilt - wijzig de standaard met /mode"
         },
         "private": {
           "description": "Toon de reactie alleen aan jou"
@@ -411,7 +408,7 @@
           "description": "Het album dat je zoekt (standaard wat je nu speelt)"
         },
         "mode": {
-          "description": "Het type reactie dat je wilt - wijzig de standaard met /responsemode"
+          "description": "Het type reactie dat je wilt - wijzig de standaard met /mode"
         },
         "private": {
           "description": "Toon de reactie alleen aan jou"
@@ -422,7 +419,7 @@
       "description": "Toont welke van je vrienden naar een genre luisteren",
       "parameters": {
         "mode": {
-          "description": "Het type reactie dat je wilt - wijzig de standaard met /responsemode"
+          "description": "Het type reactie dat je wilt - wijzig de standaard met /mode"
         },
         "private": {
           "description": "Toon de reactie alleen aan jou"
@@ -436,7 +433,7 @@
       "description": "Welke van je vrienden een track kennen",
       "parameters": {
         "mode": {
-          "description": "Het type reactie dat je wilt - wijzig de standaard met /responsemode"
+          "description": "Het type reactie dat je wilt - wijzig de standaard met /mode"
         },
         "private": {
           "description": "Toon de reactie alleen aan jou"
@@ -450,7 +447,7 @@
       "description": "⭐ Muziek waarnaar je na een luisterpauze bent teruggekeerd",
       "parameters": {
         "mode": {
-          "description": "Het type reactie dat je wilt - wijzig de standaard met /responsemode"
+          "description": "Het type reactie dat je wilt - wijzig de standaard met /mode"
         },
         "private": {
           "description": "Toon de reactie alleen aan jou"
@@ -488,7 +485,7 @@
         }
       }
     },
-    "globalwhoknows": {
+    "gwk": {
       "description": "Toont welke andere gebruikers in .fmbot naar een artiest luisteren",
       "parameters": {
         "artist": {
@@ -498,7 +495,7 @@
           "description": "Verberg of toon privégebruikers"
         },
         "mode": {
-          "description": "Het type reactie dat je wilt - wijzig de standaard met /responsemode"
+          "description": "Het type reactie dat je wilt - wijzig de standaard met /mode"
         },
         "redirects": {
           "description": "Schakel Last.fm-artiestnaamredirects in of uit (standaard aan)"
@@ -515,7 +512,7 @@
           "description": "Verberg of toon privégebruikers"
         },
         "mode": {
-          "description": "Het type reactie dat je wilt - wijzig de standaard met /responsemode"
+          "description": "Het type reactie dat je wilt - wijzig de standaard met /mode"
         }
       }
     },
@@ -526,7 +523,7 @@
           "description": "Verberg of toon privégebruikers"
         },
         "mode": {
-          "description": "Het type reactie dat je wilt - wijzig de standaard met /responsemode"
+          "description": "Het type reactie dat je wilt - wijzig de standaard met /mode"
         },
         "track": {
           "description": "De track die je zoekt (standaard wat je nu speelt)"
@@ -831,9 +828,6 @@
         }
       }
     },
-    "responsemode": {
-      "description": "Wijzigt je standaardweergave voor whoknows en toplijsten"
-    },
     "scrobble": {
       "description": "Scrobbelt een track op Last.fm",
       "parameters": {
@@ -954,7 +948,7 @@
         }
       }
     },
-    "streakhistory": {
+    "streaks": {
       "description": "Toont jouw of andermans streakgeschiedenis",
       "parameters": {
         "artist": {
@@ -967,9 +961,6 @@
           "description": "De gebruiker om te tonen (standaard jijzelf)"
         }
       }
-    },
-    "supporters": {
-      "description": "⭐ Toont alle huidige supporters"
     },
     "taste": {
       "description": "Vergelijkt je top artiesten, genres en landen met die van een andere gebruiker",
@@ -1004,7 +995,7 @@
               "description": "Verberg singles in de resultaten"
             },
             "mode": {
-              "description": "Het type reactie dat je wilt - wijzig de standaard met /responsemode"
+              "description": "Het type reactie dat je wilt - wijzig de standaard met /mode"
             },
             "private": {
               "description": "Toon de reactie alleen aan jou"
@@ -1033,7 +1024,7 @@
               "description": "Toon top artiesten in je Discogs-collectie"
             },
             "mode": {
-              "description": "Het type reactie dat je wilt - wijzig de standaard met /responsemode"
+              "description": "Het type reactie dat je wilt - wijzig de standaard met /mode"
             },
             "private": {
               "description": "Toon de reactie alleen aan jou"
@@ -1056,7 +1047,7 @@
               "description": "Toon top landen in billboard-stijl"
             },
             "mode": {
-              "description": "Het type reactie dat je wilt - wijzig de standaard met /responsemode"
+              "description": "Het type reactie dat je wilt - wijzig de standaard met /mode"
             },
             "private": {
               "description": "Toon de reactie alleen aan jou"
@@ -1079,7 +1070,7 @@
               "description": "Toon top genres in billboard-stijl"
             },
             "mode": {
-              "description": "Het type reactie dat je wilt - wijzig de standaard met /responsemode"
+              "description": "Het type reactie dat je wilt - wijzig de standaard met /mode"
             },
             "private": {
               "description": "Toon de reactie alleen aan jou"
@@ -1102,7 +1093,7 @@
               "description": "Toon top tracks in billboard-stijl"
             },
             "mode": {
-              "description": "Het type reactie dat je wilt - wijzig de standaard met /responsemode"
+              "description": "Het type reactie dat je wilt - wijzig de standaard met /mode"
             },
             "private": {
               "description": "Toon de reactie alleen aan jou"
@@ -1174,14 +1165,14 @@
         }
       }
     },
-    "whoknows": {
+    "wk": {
       "description": "Toont welke andere gebruikers in je server naar een artiest luisteren",
       "parameters": {
         "artist": {
           "description": "De artiest die je zoekt (standaard wat je nu speelt)"
         },
         "mode": {
-          "description": "Het type reactie dat je wilt - wijzig de standaard met /responsemode"
+          "description": "Het type reactie dat je wilt - wijzig de standaard met /mode"
         },
         "no-filter": {
           "description": "Schakel serverfilters en crowns uit"
@@ -1201,7 +1192,7 @@
           "description": "Het album dat je zoekt (standaard wat je nu speelt)"
         },
         "mode": {
-          "description": "Het type reactie dat je wilt - wijzig de standaard met /responsemode"
+          "description": "Het type reactie dat je wilt - wijzig de standaard met /mode"
         },
         "no-filter": {
           "description": "Schakel serverfilters uit"
@@ -1215,7 +1206,7 @@
       "description": "Toont welke andere gebruikers in je server naar een genre luisteren",
       "parameters": {
         "mode": {
-          "description": "Het type reactie dat je wilt - wijzig de standaard met /responsemode"
+          "description": "Het type reactie dat je wilt - wijzig de standaard met /mode"
         },
         "search": {
           "description": "Het genre of de artiest die je wilt bekijken"
@@ -1226,7 +1217,7 @@
       "description": "Toont welke andere gebruikers in je server naar een track luisteren",
       "parameters": {
         "mode": {
-          "description": "Het type reactie dat je wilt - wijzig de standaard met /responsemode"
+          "description": "Het type reactie dat je wilt - wijzig de standaard met /mode"
         },
         "no-filter": {
           "description": "Schakel serverfilters uit"

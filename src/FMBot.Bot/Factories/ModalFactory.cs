@@ -519,7 +519,7 @@ public static class ModalFactory
             ]
         };
 
-    public static ModalProperties CreateCustomColorModal(string customId) =>
+    public static ModalProperties CreateCustomColorModal(string customId, string currentHex = null) =>
         new(customId, "Set custom accent color")
         {
             Components =
@@ -528,6 +528,7 @@ public static class ModalFactory
                     new TextInputProperties("hex_color", TextInputStyle.Short)
                 {
                     Placeholder = "#FF5733",
+                    Value = currentHex,
                     MinLength = 4,
                     MaxLength = 7
                 })

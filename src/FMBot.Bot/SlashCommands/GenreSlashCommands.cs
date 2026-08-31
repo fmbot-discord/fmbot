@@ -65,7 +65,7 @@ public class GenreSlashCommands(
         [SlashCommandParameter(Name = "search", Description = "The genre or artist you want to view",
             AutocompleteProviderType = typeof(GenreArtistAutoComplete))]
         string search = null,
-        [SlashCommandParameter(Name = "mode", Description = "The type of response you want - change default with /responsemode")]
+        [SlashCommandParameter(Name = "mode", Description = "The type of response you want - change default with /mode")]
         WhoKnowsResponseMode? mode = null)
     {
         await RespondAsync(InteractionCallback.DeferredMessage());
@@ -101,7 +101,7 @@ public class GenreSlashCommands(
         [SlashCommandParameter(Name = "search", Description = "The genre or artist you want to view",
             AutocompleteProviderType = typeof(GenreArtistAutoComplete))]
         string search = null,
-        [SlashCommandParameter(Name = "mode", Description = "The type of response you want - change default with /responsemode")]
+        [SlashCommandParameter(Name = "mode", Description = "The type of response you want - change default with /mode")]
         WhoKnowsResponseMode? mode = null,
         [SlashCommandParameter(Name = "private", Description = "Only show response to you")]
         bool privateResponse = false)
