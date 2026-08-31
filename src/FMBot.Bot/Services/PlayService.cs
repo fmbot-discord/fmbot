@@ -1142,13 +1142,21 @@ public class PlayService
 
     public async Task<DateTime?> GetArtistFirstPlayDate(int userId, string artistName)
     {
-        var plays = await this.GetAllUserPlays(userId);
-        return plays
-            .OrderBy(o => o.TimePlayed)
-            .FirstOrDefault(f =>
-                f.ArtistName != null &&
-                f.ArtistName.Equals(artistName, StringComparison.OrdinalIgnoreCase))?
-            .TimePlayed;
+        var (connection, dataSource) = await GetConnectionWithDataSource(userId);
+        await using (connection)
+        {
+            return await PlayRepository.GetFirstPlayDateForEntity(userId, connection, dataSource, artistName);
+        }
+    }
+
+    private async Task<(NpgsqlConnection Connection, DataSource DataSource)> GetConnectionWithDataSource(int userId)
+    {
+        var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        var importUser = await UserRepository.GetImportUserForUserId(userId, connection, true);
+
+        return (connection, importUser?.DataSource ?? DataSource.LastFm);
     }
 
     public async Task<PlayHistorySummary> GetArtistPlayHistory(int userId, string artistName)
@@ -1163,15 +1171,12 @@ public class PlayService
             return null;
         }
 
-        var plays = await this.GetAllUserPlays(userId);
-        return plays
-            .OrderBy(o => o.TimePlayed)
-            .FirstOrDefault(f =>
-                f.ArtistName != null &&
-                f.ArtistName.Equals(artistName, StringComparison.OrdinalIgnoreCase) &&
-                f.AlbumName != null &&
-                f.AlbumName.Equals(albumName, StringComparison.OrdinalIgnoreCase))?
-            .TimePlayed;
+        var (connection, dataSource) = await GetConnectionWithDataSource(userId);
+        await using (connection)
+        {
+            return await PlayRepository.GetFirstPlayDateForEntity(userId, connection, dataSource, artistName,
+                albumName: albumName);
+        }
     }
 
     public async Task<PlayHistorySummary> GetAlbumPlayHistory(int userId, string artistName, string albumName)
@@ -1272,14 +1277,12 @@ public class PlayService
 
     public async Task<DateTime?> GetTrackFirstPlayDate(int userId, string artistName, string trackName)
     {
-        var plays = await this.GetAllUserPlays(userId);
-        return plays
-            .OrderBy(o => o.TimePlayed)
-            .FirstOrDefault(f =>
-                f.ArtistName != null &&
-                f.ArtistName.Equals(artistName, StringComparison.OrdinalIgnoreCase) &&
-                f.TrackName.Equals(trackName, StringComparison.OrdinalIgnoreCase))?
-            .TimePlayed;
+        var (connection, dataSource) = await GetConnectionWithDataSource(userId);
+        await using (connection)
+        {
+            return await PlayRepository.GetFirstPlayDateForEntity(userId, connection, dataSource, artistName,
+                trackName: trackName);
+        }
     }
 
     private static readonly TimeSpan LastListenedExclusionWindow = TimeSpan.FromMinutes(30);
@@ -1313,20 +1316,18 @@ public class PlayService
 
     public async Task<DateTime?> GetArtistLastPlayDate(int userId, string artistName)
     {
-        var plays = await this.GetAllUserPlays(userId);
-        var cutoff = GetLastListenedCutoff(plays);
-        if (cutoff == null)
+        var (connection, dataSource) = await GetConnectionWithDataSource(userId);
+        await using (connection)
         {
-            return null;
-        }
+            var latestPlay = await PlayRepository.GetLatestPlayDate(userId, connection, dataSource);
+            if (latestPlay == null)
+            {
+                return null;
+            }
 
-        return plays
-            .Where(w => w.TimePlayed < cutoff.Value)
-            .OrderByDescending(o => o.TimePlayed)
-            .FirstOrDefault(f =>
-                f.ArtistName != null &&
-                f.ArtistName.Equals(artistName, StringComparison.OrdinalIgnoreCase))?
-            .TimePlayed;
+            return await PlayRepository.GetLastPlayDateForEntity(userId, connection, dataSource,
+                latestPlay.Value - LastListenedExclusionWindow, artistName);
+        }
     }
 
     public async Task<DateTime?> GetAlbumLastPlayDate(int userId, string artistName, string albumName)
@@ -1336,41 +1337,34 @@ public class PlayService
             return null;
         }
 
-        var plays = await this.GetAllUserPlays(userId);
-        var cutoff = GetLastListenedCutoff(plays);
-        if (cutoff == null)
+        var (connection, dataSource) = await GetConnectionWithDataSource(userId);
+        await using (connection)
         {
-            return null;
-        }
+            var latestPlay = await PlayRepository.GetLatestPlayDate(userId, connection, dataSource);
+            if (latestPlay == null)
+            {
+                return null;
+            }
 
-        return plays
-            .Where(w => w.TimePlayed < cutoff.Value)
-            .OrderByDescending(o => o.TimePlayed)
-            .FirstOrDefault(f =>
-                f.ArtistName != null &&
-                f.ArtistName.Equals(artistName, StringComparison.OrdinalIgnoreCase) &&
-                f.AlbumName != null &&
-                f.AlbumName.Equals(albumName, StringComparison.OrdinalIgnoreCase))?
-            .TimePlayed;
+            return await PlayRepository.GetLastPlayDateForEntity(userId, connection, dataSource,
+                latestPlay.Value - LastListenedExclusionWindow, artistName, albumName: albumName);
+        }
     }
 
     public async Task<DateTime?> GetTrackLastPlayDate(int userId, string artistName, string trackName)
     {
-        var plays = await this.GetAllUserPlays(userId);
-        var cutoff = GetLastListenedCutoff(plays);
-        if (cutoff == null)
+        var (connection, dataSource) = await GetConnectionWithDataSource(userId);
+        await using (connection)
         {
-            return null;
-        }
+            var latestPlay = await PlayRepository.GetLatestPlayDate(userId, connection, dataSource);
+            if (latestPlay == null)
+            {
+                return null;
+            }
 
-        return plays
-            .Where(w => w.TimePlayed < cutoff.Value)
-            .OrderByDescending(o => o.TimePlayed)
-            .FirstOrDefault(f =>
-                f.ArtistName != null &&
-                f.ArtistName.Equals(artistName, StringComparison.OrdinalIgnoreCase) &&
-                f.TrackName.Equals(trackName, StringComparison.OrdinalIgnoreCase))?
-            .TimePlayed;
+            return await PlayRepository.GetLastPlayDateForEntity(userId, connection, dataSource,
+                latestPlay.Value - LastListenedExclusionWindow, artistName, trackName: trackName);
+        }
     }
 
     public async Task<IList<UserPlay>> GetGuildUsersPlays(int guildId, int amountOfDays)

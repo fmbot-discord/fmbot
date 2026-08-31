@@ -1629,7 +1629,8 @@ public class TrackBuilders
         response.EmbedAuthor.WithUrl(userUrl);
 
         var topTracks = await this._dataSourceFactory.GetTopTracksAsync(userSettings.UserNameLastFm, timeSettings, topListSettings.ListAmount,
-            calculateTimeListened: topListSettings.Type == TopListType.TimeListened);
+            calculateTimeListened: topListSettings.Type == TopListType.TimeListened,
+            useCache: true);
 
         if (!topTracks.Success)
         {
@@ -1686,9 +1687,10 @@ public class TrackBuilders
 
         response.Embed.WithAuthor(response.EmbedAuthor);
 
+        var topTrackList = topTracks.Content.TopTracks;
         if (topListSettings.Type == TopListType.TimeListened)
         {
-            topTracks.Content.TopTracks = topTracks.Content.TopTracks
+            topTrackList = topTrackList
                 .OrderByDescending(o => o.TimeListened.TotalTimeListened)
                 .ToList();
 
@@ -1697,7 +1699,7 @@ public class TrackBuilders
                 .ToList();
         }
 
-        var trackPages = topTracks.Content.TopTracks.ChunkBy((int)topListSettings.EmbedSize);
+        var trackPages = topTrackList.ChunkBy((int)topListSettings.EmbedSize);
 
         var counter = 1;
         var pageCounter = 1;

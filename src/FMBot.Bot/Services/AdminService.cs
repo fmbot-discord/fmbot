@@ -244,6 +244,8 @@ public class AdminService
 
         await db.SaveChangesAsync();
 
+        this._cache.Remove(WhoKnowsService.GlobalFilterSetsCacheKey);
+
         return true;
     }
 
@@ -294,6 +296,8 @@ public class AdminService
 
         await db.SaveChangesAsync();
 
+        this._cache.Remove(WhoKnowsService.GlobalFilterSetsCacheKey);
+
         return true;
     }
 
@@ -326,6 +330,8 @@ public class AdminService
         await db.BottedUsers.AddAsync(newBottedUser);
 
         await db.SaveChangesAsync();
+
+        this._cache.Remove(WhoKnowsService.GlobalFilterSetsCacheKey);
 
         return true;
     }

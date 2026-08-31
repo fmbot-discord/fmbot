@@ -652,14 +652,15 @@ public class AlbumService
         return await connection.QueryFirstOrDefaultAsync<string>(sql, new { albumId });
     }
 
-    public async Task<Color> GetAlbumAccentColor(string albumCoverUrl, string albumName, string artistName)
+    public async Task<Color> GetAlbumAccentColor(string albumCoverUrl, string albumName, string artistName,
+        Album prefetchedAlbum = null)
     {
         if (string.IsNullOrEmpty(albumName) || string.IsNullOrEmpty(artistName))
         {
             return DiscordConstants.LastFmColorRed;
         }
 
-        var album = await GetAlbumFromDatabase(artistName, albumName);
+        var album = prefetchedAlbum ?? await GetAlbumFromDatabase(artistName, albumName);
 
         var cachePath = ChartService.AlbumUrlToCacheFilePath(albumName, artistName);
         if (File.Exists(cachePath))
@@ -724,7 +725,7 @@ public class AlbumService
         return DiscordConstants.LastFmColorRed;
     }
 
-    public async Task<Color> GetAccentColorWithAlbum(ContextModel context, string albumCoverUrl, int? albumId, string albumName, string artistName, bool allowCustomColors = true)
+    public async Task<Color> GetAccentColorWithAlbum(ContextModel context, string albumCoverUrl, int? albumId, string albumName, string artistName, bool allowCustomColors = true, Album prefetchedAlbum = null)
     {
         var accentColor = context.ContextUser?.FmSetting?.AccentColor;
         if (!allowCustomColors && accentColor is FmAccentColor.Custom or FmAccentColor.LastFmRed)
@@ -757,7 +758,7 @@ public class AlbumService
             }
         }
 
-        return await GetAlbumAccentColor(albumCoverUrl, albumName, artistName);
+        return await GetAlbumAccentColor(albumCoverUrl, albumName, artistName, prefetchedAlbum);
     }
 
     private static AlbumInfo CachedAlbumToAlbumInfo(Album album)

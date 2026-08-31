@@ -106,6 +106,56 @@ public class TemplateContext
     public PlayService PlayService { get; set; }
 
     public EurovisionService EurovisionService { get; set; }
+
+    private readonly object _listenerLock = new();
+    private Task<IList<WhoKnowsObjectWithUser>> _serverArtistListeners;
+    private Task<IList<WhoKnowsObjectWithUser>> _serverAlbumListeners;
+    private Task<IList<WhoKnowsObjectWithUser>> _serverTrackListeners;
+
+    public Task<IList<WhoKnowsObjectWithUser>> GetFilteredServerArtistListeners()
+    {
+        lock (this._listenerLock)
+        {
+            return this._serverArtistListeners ??= FetchServerArtistListeners();
+        }
+    }
+
+    public Task<IList<WhoKnowsObjectWithUser>> GetFilteredServerAlbumListeners()
+    {
+        lock (this._listenerLock)
+        {
+            return this._serverAlbumListeners ??= FetchServerAlbumListeners();
+        }
+    }
+
+    public Task<IList<WhoKnowsObjectWithUser>> GetFilteredServerTrackListeners()
+    {
+        lock (this._listenerLock)
+        {
+            return this._serverTrackListeners ??= FetchServerTrackListeners();
+        }
+    }
+
+    private async Task<IList<WhoKnowsObjectWithUser>> FetchServerArtistListeners()
+    {
+        var listeners = await this.WhoKnowsArtistService.GetIndexedUsersForArtist(null,
+            this.GuildUsers, this.Guild.GuildId, this.CurrentTrack.ArtistName);
+        return WhoKnowsService.FilterWhoKnowsObjects(listeners, this.GuildUsers, this.Guild, 0).filteredUsers;
+    }
+
+    private async Task<IList<WhoKnowsObjectWithUser>> FetchServerAlbumListeners()
+    {
+        var listeners = await this.WhoKnowsAlbumService.GetIndexedUsersForAlbum(null,
+            this.GuildUsers, this.Guild.GuildId, this.DbAlbum.Id);
+        return WhoKnowsService.FilterWhoKnowsObjects(listeners, this.GuildUsers, this.Guild, 0).filteredUsers;
+    }
+
+    private async Task<IList<WhoKnowsObjectWithUser>> FetchServerTrackListeners()
+    {
+        var listeners = await this.WhoKnowsTrackService.GetIndexedUsersForTrack(null,
+            this.GuildUsers, this.Guild.GuildId, this.DbTrack.ArtistName, this.DbTrack.Name);
+        return WhoKnowsService.FilterWhoKnowsObjects(listeners, this.GuildUsers, this.Guild, 0).filteredUsers;
+    }
 }
 
 public enum EmbedOption
@@ -890,11 +940,7 @@ public static class TemplateOptions
                     return null;
                 }
 
-                var artistListeners = await context.WhoKnowsArtistService.GetIndexedUsersForArtist(null,
-                    context.GuildUsers, context.Guild.GuildId, context.CurrentTrack.ArtistName);
-                artistListeners = WhoKnowsService
-                    .FilterWhoKnowsObjects(artistListeners, context.GuildUsers, context.Guild, 0)
-                    .filteredUsers;
+                var artistListeners = await context.GetFilteredServerArtistListeners();
 
                 if (artistListeners.Any())
                 {
@@ -926,11 +972,7 @@ public static class TemplateOptions
                     return null;
                 }
 
-                var artistListeners = await context.WhoKnowsArtistService.GetIndexedUsersForArtist(null,
-                    context.GuildUsers, context.Guild.GuildId, context.CurrentTrack.ArtistName);
-                artistListeners = WhoKnowsService
-                    .FilterWhoKnowsObjects(artistListeners, context.GuildUsers, context.Guild, 0)
-                    .filteredUsers;
+                var artistListeners = await context.GetFilteredServerArtistListeners();
 
                 return artistListeners.Any()
                     ? new VariableResult(context.Localizer.TranslateCount("shared.listeners", artistListeners.Count),
@@ -957,10 +999,7 @@ public static class TemplateOptions
                     return null;
                 }
 
-                var albumListeners = await context.WhoKnowsAlbumService.GetIndexedUsersForAlbum(null,
-                    context.GuildUsers, context.Guild.GuildId, context.DbAlbum.Id);
-                albumListeners = WhoKnowsService
-                    .FilterWhoKnowsObjects(albumListeners, context.GuildUsers, context.Guild, 0).filteredUsers;
+                var albumListeners = await context.GetFilteredServerAlbumListeners();
 
                 if (albumListeners.Any())
                 {
@@ -996,10 +1035,7 @@ public static class TemplateOptions
                     return null;
                 }
 
-                var albumListeners = await context.WhoKnowsAlbumService.GetIndexedUsersForAlbum(null,
-                    context.GuildUsers, context.Guild.GuildId, context.DbAlbum.Id);
-                albumListeners = WhoKnowsService
-                    .FilterWhoKnowsObjects(albumListeners, context.GuildUsers, context.Guild, 0).filteredUsers;
+                var albumListeners = await context.GetFilteredServerAlbumListeners();
 
                 return albumListeners.Any()
                     ? new VariableResult(context.Localizer.TranslateCount("footer.albumListeners", albumListeners.Count),
@@ -1026,10 +1062,7 @@ public static class TemplateOptions
                     return null;
                 }
 
-                var trackListeners = await context.WhoKnowsTrackService.GetIndexedUsersForTrack(null,
-                    context.GuildUsers, context.Guild.GuildId, context.DbTrack.ArtistName, context.DbTrack.Name);
-                trackListeners = WhoKnowsService
-                    .FilterWhoKnowsObjects(trackListeners, context.GuildUsers, context.Guild, 0).filteredUsers;
+                var trackListeners = await context.GetFilteredServerTrackListeners();
 
                 if (trackListeners.Any())
                 {
@@ -1065,10 +1098,7 @@ public static class TemplateOptions
                     return null;
                 }
 
-                var trackListeners = await context.WhoKnowsTrackService.GetIndexedUsersForTrack(null,
-                    context.GuildUsers, context.Guild.GuildId, context.DbTrack.ArtistName, context.DbTrack.Name);
-                trackListeners = WhoKnowsService
-                    .FilterWhoKnowsObjects(trackListeners, context.GuildUsers, context.Guild, 0).filteredUsers;
+                var trackListeners = await context.GetFilteredServerTrackListeners();
 
                 return trackListeners.Any()
                     ? new VariableResult(context.Localizer.TranslateCount("footer.trackListeners", trackListeners.Count),

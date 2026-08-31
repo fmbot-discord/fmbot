@@ -176,28 +176,6 @@ public class PlaySlashCommands(
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);
-
-            var message = await this.Context.Interaction.GetResponseAsync();
-
-            try
-            {
-                if (message != null &&
-                    this.Context.Channel != null &&
-                    response.CommandResponse == CommandResponse.Ok &&
-                    this.Context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType
-                        .GuildInstall))
-                {
-                }
-            }
-            catch (Exception e)
-            {
-                await this.Context.HandleCommandException(e, userService, "Could not add emote reactions", sendReply: false);
-                await this.Context.Client.Rest.SendMessageAsync(this.Context.Channel.Id, new MessageProperties
-                {
-                    Content =
-                        "Could not add automatic emoji reactions to `/fm`. Make sure the emojis still exist, the bot is in the same server as where the emojis come from and the bot has permission to `Add Reactions`."
-                });
-            }
         }
         catch (Exception e)
         {

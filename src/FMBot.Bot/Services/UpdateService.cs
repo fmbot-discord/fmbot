@@ -254,7 +254,21 @@ public class UpdateService
             recentTracks.Content.TotalAmount = await SetOrUpdateUserPlaycount(user, playUpdate.NewPlays.Count,
                 connection, totalPlaycountCorrect ? recentTracks.Content.TotalAmount : null);
 
-            var libraryItems = await GetUserLibrary(user.UserId, connection);
+            var newPlayArtistNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var artist in playUpdate.NewPlays.GroupBy(g => g.ArtistName.ToLower()))
+            {
+                newPlayArtistNames.Add(artist.First().ArtistName);
+
+                var newPlayAlias = user.CorrectionsDisabled != true
+                    ? await this._aliasService.GetAlias(artist.Key)
+                    : null;
+                if (newPlayAlias != null && !newPlayAlias.Options.HasFlag(AliasOption.DisableInPlays))
+                {
+                    newPlayArtistNames.Add(newPlayAlias.ArtistName);
+                }
+            }
+
+            var libraryItems = await GetUserLibrary(user.UserId, connection, newPlayArtistNames.ToArray());
             var libraryItemsList = libraryItems.ToList();
 
             var userArtists = libraryItemsList
@@ -403,16 +417,17 @@ public class UpdateService
         public int Playcount { get; init; }
     }
 
-    private static async Task<IEnumerable<UserLibraryItem>> GetUserLibrary(int userId, IDbConnection connection)
+    private static async Task<IEnumerable<UserLibraryItem>> GetUserLibrary(int userId, IDbConnection connection,
+        string[] artistNames)
     {
         const string sql = @"
-SELECT 1 AS Type, user_artist_id AS Id, name AS ArtistName, name, playcount FROM public.user_artists WHERE user_id = @userId
+SELECT 1 AS Type, user_artist_id AS Id, name AS ArtistName, name, playcount FROM public.user_artists WHERE user_id = @userId AND name = ANY(@artistNames::citext[])
 UNION ALL
-SELECT 2 AS Type, user_album_id AS Id, artist_name, name, playcount FROM public.user_albums WHERE user_id = @userId
+SELECT 2 AS Type, user_album_id AS Id, artist_name, name, playcount FROM public.user_albums WHERE user_id = @userId AND artist_name = ANY(@artistNames::citext[])
 UNION ALL
-SELECT 3 AS Type, user_track_id AS Id, artist_name, name, playcount FROM public.user_tracks WHERE user_id = @userId;";
+SELECT 3 AS Type, user_track_id AS Id, artist_name, name, playcount FROM public.user_tracks WHERE user_id = @userId AND artist_name = ANY(@artistNames::citext[]);";
 
-        return await connection.QueryAsync<UserLibraryItem>(sql, new { userId });
+        return await connection.QueryAsync<UserLibraryItem>(sql, new { userId, artistNames });
     }
 
     private async Task UpdateArtistsForUser(User user,
@@ -758,10 +773,11 @@ SELECT 3 AS Type, user_track_id AS Id, artist_name, name, playcount FROM public.
 
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var user = await db.Users
-            .Include(i => i.Artists)
+            .AsNoTracking()
             .FirstOrDefaultAsync(f => f.UserId == userId);
 
-        if (user?.LastUpdated == null || !user.Artists.Any() || user.LastUpdated < DateTime.UtcNow.AddMinutes(-2))
+        if (user?.LastUpdated == null || user.LastUpdated < DateTime.UtcNow.AddMinutes(-2) ||
+            !await db.UserArtists.AsNoTracking().AnyAsync(a => a.UserId == userId))
         {
             var random = new Random();
             if (random.Next(0, 5) == 1 && user?.LastUpdated != null)
@@ -774,7 +790,8 @@ SELECT 3 AS Type, user_track_id AS Id, artist_name, name, playcount FROM public.
             }
         }
 
-        var userArtist = user.Artists.FirstOrDefault(f => f.Name.ToLower() == artistName.ToLower());
+        var userArtist = await db.UserArtists
+            .FirstOrDefaultAsync(f => f.UserId == userId && f.Name.ToLower() == artistName.ToLower());
 
         if (userArtist == null ||
             userArtist.Playcount < 20 ||
@@ -803,10 +820,11 @@ SELECT 3 AS Type, user_track_id AS Id, artist_name, name, playcount FROM public.
 
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var user = await db.Users
-            .Include(i => i.Albums)
+            .AsNoTracking()
             .FirstOrDefaultAsync(f => f.UserId == userId);
 
-        if (user?.LastUpdated == null || !user.Albums.Any() || user.LastUpdated < DateTime.UtcNow.AddMinutes(-2))
+        if (user?.LastUpdated == null || user.LastUpdated < DateTime.UtcNow.AddMinutes(-2) ||
+            !await db.UserAlbums.AsNoTracking().AnyAsync(a => a.UserId == userId))
         {
             var random = new Random();
             if (random.Next(0, 5) == 1 && user?.LastUpdated != null)
@@ -819,8 +837,9 @@ SELECT 3 AS Type, user_track_id AS Id, artist_name, name, playcount FROM public.
             }
         }
 
-        var userAlbum = user.Albums.FirstOrDefault(f => f.Name.ToLower() == albumName.ToLower() &&
-                                                        f.ArtistName.ToLower() == artistName.ToLower());
+        var userAlbum = await db.UserAlbums
+            .FirstOrDefaultAsync(f => f.UserId == userId && f.Name.ToLower() == albumName.ToLower() &&
+                                      f.ArtistName.ToLower() == artistName.ToLower());
 
         if (userAlbum == null ||
             userAlbum.Playcount < 20 ||
@@ -850,10 +869,11 @@ SELECT 3 AS Type, user_track_id AS Id, artist_name, name, playcount FROM public.
 
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var user = await db.Users
-            .Include(i => i.Tracks)
+            .AsNoTracking()
             .FirstOrDefaultAsync(f => f.UserId == userId);
 
-        if (user?.LastUpdated == null || !user.Tracks.Any() || user.LastUpdated < DateTime.UtcNow.AddMinutes(-2))
+        if (user?.LastUpdated == null || user.LastUpdated < DateTime.UtcNow.AddMinutes(-2) ||
+            !await db.UserTracks.AsNoTracking().AnyAsync(a => a.UserId == userId))
         {
             var random = new Random();
             if (random.Next(0, 5) == 1 && user?.LastUpdated != null)
@@ -866,8 +886,9 @@ SELECT 3 AS Type, user_track_id AS Id, artist_name, name, playcount FROM public.
             }
         }
 
-        var userTrack = user.Tracks.FirstOrDefault(f => f.Name.ToLower() == trackName.ToLower() &&
-                                                        f.ArtistName.ToLower() == artistName.ToLower());
+        var userTrack = await db.UserTracks
+            .FirstOrDefaultAsync(f => f.UserId == userId && f.Name.ToLower() == trackName.ToLower() &&
+                                      f.ArtistName.ToLower() == artistName.ToLower());
 
         if (userTrack == null ||
             userTrack.Playcount < 20 ||

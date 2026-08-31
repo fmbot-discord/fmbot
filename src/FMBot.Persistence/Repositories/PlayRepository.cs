@@ -355,6 +355,66 @@ ORDER BY time_played DESC;";
         });
     }
 
+    public static async Task<DateTime?> GetFirstPlayDateForEntity(int userId, NpgsqlConnection connection,
+        DataSource dataSource, string artistName, string albumName = null, string trackName = null)
+    {
+        var sql = GetUserPlaysSqlString("SELECT MIN(time_played) ", dataSource);
+        sql += GetEntityFilterSql(albumName, trackName);
+
+        return await connection.QueryFirstOrDefaultAsync<DateTime?>(sql, new
+        {
+            userId,
+            artistName,
+            albumName,
+            trackName
+        });
+    }
+
+    public static async Task<DateTime?> GetLastPlayDateForEntity(int userId, NpgsqlConnection connection,
+        DataSource dataSource, DateTime cutoff, string artistName, string albumName = null, string trackName = null)
+    {
+        var sql = GetUserPlaysSqlString("SELECT MAX(time_played) ", dataSource);
+        sql += " AND time_played < @cutoff ";
+        sql += GetEntityFilterSql(albumName, trackName);
+
+        return await connection.QueryFirstOrDefaultAsync<DateTime?>(sql, new
+        {
+            userId,
+            artistName,
+            albumName,
+            trackName,
+            cutoff
+        });
+    }
+
+    public static async Task<DateTime?> GetLatestPlayDate(int userId, NpgsqlConnection connection,
+        DataSource dataSource)
+    {
+        var sql = GetUserPlaysSqlString("SELECT MAX(time_played) ", dataSource);
+
+        return await connection.QueryFirstOrDefaultAsync<DateTime?>(sql, new
+        {
+            userId
+        });
+    }
+
+    private static string GetEntityFilterSql(string albumName, string trackName)
+    {
+        var sql = " AND UPPER(artist_name) = UPPER(CAST(@artistName AS CITEXT)) ";
+
+        if (albumName != null)
+        {
+            sql += " AND UPPER(album_name) = UPPER(CAST(@albumName AS CITEXT)) ";
+        }
+
+        if (trackName != null)
+        {
+            sql += " AND UPPER(track_name) = UPPER(CAST(@trackName AS CITEXT)) ";
+        }
+
+        return sql;
+    }
+
     private static string GetUserPlaysSqlString(string initialSql, DataSource dataSource, DateTime? start = null,
         DateTime? end = null)
     {
@@ -405,7 +465,9 @@ ORDER BY time_played DESC;";
             sql += " AND time_played <= @end ";
         }
 
-        if (!initialSql.Contains("COUNT(*)", StringComparison.OrdinalIgnoreCase))
+        if (!initialSql.Contains("COUNT(*)", StringComparison.OrdinalIgnoreCase) &&
+            !initialSql.Contains("MIN(", StringComparison.OrdinalIgnoreCase) &&
+            !initialSql.Contains("MAX(", StringComparison.OrdinalIgnoreCase))
         {
             sql += " ORDER BY time_played DESC LIMIT @limit ";
         }

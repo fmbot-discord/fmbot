@@ -284,25 +284,18 @@ public class UserService
 
     public async Task UpdateUserLastUsedAsync(ulong discordUserId)
     {
-        await using var db = await this._contextFactory.CreateDbContextAsync();
-        var user = await db.Users
-            .AsQueryable()
-            .FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
-
-        if (user != null)
+        try
         {
-            user.LastUsed = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
-
-            db.Update(user);
-
-            try
-            {
-                await db.SaveChangesAsync();
-            }
-            catch (Exception e)
-            {
-                Log.Error(e, "Something went wrong while attempting to update user {userId} last used", user.UserId);
-            }
+            await using var db = await this._contextFactory.CreateDbContextAsync();
+            await db.Users
+                .Where(w => w.DiscordUserId == discordUserId)
+                .ExecuteUpdateAsync(s =>
+                    s.SetProperty(p => p.LastUsed, DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc)));
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Something went wrong while attempting to update user {discordUserId} last used",
+                discordUserId);
         }
     }
 
@@ -1119,6 +1112,8 @@ public class UserService
         RecentTrack previousTrack,
         long totalScrobbles,
         ContextModel contextModel,
+        Track dbTrack,
+        Album dbAlbum,
         Persistence.Domain.Models.Guild guild = null,
         IDictionary<int, FullGuildUser> guildUsers = null,
         bool useSmallText = true)
@@ -1126,13 +1121,6 @@ public class UserService
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
         DefaultTypeMap.MatchNamesWithUnderscores = true;
-
-        var dbTrack =
-            await TrackRepository.GetTrackForName(currentTrack.ArtistName, currentTrack.TrackName, connection);
-
-        var dbAlbum = !string.IsNullOrEmpty(currentTrack.AlbumName)
-            ? await AlbumRepository.GetAlbumForName(currentTrack.ArtistName, currentTrack.AlbumName, connection)
-            : null;
 
         var footerContext = new TemplateContext
         {

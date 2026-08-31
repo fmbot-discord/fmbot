@@ -346,17 +346,25 @@ public class PlayBuilder
 
         var embedType = fmEmbedType;
 
+        var currentTrack = recentTracks.Content.RecentTracks[0];
+        var previousTrack = recentTracks.Content.RecentTracks.Count > 1 ? recentTracks.Content.RecentTracks[1] : null;
+
+        var dbTrackTask = this._trackService.GetTrackFromDatabase(currentTrack.ArtistName, currentTrack.TrackName);
+        var dbAlbumTask = !string.IsNullOrEmpty(currentTrack.AlbumName)
+            ? this._albumService.GetAlbumFromDatabase(currentTrack.ArtistName, currentTrack.AlbumName)
+            : Task.FromResult<Album>(null);
+
         Guild guild = null;
         IDictionary<int, FullGuildUser> guildUsers = null;
         if (context.DiscordGuild != null)
         {
-            guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
+            guild = await this._guildService.GetCachedGuildAsync(context.DiscordGuild.Id);
             if (guild?.FmEmbedType != null)
             {
                 embedType = guild.FmEmbedType.Value;
             }
 
-            var channel = await this._guildService.GetChannel(context.DiscordChannel.Id);
+            var channel = await this._guildService.GetCachedChannelAsync(context.DiscordChannel.Id);
             if (channel?.FmEmbedType != null)
             {
                 embedType = channel.FmEmbedType.Value;
@@ -375,8 +383,8 @@ public class PlayBuilder
 
         var totalPlaycount = recentTracks.Content.TotalAmount;
 
-        var currentTrack = recentTracks.Content.RecentTracks[0];
-        var previousTrack = recentTracks.Content.RecentTracks.Count > 1 ? recentTracks.Content.RecentTracks[1] : null;
+        var contextDbTrack = await dbTrackTask;
+        var contextDbAlbum = await dbAlbumTask;
         if (userSettings.DifferentUser)
         {
             totalPlaycount = recentTracks.Content.TotalAmount;
@@ -418,7 +426,7 @@ public class PlayBuilder
 
         var footerText = await this._userService.GetFooterAsync(
             footerOptions, userSettings, currentTrack, previousTrack, totalPlaycount, context,
-            guild, guildUsers, useSmallText);
+            contextDbTrack, contextDbAlbum, guild, guildUsers, useSmallText);
 
         var showOutOfSyncHint = !userSettings.DifferentUser &&
                                 !currentTrack.NowPlaying &&
@@ -442,20 +450,11 @@ public class PlayBuilder
         {
             var configuredButtons = fmSetting.Buttons.Value;
 
-            Track dbTrack = null;
-            if (NeedsDbTrack(configuredButtons))
-            {
-                dbTrack = await this._trackService.GetTrackFromDatabase(
-                    currentTrack.ArtistName, currentTrack.TrackName);
-            }
+            var dbTrack = NeedsDbTrack(configuredButtons) ? contextDbTrack : null;
 
-            Album dbAlbum = null;
-            if ((configuredButtons & (FmButton.AlbumCover | FmButton.AlbumTracks)) != 0 &&
-                !string.IsNullOrEmpty(currentTrack.AlbumName))
-            {
-                dbAlbum = await this._albumService.GetAlbumFromDatabase(
-                    currentTrack.ArtistName, currentTrack.AlbumName);
-            }
+            var dbAlbum = (configuredButtons & (FmButton.AlbumCover | FmButton.AlbumTracks)) != 0
+                ? contextDbAlbum
+                : null;
 
             var isSupporter = SupporterService.IsSupporter(context.ContextUser.UserType);
             fmButtonComponents = BuildNowPlayingButtons(
@@ -529,8 +528,7 @@ public class PlayBuilder
                 int? dbAlbumId = null;
                 if (currentTrack.AlbumName != null)
                 {
-                    var dbAlbum =
-                        await this._albumService.GetAlbumFromDatabase(currentTrack.ArtistName, currentTrack.AlbumName);
+                    var dbAlbum = contextDbAlbum;
                     if (dbAlbum != null)
                     {
                         dbAlbumId = dbAlbum.Id;
@@ -568,7 +566,8 @@ public class PlayBuilder
                 else
                 {
                     var accentColor = await this._albumService.GetAccentColorWithAlbum(context,
-                        albumCoverUrl, dbAlbumId, currentTrack.AlbumName, currentTrack.ArtistName);
+                        albumCoverUrl, dbAlbumId, currentTrack.AlbumName, currentTrack.ArtistName,
+                        prefetchedAlbum: contextDbAlbum);
                     response.ComponentsContainer.WithAccentColor(accentColor);
                 }
 
@@ -766,7 +765,7 @@ public class PlayBuilder
         }
         else if (context.DiscordGuild != null)
         {
-            response.EmoteReactions = await this._guildService.GetGuildReactions(context.DiscordGuild.Id);
+            response.EmoteReactions = guild?.EmoteReactions is { Length: > 0 } ? guild.EmoteReactions : null;
         }
 
         return response;

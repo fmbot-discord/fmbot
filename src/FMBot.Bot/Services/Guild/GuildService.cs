@@ -90,10 +90,7 @@ public class GuildService(
             return null;
         }
 
-        await using var db = await contextFactory.CreateDbContextAsync();
-        return await db.Guilds
-            .AsNoTracking()
-            .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuildId);
+        return await GetCachedGuildAsync(discordGuildId);
     }
 
     public async Task<IDictionary<int, FullGuildUser>> GetGuildUsers(ulong? discordGuildId = null)
@@ -288,6 +285,11 @@ public class GuildService(
         }
 
         await db.SaveChangesAsync();
+
+        foreach (var guild in lapsedGuilds)
+        {
+            await RemoveGuildFromCache(guild.DiscordGuildId);
+        }
     }
 
     private Task RemoveGuildFromCache(ulong discordGuildId)
@@ -299,6 +301,65 @@ public class GuildService(
     private static string CacheKeyForGuild(ulong discordGuildId)
     {
         return $"guild-{discordGuildId}";
+    }
+
+    private void RemoveChannelFromCache(ulong discordChannelId)
+    {
+        cache.Remove(CacheKeyForChannel(discordChannelId));
+    }
+
+    private static string CacheKeyForChannel(ulong discordChannelId)
+    {
+        return $"channel-{discordChannelId}";
+    }
+
+    public async Task<Persistence.Domain.Models.Guild> GetCachedGuildAsync(ulong? discordGuildId)
+    {
+        if (discordGuildId == null)
+        {
+            return null;
+        }
+
+        var cacheKey = CacheKeyForGuild(discordGuildId.Value);
+        if (cache.TryGetValue(cacheKey, out Persistence.Domain.Models.Guild guild))
+        {
+            return guild;
+        }
+
+        await using var db = await contextFactory.CreateDbContextAsync();
+        guild = await db.Guilds
+            .AsNoTracking()
+            .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuildId);
+
+        if (guild != null)
+        {
+            cache.Set(cacheKey, guild, TimeSpan.FromMinutes(5));
+        }
+
+        return guild;
+    }
+
+    public async Task<Channel> GetCachedChannelAsync(ulong? discordChannelId)
+    {
+        if (discordChannelId == null)
+        {
+            return null;
+        }
+
+        var cacheKey = CacheKeyForChannel(discordChannelId.Value);
+        if (cache.TryGetValue(cacheKey, out Channel channel))
+        {
+            return channel;
+        }
+
+        await using var db = await contextFactory.CreateDbContextAsync();
+        channel = await db.Channels
+            .AsNoTracking()
+            .FirstOrDefaultAsync(f => f.DiscordChannelId == discordChannelId);
+
+        cache.Set(cacheKey, channel, TimeSpan.FromMinutes(5));
+
+        return channel;
     }
 
     public static (FilterStats Stats, IDictionary<int, FullGuildUser> FilteredGuildUsers) FilterGuildUsers(
@@ -1246,6 +1307,7 @@ public class GuildService(
             await db.SaveChangesAsync();
 
             await RemoveGuildFromCache(discordGuildId);
+            RemoveChannelFromCache(discordChannel.Id);
 
             return;
         }
@@ -1272,6 +1334,7 @@ public class GuildService(
         db.Entry(existingChannel).State = EntityState.Modified;
 
         await RemoveGuildFromCache(discordGuildId);
+        RemoveChannelFromCache(discordChannel.Id);
 
         await db.SaveChangesAsync();
     }
@@ -1298,6 +1361,7 @@ public class GuildService(
             await db.SaveChangesAsync();
 
             await RemoveGuildFromCache(discordGuildId);
+            RemoveChannelFromCache(discordChannel.Id);
 
             return;
         }
@@ -1308,6 +1372,7 @@ public class GuildService(
         db.Entry(existingChannel).State = EntityState.Modified;
 
         await RemoveGuildFromCache(discordGuildId);
+        RemoveChannelFromCache(discordChannel.Id);
 
         await db.SaveChangesAsync();
     }
@@ -1334,6 +1399,7 @@ public class GuildService(
             await db.SaveChangesAsync();
 
             await RemoveGuildFromCache(discordGuildId);
+            RemoveChannelFromCache(discordChannel.Id);
 
             return;
         }
@@ -1343,6 +1409,7 @@ public class GuildService(
         db.Entry(existingChannel).State = EntityState.Modified;
 
         await RemoveGuildFromCache(discordGuildId);
+        RemoveChannelFromCache(discordChannel.Id);
 
         await db.SaveChangesAsync();
     }
@@ -1364,6 +1431,7 @@ public class GuildService(
         await db.SaveChangesAsync();
 
         await RemoveGuildFromCache(discordGuildId);
+        RemoveChannelFromCache(discordChannel.Id);
 
         return existingChannel.DisabledCommands;
     }
@@ -1383,6 +1451,7 @@ public class GuildService(
         await db.SaveChangesAsync();
 
         await RemoveGuildFromCache(discordGuildId);
+        RemoveChannelFromCache(discordChannel.Id);
 
         return existingChannel.DisabledCommands;
     }
@@ -1408,6 +1477,7 @@ public class GuildService(
             await db.SaveChangesAsync();
 
             await RemoveGuildFromCache(discordGuildId);
+            RemoveChannelFromCache(discordChannel.Id);
 
             return;
         }
@@ -1418,6 +1488,7 @@ public class GuildService(
         db.Entry(existingChannel).State = EntityState.Modified;
 
         await RemoveGuildFromCache(discordGuildId);
+        RemoveChannelFromCache(discordChannel.Id);
 
         await db.SaveChangesAsync();
     }
@@ -1440,6 +1511,7 @@ public class GuildService(
         db.Entry(existingChannel).State = EntityState.Modified;
 
         await RemoveGuildFromCache(discordGuildId);
+        RemoveChannelFromCache(discordChannel.Id);
 
         await db.SaveChangesAsync();
     }
@@ -1451,10 +1523,7 @@ public class GuildService(
             return null;
         }
 
-        await using var db = await contextFactory.CreateDbContextAsync();
-        var existingChannel = await db.Channels
-            .AsQueryable()
-            .FirstOrDefaultAsync(f => f.DiscordChannelId == discordChannelId);
+        var existingChannel = await GetCachedChannelAsync(discordChannelId);
 
         return existingChannel?.FmCooldown;
     }
@@ -1482,6 +1551,7 @@ public class GuildService(
             await db.SaveChangesAsync();
 
             await RemoveGuildFromCache(discordGuildId);
+            RemoveChannelFromCache(discordChannel.Id);
 
             return newChannel.FmCooldown;
         }
@@ -1495,6 +1565,7 @@ public class GuildService(
         await db.SaveChangesAsync();
 
         await RemoveGuildFromCache(discordGuildId);
+        RemoveChannelFromCache(discordChannel.Id);
 
         return existingChannel.FmCooldown;
     }
@@ -1515,7 +1586,7 @@ public class GuildService(
 
         if (guild?.LastIndexed != null && guild.LastIndexed > DateTime.UtcNow.AddDays(-120))
         {
-            cache.Set(discordGuildIdCacheKey, guild, TimeSpan.FromHours(1));
+            cache.Set(discordGuildIdCacheKey, guild, TimeSpan.FromMinutes(5));
         }
 
         return guild?.LastIndexed;
