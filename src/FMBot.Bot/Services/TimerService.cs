@@ -124,6 +124,9 @@ public class TimerService : IDisposable
         Log.Information($"RecurringJob: Adding {nameof(ClearUserCache)}");
         RecurringJob.AddOrUpdate(nameof(ClearUserCache), () => ClearUserCache(), "30 */2 * * *");
 
+        Log.Information($"RecurringJob: Adding {nameof(UpdateCacheMetrics)}");
+        RecurringJob.AddOrUpdate(nameof(UpdateCacheMetrics), () => UpdateCacheMetrics(), "* * * * *");
+
         Log.Information($"RecurringJob: Adding {nameof(RefreshPremiumGuilds)}");
         RecurringJob.AddOrUpdate(nameof(RefreshPremiumGuilds), () => RefreshPremiumGuilds(), "* * * * *");
 
@@ -856,6 +859,27 @@ public class TimerService : IDisposable
     {
         UpdateCacheMetrics();
         var usersBefore = Statistics.DiscordCachedUsersTotal.Value;
+
+        foreach (var shard in this._client)
+        {
+            var botUserId = shard.Cache.User?.Id ?? shard.Id;
+
+            foreach (var guild in shard.Cache.Guilds.Values)
+            {
+                if (guild.Users is not ConcurrentDictionary<ulong, NetCord.GuildUser> users || users.Count <= 1)
+                {
+                    continue;
+                }
+
+                foreach (var userId in users.Keys)
+                {
+                    if (userId != botUserId)
+                    {
+                        users.TryRemove(userId, out _);
+                    }
+                }
+            }
+        }
 
         UpdateCacheMetrics();
         var usersAfter = Statistics.DiscordCachedUsersTotal.Value;

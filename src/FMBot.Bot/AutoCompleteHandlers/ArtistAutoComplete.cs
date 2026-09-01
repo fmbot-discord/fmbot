@@ -23,8 +23,14 @@ public class ArtistAutoComplete : IAutocompleteProvider<AutocompleteInteractionC
         ApplicationCommandInteractionDataOption option,
         AutocompleteInteractionContext context)
     {
-        var recentlyPlayedArtists = await this._artistsService.GetLatestArtists(context.User.Id);
-        var recentTopArtists = (await this._artistsService.GetRecentTopArtists(context.User.Id))
+        var recentlyPlayedArtistsTask = this._artistsService.GetLatestArtists(context.User.Id).ObserveFaults();
+        var recentTopArtistsTask = this._artistsService.GetRecentTopArtists(context.User.Id).ObserveFaults();
+        var artistSearchTask = !string.IsNullOrWhiteSpace(option.Value)
+            ? this._artistsService.SearchThroughArtists(option.Value).ObserveFaults()
+            : null;
+
+        var recentlyPlayedArtists = await recentlyPlayedArtistsTask;
+        var recentTopArtists = (await recentTopArtistsTask)
             .Select(s => s.ArtistName).ToList();
 
         var results = new List<string>();
@@ -51,8 +57,7 @@ public class ArtistAutoComplete : IAutocompleteProvider<AutocompleteInteractionC
             var searchValue = option.Value;
             results = [searchValue];
 
-            var artistResults =
-                await this._artistsService.SearchThroughArtists(searchValue);
+            var artistResults = await artistSearchTask;
 
             results.ReplaceOrAddToList(recentlyPlayedArtists
                 .Where(w => w.StartsWith(searchValue, StringComparison.OrdinalIgnoreCase))

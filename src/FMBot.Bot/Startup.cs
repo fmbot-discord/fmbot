@@ -44,6 +44,7 @@ using NetCord.Services.ApplicationCommands;
 using NetCord.Services.Commands;
 using NetCord.Services.ComponentInteractions;
 using Prometheus;
+using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 using GatewayIntents = NetCord.Gateway.GatewayIntents;
 
@@ -91,19 +92,35 @@ public class Startup
         await Task.Delay(-1); // Keep the program alive
     }
 
+    private static readonly HashSet<string> DroppedInstruments =
+    [
+        "gateway.received.bytes.compressed",
+        "gateway.received.bytes.uncompressed",
+        "gateway.sent.bytes",
+        "gateway.sent.messages",
+        "gateway.cache.entities",
+        "http.client.request.duration",
+        "http.client.connection.duration",
+        "http.client.request.time_in_queue",
+        "http.client.open_connections",
+        "dns.lookup.duration"
+    ];
+
+    private static readonly double[] GatewayLatencyBuckets =
+        [0.05, 0.1, 0.125, 0.15, 0.175, 0.2, 0.225, 0.25, 0.3, 0.4, 0.5, 1.0];
+
     private static void ConfigureMeterAdapter()
     {
         Metrics.ConfigureMeterAdapter(options =>
         {
-            options.InstrumentFilterPredicate = static instrument =>
-                instrument.Meter.Name is not "NetCord.Gateway.GatewayClient" ||
-                instrument.Name is not ("gateway.received.bytes.compressed"
-                    or "gateway.received.bytes.uncompressed");
+            options.InstrumentFilterPredicate = static instrument => !DroppedInstruments.Contains(instrument.Name);
 
-            options.ResolveHistogramBuckets = static instrument =>
-                instrument is Instrument<double> { Advice.HistogramBucketBoundaries: { Count: > 0 } boundaries }
-                    ? [.. boundaries]
-                    : MeterAdapterOptions.DefaultHistogramBuckets;
+            options.ResolveHistogramBuckets = static instrument => instrument switch
+            {
+                { Name: "gateway.latency" } => GatewayLatencyBuckets,
+                Instrument<double> { Advice.HistogramBucketBoundaries: { Count: > 0 } boundaries } => [.. boundaries],
+                _ => MeterAdapterOptions.DefaultHistogramBuckets
+            };
         });
     }
 
@@ -174,7 +191,7 @@ public class Startup
         services.AddHealthChecks();
         services.AddDbContextFactory<FMBotDbContext>(b =>
             b.UseNpgsql(this.Configuration["Database:ConnectionString"]));
-        services.AddMemoryCache(options => { options.TrackStatistics = false; });
+        services.AddMemoryCache(options => { options.TrackStatistics = true; });
     }
 
     private static ShardedGatewayClient ConfigureDiscordClient()
@@ -199,7 +216,7 @@ public class Startup
             return new ShardedGatewayClient(new BotToken(ConfigData.Data.Discord.Token), new ShardedGatewayClientConfiguration
             {
                 IntentsFactory = _ => intents,
-                CacheProviderFactory = _ => ConcurrentGatewayClientCacheProvider.Empty,
+                CacheProviderFactory = _ => LeanGatewayClientCacheProvider.Instance,
                 TotalShardCount = ConfigData.Data.Shards.TotalShards,
                 ShardRange = startShard..(endShard + 1), // End is exclusive in NetCord
                 MaxConcurrency = maxConcurrency,
@@ -211,7 +228,7 @@ public class Startup
         return new ShardedGatewayClient(new BotToken(ConfigData.Data.Discord.Token), new ShardedGatewayClientConfiguration
         {
             IntentsFactory = _ => intents,
-            CacheProviderFactory = _ => ConcurrentGatewayClientCacheProvider.Empty,
+            CacheProviderFactory = _ => LeanGatewayClientCacheProvider.Instance,
             MaxConcurrency = maxConcurrency,
             LoggerFactory = shard => new SerilogGatewayLogger(shard)
         });

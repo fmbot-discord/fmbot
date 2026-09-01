@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
@@ -1026,30 +1025,34 @@ public class UserService
         var fmSetting = user.FmSetting;
         if (fmSetting?.AccentColor == FmAccentColor.Custom &&
             SupporterService.IsSupporter(user.UserType) &&
-            !string.IsNullOrWhiteSpace(fmSetting.CustomColor) &&
-            int.TryParse(fmSetting.CustomColor.TrimStart('#'), NumberStyles.HexNumber, null, out var customRgb))
+            ColorExtensions.TryParseHexColor(fmSetting.CustomColor, out var customColor))
         {
-            return new Color(customRgb);
+            return customColor;
         }
 
         if (fmSetting?.AccentColor == FmAccentColor.RoleColor &&
-            SupporterService.IsSupporter(user.UserType) &&
-            guild != null)
+            SupporterService.IsSupporter(user.UserType))
         {
-            guild.Users.TryGetValue(user.DiscordUserId, out var guildUser);
-            if (guildUser == null)
-            {
-                guildUser = await guild.GetUserAsync(user.DiscordUserId);
-            }
-
-            var roleColor = GetHighestRoleColor(guild, guildUser);
-            if (roleColor != null)
-            {
-                return roleColor.Value;
-            }
+            return await GetRoleColor(user, guild);
         }
 
         return null;
+    }
+
+    public static async Task<Color?> GetRoleColor(User user, NetCord.Gateway.Guild guild)
+    {
+        if (guild == null)
+        {
+            return null;
+        }
+
+        guild.Users.TryGetValue(user.DiscordUserId, out var guildUser);
+        if (guildUser == null)
+        {
+            guildUser = await guild.GetUserAsync(user.DiscordUserId);
+        }
+
+        return GetHighestRoleColor(guild, guildUser);
     }
 
     public static Color? GetHighestRoleColor(NetCord.Gateway.Guild guild, NetCord.GuildUser guildUser)
@@ -1582,6 +1585,25 @@ public class UserService
         var user = await db.Users.FirstAsync(f => f.UserId == userToUpdate.UserId);
 
         user.GraphType = graphType;
+
+        db.Update(user);
+        db.Entry(user).State = EntityState.Modified;
+
+        await db.SaveChangesAsync();
+
+        RemoveUserFromCache(user);
+    }
+
+    public async Task SetGraphColor(User userToUpdate, GraphColor graphColor, string customHex = null)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var user = await db.Users.FirstAsync(f => f.UserId == userToUpdate.UserId);
+
+        user.GraphColor = graphColor;
+        if (customHex != null)
+        {
+            user.GraphCustomColor = customHex;
+        }
 
         db.Update(user);
         db.Entry(user).State = EntityState.Modified;

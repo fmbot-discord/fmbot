@@ -23,8 +23,26 @@ public static class GatewayClientExtensions
 
     public static async Task<GuildUser> GetCachedGuildUserAsync(this Guild guild, ulong userId)
     {
-        if (Random.Shared.Next(4) != 0 && guild.Users.TryGetValue(userId, out var cachedUser))
+        if (guild.Users.TryGetValue(userId, out var cachedUser))
         {
+            if (Random.Shared.Next(4) == 0)
+            {
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        var refreshedUser = await guild.GetUserAsync(userId);
+                        if (guild.Users is ConcurrentDictionary<ulong, GuildUser> writableUsers)
+                        {
+                            writableUsers[userId] = refreshedUser;
+                        }
+                    }
+                    catch
+                    {
+                    }
+                });
+            }
+
             return cachedUser;
         }
 

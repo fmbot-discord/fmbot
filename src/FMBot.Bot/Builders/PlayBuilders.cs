@@ -320,6 +320,8 @@ public class PlayBuilder
 
         Domain.Types.Response<RecentTrackList> recentTracks;
 
+        var guildDataTask = GetGuildFmDataAsync().ObserveFaults();
+
         if (!userSettings.DifferentUser)
         {
             if (context.ContextUser.LastIndexed == null)
@@ -349,36 +351,43 @@ public class PlayBuilder
         var currentTrack = recentTracks.Content.RecentTracks[0];
         var previousTrack = recentTracks.Content.RecentTracks.Count > 1 ? recentTracks.Content.RecentTracks[1] : null;
 
-        var dbTrackTask = this._trackService.GetTrackFromDatabase(currentTrack.ArtistName, currentTrack.TrackName);
+        var dbTrackTask = this._trackService.GetTrackFromDatabase(currentTrack.ArtistName, currentTrack.TrackName).ObserveFaults();
         var dbAlbumTask = !string.IsNullOrEmpty(currentTrack.AlbumName)
-            ? this._albumService.GetAlbumFromDatabase(currentTrack.ArtistName, currentTrack.AlbumName)
+            ? this._albumService.GetAlbumFromDatabase(currentTrack.ArtistName, currentTrack.AlbumName).ObserveFaults()
             : Task.FromResult<Album>(null);
 
-        Guild guild = null;
-        IDictionary<int, FullGuildUser> guildUsers = null;
-        if (context.DiscordGuild != null)
+        var (guild, fmChannel, guildUsers) = await guildDataTask;
+        if (guild?.FmEmbedType != null)
         {
-            guild = await this._guildService.GetCachedGuildAsync(context.DiscordGuild.Id);
-            if (guild?.FmEmbedType != null)
+            embedType = guild.FmEmbedType.Value;
+        }
+        if (fmChannel?.FmEmbedType != null)
+        {
+            embedType = fmChannel.FmEmbedType.Value;
+        }
+
+        async Task<(Guild guild, Persistence.Domain.Models.Channel channel, IDictionary<int, FullGuildUser> guildUsers)> GetGuildFmDataAsync()
+        {
+            if (context.DiscordGuild == null)
             {
-                embedType = guild.FmEmbedType.Value;
+                return (null, null, null);
             }
 
-            var channel = await this._guildService.GetCachedChannelAsync(context.DiscordChannel.Id);
-            if (channel?.FmEmbedType != null)
-            {
-                embedType = channel.FmEmbedType.Value;
-            }
+            var cachedGuild = await this._guildService.GetCachedGuildAsync(context.DiscordGuild.Id);
+            var cachedChannel = await this._guildService.GetCachedChannelAsync(context.DiscordChannel.Id);
 
-            if (guild != null)
+            IDictionary<int, FullGuildUser> cachedGuildUsers = null;
+            if (cachedGuild != null)
             {
-                guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
+                cachedGuildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
                 var discordGuildUser =
                     await context.DiscordGuild.GetCachedGuildUserAsync(context.ContextUser.DiscordUserId);
 
-                await this._indexService.UpdateGuildUser(guildUsers, discordGuildUser, context.ContextUser.UserId,
-                    guild);
+                await this._indexService.UpdateGuildUser(cachedGuildUsers, discordGuildUser, context.ContextUser.UserId,
+                    cachedGuild);
             }
+
+            return (cachedGuild, cachedChannel, cachedGuildUsers);
         }
 
         var totalPlaycount = recentTracks.Content.TotalAmount;

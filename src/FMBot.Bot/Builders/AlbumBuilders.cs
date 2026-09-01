@@ -171,7 +171,8 @@ public class AlbumBuilders
                 context.DiscordChannel,
                 albumSearch.Album.AlbumName, albumSearch.Album.ArtistName, albumSearch.Album.AlbumUrl);
             var accentColorTask = this._albumService.GetAccentColorWithAlbum(context,
-                albumCoverUrl, databaseAlbum?.Id, albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
+                albumCoverUrl, databaseAlbum?.Id, albumSearch.Album.AlbumName, albumSearch.Album.ArtistName,
+                prefetchedAlbum: databaseAlbum);
 
             if (await safeForChannelTask == CensorService.CensorResult.Safe)
             {
@@ -455,6 +456,9 @@ public class AlbumBuilders
             ResponseType = ResponseType.Embed,
         };
 
+        var guildTask = this._guildService.GetGuildForWhoKnows(context.DiscordGuild.Id).ObserveFaults();
+        var guildUsersTask = this._guildService.GetGuildUsers(context.DiscordGuild.Id).ObserveFaults();
+
         var albumSearch = await this._albumService.SearchAlbum(response, context.DiscordUser, context.Localizer, albumValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedAlbums: true,
             userId: context.ContextUser.UserId, interactionId: context.InteractionId,
@@ -467,16 +471,18 @@ public class AlbumBuilders
         var databaseAlbum = await this._musicDataFactory.GetOrStoreAlbumAsync(albumSearch.Album);
         var fullAlbumName = $"{albumSearch.Album.AlbumName} by {albumSearch.Album.ArtistName}";
 
-        var guild = await this._guildService.GetGuildForWhoKnows(context.DiscordGuild.Id);
-        var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
+        var guild = await guildTask;
+        var guildUsers = await guildUsersTask;
 
-        var usersWithAlbum = await this._whoKnowsAlbumService.GetIndexedUsersForAlbum(context.DiscordGuild, guildUsers,
-            guild.GuildId, databaseAlbum.Id);
+        var usersWithAlbumTask = this._whoKnowsAlbumService.GetIndexedUsersForAlbum(context.DiscordGuild, guildUsers,
+            guild.GuildId, databaseAlbum.Id).ObserveFaults();
 
         var discordGuildUser = await context.DiscordGuild.GetCachedGuildUserAsync(context.ContextUser.DiscordUserId);
         var currentUser =
             await this._indexService.GetOrAddUserToGuild(guildUsers, guild, discordGuildUser, context.ContextUser);
         await this._indexService.UpdateGuildUser(guildUsers, discordGuildUser, currentUser.UserId, guild);
+
+        var usersWithAlbum = await usersWithAlbumTask;
 
         usersWithAlbum = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithAlbum, context.ContextUser,
             fullAlbumName, context.DiscordGuild, albumSearch.Album.UserPlaycount);
@@ -506,7 +512,8 @@ public class AlbumBuilders
             }
 
             var accentColor = await this._albumService.GetAccentColorWithAlbum(context,
-                albumCoverUrl, databaseAlbum?.Id, albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
+                albumCoverUrl, databaseAlbum?.Id, albumSearch.Album.AlbumName, albumSearch.Album.ArtistName,
+                prefetchedAlbum: databaseAlbum);
 
             response.Embed.WithColor(accentColor);
         }
@@ -702,7 +709,8 @@ public class AlbumBuilders
             }
 
             var accentColor = await this._albumService.GetAccentColorWithAlbum(context,
-                albumCoverUrl, databaseAlbum?.Id, albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
+                albumCoverUrl, databaseAlbum?.Id, albumSearch.Album.AlbumName, albumSearch.Album.ArtistName,
+                prefetchedAlbum: databaseAlbum);
 
             response.Embed.WithColor(accentColor);
         }
@@ -854,7 +862,8 @@ public class AlbumBuilders
             }
 
             var accentColor = await this._albumService.GetAccentColorWithAlbum(context,
-                albumCoverUrl, databaseAlbum?.Id, albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
+                albumCoverUrl, databaseAlbum?.Id, albumSearch.Album.AlbumName, albumSearch.Album.ArtistName,
+                prefetchedAlbum: databaseAlbum);
 
             response.Embed.WithColor(accentColor);
         }
@@ -1573,7 +1582,8 @@ public class AlbumBuilders
         }
 
         var accentColor = await this._albumService.GetAccentColorWithAlbum(context,
-            staticAlbumCoverUrl, databaseAlbum?.Id, albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
+            staticAlbumCoverUrl, databaseAlbum?.Id, albumSearch.Album.AlbumName, albumSearch.Album.ArtistName,
+            prefetchedAlbum: databaseAlbum);
 
         response.ComponentsContainer.WithAccentColor(accentColor);
 

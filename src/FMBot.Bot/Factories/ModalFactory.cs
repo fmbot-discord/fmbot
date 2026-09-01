@@ -519,8 +519,9 @@ public static class ModalFactory
             ]
         };
 
-    public static ModalProperties CreateCustomColorModal(string customId, string currentHex = null) =>
-        new(customId, "Set custom accent color")
+    public static ModalProperties CreateCustomColorModal(string customId, string currentHex = null,
+        string title = "Set custom accent color") =>
+        new(customId, title)
         {
             Components =
             [

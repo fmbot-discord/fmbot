@@ -236,7 +236,8 @@ public class TrackService
 
             if (userId.HasValue && otherUserUsername == null)
             {
-                recentScrobbles = await this._updateService.UpdateUser(new UpdateUserQueueItem(userId.Value));
+                recentScrobbles = await this._updateService.UpdateUser(new UpdateUserQueueItem(userId.Value,
+                    getAccurateTotalPlaycount: false));
             }
             else
             {

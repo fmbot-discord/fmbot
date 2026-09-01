@@ -1871,8 +1871,14 @@ public class ArtistBuilders
             return artistSearch.Response;
         }
 
-        var cachedArtist = await this._musicDataFactory.GetOrStoreArtistAsync(artistSearch.Artist,
-            artistSearch.Artist.ArtistName, redirectsEnabled);
+        var cachedArtistTask = this._musicDataFactory.GetOrStoreArtistAsync(artistSearch.Artist,
+            artistSearch.Artist.ArtistName, redirectsEnabled).ObserveFaults();
+
+        var whoKnowsContextTask = this._whoKnowsArtistService.GetFilteredUsersForArtist(context.DiscordGuild,
+            context.ContextUser, artistSearch.Artist.ArtistName, artistSearch.Artist.UserPlaycount, roles,
+            filterDisabled).ObserveFaults();
+
+        var cachedArtist = await cachedArtistTask;
 
         var safeForChannel =
             await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel, cachedArtist.Name);
@@ -1883,9 +1889,7 @@ public class ArtistBuilders
             imgUrl = null;
         }
 
-        var whoKnowsContext = await this._whoKnowsArtistService.GetFilteredUsersForArtist(context.DiscordGuild,
-            context.ContextUser, artistSearch.Artist.ArtistName, artistSearch.Artist.UserPlaycount, roles,
-            filterDisabled);
+        var whoKnowsContext = await whoKnowsContextTask;
 
         CrownModel crownModel = null;
         if (whoKnowsContext.Guild.CrownsDisabled != true && whoKnowsContext.FilteredUsersWithArtist.Count >= 1 &&

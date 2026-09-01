@@ -562,6 +562,9 @@ public class TrackBuilders
             ResponseType = ResponseType.Embed,
         };
 
+        var guildTask = this._guildService.GetGuildForWhoKnows(context.DiscordGuild.Id).ObserveFaults();
+        var guildUsersTask = this._guildService.GetGuildUsers(context.DiscordGuild.Id).ObserveFaults();
+
         var track = await this._trackService.SearchTrack(response, context.DiscordUser, context.Localizer, trackValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedTracks: true,
             userId: context.ContextUser.UserId, interactionId: context.InteractionId,
@@ -571,21 +574,26 @@ public class TrackBuilders
             return track.Response;
         }
 
-        var cachedTrack = await this._musicDataFactory.GetOrStoreTrackAsync(track.Track);
+        var cachedTrackTask = this._musicDataFactory.GetOrStoreTrackAsync(track.Track).ObserveFaults();
 
         var trackName = $"{track.Track.TrackName} by {track.Track.ArtistName}";
 
-        var guild = await this._guildService.GetGuildForWhoKnows(context.DiscordGuild.Id);
-        var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
+        var guild = await guildTask;
+        var guildUsers = await guildUsersTask;
 
-        var usersWithTrack = await this._whoKnowsTrackService.GetIndexedUsersForTrack(context.DiscordGuild, guildUsers,
-            guild.GuildId, track.Track.ArtistName, track.Track.TrackName);
+        var usersWithTrackTask = this._whoKnowsTrackService.GetIndexedUsersForTrack(context.DiscordGuild, guildUsers,
+            guild.GuildId, track.Track.ArtistName, track.Track.TrackName).ObserveFaults();
+
+        var albumCoverTask = track.Track.AlbumName != null
+            ? GetAlbumCoverUrl(context, track, response).ObserveFaults()
+            : Task.FromResult<string>(null);
 
         var discordGuildUser = await context.DiscordGuild.GetCachedGuildUserAsync(context.DiscordUser.Id);
         var currentUser =
             await this._indexService.GetOrAddUserToGuild(guildUsers, guild, discordGuildUser, context.ContextUser);
-        await this._indexService.UpdateGuildUser(guildUsers,
-            await context.DiscordGuild.GetCachedGuildUserAsync(context.ContextUser.DiscordUserId), currentUser.UserId, guild);
+        await this._indexService.UpdateGuildUser(guildUsers, discordGuildUser, currentUser.UserId, guild);
+
+        var usersWithTrack = await usersWithTrackTask;
 
         usersWithTrack = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithTrack, context.ContextUser,
             trackName, context.DiscordGuild, track.Track.UserPlaycount);
@@ -594,11 +602,8 @@ public class TrackBuilders
             WhoKnowsService.FilterWhoKnowsObjects(usersWithTrack, guildUsers, guild, context.ContextUser.UserId, roles,
                 filterDisabled);
 
-        string albumCoverUrl = null;
-        if (track.Track.AlbumName != null)
-        {
-            albumCoverUrl = await GetAlbumCoverUrl(context, track, response);
-        }
+        var albumCoverUrl = await albumCoverTask;
+        var cachedTrack = await cachedTrackTask;
 
         if (mode == WhoKnowsResponseMode.Image)
         {
@@ -1033,7 +1038,8 @@ public class TrackBuilders
             }
 
             var accentColor = await this._albumService.GetAccentColorWithAlbum(context,
-                albumCoverUrl, databaseAlbum?.Id, track.Track.AlbumName, track.Track.ArtistName);
+                albumCoverUrl, databaseAlbum?.Id, track.Track.AlbumName, track.Track.ArtistName,
+                prefetchedAlbum: databaseAlbum);
 
             response.Embed.WithColor(accentColor);
         }
