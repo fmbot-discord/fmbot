@@ -263,7 +263,7 @@ public class StartupService
         {
             Endpoint = this._botSettings.Bot.MetricsPusherEndpoint,
             Job = this._botSettings.Bot.MetricsPusherName,
-            IntervalMilliseconds = 5_000,
+            IntervalMilliseconds = 10_000,
             OnError = ex => Log.Warning(ex, "Metrics push failed"),
         };
 

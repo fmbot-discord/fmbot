@@ -44,6 +44,7 @@ using NetCord.Services.ApplicationCommands;
 using NetCord.Services.Commands;
 using NetCord.Services.ComponentInteractions;
 using Prometheus;
+using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 using GatewayIntents = NetCord.Gateway.GatewayIntents;
 
@@ -91,14 +92,25 @@ public class Startup
         await Task.Delay(-1); // Keep the program alive
     }
 
+    private static readonly HashSet<string> DroppedInstruments =
+    [
+        "gateway.received.bytes.compressed",
+        "gateway.received.bytes.uncompressed",
+        "gateway.sent.bytes",
+        "gateway.sent.messages",
+        "gateway.cache.entities",
+        "http.client.request.duration",
+        "http.client.connection.duration",
+        "http.client.request.time_in_queue",
+        "http.client.open_connections",
+        "dns.lookup.duration"
+    ];
+
     private static void ConfigureMeterAdapter()
     {
         Metrics.ConfigureMeterAdapter(options =>
         {
-            options.InstrumentFilterPredicate = static instrument =>
-                instrument.Meter.Name is not "NetCord.Gateway.GatewayClient" ||
-                instrument.Name is not ("gateway.received.bytes.compressed"
-                    or "gateway.received.bytes.uncompressed");
+            options.InstrumentFilterPredicate = static instrument => !DroppedInstruments.Contains(instrument.Name);
 
             options.ResolveHistogramBuckets = static instrument =>
                 instrument is Instrument<double> { Advice.HistogramBucketBoundaries: { Count: > 0 } boundaries }
