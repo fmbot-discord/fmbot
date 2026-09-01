@@ -24,8 +24,14 @@ public class AlbumAutoComplete : IAutocompleteProvider<AutocompleteInteractionCo
         ApplicationCommandInteractionDataOption option,
         AutocompleteInteractionContext context)
     {
-        var recentlyPlayedAlbums = await this._albumService.GetLatestAlbums(context.User.Id);
-        var recentTopAlbums = await this._albumService.GetRecentTopAlbums(context.User.Id);
+        var recentlyPlayedAlbumsTask = this._albumService.GetLatestAlbums(context.User.Id).ObserveFaults();
+        var recentTopAlbumsTask = this._albumService.GetRecentTopAlbums(context.User.Id).ObserveFaults();
+        var albumSearchTask = !string.IsNullOrWhiteSpace(option.Value)
+            ? this._albumService.SearchThroughAlbums(option.Value).ObserveFaults()
+            : null;
+
+        var recentlyPlayedAlbums = await recentlyPlayedAlbumsTask;
+        var recentTopAlbums = await recentTopAlbumsTask;
 
         var results = new List<string>();
 
@@ -53,8 +59,7 @@ public class AlbumAutoComplete : IAutocompleteProvider<AutocompleteInteractionCo
                 var searchValue = option.Value;
                 results = [searchValue];
 
-                var albumResults =
-                    await this._albumService.SearchThroughAlbums(searchValue);
+                var albumResults = await albumSearchTask;
 
                 results.ReplaceOrAddToList(recentlyPlayedAlbums
                     .Where(w => w.Album != null && w.Album.StartsWith(searchValue, StringComparison.OrdinalIgnoreCase))

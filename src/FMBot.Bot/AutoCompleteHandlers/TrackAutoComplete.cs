@@ -24,8 +24,14 @@ public class TrackAutoComplete : IAutocompleteProvider<AutocompleteInteractionCo
         ApplicationCommandInteractionDataOption option,
         AutocompleteInteractionContext context)
     {
-        var recentlyPlayedTracks = await this._trackService.GetLatestTracks(context.User.Id);
-        var recentTopTracks = await this._trackService.GetRecentTopTracksAutoComplete(context.User.Id);
+        var recentlyPlayedTracksTask = this._trackService.GetLatestTracks(context.User.Id).ObserveFaults();
+        var recentTopTracksTask = this._trackService.GetRecentTopTracksAutoComplete(context.User.Id).ObserveFaults();
+        var trackSearchTask = !string.IsNullOrWhiteSpace(option.Value)
+            ? this._trackService.SearchThroughTracks(option.Value).ObserveFaults()
+            : null;
+
+        var recentlyPlayedTracks = await recentlyPlayedTracksTask;
+        var recentTopTracks = await recentTopTracksTask;
 
         var results = new List<string>();
 
@@ -53,8 +59,7 @@ public class TrackAutoComplete : IAutocompleteProvider<AutocompleteInteractionCo
                 var searchValue = option.Value;
                 results = [searchValue];
 
-                var trackResults =
-                    await this._trackService.SearchThroughTracks(searchValue);
+                var trackResults = await trackSearchTask;
 
                 results.ReplaceOrAddToList(recentlyPlayedTracks
                     .Where(w => w.Track != null && w.Track.StartsWith(searchValue, StringComparison.OrdinalIgnoreCase))
