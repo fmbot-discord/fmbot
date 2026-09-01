@@ -875,13 +875,7 @@ public class UserBuilder
 
         container.AddComponents(accentColorMenu);
 
-        if (isSupporter)
-        {
-            container.WithSeparator();
-            container.WithTextDisplay(
-                "-# You can also switch per command by adding `bargraph`, `linegraph` or `nograph`.");
-        }
-        else
+        if (!isSupporter)
         {
             var getSupporter = new ComponentSectionProperties(new ButtonProperties(
                 InteractionConstants.SupporterLinks.GeneratePurchaseButtons(true, false,
