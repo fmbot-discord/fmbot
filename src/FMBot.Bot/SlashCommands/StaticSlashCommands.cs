@@ -80,7 +80,7 @@ public class StaticSlashCommands(
         [SlashCommandParameter(Name = "user", Description = "The user you want to gift supporter to")]
         NetCord.User user)
     {
-        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
+        this.Context.DeferInBackground(MessageFlags.Ephemeral);
 
         try
         {
@@ -125,7 +125,7 @@ public class StaticSlashCommands(
     ])]
     public async Task GiftSupporterUserCommand(NetCord.User targetUser)
     {
-        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
+        this.Context.DeferInBackground(MessageFlags.Ephemeral);
 
         try
         {

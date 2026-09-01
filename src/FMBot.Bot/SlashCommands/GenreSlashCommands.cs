@@ -37,7 +37,7 @@ public class GenreSlashCommands(
         [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
         string user = null)
     {
-        await RespondAsync(InteractionCallback.DeferredMessage());
+        this.Context.DeferInBackground();
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var guild = await guildService.GetGuildAsync(this.Context.Guild?.Id);
@@ -68,7 +68,7 @@ public class GenreSlashCommands(
         [SlashCommandParameter(Name = "mode", Description = "The type of response you want - change default with /mode")]
         WhoKnowsResponseMode? mode = null)
     {
-        await RespondAsync(InteractionCallback.DeferredMessage());
+        this.Context.DeferInBackground();
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
@@ -106,7 +106,7 @@ public class GenreSlashCommands(
         [SlashCommandParameter(Name = "private", Description = "Only show response to you")]
         bool privateResponse = false)
     {
-        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
+        this.Context.DeferInBackground(privateResponse ? MessageFlags.Ephemeral : default);
 
         var contextUser = await userService.GetUserWithFriendsAsync(this.Context.User);
 

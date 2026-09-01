@@ -34,7 +34,7 @@ public class CountrySlashCommands(
             AutocompleteProviderType = typeof(CountryArtistAutoComplete))]
         string name = null)
     {
-        await RespondAsync(InteractionCallback.DeferredMessage());
+        this.Context.DeferInBackground();
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
@@ -65,7 +65,7 @@ public class CountrySlashCommands(
         [SlashCommandParameter(Name = "private", Description = "Only show response to you")]
         bool privateResponse = false)
     {
-        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
+        this.Context.DeferInBackground(privateResponse ? MessageFlags.Ephemeral : default);
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);

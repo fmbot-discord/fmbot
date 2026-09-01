@@ -37,7 +37,7 @@ public class CrownSlashCommands(
         [SlashCommandParameter(Name = "user", Description = "The user to compare against the crown holder (defaults to self)")]
         string user = null)
     {
-        await RespondAsync(InteractionCallback.DeferredMessage());
+        this.Context.DeferInBackground();
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var challengerSettings = await settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
@@ -67,7 +67,7 @@ public class CrownSlashCommands(
         [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
         string user = null)
     {
-        await RespondAsync(InteractionCallback.DeferredMessage());
+        this.Context.DeferInBackground();
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);

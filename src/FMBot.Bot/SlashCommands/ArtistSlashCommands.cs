@@ -40,7 +40,7 @@ public class ArtistSlashCommands(
         [SlashCommandParameter(Name = "redirects", Description = "Toggle Last.fm artist name redirects (defaults to enabled)")]
         bool redirectsEnabled = true)
     {
-        await RespondAsync(InteractionCallback.DeferredMessage());
+        this.Context.DeferInBackground();
 
         var contextUser = await userService.GetUserWithDiscogs(this.Context.User.Id);
         var userSettings = await settingService.GetUser(null, contextUser, this.Context.Guild, this.Context.User, true);
@@ -71,7 +71,7 @@ public class ArtistSlashCommands(
         [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
         string user = null)
     {
-        await RespondAsync(InteractionCallback.DeferredMessage());
+        this.Context.DeferInBackground();
 
         var contextUser = await userService.GetUserWithDiscogs(this.Context.User.Id);
         var userSettings = await settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
@@ -102,7 +102,7 @@ public class ArtistSlashCommands(
         [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
         string user = null)
     {
-        await RespondAsync(InteractionCallback.DeferredMessage());
+        this.Context.DeferInBackground();
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
@@ -189,7 +189,7 @@ public class ArtistSlashCommands(
         [SlashCommandParameter(Name = "redirects", Description = "Toggle Last.fm artist name redirects (defaults to enabled)")]
         bool redirectsEnabled = true)
     {
-        await RespondAsync(InteractionCallback.DeferredMessage());
+        this.Context.DeferInBackground();
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
@@ -235,7 +235,7 @@ public class ArtistSlashCommands(
         [SlashCommandParameter(Name = "no-filter", Description = "Disable server filters and crowns")]
         bool filterDisabled = false)
     {
-        await RespondAsync(InteractionCallback.DeferredMessage());
+        this.Context.DeferInBackground();
 
         if (displayRoleFilter && !PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
         {
@@ -281,7 +281,7 @@ public class ArtistSlashCommands(
         [SlashCommandParameter(Name = "redirects", Description = "Toggle Last.fm artist name redirects (defaults to enabled)")]
         bool redirectsEnabled = true)
     {
-        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
+        this.Context.DeferInBackground(privateResponse ? MessageFlags.Ephemeral : default);
 
         var contextUser = await userService.GetUserWithFriendsAsync(this.Context.User);
 
@@ -317,7 +317,7 @@ public class ArtistSlashCommands(
         [SlashCommandParameter(Name = "redirects", Description = "Toggle Last.fm artist name redirects (defaults to enabled)")]
         bool redirectsEnabled = true)
     {
-        await RespondAsync(InteractionCallback.DeferredMessage());
+        this.Context.DeferInBackground();
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
@@ -375,7 +375,7 @@ public class ArtistSlashCommands(
             return;
         }
 
-        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
+        this.Context.DeferInBackground(privateResponse ? MessageFlags.Ephemeral : default);
 
         var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.Quarterly, timeZone: userSettings.TimeZone, language: context.Localizer.Language);
 
@@ -409,7 +409,7 @@ public class ArtistSlashCommands(
         [SlashCommandParameter(Name = "size", Description = "Amount of comparisons to show")]
         EmbedSize? embedSize = null)
     {
-        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
+        this.Context.DeferInBackground(privateResponse ? MessageFlags.Ephemeral : default);
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
@@ -437,7 +437,7 @@ public class ArtistSlashCommands(
     [RequiresIndex]
     public async Task AffinityAsync([SlashCommandParameter(Name = "user", Description = "The user to get the affinity for")] string user = null)
     {
-        await RespondAsync(InteractionCallback.DeferredMessage());
+        this.Context.DeferInBackground();
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
@@ -471,7 +471,7 @@ public class ArtistSlashCommands(
         [SlashCommandParameter(Name = "private", Description = "Only show response to you")]
         bool privateResponse = false)
     {
-        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
+        this.Context.DeferInBackground(privateResponse ? MessageFlags.Ephemeral : default);
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);

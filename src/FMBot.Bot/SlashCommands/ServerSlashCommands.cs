@@ -43,7 +43,7 @@ public class ServerSlashCommands(
         [SlashCommandParameter(Name = "role-picker", Description = "Display a rolepicker to filter with roles")]
         bool displayRoleFilter = false)
     {
-        await RespondAsync(InteractionCallback.DeferredMessage());
+        this.Context.DeferInBackground();
 
         if (displayRoleFilter && !PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
         {
@@ -91,7 +91,7 @@ public class ServerSlashCommands(
         [SlashCommandParameter(Name = "role-picker", Description = "Display a rolepicker to filter with roles")]
         bool displayRoleFilter = false)
     {
-        await RespondAsync(InteractionCallback.DeferredMessage());
+        this.Context.DeferInBackground();
 
         if (displayRoleFilter && !PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
         {
@@ -141,7 +141,7 @@ public class ServerSlashCommands(
         [SlashCommandParameter(Name = "role-picker", Description = "Display a rolepicker to filter with roles")]
         bool displayRoleFilter = false)
     {
-        await RespondAsync(InteractionCallback.DeferredMessage());
+        this.Context.DeferInBackground();
 
         if (displayRoleFilter && !PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
         {
@@ -186,7 +186,7 @@ public class ServerSlashCommands(
         [SlashCommandParameter(Name = "order", Description = "Order for chart (defaults to listeners)")]
         OrderType orderType = OrderType.Listeners)
     {
-        await RespondAsync(InteractionCallback.DeferredMessage());
+        this.Context.DeferInBackground();
 
         var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
 

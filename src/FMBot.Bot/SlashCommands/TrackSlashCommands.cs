@@ -38,7 +38,7 @@ public class TrackSlashCommands(
             AutocompleteProviderType = typeof(TrackAutoComplete))]
         string name = null)
     {
-        await RespondAsync(InteractionCallback.DeferredMessage());
+        this.Context.DeferInBackground();
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
@@ -72,7 +72,7 @@ public class TrackSlashCommands(
         [SlashCommandParameter(Name = "no-filter", Description = "Disable server filters")]
         bool filterDisabled = false)
     {
-        await RespondAsync(InteractionCallback.DeferredMessage());
+        this.Context.DeferInBackground();
 
         if (displayRoleFilter && !PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
         {
@@ -118,8 +118,7 @@ public class TrackSlashCommands(
         [SlashCommandParameter(Name = "private", Description = "Only show response to you")]
         bool privateResponse = false)
     {
-        await Context.Interaction.SendResponseAsync(
-            InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
+        this.Context.DeferInBackground(privateResponse ? MessageFlags.Ephemeral : default);
 
         var contextUser = await userService.GetUserWithFriendsAsync(this.Context.User);
 
@@ -156,7 +155,7 @@ public class TrackSlashCommands(
         [SlashCommandParameter(Name = "hide-private", Description = "Hide or show private users")]
         bool hidePrivate = false)
     {
-        await RespondAsync(InteractionCallback.DeferredMessage());
+        this.Context.DeferInBackground();
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
@@ -197,7 +196,7 @@ public class TrackSlashCommands(
         [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
         string user = null)
     {
-        await RespondAsync(InteractionCallback.DeferredMessage());
+        this.Context.DeferInBackground();
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var userSettings =
@@ -228,7 +227,7 @@ public class TrackSlashCommands(
             AutocompleteProviderType = typeof(TrackAutoComplete))]
         string name = null)
     {
-        await RespondAsync(InteractionCallback.DeferredMessage());
+        this.Context.DeferInBackground();
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
@@ -316,8 +315,7 @@ public class TrackSlashCommands(
         [SlashCommandParameter(Name = "private", Description = "Only show response to you")]
         bool privateResponse = false)
     {
-        await Context.Interaction.SendResponseAsync(
-            InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
+        this.Context.DeferInBackground(privateResponse ? MessageFlags.Ephemeral : default);
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var userSettings =
@@ -351,8 +349,7 @@ public class TrackSlashCommands(
         [SlashCommandParameter(Name = "private", Description = "Only show response to you")]
         bool privateResponse = false)
     {
-        await Context.Interaction.SendResponseAsync(
-            InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
+        this.Context.DeferInBackground(privateResponse ? MessageFlags.Ephemeral : default);
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var userSettings =
@@ -390,7 +387,7 @@ public class TrackSlashCommands(
             return;
         }
 
-        await RespondAsync(InteractionCallback.DeferredMessage());
+        this.Context.DeferInBackground();
 
         try
         {

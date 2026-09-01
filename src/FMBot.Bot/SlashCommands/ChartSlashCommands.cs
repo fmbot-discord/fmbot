@@ -57,7 +57,7 @@ public class ChartSlashCommands(
         [SlashCommandParameter(Name = "private", Description = "Only show response to you")]
         bool privateResponse = false)
     {
-        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
+        this.Context.DeferInBackground(privateResponse ? MessageFlags.Ephemeral : default);
 
         Artist filteredArtist = null;
         if (!string.IsNullOrWhiteSpace(artist))
@@ -125,7 +125,7 @@ public class ChartSlashCommands(
         [SlashCommandParameter(Name = "private", Description = "Only show response to you")]
         bool privateResponse = false)
     {
-        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
+        this.Context.DeferInBackground(privateResponse ? MessageFlags.Ephemeral : default);
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);

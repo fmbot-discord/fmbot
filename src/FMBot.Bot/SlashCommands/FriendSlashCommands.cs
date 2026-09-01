@@ -27,7 +27,7 @@ public class FriendSlashCommands(
     [UsernameSetRequired]
     public async Task FriendsAsync()
     {
-        await RespondAsync(InteractionCallback.DeferredMessage());
+        this.Context.DeferInBackground();
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 

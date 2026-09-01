@@ -33,8 +33,8 @@ public class SpotifyRemoteSlashCommands(
     [SpotifyConnectedRequired]
     public async Task RemoteAsync()
     {
+        this.Context.DeferInBackground(MessageFlags.Ephemeral);
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
-        await RespondAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
 
         try
         {
@@ -59,8 +59,8 @@ public class SpotifyRemoteSlashCommands(
             AutocompleteProviderType = typeof(TrackAutoComplete))]
         string searchValue = null)
     {
+        this.Context.DeferInBackground(MessageFlags.Ephemeral);
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
-        await RespondAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
 
         try
         {
@@ -96,7 +96,7 @@ public class SpotifyRemoteSlashCommands(
     [SpotifyConnectedRequired]
     public async Task SkipAsync()
     {
-        await RespondAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
+        this.Context.DeferInBackground(MessageFlags.Ephemeral);
 
         try
         {
@@ -127,8 +127,8 @@ public class SpotifyRemoteSlashCommands(
             AutocompleteProviderType = typeof(TrackAutoComplete))]
         string searchValue = null)
     {
+        this.Context.DeferInBackground(MessageFlags.Ephemeral);
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
-        await RespondAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
 
         try
         {
@@ -181,8 +181,8 @@ public class SpotifyRemoteSlashCommands(
 
     private async Task RemoteFromMessageAsync(RestMessage message, bool play)
     {
+        this.Context.DeferInBackground(MessageFlags.Ephemeral);
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
-        await RespondAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
 
         try
         {

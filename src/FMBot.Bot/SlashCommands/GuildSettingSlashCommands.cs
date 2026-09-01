@@ -58,7 +58,7 @@ public class GuildSettingSlashCommands(
     {
         try
         {
-            await RespondAsync(InteractionCallback.DeferredMessage());
+            this.Context.DeferInBackground();
 
             var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
             var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);

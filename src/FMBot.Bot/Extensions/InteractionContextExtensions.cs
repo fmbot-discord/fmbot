@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Fergun.Interactive;
 using FMBot.Bot.Models;
@@ -23,6 +25,8 @@ namespace FMBot.Bot.Extensions;
 
 public static class InteractionContextExtensions
 {
+    private static readonly ConditionalWeakTable<Interaction, Task> PendingDefers = new();
+
     private static EmojiProperties ToEmojiProperties(EmojiReference emoji)
     {
         if (emoji == null)
@@ -288,9 +292,23 @@ public static class InteractionContextExtensions
             referenceId, context.Interaction.User?.Username, context.Interaction.User?.Id, context.Interaction.Guild?.Name,
             context.Interaction.Guild?.Id, CommandResponse.Error, message, commandName);
 
-        if (sendReply)
+        var hadPendingDefer = false;
+        var deferCompleted = true;
+        try
         {
-            if (deferFirst)
+            hadPendingDefer = await context.EnsureDeferCompleted();
+        }
+        catch (Exception deferException)
+        {
+            deferCompleted = false;
+            Log.Warning(deferException,
+                "InteractionUsed: background deferral failed for {commandName}, skipping error reply {referenceId}",
+                commandName, referenceId);
+        }
+
+        if (sendReply && deferCompleted)
+        {
+            if (deferFirst && !hadPendingDefer)
             {
                 await context.Interaction.SendResponseAsync(
                     InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
@@ -343,9 +361,73 @@ public static class InteractionContextExtensions
 
     extension(IInteractionContext context)
     {
+        public void DeferInBackground(MessageFlags? flags = null)
+        {
+            var interaction = context.Interaction;
+            if (PendingDefers.TryGetValue(interaction, out _))
+            {
+                return;
+            }
+
+            var timer = Stopwatch.StartNew();
+            var deferTask = interaction.SendResponseAsync(InteractionCallback.DeferredMessage(flags));
+
+            _ = deferTask.ContinueWith(t =>
+            {
+                Statistics.InteractionDeferDuration
+                    .WithLabels(t.IsFaulted ? "error" : "ok")
+                    .Observe(timer.Elapsed.TotalSeconds);
+
+                if (t.IsFaulted)
+                {
+                    Log.Warning(t.Exception?.GetBaseException(),
+                        "DeferInBackground: deferral failed for interaction {interactionId}", interaction.Id);
+                }
+            }, TaskContinuationOptions.ExecuteSynchronously);
+
+            PendingDefers.Add(interaction, deferTask);
+        }
+
+        private async Task<bool> EnsureDeferCompleted()
+        {
+            if (!PendingDefers.TryGetValue(context.Interaction, out var deferTask))
+            {
+                return false;
+            }
+
+            if (deferTask != null)
+            {
+                await deferTask;
+            }
+
+            PendingDefers.Remove(context.Interaction);
+            return true;
+        }
+
         public async Task SendResponse(InteractiveService interactiveService, ResponseModel response, UserService userService, bool ephemeral = false,
             ResponseModel extraResponse = null)
         {
+            if (await context.EnsureDeferCompleted())
+            {
+                if (response.ResponseType == ResponseType.SupporterRequired)
+                {
+                    await context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
+                        .WithContent(
+                            "This feature requires .fmbot supporter status. Use `/getsupporter` for more information.")
+                        .WithFlags(MessageFlags.Ephemeral));
+                }
+                else
+                {
+                    await context.SendFollowUpResponse(interactiveService, response, userService, ephemeral);
+                    if (extraResponse != null)
+                    {
+                        await context.SendFollowUpResponse(interactiveService, extraResponse, null, ephemeral);
+                    }
+                }
+
+                return;
+            }
+
             var embeds = new[] { response.Embed };
             if (extraResponse != null)
             {
@@ -482,6 +564,8 @@ public static class InteractionContextExtensions
         public async Task<ulong?> SendFollowUpResponse(InteractiveService interactiveService, ResponseModel response, UserService userService,
             bool ephemeral = false)
         {
+            await context.EnsureDeferCompleted();
+
             ulong? responseId = null;
             var flags = ephemeral ? MessageFlags.Ephemeral : (MessageFlags?)null;
 
