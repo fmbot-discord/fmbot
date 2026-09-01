@@ -475,7 +475,7 @@ public class DataSourceFactory : IDataSourceFactory
     }
 
     public async Task<Response<TopTrackList>> GetTopTracksAsync(string lastFmUserName, TimeSettingsModel timeSettings,
-        int count = 2, int amountOfPages = 1, bool calculateTimeListened = false)
+        int count = 2, int amountOfPages = 1, bool calculateTimeListened = false, bool useCache = false)
     {
         var importUser = await this.GetImportUserForLastFmUserName(lastFmUserName);
 
@@ -488,7 +488,7 @@ public class DataSourceFactory : IDataSourceFactory
         else
         {
             topTracks = await this._lastfmRepository.GetTopTracksAsync(lastFmUserName, timeSettings, count,
-                amountOfPages);
+                amountOfPages, useCache);
         }
 
         if (calculateTimeListened && topTracks.Success && topTracks.Content?.TopTracks != null &&

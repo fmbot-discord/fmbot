@@ -674,10 +674,21 @@ public class IndexService
 
             fullGuildUsers.TryGetValue(userId, out var existingGuildUser);
             if (existingGuildUser != null &&
-                existingGuildUser.UserName == discordGuildUser.GetDisplayName() &&
-                !PublicProperties.PremiumServers.ContainsKey(guild.DiscordGuildId))
+                existingGuildUser.UserName == discordGuildUser.GetDisplayName())
             {
-                return;
+                if (!PublicProperties.PremiumServers.ContainsKey(guild.DiscordGuildId))
+                {
+                    return;
+                }
+
+                var existingRoles = existingGuildUser.Roles ?? [];
+                var currentRoles = discordGuildUser.RoleIds;
+                if (currentRoles != null &&
+                    existingRoles.Length == currentRoles.Count() &&
+                    existingRoles.All(r => currentRoles.Contains(r)))
+                {
+                    return;
+                }
             }
 
             const string sql = "UPDATE guild_users " +
@@ -822,7 +833,7 @@ public class IndexService
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var user = await db.Users
-            .Include(i => i.GuildUsers)
+            .AsNoTracking()
             .FirstOrDefaultAsync(f => f.UserId == userId);
 
         if (user == null)

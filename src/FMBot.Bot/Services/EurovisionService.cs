@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using FMBot.Bot.Extensions;
+using Microsoft.Extensions.Caching.Memory;
 using Web.InternalApi;
 
 namespace FMBot.Bot.Services;
@@ -11,18 +12,26 @@ namespace FMBot.Bot.Services;
 public class EurovisionService
 {
     private readonly EurovisionEnrichment.EurovisionEnrichmentClient _eurovisionEnrichment;
+    private readonly IMemoryCache _cache;
     private CountryService CountryService { get; set; }
 
 
     public EurovisionService(EurovisionEnrichment.EurovisionEnrichmentClient eurovisionEnrichment,
-        CountryService countryService)
+        CountryService countryService, IMemoryCache cache)
     {
         this._eurovisionEnrichment = eurovisionEnrichment;
         this.CountryService = countryService;
+        this._cache = cache;
     }
 
     public async Task<EurovisionEntry> GetEurovisionEntryForSpotifyId(string spotifyId)
     {
+        var cacheKey = $"eurovision-spotify-{spotifyId}";
+        if (this._cache.TryGetValue(cacheKey, out EurovisionEntry cachedEntry))
+        {
+            return cachedEntry;
+        }
+
         try
         {
             var entry = await this._eurovisionEnrichment.GetEntryBySpotifyIdAsync(new SpotifyIdRequest
@@ -30,10 +39,13 @@ public class EurovisionService
                 SpotifyId = spotifyId
             });
 
+            this._cache.Set(cacheKey, entry?.Entry, TimeSpan.FromHours(12));
+
             return entry?.Entry;
         }
         catch (Exception)
         {
+            this._cache.Set(cacheKey, (EurovisionEntry)null, TimeSpan.FromMinutes(5));
             return null;
         }
     }

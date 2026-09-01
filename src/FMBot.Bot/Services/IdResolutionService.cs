@@ -188,6 +188,12 @@ public class IdResolutionService(IdResolution.IdResolutionClient client, IOption
             return null;
         }
 
+        var cacheKey = $"resolve-track-id-{artistName.ToUpperInvariant()}\0{trackName.ToUpperInvariant()}";
+        if (cache.TryGetValue(cacheKey, out int? cachedTrackId))
+        {
+            return cachedTrackId;
+        }
+
         try
         {
             var request = new ResolveTrackIdsRequest();
@@ -200,6 +206,11 @@ public class IdResolutionService(IdResolution.IdResolutionClient client, IOption
             var reply = await client.ResolveTrackIdsAsync(request);
 
             var mapping = reply.Mappings.FirstOrDefault(m => m.TrackId != 0);
+
+            cache.Set(cacheKey, mapping?.TrackId, mapping?.TrackId != null
+                ? TimeSpan.FromMinutes(30)
+                : TimeSpan.FromMinutes(5));
+
             return mapping?.TrackId;
         }
         catch (Exception e)

@@ -43,7 +43,8 @@ public interface IDataSourceFactory
         DateTime startDateTime, DateTime endDateTime, int count);
 
     Task<Response<TopTrackList>> GetTopTracksAsync(string lastFmUserName,
-        TimeSettingsModel timeSettings, int count = 2, int amountOfPages = 1, bool calculateTimeListened = false);
+        TimeSettingsModel timeSettings, int count = 2, int amountOfPages = 1, bool calculateTimeListened = false,
+        bool useCache = false);
 
     Task<Response<TopTrackList>> GetTopTracksForCustomTimePeriodAsyncAsync(string lastFmUserName,
         DateTime startDateTime, DateTime endDateTime, int count, bool calculateTimeListened = false);

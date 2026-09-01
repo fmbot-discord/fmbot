@@ -14,6 +14,7 @@ using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using NetCord.Rest;
 
 namespace FMBot.Bot.Services.WhoKnows;
@@ -21,10 +22,12 @@ namespace FMBot.Bot.Services.WhoKnows;
 public class WhoKnowsService
 {
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
+    private readonly IMemoryCache _cache;
 
-    public WhoKnowsService(IDbContextFactory<FMBotDbContext> contextFactory)
+    public WhoKnowsService(IDbContextFactory<FMBotDbContext> contextFactory, IMemoryCache cache)
     {
         this._contextFactory = contextFactory;
+        this._cache = cache;
     }
 
     public static async Task<IList<WhoKnowsObjectWithUser>> AddOrReplaceUserToIndexList(
@@ -257,9 +260,31 @@ public class WhoKnowsService
             return users.ToList();
         }
 
+        var (insensitiveUserNames, userDatesToFilter) = await GetGlobalFilterSetsAsync();
+
+        return users
+            .Where(w =>
+                !insensitiveUserNames.Contains(w.LastFMUsername)
+                &&
+                !userDatesToFilter.Contains(w.RegisteredLastFm))
+            .ToList();
+    }
+
+    public const string GlobalFilterSetsCacheKey = "global-whoknows-filter-sets";
+
+    private async Task<(HashSet<string> FilteredUserNames, HashSet<DateTime?> FilteredRegisterDates)>
+        GetGlobalFilterSetsAsync()
+    {
+        const string cacheKey = GlobalFilterSetsCacheKey;
+        if (this._cache.TryGetValue(cacheKey,
+                out (HashSet<string>, HashSet<DateTime?>) cachedSets))
+        {
+            return cachedSets;
+        }
+
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var bottedUsers = await db.BottedUsers
-            .AsQueryable()
+            .AsNoTracking()
             .Where(w => w.BanActive)
             .ToListAsync();
 
@@ -280,7 +305,7 @@ public class WhoKnowsService
         var existingFilterDate = DateTime.UtcNow.AddMonths(-3);
         var existingRepeatOffenderFilterDate = DateTime.UtcNow.AddMonths(-6);
         var filteredUsers = await db.GlobalFilteredUsers
-            .AsQueryable()
+            .AsNoTracking()
             .Where(w => w.OccurrenceEnd.HasValue
                 ? w.OccurrenceEnd.Value > (w.MonthLength == null || w.MonthLength == 3
                     ? existingFilterDate
@@ -301,12 +326,10 @@ public class WhoKnowsService
             }
         }
 
-        return users
-            .Where(w =>
-                !insensitiveUserNames.Contains(w.LastFMUsername)
-                &&
-                !userDatesToFilter.Contains(w.RegisteredLastFm))
-            .ToList();
+        var sets = (insensitiveUserNames, userDatesToFilter);
+        this._cache.Set(cacheKey, sets, TimeSpan.FromMinutes(10));
+
+        return sets;
     }
 
     public static StringBuilder GetGlobalWhoKnowsFooter(StringBuilder footer, WhoKnowsSettings settings,

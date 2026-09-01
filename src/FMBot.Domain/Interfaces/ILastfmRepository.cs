@@ -49,7 +49,7 @@ public interface ILastfmRepository
         DateTime startDateTime, DateTime endDateTime, int count);
 
     Task<Response<TopTrackList>> GetTopTracksAsync(string lastFmUserName,
-        TimeSettingsModel timeSettings, int count = 2, int amountOfPages = 1);
+        TimeSettingsModel timeSettings, int count = 2, int amountOfPages = 1, bool useCache = false);
 
     Task<Response<TopTrackList>> GetTopTracksAsync(string lastFmUserName,
         string period, int count = 2, int amountOfPages = 1);

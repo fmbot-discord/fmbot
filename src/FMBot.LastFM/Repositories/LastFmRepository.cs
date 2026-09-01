@@ -1223,18 +1223,44 @@ public class LastFmRepository : ILastfmRepository
     }
 
     public async Task<Response<TopTrackList>> GetTopTracksAsync(string lastFmUserName,
-        TimeSettingsModel timeSettings, int count = 2, int amountOfPages = 1)
+        TimeSettingsModel timeSettings, int count = 2, int amountOfPages = 1, bool useCache = false)
     {
         try
         {
+            var cacheKey =
+                $"{lastFmUserName}-lastfm-top-tracks-{timeSettings.Description}-{timeSettings.UrlParameter}";
+            if (useCache)
+            {
+                var cachedTopTracks = this._cache.TryGetValue(cacheKey, out TopTrackList topTrackResponse);
+                if (cachedTopTracks && topTrackResponse?.TopTracks != null && topTrackResponse.TopTracks.Any() &&
+                    topTrackResponse.TopTracks.Count >= count)
+                {
+                    return new Response<TopTrackList>
+                    {
+                        Content = topTrackResponse,
+                        Success = true
+                    };
+                }
+            }
+
+            Response<TopTrackList> response;
             if (!timeSettings.UseCustomTimePeriod || !timeSettings.StartDateTime.HasValue ||
                 !timeSettings.EndDateTime.HasValue || timeSettings.TimePeriod == TimePeriod.AllTime)
             {
-                return await GetTopTracksAsync(lastFmUserName, timeSettings.ApiParameter, count, amountOfPages);
+                response = await GetTopTracksAsync(lastFmUserName, timeSettings.ApiParameter, count, amountOfPages);
+            }
+            else
+            {
+                response = await GetTopTracksForCustomTimePeriodAsyncAsync(lastFmUserName,
+                    timeSettings.StartDateTime.Value, timeSettings.EndDateTime.Value, count);
             }
 
-            return await GetTopTracksForCustomTimePeriodAsyncAsync(lastFmUserName, timeSettings.StartDateTime.Value,
-                timeSettings.EndDateTime.Value, count);
+            if (useCache && response.Success && amountOfPages == 1)
+            {
+                this._cache.Set(cacheKey, response.Content, TimeSpan.FromMinutes(2));
+            }
+
+            return response;
         }
         catch (Exception e)
         {
