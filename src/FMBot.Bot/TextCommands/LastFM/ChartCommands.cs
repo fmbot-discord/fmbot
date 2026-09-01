@@ -103,7 +103,7 @@ public class ChartCommands(
         }
     }
 
-    [Command("artistchart", "ac", "top")]
+    [Command("artistchart", "ac", "top", "ca", "chartartist", "chartartists", "artistcharts")]
     [Summary("Generates an artist image chart.")]
     [Options(
         Constants.CompactTimePeriodList,

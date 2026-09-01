@@ -102,7 +102,7 @@ public class DiscogsSlashCommands(
         [SlashCommandParameter(Name = "format", Description = "Media format to include")]
         DiscogsFormat? format = null)
     {
-        await RespondAsync(InteractionCallback.DeferredMessage());
+        this.Context.DeferInBackground();
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);

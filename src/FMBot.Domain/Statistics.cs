@@ -137,6 +137,13 @@ public static class Statistics
     public static readonly Histogram SlashCommandHandlerDuration = Metrics
         .CreateHistogram("bot_slash_command_handler_duration", "Histogram of text command handler duration");
 
+    public static readonly Histogram InteractionDeferDuration = Metrics
+        .CreateHistogram("bot_interaction_defer_duration", "Histogram of background interaction deferral duration",
+            new HistogramConfiguration
+            {
+                LabelNames = ["outcome"]
+            });
+
 
     public static readonly Counter UserCommandsExecuted = Metrics
         .CreateCounter("bot_user_commands_executed", "Amount of user commands executed");

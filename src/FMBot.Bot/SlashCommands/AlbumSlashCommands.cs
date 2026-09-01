@@ -33,7 +33,7 @@ public class AlbumSlashCommands(
             AutocompleteProviderType = typeof(AlbumAutoComplete))]
         string name = null)
     {
-        await RespondAsync(InteractionCallback.DeferredMessage());
+        this.Context.DeferInBackground();
 
         var contextUser = await userService.GetUserWithDiscogs(this.Context.User.Id);
 
@@ -65,7 +65,7 @@ public class AlbumSlashCommands(
         [SlashCommandParameter(Name = "no-filter", Description = "Disable server filters")]
         bool filterDisabled = false)
     {
-        await RespondAsync(InteractionCallback.DeferredMessage());
+        this.Context.DeferInBackground();
 
         if (displayRoleFilter && !PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
         {
@@ -107,7 +107,7 @@ public class AlbumSlashCommands(
         [SlashCommandParameter(Name = "private", Description = "Only show response to you")]
         bool privateResponse = false)
     {
-        await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
+        this.Context.DeferInBackground(privateResponse ? MessageFlags.Ephemeral : default);
 
         var contextUser = await userService.GetUserWithFriendsAsync(this.Context.User);
 
@@ -139,7 +139,7 @@ public class AlbumSlashCommands(
         [SlashCommandParameter(Name = "hide-private", Description = "Hide or show private users")]
         bool hidePrivate = false)
     {
-        await RespondAsync(InteractionCallback.DeferredMessage());
+        this.Context.DeferInBackground();
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
@@ -174,7 +174,7 @@ public class AlbumSlashCommands(
             AutocompleteProviderType = typeof(AlbumAutoComplete))]
         string name = null)
     {
-        await RespondAsync(InteractionCallback.DeferredMessage());
+        this.Context.DeferInBackground();
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await settingService.GetUser(null, contextUser, this.Context.Guild, this.Context.User, true);
@@ -205,7 +205,7 @@ public class AlbumSlashCommands(
         [SlashCommandParameter(Name = "playcount-order", Description = "If the list should be ordered by playcount")]
         bool orderByPlaycount = false)
     {
-        await RespondAsync(InteractionCallback.DeferredMessage());
+        this.Context.DeferInBackground();
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
@@ -234,7 +234,7 @@ public class AlbumSlashCommands(
         [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
         string user = null)
     {
-        await RespondAsync(InteractionCallback.DeferredMessage());
+        this.Context.DeferInBackground();
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);

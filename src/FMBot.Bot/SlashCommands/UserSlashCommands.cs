@@ -552,7 +552,7 @@ public class UserSlashCommands(
         [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
         string user = null)
     {
-        await RespondAsync(InteractionCallback.DeferredMessage());
+        this.Context.DeferInBackground();
 
         var contextUser = await userService.GetFullUserAsync(this.Context.User.Id);
         var userSettings =

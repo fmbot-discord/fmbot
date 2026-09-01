@@ -47,9 +47,8 @@ public class SpotifySlashCommands(
         [SlashCommandParameter(Name = "private", Description = "Only show response to you")]
         bool privateResponse = false)
     {
+        this.Context.DeferInBackground(privateResponse ? MessageFlags.Ephemeral : default);
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
-        await RespondAsync(
-            InteractionCallback.DeferredMessage(privateResponse ? MessageFlags.Ephemeral : default));
 
         try
         {
