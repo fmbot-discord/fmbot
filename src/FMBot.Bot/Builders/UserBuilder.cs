@@ -1626,16 +1626,8 @@ public class UserBuilder
                     context.DiscordGuild?.Id))
             {
                 this._supporterService.SetGuildSupporterPromoCache(context.DiscordGuild?.Id);
-                if (user.UserDiscogs == null)
-                {
-                    response.Embed.AddField(context.Localize("profile.yearsFieldTitle"),
-                        context.Localize("profile.yearsSupporterPromo", ("url", Constants.GetSupporterDiscordLink)));
-                }
-                else
-                {
-                    response.Embed.AddField(context.Localize("profile.yearsFieldTitle"),
-                        context.Localize("profile.yearsSupporterPromoDiscogs", ("url", Constants.GetSupporterDiscordLink)));
-                }
+                response.Embed.AddField(context.Localize("profile.yearsFieldTitle"),
+                    context.Localize("profile.yearsSupporterPromo", ("url", Constants.GetSupporterDiscordLink)));
             }
         }
 

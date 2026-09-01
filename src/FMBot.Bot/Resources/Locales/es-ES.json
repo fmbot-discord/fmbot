@@ -524,7 +524,6 @@
   "profile.historyAllEntry_other": "**`Todo`** - **{{count}}** plays - **{{time}}**",
   "profile.yearsFieldTitle": "Años",
   "profile.yearsSupporterPromo": "*¿Quieres ver un resumen de tus scrobbles a lo largo de los años? [Hazte supporter de .fmbot aquí.]({{url}})*",
-  "profile.yearsSupporterPromoDiscogs": "*¿Quieres ver un resumen de tus scrobbles a lo largo de los años y de tu colección de Discogs? [Hazte supporter de .fmbot aquí.]({{url}})*",
   "profile.noDataStored": "*Lo sentimos, parece que no hay datos guardados en .fmbot para este usuario.*",
   "profile.importsConfigured": "Importaciones de .fmbot: {{name}}",
   "update.fetchingScrobbles": "Obteniendo los últimos scrobbles de **{{user}}**...",

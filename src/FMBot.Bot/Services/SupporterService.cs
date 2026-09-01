@@ -151,7 +151,7 @@ public class SupporterService
         return true;
     }
 
-    public async Task SendSupporterWelcomeMessage(NetCord.User discordUser, bool hasDiscogs, Supporter supporter,
+    public async Task SendSupporterWelcomeMessage(NetCord.User discordUser, Supporter supporter,
         bool reactivation = false, bool isGifted = false, StripeSupporter stripeSupporter = null)
     {
         var container = new ComponentContainerProperties
@@ -1682,7 +1682,7 @@ public class SupporterService
                 {
                     try
                     {
-                        await SendSupporterWelcomeMessage(user, false, newSupporter, false, isGifted, stripeSub);
+                        await SendSupporterWelcomeMessage(user, newSupporter, false, isGifted, stripeSub);
                     }
                     catch (Exception e)
                     {
@@ -1779,7 +1779,7 @@ public class SupporterService
                     {
                         try
                         {
-                            await SendSupporterWelcomeMessage(user, false, reActivatedSupporter, true, isGifted,
+                            await SendSupporterWelcomeMessage(user, reActivatedSupporter, true, isGifted,
                                 stripeSub);
                         }
                         catch (Exception e)

@@ -1544,8 +1544,7 @@ public class AdminCommands(
             var discordUser = await this.Context.GetUserAsync(discordUserId);
             if (discordUser != null && sendDm == null)
             {
-                await supporterService.SendSupporterWelcomeMessage(discordUser, userSettings.UserDiscogs != null,
-                    supporter);
+                await supporterService.SendSupporterWelcomeMessage(discordUser, supporter);
 
                 description.AppendLine("✅ Thank you dm sent");
             }
@@ -1607,8 +1606,7 @@ public class AdminCommands(
             {
                 PurchaseSource = source
             };
-            await supporterService.SendSupporterWelcomeMessage(discordUser, userSettings.UserDiscogs != null,
-                supporter, stripeSupporter: stripeSupporter);
+            await supporterService.SendSupporterWelcomeMessage(discordUser, supporter, stripeSupporter: stripeSupporter);
 
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = "✅ Thank you dm sent" });
         }
@@ -1840,8 +1838,7 @@ public class AdminCommands(
             {
                 try
                 {
-                    await supporterService.SendSupporterWelcomeMessage(discordUser, userSettings.UserDiscogs != null,
-                        supporter);
+                    await supporterService.SendSupporterWelcomeMessage(discordUser, supporter);
 
                     description.AppendLine("✅ Thank you dm sent");
                 }
