@@ -192,7 +192,8 @@ public class AlbumService
 
             if (userId.HasValue && otherUserUsername == null)
             {
-                recentScrobbles = await this._updateService.UpdateUser(new UpdateUserQueueItem(userId.Value));
+                recentScrobbles = await this._updateService.UpdateUser(new UpdateUserQueueItem(userId.Value,
+                    getAccurateTotalPlaycount: false));
             }
             else
             {
@@ -660,6 +661,21 @@ public class AlbumService
             return DiscordConstants.LastFmColorRed;
         }
 
+        var accentCacheKey = $"album-accent-{artistName.ToUpperInvariant()}\0{albumName.ToUpperInvariant()}\0{albumCoverUrl}";
+        if (this._cache.TryGetValue(accentCacheKey, out Color cachedAccentColor))
+        {
+            return cachedAccentColor;
+        }
+
+        var color = await GetAlbumAccentColorInternal(albumCoverUrl, albumName, artistName, prefetchedAlbum);
+        this._cache.Set(accentCacheKey, color,
+            color.Equals(DiscordConstants.LastFmColorRed) ? TimeSpan.FromMinutes(2) : TimeSpan.FromHours(1));
+        return color;
+    }
+
+    private async Task<Color> GetAlbumAccentColorInternal(string albumCoverUrl, string albumName, string artistName,
+        Album prefetchedAlbum)
+    {
         var album = prefetchedAlbum ?? await GetAlbumFromDatabase(artistName, albumName);
 
         var cachePath = ChartService.AlbumUrlToCacheFilePath(albumName, artistName);

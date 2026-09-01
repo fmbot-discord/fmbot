@@ -82,8 +82,8 @@ public class GameInteractions(
     {
         try
         {
-            await RespondAsync(InteractionCallback.DeferredModifyMessage);
-            await this.Context.DisableInteractionButtons();
+            this.Context.DeferUpdateInBackground();
+            var disableButtonsTask = this.Context.DisableInteractionButtons().ObserveFaults();
 
             var jumbleTypeEnum = (JumbleType)Enum.Parse(typeof(JumbleType), jumbleType);
 
@@ -106,11 +106,15 @@ public class GameInteractions(
                     cancellationTokenSource);
             }
 
+            await disableButtonsTask;
+
             var responseId = await this.Context.SendFollowUpResponse(interactivity, response, userService,
                 ephemeral: response.CommandResponse != CommandResponse.Ok);
             await this.Context.LogCommandUsedAsync(response, userService,
                 flowCommand: jumbleTypeEnum == JumbleType.Artist ? "jumble" : "pixel");
-            Statistics.JumblesPlayed.WithLabels(nameof(jumbleTypeEnum)).Inc();
+            Statistics.JumblesPlayed.WithLabels(jumbleTypeEnum == JumbleType.Artist
+                ? nameof(JumbleType.Artist)
+                : nameof(JumbleType.Pixelation)).Inc();
 
             if (response.CommandResponse == CommandResponse.Ok)
             {

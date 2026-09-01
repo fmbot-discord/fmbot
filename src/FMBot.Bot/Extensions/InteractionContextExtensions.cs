@@ -363,6 +363,16 @@ public static class InteractionContextExtensions
     {
         public void DeferInBackground(MessageFlags? flags = null)
         {
+            context.StartBackgroundDefer(InteractionCallback.DeferredMessage(flags), nameof(DeferInBackground));
+        }
+
+        public void DeferUpdateInBackground()
+        {
+            context.StartBackgroundDefer(InteractionCallback.DeferredModifyMessage, nameof(DeferUpdateInBackground));
+        }
+
+        private void StartBackgroundDefer(InteractionCallbackProperties callback, string caller)
+        {
             var interaction = context.Interaction;
             if (PendingDefers.TryGetValue(interaction, out _))
             {
@@ -370,7 +380,7 @@ public static class InteractionContextExtensions
             }
 
             var timer = Stopwatch.StartNew();
-            var deferTask = interaction.SendResponseAsync(InteractionCallback.DeferredMessage(flags));
+            var deferTask = interaction.SendResponseAsync(callback);
 
             _ = deferTask.ContinueWith(t =>
             {
@@ -381,7 +391,7 @@ public static class InteractionContextExtensions
                 if (t.IsFaulted)
                 {
                     Log.Warning(t.Exception?.GetBaseException(),
-                        "DeferInBackground: deferral failed for interaction {interactionId}", interaction.Id);
+                        "{Caller}: deferral failed for interaction {interactionId}", caller, interaction.Id);
                 }
             }, TaskContinuationOptions.ExecuteSynchronously);
 
@@ -917,6 +927,8 @@ public static class InteractionContextExtensions
         public async Task ModifyComponents(RestMessage message,
             ActionRowProperties newComponents, bool interactionEdit = false)
         {
+            await context.EnsureDeferCompleted();
+
             var components = newComponents != null ? new[] { newComponents } : null;
             var isUserInstalledApp =
                 context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
@@ -954,7 +966,8 @@ public static class InteractionContextExtensions
         public async Task ModifyMessage(RestMessage message,
             ResponseModel response, bool defer = true, bool interactionEdit = false)
         {
-            if (defer)
+            var hadPendingDefer = await context.EnsureDeferCompleted();
+            if (defer && !hadPendingDefer)
             {
                 await context.Interaction.SendResponseAsync(InteractionCallback.DeferredModifyMessage);
             }

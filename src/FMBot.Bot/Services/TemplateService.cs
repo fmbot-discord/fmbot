@@ -30,6 +30,10 @@ public partial class TemplateService
         var sqlOptions = relevantOptions.OfType<SqlTemplateOption>().ToList();
         var complexOptions = relevantOptions.OfType<ComplexTemplateOption>().ToList();
 
+        var eurovisionTask = context.DbTrack?.SpotifyId != null
+            ? context.EurovisionService.GetEurovisionEntryForSpotifyId(context.DbTrack.SpotifyId)
+            : null;
+
         await using var batch = new NpgsqlBatch(context.Connection);
         foreach (var option in sqlOptions)
         {
@@ -49,10 +53,9 @@ public partial class TemplateService
         var complexTasks = complexOptions.Select(o => ProcessComplexOptionAsync(o, context, options));
         await Task.WhenAll(complexTasks);
 
-        if (context.DbTrack?.SpotifyId != null)
+        if (eurovisionTask != null)
         {
-            var eurovisionEntry =
-                await context.EurovisionService.GetEurovisionEntryForSpotifyId(context.DbTrack.SpotifyId);
+            var eurovisionEntry = await eurovisionTask;
             if (eurovisionEntry != null)
             {
                 var description = context.EurovisionService.GetEurovisionDescription(eurovisionEntry);

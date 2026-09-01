@@ -485,7 +485,8 @@ public class MusicDataFactory(
         }
 
         if (albumInfo.AlbumCoverUrl != null &&
-            !albumInfo.AlbumCoverUrl.Contains("i.scdn.co"))
+            !albumInfo.AlbumCoverUrl.Contains("i.scdn.co") &&
+            dbAlbum.LastfmImageUrl != albumInfo.AlbumCoverUrl)
         {
             await AddOrUpdateAlbumImage(db, dbAlbum.Id, ImageSource.LastFm, albumInfo.AlbumCoverUrl, null, null);
 
