@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -372,15 +373,14 @@ public class UpdateService
         return recentTracks;
     }
 
+    private static readonly ConcurrentDictionary<int, byte> BackfilledUsers = new();
+
     private async Task BackfillPlayIds(User user)
     {
-        var cacheKey = $"backfill-play-ids-{user.UserId}";
-        if (this._cache.TryGetValue(cacheKey, out _))
+        if (!BackfilledUsers.TryAdd(user.UserId, 0))
         {
             return;
         }
-
-        this._cache.Set(cacheKey, true);
 
         await this._idResolutionService.BackfillUserPlayIds(user.UserId);
         await this._idResolutionService.BackfillUserArtistIds(user.UserId);

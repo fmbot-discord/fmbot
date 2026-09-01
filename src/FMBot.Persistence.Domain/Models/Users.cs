@@ -41,6 +41,10 @@ public class User
 
     public GraphType? GraphType { get; set; }
 
+    public GraphColor? GraphColor { get; set; }
+
+    public string GraphCustomColor { get; set; }
+
     public PrivacyLevel PrivacyLevel { get; set; }
 
     public DateTime? LastIndexed { get; set; }

@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
@@ -823,9 +822,9 @@ public class UserInteractions(
     [UsernameSetRequired]
     public async Task SetCustomColorModal()
     {
-        var hexValue = this.Context.GetModalValue("hex_color")?.Trim();
+        var hexValue = ColorExtensions.NormalizeHexColor(this.Context.GetModalValue("hex_color"));
 
-        if (string.IsNullOrEmpty(hexValue) || !Regex.IsMatch(hexValue, @"^#?[0-9A-Fa-f]{3,6}$"))
+        if (hexValue == null)
         {
             await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
                 .WithEmbeds([
@@ -838,11 +837,6 @@ public class UserInteractions(
         }
 
         await this.Context.Interaction.SendResponseAsync(InteractionCallback.DeferredModifyMessage);
-
-        if (!hexValue.StartsWith('#'))
-        {
-            hexValue = $"#{hexValue}";
-        }
 
         var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
         await fmSettingService.SetAccentColor(userSettings, FmAccentColor.Custom, hexValue);
@@ -1207,44 +1201,42 @@ public class UserInteractions(
 
     [ComponentInteraction(InteractionConstants.GraphSettingAccentColor)]
     [UsernameSetRequired]
-    public async Task SetGraphAccentColor()
+    public async Task SetGraphColor()
     {
         var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
 
         var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
         var selectedValue = stringMenuInteraction.Data.SelectedValues[0];
 
-        if (Enum.TryParse(selectedValue, out FmAccentColor accentColor))
+        if (Enum.TryParse(selectedValue, out GraphColor graphColor))
         {
-            var supporterOnly = accentColor.GetAttribute<OptionAttribute>().SupporterOnly;
-            if (supporterOnly && userSettings.UserType == UserType.User)
+            if (userSettings.UserType == UserType.User)
             {
                 await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
                     .WithEmbeds([
                         new EmbedProperties()
-                            .WithDescription("This option is only available for .fmbot supporters.")
+                            .WithDescription("This setting is only available for .fmbot supporters.")
                             .WithColor(DiscordConstants.WarningColorOrange)
                     ])
                     .WithComponents([
                         new ActionRowProperties()
                             .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
                                 customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(
-                                    source: "graph-accentcolor"))
+                                    source: "graph-color"))
                     ])
                     .WithFlags(MessageFlags.Ephemeral)));
                 return;
             }
 
-            if (accentColor == FmAccentColor.Custom)
+            if (graphColor == GraphColor.Custom)
             {
-                userSettings.FmSetting ??= await fmSettingService.GetOrCreateFmSetting(userSettings.UserId);
                 await RespondAsync(InteractionCallback.Modal(
                     ModalFactory.CreateCustomColorModal(InteractionConstants.GraphSettingCustomColorModal,
-                        userSettings.FmSetting?.CustomColor)));
+                        userSettings.GraphCustomColor, "Set custom graph color")));
                 return;
             }
 
-            await fmSettingService.SetAccentColor(userSettings, accentColor);
+            await userService.SetGraphColor(userSettings, graphColor);
             await RefreshGraphModeEmbed();
         }
     }
@@ -1254,20 +1246,19 @@ public class UserInteractions(
     public async Task EditGraphCustomColor()
     {
         var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
-        userSettings.FmSetting ??= await fmSettingService.GetOrCreateFmSetting(userSettings.UserId);
 
         await RespondAsync(InteractionCallback.Modal(
             ModalFactory.CreateCustomColorModal(InteractionConstants.GraphSettingCustomColorModal,
-                userSettings.FmSetting?.CustomColor)));
+                userSettings.GraphCustomColor, "Set custom graph color")));
     }
 
     [ComponentInteraction(InteractionConstants.GraphSettingCustomColorModal)]
     [UsernameSetRequired]
     public async Task SetGraphCustomColorModal()
     {
-        var hexValue = this.Context.GetModalValue("hex_color")?.Trim();
+        var hexValue = ColorExtensions.NormalizeHexColor(this.Context.GetModalValue("hex_color"));
 
-        if (string.IsNullOrEmpty(hexValue) || !Regex.IsMatch(hexValue, @"^#?[0-9A-Fa-f]{3,6}$"))
+        if (hexValue == null)
         {
             await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
                 .WithEmbeds([
@@ -1281,13 +1272,8 @@ public class UserInteractions(
 
         await this.Context.Interaction.SendResponseAsync(InteractionCallback.DeferredModifyMessage);
 
-        if (!hexValue.StartsWith('#'))
-        {
-            hexValue = $"#{hexValue}";
-        }
-
         var userSettings = await userService.GetUserSettingsAsync(this.Context.User);
-        await fmSettingService.SetAccentColor(userSettings, FmAccentColor.Custom, hexValue);
+        await userService.SetGraphColor(userSettings, GraphColor.Custom, hexValue);
 
         await RefreshGraphModeEmbed(deferred: true);
     }

@@ -76,12 +76,35 @@ public static class GraphExtensions
 
     private static async Task<SKColor> GetLineColor(ContextModel context, ResponseModel response)
     {
+        var user = context.ContextUser;
+
+        switch (user?.GraphColor ?? GraphColor.EmbedColor)
+        {
+            case GraphColor.FmbotBlue:
+                return GraphColors.FmbotBlue;
+            case GraphColor.Custom when ColorExtensions.TryParseHexColor(user.GraphCustomColor, out var customColor):
+                return Brighten(ToSkColor(customColor));
+            case GraphColor.RoleColor:
+                var roleColor = await UserService.GetRoleColor(user, context.DiscordGuild);
+                if (roleColor.HasValue)
+                {
+                    return Brighten(ToSkColor(roleColor.Value));
+                }
+
+                break;
+        }
+
         var accentColor = response.ComponentsContainer?.AccentColor ??
-                          await UserService.GetCustomAccentColor(context.ContextUser, context.DiscordGuild);
+                          await UserService.GetCustomAccentColor(user, context.DiscordGuild);
 
         return accentColor.HasValue
-            ? Brighten(new SKColor(accentColor.Value.Red, accentColor.Value.Green, accentColor.Value.Blue))
+            ? Brighten(ToSkColor(accentColor.Value))
             : GraphColors.FmbotBlue;
+    }
+
+    private static SKColor ToSkColor(NetCord.Color color)
+    {
+        return new SKColor(color.Red, color.Green, color.Blue);
     }
 
     private static SKColor Brighten(SKColor color)

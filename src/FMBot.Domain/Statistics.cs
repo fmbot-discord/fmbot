@@ -131,11 +131,16 @@ public static class Statistics
             });
 
 
+    private static readonly double[] CommandDurationBuckets =
+        [0.05, 0.1, 0.25, 0.5, 0.75, 1, 1.5, 2, 3, 5, 7.5, 10, 15, 30, 60];
+
     public static readonly Histogram TextCommandHandlerDuration = Metrics
-        .CreateHistogram("bot_text_command_handler_duration", "Histogram of text command handler duration");
+        .CreateHistogram("bot_text_command_handler_duration", "Histogram of text command handler duration",
+            new HistogramConfiguration { Buckets = CommandDurationBuckets });
 
     public static readonly Histogram SlashCommandHandlerDuration = Metrics
-        .CreateHistogram("bot_slash_command_handler_duration", "Histogram of text command handler duration");
+        .CreateHistogram("bot_slash_command_handler_duration", "Histogram of slash command handler duration",
+            new HistogramConfiguration { Buckets = CommandDurationBuckets });
 
     public static readonly Histogram InteractionDeferDuration = Metrics
         .CreateHistogram("bot_interaction_defer_duration", "Histogram of background interaction deferral duration",

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -465,10 +464,9 @@ public class UserBuilder
 
         if (fmSetting?.AccentColor == FmAccentColor.Custom &&
             SupporterService.IsSupporter(context.ContextUser.UserType) &&
-            !string.IsNullOrWhiteSpace(fmSetting.CustomColor) &&
-            int.TryParse(fmSetting.CustomColor.TrimStart('#'), NumberStyles.HexNumber, null, out var customRgb))
+            ColorExtensions.TryParseHexColor(fmSetting.CustomColor, out var customColor))
         {
-            container.AccentColor = new Color(customRgb);
+            container.AccentColor = customColor;
             container.AddComponent(new ComponentSectionProperties(
                 new ButtonProperties(InteractionConstants.FmCommand.FmSettingEditCustomColor, "Edit color",
                     ButtonStyle.Secondary))
@@ -795,7 +793,6 @@ public class UserBuilder
         };
 
         var isSupporter = SupporterService.IsSupporter(context.ContextUser.UserType);
-        var fmSetting = context.ContextUser.FmSetting;
 
         var container = response.ComponentsContainer;
         container.WithAccentColor(DiscordConstants.InformationColorBlue);
@@ -831,12 +828,12 @@ public class UserBuilder
 
         container.WithSeparator();
 
-        if (fmSetting?.AccentColor == FmAccentColor.Custom &&
+        var graphColor = context.ContextUser.GraphColor ?? GraphColor.EmbedColor;
+        if (graphColor == GraphColor.Custom &&
             isSupporter &&
-            !string.IsNullOrWhiteSpace(fmSetting.CustomColor) &&
-            int.TryParse(fmSetting.CustomColor.TrimStart('#'), NumberStyles.HexNumber, null, out var customRgb))
+            ColorExtensions.TryParseHexColor(context.ContextUser.GraphCustomColor, out var customGraphColor))
         {
-            container.AccentColor = new Color(customRgb);
+            container.AccentColor = customGraphColor;
             container.AddComponent(new ComponentSectionProperties(
                 new ButtonProperties(InteractionConstants.GraphSettingEditCustomColor, "Edit color",
                     ButtonStyle.Secondary))
@@ -844,36 +841,36 @@ public class UserBuilder
                 Components =
                 [
                     new TextDisplayProperties(
-                        $"**Accent color** — Currently `{fmSetting.CustomColor.FilterOutMentions()}`\n" +
-                        "-# Also used for your embed colors")
+                        $"**Graph color** — Currently `{context.ContextUser.GraphCustomColor}`\n" +
+                        "-# Dark colors get lightened so the graph stays readable")
                 ]
             });
         }
         else
         {
-            container.WithTextDisplay("**Accent color**\n" +
-                                      "-# Also used for your embed colors");
+            container.WithTextDisplay("**Graph color**");
         }
 
-        var accentColorMenu = new StringMenuProperties(InteractionConstants.GraphSettingAccentColor)
-            .WithPlaceholder("Select accent color")
+        var graphColorMenu = new StringMenuProperties(InteractionConstants.GraphSettingAccentColor)
+            .WithPlaceholder(isSupporter ? "Select graph color" : "⭐ Supporter-only option")
+            .WithDisabled(!isSupporter)
             .WithMinValues(1)
             .WithMaxValues(1);
 
-        foreach (var option in Enum.GetValues<FmAccentColor>())
+        foreach (var option in Enum.GetValues<GraphColor>())
         {
             var name = option.GetAttribute<OptionAttribute>().Name;
             var optionDescription = option.GetAttribute<OptionAttribute>().Description;
             var value = Enum.GetName(option);
-            var active = fmSetting?.AccentColor == option;
-            accentColorMenu.AddOption(new StringMenuSelectOptionProperties(name, value)
+            var active = isSupporter && graphColor == option;
+            graphColorMenu.AddOption(new StringMenuSelectOptionProperties(name, value)
             {
                 Description = optionDescription,
                 Default = active
             });
         }
 
-        container.AddComponents(accentColorMenu);
+        container.AddComponents(graphColorMenu);
 
         if (!isSupporter)
         {

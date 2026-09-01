@@ -1,15 +1,56 @@
 using System;
 using System.Collections.Generic;
-using System.Drawing;
+using System.Globalization;
+using System.Text.RegularExpressions;
+using NetCord;
 using SkiaSharp;
 
 namespace FMBot.Bot.Extensions;
 
-public static class BitmapExtensions
+public static partial class ColorExtensions
 {
+    [GeneratedRegex("^#?([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$")]
+    private static partial Regex HexColorRegex();
+
+    public static string NormalizeHexColor(string input)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            return null;
+        }
+
+        var match = HexColorRegex().Match(input.Trim());
+        if (!match.Success)
+        {
+            return null;
+        }
+
+        var hex = match.Groups[1].Value.ToUpperInvariant();
+        if (hex.Length == 3)
+        {
+            hex = $"{hex[0]}{hex[0]}{hex[1]}{hex[1]}{hex[2]}{hex[2]}";
+        }
+
+        return $"#{hex}";
+    }
+
+    public static bool TryParseHexColor(string input, out Color color)
+    {
+        color = default;
+
+        var normalized = NormalizeHexColor(input);
+        if (normalized == null)
+        {
+            return false;
+        }
+
+        color = new Color(int.Parse(normalized.AsSpan(1), NumberStyles.HexNumber));
+        return true;
+    }
+
     extension(SKBitmap skBitmap)
     {
-        public Color GetAccentColor()
+        public System.Drawing.Color GetAccentColor()
         {
             const int maxSampleSize = 64;
             const int quantizeShift = 5;
@@ -57,7 +98,7 @@ public static class BitmapExtensions
 
                 if (totalPixels == 0)
                 {
-                    return Color.Transparent;
+                    return System.Drawing.Color.Transparent;
                 }
 
                 var bestKey = -1;
@@ -84,7 +125,7 @@ public static class BitmapExtensions
                 }
 
                 var best = bins[bestKey];
-                return Color.FromArgb(255,
+                return System.Drawing.Color.FromArgb(255,
                     (int)(best.R / best.Count),
                     (int)(best.G / best.Count),
                     (int)(best.B / best.Count));
@@ -121,7 +162,7 @@ public static class BitmapExtensions
                 return SKColors.White;
             }
 
-            var avg = Color.FromArgb(
+            var avg = System.Drawing.Color.FromArgb(
                 (int)(totalR / totalPixels),
                 (int)(totalG / totalPixels),
                 (int)(totalB / totalPixels));
