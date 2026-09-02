@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
@@ -219,9 +220,10 @@ WHERE s.id = (
             ab.artist_name,
             COALESCE(
                 ab.spotify_image_url,
-                REPLACE(REPLACE(ai.url, '{w}', ai.width::text), '{h}', ai.height::text),
-                ab.lastfm_image_url
-            ) as album_cover_url,
+                REPLACE(REPLACE(ai.url, '{w}', ai.width::text), '{h}', ai.height::text)
+            ) as stored_cover_url,
+            ab.lastfm_image_url,
+            dr.cover_url AS discogs_cover_url,
             ab.spotify_id,
             ab.release_date,
             ab.release_date_precision,
@@ -237,10 +239,18 @@ WHERE s.id = (
               AND height IS NOT NULL
             LIMIT 1
         ) ai ON TRUE
+        LEFT JOIN LATERAL (
+            SELECT cover_url
+            FROM discogs_releases
+            WHERE album_id = ab.id
+              AND cover_url LIKE 'https://i.discogs.com/%'
+            ORDER BY year NULLS LAST, discogs_id
+            LIMIT 1
+        ) dr ON TRUE
         WHERE (ab.artist_name, ab.name) IN (
             SELECT CAST(unnest(@artistNames) AS CITEXT),
                    CAST(unnest(@albumNames) AS CITEXT)
-        ) AND ab.release_date != '0000'";
+        )";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         var albumData = await connection.QueryAsync<AlbumData>(getAlbumQuery, new
@@ -250,7 +260,7 @@ WHERE s.id = (
         });
 
         var albumLookup = albumData
-            .Where(w => w.AlbumCoverUrl != null)
+            .Where(w => w.StoredCoverUrl != null || w.LastfmImageUrl != null || w.DiscogsCoverUrl != null)
             .GroupBy(a => (a.Name.ToLower(), a.ArtistName.ToLower()))
             .ToDictionary(
                 g => g.Key,
@@ -262,16 +272,24 @@ WHERE s.id = (
             var key = (album.AlbumName.ToLower(), album.ArtistName.ToLower());
             if (albumLookup.TryGetValue(key, out var dbAlbum))
             {
-                album.AlbumCoverUrl = dbAlbum.AlbumCoverUrl;
-                album.ReleaseDatePrecision = dbAlbum.ReleaseDatePrecision;
+                album.AlbumCoverUrl = dbAlbum.StoredCoverUrl ?? album.AlbumCoverUrl ?? dbAlbum.LastfmImageUrl ??
+                                      dbAlbum.DiscogsCoverUrl;
 
-                album.ReleaseDate = dbAlbum.ReleaseDatePrecision switch
+                var releaseDateString = dbAlbum.ReleaseDatePrecision switch
                 {
-                    "year" => DateTime.Parse($"{dbAlbum.ReleaseDate}-1-1"),
-                    "month" => DateTime.Parse($"{dbAlbum.ReleaseDate}-1"),
-                    "day" => DateTime.Parse(dbAlbum.ReleaseDate),
+                    "year" => $"{dbAlbum.ReleaseDate}-1-1",
+                    "month" => $"{dbAlbum.ReleaseDate}-1",
+                    "day" => dbAlbum.ReleaseDate,
                     _ => null
                 };
+
+                if (releaseDateString != null &&
+                    DateTime.TryParse(releaseDateString, CultureInfo.InvariantCulture,
+                        DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var releaseDate))
+                {
+                    album.ReleaseDate = releaseDate;
+                    album.ReleaseDatePrecision = dbAlbum.ReleaseDatePrecision;
+                }
             }
         }
     }
@@ -280,7 +298,9 @@ WHERE s.id = (
     {
         public string Name { get; set; }
         public string ArtistName { get; set; }
-        public string AlbumCoverUrl { get; set; }
+        public string StoredCoverUrl { get; set; }
+        public string LastfmImageUrl { get; set; }
+        public string DiscogsCoverUrl { get; set; }
         public string SpotifyId { get; set; }
         public string ReleaseDate { get; set; }
         public string ReleaseDatePrecision { get; set; }

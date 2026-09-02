@@ -375,6 +375,21 @@ public class AlbumService
         return topAlbums;
     }
 
+    public async Task<List<TopAlbum>> PreferStoredAlbumCovers(List<TopAlbum> topAlbums)
+    {
+        if (topAlbums.Count == 0)
+        {
+            return topAlbums;
+        }
+
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        await AlbumRepository.GetAlbumCovers(topAlbums, connection);
+
+        return topAlbums;
+    }
+
     public async Task<Response<TopAlbumList>> FilterAlbumToReleaseYear(Response<TopAlbumList> albums, int year)
     {
         await EnrichTopAlbums(albums.Content.TopAlbums);

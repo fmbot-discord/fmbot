@@ -403,7 +403,7 @@ public class Startup
     {
         services.AddHttpClient<BotListService>();
         services.AddHttpClient<ILastfmApi, LastfmApi>();
-        services.AddHttpClient<ChartService>();
+        services.AddHttpClient<ChartService>(client => { client.Timeout = TimeSpan.FromSeconds(15); });
         services.AddHttpClient<ImportService>();
         services.AddHttpClient<DiscogsApi>();
         services.AddHttpClient<GeniusService>();

@@ -227,8 +227,6 @@ public class ChartBuilders
             albums.Content.TotalAmount = topAllTimeDb.Count;
         }
 
-        albums.Content.TopAlbums = await this._albumService.FillMissingAlbumCovers(albums.Content.TopAlbums);
-
         if (chartSettings.ReleaseYearFilter.HasValue)
         {
             albums = await this._albumService.FilterAlbumToReleaseYear(albums, chartSettings.ReleaseYearFilter.Value);
@@ -280,6 +278,8 @@ public class ChartBuilders
 
         var imagesToRequest = chartSettings.ImagesNeeded + extraAlbums;
         topAlbums = topAlbums.Take(imagesToRequest).ToList();
+
+        topAlbums = await this._albumService.PreferStoredAlbumCovers(topAlbums);
 
         var albumsWithoutImage = topAlbums.Where(f => f.AlbumCoverUrl == null).ToList();
 
