@@ -40,7 +40,6 @@ using GraphQL.Client.Serializer.SystemTextJson;
 using NetCord;
 using NetCord.Gateway;
 using NetCord.Logging;
-using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using NetCord.Services.Commands;
 using NetCord.Services.ComponentInteractions;
@@ -200,6 +199,10 @@ public class Startup
 
         var maxConcurrency = ConfigData.Data.Discord.MaxConcurrency;
 
+        Log.Information("HTTP/3 (QUIC) support available for Discord REST: {QuicSupported}",
+            (OperatingSystem.IsLinux() || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS()) &&
+            System.Net.Quic.QuicConnection.IsSupported);
+
         if (ConfigData.Data.Shards != null && ConfigData.Data.Shards.StartShard.HasValue &&
             ConfigData.Data.Shards.EndShard.HasValue)
         {
@@ -217,11 +220,7 @@ public class Startup
                 TotalShardCount = ConfigData.Data.Shards.TotalShards,
                 ShardRange = startShard..(endShard + 1), // End is exclusive in NetCord
                 MaxConcurrency = maxConcurrency,
-                LoggerFactory = shard => new SerilogGatewayLogger(shard),
-                RestClientConfiguration = new RestClientConfiguration
-                {
-                    RequestHandler = new DiscordRestRequestHandler()
-                }
+                LoggerFactory = shard => new SerilogGatewayLogger(shard)
             });
         }
 
@@ -231,11 +230,7 @@ public class Startup
             IntentsFactory = _ => intents,
             CacheProviderFactory = _ => LeanGatewayClientCacheProvider.Instance,
             MaxConcurrency = maxConcurrency,
-            LoggerFactory = shard => new SerilogGatewayLogger(shard),
-            RestClientConfiguration = new RestClientConfiguration
-            {
-                RequestHandler = new DiscordRestRequestHandler()
-            }
+            LoggerFactory = shard => new SerilogGatewayLogger(shard)
         });
     }
 
