@@ -14,6 +14,8 @@ public abstract class Call
         UserInfo = "user.getInfo",
         UserFriends = "user.getFriends",
         TopTracks = "user.getTopTracks",
+        TopAlbums = "user.getTopAlbums",
+        TopArtists = "user.getTopArtists",
         RecentTracks = "user.getRecentTracks",
         LovedTracks = "user.getLovedTracks",
         GetWeeklyArtistChart = "user.getWeeklyArtistChart",

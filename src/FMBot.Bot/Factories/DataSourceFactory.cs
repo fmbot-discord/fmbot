@@ -333,7 +333,7 @@ public class DataSourceFactory : IDataSourceFactory
     }
 
     public async Task<Response<TopAlbumList>> GetTopAlbumsAsync(string lastFmUserName, TimeSettingsModel timeSettings,
-        int count = 2, int amountOfPages = 1, bool useCache = false)
+        int count = 2, int amountOfPages = 1, bool useCache = false, int errorRetries = 1)
     {
         var importUser = await this.GetImportUserForLastFmUserName(lastFmUserName);
         Response<TopAlbumList> topAlbums;
@@ -347,7 +347,7 @@ public class DataSourceFactory : IDataSourceFactory
         }
 
         topAlbums = await this._lastfmRepository.GetTopAlbumsAsync(lastFmUserName, timeSettings, count, amountOfPages,
-            useCache);
+            useCache, errorRetries);
 
         await CorrectTopAlbumNamesInternally(topAlbums);
         AddAlbumTopList(topAlbums, lastFmUserName);
@@ -403,7 +403,7 @@ public class DataSourceFactory : IDataSourceFactory
     }
 
     public async Task<Response<TopArtistList>> GetTopArtistsAsync(string lastFmUserName, TimeSettingsModel timeSettings,
-        int count = 2, int amountOfPages = 1, bool useCache = false)
+        int count = 2, int amountOfPages = 1, bool useCache = false, int errorRetries = 1)
     {
         var importUser = await this.GetImportUserForLastFmUserName(lastFmUserName);
 
@@ -420,7 +420,7 @@ public class DataSourceFactory : IDataSourceFactory
 
         topArtists =
             await this._lastfmRepository.GetTopArtistsAsync(lastFmUserName, timeSettings, count, amountOfPages,
-                useCache);
+                useCache, errorRetries);
 
         await CorrectTopArtistNamesInternally(topArtists);
         AddArtistTopList(topArtists, lastFmUserName);

@@ -31,13 +31,15 @@ public interface IDataSourceFactory
     Task<Response<AlbumInfo>> SearchAlbumAsync(string searchQuery);
 
     Task<Response<TopAlbumList>> GetTopAlbumsAsync(string lastFmUserName,
-        TimeSettingsModel timeSettings, int count = 2, int amountOfPages = 1, bool useCache = false);
+        TimeSettingsModel timeSettings, int count = 2, int amountOfPages = 1, bool useCache = false,
+        int errorRetries = 1);
 
     Task<Response<TopAlbumList>> GetTopAlbumsForCustomTimePeriodAsyncAsync(string lastFmUserName,
         DateTime startDateTime, DateTime endDateTime, int count);
 
     Task<Response<TopArtistList>> GetTopArtistsAsync(string lastFmUserName,
-        TimeSettingsModel timeSettings, int count = 2, int amountOfPages = 1, bool useCache = false);
+        TimeSettingsModel timeSettings, int count = 2, int amountOfPages = 1, bool useCache = false,
+        int errorRetries = 1);
 
     Task<Response<TopArtistList>> GetTopArtistsForCustomTimePeriodAsync(string lastFmUserName,
         DateTime startDateTime, DateTime endDateTime, int count);

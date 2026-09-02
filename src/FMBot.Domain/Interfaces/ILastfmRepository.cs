@@ -31,19 +31,21 @@ public interface ILastfmRepository
     Task<Response<AlbumInfo>> SearchAlbumAsync(string searchQuery);
 
     Task<Response<TopAlbumList>> GetTopAlbumsAsync(string lastFmUserName,
-        TimeSettingsModel timeSettings, int count = 2, int amountOfPages = 1, bool useCache = false);
+        TimeSettingsModel timeSettings, int count = 2, int amountOfPages = 1, bool useCache = false,
+        int errorRetries = 1);
 
     Task<Response<TopAlbumList>> GetTopAlbumsAsync(string lastFmUserName,
-        TimePeriod timePeriod, int count = 2, int amountOfPages = 1);
+        TimePeriod timePeriod, int count = 2, int amountOfPages = 1, int errorRetries = 1);
 
     Task<Response<TopAlbumList>> GetTopAlbumsForCustomTimePeriodAsyncAsync(string lastFmUserName,
         DateTime startDateTime, DateTime endDateTime, int count);
 
     Task<Response<TopArtistList>> GetTopArtistsAsync(string lastFmUserName,
-        TimeSettingsModel timeSettings, long count = 2, long amountOfPages = 1, bool useCache = false);
+        TimeSettingsModel timeSettings, long count = 2, long amountOfPages = 1, bool useCache = false,
+        int errorRetries = 1);
 
     Task<Response<TopArtistList>> GetTopArtistsAsync(string lastFmUserName,
-        TimePeriod timePeriod, long count = 2, long amountOfPages = 1);
+        TimePeriod timePeriod, long count = 2, long amountOfPages = 1, int errorRetries = 1);
 
     Task<Response<TopArtistList>> GetTopArtistsForCustomTimePeriodAsync(string lastFmUserName,
         DateTime startDateTime, DateTime endDateTime, int count);
