@@ -1890,6 +1890,10 @@ public class ArtistBuilders
         }
 
         var whoKnowsContext = await whoKnowsContextTask;
+        if (whoKnowsContext == null)
+        {
+            return WhoKnowsService.IndexRequiredResponse(context, response);
+        }
 
         CrownModel crownModel = null;
         if (whoKnowsContext.Guild.CrownsDisabled != true && whoKnowsContext.FilteredUsersWithArtist.Count >= 1 &&

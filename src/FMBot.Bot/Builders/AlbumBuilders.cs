@@ -472,6 +472,11 @@ public class AlbumBuilders
         var fullAlbumName = $"{albumSearch.Album.AlbumName} by {albumSearch.Album.ArtistName}";
 
         var guild = await guildTask;
+        if (guild == null)
+        {
+            return WhoKnowsService.IndexRequiredResponse(context, response);
+        }
+
         var guildUsers = await guildUsersTask;
 
         var usersWithAlbumTask = this._whoKnowsAlbumService.GetIndexedUsersForAlbum(context.DiscordGuild, guildUsers,

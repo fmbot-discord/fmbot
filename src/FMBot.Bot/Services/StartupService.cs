@@ -223,7 +223,7 @@ public class StartupService
             .UseSerilogLogProvider()
             .UseSimpleAssemblyNameTypeSerializer()
             .UseRecommendedSerializerSettings()
-            .UseMemoryStorage()
+            .UseMemoryStorage(new MemoryStorageOptions { FetchNextJobTimeout = TimeSpan.FromHours(6) })
             .UseActivator(new HangfireActivator(this._provider));
     }
 

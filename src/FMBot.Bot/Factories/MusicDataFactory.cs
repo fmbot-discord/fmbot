@@ -18,6 +18,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Npgsql;
 using Serilog;
+using Serilog.Events;
 using SpotifyAPI.Web;
 using Web.InternalApi;
 using static FMBot.Bot.Services.MusicBrainzService;
@@ -63,7 +64,7 @@ public class MusicDataFactory(
                 var musicBrainzUpdatedTask = musicBrainzService.AddMusicBrainzDataToArtistAsync(artistToAdd);
                 var appleMusicArtistTask = appleMusicService.GetAppleMusicArtist(artistInfo.ArtistName);
 
-                var spotifyArtist = await spotifyArtistTask;
+                var spotifyArtist = (await spotifyArtistTask).Item;
                 var musicBrainzUpdated = await musicBrainzUpdatedTask;
                 var amArtist = await appleMusicArtistTask;
 
@@ -169,7 +170,7 @@ public class MusicDataFactory(
                 return artistToAdd;
             }
 
-            Task<FullArtist> updateSpotify = null;
+            Task<SpotifyLookup<FullArtist>> updateSpotify = null;
             Task<ArtistUpdated> updateMusicBrainz = null;
             Task<AmData<AmArtistAttributes>> updateAppleMusic = null;
 
@@ -240,7 +241,8 @@ public class MusicDataFactory(
             {
                 await using var db = await contextFactory.CreateDbContextAsync();
 
-                var spotifyArtist = await updateSpotify;
+                var spotifyLookup = await updateSpotify;
+                var spotifyArtist = spotifyLookup.Item;
 
                 if (spotifyArtist != null && spotifyArtist.Images.Any())
                 {
@@ -263,7 +265,11 @@ public class MusicDataFactory(
                     }
                 }
 
-                dbArtist.SpotifyImageDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+                if (!spotifyLookup.Failed)
+                {
+                    dbArtist.SpotifyImageDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+                }
+
                 db.Entry(dbArtist).State = EntityState.Modified;
                 await db.SaveChangesAsync();
 
@@ -404,7 +410,8 @@ public class MusicDataFactory(
                 spotifyService.GetAlbumFromSpotify(albumInfo.AlbumName, albumInfo.ArtistName.ToLower());
             var amAlbumTask = appleMusicService.GetAppleMusicAlbum(albumInfo.ArtistName, albumInfo.AlbumName);
 
-            var spotifyAlbum = await spotifyAlbumTask;
+            var spotifyAlbumLookup = await spotifyAlbumTask;
+            var spotifyAlbum = spotifyAlbumLookup.Item;
             var amAlbum = await amAlbumTask;
 
             if (spotifyAlbum != null)
@@ -437,7 +444,11 @@ public class MusicDataFactory(
                 }
             }
 
-            albumToAdd.SpotifyImageDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+            if (!spotifyAlbumLookup.Failed)
+            {
+                albumToAdd.SpotifyImageDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+            }
+
             albumToAdd.AppleMusicDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
 
             await db.Albums.AddAsync(albumToAdd);
@@ -522,7 +533,7 @@ public class MusicDataFactory(
             }
         }
 
-        Task<FullAlbum> updateSpotify = null;
+        Task<SpotifyLookup<FullAlbum>> updateSpotify = null;
         Task<AmData<AmAlbumAttributes>> updateAppleMusic = null;
 
         var refreshCutoff = DateTime.UtcNow.AddDays(-GetAlbumCacheDays(dbAlbum));
@@ -541,8 +552,13 @@ public class MusicDataFactory(
 
         if (updateSpotify != null)
         {
-            var spotifyAlbum = await updateSpotify;
-            dbAlbum.SpotifyImageDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+            var spotifyAlbumLookup = await updateSpotify;
+            var spotifyAlbum = spotifyAlbumLookup.Item;
+
+            if (!spotifyAlbumLookup.Failed)
+            {
+                dbAlbum.SpotifyImageDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+            }
 
             if (spotifyAlbum != null)
             {
@@ -822,7 +838,8 @@ public class MusicDataFactory(
 
                 var musicBrainzTask = musicBrainzService.AddMusicBrainzDataToTrackAsync(trackToAdd);
 
-                var spotifyTrack = await spotifyTrackTask;
+                var spotifyTrackLookup = await spotifyTrackTask;
+                var spotifyTrack = spotifyTrackLookup.Item;
                 var amSong = await amSongTask;
 
                 var lyricsFailed = false;
@@ -835,7 +852,7 @@ public class MusicDataFactory(
                 {
                     lyricsFailed = true;
                     lyrics = new LyricsReply { Result = false };
-                    Log.Warning(lyricsException,
+                    Log.Write(LyricsFailureLogLevel(lyricsException), lyricsException,
                         "{Factory}: Lyrics API unavailable while storing new track {Artist} - {Track}, storing without lyrics",
                         nameof(MusicDataFactory), trackInfo.ArtistName, trackInfo.TrackName);
                 }
@@ -895,7 +912,11 @@ public class MusicDataFactory(
                 {
                     trackToAdd.LyricsDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
                 }
-                trackToAdd.SpotifyLastUpdated = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+                if (!spotifyTrackLookup.Failed)
+                {
+                    trackToAdd.SpotifyLastUpdated = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+                }
+
                 trackToAdd.AppleMusicDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
 
                 await db.Tracks.AddAsync(trackToAdd);
@@ -964,7 +985,7 @@ public class MusicDataFactory(
                 db.Entry(dbTrack).State = EntityState.Modified;
             }
 
-            Task<FullTrack> updateSpotify = null;
+            Task<SpotifyLookup<FullTrack>> updateSpotify = null;
             Task<AmData<AmSongAttributes>> updateAppleMusic = null;
             AsyncUnaryCall<LyricsReply> updateLyrics = null;
             Task<TrackUpdated> updateMusicBrainz = null;
@@ -1012,7 +1033,8 @@ public class MusicDataFactory(
 
             if (updateSpotify != null)
             {
-                var spotifyTrack = await updateSpotify;
+                var spotifyTrackLookup = await updateSpotify;
+                var spotifyTrack = spotifyTrackLookup.Item;
 
                 if (spotifyTrack != null)
                 {
@@ -1038,7 +1060,11 @@ public class MusicDataFactory(
                     }
                 }
 
-                dbTrack.SpotifyLastUpdated = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+                if (!spotifyTrackLookup.Failed)
+                {
+                    dbTrack.SpotifyLastUpdated = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+                }
+
                 db.Entry(dbTrack).State = EntityState.Modified;
             }
 
@@ -1107,7 +1133,7 @@ public class MusicDataFactory(
                 }
                 catch (Exception lyricsException)
                 {
-                    Log.Warning(lyricsException,
+                    Log.Write(LyricsFailureLogLevel(lyricsException), lyricsException,
                         "{Factory}: Lyrics API unavailable while refreshing {Artist} - {Track}, keeping stored lyrics",
                         nameof(MusicDataFactory), trackInfo.ArtistName, trackInfo.TrackName);
                 }
@@ -1130,6 +1156,11 @@ public class MusicDataFactory(
             Log.Error(e, $"{nameof(MusicDataFactory)}: Something went wrong while retrieving track info");
             return null;
         }
+    }
+
+    private static LogEventLevel LyricsFailureLogLevel(Exception e)
+    {
+        return e is RpcException { StatusCode: StatusCode.Unavailable } ? LogEventLevel.Debug : LogEventLevel.Warning;
     }
 
     public async Task EnrichMissingMetadata()

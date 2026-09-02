@@ -640,17 +640,18 @@ public class IndexService
         }
     }
 
-    public async Task AddGuildUserToDatabase(GuildUser guildUserToAdd)
+    public async Task<bool> AddGuildUserToDatabase(GuildUser guildUserToAdd)
     {
         const string sql = "INSERT INTO guild_users (guild_id, user_id, user_name, bot, roles, last_message) " +
-                           "VALUES (@guildId, @userId, @userName, false, @roles, @lastMessage) " +
+                           "SELECT @guildId, @userId, CAST(@userName AS text), false, CAST(@roles AS numeric(20,0)[]), CAST(@lastMessage AS timestamptz) " +
+                           "FROM users WHERE user_id = @userId " +
                            "ON CONFLICT DO NOTHING";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        await connection.ExecuteAsync(sql, new
+        var rowsAffected = await connection.ExecuteAsync(sql, new
         {
             guildId = guildUserToAdd.GuildId,
             userId = guildUserToAdd.UserId,
@@ -659,7 +660,22 @@ public class IndexService
             lastMessage = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc)
         });
 
+        if (rowsAffected == 0)
+        {
+            var userExists = await connection.ExecuteScalarAsync<bool>(
+                "SELECT EXISTS(SELECT 1 FROM users WHERE user_id = @userId)",
+                new { userId = guildUserToAdd.UserId });
+
+            if (!userExists)
+            {
+                Log.Warning("Skipped adding guild user {userId} to guild {guildId} - user no longer exists",
+                    guildUserToAdd.UserId, guildUserToAdd.GuildId);
+                return false;
+            }
+        }
+
         Log.Information("Added user {guildUserName} | {userId} to guild {guildName}", guildUserToAdd.UserName, guildUserToAdd.UserId, guildUserToAdd.GuildId);
+        return true;
     }
 
     public async Task UpdateGuildUser(IDictionary<int, FullGuildUser> fullGuildUsers, NetCord.GuildUser discordGuildUser,
@@ -765,7 +781,12 @@ public class IndexService
                     newGuildUser.Roles = discordGuildUser.RoleIds.ToArray();
                 }
 
-                await AddGuildUserToDatabase(newGuildUser);
+                var added = await AddGuildUserToDatabase(newGuildUser);
+                if (!added)
+                {
+                    PublicProperties.RegisteredUsers.TryRemove(discordGuildUser.Id, out _);
+                }
+
                 return;
             }
 

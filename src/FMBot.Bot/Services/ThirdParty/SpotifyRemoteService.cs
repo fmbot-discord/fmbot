@@ -174,7 +174,7 @@ public class SpotifyRemoteService(
 
     public async Task<RemoteTrack> ResolveSpotifyTrackAsync(string artistName, string trackName)
     {
-        var track = await spotifyService.GetTrackFromSpotify(trackName, artistName);
+        var track = (await spotifyService.GetTrackFromSpotify(trackName, artistName)).Item;
         if (track == null)
         {
             var search = await spotifyService.GetSearchResultAsync($"{trackName} {artistName}");
@@ -216,7 +216,7 @@ public class SpotifyRemoteService(
 
     public async Task<RemoteAlbum> ResolveAlbumByNameAsync(string artistName, string albumName)
     {
-        var album = await spotifyService.GetAlbumFromSpotify(albumName, artistName);
+        var album = (await spotifyService.GetAlbumFromSpotify(albumName, artistName)).Item;
         if (album == null)
         {
             var search = await spotifyService.GetSearchResultAsync($"{albumName} {artistName}",
@@ -239,7 +239,7 @@ public class SpotifyRemoteService(
 
     public async Task<RemoteArtist> ResolveArtistByNameAsync(string artistName)
     {
-        var artist = await spotifyService.GetArtistFromSpotify(artistName);
+        var artist = (await spotifyService.GetArtistFromSpotify(artistName)).Item;
         if (artist == null)
         {
             var search = await spotifyService.GetSearchResultAsync(artistName, SearchRequest.Types.Artist);

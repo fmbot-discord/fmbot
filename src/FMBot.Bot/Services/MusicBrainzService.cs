@@ -1,11 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
 using FMBot.Persistence.Domain.Models;
+using MetaBrainz.Common;
 using MetaBrainz.MusicBrainz;
 using MetaBrainz.MusicBrainz.Interfaces.Entities;
 using Serilog;
@@ -14,6 +17,9 @@ namespace FMBot.Bot.Services;
 
 public class MusicBrainzService
 {
+    private static readonly TimeSpan PauseAfterThrottle = TimeSpan.FromMinutes(1);
+    private static long _pausedUntilTicks;
+
     private readonly Query _query;
 
     public MusicBrainzService(IHttpClientFactory httpClientFactory)
@@ -22,11 +28,44 @@ public class MusicBrainzService
         this._query = new Query(httpClient);
     }
 
+    private static bool IsPaused()
+    {
+        return Interlocked.Read(ref _pausedUntilTicks) > DateTime.UtcNow.Ticks;
+    }
+
+    private static void PauseAfterThrottleResponse(HttpError e, string entityType, string name)
+    {
+        var alreadyPaused = IsPaused();
+        Interlocked.Exchange(ref _pausedUntilTicks, DateTime.UtcNow.Add(PauseAfterThrottle).Ticks);
+
+        if (!alreadyPaused)
+        {
+            Log.Warning("MusicBrainz throttled ({status}) while looking up {entityType} {name}, pausing lookups for {seconds}s",
+                (int)e.Status, entityType, name, PauseAfterThrottle.TotalSeconds);
+        }
+    }
+
+    private static bool IsThrottleResponse(HttpError e)
+    {
+        return e.Status is HttpStatusCode.ServiceUnavailable or HttpStatusCode.TooManyRequests ||
+               e.InnerException is HttpError { Status: HttpStatusCode.ServiceUnavailable or HttpStatusCode.TooManyRequests };
+    }
+
+    private static DateTime RetryAfterThrottleDate()
+    {
+        return DateTime.SpecifyKind(DateTime.UtcNow.AddDays(-119), DateTimeKind.Utc);
+    }
+
     public async Task<ArtistUpdated> AddMusicBrainzDataToArtistAsync(Artist artist)
     {
         try
         {
             if (artist.MusicBrainzDate.HasValue && artist.MusicBrainzDate > DateTime.UtcNow.AddDays(-120))
+            {
+                return new ArtistUpdated(artist);
+            }
+
+            if (IsPaused())
             {
                 return new ArtistUpdated(artist);
             }
@@ -97,6 +136,12 @@ public class MusicBrainzService
 
             return new ArtistUpdated(artist, true);
         }
+        catch (HttpError e) when (IsThrottleResponse(e))
+        {
+            PauseAfterThrottleResponse(e, "artist", artist.Name);
+            artist.MusicBrainzDate = RetryAfterThrottleDate();
+            return new ArtistUpdated(artist, true);
+        }
         catch (Exception e)
         {
             Log.Error(e, "error in musicbrainzservice");
@@ -109,6 +154,11 @@ public class MusicBrainzService
         try
         {
             if (track.MusicBrainzDate.HasValue && track.MusicBrainzDate > DateTime.UtcNow.AddDays(-120))
+            {
+                return new TrackUpdated(track);
+            }
+
+            if (IsPaused())
             {
                 return new TrackUpdated(track);
             }
@@ -160,6 +210,12 @@ public class MusicBrainzService
                 }
             }
 
+            return new TrackUpdated(track, true);
+        }
+        catch (HttpError e) when (IsThrottleResponse(e))
+        {
+            PauseAfterThrottleResponse(e, "track", $"{track.ArtistName} - {track.Name}");
+            track.MusicBrainzDate = RetryAfterThrottleDate();
             return new TrackUpdated(track, true);
         }
         catch (Exception e)

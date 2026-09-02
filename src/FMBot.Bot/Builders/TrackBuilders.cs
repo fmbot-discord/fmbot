@@ -579,6 +579,11 @@ public class TrackBuilders
         var trackName = $"{track.Track.TrackName} by {track.Track.ArtistName}";
 
         var guild = await guildTask;
+        if (guild == null)
+        {
+            return WhoKnowsService.IndexRequiredResponse(context, response);
+        }
+
         var guildUsers = await guildUsersTask;
 
         var usersWithTrackTask = this._whoKnowsTrackService.GetIndexedUsersForTrack(context.DiscordGuild, guildUsers,

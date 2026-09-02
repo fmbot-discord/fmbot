@@ -433,7 +433,6 @@
   "profile.historyAllEntry_other": "**`Semua`** - **{{count}}** plays - **{{time}}**",
   "profile.yearsFieldTitle": "Tahun",
   "profile.yearsSupporterPromo": "*Ingin melihat ringkasan scrobbles kamu dari tahun ke tahun? [Jadi supporter .fmbot di sini.]({{url}})*",
-  "profile.yearsSupporterPromoDiscogs": "*Ingin melihat ringkasan scrobbles kamu dari tahun ke tahun dan koleksi Discogs kamu? [Jadi supporter .fmbot di sini.]({{url}})*",
   "profile.noDataStored": "*Maaf, sepertinya tidak ada data yang tersimpan di .fmbot untuk pengguna ini.*",
   "profile.importsConfigured": "Impor .fmbot: {{name}}",
   "update.fetchingScrobbles": "Mengambil scrobbles terbaru **{{user}}**...",

@@ -524,7 +524,6 @@
   "profile.historyAllEntry_other": "**` कुल`** - **{{count}}** plays - **{{time}}**",
   "profile.yearsFieldTitle": "साल",
   "profile.yearsSupporterPromo": "*अपने scrobbles का सालों का ओवरव्यू देखना चाहते हो? [यहाँ .fmbot supporter बनो।]({{url}})*",
-  "profile.yearsSupporterPromoDiscogs": "*अपने scrobbles का सालों का ओवरव्यू और अपना Discogs कलेक्शन देखना चाहते हो? [यहाँ .fmbot supporter बनो।]({{url}})*",
   "profile.noDataStored": "*माफ़ करना, लगता है .fmbot में इस यूज़र का कोई डेटा स्टोर नहीं है।*",
   "profile.importsConfigured": ".fmbot इंपोर्ट: {{name}}",
   "update.fetchingScrobbles": "**{{user}}** के नए scrobbles लाए जा रहे हैं...",

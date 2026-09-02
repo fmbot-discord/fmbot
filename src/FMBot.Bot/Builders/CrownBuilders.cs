@@ -100,6 +100,10 @@ public class CrownBuilders
 
         var whoKnowsContext = await this._whoKnowsArtistService.GetFilteredUsersForArtist(context.DiscordGuild,
             context.ContextUser, artistSearch.Artist.ArtistName, artistSearch.Artist.UserPlaycount);
+        if (whoKnowsContext == null)
+        {
+            return WhoKnowsService.IndexRequiredResponse(context, response);
+        }
 
         var contextUserRoles = whoKnowsContext.FilteredUsersWithArtist
             .FirstOrDefault(f => f.UserId == context.ContextUser.UserId)?.Roles;

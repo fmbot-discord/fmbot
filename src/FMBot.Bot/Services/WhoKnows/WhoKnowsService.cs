@@ -21,6 +21,15 @@ namespace FMBot.Bot.Services.WhoKnows;
 
 public class WhoKnowsService
 {
+    public static ResponseModel IndexRequiredResponse(ContextModel context, ResponseModel response)
+    {
+        response.ResponseType = ResponseType.Embed;
+        response.Embed.WithDescription(context.Localize("errors.indexRequired",
+            ("refreshCommand", $"{context.Prefix}refreshmembers")));
+        response.CommandResponse = CommandResponse.IndexRequired;
+        return response;
+    }
+
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
     private readonly IMemoryCache _cache;
 

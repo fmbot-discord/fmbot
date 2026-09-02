@@ -31,7 +31,9 @@ using Hangfire;
 using FMBot.Domain.Interfaces;
 using FMBot.Bot.Factories;
 using FMBot.Persistence.Interfaces;
+using System.Net;
 using System.Net.Http;
+using System.Runtime.InteropServices;
 using FMBot.Bot.Extensions;
 using Web.InternalApi;
 using FMBot.AppleMusic;
@@ -40,6 +42,7 @@ using GraphQL.Client.Serializer.SystemTextJson;
 using NetCord;
 using NetCord.Gateway;
 using NetCord.Logging;
+using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using NetCord.Services.Commands;
 using NetCord.Services.ComponentInteractions;
@@ -99,10 +102,6 @@ public class Startup
         "gateway.sent.bytes",
         "gateway.sent.messages",
         "gateway.cache.entities",
-        "http.client.request.duration",
-        "http.client.connection.duration",
-        "http.client.request.time_in_queue",
-        "http.client.open_connections",
         "dns.lookup.duration"
     ];
 
@@ -203,6 +202,21 @@ public class Startup
 
         var maxConcurrency = ConfigData.Data.Discord.MaxConcurrency;
 
+        Log.Information("HTTP/3 (QUIC) support available for Discord REST: {QuicSupported}",
+            (OperatingSystem.IsLinux() || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS()) &&
+            System.Net.Quic.QuicConnection.IsSupported);
+
+        Log.Information("Zstandard available for Discord gateway compression: {ZstdAvailable}",
+            NativeLibrary.TryLoad("libzstd", typeof(ShardedGatewayClient).Assembly, null, out _));
+
+        var restClientConfiguration = new RestClientConfiguration
+        {
+            RequestHandler = new RestRequestHandler(new SocketsHttpHandler
+            {
+                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Brotli
+            })
+        };
+
         if (ConfigData.Data.Shards != null && ConfigData.Data.Shards.StartShard.HasValue &&
             ConfigData.Data.Shards.EndShard.HasValue)
         {
@@ -220,6 +234,7 @@ public class Startup
                 TotalShardCount = ConfigData.Data.Shards.TotalShards,
                 ShardRange = startShard..(endShard + 1), // End is exclusive in NetCord
                 MaxConcurrency = maxConcurrency,
+                RestClientConfiguration = restClientConfiguration,
                 LoggerFactory = shard => new SerilogGatewayLogger(shard)
             });
         }
@@ -230,6 +245,7 @@ public class Startup
             IntentsFactory = _ => intents,
             CacheProviderFactory = _ => LeanGatewayClientCacheProvider.Instance,
             MaxConcurrency = maxConcurrency,
+            RestClientConfiguration = restClientConfiguration,
             LoggerFactory = shard => new SerilogGatewayLogger(shard)
         });
     }
@@ -404,10 +420,13 @@ public class Startup
         services.AddHttpClient<SpotifyRemoteService>(client => { client.Timeout = TimeSpan.FromSeconds(10); });
 
         MetaBrainz.MusicBrainz.Query.DelayBetweenRequests = 1.5;
-        MetaBrainz.MusicBrainz.Query.DefaultUserAgent.Add(new ProductInfoHeaderValue("fmbot", "1.0"));
-        MetaBrainz.MusicBrainz.Query.DefaultUserAgent.Add(new ProductInfoHeaderValue("(+contact@fm.bot)"));
 
-        services.AddHttpClient("MusicBrainz", client => { client.Timeout = TimeSpan.FromSeconds(8); });
+        services.AddHttpClient("MusicBrainz", client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(8);
+            client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("fmbot", "1.0"));
+            client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("(+contact@fm.bot)"));
+        });
         services.AddSingleton<MusicBrainzService>();
     }
 

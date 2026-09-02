@@ -524,7 +524,6 @@
   "profile.historyAllEntry_other": "**`Tümü`** - **{{count}}** play - **{{time}}**",
   "profile.yearsFieldTitle": "Yıllar",
   "profile.yearsSupporterPromo": "*Yıllar içindeki scrobble'larının genel görünümünü görmek ister misin? [Buradan .fmbot supporter ol.]({{url}})*",
-  "profile.yearsSupporterPromoDiscogs": "*Yıllar içindeki scrobble'larının genel görünümünü ve Discogs koleksiyonunu görmek ister misin? [Buradan .fmbot supporter ol.]({{url}})*",
   "profile.noDataStored": "*Üzgünüz, .fmbot'ta bu kullanıcı için kayıtlı veri yok gibi görünüyor.*",
   "profile.importsConfigured": ".fmbot içe aktarmaları: {{name}}",
   "update.fetchingScrobbles": "**{{user}}** kullanıcısının en son scrobble'ları alınıyor...",

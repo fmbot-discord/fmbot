@@ -706,7 +706,6 @@
   "profile.historyAllEntry_other": "**`Suma`** - **{{count}}** odtworzeń - **{{time}}**",
   "profile.yearsFieldTitle": "Lata",
   "profile.yearsSupporterPromo": "*Chcesz zobaczyć przegląd swoich scrobbli na przestrzeni lat? [Zostań supporterem .fmbot]({{url}}).*",
-  "profile.yearsSupporterPromoDiscogs": "*Chcesz zobaczyć przegląd swoich scrobbli na przestrzeni lat oraz swoją kolekcję Discogs? [Zostań supporterem .fmbot]({{url}}).*",
   "profile.noDataStored": "*Przykro nam, wygląda na to, że .fmbot nie ma zapisanych danych dla tego użytkownika.*",
   "profile.importsConfigured": "Importy .fmbot: {{name}}",
   "update.fetchingScrobbles": "Pobieranie najnowszych scrobbli użytkownika **{{user}}**...",
