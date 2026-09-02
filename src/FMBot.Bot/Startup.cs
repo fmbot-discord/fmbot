@@ -31,7 +31,9 @@ using Hangfire;
 using FMBot.Domain.Interfaces;
 using FMBot.Bot.Factories;
 using FMBot.Persistence.Interfaces;
+using System.Net;
 using System.Net.Http;
+using System.Runtime.InteropServices;
 using FMBot.Bot.Extensions;
 using Web.InternalApi;
 using FMBot.AppleMusic;
@@ -40,6 +42,7 @@ using GraphQL.Client.Serializer.SystemTextJson;
 using NetCord;
 using NetCord.Gateway;
 using NetCord.Logging;
+using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using NetCord.Services.Commands;
 using NetCord.Services.ComponentInteractions;
@@ -203,6 +206,17 @@ public class Startup
             (OperatingSystem.IsLinux() || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS()) &&
             System.Net.Quic.QuicConnection.IsSupported);
 
+        Log.Information("Zstandard available for Discord gateway compression: {ZstdAvailable}",
+            NativeLibrary.TryLoad("libzstd", typeof(ShardedGatewayClient).Assembly, null, out _));
+
+        var restClientConfiguration = new RestClientConfiguration
+        {
+            RequestHandler = new RestRequestHandler(new SocketsHttpHandler
+            {
+                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Brotli
+            })
+        };
+
         if (ConfigData.Data.Shards != null && ConfigData.Data.Shards.StartShard.HasValue &&
             ConfigData.Data.Shards.EndShard.HasValue)
         {
@@ -220,6 +234,7 @@ public class Startup
                 TotalShardCount = ConfigData.Data.Shards.TotalShards,
                 ShardRange = startShard..(endShard + 1), // End is exclusive in NetCord
                 MaxConcurrency = maxConcurrency,
+                RestClientConfiguration = restClientConfiguration,
                 LoggerFactory = shard => new SerilogGatewayLogger(shard)
             });
         }
@@ -230,6 +245,7 @@ public class Startup
             IntentsFactory = _ => intents,
             CacheProviderFactory = _ => LeanGatewayClientCacheProvider.Instance,
             MaxConcurrency = maxConcurrency,
+            RestClientConfiguration = restClientConfiguration,
             LoggerFactory = shard => new SerilogGatewayLogger(shard)
         });
     }
