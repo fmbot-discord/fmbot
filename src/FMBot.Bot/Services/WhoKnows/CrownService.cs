@@ -384,7 +384,7 @@ public class CrownService(
 
         public int GetHashCode((int UserId, string ArtistName) obj)
         {
-            return HashCode.Combine(obj.UserId, obj.ArtistName.ToLowerInvariant());
+            return HashCode.Combine(obj.UserId, StringComparer.OrdinalIgnoreCase.GetHashCode(obj.ArtistName ?? ""));
         }
     }
 
@@ -438,16 +438,15 @@ public class CrownService(
         try
         {
             var existingActiveCrownsDict = existingCrowns?
-                .OrderByDescending(o => o.CurrentPlaycount)
                 .Where(w => w.Active)
-                .DistinctBy(d => (d.UserId, d.ArtistName), new UserIdArtistNameComparer())
-                .ToDictionary(c => (c.UserId, c.ArtistName.ToLower()));
+                .GroupBy(g => (g.UserId, g.ArtistName), new UserIdArtistNameComparer())
+                .ToDictionary(g => g.Key, g => g.MaxBy(m => m.CurrentPlaycount), new UserIdArtistNameComparer());
 
             var now = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
             var crownsToSeed = topUsersForPlaycount.Select(s =>
             {
                 UserCrown existingCrown = null;
-                existingActiveCrownsDict?.TryGetValue((s.UserId, s.Name.ToLower()), out existingCrown);
+                existingActiveCrownsDict?.TryGetValue((s.UserId, s.Name), out existingCrown);
                 return new UserCrown
                 {
                     UserId = s.UserId,
@@ -466,11 +465,11 @@ public class CrownService(
             {
                 var existingCrownArtists = existingCrowns
                     .Where(wh => !wh.SeededCrown)
-                    .Select(s => s.ArtistName.ToLower())
-                    .ToHashSet();
+                    .Select(s => s.ArtistName)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
                 crownsToSeed = crownsToSeed.Where(w =>
-                        !existingCrownArtists.Contains(w.ArtistName.ToLower()))
+                        !existingCrownArtists.Contains(w.ArtistName))
                     .ToList();
             }
 

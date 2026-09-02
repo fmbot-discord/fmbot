@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
@@ -2491,6 +2492,10 @@ public class SupporterService
                     }
                 }
             }
+            catch (RestException e) when (e.StatusCode == HttpStatusCode.NotFound)
+            {
+                Log.Debug("Modifying supporter role skipped for {id} - not in base server", discordUserId);
+            }
             catch (Exception e)
             {
                 Log.Error(e, "Modifying supporter role failed for {id}", discordUserId);
@@ -2534,7 +2539,7 @@ public class SupporterService
                     }
                 }
             }
-            catch (RestException e) when (e.Error?.Code == 10007)
+            catch (RestException e) when (e.StatusCode == HttpStatusCode.NotFound)
             {
                 Log.Debug("Modifying premium guild role skipped for {id} - not in base server", discordUserId);
             }

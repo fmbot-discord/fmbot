@@ -128,6 +128,20 @@ public class LastfmApi : ILastfmApi
         var response = new Response<T>();
         var requestBody = await httpResponse.Content.ReadAsStringAsync();
 
+        if (string.IsNullOrWhiteSpace(requestBody))
+        {
+            Statistics.LastfmErrors.WithLabels(call).Inc();
+            Statistics.LastfmFailureErrors.WithLabels(call).Inc();
+            Log.Warning("LastfmApi: Empty response body for {call} ({statusCode})", call, (int)httpResponse.StatusCode);
+            timer.Dispose();
+            return new Response<T>
+            {
+                Success = false,
+                Error = ResponseStatus.Failure,
+                Message = "Last.fm returned an empty response. Please try again later."
+            };
+        }
+
         try
         {
             // Check for error response first since last.fm returns 200 ok even if something isn't found
@@ -206,7 +220,7 @@ public class LastfmApi : ILastfmApi
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "LastfmApi: Error while trying to check for error");
+            Log.Warning(ex, "LastfmApi: Error while trying to check for error");
         }
 
         return response;

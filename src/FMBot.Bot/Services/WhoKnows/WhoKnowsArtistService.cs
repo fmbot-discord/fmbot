@@ -44,6 +44,11 @@ public class WhoKnowsArtistService
         bool filterDisabled = false)
     {
         var guild = await this._guildService.GetGuildForWhoKnows(discordGuild.Id);
+        if (guild == null)
+        {
+            return null;
+        }
+
         var guildUsers = await this._guildService.GetGuildUsers(discordGuild.Id);
 
         var usersWithArtist = await GetIndexedUsersForArtist(discordGuild, guildUsers, guild.GuildId, artistName);

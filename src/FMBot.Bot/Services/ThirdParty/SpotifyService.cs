@@ -17,8 +17,17 @@ using SpotifyAPI.Web.Http;
 
 namespace FMBot.Bot.Services.ThirdParty;
 
+public sealed record SpotifyLookup<T>(T Item, bool Failed) where T : class
+{
+    public static SpotifyLookup<T> Found(T item) => new(item, false);
+    public static readonly SpotifyLookup<T> NotFound = new(null, false);
+    public static readonly SpotifyLookup<T> Unavailable = new(null, true);
+}
+
 public class SpotifyService
 {
+    private static readonly TimeSpan MaxRetryDelay = TimeSpan.FromSeconds(5);
+
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
     private readonly BotSettings _botSettings;
     private readonly HttpClient _httpClient;
@@ -48,89 +57,111 @@ public class SpotifyService
         return await spotify.Search.Item(searchRequest);
     }
 
-    public async Task<FullArtist> GetArtistFromSpotify(string artistName)
+    public async Task<SpotifyLookup<FullArtist>> GetArtistFromSpotify(string artistName)
     {
-        var spotify = GetSpotifyWebApi();
-
-        var truncatedArtistName = artistName.Length > 100 ? artistName[..100] : artistName;
-
-        var searchRequest = new SearchRequest(SearchRequest.Types.Artist, truncatedArtistName)
+        try
         {
-            Limit = 50
-        };
+            var spotify = GetSpotifyWebApi();
 
-        var results = await spotify.Search.Item(searchRequest);
-        Statistics.SpotifyApiCalls.Inc();
+            var truncatedArtistName = artistName.Length > 100 ? artistName[..100] : artistName;
 
-        if (results.Artists.Items?.Any() == true)
-        {
-            var spotifyArtist = results.Artists.Items
-                .OrderByDescending(o => o.Popularity)
-                .ThenByDescending(o => o.Followers.Total)
-                .FirstOrDefault(w => w.Name.ToLower() == artistName.ToLower());
-
-            if (spotifyArtist != null)
+            var searchRequest = new SearchRequest(SearchRequest.Types.Artist, truncatedArtistName)
             {
-                return spotifyArtist;
-            }
-        }
+                Limit = 50
+            };
 
-        return null;
+            var results = await spotify.Search.Item(searchRequest);
+            Statistics.SpotifyApiCalls.Inc();
+
+            if (results.Artists.Items?.Any() == true)
+            {
+                var spotifyArtist = results.Artists.Items
+                    .OrderByDescending(o => o.Popularity)
+                    .ThenByDescending(o => o.Followers.Total)
+                    .FirstOrDefault(w => w.Name.ToLower() == artistName.ToLower());
+
+                if (spotifyArtist != null)
+                {
+                    return SpotifyLookup<FullArtist>.Found(spotifyArtist);
+                }
+            }
+
+            return SpotifyLookup<FullArtist>.NotFound;
+        }
+        catch (APIException e)
+        {
+            Log.Warning(e, "SpotifyService: Artist search failed for {artistName}", artistName);
+            return SpotifyLookup<FullArtist>.Unavailable;
+        }
     }
 
-    public async Task<FullTrack> GetTrackFromSpotify(string trackName, string artistName)
+    public async Task<SpotifyLookup<FullTrack>> GetTrackFromSpotify(string trackName, string artistName)
     {
-        //Create the auth object
-        var spotify = GetSpotifyWebApi();
-
-        var truncatedTrackName = trackName.Length > 100 ? trackName[..100] : trackName;
-        var truncatedArtistName = artistName.Length > 100 ? artistName[..100] : artistName;
-
-        var searchRequest = new SearchRequest(SearchRequest.Types.Track, $"track:{truncatedTrackName} artist:{truncatedArtistName}");
-
-        var results = await spotify.Search.Item(searchRequest);
-        Statistics.SpotifyApiCalls.Inc();
-
-        if (results.Tracks.Items?.Any() == true)
+        try
         {
-            var spotifyTrack = results.Tracks.Items
-                .OrderByDescending(o => o.Popularity)
-                .FirstOrDefault(w => w.Name.ToLower() == trackName.ToLower() && w.Artists.Select(s => s.Name.ToLower()).Contains(artistName.ToLower()));
+            var spotify = GetSpotifyWebApi();
 
-            if (spotifyTrack != null)
+            var truncatedTrackName = trackName.Length > 100 ? trackName[..100] : trackName;
+            var truncatedArtistName = artistName.Length > 100 ? artistName[..100] : artistName;
+
+            var searchRequest = new SearchRequest(SearchRequest.Types.Track, $"track:{truncatedTrackName} artist:{truncatedArtistName}");
+
+            var results = await spotify.Search.Item(searchRequest);
+            Statistics.SpotifyApiCalls.Inc();
+
+            if (results.Tracks.Items?.Any() == true)
             {
-                return spotifyTrack;
-            }
-        }
+                var spotifyTrack = results.Tracks.Items
+                    .OrderByDescending(o => o.Popularity)
+                    .FirstOrDefault(w => w.Name.ToLower() == trackName.ToLower() && w.Artists.Select(s => s.Name.ToLower()).Contains(artistName.ToLower()));
 
-        return null;
+                if (spotifyTrack != null)
+                {
+                    return SpotifyLookup<FullTrack>.Found(spotifyTrack);
+                }
+            }
+
+            return SpotifyLookup<FullTrack>.NotFound;
+        }
+        catch (APIException e)
+        {
+            Log.Warning(e, "SpotifyService: Track search failed for {artistName} - {trackName}", artistName, trackName);
+            return SpotifyLookup<FullTrack>.Unavailable;
+        }
     }
 
-    public async Task<FullAlbum> GetAlbumFromSpotify(string albumName, string artistName)
+    public async Task<SpotifyLookup<FullAlbum>> GetAlbumFromSpotify(string albumName, string artistName)
     {
-        //Create the auth object
-        var spotify = GetSpotifyWebApi();
-
-        var truncatedAlbumName = albumName.Length > 100 ? albumName[..100] : albumName;
-        var truncatedArtistName = artistName.Length > 100 ? artistName[..100] : artistName;
-
-        var searchRequest = new SearchRequest(SearchRequest.Types.Album, $"{truncatedAlbumName} {truncatedArtistName}");
-
-        var results = await spotify.Search.Item(searchRequest);
-        Statistics.SpotifyApiCalls.Inc();
-
-        if (results.Albums.Items?.Any() == true)
+        try
         {
-            var spotifyAlbum = results.Albums.Items
-                .FirstOrDefault(w => w.Name.ToLower() == albumName.ToLower() && w.Artists.Select(s => s.Name.ToLower()).Contains(artistName.ToLower()));
+            var spotify = GetSpotifyWebApi();
 
-            if (spotifyAlbum != null)
+            var truncatedAlbumName = albumName.Length > 100 ? albumName[..100] : albumName;
+            var truncatedArtistName = artistName.Length > 100 ? artistName[..100] : artistName;
+
+            var searchRequest = new SearchRequest(SearchRequest.Types.Album, $"{truncatedAlbumName} {truncatedArtistName}");
+
+            var results = await spotify.Search.Item(searchRequest);
+            Statistics.SpotifyApiCalls.Inc();
+
+            if (results.Albums.Items?.Any() == true)
             {
-                return await GetAlbumById(spotifyAlbum.Id);
-            }
-        }
+                var spotifyAlbum = results.Albums.Items
+                    .FirstOrDefault(w => w.Name.ToLower() == albumName.ToLower() && w.Artists.Select(s => s.Name.ToLower()).Contains(artistName.ToLower()));
 
-        return null;
+                if (spotifyAlbum != null)
+                {
+                    return SpotifyLookup<FullAlbum>.Found(await GetAlbumById(spotifyAlbum.Id));
+                }
+            }
+
+            return SpotifyLookup<FullAlbum>.NotFound;
+        }
+        catch (APIException e)
+        {
+            Log.Warning(e, "SpotifyService: Album search failed for {artistName} - {albumName}", artistName, albumName);
+            return SpotifyLookup<FullAlbum>.Unavailable;
+        }
     }
 
     public async Task<FullTrack> GetTrackById(string spotifyId)
@@ -161,9 +192,17 @@ public class SpotifyService
     {
         var spotify = GetSpotifyWebApi();
 
-        Statistics.SpotifyApiCalls.Inc();
-        var result = await spotify.Artists.GetTopTracks(spotifyId, new ArtistsTopTracksRequest(market));
-        return result?.Tracks ?? [];
+        try
+        {
+            Statistics.SpotifyApiCalls.Inc();
+            var result = await spotify.Artists.GetTopTracks(spotifyId, new ArtistsTopTracksRequest(market));
+            return result?.Tracks ?? [];
+        }
+        catch (APIException e)
+        {
+            Log.Warning(e, "SpotifyService: Top tracks lookup failed for {spotifyId}", spotifyId);
+            return [];
+        }
     }
 
     public async Task<TrackAudioFeatures> GetAudioFeaturesFromSpotify(string spotifyId)
@@ -209,6 +248,14 @@ public class SpotifyService
             PublicProperties.SpotifyConfig = SpotifyClientConfig
                 .CreateDefault()
                 .WithHTTPClient(new NetHttpClient(this._httpClient))
+                .WithRetryHandler(new SimpleRetryHandler((delay, cancellationToken) => delay > MaxRetryDelay
+                    ? throw new APIException($"Spotify requested a retry after {delay.TotalSeconds:F0}s, giving up")
+                    : Task.Delay(delay, cancellationToken))
+                {
+                    RetryTimes = 2,
+                    RetryAfter = TimeSpan.FromMilliseconds(500),
+                    TooManyRequestsConsumesARetry = true
+                })
                 .WithAuthenticator(new ClientCredentialsAuthenticator(this._botSettings.Spotify.Key,
                     this._botSettings.Spotify.Secret));
         }

@@ -100,10 +100,6 @@ public class Startup
         "gateway.sent.bytes",
         "gateway.sent.messages",
         "gateway.cache.entities",
-        "http.client.request.duration",
-        "http.client.connection.duration",
-        "http.client.request.time_in_queue",
-        "http.client.open_connections",
         "dns.lookup.duration"
     ];
 
@@ -413,10 +409,13 @@ public class Startup
         services.AddHttpClient<SpotifyRemoteService>(client => { client.Timeout = TimeSpan.FromSeconds(10); });
 
         MetaBrainz.MusicBrainz.Query.DelayBetweenRequests = 1.5;
-        MetaBrainz.MusicBrainz.Query.DefaultUserAgent.Add(new ProductInfoHeaderValue("fmbot", "1.0"));
-        MetaBrainz.MusicBrainz.Query.DefaultUserAgent.Add(new ProductInfoHeaderValue("(+contact@fm.bot)"));
 
-        services.AddHttpClient("MusicBrainz", client => { client.Timeout = TimeSpan.FromSeconds(8); });
+        services.AddHttpClient("MusicBrainz", client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(8);
+            client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("fmbot", "1.0"));
+            client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("(+contact@fm.bot)"));
+        });
         services.AddSingleton<MusicBrainzService>();
     }
 

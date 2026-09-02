@@ -383,53 +383,56 @@ public class GameBuilders
         pages.Add(userPage);
         response.Embed = userPage.GetEmbedProperties();
 
-        var guildPage = new PageBuilder();
-        guildPage.WithAuthor(context.Localize("jumble.serverStatsTitle", ("game", name),
-            ("server", context.DiscordGuild.Name)));
-        guildPage.WithColor(DiscordConstants.InformationColorBlue);
-
-        var guildStats =
-            await this._gameService.GetJumbleGuildStats(context.DiscordGuild.Id, jumbleType);
-
-        if (guildStats == null)
+        if (context.DiscordGuild != null)
         {
-            guildPage.WithDescription(context.Localize("jumble.noStatsServer"));
-        }
-        else
-        {
-            var gameStats = new StringBuilder();
-            gameStats.AppendLine(context.LocalizeCount("jumble.statTotalGamesPlayed", guildStats.TotalGamesPlayed));
-            gameStats.AppendLine(context.LocalizeCount("jumble.statGamesSolved", guildStats.GamesSolved));
-            gameStats.AppendLine(context.LocalizeCount("jumble.statTotalReshuffles", guildStats.TotalReshuffles));
-            gameStats.AppendLine(context.Localize("jumble.statAvgHintsShown",
-                ("avg", decimal.Round(guildStats.AvgHintsShown, 1).ToString())));
-            guildPage.AddField(context.Localize("jumble.fieldGames"), gameStats.ToString());
+            var guildPage = new PageBuilder();
+            guildPage.WithAuthor(context.Localize("jumble.serverStatsTitle", ("game", name),
+                ("server", context.DiscordGuild.Name)));
+            guildPage.WithColor(DiscordConstants.InformationColorBlue);
 
-            var answerStats = new StringBuilder();
-            answerStats.AppendLine(context.LocalizeCount("jumble.statTotalAnswers", guildStats.TotalAnswers));
-            answerStats.AppendLine(context.Localize("jumble.statAvgAnswerTime",
-                ("seconds", decimal.Round(guildStats.AvgAnsweringTime, 1).ToString())));
-            answerStats.AppendLine(context.Localize("jumble.statAvgCorrectAnswerTime",
-                ("seconds", decimal.Round(guildStats.AvgCorrectAnsweringTime, 1).ToString())));
-            answerStats.AppendLine(context.Localize("jumble.statAvgAttempts",
-                ("avg", decimal.Round(guildStats.AvgAttemptsUntilCorrect, 1).ToString())));
-            guildPage.AddField(context.Localize("jumble.fieldAnswers"), answerStats.ToString());
+            var guildStats =
+                await this._gameService.GetJumbleGuildStats(context.DiscordGuild.Id, jumbleType);
 
-            var channels = new StringBuilder();
-            var counter = 1;
-            foreach (var channel in guildStats.Channels.Take(5))
+            if (guildStats == null)
             {
-                channels.AppendLine(
-                    $"{counter}. <#{channel.Id}> - {context.LocalizeCount("shared.games", channel.Count)}");
-                counter++;
+                guildPage.WithDescription(context.Localize("jumble.noStatsServer"));
+            }
+            else
+            {
+                var gameStats = new StringBuilder();
+                gameStats.AppendLine(context.LocalizeCount("jumble.statTotalGamesPlayed", guildStats.TotalGamesPlayed));
+                gameStats.AppendLine(context.LocalizeCount("jumble.statGamesSolved", guildStats.GamesSolved));
+                gameStats.AppendLine(context.LocalizeCount("jumble.statTotalReshuffles", guildStats.TotalReshuffles));
+                gameStats.AppendLine(context.Localize("jumble.statAvgHintsShown",
+                    ("avg", decimal.Round(guildStats.AvgHintsShown, 1).ToString())));
+                guildPage.AddField(context.Localize("jumble.fieldGames"), gameStats.ToString());
+
+                var answerStats = new StringBuilder();
+                answerStats.AppendLine(context.LocalizeCount("jumble.statTotalAnswers", guildStats.TotalAnswers));
+                answerStats.AppendLine(context.Localize("jumble.statAvgAnswerTime",
+                    ("seconds", decimal.Round(guildStats.AvgAnsweringTime, 1).ToString())));
+                answerStats.AppendLine(context.Localize("jumble.statAvgCorrectAnswerTime",
+                    ("seconds", decimal.Round(guildStats.AvgCorrectAnsweringTime, 1).ToString())));
+                answerStats.AppendLine(context.Localize("jumble.statAvgAttempts",
+                    ("avg", decimal.Round(guildStats.AvgAttemptsUntilCorrect, 1).ToString())));
+                guildPage.AddField(context.Localize("jumble.fieldAnswers"), answerStats.ToString());
+
+                var channels = new StringBuilder();
+                var counter = 1;
+                foreach (var channel in guildStats.Channels.Take(5))
+                {
+                    channels.AppendLine(
+                        $"{counter}. <#{channel.Id}> - {context.LocalizeCount("shared.games", channel.Count)}");
+                    counter++;
+                }
+
+                guildPage.AddField(context.Localize("jumble.fieldTopChannels"), channels.ToString());
             }
 
-            guildPage.AddField(context.Localize("jumble.fieldTopChannels"), channels.ToString());
+            guildPage.WithFooter(context.Localize("jumble.userStatsFooter", ("user", userSettings.DisplayName)));
+
+            pages.Add(guildPage);
         }
-
-        guildPage.WithFooter(context.Localize("jumble.userStatsFooter", ("user", userSettings.DisplayName)));
-
-        pages.Add(guildPage);
 
         response.ComponentPaginator = StringService.BuildSimpleComponentPaginator(pages);
 

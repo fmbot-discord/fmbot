@@ -115,8 +115,8 @@ public class TimerService : IDisposable
         Log.Information($"RecurringJob: Adding {nameof(UpdateShortcuts)}");
         RecurringJob.AddOrUpdate(nameof(UpdateShortcuts), () => UpdateShortcuts(), "* * * * *");
 
-        Log.Information($"RecurringJob: Adding {nameof(UpdateHealthCheck)}");
-        RecurringJob.AddOrUpdate(nameof(UpdateHealthCheck), () => UpdateHealthCheck(), "*/20 * * * * *");
+        Log.Information($"Starting {nameof(UpdateHealthCheck)} loop");
+        _ = RunHealthCheckLoop();
 
         Log.Information($"RecurringJob: Adding {nameof(CheckIfShardsNeedReconnect)}");
         RecurringJob.AddOrUpdate(nameof(CheckIfShardsNeedReconnect), () => CheckIfShardsNeedReconnect(), "*/2 * * * *");
@@ -381,6 +381,23 @@ public class TimerService : IDisposable
         }
     }
 
+    private async Task RunHealthCheckLoop()
+    {
+        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(10));
+
+        while (await timer.WaitForNextTickAsync())
+        {
+            try
+            {
+                await UpdateHealthCheck();
+            }
+            catch (Exception e)
+            {
+                Log.Debug(e, $"{nameof(RunHealthCheckLoop)}: {nameof(UpdateHealthCheck)} failed");
+            }
+        }
+    }
+
     public async Task UpdateHealthCheck()
     {
         Log.Debug($"Running {nameof(UpdateHealthCheck)}");
@@ -422,7 +439,7 @@ public class TimerService : IDisposable
                     ConnectedShards = this._client?.Count(c => c.Status == WebSocketStatus.Ready) ?? 0,
                     TotalShards = this._client?.Count ?? 0,
                     MemoryBytesUsed = currentMemoryUsage
-                });
+                }, deadline: DateTime.UtcNow.AddSeconds(10));
             }
         }
         catch (Exception e)
@@ -934,8 +951,16 @@ public class TimerService : IDisposable
         Log.Information("Cleared internal logs");
     }
 
+    private static int _enrichMissingMetadataRunning;
+
     public async Task EnrichMissingMetadata()
     {
+        if (Interlocked.CompareExchange(ref _enrichMissingMetadataRunning, 1, 0) != 0)
+        {
+            Log.Information($"{nameof(EnrichMissingMetadata)}: previous batch still running, skipping");
+            return;
+        }
+
         Log.Information($"Running {nameof(EnrichMissingMetadata)}");
 
         try
@@ -947,6 +972,10 @@ public class TimerService : IDisposable
         {
             Log.Error(e, nameof(EnrichMissingMetadata));
             throw;
+        }
+        finally
+        {
+            Interlocked.Exchange(ref _enrichMissingMetadataRunning, 0);
         }
     }
 
