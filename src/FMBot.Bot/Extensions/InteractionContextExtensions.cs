@@ -445,6 +445,7 @@ public static class InteractionContextExtensions
             }
 
             ulong? interactionResponseId = null;
+            RestMessage responseMessage = null;
             var flags = ephemeral ? MessageFlags.Ephemeral : (MessageFlags?)null;
 
             switch (response.ResponseType)
@@ -455,16 +456,18 @@ public static class InteractionContextExtensions
                             .WithContent(response.Text)
                             .WithAllowedMentions(AllowedMentionsProperties.None)
                             .WithFlags(flags)
-                            .WithComponents(response.GetMessageComponents())));
+                            .WithComponents(response.GetMessageComponents())), withResponse: true);
                     interactionResponseId = text?.Interaction.ResponseMessageId;
+                    responseMessage = text?.Resource?.Message;
                     break;
                 case ResponseType.Embed:
                     var embed = await context.Interaction.SendResponseAsync(InteractionCallback.Message(
                         new InteractionMessageProperties()
                             .WithEmbeds(embeds)
                             .WithFlags(flags)
-                            .WithComponents(response.GetMessageComponents())));
+                            .WithComponents(response.GetMessageComponents())), withResponse: true);
                     interactionResponseId = embed?.Interaction.ResponseMessageId;
+                    responseMessage = embed?.Resource?.Message;
                     break;
                 case ResponseType.ComponentsV2:
                     var componentsV2Flags = ephemeral
@@ -474,8 +477,9 @@ public static class InteractionContextExtensions
                         new InteractionMessageProperties()
                             .WithComponents(response.GetComponentsV2())
                             .WithFlags(componentsV2Flags)
-                            .WithAllowedMentions(AllowedMentionsProperties.None)));
+                            .WithAllowedMentions(AllowedMentionsProperties.None)), withResponse: true);
                     interactionResponseId = componentsv2?.Interaction.ResponseMessageId;
+                    responseMessage = componentsv2?.Resource?.Message;
                     break;
                 case ResponseType.ImageWithEmbed:
                     response.FileName =
@@ -487,8 +491,9 @@ public static class InteractionContextExtensions
                                 response.Stream).WithDescription(response.FileDescription))
                             .WithEmbeds([response.Embed])
                             .WithFlags(flags)
-                            .WithComponents(response.GetMessageComponents())));
+                            .WithComponents(response.GetMessageComponents())), withResponse: true);
                     interactionResponseId = imageWithEmbed?.Interaction.ResponseMessageId;
+                    responseMessage = imageWithEmbed?.Resource?.Message;
 
                     if (response.Stream != null)
                     {
@@ -527,7 +532,7 @@ public static class InteractionContextExtensions
             {
                 try
                 {
-                    var message = await context.Interaction.GetResponseAsync();
+                    var message = responseMessage ?? await context.Interaction.GetResponseAsync();
                     await GuildService.AddReactionsAsync(message, response.EmoteReactions);
                 }
                 catch (Exception e)

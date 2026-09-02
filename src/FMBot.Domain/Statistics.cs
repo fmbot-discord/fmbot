@@ -142,6 +142,13 @@ public static class Statistics
         .CreateHistogram("bot_slash_command_handler_duration", "Histogram of slash command handler duration",
             new HistogramConfiguration { Buckets = CommandDurationBuckets });
 
+    public static readonly Counter DiscordRestResponses = Metrics
+        .CreateCounter("bot_discord_rest_responses", "Discord REST responses by negotiated HTTP protocol version",
+            new CounterConfiguration
+            {
+                LabelNames = ["protocol"]
+            });
+
     public static readonly Histogram InteractionDeferDuration = Metrics
         .CreateHistogram("bot_interaction_defer_duration", "Histogram of background interaction deferral duration",
             new HistogramConfiguration

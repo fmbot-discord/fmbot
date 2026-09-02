@@ -2,6 +2,10 @@ FROM mcr.microsoft.com/dotnet/runtime:10.0-noble-amd64 AS base
 
 RUN apt-get update -y && apt-get install -y libjemalloc2 libgdiplus software-properties-common curl
 RUN add-apt-repository ppa:ubuntuhandbook1/ffmpeg8 && apt-get update -y && apt-get install -y ffmpeg
+RUN curl -sSL -o /tmp/packages-microsoft-prod.deb https://packages.microsoft.com/config/ubuntu/24.04/packages-microsoft-prod.deb \
+    && dpkg -i /tmp/packages-microsoft-prod.deb \
+    && rm /tmp/packages-microsoft-prod.deb \
+    && apt-get update -y && apt-get install -y libmsquic
 
 #####################
 #PUPPETEER RECIPE

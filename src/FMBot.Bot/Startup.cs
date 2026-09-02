@@ -40,6 +40,7 @@ using GraphQL.Client.Serializer.SystemTextJson;
 using NetCord;
 using NetCord.Gateway;
 using NetCord.Logging;
+using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using NetCord.Services.Commands;
 using NetCord.Services.ComponentInteractions;
@@ -220,7 +221,11 @@ public class Startup
                 TotalShardCount = ConfigData.Data.Shards.TotalShards,
                 ShardRange = startShard..(endShard + 1), // End is exclusive in NetCord
                 MaxConcurrency = maxConcurrency,
-                LoggerFactory = shard => new SerilogGatewayLogger(shard)
+                LoggerFactory = shard => new SerilogGatewayLogger(shard),
+                RestClientConfiguration = new RestClientConfiguration
+                {
+                    RequestHandler = new DiscordRestRequestHandler()
+                }
             });
         }
 
@@ -230,7 +235,11 @@ public class Startup
             IntentsFactory = _ => intents,
             CacheProviderFactory = _ => LeanGatewayClientCacheProvider.Instance,
             MaxConcurrency = maxConcurrency,
-            LoggerFactory = shard => new SerilogGatewayLogger(shard)
+            LoggerFactory = shard => new SerilogGatewayLogger(shard),
+            RestClientConfiguration = new RestClientConfiguration
+            {
+                RequestHandler = new DiscordRestRequestHandler()
+            }
         });
     }
 
