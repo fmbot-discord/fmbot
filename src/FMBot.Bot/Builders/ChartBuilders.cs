@@ -336,7 +336,7 @@ public class ChartBuilders
 
         response.FileDescription = StringExtensions.TruncateLongString(chartSettings.FileDescription.ToString(), 1024);
         response.FileName =
-            $"album-chart-{chartSettings.Width}w-{chartSettings.Height}h-{chartSettings.TimeSettings.TimePeriod}-{userSettings.UserNameLastFm}.webp";
+            $"album-chart-{chartSettings.Width}w-{chartSettings.Height}h-{chartSettings.TimeSettings.TimePeriod}-{userSettings.UserNameLastFm}{ChartService.ChartFileExtension}";
 
         var mediaGallery =
             new MediaGalleryItemProperties(new ComponentMediaProperties($"attachment://{response.FileName}"))
@@ -381,7 +381,7 @@ public class ChartBuilders
             response.ComponentsContainer.AddComponent(new TextDisplayProperties(footerText));
         }
 
-        var encoded = chart.Encode(SKEncodedImageFormat.Webp, ChartService.ChartQuality);
+        var encoded = ChartService.EncodeChart(chart);
         response.Stream = encoded.AsStream(true);
         response.ResponseType = ResponseType.ComponentsV2;
         response.ComponentsContainer.WithAccentColor(DiscordConstants.LastFmColorRed);
@@ -559,7 +559,7 @@ public class ChartBuilders
 
         response.FileDescription = StringExtensions.TruncateLongString(chartSettings.FileDescription.ToString(), 1024);
         response.FileName =
-            $"artist-chart-{chartSettings.Width}w-{chartSettings.Height}h-{chartSettings.TimeSettings.TimePeriod}-{userSettings.UserNameLastFm}.webp";
+            $"artist-chart-{chartSettings.Width}w-{chartSettings.Height}h-{chartSettings.TimeSettings.TimePeriod}-{userSettings.UserNameLastFm}{ChartService.ChartFileExtension}";
 
         var mediaGallery =
             new MediaGalleryItemProperties(new ComponentMediaProperties($"attachment://{response.FileName}"))
@@ -598,7 +598,7 @@ public class ChartBuilders
             response.ComponentsContainer.AddComponent(new TextDisplayProperties(footer.ToString()));
         }
 
-        var encoded = chart.Encode(SKEncodedImageFormat.Webp, ChartService.ChartQuality);
+        var encoded = ChartService.EncodeChart(chart);
         response.Stream = encoded.AsStream(true);
         response.ResponseType = ResponseType.ComponentsV2;
         response.ComponentsContainer.WithAccentColor(DiscordConstants.LastFmColorRed);

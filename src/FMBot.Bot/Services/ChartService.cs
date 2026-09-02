@@ -120,12 +120,23 @@ public class ChartService
 
             if (!chart.ArtistChart)
             {
-                var covers = await Task.WhenAll(chart.Albums.Select(async album =>
+                var prepared = await Task.WhenAll(chart.Albums.Select(async (album, index) =>
                 {
                     await semaphore.WaitAsync();
                     try
                     {
-                        return await LoadAlbumCoverAsync(album, cellSize);
+                        var cover = await LoadAlbumCoverAsync(album, cellSize);
+                        return PrepareChartImage(chart,
+                            cover.Image,
+                            index,
+                            chartImageHeight,
+                            chartImageWidth,
+                            scale,
+                            cover.ValidImage,
+                            topName: chart.FilteredArtist == null ? album.ArtistName : album.AlbumName,
+                            bottomName: chart.FilteredArtist == null ? album.AlbumName : null,
+                            nsfw: cover.Nsfw,
+                            censored: cover.Censored);
                     }
                     finally
                     {
@@ -136,30 +147,28 @@ public class ChartService
                 for (var index = 0; index < chart.Albums.Count; index++)
                 {
                     var album = chart.Albums[index];
-                    var cover = covers[index];
-
                     chart.FileDescription.Append($"#{index + 1} {album.AlbumName} by {album.ArtistName}, ");
-                    AddImageToChart(chart,
-                        cover.Image,
-                        index,
-                        chartImageHeight,
-                        chartImageWidth,
-                        scale,
-                        cover.ValidImage,
-                        topName: chart.FilteredArtist == null ? album.ArtistName : album.AlbumName,
-                        bottomName: chart.FilteredArtist == null ? album.AlbumName : null,
-                        nsfw: cover.Nsfw,
-                        censored: cover.Censored);
+                    chart.ChartImages.Add(prepared[index]);
                 }
             }
             else
             {
-                var covers = await Task.WhenAll(chart.Artists.Select(async artist =>
+                var prepared = await Task.WhenAll(chart.Artists.Select(async (artist, index) =>
                 {
                     await semaphore.WaitAsync();
                     try
                     {
-                        return await LoadArtistImageAsync(artist, cellSize);
+                        var cover = await LoadArtistImageAsync(artist, cellSize);
+                        return PrepareChartImage(chart,
+                            cover.Image,
+                            index,
+                            chartImageHeight,
+                            chartImageWidth,
+                            scale,
+                            cover.ValidImage,
+                            topName: artist.ArtistName,
+                            nsfw: cover.Nsfw,
+                            censored: cover.Censored);
                     }
                     finally
                     {
@@ -170,19 +179,8 @@ public class ChartService
                 for (var index = 0; index < chart.Artists.Count; index++)
                 {
                     var artist = chart.Artists[index];
-                    var cover = covers[index];
-
                     chart.FileDescription.Append($"#{index + 1} {artist.ArtistName}, ");
-                    AddImageToChart(chart,
-                        cover.Image,
-                        index,
-                        chartImageHeight,
-                        chartImageWidth,
-                        scale,
-                        cover.ValidImage,
-                        topName: artist.ArtistName,
-                        nsfw: cover.Nsfw,
-                        censored: cover.Censored);
+                    chart.ChartImages.Add(prepared[index]);
                 }
             }
 
@@ -415,7 +413,15 @@ public class ChartService
         return Convert.ToHexString(bytes, 0, 8).ToLowerInvariant();
     }
 
-    public const int ChartQuality = 98;
+    public const int ChartQuality = 95;
+    public const string ChartFileExtension = ".jpg";
+
+    public static SKData EncodeChart(SKImage chart)
+    {
+        using var pixmap = chart.PeekPixels();
+        return pixmap.Encode(new SKJpegEncoderOptions(ChartQuality, SKJpegEncoderDownsample.Downsample444,
+            SKJpegEncoderAlphaOption.Ignore));
+    }
     public const int MaxImages = 225;
     public const int BaseCellSize = 300;
     public const int MinCellSize = 200;
@@ -565,7 +571,7 @@ public class ChartService
         await stream.CopyToAsync(fileStream);
     }
 
-    private void AddImageToChart(ChartSettings chart,
+    private ChartImage PrepareChartImage(ChartSettings chart,
         SKBitmap chartImage,
         int index,
         int chartImageHeight,
@@ -637,7 +643,7 @@ public class ChartService
             primaryColor = chartImage.GetAccentColor();
         }
 
-        chart.ChartImages.Add(new ChartImage(chartImage, index, validImage, primaryColor, nsfw, censored));
+        return new ChartImage(chartImage, index, validImage, primaryColor, nsfw, censored);
     }
 
     private static List<ChartImage> RainbowSort(IEnumerable<ChartImage> images)
