@@ -16,10 +16,7 @@ namespace FMBot.Bot.Handlers;
 
 public sealed class DiscordRestRequestHandler : IRestRequestHandler
 {
-    private readonly HttpClient _httpClient = new(new SocketsHttpHandler
-    {
-        EnableMultipleHttp2Connections = true
-    });
+    private readonly HttpClient _httpClient = new(new SocketsHttpHandler());
 
     private readonly ConcurrentDictionary<string, byte> _seenProtocols = new();
 
