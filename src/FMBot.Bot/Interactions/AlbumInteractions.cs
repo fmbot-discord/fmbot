@@ -32,8 +32,8 @@ public class AlbumInteractions(
     [UsernameSetRequired]
     public async Task AlbumAsync(string album, string discordUser, string requesterDiscordUser)
     {
-        await RespondAsync(InteractionCallback.DeferredModifyMessage);
-        await this.Context.DisableButtonsAndMenus();
+        this.Context.DeferUpdateInBackground();
+        var disableButtonsTask = this.Context.DisableButtonsAndMenus().ObserveFaults();
 
         var discordUserId = ulong.Parse(discordUser);
         var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
@@ -50,6 +50,7 @@ public class AlbumInteractions(
             var response = await albumBuilders.AlbumAsync(
                 new ContextModel(this.Context, contextUser, discordContextUser), $"{dbAlbum.ArtistName} | {dbAlbum.Name}", userSettings);
 
+            await disableButtonsTask;
             await this.Context.UpdateInteractionEmbed(response, interactivity, false);
             await this.Context.LogCommandUsedAsync(response, userService);
         }
@@ -136,16 +137,17 @@ public class AlbumInteractions(
             ephemeral = fmSetting.PrivateButtonResponse != false; // null/true → private
         }
 
+        var disableButtonsTask = Task.CompletedTask;
         if (ephemeral)
         {
-            await RespondAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
+            this.Context.DeferInBackground(MessageFlags.Ephemeral);
         }
         else
         {
-            await RespondAsync(InteractionCallback.DeferredModifyMessage);
+            this.Context.DeferUpdateInBackground();
             if (this.Context.Interaction is ButtonInteraction buttonInteraction && isFmContext)
             {
-                await this.Context.DisableButtonsAndMenus(buttonInteraction.Data.CustomId);
+                disableButtonsTask = this.Context.DisableButtonsAndMenus(buttonInteraction.Data.CustomId).ObserveFaults();
             }
         }
 
@@ -176,6 +178,7 @@ public class AlbumInteractions(
             }
             else
             {
+                await disableButtonsTask;
                 await this.Context.UpdateInteractionEmbed(response, interactivity, false);
             }
 
@@ -202,8 +205,8 @@ public class AlbumInteractions(
             return;
         }
 
-        await RespondAsync(InteractionCallback.DeferredModifyMessage);
-        await this.Context.DisableButtonsAndMenus();
+        this.Context.DeferUpdateInBackground();
+        var disableButtonsTask = this.Context.DisableButtonsAndMenus().ObserveFaults();
 
         var contextUser = await userService.GetUserWithDiscogs(requesterDiscordUserId);
         var discordContextUser = await this.Context.GetUserAsync(requesterDiscordUserId);
@@ -213,6 +216,7 @@ public class AlbumInteractions(
         {
             var response = await albumBuilders.CoverAsync(new ContextModel(this.Context, contextUser, discordContextUser), userSettings, "random");
 
+            await disableButtonsTask;
             await this.Context.UpdateInteractionEmbed(response, interactivity, false);
             await this.Context.LogCommandUsedAsync(response, userService);
 
@@ -242,14 +246,15 @@ public class AlbumInteractions(
             ephemeral = fmSetting.PrivateButtonResponse != false; // null/true → private
         }
 
+        var disableButtonsTask = Task.CompletedTask;
         if (ephemeral)
         {
-            await RespondAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
+            this.Context.DeferInBackground(MessageFlags.Ephemeral);
         }
         else
         {
-            await RespondAsync(InteractionCallback.DeferredModifyMessage);
-            await this.Context.DisableButtonsAndMenus();
+            this.Context.DeferUpdateInBackground();
+            disableButtonsTask = this.Context.DisableButtonsAndMenus().ObserveFaults();
         }
 
         var discordUserId = ulong.Parse(discordUser);
@@ -276,10 +281,12 @@ public class AlbumInteractions(
 
             if (ephemeral)
             {
+                await disableButtonsTask;
                 await this.Context.SendFollowUpResponse(interactivity, response, userService, ephemeral: true);
             }
             else
             {
+                await disableButtonsTask;
                 await this.Context.UpdateInteractionEmbed(response, interactivity, false);
             }
 

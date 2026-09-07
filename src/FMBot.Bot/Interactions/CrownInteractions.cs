@@ -28,8 +28,8 @@ public class CrownInteractions(
     [UsernameSetRequired]
     public async Task CrownButtonAsync(string artistId, string stolen)
     {
-        await RespondAsync(InteractionCallback.DeferredModifyMessage);
-        await this.Context.DisableInteractionButtons();
+        this.Context.DeferUpdateInBackground();
+        var disableButtonsTask = this.Context.DisableInteractionButtons().ObserveFaults();
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var artist = await artistsService.GetArtistForId(int.Parse(artistId));
@@ -42,11 +42,13 @@ public class CrownInteractions(
             if (stolen.Equals("true", StringComparison.OrdinalIgnoreCase))
             {
                 response.Components = null;
+                await disableButtonsTask;
                 await this.Context.SendFollowUpResponse(interactivity, response, userService);
                 await this.Context.LogCommandUsedAsync(response, userService);
             }
             else
             {
+                await disableButtonsTask;
                 await this.Context.UpdateInteractionEmbed(response, defer: false);
                 await this.Context.LogCommandUsedAsync(response, userService);
             }
@@ -62,8 +64,8 @@ public class CrownInteractions(
     [UsernameSetRequired]
     public async Task CrownSelectMenu(params string[] inputs)
     {
-        await RespondAsync(InteractionCallback.DeferredModifyMessage);
-        await this.Context.DisableButtonsAndMenus();
+        this.Context.DeferUpdateInBackground();
+        var disableButtonsTask = this.Context.DisableButtonsAndMenus().ObserveFaults();
 
         var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
         var options = stringMenuInteraction.Data.SelectedValues[0].Split("-");
@@ -86,6 +88,7 @@ public class CrownInteractions(
         {
             var response = await crownBuilders.CrownOverviewAsync(new ContextModel(this.Context, contextUser, discordContextUser), guild, userSettings, viewType);
 
+            await disableButtonsTask;
             await this.Context.UpdateInteractionEmbed(response, interactivity, false);
             await this.Context.LogCommandUsedAsync(response, userService);
         }

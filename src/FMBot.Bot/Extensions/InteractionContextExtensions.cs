@@ -406,6 +406,11 @@ public static class InteractionContextExtensions
             PendingDefers.Add(interaction, deferTask);
         }
 
+        public Task WaitForPendingDefer()
+        {
+            return context.EnsureDeferCompleted();
+        }
+
         private async Task<bool> EnsureDeferCompleted()
         {
             if (!PendingDefers.TryGetValue(context.Interaction, out var deferTask))
@@ -511,7 +516,7 @@ public static class InteractionContextExtensions
                     break;
                 case ResponseType.Paginator:
                     var paginator = await interactiveService.SendPaginatorAsync(
-                        response.ComponentPaginator.Build(),
+                        new SingleCallbackComponentPaginator(response.ComponentPaginator),
                         context.Interaction,
                         TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
                         ephemeral: ephemeral);
@@ -747,7 +752,8 @@ public static class InteractionContextExtensions
 
         if (response.ResponseType == ResponseType.Paginator)
         {
-            if (defer)
+            var hadPendingDefer = await context.EnsureDeferCompleted();
+            if (defer && !hadPendingDefer)
             {
                 await context.Interaction.SendResponseAsync(InteractionCallback.DeferredModifyMessage);
             }
@@ -773,6 +779,7 @@ public static class InteractionContextExtensions
 
             var newComponents = message.Components.WithDisabled(specificButtonOnly);
 
+            await context.EnsureDeferCompleted();
             await context.Interaction.ModifyResponseAsync(m => m.Components = newComponents);
         }
 

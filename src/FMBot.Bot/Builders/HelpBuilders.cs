@@ -506,7 +506,7 @@ public class HelpBuilders(HelpService helpService)
             for (var page = 0; page < pages; page++)
             {
                 var commandMenu = new StringMenuProperties(
-                        $"{InteractionConstants.Help.CommandMenu}:{ModeString(mode)}:{category.Value}")
+                        $"{InteractionConstants.Help.CommandMenu}:{ModeString(mode)}:{category.Value}:{page}")
                     .WithPlaceholder(pages > 1
                         ? context.Localize("help.selectCommandPage", ("page", (page + 1).ToString()), ("pages", pages.ToString()))
                         : context.Localize("help.selectCommand"));

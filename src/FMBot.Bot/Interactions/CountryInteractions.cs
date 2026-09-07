@@ -37,8 +37,8 @@ public class CountryInteractions(
 
             var timeDescription = string.Join("-", splitInput.Skip(3));
 
-            await RespondAsync(InteractionCallback.DeferredModifyMessage);
-            await this.Context.DisableButtonsAndMenus();
+            this.Context.DeferUpdateInBackground();
+            var disableButtonsTask = this.Context.DisableButtonsAndMenus().ObserveFaults();
 
             var contextUser = await userService.GetUserWithDiscogs(targetDiscordUserId);
             var userSettings = await settingService.GetOriginalContextUser(targetDiscordUserId, this.Context.User.Id,
@@ -51,6 +51,7 @@ public class CountryInteractions(
             var response = await countryBuilders.GetTopCountryChart(
                 new ContextModel(this.Context, contextUser), userSettings, timeSettings, theme);
 
+            await disableButtonsTask;
             await this.Context.UpdateInteractionEmbed(response, defer: false);
 
             if (response.Stream != null)

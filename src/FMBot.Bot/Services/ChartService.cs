@@ -425,8 +425,8 @@ public class ChartService
     public const int MaxImages = 225;
     public const int BaseCellSize = 300;
     public const int MinCellSize = 200;
-    public const int MaxCellSize = 600;
-    public const int MaxChartSize = 3000;
+    public const int MaxCellSize = 640;
+    public const int MaxChartSize = 3200;
     public const int MaxPixelDimension = 16000;
     public const int MaxCachedCoverSize = 640;
     private const int CachedCoverQuality = 100;

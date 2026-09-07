@@ -86,7 +86,7 @@ public class SettingsInteractions(
                 return;
             }
 
-            await RespondAsync(InteractionCallback.DeferredModifyMessage);
+            this.Context.DeferUpdateInBackground();
 
             var response = tab switch
             {

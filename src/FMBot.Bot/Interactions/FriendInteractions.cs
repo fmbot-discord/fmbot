@@ -30,7 +30,7 @@ public class FriendInteractions(
     {
         try
         {
-            await RespondAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
+            this.Context.DeferInBackground(MessageFlags.Ephemeral);
 
             var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
             var response = await friendBuilders.ManageFriendsAsync(new ContextModel(this.Context, contextUser));

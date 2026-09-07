@@ -276,7 +276,7 @@ public class DiscordSkuService
         }
     }
 
-    public async Task SendVoiceMessage(string audioUrl, string interactionToken)
+    public async Task SendVoiceMessage(string audioUrl, string interactionToken, Task interactionReady = null)
     {
         var audioBytes = await _client.GetByteArrayAsync(audioUrl);
 
@@ -321,6 +321,11 @@ public class DiscordSkuService
             Content = multipartContent
         };
         request.Headers.Add("Authorization", $"Bot {_token}");
+
+        if (interactionReady != null)
+        {
+            await interactionReady;
+        }
 
         var response = await _client.SendAsync(request);
 

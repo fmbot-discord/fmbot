@@ -800,8 +800,8 @@ public class TrackBuilders
             return response;
         }
 
-        var title = context.Localize("track.whoknows.friendsTitle",
-            ("track", track.Track.TrackName), ("artist", track.Track.ArtistName));
+        var title = StringExtensions.TruncateLongString(context.Localize("track.whoknows.friendsTitle",
+            ("track", track.Track.TrackName), ("artist", track.Track.ArtistName)), 255);
 
         var footer = "";
 
@@ -1193,7 +1193,8 @@ public class TrackBuilders
 
     public async Task<ResponseModel> TrackPreviewAsync(ContextModel context,
         string searchValue,
-        string interactionToken)
+        string interactionToken,
+        Task interactionReady = null)
     {
         var response = new ResponseModel
         {
@@ -1215,7 +1216,7 @@ public class TrackBuilders
 
         try
         {
-            await this._discordSkuService.SendVoiceMessage(previewUrl, interactionToken);
+            await this._discordSkuService.SendVoiceMessage(previewUrl, interactionToken, interactionReady);
         }
         catch (Exception e)
         {

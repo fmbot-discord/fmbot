@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using FMBot.Bot.Extensions;
+using FMBot.Bot.Models;
+using FMBot.Bot.Services;
 using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
@@ -11,55 +13,145 @@ namespace FMBot.Bot.AutoCompleteHandlers;
 
 public class ChartSizeAutoComplete : IAutocompleteProvider<AutocompleteInteractionContext>
 {
-    private readonly List<string> _allPossibleCombinations;
-    public ChartSizeAutoComplete()
-    {
-        this._allPossibleCombinations = new List<string>();
+    private const int MaxChoices = 25;
 
-        for (var i = 1; i <= FMBot.Bot.Services.ChartService.MaxImages; i++)
-        {
-            for (var j = 1; j <= FMBot.Bot.Services.ChartService.MaxImages && i * j <= FMBot.Bot.Services.ChartService.MaxImages; j++)
-            {
-                this._allPossibleCombinations.Add($"{i}x{j}");
-            }
+    private static readonly (int Width, int Height)[] DefaultSizes =
+    [
+        (3, 3), (4, 4), (5, 5), (6, 6), (8, 8), (10, 10), (15, 15),
+        (4, 3), (5, 3), (8, 5), (10, 6), (4, 8), (15, 6)
+    ];
 
-        }
-    }
+    private static readonly int[] CommonHeights = [3, 4, 5, 6, 8, 10, 2, 7, 9, 12, 15];
 
-    public async ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>> GetChoicesAsync(
+    private static readonly Regex SizeInput = new(
+        @"^\s*(?<width>[0-9]{1,3})(?<separator>\s*(?:[x×*,/]|by)\s*|\s+)?(?<height>[0-9]{0,3})\s*$",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled, TimeSpan.FromMilliseconds(100));
+
+    public ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>> GetChoicesAsync(
         ApplicationCommandInteractionDataOption option,
         AutocompleteInteractionContext context)
     {
-        var results = new List<string>();
+        var suggestions = GetSuggestions(option.Value, ChartService.MaxImages);
 
-        if (string.IsNullOrWhiteSpace(option.Value))
+        var localizer = Localizer.ForGuild(context.Interaction.GuildId, discordLocale: context.Interaction.GuildLocale);
+        var countKey = IsArtistChart(context) ? "shared.artists" : "shared.albums";
+
+        var choices = suggestions.Select(s =>
         {
-            results
-                .ReplaceOrAddToList(new List<string>
+            var value = $"{s.Width}x{s.Height}";
+            var label = $"{value} · {localizer.TranslateCount(countKey, s.Width * s.Height)}";
+            return new ApplicationCommandOptionChoiceProperties(label, value);
+        });
+
+        return ValueTask.FromResult<IEnumerable<ApplicationCommandOptionChoiceProperties>>(choices.ToList());
+    }
+
+    public static List<(int Width, int Height)> GetSuggestions(string input, int maxImages)
+    {
+        var results = new List<(int Width, int Height)>();
+        var seen = new HashSet<(int, int)>();
+
+        void Add(int width, int height)
+        {
+            if (results.Count >= MaxChoices || width < 1 || height < 1 || width * height > maxImages)
+            {
+                return;
+            }
+
+            if (seen.Add((width, height)))
+            {
+                results.Add((width, height));
+            }
+        }
+
+        var match = string.IsNullOrWhiteSpace(input) ? null : SizeInput.Match(input);
+        if (match == null || !match.Success)
+        {
+            foreach (var size in DefaultSizes)
+            {
+                Add(size.Width, size.Height);
+            }
+
+            return results;
+        }
+
+        var width = int.Parse(match.Groups["width"].Value);
+        var hasSeparator = match.Groups["separator"].Success;
+        var heightText = match.Groups["height"].Value;
+
+        if (width < 1 || width > maxImages)
+        {
+            foreach (var size in DefaultSizes)
+            {
+                Add(size.Width, size.Height);
+            }
+
+            return results;
+        }
+
+        var maxHeight = maxImages / width;
+
+        if (heightText.Length > 0)
+        {
+            var height = int.Parse(heightText);
+
+            if (height <= maxHeight)
+            {
+                Add(width, height);
+
+                for (var i = 0; i <= 9; i++)
                 {
-                    "3x3",
-                    "4x4",
-                    "5x5",
-                    "8x5",
-                    "10x10",
-                    "4x8",
-                    "15x6",
-                });
+                    Add(width, height * 10 + i);
+                }
+            }
+            else
+            {
+                var square = (int)Math.Sqrt(maxImages);
+                Add(width, maxHeight);
+                Add(maxImages / height, height);
+                Add(square, square);
+            }
+
+            return results;
         }
-        else
+
+        if (hasSeparator)
         {
-            var searchValue = option.Value;
+            Add(width, Math.Min(width, maxHeight));
 
-            results.ReplaceOrAddToList(this._allPossibleCombinations
-                .Where(w => w.StartsWith(searchValue, StringComparison.OrdinalIgnoreCase))
-                .Take(6));
+            for (var height = 1; height <= maxHeight; height++)
+            {
+                Add(width, height);
+            }
 
-            results.ReplaceOrAddToList(this._allPossibleCombinations
-                .Where(w => w.Contains(searchValue, StringComparison.OrdinalIgnoreCase))
-                .Take(5));
+            return results;
         }
 
-        return new List<ApplicationCommandOptionChoiceProperties>(results.Select(s =>
-            new ApplicationCommandOptionChoiceProperties(s, s)));
+        Add(width, Math.Min(width, maxHeight));
+
+        foreach (var size in DefaultSizes.Where(w => w.Width != width &&
+                                                     w.Width.ToString().StartsWith(width.ToString())))
+        {
+            Add(size.Width, size.Height);
+        }
+
+        foreach (var height in CommonHeights)
+        {
+            Add(width, height);
+        }
+
+        for (var height = 1; height <= maxHeight; height++)
+        {
+            Add(width, height);
+        }
+
+        return results;
+    }
+
+    private static bool IsArtistChart(AutocompleteInteractionContext context)
+    {
+        return context.Interaction.Data.Options.Any(o =>
+            o.Type == ApplicationCommandOptionType.SubCommand &&
+            o.Name.Equals("artists", StringComparison.OrdinalIgnoreCase));
     }
 }

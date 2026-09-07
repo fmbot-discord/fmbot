@@ -28,8 +28,8 @@ public class GenreInteractions(
     [ComponentInteraction(InteractionConstants.Genre.GenreGuild)]
     public async Task GuildGenresAsync(string discordUser, string requesterDiscordUser, string genre, string originalSearch)
     {
-        await RespondAsync(InteractionCallback.DeferredModifyMessage);
-        await this.Context.DisableButtonsAndMenus();
+        this.Context.DeferUpdateInBackground();
+        var disableButtonsTask = this.Context.DisableButtonsAndMenus().ObserveFaults();
 
         var discordUserId = ulong.Parse(discordUser);
         var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
@@ -44,6 +44,7 @@ public class GenreInteractions(
         {
             var response = await genreBuilders.GenreAsync(new ContextModel(this.Context, contextUser, discordContextUser), genre, userSettings, guild, false, originalSearchValue);
 
+            await disableButtonsTask;
             await this.Context.UpdateInteractionEmbed(response, interactivity, false);
             await this.Context.LogCommandUsedAsync(response, userService);
         }
@@ -57,8 +58,8 @@ public class GenreInteractions(
     [ComponentInteraction(InteractionConstants.Genre.GenreUser)]
     public async Task UserGenresAsync(string discordUser, string requesterDiscordUser, string genre, string originalSearch)
     {
-        await RespondAsync(InteractionCallback.DeferredModifyMessage);
-        await this.Context.DisableButtonsAndMenus();
+        this.Context.DeferUpdateInBackground();
+        var disableButtonsTask = this.Context.DisableButtonsAndMenus().ObserveFaults();
 
         var discordUserId = ulong.Parse(discordUser);
         var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
@@ -74,6 +75,7 @@ public class GenreInteractions(
             var context = new ContextModel(this.Context, contextUser, discordContextUser);
             var response = await genreBuilders.GenreAsync(context, genre, userSettings, guild, originalSearch: originalSearchValue);
 
+            await disableButtonsTask;
             await this.Context.UpdateInteractionEmbed(response, interactivity, false);
             await this.Context.LogCommandUsedAsync(response, userService);
         }
@@ -92,8 +94,8 @@ public class GenreInteractions(
             var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
             var options = stringMenuInteraction.Data.SelectedValues.First().Split(":");
 
-            await RespondAsync(InteractionCallback.DeferredModifyMessage);
-            await this.Context.DisableButtonsAndMenus();
+            this.Context.DeferUpdateInBackground();
+            var disableButtonsTask = this.Context.DisableButtonsAndMenus().ObserveFaults();
 
             var discordUserId = ulong.Parse(options[0]);
             var requesterDiscordUserId = ulong.Parse(options[1]);
@@ -137,6 +139,7 @@ public class GenreInteractions(
 
             }
 
+            await disableButtonsTask;
             await this.Context.UpdateInteractionEmbed(response, interactivity, false);
             await this.Context.LogCommandUsedAsync(response, userService);
         }

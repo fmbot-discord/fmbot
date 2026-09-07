@@ -338,8 +338,8 @@ public class GuildSettingInteractions(
                 return;
             }
 
-            await RespondAsync(InteractionCallback.DeferredModifyMessage);
-            await this.Context.DisableButtonsAndMenus();
+            this.Context.DeferUpdateInBackground();
+            var disableButtonsTask = this.Context.DisableButtonsAndMenus().ObserveFaults();
 
             var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
             var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
@@ -348,6 +348,7 @@ public class GuildSettingInteractions(
                 await guildBuilders.MemberOverviewAsync(new ContextModel(this.Context, contextUser), guild,
                     viewType);
 
+            await disableButtonsTask;
             await this.Context.UpdateInteractionEmbed(response, interactivity, false);
             await this.Context.LogCommandUsedAsync(response, userService);
         }
