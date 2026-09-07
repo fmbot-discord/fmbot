@@ -107,30 +107,11 @@ public class UserCommands(
             var userSettings = await settingService.GetUser(userOptions, user, this.Context, true);
             var guildUsers = await guildService.GetGuildUsers(this.Context.Guild?.Id);
 
-            if (userSettings.DifferentUser && guildUsers.ContainsKey(userSettings.UserId))
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
             {
-                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
-                {
-                    Content = $"<@{userSettings.DiscordUserId}>'s Last.fm profile: {LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}",
-                    AllowedMentions = AllowedMentionsProperties.None
-                });
-            }
-            else if (userSettings.DifferentUser)
-            {
-                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
-                {
-                    Content = $"Their Last.fm profile: {LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}",
-                    AllowedMentions = AllowedMentionsProperties.None
-                });
-            }
-            else
-            {
-                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
-                {
-                    Content = $"Your Last.fm profile: {LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}",
-                    AllowedMentions = AllowedMentionsProperties.None
-                });
-            }
+                Content = UserBuilder.LastfmProfileLink(userSettings, guildUsers.ContainsKey(userSettings.UserId)),
+                AllowedMentions = AllowedMentionsProperties.None
+            });
 
             await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
         }

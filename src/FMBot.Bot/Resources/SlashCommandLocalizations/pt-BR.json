@@ -375,6 +375,28 @@
         }
       }
     },
+    "genius": {
+      "description": "Compartilha um link de letra do Genius do que você está ouvindo ou de uma faixa que buscar",
+      "parameters": {
+        "private": {
+          "description": "Mostrar a resposta só para você"
+        },
+        "search": {
+          "description": "Faixa a buscar (padrão: o que você está ouvindo)"
+        }
+      }
+    },
+    "lastfm": {
+      "description": "Mostra um link para o seu perfil do Last.fm ou o de outra pessoa",
+      "parameters": {
+        "private": {
+          "description": "Mostrar a resposta só para você"
+        },
+        "user": {
+          "description": "O usuário a mostrar (padrão: você)"
+        }
+      }
+    },
     "mode": {
       "description": "Personalize o layout do seu '/fm', o modo de resposta e o tipo de capa de álbum"
     },
@@ -702,7 +724,7 @@
       }
     },
     "members": {
-      "description": "Membros deste servidor que usam o .fmbot",
+      "description": "Membros e rankings dos usuários deste servidor que usam o .fmbot",
       "parameters": {
         "view": {
           "description": "Estatística que você quer ver"
@@ -750,6 +772,14 @@
         },
         "user": {
           "description": "O usuário a mostrar (padrão: você)"
+        }
+      }
+    },
+    "play": {
+      "description": "Toca uma faixa no seu Spotify, ou retoma a reprodução se nada for informado",
+      "parameters": {
+        "search": {
+          "description": "Faixa ou link do Spotify para tocar (deixe vazio para retomar a reprodução)"
         }
       }
     },

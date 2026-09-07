@@ -48,7 +48,7 @@ public class GuildSettingSlashCommands(
         }
     }
 
-    [SlashCommand("members", "Members in this server that use .fmbot",
+    [SlashCommand("members", "Members and leaderboards for users in this server that use .fmbot",
         Contexts = [InteractionContextType.Guild],
         IntegrationTypes = [ApplicationIntegrationType.GuildInstall])]
     [RequiresIndex]

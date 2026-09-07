@@ -10,7 +10,8 @@ public static class SlashCommandCanonicalNames
         ["wk"] = "whoknows",
         ["gwk"] = "globalwhoknows",
         ["fwk"] = "friendwhoknows",
-        ["faq"] = "frequentlyasked"
+        ["faq"] = "frequentlyasked",
+        ["lastfm"] = "link"
     }.ToFrozenDictionary();
 
     public static string Resolve(string commandName)

@@ -563,4 +563,40 @@ public class UserSlashCommands(
         await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
         await this.Context.LogCommandUsedAsync(response, userService);
     }
+
+    [SlashCommand("lastfm", "Shows a link to your or someone else's Last.fm profile",
+        Contexts =
+            [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild],
+        IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
+    [UsernameSetRequired]
+    public async Task LastfmAsync(
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
+        string user = null,
+        [SlashCommandParameter(Name = "private", Description = "Only show response to you")]
+        bool privateResponse = false)
+    {
+        this.Context.DeferInBackground(privateResponse ? MessageFlags.Ephemeral : default);
+
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+
+        try
+        {
+            var userSettings =
+                await settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+            var guildUsers = await guildService.GetGuildUsers(this.Context.Interaction.GuildId);
+
+            var response = new ResponseModel
+            {
+                ResponseType = ResponseType.Text,
+                Text = UserBuilder.LastfmProfileLink(userSettings, guildUsers.ContainsKey(userSettings.UserId))
+            };
+
+            await this.Context.SendFollowUpResponse(this.Interactivity, response, userService, privateResponse);
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
 }

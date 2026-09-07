@@ -375,6 +375,28 @@
         }
       }
     },
+    "genius": {
+      "description": "Dinlediğin ya da aradığın bir parça için Genius şarkı sözü bağlantısı paylaşır",
+      "parameters": {
+        "private": {
+          "description": "Yanıtı yalnızca sana göster"
+        },
+        "search": {
+          "description": "Aranacak parça (varsayılan: şu an çaldığın)"
+        }
+      }
+    },
+    "lastfm": {
+      "description": "Senin ya da başkasının Last.fm profiline bağlantı gösterir",
+      "parameters": {
+        "private": {
+          "description": "Yanıtı yalnızca sana göster"
+        },
+        "user": {
+          "description": "Gösterilecek kullanıcı (varsayılan: sen)"
+        }
+      }
+    },
     "mode": {
       "description": "'/fm' düzenini, yanıt modunu ve albüm kapağı türünü özelleştir"
     },
@@ -702,7 +724,7 @@
       }
     },
     "members": {
-      "description": "Bu sunucuda .fmbot kullanan üyeler",
+      "description": "Bu sunucuda .fmbot kullanan üyeler ve liderlik tabloları",
       "parameters": {
         "view": {
           "description": "Görüntülemek istediğin istatistik"
@@ -750,6 +772,14 @@
         },
         "user": {
           "description": "Gösterilecek kullanıcı (varsayılan: sen)"
+        }
+      }
+    },
+    "play": {
+      "description": "Spotify'ında bir parça çalar, hiçbir şey verilmezse çalmaya devam eder",
+      "parameters": {
+        "search": {
+          "description": "Çalınacak parça ya da Spotify bağlantısı (devam etmek için boş bırak)"
         }
       }
     },

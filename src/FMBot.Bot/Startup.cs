@@ -297,6 +297,7 @@ public class Startup
             .AddSingleton<EurovisionBuilders>()
             .AddSingleton<FriendBuilders>()
             .AddSingleton<GameBuilders>()
+            .AddSingleton<GeniusBuilders>()
             .AddSingleton<GenreBuilders>()
             .AddSingleton<GuildBuilders>()
             .AddSingleton<GuildSettingBuilder>()

@@ -375,6 +375,28 @@
         }
       }
     },
+    "genius": {
+      "description": "Deelt een Genius-songtekstlink voor wat je luistert of een nummer waar je naar zoekt",
+      "parameters": {
+        "private": {
+          "description": "Toon de reactie alleen aan jou"
+        },
+        "search": {
+          "description": "Nummer om op te zoeken (standaard: wat je nu afspeelt)"
+        }
+      }
+    },
+    "lastfm": {
+      "description": "Toont een link naar jouw Last.fm-profiel of dat van iemand anders",
+      "parameters": {
+        "private": {
+          "description": "Toon de reactie alleen aan jou"
+        },
+        "user": {
+          "description": "De gebruiker om te tonen (standaard jijzelf)"
+        }
+      }
+    },
     "mode": {
       "description": "Pas je '/fm'-lay-out, weergavemodus en type albumhoes aan"
     },
@@ -702,7 +724,7 @@
       }
     },
     "members": {
-      "description": "Leden in deze server die .fmbot gebruiken",
+      "description": "Leden en ranglijsten van gebruikers in deze server die .fmbot gebruiken",
       "parameters": {
         "view": {
           "description": "Statistiek die je wilt bekijken"
@@ -750,6 +772,14 @@
         },
         "user": {
           "description": "De gebruiker om te tonen (standaard jijzelf)"
+        }
+      }
+    },
+    "play": {
+      "description": "Speelt een nummer af op je Spotify, of hervat het afspelen als je niets opgeeft",
+      "parameters": {
+        "search": {
+          "description": "Nummer of Spotify-link om af te spelen (laat leeg om het afspelen te hervatten)"
         }
       }
     },
