@@ -32,8 +32,8 @@ public class ArtistInteractions(
     [UsernameSetRequired]
     public async Task ArtistInfoAsync(string artistId, string discordUser, string requesterDiscordUser)
     {
-        await RespondAsync(InteractionCallback.DeferredModifyMessage);
-        await this.Context.DisableButtonsAndMenus();
+        this.Context.DeferUpdateInBackground();
+        var disableButtonsTask = this.Context.DisableButtonsAndMenus().ObserveFaults();
 
         var discordUserId = ulong.Parse(discordUser);
         var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
@@ -48,6 +48,7 @@ public class ArtistInteractions(
         {
             var response = await artistBuilders.ArtistInfoAsync(new ContextModel(this.Context, contextUser, discordContextUser), userSettings, artist.Name, false);
 
+            await disableButtonsTask;
             await this.Context.UpdateInteractionEmbed(response, interactivity, false);
             await this.Context.LogCommandUsedAsync(response, userService);
         }
@@ -61,8 +62,8 @@ public class ArtistInteractions(
     [UsernameSetRequired]
     public async Task ArtistOverviewAsync(string artistId, string discordUser, string requesterDiscordUser)
     {
-        await RespondAsync(InteractionCallback.DeferredModifyMessage);
-        await this.Context.DisableButtonsAndMenus();
+        this.Context.DeferUpdateInBackground();
+        var disableButtonsTask = this.Context.DisableButtonsAndMenus().ObserveFaults();
 
         var discordUserId = ulong.Parse(discordUser);
         var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
@@ -78,6 +79,7 @@ public class ArtistInteractions(
             var response = await artistBuilders.ArtistOverviewAsync(new ContextModel(this.Context, contextUser, discordContextUser), userSettings,
                 artist.Name, false);
 
+            await disableButtonsTask;
             await this.Context.UpdateInteractionEmbed(response, interactivity, false);
             await this.Context.LogCommandUsedAsync(response, userService);
         }
@@ -100,16 +102,17 @@ public class ArtistInteractions(
             ephemeral = fmSetting.PrivateButtonResponse != false; // null/true → private
         }
 
+        var disableButtonsTask = Task.CompletedTask;
         if (ephemeral)
         {
-            await RespondAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
+            this.Context.DeferInBackground(MessageFlags.Ephemeral);
         }
         else
         {
-            await RespondAsync(InteractionCallback.DeferredModifyMessage);
+            this.Context.DeferUpdateInBackground();
             if (this.Context.Interaction is ButtonInteraction buttonInteraction && isFmContext)
             {
-                await this.Context.DisableButtonsAndMenus(buttonInteraction.Data.CustomId);
+                disableButtonsTask = this.Context.DisableButtonsAndMenus(buttonInteraction.Data.CustomId).ObserveFaults();
             }
         }
 
@@ -135,10 +138,12 @@ public class ArtistInteractions(
 
         if (ephemeral)
         {
+            await disableButtonsTask;
             await this.Context.SendFollowUpResponse(interactivity, response, userService, ephemeral: true);
         }
         else
         {
+            await disableButtonsTask;
             await this.Context.UpdateInteractionEmbed(response, interactivity, false);
         }
 
@@ -148,8 +153,8 @@ public class ArtistInteractions(
     [ComponentInteraction(InteractionConstants.Artist.Albums)]
     public async Task ArtistAlbumsAsync(string artistId, string discordUser, string requesterDiscordUser)
     {
-        await RespondAsync(InteractionCallback.DeferredModifyMessage);
-        await this.Context.DisableButtonsAndMenus();
+        this.Context.DeferUpdateInBackground();
+        var disableButtonsTask = this.Context.DisableButtonsAndMenus().ObserveFaults();
 
         var discordUserId = ulong.Parse(discordUser);
         var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
@@ -163,6 +168,7 @@ public class ArtistInteractions(
         var response = await artistBuilders.ArtistAlbumsAsync(new ContextModel(this.Context, contextUser, discordContextUser),
             userSettings, artist.Name, false);
 
+        await disableButtonsTask;
         await this.Context.UpdateInteractionEmbed(response, interactivity, false);
         await this.Context.LogCommandUsedAsync(response, userService);
     }
@@ -235,8 +241,8 @@ public class ArtistInteractions(
     [RequiresIndex]
     public async Task WhoKnowsAsync(string artistId)
     {
-        await RespondAsync(InteractionCallback.DeferredModifyMessage);
-        await this.Context.DisableButtonsAndMenus();
+        this.Context.DeferUpdateInBackground();
+        var disableButtonsTask = this.Context.DisableButtonsAndMenus().ObserveFaults();
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var artist = await artistsService.GetArtistForId(int.Parse(artistId));
@@ -246,6 +252,7 @@ public class ArtistInteractions(
         {
             var response = await artistBuilders.WhoKnowsArtistAsync(new ContextModel(this.Context, contextUser), mode, artist.Name, showCrownButton: true);
 
+            await disableButtonsTask;
             await this.Context.UpdateInteractionEmbed(response, defer: false);
             await this.Context.LogCommandUsedAsync(response, userService);
         }
@@ -285,8 +292,8 @@ public class ArtistInteractions(
                 return;
             }
 
-            await RespondAsync(InteractionCallback.DeferredModifyMessage);
-            await this.Context.DisableButtonsAndMenus();
+            this.Context.DeferUpdateInBackground();
+            var disableButtonsTask = this.Context.DisableButtonsAndMenus().ObserveFaults();
 
             var rebuildResponse = await artistBuilders.RebuildTasteAsync(
                 ownDiscordId, otherDiscordId,
@@ -294,6 +301,7 @@ public class ArtistInteractions(
                 pageIndex, this.Context.Guild,
                 Localizer.ForGuild(this.Context.Interaction.GuildId, discordLocale: this.Context.Interaction.GuildLocale));
 
+            await disableButtonsTask;
             await this.Context.UpdateInteractionEmbed(rebuildResponse, defer: false);
         }
         catch (Exception e)

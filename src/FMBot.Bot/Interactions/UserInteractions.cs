@@ -1488,8 +1488,8 @@ public class UserInteractions(
     [ComponentInteraction(InteractionConstants.User.Profile)]
     public async Task ProfileAsync(string discordUser, string requesterDiscordUser)
     {
-        await RespondAsync(InteractionCallback.DeferredModifyMessage);
-        await this.Context.DisableButtonsAndMenus();
+        this.Context.DeferUpdateInBackground();
+        var disableButtonsTask = this.Context.DisableButtonsAndMenus().ObserveFaults();
 
         var discordUserId = ulong.Parse(discordUser);
         var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
@@ -1503,6 +1503,7 @@ public class UserInteractions(
             await userBuilder.ProfileAsync(new ContextModel(this.Context, contextUser, discordContextUser),
                 userSettings);
 
+        await disableButtonsTask;
         await this.Context.UpdateInteractionEmbed(response, interactivity, false);
         await this.Context.LogCommandUsedAsync(response, userService);
     }
@@ -1513,8 +1514,8 @@ public class UserInteractions(
     {
         try
         {
-            await RespondAsync(InteractionCallback.DeferredModifyMessage);
-            await this.Context.DisableButtonsAndMenus();
+            this.Context.DeferUpdateInBackground();
+            var disableButtonsTask = this.Context.DisableButtonsAndMenus().ObserveFaults();
 
             var discordUserId = ulong.Parse(discordUser);
             var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
@@ -1529,6 +1530,7 @@ public class UserInteractions(
                     new ContextModel(this.Context, contextUser, discordContextUser),
                     userSettings);
 
+            await disableButtonsTask;
             await this.Context.UpdateInteractionEmbed(response, interactivity, false);
             await this.Context.LogCommandUsedAsync(response, userService);
         }

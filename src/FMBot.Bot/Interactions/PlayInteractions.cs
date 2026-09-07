@@ -324,8 +324,8 @@ public class PlayInteractions(
             return;
         }
 
-        await RespondAsync(InteractionCallback.DeferredModifyMessage);
-        await this.Context.DisableInteractionButtons();
+        this.Context.DeferUpdateInBackground();
+        var disableButtonsTask = this.Context.DisableInteractionButtons().ObserveFaults();
 
         var contextUser = await userService.GetUserWithDiscogs(requesterDiscordUserId);
         var userSettings = await settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId,
@@ -341,6 +341,7 @@ public class PlayInteractions(
                 userSettings, mileStoneAmount.amount, targetUser.TotalPlaycount.GetValueOrDefault(),
                 mileStoneAmount.isRandom);
 
+            await disableButtonsTask;
             await this.Context.UpdateInteractionEmbed(response, interactivity, false);
             await this.Context.LogCommandUsedAsync(response, userService);
 
@@ -431,7 +432,8 @@ public class PlayInteractions(
                 return;
             }
 
-            await RespondAsync(InteractionCallback.DeferredModifyMessage);
+            var disableButtonsTask = Task.CompletedTask;
+            this.Context.DeferUpdateInBackground();
 
             var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
             if (message == null)
@@ -445,12 +447,13 @@ public class PlayInteractions(
             var components =
                 new ActionRowProperties().WithButton(loadingLabel, customId: "1",
                     emote: EmojiProperties.Custom(DiscordConstants.Loading), disabled: true, style: ButtonStyle.Secondary);
-            await Context.ModifyComponents(message, components);
+            disableButtonsTask = Context.ModifyComponents(message, components).ObserveFaults();
 
             var response =
                 await recapBuilders.RecapAsync(context, userSettings, timeSettings,
                     viewType);
 
+            await disableButtonsTask;
             await this.Context.UpdateInteractionEmbed(response, interactivity, false);
             await this.Context.LogCommandUsedAsync(response, userService);
         }

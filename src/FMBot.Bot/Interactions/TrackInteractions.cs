@@ -106,13 +106,14 @@ public class TrackInteractions(
             ephemeral = fmSetting.PrivateButtonResponse == true; // default public
         }
 
+        var messageEditTask = Task.CompletedTask;
         if (ephemeral)
         {
-            await RespondAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
+            this.Context.DeferInBackground(MessageFlags.Ephemeral);
         }
         else
         {
-            await RespondAsync(InteractionCallback.DeferredModifyMessage);
+            this.Context.DeferUpdateInBackground();
             if (this.Context.Interaction is ButtonInteraction buttonInteraction)
             {
                 var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
@@ -120,7 +121,7 @@ public class TrackInteractions(
 
                 if (isFmContext || isComponentsV2)
                 {
-                    await this.Context.DisableButtonsAndMenus(buttonInteraction.Data.CustomId);
+                    messageEditTask = this.Context.DisableButtonsAndMenus(buttonInteraction.Data.CustomId).ObserveFaults();
                 }
                 else
                 {
@@ -137,7 +138,7 @@ public class TrackInteractions(
                             "Open on Apple Music",
                             EmojiProperties.Custom(DiscordConstants.AppleMusic));
 
-                    await this.Context.AddLinkButton(linkButton);
+                    messageEditTask = this.Context.AddLinkButton(linkButton).ObserveFaults();
                 }
             }
         }
@@ -148,8 +149,9 @@ public class TrackInteractions(
 
         try
         {
+            var interactionReady = Task.WhenAll(this.Context.WaitForPendingDefer(), messageEditTask);
             var response = await trackBuilders.TrackPreviewAsync(new ContextModel(this.Context, contextUser),
-                $"{dbTrack.ArtistName} | {dbTrack.Name}", Context.Interaction.Token);
+                $"{dbTrack.ArtistName} | {dbTrack.Name}", Context.Interaction.Token, interactionReady);
 
             if (isFmContext && ephemeral)
             {
@@ -187,13 +189,14 @@ public class TrackInteractions(
             ephemeral = fmSetting.PrivateButtonResponse != false; // null/true → private
         }
 
+        var disableButtonsTask = Task.CompletedTask;
         if (ephemeral)
         {
-            await RespondAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
+            this.Context.DeferInBackground(MessageFlags.Ephemeral);
         }
         else
         {
-            await RespondAsync(InteractionCallback.DeferredModifyMessage);
+            this.Context.DeferUpdateInBackground();
             if (this.Context.Interaction is ButtonInteraction buttonInteraction)
             {
                 var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
@@ -201,7 +204,7 @@ public class TrackInteractions(
 
                 if (isFmContext || isComponentsV2)
                 {
-                    await this.Context.DisableButtonsAndMenus(buttonInteraction.Data.CustomId);
+                    disableButtonsTask = this.Context.DisableButtonsAndMenus(buttonInteraction.Data.CustomId).ObserveFaults();
                 }
             }
         }
@@ -213,6 +216,7 @@ public class TrackInteractions(
         {
             var response =
                 await trackBuilders.TrackLyricsAsync(context, $"{dbTrack.ArtistName} | {dbTrack.Name}");
+            await disableButtonsTask;
             await this.Context.SendFollowUpResponse(interactivity, response, userService, ephemeral: ephemeral);
             await this.Context.LogCommandUsedAsync(response, userService);
         }
@@ -272,7 +276,7 @@ public class TrackInteractions(
     {
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
-        await RespondAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
+        this.Context.DeferInBackground(MessageFlags.Ephemeral);
 
         var dbTrack = await trackService.GetTrackForId(int.Parse(trackId));
         var context = new ContextModel(this.Context, contextUser);
@@ -297,7 +301,7 @@ public class TrackInteractions(
     {
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
-        await RespondAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
+        this.Context.DeferInBackground(MessageFlags.Ephemeral);
 
         var dbTrack = await trackService.GetTrackForId(int.Parse(trackId));
         var context = new ContextModel(this.Context, contextUser);
@@ -320,7 +324,7 @@ public class TrackInteractions(
     [UserSessionRequired]
     public async Task ScrobbleFromUserViewAsync(string targetUserId)
     {
-        await RespondAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
+        this.Context.DeferInBackground(MessageFlags.Ephemeral);
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
