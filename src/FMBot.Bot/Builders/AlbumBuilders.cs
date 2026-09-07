@@ -737,9 +737,9 @@ public class AlbumBuilders
             return response;
         }
 
-        var title = context.Localize("album.whoknows.friendsTitle",
+        var title = StringExtensions.TruncateLongString(context.Localize("album.whoknows.friendsTitle",
             ("album", albumSearch.Album.AlbumName),
-            ("artist", albumSearch.Album.ArtistName));
+            ("artist", albumSearch.Album.ArtistName)), 255);
 
         var footer = "";
 
@@ -889,9 +889,9 @@ public class AlbumBuilders
             return response;
         }
 
-        var title = context.Localize("album.whoknows.globalTitle",
+        var title = StringExtensions.TruncateLongString(context.Localize("album.whoknows.globalTitle",
             ("album", albumSearch.Album.AlbumName),
-            ("artist", albumSearch.Album.ArtistName));
+            ("artist", albumSearch.Album.ArtistName)), 255);
 
         var footer = new StringBuilder();
 

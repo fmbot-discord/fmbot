@@ -800,8 +800,8 @@ public class TrackBuilders
             return response;
         }
 
-        var title = context.Localize("track.whoknows.friendsTitle",
-            ("track", track.Track.TrackName), ("artist", track.Track.ArtistName));
+        var title = StringExtensions.TruncateLongString(context.Localize("track.whoknows.friendsTitle",
+            ("track", track.Track.TrackName), ("artist", track.Track.ArtistName)), 255);
 
         var footer = "";
 
