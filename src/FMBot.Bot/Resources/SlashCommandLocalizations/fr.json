@@ -530,6 +530,17 @@
         }
       }
     },
+    "help": {
+      "description": "Aperçu de l'aide et détails de chaque commande .fmbot",
+      "parameters": {
+        "command": {
+          "description": "Commande dont tu veux voir les détails"
+        },
+        "private": {
+          "description": "N'afficher la réponse qu'à toi"
+        }
+      }
+    },
     "iceberg": {
       "description": "Affiche ton iceberg, basé sur la popularité des artistes",
       "parameters": {

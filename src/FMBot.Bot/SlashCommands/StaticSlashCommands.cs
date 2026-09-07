@@ -1,8 +1,10 @@
 using System;
 using System.Threading.Tasks;
 using Fergun.Interactive;
+using FMBot.Bot.AutoCompleteHandlers;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
+using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services;
 using NetCord;
@@ -14,8 +16,10 @@ namespace FMBot.Bot.SlashCommands;
 public class StaticSlashCommands(
     UserService userService,
     StaticBuilders staticBuilders,
+    HelpBuilders helpBuilders,
     SettingService settingService,
-    InteractiveService interactivity)
+    InteractiveService interactivity,
+    IPrefixService prefixService)
     : ApplicationCommandModule<ApplicationCommandContext>
 {
     private InteractiveService Interactivity { get; } = interactivity;
@@ -89,6 +93,41 @@ public class StaticSlashCommands(
                 Context.Interaction.UserLocale);
 
             await Context.SendFollowUpResponse(this.Interactivity, response, userService, ephemeral: true);
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
+    [SlashCommand("help", "Help overview and details for every .fmbot command", Contexts =
+    [
+        InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,
+        InteractionContextType.Guild
+    ], IntegrationTypes =
+    [
+        ApplicationIntegrationType.GuildInstall,
+        ApplicationIntegrationType.UserInstall
+    ])]
+    public async Task HelpAsync(
+        [SlashCommandParameter(Name = "command", Description = "Command to view details for",
+            AutocompleteProviderType = typeof(CommandAutoComplete))]
+        string command = null,
+        [SlashCommandParameter(Name = "private", Description = "Only show response to you")]
+        bool privateResponse = true)
+    {
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+
+        try
+        {
+            var context = new ContextModel(this.Context, contextUser)
+            {
+                Prefix = prefixService.GetPrefix(this.Context.Interaction.GuildId)
+            };
+            var response = helpBuilders.Resolve(context, command, HelpMode.Slash);
+
+            await this.Context.SendResponse(this.Interactivity, response, userService, ephemeral: privateResponse);
             await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)

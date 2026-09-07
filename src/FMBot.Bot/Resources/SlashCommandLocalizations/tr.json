@@ -530,6 +530,17 @@
         }
       }
     },
+    "help": {
+      "description": "Her .fmbot komutu için yardım özeti ve ayrıntılar",
+      "parameters": {
+        "command": {
+          "description": "Ayrıntılarını görmek istediğin komut"
+        },
+        "private": {
+          "description": "Yanıtı yalnızca sana göster"
+        }
+      }
+    },
     "iceberg": {
       "description": "Sanatçı popülerliğine dayalı iceberg'ini gösterir",
       "parameters": {

@@ -85,6 +85,9 @@
         <Protobuf Include="..\Shared.Domain\Protos\idresolution.proto" GrpcServices="Client" Link="Protos\idresolution.proto" />
     </ItemGroup>
     <ItemGroup>
+        <RuntimeHostConfigurationOption Include="System.Net.SocketsHttpHandler.Http3Support" Value="false" />
+    </ItemGroup>
+    <ItemGroup>
         <ProjectReference Include="..\FMBot.AppleMusic\FMBot.AppleMusic.csproj" />
         <ProjectReference Include="..\FMBot.Discogs\FMBot.Discogs.csproj" />
         <ProjectReference Include="..\FMBot.Domain\FMBot.Domain.csproj" />

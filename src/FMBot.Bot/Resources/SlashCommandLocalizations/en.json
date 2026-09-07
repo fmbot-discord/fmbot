@@ -527,6 +527,17 @@
         }
       }
     },
+    "help": {
+      "description": "Help overview and details for every .fmbot command",
+      "parameters": {
+        "command": {
+          "description": "Command to view details for"
+        },
+        "private": {
+          "description": "Only show response to you"
+        }
+      }
+    },
     "iceberg": {
       "description": "Shows your iceberg, based on artist popularity",
       "parameters": {

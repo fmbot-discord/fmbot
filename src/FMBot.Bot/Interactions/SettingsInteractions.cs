@@ -20,6 +20,34 @@ public class SettingsInteractions(
     InteractiveService interactivity)
     : ComponentInteractionModule<ComponentInteractionContext>
 {
+    [ComponentInteraction(InteractionConstants.Settings.ServerNew)]
+    [UsernameSetRequired]
+    public async Task OpenServerSettingsNewResponse()
+    {
+        try
+        {
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+            var context = new ContextModel(this.Context, contextUser);
+
+            var availableTabs = await guildSettingBuilder.GetAvailableSettingsTabs(context);
+            if (!availableTabs.Contains(SettingsTab.Server))
+            {
+                await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
+                return;
+            }
+
+            var response = await guildSettingBuilder.GetGuildSettings(context,
+                this.Context.Interaction.AppPermissions, availableTabs);
+
+            await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
+            await this.Context.LogCommandUsedAsync(response, userService, flowCommand: "configuration");
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
     [ComponentInteraction(InteractionConstants.Settings.Tab)]
     [UsernameSetRequired]
     public async Task SettingsTabAsync(string tabStr, string discordUserIdStr)

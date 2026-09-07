@@ -23,9 +23,9 @@ namespace FMBot.Bot.Interactions;
 public class StaticInteractions(
     UserService userService,
     StaticBuilders staticBuilders,
+    HelpBuilders helpBuilders,
     SupporterService supporterService,
     InteractiveService interactivity,
-    CommandService<CommandContext> commandService,
     IPrefixService prefixService)
     : ComponentInteractionModule<ComponentInteractionContext>
 {
@@ -418,6 +418,24 @@ public class StaticInteractions(
         }
     }
 
+    [ComponentInteraction(InteractionConstants.Faq.OverviewNew)]
+    public async Task FaqOverviewNewResponse()
+    {
+        try
+        {
+            var response = staticBuilders.FaqOverview();
+
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithComponents(response.GetComponentsV2())
+                .WithFlags(MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral)));
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService, deferFirst: true);
+        }
+    }
+
     [ComponentInteraction(InteractionConstants.Faq.Category)]
     public async Task FaqCategorySelected(string categoryId, string newResponse)
     {
@@ -461,78 +479,65 @@ public class StaticInteractions(
     }
 
     [ComponentInteraction(InteractionConstants.Help.CategoryMenu)]
-    public async Task HelpCategorySelected()
+    public async Task HelpCategorySelected(string mode)
     {
-        try
+        var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
+        var selected = stringMenuInteraction.Data.SelectedValues.FirstOrDefault();
+
+        if (string.IsNullOrEmpty(selected))
         {
-            await RespondAsync(InteractionCallback.DeferredModifyMessage);
-
-            var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
-            var selectedCategory = stringMenuInteraction.Data.SelectedValues.FirstOrDefault();
-
-            if (string.IsNullOrEmpty(selectedCategory))
-            {
-                return;
-            }
-
-            Enum.TryParse<CommandCategory>(selectedCategory, out var category);
-
-            var prefix = prefixService.GetPrefix(this.Context.Interaction.GuildId);
-            var allCommands = commandService.GetCommands().SelectMany(kvp => kvp.Value).Distinct().ToList();
-            var userName = this.Context.User.GlobalName ?? this.Context.User.Username;
-
-            var response = await staticBuilders.BuildHelpResponse(
-                allCommands,
-                prefix,
-                category,
-                null,
-                userName,
-                this.Context.User.Id,
-                Localizer.ForGuild(this.Context.Interaction.GuildId, discordLocale: this.Context.Interaction.GuildLocale));
-
-            await this.Context.UpdateInteractionEmbed(response, interactivity, defer: false);
-            await this.Context.LogCommandUsedAsync(response, userService);
+            return;
         }
-        catch (Exception e)
-        {
-            await this.Context.HandleCommandException(e, userService);
-        }
+
+        await RenderHelp(mode, selected == "overview" ? "overview" : selected == "all" ? "all" : "category", selected);
     }
 
     [ComponentInteraction(InteractionConstants.Help.CommandMenu)]
-    public async Task HelpCommandSelected()
+    public async Task HelpCommandSelected(string mode, string category)
+    {
+        var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
+        var selected = stringMenuInteraction.Data.SelectedValues.FirstOrDefault();
+
+        if (string.IsNullOrEmpty(selected))
+        {
+            return;
+        }
+
+        await RenderHelp(mode, "command", selected);
+    }
+
+    [ComponentInteraction(InteractionConstants.Help.Navigate)]
+    public async Task HelpNavigate(string mode, string view, string argument)
+    {
+        await RenderHelp(mode, view, argument);
+    }
+
+    private async Task RenderHelp(string mode, string view, string argument)
     {
         try
         {
-            await RespondAsync(InteractionCallback.DeferredModifyMessage);
-
-            var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
-            var selectedCommand = stringMenuInteraction.Data.SelectedValues.FirstOrDefault();
-
-            if (string.IsNullOrEmpty(selectedCommand))
+            var helpMode = HelpBuilders.ParseMode(mode);
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+            var context = new ContextModel(this.Context, contextUser)
             {
-                return;
-            }
+                Prefix = prefixService.GetPrefix(this.Context.Interaction.GuildId)
+            };
 
-            var prefix = prefixService.GetPrefix(this.Context.Interaction.GuildId);
-            var allCommands = commandService.GetCommands().SelectMany(kvp => kvp.Value).Distinct().ToList();
-            var userName = this.Context.User.GlobalName ?? this.Context.User.Username;
+            var response = view switch
+            {
+                "category" when Enum.TryParse<CommandCategory>(argument, true, out var category) =>
+                    helpBuilders.Category(context, category, helpMode),
+                "command" => helpBuilders.Resolve(context, argument, helpMode),
+                "all" => helpBuilders.AllCommands(context, helpMode, int.TryParse(argument, out var page) ? page : 1),
+                _ => helpBuilders.Overview(context, helpMode)
+            };
 
-            var response = await staticBuilders.BuildHelpResponse(
-                allCommands,
-                prefix,
-                null,
-                selectedCommand,
-                userName,
-                this.Context.User.Id,
-                Localizer.ForGuild(this.Context.Interaction.GuildId, discordLocale: this.Context.Interaction.GuildLocale));
-
-            await this.Context.UpdateInteractionEmbed(response, interactivity, defer: false);
+            await this.Context.UpdateInteractionEmbed(response, interactivity);
             await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e, userService);
+            await this.Context.HandleCommandException(e, userService, deferFirst: true);
         }
     }
 }

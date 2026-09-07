@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
@@ -156,96 +156,11 @@ public static class GenericEmbedService
             errorResponse.ComponentsContainer.WithTextDisplay(errorResponse.Embed.Description ?? localizer.Translate("errors.noScrobblesShort"));
             errorResponse.CommandResponse = CommandResponse.NoScrobbles;
             errorResponse.Components = NoScrobblesFoundComponents(localizer);
+            errorResponse.ComponentsContainer.WithActionRow(NoScrobblesFoundComponents(localizer));
             return errorResponse;
         }
 
         return null;
-    }
-
-    public static (EmbedProperties EmbedProperties, bool showPurchaseButtons) HelpResponse(EmbedProperties embed,
-        ICommandInfo<CommandContext> commandInfo, string prfx, string userName, Localizer localizer)
-    {
-        embed.WithColor(DiscordConstants.InformationColorBlue);
-        embed.WithTitle(localizer.Translate("help.title",
-            ("command", $"{prfx}{commandInfo.Aliases[0]}"), ("user", userName)));
-
-        var allAttributes = commandInfo.Attributes.Values.SelectMany(x => x);
-        var summary = allAttributes.OfType<SummaryAttribute>().FirstOrDefault()?.Summary;
-        if (!string.IsNullOrWhiteSpace(summary))
-        {
-            embed.WithDescription(summary.Replace("{{prfx}}", prfx));
-        }
-
-        var options = allAttributes.OfType<OptionsAttribute>()
-            .FirstOrDefault();
-        if (options?.Options != null && options.Options.Any())
-        {
-            var optionsString = new StringBuilder();
-            foreach (var option in options.Options)
-            {
-                optionsString.AppendLine($"- {option}");
-            }
-
-            embed.AddField(localizer.Translate("help.options"), optionsString.ToString());
-        }
-
-        var examples = allAttributes.OfType<ExamplesAttribute>()
-            .FirstOrDefault();
-        if (examples?.Examples != null && examples.Examples.Any())
-        {
-            var examplesString = new StringBuilder();
-            foreach (var example in examples.Examples)
-            {
-                examplesString.AppendLine($"`{prfx}{example}`");
-            }
-
-            embed.AddField(localizer.Translate("help.examples"), examplesString.ToString());
-        }
-
-        var aliases = commandInfo.Aliases.Skip(1).ToList();
-        if (aliases.Any())
-        {
-            var aliasesString = new StringBuilder();
-            for (var index = 0; index < aliases.Count; index++)
-            {
-                if (index != 0)
-                {
-                    aliasesString.Append(", ");
-                }
-
-                var alias = aliases[index];
-                aliasesString.Append($"`{prfx}{alias}`");
-            }
-
-            embed.AddField(localizer.Translate("help.aliases"), aliasesString.ToString());
-        }
-
-        var showPurchaseButtons = false;
-        var supporterEnhanced = allAttributes.OfType<SupporterEnhancedAttribute>()
-            .FirstOrDefault();
-        if (supporterEnhanced?.Explainer != null)
-        {
-            showPurchaseButtons = true;
-            embed.AddField(localizer.Translate("help.supporterEnhanced"), supporterEnhanced.Explainer);
-        }
-
-        var supporterExclusive = allAttributes.OfType<SupporterExclusiveAttribute>()
-            .FirstOrDefault();
-        if (supporterExclusive?.Explainer != null)
-        {
-            showPurchaseButtons = true;
-            embed.AddField(localizer.Translate("help.supporterExclusive"), supporterExclusive.Explainer);
-        }
-
-        return (embed, showPurchaseButtons);
-    }
-
-    public static ActionRowProperties PurchaseButtons(ICommandInfo<CommandContext> commandInfo)
-    {
-        return new ActionRowProperties()
-            .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
-                customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(
-                    source: $"help-{commandInfo.Aliases[0]}"));
     }
 
     extension(EmbedProperties embed)

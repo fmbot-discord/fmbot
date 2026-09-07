@@ -530,6 +530,17 @@
         }
       }
     },
+    "help": {
+      "description": "Hulpoverzicht en details voor elk .fmbot commando",
+      "parameters": {
+        "command": {
+          "description": "Commando om details voor te bekijken"
+        },
+        "private": {
+          "description": "Toon de reactie alleen aan jou"
+        }
+      }
+    },
     "iceberg": {
       "description": "Toont je iceberg, gebaseerd op artiestpopulariteit",
       "parameters": {

@@ -1059,7 +1059,7 @@ public class TrackBuilders
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Text,
+            ResponseType = ResponseType.ComponentsV2,
         };
 
         var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, context.Localizer, searchValue,
@@ -1069,6 +1069,8 @@ public class TrackBuilders
             referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
         if (trackSearch.Track == null)
         {
+            trackSearch.Response.ResponseType = ResponseType.ComponentsV2;
+            trackSearch.Response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
             return trackSearch.Response;
         }
 
@@ -1116,15 +1118,10 @@ public class TrackBuilders
                 "track-plays.png", height: GraphExtensions.CompactGraphHeight)
             : null;
 
+        response.TopLevelComponents.Add(new TextDisplayProperties(reply));
         if (playHistoryGraph != null)
         {
-            response.ResponseType = ResponseType.ComponentsV2;
-            response.TopLevelComponents.Add(new TextDisplayProperties(reply));
             response.TopLevelComponents.Add(playHistoryGraph);
-        }
-        else
-        {
-            response.Text = reply;
         }
 
         return response;

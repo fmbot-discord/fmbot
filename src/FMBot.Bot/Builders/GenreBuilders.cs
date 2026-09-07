@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -436,10 +436,6 @@ public class GenreBuilders
                     userSettings.UserNameLastFM, context.Localizer);
                 response.ComponentsContainer = errorResponse.ComponentsContainer;
                 response.CommandResponse = errorResponse.CommandResponse;
-                if (errorResponse.Components?.Any() == true)
-                {
-                    response.ComponentsContainer.WithActionRow(errorResponse.Components);
-                }
                 response.ResponseType = ResponseType.ComponentsV2;
                 return (null, selectMenu);
             }

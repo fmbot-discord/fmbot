@@ -242,7 +242,10 @@ WHERE s.id = (
         LEFT JOIN LATERAL (
             SELECT cover_url
             FROM discogs_releases
-            WHERE album_id = ab.id
+            WHERE ab.spotify_image_url IS NULL
+              AND ab.lastfm_image_url IS NULL
+              AND ai.url IS NULL
+              AND album_id = ab.id
               AND cover_url LIKE 'https://i.discogs.com/%'
             ORDER BY year NULLS LAST, discogs_id
             LIMIT 1

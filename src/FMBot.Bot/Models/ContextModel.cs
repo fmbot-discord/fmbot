@@ -6,6 +6,7 @@ using FMBot.Domain.Attributes;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
+
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using NetCord.Services.Commands;
@@ -33,6 +34,8 @@ public class ContextModel
     public ContextModel(ApplicationCommandContext context, User contextUser = null, NetCord.User discordContextUser = null)
     {
         this.Prefix = "/";
+        this.UserApp = context.Interaction.AuthorizingIntegrationOwners.ContainsKey(NetCord.ApplicationIntegrationType.UserInstall) &&
+                       !context.Interaction.AuthorizingIntegrationOwners.ContainsKey(NetCord.ApplicationIntegrationType.GuildInstall);
         this.NumberFormat = contextUser?.NumberFormat ?? NumberFormat.NoSeparator;
         this.Localizer = new Localizer(LocalizationService.GetLanguage(context.Interaction.GuildId, context.Interaction.GuildLocale), this.NumberFormat);
         this.DiscordGuild = context.Guild;
@@ -47,6 +50,8 @@ public class ContextModel
     public ContextModel(ComponentInteractionContext context, User contextUser = null, NetCord.User discordContextUser = null)
     {
         this.Prefix = "/";
+        this.UserApp = context.Interaction.AuthorizingIntegrationOwners.ContainsKey(NetCord.ApplicationIntegrationType.UserInstall) &&
+                       !context.Interaction.AuthorizingIntegrationOwners.ContainsKey(NetCord.ApplicationIntegrationType.GuildInstall);
         this.NumberFormat = contextUser?.NumberFormat ?? NumberFormat.NoSeparator;
         this.Localizer = new Localizer(LocalizationService.GetLanguage(context.Interaction.GuildId, context.Interaction.GuildLocale), this.NumberFormat);
         this.DiscordGuild = context.Guild;
@@ -59,6 +64,8 @@ public class ContextModel
     }
 
     public bool SlashCommand { get; set; }
+
+    public bool UserApp { get; set; }
 
     public string Prefix { get; set; }
 
