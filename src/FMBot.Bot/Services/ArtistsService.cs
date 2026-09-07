@@ -578,7 +578,8 @@ public class ArtistsService
         return null;
     }
 
-    public async Task<Artist> GetArtistFromDatabase(string artistName, bool redirectsEnabled = true)
+    public async Task<Artist> GetArtistFromDatabase(string artistName, bool redirectsEnabled = true,
+        bool requireSpotify = true)
     {
         if (string.IsNullOrWhiteSpace(artistName))
         {
@@ -600,7 +601,7 @@ public class ArtistsService
 
         await connection.CloseAsync();
 
-        return artist?.SpotifyId != null ? artist : null;
+        return !requireSpotify || artist?.SpotifyId != null ? artist : null;
     }
 
 

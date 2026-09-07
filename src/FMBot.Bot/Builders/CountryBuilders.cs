@@ -101,7 +101,7 @@ public class CountryBuilders(
 
             if (country != null)
             {
-                var artist = await artistsService.GetArtistFromDatabase(artistName);
+                var artist = await artistsService.GetArtistFromDatabase(artistName, requireSpotify: false);
 
                 if (artist?.CountryCode == null)
                 {
@@ -167,7 +167,7 @@ public class CountryBuilders(
 
             if (foundCountry == null)
             {
-                var artist = await artistsService.GetArtistFromDatabase(countryOptions);
+                var artist = await artistsService.GetArtistFromDatabase(countryOptions, requireSpotify: false);
 
                 if (artist is { CountryCode: null })
                 {
