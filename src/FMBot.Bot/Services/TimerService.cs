@@ -775,8 +775,9 @@ public class TimerService : IDisposable
         }
 
         var plainText = Regex.Replace(description, @"\[([^\]]+)\]\([^)]+\)", "$1");
+        var bio = $"**Server featured:**\n{plainText}";
 
-        return plainText.Length > 190 ? plainText[..190] : plainText;
+        return bio.Length > 190 ? bio[..190] : bio;
     }
 
     public async Task CheckDiscordSupportersUserType()
