@@ -241,6 +241,20 @@ public class UserBuilder
         return response;
     }
 
+    public static string LastfmProfileLink(UserSettingsModel userSettings, bool inGuild)
+    {
+        var url = LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm);
+
+        if (userSettings.DifferentUser && inGuild)
+        {
+            return $"<@{userSettings.DiscordUserId}>'s Last.fm profile: {url}";
+        }
+
+        return userSettings.DifferentUser
+            ? $"Their Last.fm profile: {url}"
+            : $"Your Last.fm profile: {url}";
+    }
+
     public static ResponseModel BotScrobblingAsync(ContextModel context)
     {
         var response = new ResponseModel

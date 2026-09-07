@@ -375,6 +375,28 @@
         }
       }
     },
+    "genius": {
+      "description": "Delar en Genius-låttextlänk för det du lyssnar på eller en låt du söker efter",
+      "parameters": {
+        "private": {
+          "description": "Visa svaret endast för dig"
+        },
+        "search": {
+          "description": "Låt att slå upp (standard: det du spelar just nu)"
+        }
+      }
+    },
+    "lastfm": {
+      "description": "Visar en länk till din eller någon annans Last.fm-profil",
+      "parameters": {
+        "private": {
+          "description": "Visa svaret endast för dig"
+        },
+        "user": {
+          "description": "Användaren som ska visas (standard: du själv)"
+        }
+      }
+    },
     "mode": {
       "description": "Anpassa layouten för '/fm', ditt svarsläge och typen av albumomslag"
     },
@@ -702,7 +724,7 @@
       }
     },
     "members": {
-      "description": "Medlemmar på den här servern som använder .fmbot",
+      "description": "Medlemmar och topplistor för användare på den här servern som använder .fmbot",
       "parameters": {
         "view": {
           "description": "Statistiken du vill visa"
@@ -750,6 +772,14 @@
         },
         "user": {
           "description": "Användaren som ska visas (standard: du själv)"
+        }
+      }
+    },
+    "play": {
+      "description": "Spelar en låt på din Spotify, eller återupptar uppspelningen om inget anges",
+      "parameters": {
+        "search": {
+          "description": "Låt eller Spotify-länk att spela (lämna tomt för att återuppta uppspelningen)"
         }
       }
     },

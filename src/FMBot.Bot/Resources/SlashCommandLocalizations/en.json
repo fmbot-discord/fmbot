@@ -460,6 +460,17 @@
         }
       }
     },
+    "genius": {
+      "description": "Shares a Genius lyrics link for what you're listening to or a track you search for",
+      "parameters": {
+        "private": {
+          "description": "Only show response to you"
+        },
+        "search": {
+          "description": "Track to look up (defaults to what you're playing)"
+        }
+      }
+    },
     "genre": {
       "description": "Shows genre info for artist or top artists for genre",
       "parameters": {
@@ -635,6 +646,17 @@
         }
       }
     },
+    "lastfm": {
+      "description": "Shows a link to your or someone else's Last.fm profile",
+      "parameters": {
+        "private": {
+          "description": "Only show response to you"
+        },
+        "user": {
+          "description": "The user to show (defaults to self)"
+        }
+      }
+    },
     "lastlistened": {
       "description": "⭐ Shows the date you last listened to the artist, album, and track",
       "parameters": {
@@ -699,7 +721,7 @@
       }
     },
     "members": {
-      "description": "Members in this server that use .fmbot",
+      "description": "Members and leaderboards for users in this server that use .fmbot",
       "parameters": {
         "view": {
           "description": "Statistic you want to view"
@@ -753,6 +775,14 @@
         },
         "user": {
           "description": "The user to show (defaults to self)"
+        }
+      }
+    },
+    "play": {
+      "description": "Play a track on your Spotify, or resume playback when nothing is given",
+      "parameters": {
+        "search": {
+          "description": "Track or Spotify link to play (leave empty to resume playback)"
         }
       }
     },

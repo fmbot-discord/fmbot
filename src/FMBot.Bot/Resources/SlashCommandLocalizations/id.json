@@ -375,6 +375,28 @@
         }
       }
     },
+    "genius": {
+      "description": "Membagikan tautan lirik Genius untuk lagu yang sedang kamu dengarkan atau yang kamu cari",
+      "parameters": {
+        "private": {
+          "description": "Hanya tampilkan respons ke kamu"
+        },
+        "search": {
+          "description": "Lagu yang ingin dicari (default: yang sedang kamu putar)"
+        }
+      }
+    },
+    "lastfm": {
+      "description": "Menampilkan tautan ke profil Last.fm kamu atau orang lain",
+      "parameters": {
+        "private": {
+          "description": "Hanya tampilkan respons ke kamu"
+        },
+        "user": {
+          "description": "Pengguna yang ditampilkan (default: kamu sendiri)"
+        }
+      }
+    },
     "mode": {
       "description": "Sesuaikan tata letak '/fm', mode respons, dan tipe sampul album kamu"
     },
@@ -702,7 +724,7 @@
       }
     },
     "members": {
-      "description": "Member di server ini yang menggunakan .fmbot",
+      "description": "Member dan papan peringkat pengguna di server ini yang menggunakan .fmbot",
       "parameters": {
         "view": {
           "description": "Statistik yang ingin kamu lihat"
@@ -750,6 +772,14 @@
         },
         "user": {
           "description": "Pengguna yang ditampilkan (default: kamu sendiri)"
+        }
+      }
+    },
+    "play": {
+      "description": "Memutar lagu di Spotify kamu, atau melanjutkan pemutaran jika tidak ada yang diisi",
+      "parameters": {
+        "search": {
+          "description": "Lagu atau tautan Spotify yang ingin diputar (kosongkan untuk melanjutkan pemutaran)"
         }
       }
     },

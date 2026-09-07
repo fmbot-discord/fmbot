@@ -88,6 +88,62 @@ public class SpotifyRemoteSlashCommands(
         }
     }
 
+    [SlashCommand("play", "Play a track on your Spotify, or resume playback when nothing is given",
+        Contexts =
+            [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild],
+        IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
+    [UsernameSetRequired]
+    [SpotifyConnectedRequired]
+    public async Task PlayAsync(
+        [SlashCommandParameter(Name = "search", Description = "Track or Spotify link to play (leave empty to resume playback)",
+            AutocompleteProviderType = typeof(TrackAutoComplete))]
+        string searchValue = null)
+    {
+        this.Context.DeferInBackground(MessageFlags.Ephemeral);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+
+        try
+        {
+            var token = await spotifyRemoteService.GetActiveTokenAsync(this.Context.User.Id);
+            if (token == null)
+            {
+                await SendFollowUp(SpotifyRemoteBuilders.NotConnectedResponse());
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(searchValue))
+            {
+                var resumeResult = await spotifyRemoteService.ResumeAsync(token);
+                await SendFollowUp(SpotifyRemoteBuilders.PlayPauseResult(resumeResult, true));
+                return;
+            }
+
+            var link = MusicLinkExtensions.TryParseMusicLink(searchValue);
+            var albumOrArtist =
+                await spotifyRemoteBuilders.TryQueueOrPlayAlbumOrArtistAsync(token, link, null, play: true);
+            if (albumOrArtist != null)
+            {
+                await SendFollowUp(albumOrArtist);
+                return;
+            }
+
+            var track = await ResolveTrackAsync(contextUser.UserNameLastFM, contextUser.SessionKeyLastFm,
+                contextUser.UserId, searchValue);
+            if (track == null)
+            {
+                await SendFollowUp(SpotifyRemoteBuilders.TrackNotFoundResponse());
+                return;
+            }
+
+            var result = await spotifyRemoteService.PlayTrackAsync(token, track.Uri, track.AlbumUri);
+            await SendFollowUp(SpotifyRemoteBuilders.PlayResult(result, track));
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
     [SlashCommand("skip", "Skip to the next track on your Spotify",
         Contexts =
             [InteractionContextType.BotDMChannel, InteractionContextType.DMChannel, InteractionContextType.Guild],

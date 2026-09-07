@@ -1,28 +1,22 @@
 using System;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using FMBot.Bot.Attributes;
+using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services;
-using FMBot.Bot.Services.ThirdParty;
-using FMBot.Domain;
-using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
 using NetCord.Services.Commands;
 using Fergun.Interactive;
-using NetCord.Rest;
 
 namespace FMBot.Bot.TextCommands;
 
 [ModuleName("Genius")]
 public class GeniusCommands(
-    GeniusService geniusService,
+    GeniusBuilders geniusBuilders,
     IPrefixService prefixService,
-    IDataSourceFactory dataSourceFactory,
     UserService userService,
     IOptions<BotSettings> botSettings,
     InteractiveService interactivity)
@@ -44,9 +38,6 @@ public class GeniusCommands(
 
         try
         {
-            var currentTrackName = "";
-            var currentTrackArtist = "";
-
             if (this.Context.Message.ReferencedMessage != null && string.IsNullOrWhiteSpace(searchValue))
             {
                 var internalLookup = CommandContextExtensions.GetReferencedMusic(this.Context.Message.ReferencedMessage.Id)
@@ -59,96 +50,7 @@ public class GeniusCommands(
                 }
             }
 
-            string querystring;
-            if (!string.IsNullOrWhiteSpace(searchValue))
-            {
-                querystring = searchValue;
-            }
-            else
-            {
-                string sessionKey = null;
-                if (!string.IsNullOrEmpty(userSettings.SessionKeyLastFm))
-                {
-                    sessionKey = userSettings.SessionKeyLastFm;
-                }
-
-                var recentScrobbles = await dataSourceFactory.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
-
-                if (await GenericEmbedService.RecentScrobbleCallFailedReply(recentScrobbles, userSettings.UserNameLastFM, this.Context, userService))
-                {
-                    return;
-                }
-
-                var currentTrack = recentScrobbles.Content.RecentTracks[0];
-                querystring = $"{currentTrack.ArtistName} {currentTrack.TrackName}";
-
-                currentTrackName = currentTrack.TrackName;
-                currentTrackArtist = currentTrack.ArtistName;
-
-            }
-
-            var response = new ResponseModel
-            {
-                ResponseType = ResponseType.Embed,
-                ReferencedMusic = currentTrackArtist != null ? new ReferencedMusic
-                {
-                    Artist = currentTrackArtist,
-                    Track = currentTrackName
-                } : null
-            };
-
-            var geniusResults = await geniusService.SearchGeniusAsync(querystring, currentTrackName, currentTrackArtist);
-
-            if (geniusResults != null && geniusResults.Any())
-            {
-                var rnd = new Random();
-                if (rnd.Next(0, 8) == 1 && string.IsNullOrWhiteSpace(searchValue) && !await userService.HintShownBefore(userSettings.UserId, "genius"))
-                {
-                    response.EmbedFooter.WithText($"Tip: Search for other songs by simply adding the searchvalue behind '{prfx}genius'.");
-                    response.HintShown = true;
-                    response.Embed.WithFooter(response.EmbedFooter);
-                }
-
-                var firstResult = geniusResults.First().Result;
-                if (firstResult.TitleWithFeatured.Trim().StartsWith(currentTrackName.Trim(), StringComparison.OrdinalIgnoreCase) &&
-                    firstResult.PrimaryArtist.Name.Trim().Equals(currentTrackArtist.Trim(), StringComparison.OrdinalIgnoreCase) ||
-                    geniusResults.Count == 1)
-                {
-                    response.Embed.WithTitle(firstResult.TitleWithFeatured);
-                    response.Embed.WithUrl(firstResult.Url);
-                    response.Embed.WithThumbnail(firstResult.SongArtImageThumbnailUrl);
-
-                    response.Embed.WithDescription($"By **[{firstResult.PrimaryArtist.Name}]({firstResult.PrimaryArtist.Url})**");
-
-                    response.Components = new ActionRowProperties().WithButton("View on Genius",  url: firstResult.Url);
-
-                    await this.Context.SendResponse(this.Interactivity, response, userService);
-                    await this.Context.LogCommandUsedAsync(response, userService);
-                    return;
-                }
-
-                response.Embed.WithTitle($"Genius results for {querystring}");
-                response.Embed.WithThumbnail(firstResult.SongArtImageThumbnailUrl);
-
-                var embedDescription = new StringBuilder();
-
-                var amount = geniusResults.Count > 5 ? 5 : geniusResults.Count;
-                for (var i = 0; i < amount; i++)
-                {
-                    var geniusResult = geniusResults[i].Result;
-
-                    embedDescription.AppendLine($"{i + 1}. [{geniusResult.TitleWithFeatured}]({geniusResult.Url})");
-                    embedDescription.AppendLine($"By **[{geniusResult.PrimaryArtist.Name}]({geniusResult.PrimaryArtist.Url})**");
-                    embedDescription.AppendLine();
-                }
-
-                response.Embed.WithDescription(embedDescription.ToString());
-            }
-            else
-            {
-                response.Embed.WithDescription("No Genius results have been found for this track.");
-                response.CommandResponse = CommandResponse.NotFound;
-            }
+            var response = await geniusBuilders.GeniusAsync(new ContextModel(this.Context, prfx, userSettings), searchValue);
 
             await this.Context.SendResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);

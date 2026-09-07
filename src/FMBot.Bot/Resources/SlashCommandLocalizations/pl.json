@@ -375,6 +375,28 @@
         }
       }
     },
+    "genius": {
+      "description": "Udostępnia link do tekstu na Genius dla tego, czego słuchasz, lub wyszukanego utworu",
+      "parameters": {
+        "private": {
+          "description": "Pokaż odpowiedź tylko tobie"
+        },
+        "search": {
+          "description": "Utwór do wyszukania (domyślnie: to, czego słuchasz)"
+        }
+      }
+    },
+    "lastfm": {
+      "description": "Pokazuje link do Twojego profilu Last.fm lub profilu innej osoby",
+      "parameters": {
+        "private": {
+          "description": "Pokaż odpowiedź tylko tobie"
+        },
+        "user": {
+          "description": "Użytkownik do wyświetlenia (domyślnie ty)"
+        }
+      }
+    },
     "mode": {
       "description": "Dostosuj układ '/fm', tryb odpowiedzi i typ okładki albumu"
     },
@@ -702,7 +724,7 @@
       }
     },
     "members": {
-      "description": "Członkowie tego serwera korzystający z .fmbot",
+      "description": "Członkowie i rankingi użytkowników tego serwera korzystających z .fmbot",
       "parameters": {
         "view": {
           "description": "Statystyka do wyświetlenia"
@@ -750,6 +772,14 @@
         },
         "user": {
           "description": "Użytkownik do wyświetlenia (domyślnie ty)"
+        }
+      }
+    },
+    "play": {
+      "description": "Odtwarza utwór na Twoim Spotify lub wznawia odtwarzanie, gdy nic nie podasz",
+      "parameters": {
+        "search": {
+          "description": "Utwór lub link Spotify do odtworzenia (zostaw puste, aby wznowić odtwarzanie)"
         }
       }
     },

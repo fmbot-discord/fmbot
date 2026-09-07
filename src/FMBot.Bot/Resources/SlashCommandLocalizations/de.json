@@ -375,6 +375,28 @@
         }
       }
     },
+    "genius": {
+      "description": "Teilt einen Genius-Songtext-Link zu dem, was du gerade hörst, oder zu einem gesuchten Track",
+      "parameters": {
+        "private": {
+          "description": "Antwort nur dir anzeigen"
+        },
+        "search": {
+          "description": "Track zum Nachschlagen (Standard: was gerade läuft)"
+        }
+      }
+    },
+    "lastfm": {
+      "description": "Zeigt einen Link zu deinem oder dem Last.fm-Profil von jemand anderem",
+      "parameters": {
+        "private": {
+          "description": "Antwort nur dir anzeigen"
+        },
+        "user": {
+          "description": "Der anzuzeigende Nutzer (standardmäßig du selbst)"
+        }
+      }
+    },
     "mode": {
       "description": "Passe dein '/fm'-Layout, deinen Antwortmodus und den Albumcover-Typ an"
     },
@@ -702,7 +724,7 @@
       }
     },
     "members": {
-      "description": "Mitglieder dieses Servers, die .fmbot nutzen",
+      "description": "Mitglieder und Ranglisten der Nutzer dieses Servers, die .fmbot nutzen",
       "parameters": {
         "view": {
           "description": "Statistik, die du ansehen möchtest"
@@ -750,6 +772,14 @@
         },
         "user": {
           "description": "Der anzuzeigende Nutzer (standardmäßig du selbst)"
+        }
+      }
+    },
+    "play": {
+      "description": "Spielt einen Track auf deinem Spotify ab oder setzt die Wiedergabe fort, wenn nichts angegeben ist",
+      "parameters": {
+        "search": {
+          "description": "Track oder Spotify-Link zum Abspielen (leer lassen, um die Wiedergabe fortzusetzen)"
         }
       }
     },
