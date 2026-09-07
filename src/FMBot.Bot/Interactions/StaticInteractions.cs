@@ -493,7 +493,7 @@ public class StaticInteractions(
     }
 
     [ComponentInteraction(InteractionConstants.Help.CommandMenu)]
-    public async Task HelpCommandSelected(string mode, string category)
+    public async Task HelpCommandSelected(string mode, string category, string page)
     {
         var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
         var selected = stringMenuInteraction.Data.SelectedValues.FirstOrDefault();
