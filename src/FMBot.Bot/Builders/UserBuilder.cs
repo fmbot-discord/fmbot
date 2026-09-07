@@ -1358,22 +1358,19 @@ public class UserBuilder
         if (user.UserDiscogs != null)
         {
             var collection = new StringBuilder();
-            if (user.UserType != UserType.User)
+            var discogsCollection = await this._discogsService.GetUserCollection(userSettings.UserId);
+            if (discogsCollection.Any())
             {
-                var discogsCollection = await this._discogsService.GetUserCollection(userSettings.UserId);
-                if (discogsCollection.Any())
+                var collectionTypes = discogsCollection
+                    .GroupBy(g => g.Release.Format)
+                    .OrderByDescending(o => o.Count());
+                foreach (var type in collectionTypes)
                 {
-                    var collectionTypes = discogsCollection
-                        .GroupBy(g => g.Release.Format)
-                        .OrderByDescending(o => o.Count());
-                    foreach (var type in collectionTypes)
-                    {
-                        collection.AppendLine(
-                            $" {StringService.GetDiscogsFormatEmote(type.Key)} {context.LocalizeCount("profile.discogsCollected", type.Count(), ("format", type.Key))} ");
-                    }
-
-                    discogs = true;
+                    collection.AppendLine(
+                        $" {StringService.GetDiscogsFormatEmote(type.Key)} {context.LocalizeCount("profile.discogsCollected", type.Count(), ("format", type.Key))} ");
                 }
+
+                discogs = true;
             }
 
             if (collection.Length > 0)

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -844,7 +844,13 @@ public class LastFmRepository : ILastfmRepository
                 {
                     return new Response<TopAlbumList>
                     {
-                        Content = topAlbumResponse,
+                        Content = new TopAlbumList
+                        {
+                            TotalAmount = topAlbumResponse.TotalAmount,
+                            UserUrl = topAlbumResponse.UserUrl,
+                            UserTopAlbumsUrl = topAlbumResponse.UserTopAlbumsUrl,
+                            TopAlbums = topAlbumResponse.TopAlbums.Take(count).ToList()
+                        },
                         Success = true
                     };
                 }
@@ -1024,7 +1030,13 @@ public class LastFmRepository : ILastfmRepository
                 {
                     return new Response<TopArtistList>
                     {
-                        Content = topArtistResponse,
+                        Content = new TopArtistList
+                        {
+                            TotalAmount = topArtistResponse.TotalAmount,
+                            UserUrl = topArtistResponse.UserUrl,
+                            UserTopArtistsUrl = topArtistResponse.UserTopArtistsUrl,
+                            TopArtists = topArtistResponse.TopArtists.Take((int)count).ToList()
+                        },
                         Success = true
                     };
                 }
@@ -1201,7 +1213,13 @@ public class LastFmRepository : ILastfmRepository
                 {
                     return new Response<TopTrackList>
                     {
-                        Content = topTrackResponse,
+                        Content = new TopTrackList
+                        {
+                            TotalAmount = topTrackResponse.TotalAmount,
+                            UserUrl = topTrackResponse.UserUrl,
+                            UserTopTracksUrl = topTrackResponse.UserTopTracksUrl,
+                            TopTracks = topTrackResponse.TopTracks.Take(count).ToList()
+                        },
                         Success = true
                     };
                 }

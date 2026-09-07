@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -1333,10 +1333,10 @@ public class GuildService(
 
         db.Entry(existingChannel).State = EntityState.Modified;
 
+        await db.SaveChangesAsync();
+
         await RemoveGuildFromCache(discordGuildId);
         RemoveChannelFromCache(discordChannel.Id);
-
-        await db.SaveChangesAsync();
     }
 
     public async Task SetChannelEmbedType(IGuildChannel discordChannel, int guildId, FmEmbedType? embedType,
@@ -1371,10 +1371,10 @@ public class GuildService(
 
         db.Entry(existingChannel).State = EntityState.Modified;
 
+        await db.SaveChangesAsync();
+
         await RemoveGuildFromCache(discordGuildId);
         RemoveChannelFromCache(discordChannel.Id);
-
-        await db.SaveChangesAsync();
     }
 
     public async Task SetRecommendedAlternativeChannels(IGuildChannel discordChannel, int guildId, ulong[] recommendedAlternativeChannelIds,
@@ -1408,10 +1408,10 @@ public class GuildService(
 
         db.Entry(existingChannel).State = EntityState.Modified;
 
+        await db.SaveChangesAsync();
+
         await RemoveGuildFromCache(discordGuildId);
         RemoveChannelFromCache(discordChannel.Id);
-
-        await db.SaveChangesAsync();
     }
 
     public async Task<string[]> EnableChannelCommandsAsync(IGuildChannel discordChannel, List<string> commands,
@@ -1487,10 +1487,10 @@ public class GuildService(
 
         db.Entry(existingChannel).State = EntityState.Modified;
 
+        await db.SaveChangesAsync();
+
         await RemoveGuildFromCache(discordGuildId);
         RemoveChannelFromCache(discordChannel.Id);
-
-        await db.SaveChangesAsync();
     }
 
     public async Task EnableChannelAsync(IGuildChannel discordChannel, ulong discordGuildId)
@@ -1510,10 +1510,10 @@ public class GuildService(
 
         db.Entry(existingChannel).State = EntityState.Modified;
 
+        await db.SaveChangesAsync();
+
         await RemoveGuildFromCache(discordGuildId);
         RemoveChannelFromCache(discordChannel.Id);
-
-        await db.SaveChangesAsync();
     }
 
     public async Task<int?> GetChannelCooldown(ulong? discordChannelId)
