@@ -12,6 +12,7 @@ public static class Constants
     public const string LastFmNonExistentImageName = "2a96cbd8b46e442fc41c2b86b821562f.png";
 
     public const long InviteLinkPermissions = 275415092288;
+    public const string InviteLink = "https://discord.com/oauth2/authorize?client_id=356268235697553409&permissions=275415092288&scope=applications.commands%20bot";
 
     public const ulong BotProductionId = 356268235697553409;
     public const ulong BotBetaId = 493845886166630443;

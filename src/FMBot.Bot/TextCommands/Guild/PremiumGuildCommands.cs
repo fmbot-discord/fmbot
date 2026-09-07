@@ -38,6 +38,7 @@ public class PremiumGuildCommands(
 
     [Command("premiumserver", "premium", "getpremium", "getpremiumserver")]
     [Summary("Unlock server-wide perks and automation for this server")]
+    [CommandCategories(CommandCategory.ServerSettings)]
     [GuildOnly]
     [UsernameSetRequired]
     public async Task PremiumServerAsync([CommandParameter(Remainder = true)] string unused = null)
@@ -61,6 +62,7 @@ public class PremiumGuildCommands(
 
     [Command("botbranding", "custombranding", "botavatar", "customlogo", "serverfeatured", "localfeatured")]
     [Summary("Give the bot a custom look in this server")]
+    [CommandCategories(CommandCategory.ServerSettings)]
     [GuildOnly]
     public async Task BotBrandingAsync([CommandParameter(Remainder = true)] string unused = null)
     {
@@ -127,6 +129,7 @@ public class PremiumGuildCommands(
 
     [Command("servershortcuts", "guildshortcuts", "servershortcut", "guildshortcut")]
     [Summary("Manage server-wide command shortcuts")]
+    [CommandCategories(CommandCategory.ServerSettings)]
     [GuildOnly]
     [UsernameSetRequired]
     public async Task ServerShortcutsAsync([CommandParameter(Remainder = true)] string unused = null)

@@ -212,8 +212,10 @@ public class TrackService
 
                 if (!trackInfo.Success && trackInfo.Error == ResponseStatus.MissingParameters)
                 {
-                    response.Embed.WithDescription(localizer.Translate("track.notFoundWithValues",
-                        ("track", trackName), ("artist", trackArtist)));
+                    var desc = localizer.Translate("track.notFoundWithValues",
+                        ("track", trackName), ("artist", trackArtist));
+                    response.Embed.WithDescription(desc);
+                    response.ComponentsContainer.WithTextDisplay(desc);
                     response.CommandResponse = CommandResponse.NotFound;
                     response.ResponseType = ResponseType.Embed;
                     return new TrackSearch(null, response);
@@ -222,6 +224,7 @@ public class TrackService
                 if (!trackInfo.Success || trackInfo.Content == null)
                 {
                     response.Embed.ErrorResponse(trackInfo.Error, trackInfo.Message, null, localizer, discordUser, "track");
+                    response.ComponentsContainer.WithTextDisplay(response.Embed.Description ?? localizer.Translate("track.infoFailed"));
                     response.CommandResponse = CommandResponse.LastFmError;
                     response.ResponseType = ResponseType.Embed;
                     return new TrackSearch(null, response);
@@ -335,8 +338,10 @@ public class TrackService
 
             if (trackInfo?.Content == null || !trackInfo.Success)
             {
-                response.Embed.WithDescription(localizer.Translate("track.noLastFmResult",
-                    ("track", trackSearch.Name), ("artist", trackSearch.ArtistName)));
+                var desc = localizer.Translate("track.noLastFmResult",
+                    ("track", trackSearch.Name), ("artist", trackSearch.ArtistName));
+                response.Embed.WithDescription(desc);
+                response.ComponentsContainer.WithTextDisplay(desc);
 
                 response.CommandResponse = CommandResponse.NotFound;
                 response.ResponseType = ResponseType.Embed;
@@ -353,8 +358,11 @@ public class TrackService
             return new TrackSearch(trackInfo.Content, response);
         }
 
-        response.Embed.WithDescription(localizer.Translate("track.notFound"));
+        var notFoundDesc = localizer.Translate("track.notFound");
+        response.Embed.WithDescription(notFoundDesc);
         response.Embed.WithFooter(localizer.Translate("shared.searchValue", ("value", searchValue)));
+        response.ComponentsContainer.WithTextDisplay(notFoundDesc);
+        response.ComponentsContainer.WithTextDisplay($"-# {localizer.Translate("shared.searchValue", ("value", searchValue))}");
         response.CommandResponse = CommandResponse.NotFound;
         response.ResponseType = ResponseType.Embed;
         return new TrackSearch(null, response);

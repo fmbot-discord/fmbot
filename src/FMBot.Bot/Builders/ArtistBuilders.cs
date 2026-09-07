@@ -1678,7 +1678,7 @@ public class ArtistBuilders
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Text,
+            ResponseType = ResponseType.ComponentsV2,
         };
 
         var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, context.Localizer, artistName,
@@ -1688,6 +1688,8 @@ public class ArtistBuilders
             referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
         if (artistSearch.Artist == null)
         {
+            artistSearch.Response.ResponseType = ResponseType.ComponentsV2;
+            artistSearch.Response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
             return artistSearch.Response;
         }
 
@@ -1726,15 +1728,10 @@ public class ArtistBuilders
                 "artist-plays.png", height: GraphExtensions.CompactGraphHeight)
             : null;
 
+        response.TopLevelComponents.Add(new TextDisplayProperties(reply));
         if (playHistoryGraph != null)
         {
-            response.ResponseType = ResponseType.ComponentsV2;
-            response.TopLevelComponents.Add(new TextDisplayProperties(reply));
             response.TopLevelComponents.Add(playHistoryGraph);
-        }
-        else
-        {
-            response.Text = reply;
         }
 
         return response;

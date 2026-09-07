@@ -44,6 +44,7 @@ public class CommandHandler
     private readonly IndexService _indexService;
     private readonly GameBuilders _gameBuilders;
     private readonly ShortcutService _shortcutService;
+    private readonly HelpBuilders _helpBuilders;
 
     public CommandHandler(
         ShardedGatewayClient discord,
@@ -58,7 +59,8 @@ public class CommandHandler
         IMemoryCache cache,
         IndexService indexService,
         GameBuilders gameBuilders,
-        ShortcutService shortcutService)
+        ShortcutService shortcutService,
+        HelpBuilders helpBuilders)
     {
         this._discord = discord;
         this._commands = commands;
@@ -72,6 +74,7 @@ public class CommandHandler
         this._indexService = indexService;
         this._gameBuilders = gameBuilders;
         this._shortcutService = shortcutService;
+        this._helpBuilders = helpBuilders;
         this._botSettings = botSettings.Value;
         this._discord.MessageCreate += MessageReceived;
         this._discord.MessageUpdate += MessageUpdated;
@@ -443,25 +446,11 @@ public class CommandHandler
             }
             if (msg.Content.EndsWith(" help", StringComparison.OrdinalIgnoreCase) && commandName != "help")
             {
-                var embed = new EmbedProperties();
-                var guildUser = context.Message.Author as GuildUser;
-                var userName = guildUser?.GetDisplayName() ?? context.User.GetDisplayName();
+                var contextUser = await this._userService.GetUserSettingsAsync(context.User);
+                var helpResponse = this._helpBuilders.Resolve(new ContextModel(context, prfx, contextUser),
+                    searchResult.Command.Aliases[0], HelpMode.Slash);
 
-                var helpResponse =
-                    GenericEmbedService.HelpResponse(embed, searchResult.Command, prfx, userName,
-                        Localizer.ForGuild(context.Guild?.Id, discordLocale: context.Guild?.PreferredLocale));
-
-                var messageProps = new MessageProperties
-                {
-                    Embeds = [embed]
-                };
-
-                if (helpResponse.showPurchaseButtons && !await this._userService.UserIsSupporter(context.User))
-                {
-                    messageProps.Components = [GenericEmbedService.PurchaseButtons(searchResult.Command)];
-                }
-
-                await context.Client.Rest.SendMessageAsync(context.Message.ChannelId,messageProps);
+                await context.SendResponse(this._interactiveService, helpResponse, this._userService);
                 await context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Help }, this._userService, commandName);
                 return;
             }

@@ -530,6 +530,17 @@
         }
       }
     },
+    "help": {
+      "description": "हर .fmbot कमांड के लिए सहायता अवलोकन और विवरण",
+      "parameters": {
+        "command": {
+          "description": "वह कमांड जिसका विवरण देखना है"
+        },
+        "private": {
+          "description": "जवाब सिर्फ़ तुम्हें दिखे"
+        }
+      }
+    },
     "iceberg": {
       "description": "Artist लोकप्रियता पर आधारित तुम्हारा आइसबर्ग दिखाता है",
       "parameters": {

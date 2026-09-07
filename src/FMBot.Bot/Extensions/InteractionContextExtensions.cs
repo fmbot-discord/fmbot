@@ -310,8 +310,16 @@ public static class InteractionContextExtensions
         {
             if (deferFirst && !hadPendingDefer)
             {
-                await context.Interaction.SendResponseAsync(
-                    InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
+                try
+                {
+                    await context.Interaction.SendResponseAsync(
+                        InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
+                }
+                catch (RestException restException) when (restException.Error?.Code == 40060)
+                {
+                    Log.Warning("InteractionUsed: interaction already acknowledged before error reply for {commandName} {referenceId}",
+                        commandName, referenceId);
+                }
             }
 
             if (exception?.Message != null &&

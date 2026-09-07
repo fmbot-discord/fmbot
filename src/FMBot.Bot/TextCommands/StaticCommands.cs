@@ -40,6 +40,7 @@ public class StaticCommands(
     InteractiveService interactivity,
     MusicBotService musicBotService,
     StaticBuilders staticBuilders,
+    HelpBuilders helpBuilders,
     SettingService settingService,
     StatusHandler.StatusHandlerClient statusHandler,
     ShardedGatewayClient client)
@@ -454,42 +455,20 @@ public class StaticCommands(
     }
 
     [Command("help")]
-    [Summary("Quick help summary to get started.")]
+    [Summary("Shows a help overview, or details about a specific command.")]
+    [Options("Command - Name of a command or category to view details for")]
+    [Examples("help", "help whoknows", "help crowns")]
     [CommandCategories(CommandCategory.Other)]
     public async Task HelpAsync([CommandParameter(Remainder = true)] string extraValues = null)
     {
-        var prefix = prefixService.GetPrefix(this.Context.Guild?.Id);
-        var allCommands = service.GetCommands().SelectMany(kvp => kvp.Value).Distinct().ToList();
-        var userName = GetUserDisplayName(this.Context.Message.Author as GuildUser, this.Context.User);
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
         try
         {
-            string selectedCommand = null;
-            if (!string.IsNullOrWhiteSpace(extraValues))
-            {
-                if (extraValues.Length > prefix.Length && extraValues.Contains(prefix))
-                {
-                    extraValues = extraValues.Replace(prefix, "");
-                }
+            var response = helpBuilders.Resolve(new ContextModel(this.Context, prfx, contextUser), extraValues, HelpMode.Slash);
 
-                selectedCommand = extraValues.Trim();
-            }
-
-            var response = await staticBuilders.BuildHelpResponse(
-                allCommands,
-                prefix,
-                null,
-                selectedCommand,
-                userName,
-                this.Context.User.Id,
-                Localizer.ForGuild(this.Context.Guild?.Id, discordLocale: this.Context.Guild?.PreferredLocale));
-
-            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
-            {
-                Embeds = [response.Embed],
-                Components = response.GetMessageComponents()
-            });
-
+            await this.Context.SendResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
@@ -738,55 +717,19 @@ public class StaticCommands(
     }
 
     [Command("fullhelp")]
-    [Summary("Displays all available commands.")]
+    [Summary("Displays a compact list of all available commands.")]
     [CommandCategories(CommandCategory.Other)]
     public async Task FullHelpAsync()
     {
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+
         try
         {
-            var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
-            this._embed.WithColor(DiscordConstants.InformationColorBlue);
+            var response = helpBuilders.AllCommands(new ContextModel(this.Context, prfx, contextUser), HelpMode.Slash);
 
-            this._embed.WithDescription("**See a list of all available commands below.**\n" +
-                                        $"Use `{prfx}serverhelp` to view all your configurable server settings.");
-
-            var allCommands = service.GetCommands().SelectMany(kvp => kvp.Value).Distinct()
-                .Where(w => !GetAllAttributes(w).OfType<ExcludeFromHelp>().Any() &&
-                            !GetAllAttributes(w).OfType<CommandCategoriesAttribute>().SelectMany(s => s.Categories)
-                                .Contains(CommandCategory.ServerSettings))
-                .ToList();
-
-            var commandsByModule = allCommands
-                .GroupBy(c => GetAllAttributes(c).OfType<CommandCategoriesAttribute>().FirstOrDefault()?.Categories.FirstOrDefault().ToString() ?? "Other")
-                .OrderByDescending(g => g.Count());
-
-            foreach (var moduleGroup in commandsByModule)
-            {
-                var moduleCommands = "";
-                foreach (var cmd in moduleGroup)
-                {
-                    if (!string.IsNullOrEmpty(moduleCommands))
-                    {
-                        moduleCommands += ", ";
-                    }
-
-                    var cmdName = GetCommandName(cmd);
-                    var name = $"`{prfx}{cmdName}`";
-                    name = name.Replace("fmfm", "fm");
-
-                    moduleCommands += name;
-                }
-
-                if (!string.IsNullOrEmpty(moduleGroup.Key) && !string.IsNullOrEmpty(moduleCommands))
-                {
-                    this._embed.AddField(moduleGroup.Key, moduleCommands, true);
-                }
-            }
-
-            this._embed.WithFooter($"Add 'help' after a command to get more info. For example: '{prfx}chart help'");
-            await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
-
-            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
@@ -800,52 +743,20 @@ public class StaticCommands(
     public async Task ServerHelpAsync()
     {
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
-        this._embed.WithColor(DiscordConstants.InformationColorBlue);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
-        this._embed.WithDescription("**See all server settings below.**\n" +
-                                    "These commands require either the `Admin` or the `Ban Members` permission.");
-
-        var allCommands = service.GetCommands().SelectMany(kvp => kvp.Value)
-            .DistinctBy(c => GetCommandName(c))
-            .Where(w => !GetAllAttributes(w).OfType<ExcludeFromHelp>().Any() &&
-                        GetAllAttributes(w).OfType<CommandCategoriesAttribute>().SelectMany(s => s.Categories)
-                            .Contains(CommandCategory.ServerSettings))
-            .ToList();
-
-        var commandsByModule = allCommands
-            .GroupBy(c =>
-            {
-                var categories = GetAllAttributes(c).OfType<CommandCategoriesAttribute>()
-                    .SelectMany(s => s.Categories)
-                    .Where(cat => cat != CommandCategory.ServerSettings)
-                    .ToList();
-                return categories.Count > 0 ? categories.First().ToString() : "Server Settings";
-            })
-            .OrderByDescending(g => g.Count());
-
-        foreach (var moduleGroup in commandsByModule)
+        try
         {
-            var moduleCommands = "";
-            foreach (var cmd in moduleGroup)
-            {
-                if (!string.IsNullOrEmpty(moduleCommands))
-                {
-                    moduleCommands += ", ";
-                }
+            var response = helpBuilders.Category(new ContextModel(this.Context, prfx, contextUser),
+                CommandCategory.ServerSettings, HelpMode.Slash);
 
-                moduleCommands += $"`{prfx}{GetCommandName(cmd)}`";
-            }
-
-            if (!string.IsNullOrEmpty(moduleGroup.Key) && !string.IsNullOrEmpty(moduleCommands))
-            {
-                this._embed.AddField(moduleGroup.Key, moduleCommands, true);
-            }
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
-
-        this._embed.WithFooter($"Add 'help' after a command to get more info. For example: '{prfx}prefix help'");
-        await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
-
-        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
     }
 
     [Command("staffhelp")]
@@ -902,18 +813,6 @@ public class StaticCommands(
         return (int)((guildId >> 22) % (ulong)totalShards);
     }
 
-    private static string GetUserDisplayName(GuildUser guildUser, User user)
-    {
-        return guildUser?.GetDisplayName() ?? user?.GetDisplayName() ?? "Unknown";
-    }
-
-    private static ICommandInfo<CommandContext> FindCommand(IEnumerable<ICommandInfo<CommandContext>> commands, string name)
-    {
-        return commands.FirstOrDefault(c =>
-            GetCommandName(c).Equals(name, StringComparison.OrdinalIgnoreCase) ||
-            GetCommandAliases(c).Any(a => a.Equals(name, StringComparison.OrdinalIgnoreCase)));
-    }
-
     private static IEnumerable<Attribute> GetAllAttributes(ICommandInfo<CommandContext> commandInfo)
     {
         return commandInfo.Attributes.Values.SelectMany(x => x);
@@ -931,14 +830,4 @@ public class StaticCommands(
         return commandInfo.ToString() ?? "unknown";
     }
 
-    private static IEnumerable<string> GetCommandAliases(ICommandInfo<CommandContext> commandInfo)
-    {
-        var nameAttr = GetAllAttributes(commandInfo).OfType<CommandAttribute>().FirstOrDefault();
-        return nameAttr?.Aliases ?? Array.Empty<string>();
-    }
-
-    private static string GetCommandSummary(ICommandInfo<CommandContext> commandInfo)
-    {
-        return GetAllAttributes(commandInfo).OfType<SummaryAttribute>().FirstOrDefault()?.Summary;
-    }
 }

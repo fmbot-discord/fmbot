@@ -202,9 +202,9 @@ public class Startup
 
         var maxConcurrency = ConfigData.Data.Discord.MaxConcurrency;
 
-        Log.Information("HTTP/3 (QUIC) support available for Discord REST: {QuicSupported}",
-            (OperatingSystem.IsLinux() || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS()) &&
-            System.Net.Quic.QuicConnection.IsSupported);
+        AppContext.TryGetSwitch("System.Net.SocketsHttpHandler.Http3Support", out var http3Enabled);
+        Log.Information("HTTP/3 for Discord REST: {Http3Enabled} (QUIC supported: {QuicSupported}) - expecting HTTP/2",
+            http3Enabled, System.Net.Quic.QuicConnection.IsSupported);
 
         Log.Information("Zstandard available for Discord gateway compression: {ZstdAvailable}",
             NativeLibrary.TryLoad("libzstd", typeof(ShardedGatewayClient).Assembly, null, out _));
@@ -300,6 +300,7 @@ public class Startup
             .AddSingleton<GenreBuilders>()
             .AddSingleton<GuildBuilders>()
             .AddSingleton<GuildSettingBuilder>()
+            .AddSingleton<HelpBuilders>()
             .AddSingleton<ImportBuilders>()
             .AddSingleton<PlayBuilder>()
             .AddSingleton<RecapBuilders>()
@@ -370,6 +371,7 @@ public class Startup
         // Guild-specific services
         services
             .AddSingleton<GuildService>()
+            .AddSingleton<HelpService>()
             .AddSingleton<GuildDisabledCommandService>()
             .AddSingleton<AutopostService>()
             .AddSingleton<AutopostRendererRegistry>()
@@ -403,7 +405,7 @@ public class Startup
     {
         services.AddHttpClient<BotListService>();
         services.AddHttpClient<ILastfmApi, LastfmApi>();
-        services.AddHttpClient<ChartService>();
+        services.AddHttpClient<ChartService>(client => { client.Timeout = TimeSpan.FromSeconds(15); });
         services.AddHttpClient<ImportService>();
         services.AddHttpClient<DiscogsApi>();
         services.AddHttpClient<GeniusService>();

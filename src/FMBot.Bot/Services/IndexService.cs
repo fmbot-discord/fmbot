@@ -279,7 +279,7 @@ public class IndexService
         var indexLimit = UserHasHigherIndexLimit(user) ? 200 : 4;
 
         var topArtists = await this._dataSourceFactory.GetTopArtistsAsync(user.UserNameLastFM,
-            new TimeSettingsModel { TimePeriod = TimePeriod.AllTime, PlayDays = 99999, StartDateTime = user.RegisteredLastFm, ApiParameter = "overall" }, 1000, indexLimit);
+            new TimeSettingsModel { TimePeriod = TimePeriod.AllTime, PlayDays = 99999, StartDateTime = user.RegisteredLastFm, ApiParameter = "overall" }, 1000, indexLimit, errorRetries: 5);
 
         if (!topArtists.Success || topArtists.Content?.TopArtists == null || topArtists.Content.TopArtists.Count == 0)
         {
@@ -344,7 +344,7 @@ public class IndexService
 
         var topAlbums =
             await this._dataSourceFactory.GetTopAlbumsAsync(user.UserNameLastFM,
-                new TimeSettingsModel { TimePeriod = TimePeriod.AllTime, PlayDays = 99999, StartDateTime = user.RegisteredLastFm, ApiParameter = "overall" }, 1000, indexLimit);
+                new TimeSettingsModel { TimePeriod = TimePeriod.AllTime, PlayDays = 99999, StartDateTime = user.RegisteredLastFm, ApiParameter = "overall" }, 1000, indexLimit, errorRetries: 5);
 
         if (!topAlbums.Success || topAlbums.Content?.TopAlbums == null || topAlbums.Content?.TopAlbums.Count == 0)
         {

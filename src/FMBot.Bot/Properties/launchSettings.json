@@ -2,10 +2,7 @@
   "profiles": {
     "FMBot.Bot": {
       "commandName": "Project",
-      "sqlDebugging": true,
-      "environmentVariables": {
-        "DYLD_FALLBACK_LIBRARY_PATH": "/opt/homebrew/opt/libmsquic/lib"
-      }
+      "sqlDebugging": true
     },
     "Docker": {
       "commandName": "Docker"

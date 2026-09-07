@@ -530,6 +530,17 @@
         }
       }
     },
+    "help": {
+      "description": "Ringkasan bantuan dan detail untuk setiap perintah .fmbot",
+      "parameters": {
+        "command": {
+          "description": "Perintah yang ingin dilihat detailnya"
+        },
+        "private": {
+          "description": "Hanya tampilkan respons ke kamu"
+        }
+      }
+    },
     "iceberg": {
       "description": "Menampilkan iceberg kamu, berdasarkan popularitas artis",
       "parameters": {

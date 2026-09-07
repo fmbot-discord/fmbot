@@ -30,6 +30,7 @@ public static class InteractionConstants
         public const string Tab = "settings-tab";
         public const string ServerSection = "server-settings-section";
         public const string ServerHome = "server-settings-home";
+        public const string ServerNew = "server-settings-new";
         public const string ServerSettingOpen = "server-settings-open";
     }
 
@@ -437,6 +438,7 @@ public static class InteractionConstants
     public static class Faq
     {
         public const string Overview = "faq-overview";
+        public const string OverviewNew = "faq-overview-new";
         public const string Category = "faq-category";
         public const string Question = "faq-question";
     }
@@ -445,6 +447,7 @@ public static class InteractionConstants
     {
         public const string CategoryMenu = "help-category";
         public const string CommandMenu = "help-command";
+        public const string Navigate = "help-nav";
     }
 
     public static class Template

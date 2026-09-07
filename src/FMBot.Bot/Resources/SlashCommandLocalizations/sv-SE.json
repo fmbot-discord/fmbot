@@ -530,6 +530,17 @@
         }
       }
     },
+    "help": {
+      "description": "Hjälpöversikt och detaljer för varje .fmbot-kommando",
+      "parameters": {
+        "command": {
+          "description": "Kommando att visa detaljer för"
+        },
+        "private": {
+          "description": "Visa svaret endast för dig"
+        }
+      }
+    },
     "iceberg": {
       "description": "Visar ditt isberg, baserat på artisternas popularitet",
       "parameters": {

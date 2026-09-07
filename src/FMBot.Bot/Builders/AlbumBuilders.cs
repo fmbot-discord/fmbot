@@ -1358,7 +1358,7 @@ public class AlbumBuilders
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Text,
+            ResponseType = ResponseType.ComponentsV2,
         };
 
         var albumSearch = await this._albumService.SearchAlbum(response, context.DiscordUser, context.Localizer, searchValue,
@@ -1368,6 +1368,8 @@ public class AlbumBuilders
             referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
         if (albumSearch.Album == null)
         {
+            albumSearch.Response.ResponseType = ResponseType.ComponentsV2;
+            albumSearch.Response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
             return albumSearch.Response;
         }
 
@@ -1415,15 +1417,10 @@ public class AlbumBuilders
                 "album-plays.png", height: GraphExtensions.CompactGraphHeight)
             : null;
 
+        response.TopLevelComponents.Add(new TextDisplayProperties(reply));
         if (playHistoryGraph != null)
         {
-            response.ResponseType = ResponseType.ComponentsV2;
-            response.TopLevelComponents.Add(new TextDisplayProperties(reply));
             response.TopLevelComponents.Add(playHistoryGraph);
-        }
-        else
-        {
-            response.Text = reply;
         }
 
         return response;
