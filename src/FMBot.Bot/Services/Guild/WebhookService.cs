@@ -74,13 +74,8 @@ public class WebhookService
         if (context.Channel is GuildThread threadChannel)
         {
             // Thread channel - need to create webhook on parent channel
-            if (!threadChannel.ParentId.HasValue)
-            {
-                throw new InvalidOperationException("Could not determine parent channel for thread.");
-            }
-
             var newWebhook = await context.Client.Rest.CreateWebhookAsync(
-                threadChannel.ParentId.Value,
+                threadChannel.ParentId,
                 new WebhookProperties(webhookName)
                 {
                     Avatar = new ImageProperties(ImageFormat.Png, avatarBytes)

@@ -2737,7 +2737,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                 if (!ulong.TryParse(user, out var discordUserId))
                 {
                     await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
-                        new MessageProperties { Content = "Usage: `.sendspotifyexpirydm \"discord-user-id\"`\nAdd `force` to skip the dedupe and 3-day window checks. The send is always logged, so a forced send still counts as their notification." });
+                        new MessageProperties { Content = "Usage: `.sendspotifyexpirydm \"discord-user-id\"`\nAdd `force` to skip the dedupe and 10-day window checks. Sends the final-reminder variant when the expiry is within 1 day, the initial warning otherwise. The send is always logged, so a forced send still counts as their notification." });
                     await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
                     return;
                 }
@@ -3744,8 +3744,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
 
             if (this.Context.Channel is GuildThread threadChannel &&
                 this.Context.Guild != null &&
-                threadChannel.ParentId.HasValue &&
-                this.Context.Guild.Channels.TryGetValue(threadChannel.ParentId.Value, out var parentChannel) &&
+                this.Context.Guild.Channels.TryGetValue(threadChannel.ParentId, out var parentChannel) &&
                 parentChannel is ForumGuildChannel forumChannel &&
                 forumChannel.AvailableTags.Any())
             {
