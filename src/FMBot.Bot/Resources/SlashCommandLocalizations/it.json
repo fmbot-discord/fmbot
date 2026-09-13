@@ -1243,6 +1243,17 @@
         }
       }
     },
+    "wkcountry": {
+      "description": "Mostra quali altri utenti ascoltano artisti di un paese nel tuo server",
+      "parameters": {
+        "mode": {
+          "description": "Il tipo di risposta che vuoi - cambia il predefinito con /mode"
+        },
+        "search": {
+          "description": "Il paese o l'artista che vuoi vedere"
+        }
+      }
+    },
     "wkgenre": {
       "description": "Mostra quali altri utenti ascoltano un genere nel tuo server",
       "parameters": {

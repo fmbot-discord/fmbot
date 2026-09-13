@@ -1193,6 +1193,8 @@
   "country.pageCounterCountries_other": "Pagina {{page}}/{{pages}} - {{count}} paesi in totale",
   "country.chartTitle": "Paesi dei [top artisti]({{url}}) di {{user}} ({{period}})",
   "country.changeMapTheme": "Cambia tema della mappa",
+  "country.whoknows.serverStats": "Paese - {{listeners}} - {{plays}} - {{avg}} di media",
+  "country.whoknows.nobodyInServer": "Nessuno in questo server (nemmeno tu) ha ascoltato artisti di questo paese.",
   "taste.userNotFmbot": "Quell'utente non usa .fmbot.",
   "taste.mentionPrompt": "Menziona qualcuno, inserisci un nome utente Last.fm o rispondi a qualcuno per confrontare i vostri gusti.\n-# Esempio: `{{commandOne}}` o `{{commandTwo}}`",
   "taste.compareWithSelf": "Non puoi confrontare i gusti con te stesso. Usa `{{command}}` per vedere i tuoi top artisti.",

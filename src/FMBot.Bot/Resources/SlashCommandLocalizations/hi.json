@@ -1243,6 +1243,17 @@
         }
       }
     },
+    "wkcountry": {
+      "description": "तुम्हारे सर्वर में कौन से यूज़र किसी देश के artists को सुनते हैं",
+      "parameters": {
+        "mode": {
+          "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /mode से बदलो"
+        },
+        "search": {
+          "description": "जो देश या artist तुम देखना चाहते हो"
+        }
+      }
+    },
     "wkgenre": {
       "description": "तुम्हारे सर्वर में कौन से यूज़र किसी genre को सुनते हैं",
       "parameters": {

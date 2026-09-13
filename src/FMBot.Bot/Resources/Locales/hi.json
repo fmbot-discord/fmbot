@@ -1193,6 +1193,8 @@
   "country.pageCounterCountries_other": "पेज {{page}}/{{pages}} - कुल {{count}} देश",
   "country.chartTitle": "{{user}} के [Top {{period}} artist]({{url}}) देश",
   "country.changeMapTheme": "मैप थीम बदलो",
+  "country.whoknows.serverStats": "देश - {{listeners}} - {{plays}} - {{avg}} औसत",
+  "country.whoknows.nobodyInServer": "इस सर्वर में किसी ने भी (तुमने भी नहीं) इस देश के artists नहीं सुने।",
   "taste.userNotFmbot": "वह यूज़र .fmbot इस्तेमाल नहीं करता।",
   "taste.mentionPrompt": "जिससे अपनी पसंद की तुलना करनी है, उसे मेंशन करो, उसका Last.fm यूज़रनेम डालो या उसके किसी मैसेज का रिप्लाई करो।\n-# उदाहरण: `{{commandOne}}` या `{{commandTwo}}`",
   "taste.compareWithSelf": "तुम खुद से अपनी पसंद की तुलना नहीं कर सकते। अपने Top artists देखने के लिए `{{command}}` इस्तेमाल करो।",

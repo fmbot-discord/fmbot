@@ -1193,6 +1193,8 @@
   "country.pageCounterCountries_other": "Sida {{page}}/{{pages}} - {{count}} länder totalt",
   "country.chartTitle": "[Top-artistländer]({{url}}) för {{user}} ({{period}})",
   "country.changeMapTheme": "Byt karttema",
+  "country.whoknows.serverStats": "Land - {{listeners}} - {{plays}} - {{avg}} snitt",
+  "country.whoknows.nobodyInServer": "Ingen på den här servern (inte ens du) har lyssnat på artister från det här landet.",
   "taste.userNotFmbot": "Den användaren använder inte .fmbot.",
   "taste.mentionPrompt": "Nämn någon, ange ett Last.fm-användarnamn eller svara på någons meddelande för att jämföra din smak med deras.\n-# Exempel: `{{commandOne}}` eller `{{commandTwo}}`",
   "taste.compareWithSelf": "Du kan inte jämföra smak med dig själv. Använd `{{command}}` för att se dina egna Top-artister.",

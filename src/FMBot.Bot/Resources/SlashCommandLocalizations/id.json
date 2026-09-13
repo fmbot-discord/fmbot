@@ -1243,6 +1243,17 @@
         }
       }
     },
+    "wkcountry": {
+      "description": "Menampilkan pengguna lain yang mendengarkan artis dari suatu negara di servermu",
+      "parameters": {
+        "mode": {
+          "description": "Jenis respons yang kamu mau - ubah default dengan /mode"
+        },
+        "search": {
+          "description": "Negara atau artis yang ingin kamu lihat"
+        }
+      }
+    },
     "wkgenre": {
       "description": "Menampilkan pengguna lain yang mendengarkan suatu genre di servermu",
       "parameters": {

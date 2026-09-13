@@ -1193,6 +1193,8 @@
   "country.pageCounterCountries_other": "Sayfa {{page}}/{{pages}} - toplam {{count}} ülke",
   "country.chartTitle": "{{user}} için [Top {{period}} sanatçı]({{url}}) ülkeleri",
   "country.changeMapTheme": "Harita temasını değiştir",
+  "country.whoknows.serverStats": "Ülke - {{listeners}} - {{plays}} - {{avg}} ort.",
+  "country.whoknows.nobodyInServer": "Bu sunucuda hiç kimse (sen bile) bu ülkeden sanatçı dinlememiş.",
   "taste.userNotFmbot": "Bu kullanıcı .fmbot kullanmıyor.",
   "taste.mentionPrompt": "Zevkini karşılaştırmak için lütfen birini etiketle, bir Last.fm kullanıcı adı gir veya birine yanıt ver.\n-# Örnek: `{{commandOne}}` veya `{{commandTwo}}`",
   "taste.compareWithSelf": "Zevkini kendinle karşılaştıramazsın. Kendi top sanatçılarını görmek için `{{command}}` kullan.",

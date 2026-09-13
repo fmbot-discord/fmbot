@@ -122,4 +122,41 @@ public class CountryCommands(
             await this.Context.HandleCommandException(e, userService);
         }
     }
+
+    [Command("whoknowscountry", "wc", "wkc", "wkcountry")]
+    [Summary("Shows what other users listen to artists from a country in your server")]
+    [Examples("wc", "wkc japan", "whoknowscountry", "whoknowscountry Netherlands", "wc Radiohead")]
+    [UsernameSetRequired]
+    [GuildOnly]
+    [RequiresIndex]
+    [CommandCategories(CommandCategory.Genres, CommandCategory.WhoKnows)]
+    public async Task WhoKnowsCountryAsync([CommandParameter(Remainder = true)] string countryValues = null)
+    {
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
+
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+
+        try
+        {
+            var currentSettings = new WhoKnowsSettings
+            {
+                ResponseMode = contextUser.WhoKnowsMode ?? WhoKnowsResponseMode.Default,
+                NewSearchValue = countryValues
+            };
+
+            var settings =
+                SettingService.SetWhoKnowsSettings(currentSettings, countryValues, contextUser.UserType, supportImageMode: false);
+
+            var response = await countryBuilders.WhoKnowsCountryAsync(new ContextModel(this.Context, prfx, contextUser),
+                settings.ResponseMode, settings.NewSearchValue);
+
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
 }

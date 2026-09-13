@@ -1243,6 +1243,17 @@
         }
       }
     },
+    "wkcountry": {
+      "description": "Toont welke andere gebruikers in je server naar artiesten uit een land luisteren",
+      "parameters": {
+        "mode": {
+          "description": "Het type reactie dat je wilt - wijzig de standaard met /mode"
+        },
+        "search": {
+          "description": "Het land of de artiest die je wilt bekijken"
+        }
+      }
+    },
     "wkgenre": {
       "description": "Toont welke andere gebruikers in je server naar een genre luisteren",
       "parameters": {

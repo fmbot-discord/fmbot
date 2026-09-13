@@ -9,6 +9,8 @@ using FMBot.Bot.Factories;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Bot.Services.Guild;
+using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
@@ -28,7 +30,10 @@ public class CountryBuilders(
     ArtistsService artistsService,
     PlayService playService,
     PuppeteerService puppeteerService,
-    MusicDataFactory musicDataFactory)
+    MusicDataFactory musicDataFactory,
+    GuildService guildService,
+    IndexService indexService,
+    FriendsService friendsService)
 {
     public async Task<ResponseModel> CountryAsync(
         ContextModel context,
@@ -579,6 +584,202 @@ public class CountryBuilders(
         response.ComponentsContainer.AddComponent(themeMenu);
         response.ResponseType = ResponseType.ComponentsV2;
         response.ComponentsContainer.WithAccentColor(DiscordConstants.LastFmColorRed);
+
+        return response;
+    }
+
+    private async Task<CountryInfo> ResolveCountryOrRespond(
+        ContextModel context,
+        string countryOptions,
+        ResponseModel response,
+        string exampleCommand)
+    {
+        if (string.IsNullOrWhiteSpace(countryOptions))
+        {
+            var recentTracks = await dataSourceFactory.GetRecentTracksAsync(context.ContextUser.UserNameLastFM, 1,
+                true, context.ContextUser.SessionKeyLastFm);
+
+            if (GenericEmbedService.RecentScrobbleCallFailed(recentTracks))
+            {
+                var failedResponse = GenericEmbedService.RecentScrobbleCallFailedResponse(recentTracks,
+                    context.ContextUser.UserNameLastFM, context.Localizer);
+                response.Embed = failedResponse.Embed;
+                response.CommandResponse = failedResponse.CommandResponse;
+                response.ResponseType = ResponseType.Embed;
+                return null;
+            }
+
+            var artistName = recentTracks.Content.RecentTracks.First().ArtistName;
+
+            var artist = await artistsService.GetArtistFromDatabase(artistName, requireSpotify: false);
+            if (artist?.CountryCode == null)
+            {
+                var artistCall = await dataSourceFactory.GetArtistInfoAsync(artistName, context.ContextUser.UserNameLastFM);
+                if (artistCall.Success)
+                {
+                    artist = await musicDataFactory.GetOrStoreArtistAsync(artistCall.Content);
+                }
+            }
+
+            if (artist?.CountryCode == null)
+            {
+                response.Embed.WithDescription(context.Localize("country.noRegisteredCountry",
+                    ("command", exampleCommand)));
+                response.CommandResponse = CommandResponse.NotFound;
+                response.ResponseType = ResponseType.Embed;
+                return null;
+            }
+
+            var resolvedCountry = countryService.GetValidCountry(artist.CountryCode);
+            if (resolvedCountry == null)
+            {
+                response.Embed.WithDescription(context.Localize("country.unresolvableCountryCode",
+                    ("artist", StringExtensions.Sanitize(artist.Name)),
+                    ("code", StringExtensions.Sanitize(artist.CountryCode))));
+                response.CommandResponse = CommandResponse.NotFound;
+                response.ResponseType = ResponseType.Embed;
+                return null;
+            }
+
+            return resolvedCountry;
+        }
+
+        var country = countryService.GetValidCountry(countryOptions);
+        if (country != null)
+        {
+            return country;
+        }
+
+        var searchedArtist = await artistsService.GetArtistFromDatabase(countryOptions, requireSpotify: false);
+        if (searchedArtist is { CountryCode: null })
+        {
+            var artistCall = await dataSourceFactory.GetArtistInfoAsync(searchedArtist.Name, context.ContextUser.UserNameLastFM);
+            if (artistCall.Success)
+            {
+                searchedArtist = await musicDataFactory.GetOrStoreArtistAsync(artistCall.Content);
+            }
+        }
+
+        if (searchedArtist?.CountryCode == null)
+        {
+            response.Embed.WithDescription(
+                searchedArtist == null
+                    ? context.Localize("country.artistOrCountryNotFound")
+                    : context.Localize("country.artistNoCountry",
+                        ("artist", StringExtensions.Sanitize(searchedArtist.Name))));
+            response.CommandResponse = CommandResponse.NotFound;
+            response.ResponseType = ResponseType.Embed;
+            return null;
+        }
+
+        country = countryService.GetValidCountry(searchedArtist.CountryCode);
+        if (country == null)
+        {
+            response.Embed.WithDescription(context.Localize("country.unresolvableCountryCode",
+                ("artist", StringExtensions.Sanitize(searchedArtist.Name)),
+                ("code", StringExtensions.Sanitize(searchedArtist.CountryCode))));
+            response.CommandResponse = CommandResponse.NotFound;
+            response.ResponseType = ResponseType.Embed;
+            return null;
+        }
+
+        return country;
+    }
+
+    public async Task<ResponseModel> WhoKnowsCountryAsync(
+        ContextModel context,
+        WhoKnowsResponseMode mode,
+        string countryValues)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.ComponentsV2
+        };
+
+        var country = await ResolveCountryOrRespond(context, countryValues, response,
+            $"{context.Prefix}wkcountry Netherlands");
+
+        if (country == null)
+        {
+            return response;
+        }
+
+        var guild = await guildService.GetGuildForWhoKnows(context.DiscordGuild.Id);
+        var guildUsers = await guildService.GetGuildUsers(context.DiscordGuild.Id);
+
+        var usersWithCountry = await countryService.GetGuildUsersForCountry(guild.GuildId, country.Code, guildUsers);
+
+        var discordGuildUser = await context.DiscordGuild.GetCachedGuildUserAsync(context.ContextUser.DiscordUserId);
+        var currentUser =
+            await indexService.GetOrAddUserToGuild(guildUsers, guild, discordGuildUser, context.ContextUser);
+        await indexService.UpdateGuildUser(guildUsers, discordGuildUser, currentUser.UserId, guild);
+
+        var (filterStats, filteredUsersWithCountry) =
+            WhoKnowsService.FilterWhoKnowsObjects(usersWithCountry, guildUsers, guild, context.ContextUser.UserId);
+
+        var title = $":flag_{country.Code.ToLower()}: {country.Name} in {context.DiscordGuild.Name}";
+
+        var footer = new StringBuilder();
+
+        var rnd = new Random();
+        var lastIndex = await guildService.GetGuildIndexTimestampAsync(context.DiscordGuild);
+        if (rnd.Next(0, 10) == 1 && lastIndex < DateTime.UtcNow.AddDays(-180))
+        {
+            footer.AppendLine(context.Localize("shared.whoknows.missingMembers", ("command", $"{context.Prefix}refreshmembers")));
+        }
+
+        if (filteredUsersWithCountry.Count > 1)
+        {
+            var serverListeners = filteredUsersWithCountry.Count;
+            var serverPlaycount = filteredUsersWithCountry.Sum(a => a.Playcount);
+            var avgServerPlaycount = filteredUsersWithCountry.Average(a => a.Playcount);
+
+            footer.AppendLine(context.Localize("country.whoknows.serverStats",
+                ("listeners", context.LocalizeCount("shared.listeners", serverListeners)),
+                ("plays", context.LocalizeCount("shared.plays", serverPlaycount)),
+                ("avg", ((int)avgServerPlaycount).Format(context.NumberFormat))));
+        }
+
+        var filterDescription = filterStats.GetFullDescription(context.Localizer);
+        if (filterDescription != null)
+        {
+            footer.AppendLine(filterDescription);
+        }
+
+        footer.AppendLine(context.Localize("country.source"));
+
+        var closeFriendUserIds = await friendsService.GetCloseFriendUserIdsAsync(context.ContextUser);
+
+        if (mode == WhoKnowsResponseMode.Pagination)
+        {
+            var paginator = WhoKnowsService.CreateWhoKnowsPaginator(filteredUsersWithCountry,
+                context.ContextUser.UserId, PrivacyLevel.Server, context.Localizer,
+                title, footer.ToString(), closeFriendUserIds: closeFriendUserIds);
+
+            response.ResponseType = ResponseType.Paginator;
+            response.ComponentPaginator = paginator;
+            return response;
+        }
+
+        var serverUsers =
+            WhoKnowsService.WhoKnowsListToString(filteredUsersWithCountry, context.ContextUser.UserId,
+                PrivacyLevel.Server, context.Localizer, doNotLinkEmojis: true, closeFriendUserIds: closeFriendUserIds);
+        if (filteredUsersWithCountry.Count == 0)
+        {
+            serverUsers = context.Localize("country.whoknows.nobodyInServer");
+        }
+
+        response.ComponentsContainer.WithTextDisplay($"### {title}");
+        response.ComponentsContainer.WithSeparator();
+        response.ComponentsContainer.WithTextDisplay(serverUsers);
+
+        var footerText = footer.ToString().TrimEnd();
+        if (!string.IsNullOrWhiteSpace(footerText))
+        {
+            response.ComponentsContainer.WithSeparator();
+            var footerLines = string.Join("\n", footerText.Split('\n').Select(l => $"-# {l}"));
+            response.ComponentsContainer.WithTextDisplay(footerLines);
+        }
 
         return response;
     }

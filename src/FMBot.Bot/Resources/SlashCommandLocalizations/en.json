@@ -1246,6 +1246,17 @@
         }
       }
     },
+    "wkcountry": {
+      "description": "Shows what other users listen to artists from a country in your server",
+      "parameters": {
+        "mode": {
+          "description": "The type of response you want - change default with /mode"
+        },
+        "search": {
+          "description": "The country or artist you want to view"
+        }
+      }
+    },
     "wkgenre": {
       "description": "Shows what other users listen to a genre in your server",
       "parameters": {

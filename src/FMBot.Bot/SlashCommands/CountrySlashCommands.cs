@@ -79,4 +79,40 @@ public class CountrySlashCommands(
         await this.Context.SendFollowUpResponse(this.Interactivity, response, userService, privateResponse);
         await this.Context.LogCommandUsedAsync(response, userService);
     }
+
+    [SlashCommand("wkcountry", "Shows what other users listen to artists from a country in your server",
+        Contexts = [InteractionContextType.Guild],
+        IntegrationTypes = [ApplicationIntegrationType.GuildInstall])]
+    [UsernameSetRequired]
+    [RequiresIndex]
+    public async Task WhoKnowsCountryAsync(
+        [SlashCommandParameter(Name = "search", Description = "The country or artist you want to view",
+            AutocompleteProviderType = typeof(CountryArtistAutoComplete))]
+        string search = null,
+        [SlashCommandParameter(Name = "mode", Description = "The type of response you want - change default with /mode")]
+        WhoKnowsResponseMode? mode = null)
+    {
+        this.Context.DeferInBackground();
+
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+
+        mode ??= contextUser.WhoKnowsMode ?? WhoKnowsResponseMode.Default;
+        if (mode == WhoKnowsResponseMode.Image)
+        {
+            mode = WhoKnowsResponseMode.Default;
+        }
+
+        try
+        {
+            var response = await countryBuilders.WhoKnowsCountryAsync(new ContextModel(this.Context, contextUser),
+                mode.Value, search);
+
+            await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
 }

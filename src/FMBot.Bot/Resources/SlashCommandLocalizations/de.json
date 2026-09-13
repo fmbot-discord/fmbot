@@ -1243,6 +1243,17 @@
         }
       }
     },
+    "wkcountry": {
+      "description": "Zeigt, welche anderen Nutzer auf deinem Server Künstler aus einem Land hören",
+      "parameters": {
+        "mode": {
+          "description": "Gewünschter Antworttyp - Standard änderbar mit /mode"
+        },
+        "search": {
+          "description": "Das Land oder der Künstler, den du ansehen möchtest"
+        }
+      }
+    },
     "wkgenre": {
       "description": "Zeigt, welche anderen Nutzer auf deinem Server ein Genre hören",
       "parameters": {
