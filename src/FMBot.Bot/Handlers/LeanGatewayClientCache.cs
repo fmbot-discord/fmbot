@@ -19,18 +19,15 @@ public sealed class LeanGatewayClientCacheProvider : IGatewayClientCacheProvider
 
     public IGatewayClientCache Create(ulong clientId, RestClient client)
     {
-        return new LeanGatewayClientCache();
+        return new LeanGatewayClientCache(ConcurrentGatewayClientCacheProvider.Empty.Create(clientId, client));
     }
 }
 
-public sealed class LeanGatewayClientCache : IGatewayClientCache
+public sealed class LeanGatewayClientCache(ConcurrentGatewayClientCache inner) : IGatewayClientCache
 {
-    private CurrentUser _user;
-    private readonly ConcurrentDictionary<ulong, Guild> _guilds = new();
+    public CurrentUser User => inner.User;
 
-    public CurrentUser User => this._user;
-
-    public IReadOnlyDictionary<ulong, Guild> Guilds => this._guilds;
+    public IReadOnlyDictionary<ulong, Guild> Guilds => inner.Guilds;
 
     private static class Empty<TKey, TValue> where TKey : notnull where TValue : class
     {
@@ -52,12 +49,7 @@ public sealed class LeanGatewayClientCache : IGatewayClientCache
         }
 
         var items = source as IReadOnlyCollection<TSource> ?? source.ToList();
-        if (items.Count == 0)
-        {
-            return Empty<TKey, TValue>.Instance;
-        }
-
-        var dictionary = new ConcurrentDictionary<TKey, TValue>(1, items.Count);
+        var dictionary = new ConcurrentDictionary<TKey, TValue>(1, Math.Max(items.Count, 1));
         foreach (var item in items)
         {
             if (item is JsonChannel channel)
@@ -80,64 +72,21 @@ public sealed class LeanGatewayClientCache : IGatewayClientCache
                typeof(TValue) == typeof(Presence);
     }
 
-    private static ConcurrentDictionary<TKey, TValue> Writable<TKey, TValue>(Guild guild,
-        Func<Guild, IReadOnlyDictionary<TKey, TValue>> get, Action<Guild, ConcurrentDictionary<TKey, TValue>> set)
-        where TKey : notnull where TValue : class
-    {
-        if (get(guild) is ConcurrentDictionary<TKey, TValue> existing)
-        {
-            return existing;
-        }
-
-        lock (guild)
-        {
-            if (get(guild) is ConcurrentDictionary<TKey, TValue> raced)
-            {
-                return raced;
-            }
-
-            var created = new ConcurrentDictionary<TKey, TValue>(1, 4);
-            set(guild, created);
-            return created;
-        }
-    }
-
-    private static void Remove<TKey, TValue>(Guild guild, Func<Guild, IReadOnlyDictionary<TKey, TValue>> get, TKey key)
-        where TKey : notnull where TValue : class
-    {
-        if (get(guild) is ConcurrentDictionary<TKey, TValue> dictionary)
-        {
-            dictionary.TryRemove(key, out _);
-        }
-    }
-
     public IGatewayClientCache CacheGuild(Guild guild)
     {
-        this._guilds[guild.Id] = guild;
+        inner.CacheGuild(guild);
         return this;
     }
 
     public IGatewayClientCache CacheGuildUser(GuildUser user)
     {
-        if (this._guilds.TryGetValue(user.GuildId, out var guild))
-        {
-            Writable(guild, static g => g.Users, static (g, d) => g.Users = d)[user.Id] = user;
-        }
-
+        inner.CacheGuildUser(user);
         return this;
     }
 
     public IGatewayClientCache CacheGuildUsers(ulong guildId, IReadOnlyList<GuildUser> users)
     {
-        if (this._guilds.TryGetValue(guildId, out var guild))
-        {
-            var dictionary = Writable(guild, static g => g.Users, static (g, d) => g.Users = d);
-            foreach (var user in users)
-            {
-                dictionary[user.Id] = user;
-            }
-        }
-
+        inner.CacheGuildUsers(guildId, users);
         return this;
     }
 
@@ -148,11 +97,7 @@ public sealed class LeanGatewayClientCache : IGatewayClientCache
 
     public IGatewayClientCache CacheRole(Role role)
     {
-        if (this._guilds.TryGetValue(role.GuildId, out var guild))
-        {
-            Writable(guild, static g => g.Roles, static (g, d) => g.Roles = d)[role.Id] = role;
-        }
-
+        inner.CacheRole(role);
         return this;
     }
 
@@ -163,21 +108,13 @@ public sealed class LeanGatewayClientCache : IGatewayClientCache
 
     public IGatewayClientCache CacheGuildThread(GuildThread thread)
     {
-        if (this._guilds.TryGetValue(thread.GuildId, out var guild))
-        {
-            Writable(guild, static g => g.ActiveThreads, static (g, d) => g.ActiveThreads = d)[thread.Id] = thread;
-        }
-
+        inner.CacheGuildThread(thread);
         return this;
     }
 
     public IGatewayClientCache CacheGuildChannel(IGuildChannel channel)
     {
-        if (this._guilds.TryGetValue(channel.GuildId, out var guild))
-        {
-            Writable(guild, static g => g.Channels, static (g, d) => g.Channels = d)[channel.Id] = channel;
-        }
-
+        inner.CacheGuildChannel(channel);
         return this;
     }
 
@@ -188,17 +125,13 @@ public sealed class LeanGatewayClientCache : IGatewayClientCache
 
     public IGatewayClientCache CacheCurrentUser(CurrentUser user)
     {
-        this._user = user;
+        inner.CacheCurrentUser(user);
         return this;
     }
 
     public IGatewayClientCache CacheVoiceState(VoiceState voiceState)
     {
-        if (this._guilds.TryGetValue(voiceState.GuildId, out var guild))
-        {
-            Writable(guild, static g => g.VoiceStates, static (g, d) => g.VoiceStates = d)[voiceState.UserId] = voiceState;
-        }
-
+        inner.CacheVoiceState(voiceState);
         return this;
     }
 
@@ -217,49 +150,34 @@ public sealed class LeanGatewayClientCache : IGatewayClientCache
         return this;
     }
 
-    public IGatewayClientCache SyncGuildActiveThreads(ulong guildId, IReadOnlyDictionary<ulong, GuildThread> threads)
+    public IGatewayClientCache SyncGuildActiveThreads(ulong guildId, IReadOnlyList<ulong> channelIds,
+        IReadOnlyDictionary<ulong, GuildThread> threads)
     {
-        if (this._guilds.TryGetValue(guildId, out var guild))
-        {
-            guild.ActiveThreads = threads;
-        }
-
+        inner.SyncGuildActiveThreads(guildId, channelIds, threads);
         return this;
     }
 
     public IGatewayClientCache SyncGuilds(IReadOnlyList<ulong> guildIds)
     {
-        foreach (var guildId in this._guilds.Keys.Except(guildIds))
-        {
-            this._guilds.TryRemove(guildId, out _);
-        }
-
+        inner.SyncGuilds(guildIds);
         return this;
     }
 
     public IGatewayClientCache RemoveGuild(ulong guildId)
     {
-        this._guilds.TryRemove(guildId, out _);
+        inner.RemoveGuild(guildId);
         return this;
     }
 
     public IGatewayClientCache RemoveGuildUser(ulong guildId, ulong userId)
     {
-        if (this._guilds.TryGetValue(guildId, out var guild))
-        {
-            Remove(guild, static g => g.Users, userId);
-        }
-
+        inner.RemoveGuildUser(guildId, userId);
         return this;
     }
 
     public IGatewayClientCache RemoveRole(ulong guildId, ulong roleId)
     {
-        if (this._guilds.TryGetValue(guildId, out var guild))
-        {
-            Remove(guild, static g => g.Roles, roleId);
-        }
-
+        inner.RemoveRole(guildId, roleId);
         return this;
     }
 
@@ -270,21 +188,13 @@ public sealed class LeanGatewayClientCache : IGatewayClientCache
 
     public IGatewayClientCache RemoveGuildThread(ulong guildId, ulong threadId)
     {
-        if (this._guilds.TryGetValue(guildId, out var guild))
-        {
-            Remove(guild, static g => g.ActiveThreads, threadId);
-        }
-
+        inner.RemoveGuildThread(guildId, threadId);
         return this;
     }
 
     public IGatewayClientCache RemoveGuildChannel(ulong guildId, ulong channelId)
     {
-        if (this._guilds.TryGetValue(guildId, out var guild))
-        {
-            Remove(guild, static g => g.Channels, channelId);
-        }
-
+        inner.RemoveGuildChannel(guildId, channelId);
         return this;
     }
 
@@ -295,15 +205,12 @@ public sealed class LeanGatewayClientCache : IGatewayClientCache
 
     public IGatewayClientCache RemoveVoiceState(ulong guildId, ulong userId)
     {
-        if (this._guilds.TryGetValue(guildId, out var guild))
-        {
-            Remove(guild, static g => g.VoiceStates, userId);
-        }
-
+        inner.RemoveVoiceState(guildId, userId);
         return this;
     }
 
     public void Dispose()
     {
+        inner.Dispose();
     }
 }

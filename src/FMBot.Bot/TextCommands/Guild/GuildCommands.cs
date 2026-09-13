@@ -334,7 +334,7 @@ public class GuildCommands(
             var id = this.Context.Channel.Id;
             if (this.Context.Channel is GuildThread threadChannel)
             {
-                id = threadChannel.ParentId ?? this.Context.Channel.Id;
+                id = threadChannel.ParentId;
             }
 
             var response =
