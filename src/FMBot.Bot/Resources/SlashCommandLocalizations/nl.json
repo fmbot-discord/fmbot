@@ -255,6 +255,9 @@
       "parameters": {
         "search": {
           "description": "Het land of de artiest die je wilt bekijken"
+        },
+        "user": {
+          "description": "De gebruiker om te tonen (standaard jijzelf)"
         }
       }
     },

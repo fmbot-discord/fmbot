@@ -151,26 +151,33 @@ public class ArtistInteractions(
     }
 
     [ComponentInteraction(InteractionConstants.Artist.Albums)]
-    public async Task ArtistAlbumsAsync(string artistId, string discordUser, string requesterDiscordUser)
+    public async Task ArtistAlbumsAsync(string artistId, string discordUser, string requesterDiscordUser, string fmFlag = null)
     {
         this.Context.DeferUpdateInBackground();
         var disableButtonsTask = this.Context.DisableButtonsAndMenus().ObserveFaults();
 
-        var discordUserId = ulong.Parse(discordUser);
-        var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
+        try
+        {
+            var discordUserId = ulong.Parse(discordUser);
+            var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
 
-        var contextUser = await userService.GetUserAsync(requesterDiscordUserId);
-        var discordContextUser = await this.Context.GetUserAsync(requesterDiscordUserId);
-        var userSettings = await settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
+            var contextUser = await userService.GetUserAsync(requesterDiscordUserId);
+            var discordContextUser = await this.Context.GetUserAsync(requesterDiscordUserId);
+            var userSettings = await settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
 
-        var artist = await artistsService.GetArtistForId(int.Parse(artistId));
+            var artist = await artistsService.GetArtistForId(int.Parse(artistId));
 
-        var response = await artistBuilders.ArtistAlbumsAsync(new ContextModel(this.Context, contextUser, discordContextUser),
-            userSettings, artist.Name, false);
+            var response = await artistBuilders.ArtistAlbumsAsync(new ContextModel(this.Context, contextUser, discordContextUser),
+                userSettings, artist.Name, false);
 
-        await disableButtonsTask;
-        await this.Context.UpdateInteractionEmbed(response, interactivity, false);
-        await this.Context.LogCommandUsedAsync(response, userService);
+            await disableButtonsTask;
+            await this.Context.UpdateInteractionEmbed(response, interactivity, false);
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
     }
 
     [ComponentInteraction(InteractionConstants.WhoKnowsRolePicker)]
@@ -253,7 +260,7 @@ public class ArtistInteractions(
             var response = await artistBuilders.WhoKnowsArtistAsync(new ContextModel(this.Context, contextUser), mode, artist.Name, showCrownButton: true);
 
             await disableButtonsTask;
-            await this.Context.UpdateInteractionEmbed(response, defer: false);
+            await this.Context.UpdateInteractionEmbed(response, interactivity, false);
             await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)

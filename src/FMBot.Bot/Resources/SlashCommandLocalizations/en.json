@@ -255,6 +255,9 @@
       "parameters": {
         "search": {
           "description": "The country or artist you want to view"
+        },
+        "user": {
+          "description": "The user to show (defaults to self)"
         }
       }
     },

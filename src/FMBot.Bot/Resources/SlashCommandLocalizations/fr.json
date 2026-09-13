@@ -255,6 +255,9 @@
       "parameters": {
         "search": {
           "description": "Le pays ou l'artiste à afficher"
+        },
+        "user": {
+          "description": "L'utilisateur à afficher (toi par défaut)"
         }
       }
     },

@@ -255,6 +255,9 @@
       "parameters": {
         "search": {
           "description": "Negara atau artis yang ingin kamu lihat"
+        },
+        "user": {
+          "description": "Pengguna yang ditampilkan (default: kamu sendiri)"
         }
       }
     },

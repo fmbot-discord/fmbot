@@ -255,6 +255,9 @@
       "parameters": {
         "search": {
           "description": "Il paese o l'artista che vuoi vedere"
+        },
+        "user": {
+          "description": "L'utente da mostrare (predefinito: te stesso)"
         }
       }
     },

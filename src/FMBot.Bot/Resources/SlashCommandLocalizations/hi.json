@@ -255,6 +255,9 @@
       "parameters": {
         "search": {
           "description": "जो देश या artist तुम देखना चाहते हो"
+        },
+        "user": {
+          "description": "जिस यूज़र का डेटा दिखाना है (डिफ़ॉल्ट: तुम खुद)"
         }
       }
     },

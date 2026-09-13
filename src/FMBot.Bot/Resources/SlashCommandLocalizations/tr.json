@@ -255,6 +255,9 @@
       "parameters": {
         "search": {
           "description": "Görüntülemek istediğin ülke veya sanatçı"
+        },
+        "user": {
+          "description": "Gösterilecek kullanıcı (varsayılan: sen)"
         }
       }
     },

@@ -37,7 +37,8 @@ public class CountryBuilders(
 {
     public async Task<ResponseModel> CountryAsync(
         ContextModel context,
-        string countryOptions)
+        string countryOptions,
+        UserSettingsModel userSettings)
     {
         var response = new ResponseModel
         {
@@ -59,13 +60,13 @@ public class CountryBuilders(
         CountryInfo country = null;
         if (string.IsNullOrWhiteSpace(countryOptions))
         {
-            var recentTracks = await dataSourceFactory.GetRecentTracksAsync(context.ContextUser.UserNameLastFM, 1,
-                true, context.ContextUser.SessionKeyLastFm);
+            var recentTracks = await dataSourceFactory.GetRecentTracksAsync(userSettings.UserNameLastFm, 1,
+                true, userSettings.SessionKeyLastFm);
 
             if (GenericEmbedService.RecentScrobbleCallFailed(recentTracks))
             {
                 return GenericEmbedService.RecentScrobbleCallFailedResponse(recentTracks,
-                    context.ContextUser.UserNameLastFM, context.Localizer);
+                    userSettings.UserNameLastFm, context.Localizer);
             }
 
             var artistName = recentTracks.Content.RecentTracks.First().ArtistName;
@@ -75,7 +76,7 @@ public class CountryBuilders(
             if (foundCountry == null)
             {
                 var artistCall =
-                    await dataSourceFactory.GetArtistInfoAsync(artistName, context.ContextUser.UserNameLastFM);
+                    await dataSourceFactory.GetArtistInfoAsync(artistName, userSettings.UserNameLastFm);
                 if (artistCall.Success)
                 {
                     var cachedArtist = await musicDataFactory.GetOrStoreArtistAsync(artistCall.Content);
@@ -178,7 +179,7 @@ public class CountryBuilders(
                 {
                     var artistCall =
                         await dataSourceFactory.GetArtistInfoAsync(artist.Name,
-                            context.ContextUser.UserNameLastFM);
+                            userSettings.UserNameLastFm);
                     if (artistCall.Success)
                     {
                         artist = await musicDataFactory.GetOrStoreArtistAsync(artistCall.Content);
@@ -254,7 +255,7 @@ public class CountryBuilders(
             return response;
         }
 
-        var countryArtists = await countryService.GetUserArtistsForCountry(context.ContextUser.UserId, country.Code);
+        var countryArtists = await countryService.GetUserArtistsForCountry(userSettings.UserId, country.Code);
 
         if (!countryArtists.Any())
         {
@@ -265,6 +266,13 @@ public class CountryBuilders(
         }
 
         var userTitle = await userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
+        if (userSettings.DifferentUser)
+        {
+            userTitle = context.Localize("shared.requestedByTitle",
+                ("user", userSettings.UserNameLastFm),
+                ("requester", userTitle));
+        }
+
         var pages = new List<PageBuilder>();
 
         var title = context.Localize("country.topArtistsTitle",
@@ -301,7 +309,7 @@ public class CountryBuilders(
                 .WithTitle(title)
                 .WithColor(DiscordConstants.LastFmColorRed)
                 .WithUrl(
-                    $"{LastfmUrlExtensions.GetUserUrl(context.ContextUser.UserNameLastFM)}/library/artists?date_preset=ALL")
+                    $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library/artists?date_preset=ALL")
                 .WithFooter(footer));
             pageCounter++;
         }

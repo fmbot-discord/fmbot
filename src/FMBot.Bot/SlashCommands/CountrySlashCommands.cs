@@ -32,15 +32,18 @@ public class CountrySlashCommands(
     public async Task CountryAsync(
         [SlashCommandParameter(Name = "search", Description = "The country or artist you want to view",
             AutocompleteProviderType = typeof(CountryArtistAutoComplete))]
-        string name = null)
+        string name = null,
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
+        string user = null)
     {
         this.Context.DeferInBackground();
 
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var userSettings = await settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
 
         try
         {
-            var response = await countryBuilders.CountryAsync(new ContextModel(this.Context, contextUser), name);
+            var response = await countryBuilders.CountryAsync(new ContextModel(this.Context, contextUser), name, userSettings);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);

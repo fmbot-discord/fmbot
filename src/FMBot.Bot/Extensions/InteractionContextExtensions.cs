@@ -762,11 +762,22 @@ public static class InteractionContextExtensions
             return;
         }
 
-        await context.ModifyMessage(message, response, defer);
+        await context.ModifyMessage(message, response, defer, interactiveService: interactiveService);
     }
 
 
 
+
+    extension(InteractiveService interactiveService)
+    {
+        public void CancelPaginator(ulong messageId)
+        {
+            if (interactiveService.TryRemoveCallback(messageId, out var callback))
+            {
+                callback.Cancel();
+            }
+        }
+    }
 
     extension(IInteractionContext context)
     {
@@ -984,12 +995,22 @@ public static class InteractionContextExtensions
         }
 
         public async Task ModifyMessage(RestMessage message,
-            ResponseModel response, bool defer = true, bool interactionEdit = false)
+            ResponseModel response, bool defer = true, bool interactionEdit = false,
+            InteractiveService interactiveService = null)
         {
             var hadPendingDefer = await context.EnsureDeferCompleted();
             if (defer && !hadPendingDefer)
             {
                 await context.Interaction.SendResponseAsync(InteractionCallback.DeferredModifyMessage);
+            }
+
+            var editedMessageId = context.RespondsThroughInteraction(interactionEdit)
+                ? (context.Interaction as MessageComponentInteraction)?.Message?.Id
+                  ?? (context.Interaction as ModalInteraction)?.Message?.Id
+                : message?.Id;
+            if (editedMessageId.HasValue)
+            {
+                interactiveService?.CancelPaginator(editedMessageId.Value);
             }
 
             IEnumerable<IMessageComponentProperties> components = response.ResponseType == ResponseType.ComponentsV2
@@ -1037,16 +1058,12 @@ public static class InteractionContextExtensions
         private async Task ModifyPaginator(InteractiveService interactiveService,
             Message message, ResponseModel response)
         {
-            if (context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
-                !context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall))
-            {
-                _ = interactiveService.SendPaginatorAsync(
-                    response.ComponentPaginator.Build(),
-                    context.Interaction,
-                    TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
-                    InteractionCallbackType.DeferredMessage);
-            }
-            else if (message.Flags.HasFlag(MessageFlags.Ephemeral))
+            interactiveService.CancelPaginator(message.Id);
+
+            var userInstallOnly = context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
+                                  !context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall);
+
+            if (userInstallOnly || message.Flags.HasFlag(MessageFlags.Ephemeral))
             {
                 _ = interactiveService.SendPaginatorAsync(
                     response.ComponentPaginator.Build(),

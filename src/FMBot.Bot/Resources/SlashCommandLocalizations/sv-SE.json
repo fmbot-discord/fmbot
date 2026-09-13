@@ -255,6 +255,9 @@
       "parameters": {
         "search": {
           "description": "Landet eller artisten du vill visa"
+        },
+        "user": {
+          "description": "Användaren som ska visas (standard: du själv)"
         }
       }
     },

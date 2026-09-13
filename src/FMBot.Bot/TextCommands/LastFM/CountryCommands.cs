@@ -100,7 +100,8 @@ public class CountryCommands(
 
     [Command("country", "from")]
     [Summary("Shows country information for an artist, or top artists for a specific country")]
-    [Examples("country", "country Japan", "from", "from Radiohead")]
+    [Options(Constants.UserMentionExample)]
+    [Examples("country", "country Japan", "from", "from Radiohead", "country Japan @user", "country lfm:fm-bot")]
     [UsernameSetRequired]
     [SupportsPagination]
     [CommandCategories(CommandCategory.Genres)]
@@ -113,7 +114,10 @@ public class CountryCommands(
 
         try
         {
-            var response = await countryBuilders.CountryAsync(new ContextModel(this.Context, prfx, contextUser), countryOptions);
+            var userSettings = await settingService.GetUser(countryOptions, contextUser, this.Context);
+
+            var response = await countryBuilders.CountryAsync(new ContextModel(this.Context, prfx, contextUser),
+                userSettings.NewSearchValue, userSettings);
             await this.Context.SendResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);
         }
