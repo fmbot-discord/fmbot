@@ -14,13 +14,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="HtmlSanitizer" Version="9.2.995" />
-    <PackageReference Include="PuppeteerSharp" Version="24.39.0" />
+    <PackageReference Include="HtmlSanitizer" Version="9.2.1039" />
+    <PackageReference Include="PuppeteerSharp" Version="25.10.0" />
     <PackageReference Include="Serilog" Version="4.4.0" />
-    <PackageReference Include="SkiaSharp" Version="4.151.1" />
-    <PackageReference Include="SkiaSharp.HarfBuzz" Version="4.151.1" />
-    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="4.151.1" />
-    <PackageReference Include="SkiaSharp.Views.Desktop.Common" Version="4.151.1" />
+    <PackageReference Include="SkiaSharp" Version="4.152.0" />
+    <PackageReference Include="SkiaSharp.HarfBuzz" Version="4.152.0" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="4.152.0" />
   </ItemGroup>
 
   <ItemGroup>
