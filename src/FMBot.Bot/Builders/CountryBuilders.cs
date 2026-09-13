@@ -588,7 +588,7 @@ public class CountryBuilders(
         return response;
     }
 
-    private async Task<CountryInfo> ResolveCountryOrRespond(
+    private async Task<(CountryInfo Country, string ArtistName)> ResolveCountryOrRespond(
         ContextModel context,
         string countryOptions,
         ResponseModel response,
@@ -606,7 +606,7 @@ public class CountryBuilders(
                 response.Embed = failedResponse.Embed;
                 response.CommandResponse = failedResponse.CommandResponse;
                 response.ResponseType = ResponseType.Embed;
-                return null;
+                return (null, null);
             }
 
             var artistName = recentTracks.Content.RecentTracks.First().ArtistName;
@@ -627,7 +627,7 @@ public class CountryBuilders(
                     ("command", exampleCommand)));
                 response.CommandResponse = CommandResponse.NotFound;
                 response.ResponseType = ResponseType.Embed;
-                return null;
+                return (null, null);
             }
 
             var resolvedCountry = countryService.GetValidCountry(artist.CountryCode);
@@ -638,16 +638,16 @@ public class CountryBuilders(
                     ("code", StringExtensions.Sanitize(artist.CountryCode))));
                 response.CommandResponse = CommandResponse.NotFound;
                 response.ResponseType = ResponseType.Embed;
-                return null;
+                return (null, null);
             }
 
-            return resolvedCountry;
+            return (resolvedCountry, artist.Name);
         }
 
         var country = countryService.GetValidCountry(countryOptions);
         if (country != null)
         {
-            return country;
+            return (country, null);
         }
 
         var searchedArtist = await artistsService.GetArtistFromDatabase(countryOptions, requireSpotify: false);
@@ -669,7 +669,7 @@ public class CountryBuilders(
                         ("artist", StringExtensions.Sanitize(searchedArtist.Name))));
             response.CommandResponse = CommandResponse.NotFound;
             response.ResponseType = ResponseType.Embed;
-            return null;
+            return (null, null);
         }
 
         country = countryService.GetValidCountry(searchedArtist.CountryCode);
@@ -680,10 +680,10 @@ public class CountryBuilders(
                 ("code", StringExtensions.Sanitize(searchedArtist.CountryCode))));
             response.CommandResponse = CommandResponse.NotFound;
             response.ResponseType = ResponseType.Embed;
-            return null;
+            return (null, null);
         }
 
-        return country;
+        return (country, searchedArtist.Name);
     }
 
     public async Task<ResponseModel> WhoKnowsCountryAsync(
@@ -696,7 +696,7 @@ public class CountryBuilders(
             ResponseType = ResponseType.ComponentsV2
         };
 
-        var country = await ResolveCountryOrRespond(context, countryValues, response,
+        var (country, artistName) = await ResolveCountryOrRespond(context, countryValues, response,
             $"{context.Prefix}wkcountry Netherlands");
 
         if (country == null)
@@ -744,6 +744,12 @@ public class CountryBuilders(
         if (filterDescription != null)
         {
             footer.AppendLine(filterDescription);
+        }
+
+        if (artistName != null)
+        {
+            footer.AppendLine(context.Localize("country.whoknows.countryOfArtist",
+                ("artist", StringExtensions.Sanitize(artistName))));
         }
 
         footer.AppendLine(context.Localize("country.source"));

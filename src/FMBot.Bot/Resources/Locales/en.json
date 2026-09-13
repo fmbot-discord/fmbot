@@ -1195,6 +1195,7 @@
   "country.changeMapTheme": "Change map theme",
   "country.whoknows.serverStats": "Country - {{listeners}} - {{plays}} - {{avg}} avg",
   "country.whoknows.nobodyInServer": "Nobody in this server (not even you) has listened to artists from this country.",
+  "country.whoknows.countryOfArtist": "Country of **{{artist}}**",
   "taste.userNotFmbot": "That user doesn't use .fmbot.",
   "taste.mentionPrompt": "Please mention someone, enter a Last.fm username or reply to someone to compare your taste with.\n-# Example: `{{commandOne}}` or `{{commandTwo}}`",
   "taste.compareWithSelf": "You can't compare taste with yourself. Use `{{command}}` to view your own top artists.",
