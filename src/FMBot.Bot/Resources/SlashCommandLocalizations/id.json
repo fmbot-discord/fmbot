@@ -255,6 +255,9 @@
       "parameters": {
         "search": {
           "description": "Negara atau artis yang ingin kamu lihat"
+        },
+        "user": {
+          "description": "Pengguna yang ditampilkan (default: kamu sendiri)"
         }
       }
     },
@@ -1240,6 +1243,17 @@
         },
         "role-picker": {
           "description": "Tampilkan pemilih role untuk memfilter dengan role"
+        }
+      }
+    },
+    "wkcountry": {
+      "description": "Menampilkan pengguna lain yang mendengarkan artis dari suatu negara di servermu",
+      "parameters": {
+        "mode": {
+          "description": "Jenis respons yang kamu mau - ubah default dengan /mode"
+        },
+        "search": {
+          "description": "Negara atau artis yang ingin kamu lihat"
         }
       }
     },

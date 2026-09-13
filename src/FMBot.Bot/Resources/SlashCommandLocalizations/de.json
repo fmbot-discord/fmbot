@@ -255,6 +255,9 @@
       "parameters": {
         "search": {
           "description": "Das Land oder der Künstler, den du ansehen möchtest"
+        },
+        "user": {
+          "description": "Der anzuzeigende Nutzer (standardmäßig du selbst)"
         }
       }
     },
@@ -1240,6 +1243,17 @@
         },
         "role-picker": {
           "description": "Rollenauswahl zum Filtern nach Rollen anzeigen"
+        }
+      }
+    },
+    "wkcountry": {
+      "description": "Zeigt, welche anderen Nutzer auf deinem Server Künstler aus einem Land hören",
+      "parameters": {
+        "mode": {
+          "description": "Gewünschter Antworttyp - Standard änderbar mit /mode"
+        },
+        "search": {
+          "description": "Das Land oder der Künstler, den du ansehen möchtest"
         }
       }
     },

@@ -255,6 +255,9 @@
       "parameters": {
         "search": {
           "description": "Landet eller artisten du vill visa"
+        },
+        "user": {
+          "description": "Användaren som ska visas (standard: du själv)"
         }
       }
     },
@@ -1240,6 +1243,17 @@
         },
         "role-picker": {
           "description": "Visa en rollväljare för att filtrera med roller"
+        }
+      }
+    },
+    "wkcountry": {
+      "description": "Visar vilka andra användare på din server som lyssnar på artister från ett land",
+      "parameters": {
+        "mode": {
+          "description": "Typen av svar du vill ha - ändra standard med /mode"
+        },
+        "search": {
+          "description": "Landet eller artisten du vill visa"
         }
       }
     },

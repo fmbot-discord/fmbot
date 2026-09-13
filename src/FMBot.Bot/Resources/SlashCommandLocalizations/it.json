@@ -255,6 +255,9 @@
       "parameters": {
         "search": {
           "description": "Il paese o l'artista che vuoi vedere"
+        },
+        "user": {
+          "description": "L'utente da mostrare (predefinito: te stesso)"
         }
       }
     },
@@ -1240,6 +1243,17 @@
         },
         "role-picker": {
           "description": "Mostra un selettore di ruoli per filtrare"
+        }
+      }
+    },
+    "wkcountry": {
+      "description": "Mostra quali altri utenti ascoltano artisti di un paese nel tuo server",
+      "parameters": {
+        "mode": {
+          "description": "Il tipo di risposta che vuoi - cambia il predefinito con /mode"
+        },
+        "search": {
+          "description": "Il paese o l'artista che vuoi vedere"
         }
       }
     },

@@ -255,6 +255,9 @@
       "parameters": {
         "search": {
           "description": "जो देश या artist तुम देखना चाहते हो"
+        },
+        "user": {
+          "description": "जिस यूज़र का डेटा दिखाना है (डिफ़ॉल्ट: तुम खुद)"
         }
       }
     },
@@ -1240,6 +1243,17 @@
         },
         "role-picker": {
           "description": "रोल से फ़िल्टर करने के लिए रोल-पिकर दिखाओ"
+        }
+      }
+    },
+    "wkcountry": {
+      "description": "तुम्हारे सर्वर में कौन से यूज़र किसी देश के artists को सुनते हैं",
+      "parameters": {
+        "mode": {
+          "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /mode से बदलो"
+        },
+        "search": {
+          "description": "जो देश या artist तुम देखना चाहते हो"
         }
       }
     },

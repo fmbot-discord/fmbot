@@ -255,6 +255,9 @@
       "parameters": {
         "search": {
           "description": "Görüntülemek istediğin ülke veya sanatçı"
+        },
+        "user": {
+          "description": "Gösterilecek kullanıcı (varsayılan: sen)"
         }
       }
     },
@@ -1240,6 +1243,17 @@
         },
         "role-picker": {
           "description": "Rollerle filtrelemek için rol seçici göster"
+        }
+      }
+    },
+    "wkcountry": {
+      "description": "Sunucunda bir ülkeden sanatçıları hangi kullanıcıların dinlediğini gösterir",
+      "parameters": {
+        "mode": {
+          "description": "İstediğin yanıt türü - varsayılanı /mode ile değiştir"
+        },
+        "search": {
+          "description": "Görüntülemek istediğin ülke veya sanatçı"
         }
       }
     },

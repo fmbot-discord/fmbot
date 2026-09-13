@@ -105,14 +105,16 @@ public static class CommandContextExtensions
         public async Task<RestMessage> SendResponse(InteractiveService interactiveService, ResponseModel response, UserService userService)
         {
             RestMessage responseMessage = null;
-            if (PublicProperties.UsedCommandsResponseMessageId.ContainsKey(context.Message.Id))
+            if (PublicProperties.UsedCommandsResponseMessageId.TryGetValue(context.Message.Id, out var existingResponseId))
             {
+                interactiveService.CancelPaginator(existingResponseId);
+
                 switch (response.ResponseType)
                 {
                     case ResponseType.Text:
                         await context.Client.Rest.ModifyMessageAsync(
                             context.Message.ChannelId,
-                            PublicProperties.UsedCommandsResponseMessageId[context.Message.Id],
+                            existingResponseId,
                             msg =>
                             {
                                 msg.AllowedMentions = AllowedMentionsProperties.None;
@@ -126,7 +128,7 @@ public static class CommandContextExtensions
                     case ResponseType.ImageOnly:
                         await context.Client.Rest.ModifyMessageAsync(
                             context.Message.ChannelId,
-                            PublicProperties.UsedCommandsResponseMessageId[context.Message.Id],
+                            existingResponseId,
                             msg =>
                             {
                                 msg.AllowedMentions = AllowedMentionsProperties.None;
@@ -154,7 +156,7 @@ public static class CommandContextExtensions
                     case ResponseType.ComponentsV2:
                         await context.Client.Rest.ModifyMessageAsync(
                             context.Message.ChannelId,
-                            PublicProperties.UsedCommandsResponseMessageId[context.Message.Id],
+                            existingResponseId,
                             msg =>
                             {
                                 msg.AllowedMentions = AllowedMentionsProperties.None;
@@ -178,13 +180,13 @@ public static class CommandContextExtensions
                         break;
                     case ResponseType.Paginator:
                         var existingMsgPaginator = await context.Client.Rest.GetMessageAsync(context.Message.ChannelId,
-                            PublicProperties.UsedCommandsResponseMessageId[context.Message.Id]);
+                            existingResponseId);
 
                         if (existingMsgPaginator.Attachments != null && existingMsgPaginator.Attachments.Any())
                         {
                             await context.Client.Rest.ModifyMessageAsync(
                                 context.Message.ChannelId,
-                                PublicProperties.UsedCommandsResponseMessageId[context.Message.Id],
+                                existingResponseId,
                                 msg => { msg.Attachments = null; });
                         }
 

@@ -379,6 +379,7 @@ public class TrackInteractions(
 
                 if (paginatorResponse.ComponentPaginator != null)
                 {
+                    interactivity.CancelPaginator(message.Id);
                     _ = interactivity.SendPaginatorAsync(
                         paginatorResponse.ComponentPaginator.Build(),
                         message,

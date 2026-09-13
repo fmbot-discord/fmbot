@@ -100,7 +100,8 @@ public class CountryCommands(
 
     [Command("country", "from")]
     [Summary("Shows country information for an artist, or top artists for a specific country")]
-    [Examples("country", "country Japan", "from", "from Radiohead")]
+    [Options(Constants.UserMentionExample)]
+    [Examples("country", "country Japan", "from", "from Radiohead", "country Japan @user", "country lfm:fm-bot")]
     [UsernameSetRequired]
     [SupportsPagination]
     [CommandCategories(CommandCategory.Genres)]
@@ -113,7 +114,47 @@ public class CountryCommands(
 
         try
         {
-            var response = await countryBuilders.CountryAsync(new ContextModel(this.Context, prfx, contextUser), countryOptions);
+            var userSettings = await settingService.GetUser(countryOptions, contextUser, this.Context);
+
+            var response = await countryBuilders.CountryAsync(new ContextModel(this.Context, prfx, contextUser),
+                userSettings.NewSearchValue, userSettings);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
+    [Command("whoknowscountry", "wc", "wkc", "wkcountry")]
+    [Summary("Shows what other users listen to artists from a country in your server")]
+    [Examples("wc", "wkc japan", "whoknowscountry", "whoknowscountry Netherlands", "wc Radiohead")]
+    [UsernameSetRequired]
+    [GuildOnly]
+    [RequiresIndex]
+    [CommandCategories(CommandCategory.Genres, CommandCategory.WhoKnows)]
+    public async Task WhoKnowsCountryAsync([CommandParameter(Remainder = true)] string countryValues = null)
+    {
+        _ = this.Context.Channel?.TriggerTypingAsync()!;
+
+        var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+
+        try
+        {
+            var currentSettings = new WhoKnowsSettings
+            {
+                ResponseMode = contextUser.WhoKnowsMode ?? WhoKnowsResponseMode.Default,
+                NewSearchValue = countryValues
+            };
+
+            var settings =
+                SettingService.SetWhoKnowsSettings(currentSettings, countryValues, contextUser.UserType, supportImageMode: false);
+
+            var response = await countryBuilders.WhoKnowsCountryAsync(new ContextModel(this.Context, prfx, contextUser),
+                settings.ResponseMode, settings.NewSearchValue);
+
             await this.Context.SendResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);
         }

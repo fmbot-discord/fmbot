@@ -255,6 +255,9 @@
       "parameters": {
         "search": {
           "description": "The country or artist you want to view"
+        },
+        "user": {
+          "description": "The user to show (defaults to self)"
         }
       }
     },
@@ -1243,6 +1246,17 @@
         },
         "role-picker": {
           "description": "Display a rolepicker to filter with roles"
+        }
+      }
+    },
+    "wkcountry": {
+      "description": "Shows what other users listen to artists from a country in your server",
+      "parameters": {
+        "mode": {
+          "description": "The type of response you want - change default with /mode"
+        },
+        "search": {
+          "description": "The country or artist you want to view"
         }
       }
     },

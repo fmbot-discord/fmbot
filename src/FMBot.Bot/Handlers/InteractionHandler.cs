@@ -16,6 +16,7 @@ using Microsoft.Extensions.Caching.Memory;
 using NetCord;
 using NetCord.Gateway;
 using NetCord.Rest;
+using NetCord.Services;
 using NetCord.Services.ApplicationCommands;
 using NetCord.Services.Commands;
 using NetCord.Services.ComponentInteractions;
@@ -144,7 +145,8 @@ public class InteractionHandler
 
             _ = Task.Run(async () => await this._userService.InsertSlashCommandInteractionAsync(context, commandName));
 
-            await this._appCommands.ExecuteAsync(context, this._provider);
+            var result = await this._appCommands.ExecuteAsync(context, this._provider);
+            LogExecutionResult(result, "SlashCommand", commandName, slashCommand);
 
             var integrationType =
                 context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
@@ -175,7 +177,8 @@ public class InteractionHandler
             }
         }
 
-        await this._appCommands.ExecuteAsync(context, this._provider);
+        var result = await this._appCommands.ExecuteAsync(context, this._provider);
+        LogExecutionResult(result, "UserCommand", commandName, userCommand);
 
         Statistics.UserCommandsExecuted.Inc();
 
@@ -199,7 +202,8 @@ public class InteractionHandler
             }
         }
 
-        await this._appCommands.ExecuteAsync(context, this._provider);
+        var result = await this._appCommands.ExecuteAsync(context, this._provider);
+        LogExecutionResult(result, "MessageCommand", commandName, messageCommand);
 
         Statistics.MessageCommandsExecuted.Inc();
 
@@ -229,6 +233,8 @@ public class InteractionHandler
         var componentInfo = GetComponentInteractionInfo(customId);
         if (componentInfo != null)
         {
+            CheckCustomIdShape(componentInfo, customId);
+
             var keepGoing = await CheckComponentAttributes(context, componentInfo.Attributes, customId);
             if (!keepGoing)
             {
@@ -236,7 +242,8 @@ public class InteractionHandler
             }
         }
 
-        await this._componentCommands.ExecuteAsync(context, this._provider);
+        var result = await this._componentCommands.ExecuteAsync(context, this._provider);
+        LogExecutionResult(result, "SelectMenu", customId, component);
 
         Statistics.SelectMenusExecuted.Inc();
     }
@@ -244,7 +251,8 @@ public class InteractionHandler
     private async Task ExecuteModal(ModalInteraction modal, GatewayClient client)
     {
         var context = new ComponentInteractionContext(modal, client);
-        await this._componentCommands.ExecuteAsync(context, this._provider);
+        var result = await this._componentCommands.ExecuteAsync(context, this._provider);
+        LogExecutionResult(result, "Modal", modal.Data.CustomId, modal);
 
         Statistics.ModalsExecuted.Inc();
     }
@@ -264,6 +272,8 @@ public class InteractionHandler
         var componentInfo = GetComponentInteractionInfo(customId);
         if (componentInfo != null)
         {
+            CheckCustomIdShape(componentInfo, customId);
+
             var keepGoing = await CheckComponentAttributes(context, componentInfo.Attributes, customId);
             if (!keepGoing)
             {
@@ -277,11 +287,69 @@ public class InteractionHandler
             customId,
             component.Channel.Id);
 
-        await _componentCommands.ExecuteAsync(context, this._provider);
+        var result = await _componentCommands.ExecuteAsync(context, this._provider);
+        LogExecutionResult(result, "Button", customId, component);
 
         Statistics.ButtonExecuted.Inc();
 
         _ = Task.Run(async () => await this._userService.UpdateUserLastUsedAsync(context.User.Id));
+    }
+
+    private void LogExecutionResult(IExecutionResult result, string interactionType, string identifier, Interaction interaction)
+    {
+        if (result is not IFailResult)
+        {
+            return;
+        }
+
+        switch (result)
+        {
+            case IExceptionResult exceptionResult:
+                Log.Error(exceptionResult.Exception,
+                    "InteractionFailed: {InteractionType} {Identifier} | {ResultType} | {DiscordUserId} | {DiscordGuildId}",
+                    interactionType, identifier, result.GetType().Name, interaction.User.Id, interaction.GuildId);
+                break;
+            case NotFoundResult when interaction is MessageComponentInteraction component &&
+                                     this._interactivity.Callbacks.ContainsKey(component.Message.Id):
+                break;
+            default:
+                Log.Warning(
+                    "InteractionFailed: {InteractionType} {Identifier} | {ResultType} | {ResultMessage} | {DiscordUserId} | {DiscordGuildId}",
+                    interactionType, identifier, result.GetType().Name, GetFailMessage(result), interaction.User.Id,
+                    interaction.GuildId);
+                break;
+        }
+    }
+
+    private static string GetFailMessage(IExecutionResult result)
+    {
+        return result switch
+        {
+            PreconditionFailResult r => r.Message,
+            ParametersMismatchResult r => r.Message,
+            NotFoundResult r => r.Message,
+            ComponentInteractionTypeReaderFailResult r => r.Message,
+            SlashCommandTypeReaderFailResult r => r.Message,
+            _ => null
+        };
+    }
+
+    private static void CheckCustomIdShape(ComponentInteractionInfo<ComponentInteractionContext> componentInfo, string customId)
+    {
+        var parameters = componentInfo.Parameters;
+        if (parameters.Any(p => p.Params))
+        {
+            return;
+        }
+
+        var segments = customId.Split(':').Length - 1;
+        var required = parameters.Count(p => !p.IsOptional);
+
+        if (segments < required || (segments > parameters.Count && customId.EndsWith(':')))
+        {
+            Log.Warning("CustomIdMismatch: {CustomId} has {Segments} segments, handler expects {Required}-{Total}",
+                customId, segments, required, parameters.Count);
+        }
     }
 
     private ComponentInteractionInfo<ComponentInteractionContext> GetComponentInteractionInfo(string customId)
