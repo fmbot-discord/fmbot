@@ -376,6 +376,7 @@ public static class InteractionConstants
         public const string GenreUser = "genre-user";
 
         public const string GenreSelectMenu = "genre-picker";
+        public const string GenreButton = "genre-btn";
     }
 
     public const string GuildMembers = "guild-members";

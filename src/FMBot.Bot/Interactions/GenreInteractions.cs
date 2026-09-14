@@ -89,10 +89,22 @@ public class GenreInteractions(
     [UsernameSetRequired]
     public async Task SetResponseModeAsync()
     {
+        var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
+        await HandleGenreSelection(stringMenuInteraction.Data.SelectedValues.First());
+    }
+
+    [ComponentInteraction(InteractionConstants.Genre.GenreButton)]
+    [UsernameSetRequired]
+    public async Task GenreButtonAsync(string selection)
+    {
+        await HandleGenreSelection(selection);
+    }
+
+    private async Task HandleGenreSelection(string selection)
+    {
         try
         {
-            var stringMenuInteraction = (StringMenuInteraction)this.Context.Interaction;
-            var options = stringMenuInteraction.Data.SelectedValues.First().Split(":");
+            var options = selection.Split(":");
 
             this.Context.DeferUpdateInBackground();
             var disableButtonsTask = this.Context.DisableButtonsAndMenus().ObserveFaults();
@@ -101,7 +113,7 @@ public class GenreInteractions(
             var requesterDiscordUserId = ulong.Parse(options[1]);
             var view = options[2];
             var selectedOption = options[3];
-            var originalSearch = string.IsNullOrWhiteSpace(options[4]) ? null : options[4];
+            var originalSearch = string.IsNullOrWhiteSpace(options.ElementAtOrDefault(4)) ? null : options[4];
 
             var guild = await guildService.GetGuildAsync(this.Context.Guild?.Id);
             var contextUser = await userService.GetUserWithFriendsAsync(requesterDiscordUserId);

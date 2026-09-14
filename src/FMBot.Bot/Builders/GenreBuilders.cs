@@ -418,7 +418,7 @@ public class GenreBuilders
     }
 
     private async Task<(List<string> genres, StringMenuProperties selectMenu)> GetGenreOrRespond(string genreOptions,
-        ContextModel context, ResponseModel response, User userSettings, string commandDescription,
+        ContextModel context, ResponseModel response, User userSettings,
         string selectedValue = null,
         string selectCommandId = null, string selectCommandDescription = null)
     {
@@ -525,8 +525,8 @@ public class GenreBuilders
             if (selectMenu != null)
             {
                 response.ComponentsContainer.WithSeparator();
-                response.ComponentsContainer.WithTextDisplay($"-# Genre source: Spotify\n-# Add a genre to this command to see {commandDescription}");
-                response.ComponentsContainer.AddComponent(selectMenu);
+                response.ComponentsContainer.WithTextDisplay("-# Genre source: Spotify");
+                response.ComponentsContainer.AddComponent(GenreOptionsComponent(selectMenu));
             }
 
             response.ResponseType = ResponseType.ComponentsV2;
@@ -593,8 +593,8 @@ public class GenreBuilders
                 if (selectMenu != null)
                 {
                     response.ComponentsContainer.WithSeparator();
-                    response.ComponentsContainer.WithTextDisplay($"-# Genre source: Spotify\n-# Add a genre to this command to see {commandDescription}");
-                    response.ComponentsContainer.AddComponent(selectMenu);
+                    response.ComponentsContainer.WithTextDisplay("-# Genre source: Spotify");
+                    response.ComponentsContainer.AddComponent(GenreOptionsComponent(selectMenu));
                 }
 
                 response.ResponseType = ResponseType.ComponentsV2;
@@ -629,6 +629,27 @@ public class GenreBuilders
         }
 
         return (genres, selectMenu);
+    }
+
+    private static IComponentContainerComponentProperties GenreOptionsComponent(StringMenuProperties selectMenu)
+    {
+        var options = selectMenu.Options.ToList();
+        if (options.Count > 3)
+        {
+            return selectMenu;
+        }
+
+        var actionRow = new ActionRowProperties();
+        foreach (var option in options)
+        {
+            var customId = StringExtensions.TruncateLongString(
+                $"{InteractionConstants.Genre.GenreButton}:{option.Value}", 100);
+            actionRow.WithButton(option.Label, customId: customId,
+                style: option.Default == true ? ButtonStyle.Primary : ButtonStyle.Secondary,
+                disabled: option.Default == true);
+        }
+
+        return actionRow;
     }
 
     private async Task<StringMenuProperties> GetGenreSearchOptions(ContextModel context, User userSettings,
@@ -707,7 +728,7 @@ public class GenreBuilders
         }
 
         var user = await this._userService.GetUserForIdAsync(userSettings.UserId);
-        var genres = await GetGenreOrRespond(genreOptions, context, response, user, "top artists", null,
+        var genres = await GetGenreOrRespond(genreOptions, context, response, user, null,
             userView ? "genre" : "guild-genre", "Select genre to view top artists");
 
         if (genres.genres == null)
@@ -718,7 +739,7 @@ public class GenreBuilders
         if (originalSearch != null)
         {
             var tempResponse = new ResponseModel();
-            var originalSearchResponse = await GetGenreOrRespond(originalSearch, context, tempResponse, user, "top artists",
+            var originalSearchResponse = await GetGenreOrRespond(originalSearch, context, tempResponse, user,
                 genres.genres.First(), userView ? "genre" : "guild-genre", "Select genre to view top artists");
             genres.selectMenu = originalSearchResponse.selectMenu;
         }
@@ -844,7 +865,7 @@ public class GenreBuilders
 
             if (genres.selectMenu != null)
             {
-                response.ComponentsContainer.AddComponent(genres.selectMenu);
+                response.ComponentsContainer.AddComponent(GenreOptionsComponent(genres.selectMenu));
             }
         }
         else
@@ -900,7 +921,7 @@ public class GenreBuilders
 
                 if (selectMenu != null)
                 {
-                    container.AddComponent(selectMenu);
+                    container.AddComponent(GenreOptionsComponent(selectMenu));
                 }
 
                 return new PageBuilder()
@@ -984,7 +1005,7 @@ public class GenreBuilders
             ResponseType = ResponseType.ComponentsV2
         };
 
-        var genres = await GetGenreOrRespond(genreValues, context, response, context.ContextUser, "WhoKnows genre",
+        var genres = await GetGenreOrRespond(genreValues, context, response, context.ContextUser,
             null, "whoknows", "Select genre to view WhoKnows");
 
         if (genres.genres == null)
@@ -996,7 +1017,7 @@ public class GenreBuilders
         {
             var tempResponse = new ResponseModel();
             var originalSearchResponse = await GetGenreOrRespond(originalSearch, context, tempResponse, context.ContextUser,
-                "WhoKnows genre", genres.genres.First(), "whoknows", "Select genre to view WhoKnows");
+                genres.genres.First(), "whoknows", "Select genre to view WhoKnows");
             genres.selectMenu = originalSearchResponse.selectMenu;
         }
 
@@ -1077,7 +1098,7 @@ public class GenreBuilders
 
         if (genres.selectMenu != null)
         {
-            response.ComponentsContainer.AddComponent(genres.selectMenu);
+            response.ComponentsContainer.AddComponent(GenreOptionsComponent(genres.selectMenu));
         }
 
         return response;
@@ -1103,7 +1124,7 @@ public class GenreBuilders
         }
 
         var genres = await GetGenreOrRespond(genreValues, context, response, context.ContextUser,
-            "Friends WhoKnow genre", null, "friendwhoknows", "Select genre to view Friends WhoKnow");
+            null, "friendwhoknows", "Select genre to view Friends WhoKnow");
 
         if (genres.genres == null)
         {
@@ -1114,7 +1135,7 @@ public class GenreBuilders
         {
             var tempResponse = new ResponseModel();
             var originalSearchResponse = await GetGenreOrRespond(originalSearch, context, tempResponse, context.ContextUser,
-                "Friends WhoKnow genre", genres.genres.First(), "friendwhoknows",
+                genres.genres.First(), "friendwhoknows",
                 "Select genre to view Friends WhoKnow");
             genres.selectMenu = originalSearchResponse.selectMenu;
         }
@@ -1198,7 +1219,7 @@ public class GenreBuilders
 
         if (genres.selectMenu != null)
         {
-            response.ComponentsContainer.AddComponent(genres.selectMenu);
+            response.ComponentsContainer.AddComponent(GenreOptionsComponent(genres.selectMenu));
         }
 
         return response;
