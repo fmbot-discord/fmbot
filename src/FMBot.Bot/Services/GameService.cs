@@ -79,25 +79,9 @@ public class GameService(
         recentJumbles ??= [];
 
         var today = DateTime.Today;
-        var recentJumblesHashset = recentJumbles
-            .Where(w => w.DateStarted.Date == today)
-            .GroupBy(g => g.CorrectAnswer)
-            .Select(s => s.Key)
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-        if (topArtists.Count > 250 && recentJumbles.Count > 50)
-        {
-            var recentJumbleAnswers = recentJumbles
-                .GroupBy(g => g.CorrectAnswer)
-                .Select(s => s.Key)
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-            recentJumblesHashset.UnionWith(recentJumbleAnswers);
-        }
 
         topArtists = topArtists
-            .Where(w => !recentJumblesHashset.Contains(w.ArtistName) &&
-                        w.ArtistName.Length is > 2 and < 40 &&
+            .Where(w => w.ArtistName.Length is > 2 and < 40 &&
                         !w.ArtistName.StartsWith(ConfigData.Data.Bot.Prefix, StringComparison.OrdinalIgnoreCase))
             .OrderByDescending(o => o.UserPlaycount)
             .ToList();
@@ -126,14 +110,20 @@ public class GameService(
             finalMinPlaycount = 1;
         }
 
-        var eligibleArtists = topArtists
+        var eligiblePool = topArtists
             .Where(w => w.UserPlaycount >= finalMinPlaycount)
+            .ToList();
+
+        var recentJumblesHashset = BuildExclusionSet(recentJumbles, s => s.CorrectAnswer, eligiblePool.Count);
+
+        var eligibleArtists = eligiblePool
+            .Where(w => !recentJumblesHashset.Contains(w.ArtistName))
             .ToList();
 
         Log.Debug(
             "PickArtistForJumble: {topArtistCount} top artists - {jumblesPlayedTodayCount} jumbles played today - " +
-            "{multiplier} multiplier - {minPlaycount} min playcount - {finalMinPlaycount} final min playcount",
-            topArtists.Count, recentJumbles.Count, multiplier, minPlaycount, finalMinPlaycount);
+            "{multiplier} multiplier - {minPlaycount} min playcount - {finalMinPlaycount} final min playcount - {excluded} excluded",
+            topArtists.Count, recentJumbles.Count, multiplier, minPlaycount, finalMinPlaycount, recentJumblesHashset.Count);
 
         if (eligibleArtists.Count == 0)
         {
@@ -198,22 +188,6 @@ public class GameService(
         recentJumbles ??= [];
 
         var today = DateTime.Today;
-        var recentJumblesHashset = recentJumbles
-            .Where(w => w.DateStarted.Date >= today && w.AlbumName != null)
-            .GroupBy(g => g.AlbumName)
-            .Select(s => s.Key)
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-        if (topAlbums.Count > 250 && recentJumbles.Count > 50)
-        {
-            var recentJumbleAlbums = recentJumbles
-                .Where(w => w.AlbumName != null)
-                .GroupBy(g => g.AlbumName)
-                .Select(s => s.Key)
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-            recentJumblesHashset.UnionWith(recentJumbleAlbums);
-        }
 
         topAlbums = topAlbums
             .Where(w => w.AlbumCoverUrl != null &&
@@ -247,16 +221,20 @@ public class GameService(
             finalMinPlaycount = 1;
         }
 
-        var eligibleAlbums = topAlbums
-            .Where(w =>
-                !recentJumblesHashset.Contains(w.AlbumName) &&
-                w.UserPlaycount >= finalMinPlaycount)
+        var eligiblePool = topAlbums
+            .Where(w => w.UserPlaycount >= finalMinPlaycount)
+            .ToList();
+
+        var recentJumblesHashset = BuildExclusionSet(recentJumbles, s => s.AlbumName, eligiblePool.Count);
+
+        var eligibleAlbums = eligiblePool
+            .Where(w => !recentJumblesHashset.Contains(w.AlbumName))
             .ToList();
 
         Log.Debug(
             "PickAlbumForPixelation: {topArtistCount} top artists - {jumblesPlayedTodayCount} jumbles played today - " +
-            "{multiplier} multiplier - {minPlaycount} min playcount - {finalMinPlaycount} final min playcount",
-            topAlbums.Count, recentJumbles.Count, multiplier, minPlaycount, finalMinPlaycount);
+            "{multiplier} multiplier - {minPlaycount} min playcount - {finalMinPlaycount} final min playcount - {excluded} excluded",
+            topAlbums.Count, recentJumbles.Count, multiplier, minPlaycount, finalMinPlaycount, recentJumblesHashset.Count);
 
         if (eligibleAlbums.Count == 0)
         {
@@ -322,6 +300,34 @@ public class GameService(
             popLookup.GetValueOrDefault(selectedKey, defaultPopularity));
 
         return selected;
+    }
+
+    public static HashSet<string> BuildExclusionSet(List<JumbleSession> recentJumbles,
+        Func<JumbleSession, string> answer, int eligiblePoolSize)
+    {
+        var today = DateTime.Today;
+        var excluded = recentJumbles
+            .Where(w => w.DateStarted.Date == today)
+            .Select(answer)
+            .Where(w => w != null)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var maxExcluded = Math.Max(excluded.Count, (int)(eligiblePoolSize * 0.6));
+
+        foreach (var recentAnswer in recentJumbles.OrderByDescending(o => o.DateStarted).Select(answer))
+        {
+            if (excluded.Count >= maxExcluded)
+            {
+                break;
+            }
+
+            if (recentAnswer != null)
+            {
+                excluded.Add(recentAnswer);
+            }
+        }
+
+        return excluded;
     }
 
     public async Task<JumbleSession> StartJumbleGame(int userId, ContextModel context, JumbleType jumbleType,
@@ -394,21 +400,40 @@ public class GameService(
     public async Task<JumbleSession> GetJumbleSessionForSessionId(int jumbleSessionId)
     {
         await using var db = await contextFactory.CreateDbContextAsync();
-        return await db.JumbleSessions
+        var session = await db.JumbleSessions
             .OrderByDescending(o => o.DateStarted)
             .Include(i => i.Hints)
             .Include(i => i.Answers)
             .FirstOrDefaultAsync(f => f.JumbleSessionId == jumbleSessionId);
+
+        SortHints(session);
+        return session;
     }
 
     public async Task<JumbleSession> GetJumbleSessionForChannelId(ulong discordChannelId)
     {
         await using var db = await contextFactory.CreateDbContextAsync();
-        return await db.JumbleSessions
+        var session = await db.JumbleSessions
             .OrderByDescending(o => o.DateStarted)
             .Include(i => i.Hints)
             .Include(i => i.Answers)
             .FirstOrDefaultAsync(f => f.DiscordChannelId == discordChannelId);
+
+        SortHints(session);
+        return session;
+    }
+
+    private static void SortHints(JumbleSession session)
+    {
+        if (session?.Hints == null)
+        {
+            return;
+        }
+
+        session.Hints = session.Hints
+            .OrderBy(o => o.Order ?? int.MaxValue)
+            .ThenBy(t => t.JumbleSessionHintId)
+            .ToList();
     }
 
     public static bool TryClaimGameStart(ulong discordChannelId)
@@ -424,7 +449,7 @@ public class GameService(
     public async Task<List<JumbleSession>> GetRecentJumbles(int userId, JumbleType jumbleType)
     {
         const string sql = "SELECT correct_answer, date_started, album_name, artist_name FROM public.jumble_sessions " +
-                           "WHERE starter_user_id = @userId AND jumble_type = @jumbleType ORDER BY date_started DESC LIMIT 200 ";
+                           "WHERE starter_user_id = @userId AND jumble_type = @jumbleType ORDER BY date_started DESC LIMIT 1000 ";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
@@ -508,27 +533,40 @@ public class GameService(
         await token.CancelAsync();
     }
 
-    public static List<JumbleSessionHint> GetJumbleArtistHints(Artist artist, long userPlaycount,
-        Localizer localizer,
-        CountryInfo country = null)
+    public static List<JumbleSessionHint> GetJumbleArtistHints(Artist artist, string answer, long userPlaycount,
+        Localizer localizer, CountryInfo country = null, ArtistHintContext hintContext = null)
     {
         var hints = GetRandomArtistHints(artist, localizer, country);
+
+        var firstLetter = FirstLetter(answer);
+        if (firstLetter != null)
+        {
+            hints.Add(new JumbleSessionHint(JumbleHintType.FirstLetter,
+                localizer.Translate("jumble.hints.firstLetterArtist", ("letter", firstLetter))));
+        }
+
+        var otherAlbum = PickHintCandidate(hintContext?.PopularAlbums, answer);
+        if (otherAlbum != null)
+        {
+            hints.Add(new JumbleSessionHint(JumbleHintType.OtherAlbum,
+                localizer.Translate("jumble.hints.otherAlbumArtist", ("album", StringExtensions.Sanitize(otherAlbum)))));
+        }
+
+        var popularTrack = PickHintCandidate(hintContext?.PopularTracks.Select(s => s.Name).ToList(), answer, otherAlbum);
+        if (popularTrack != null)
+        {
+            hints.Add(new JumbleSessionHint(JumbleHintType.PopularTrack,
+                localizer.Translate("jumble.hints.popularTrackArtist", ("track", StringExtensions.Sanitize(popularTrack)))));
+        }
+
         hints.Add(new JumbleSessionHint(JumbleHintType.Playcount,
             localizer.TranslateCount("jumble.hints.playcountArtist", userPlaycount)));
 
-        RandomNumberGenerator.Shuffle(CollectionsMarshal.AsSpan(hints));
-
-        for (int i = 0; i < Math.Min(hints.Count, 3); i++)
-        {
-            hints[i].HintShown = true;
-            hints[i].Order = i;
-        }
-
-        return hints;
+        return OrderHints(hints);
     }
 
-    public static List<JumbleSessionHint> GetJumbleAlbumHints(Album album, Artist artist, long userPlaycount,
-        Localizer localizer, CountryInfo country = null)
+    public static List<JumbleSessionHint> GetJumbleAlbumHints(Album album, Artist artist, string answer,
+        long userPlaycount, Localizer localizer, CountryInfo country = null, ArtistHintContext hintContext = null)
     {
         var albumType = "Album";
         if (album is { Type: not null } && album.Type.Equals("single", StringComparison.OrdinalIgnoreCase))
@@ -537,20 +575,130 @@ public class GameService(
         }
 
         var hints = GetRandomAlbumHints(album, artist, localizer, country, albumType);
+
+        var firstLetter = FirstLetter(answer);
+        if (firstLetter != null)
+        {
+            hints.Add(new JumbleSessionHint(JumbleHintType.FirstLetter,
+                localizer.Translate("jumble.hints.firstLetterAlbumName", ("letter", firstLetter))));
+        }
+
+        var otherAlbum = PickHintCandidate(hintContext?.PopularAlbums, answer);
+        if (otherAlbum != null)
+        {
+            hints.Add(new JumbleSessionHint(JumbleHintType.OtherAlbum,
+                localizer.Translate("jumble.hints.otherAlbumAlbumArtist", ("album", StringExtensions.Sanitize(otherAlbum)))));
+        }
+
+        var popularTrack = PickHintCandidate(TracksFromOtherAlbums(hintContext?.PopularTracks, answer), answer, otherAlbum);
+        if (popularTrack != null)
+        {
+            hints.Add(new JumbleSessionHint(JumbleHintType.PopularTrack,
+                localizer.Translate("jumble.hints.popularTrackAlbumArtist", ("track", StringExtensions.Sanitize(popularTrack)))));
+        }
+
         hints.Add(new JumbleSessionHint(JumbleHintType.Playcount,
             albumType == "Single"
                 ? localizer.TranslateCount("jumble.hints.playcountSingle", userPlaycount)
                 : localizer.TranslateCount("jumble.hints.playcountAlbum", userPlaycount)));
 
-        RandomNumberGenerator.Shuffle(CollectionsMarshal.AsSpan(hints));
+        return OrderHints(hints);
+    }
 
-        for (int i = 0; i < Math.Min(hints.Count, 3); i++)
+    public static List<JumbleSessionHint> OrderHints(List<JumbleSessionHint> hints, int shownCount = 3)
+    {
+        var opening = hints.Where(w => ExtraHintRank(w.Type) == null).ToList();
+        RandomNumberGenerator.Shuffle(CollectionsMarshal.AsSpan(opening));
+
+        var extras = hints
+            .Where(w => ExtraHintRank(w.Type) != null)
+            .OrderBy(o => ExtraHintRank(o.Type))
+            .ToList();
+
+        var ordered = opening.Concat(extras).ToList();
+
+        for (var i = 0; i < ordered.Count; i++)
         {
-            hints[i].HintShown = true;
-            hints[i].Order = i;
+            ordered[i].Order = i;
+            ordered[i].HintShown = i < shownCount;
         }
 
-        return hints;
+        return ordered;
+    }
+
+    private static int? ExtraHintRank(JumbleHintType type)
+    {
+        return type switch
+        {
+            JumbleHintType.MoreGenres => 1,
+            JumbleHintType.FirstLetter => 2,
+            JumbleHintType.OtherAlbum => 3,
+            JumbleHintType.PopularTrack => 4,
+            _ => null
+        };
+    }
+
+    public static string FirstLetter(string answer)
+    {
+        if (string.IsNullOrWhiteSpace(answer))
+        {
+            return null;
+        }
+
+        foreach (var rune in answer.EnumerateRunes())
+        {
+            if (Rune.IsLetterOrDigit(rune))
+            {
+                return Rune.ToUpperInvariant(rune).ToString();
+            }
+        }
+
+        return null;
+    }
+
+    public static List<string> TracksFromOtherAlbums(List<ArtistHintTrack> tracks, string albumAnswer)
+    {
+        if (tracks == null || string.IsNullOrWhiteSpace(albumAnswer))
+        {
+            return null;
+        }
+
+        return tracks
+            .Where(w => !string.IsNullOrWhiteSpace(w.AlbumName) && !NamesOverlap(w.AlbumName, albumAnswer))
+            .Select(s => s.Name)
+            .ToList();
+    }
+
+    public static string PickHintCandidate(List<string> candidates, params string[] exclude)
+    {
+        if (candidates == null || candidates.Count == 0)
+        {
+            return null;
+        }
+
+        var valid = candidates
+            .Where(c => !string.IsNullOrWhiteSpace(c) && c.Length < 60)
+            .Select(StringExtensions.RemoveEditionSuffix)
+            .Where(c => !string.IsNullOrWhiteSpace(c))
+            .Where(c => exclude.All(e => string.IsNullOrWhiteSpace(e) || !NamesOverlap(c, e)))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(5)
+            .ToList();
+
+        return valid.Count == 0 ? null : valid[RandomNumberGenerator.GetInt32(valid.Count)];
+    }
+
+    private static bool NamesOverlap(string first, string second)
+    {
+        var a = NormalizeAnswer(StringExtensions.RemoveEditionSuffix(first));
+        var b = NormalizeAnswer(StringExtensions.RemoveEditionSuffix(second));
+
+        if (a.Length == 0 || b.Length == 0)
+        {
+            return true;
+        }
+
+        return a.Contains(b, StringComparison.OrdinalIgnoreCase) || b.Contains(a, StringComparison.OrdinalIgnoreCase);
     }
 
     public static string HintsToString(List<JumbleSessionHint> hints, int count = 3)
@@ -655,12 +803,17 @@ public class GameService(
                 localizer.Translate("jumble.hints.popularityArtist", ("value", artist.Popularity.ToString()))));
         }
 
-        if (artist?.ArtistGenres != null && artist.ArtistGenres.Any())
+        var genres = ShuffledGenres(artist);
+        if (genres.Count > 0)
         {
-            var random = RandomNumberGenerator.GetInt32(artist.ArtistGenres.Count);
-            var genre = artist.ArtistGenres.ToList()[random];
             hints.Add(new JumbleSessionHint(JumbleHintType.Genre,
-                localizer.Translate("jumble.hints.genreArtist", ("genre", genre.Name))));
+                localizer.Translate("jumble.hints.genreArtist", ("genre", genres[0]))));
+        }
+
+        if (genres.Count >= 3)
+        {
+            hints.Add(new JumbleSessionHint(JumbleHintType.MoreGenres,
+                localizer.Translate("jumble.hints.moreGenresArtist", ("genreOne", genres[1]), ("genreTwo", genres[2]))));
         }
 
         if (artist?.StartDate != null)
@@ -709,7 +862,7 @@ public class GameService(
         {
             var typeKey = artist.Type.ToLower() switch
             {
-                "person" => "jumble.hints.typeArtistPerson",
+                "person" => PersonTypeKey(artist.Gender, "jumble.hints.typeArtistPerson"),
                 "group" => "jumble.hints.typeArtistGroup",
                 "orchestra" => "jumble.hints.typeArtistOrchestra",
                 "choir" => "jumble.hints.typeArtistChoir",
@@ -780,12 +933,17 @@ public class GameService(
                 $"- *{album.AppleMusicShortDescription}*"));
         }
 
-        if (artist?.ArtistGenres != null && artist.ArtistGenres.Any())
+        var genres = ShuffledGenres(artist);
+        if (genres.Count > 0)
         {
-            var random = RandomNumberGenerator.GetInt32(artist.ArtistGenres.Count);
-            var genre = artist.ArtistGenres.ToList()[random];
             hints.Add(new JumbleSessionHint(JumbleHintType.Genre,
-                localizer.Translate("jumble.hints.genreAlbumArtist", ("genre", genre.Name))));
+                localizer.Translate("jumble.hints.genreAlbumArtist", ("genre", genres[0]))));
+        }
+
+        if (genres.Count >= 3)
+        {
+            hints.Add(new JumbleSessionHint(JumbleHintType.MoreGenres,
+                localizer.Translate("jumble.hints.moreGenresAlbumArtist", ("genreOne", genres[1]), ("genreTwo", genres[2]))));
         }
 
         if (artist?.StartDate != null)
@@ -834,7 +992,7 @@ public class GameService(
         {
             var typeKey = artist.Type.ToLower() switch
             {
-                "person" => "jumble.hints.typeAlbumArtistPerson",
+                "person" => PersonTypeKey(artist.Gender, "jumble.hints.typeAlbumArtistPerson"),
                 "group" => "jumble.hints.typeAlbumArtistGroup",
                 "orchestra" => "jumble.hints.typeAlbumArtistOrchestra",
                 "choir" => "jumble.hints.typeAlbumArtistChoir",
@@ -855,6 +1013,34 @@ public class GameService(
         }
 
         return hints;
+    }
+
+    private static List<string> ShuffledGenres(Artist artist)
+    {
+        if (artist?.ArtistGenres == null)
+        {
+            return [];
+        }
+
+        var genres = artist.ArtistGenres
+            .Select(s => s.Name)
+            .Where(w => !string.IsNullOrWhiteSpace(w))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        RandomNumberGenerator.Shuffle(CollectionsMarshal.AsSpan(genres));
+        return genres;
+    }
+
+    private static string PersonTypeKey(string gender, string baseKey)
+    {
+        return gender?.ToLowerInvariant() switch
+        {
+            "male" => baseKey + "Male",
+            "female" => baseKey + "Female",
+            "non-binary" => baseKey + "NonBinary",
+            _ => baseKey
+        };
     }
 
     private static string JumbleWords(string input)

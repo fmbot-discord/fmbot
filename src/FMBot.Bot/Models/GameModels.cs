@@ -2,6 +2,18 @@ using System.Collections.Generic;
 
 namespace FMBot.Bot.Models;
 
+public class ArtistHintContext
+{
+    public List<string> PopularAlbums { get; set; } = [];
+    public List<ArtistHintTrack> PopularTracks { get; set; } = [];
+}
+
+public class ArtistHintTrack
+{
+    public string Name { get; set; }
+    public string AlbumName { get; set; }
+}
+
 public class JumbleUserStats
 {
     public int TotalGamesPlayed { get; set; }

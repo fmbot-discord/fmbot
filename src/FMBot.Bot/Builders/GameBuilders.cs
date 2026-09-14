@@ -126,6 +126,10 @@ public class GameBuilders
                 databaseArtist = await this._artistsService.GetArtistFromDatabase(artist.artist);
             }
 
+            var hintContextTask = databaseArtist != null
+                ? this._artistsService.GetArtistHintContext(databaseArtist.Id)
+                : Task.FromResult<ArtistHintContext>(null);
+
             var game = await this._gameService.StartJumbleGame(userId, context, JumbleType.Artist, artist.artist,
                 cancellationTokenSource, artist.artist);
 
@@ -135,8 +139,8 @@ public class GameBuilders
                 artistCountry = this._countryService.GetValidCountry(databaseArtist.CountryCode);
             }
 
-            var hints = GameService.GetJumbleArtistHints(databaseArtist, artist.userPlaycount, context.Localizer,
-                artistCountry);
+            var hints = GameService.GetJumbleArtistHints(databaseArtist, game.CorrectAnswer, artist.userPlaycount,
+                context.Localizer, artistCountry, await hintContextTask);
             await this._gameService.JumbleStoreShowedHints(game, hints);
 
             BuildJumbleEmbed(response.Embed, game.JumbledArtist, game.Hints, context.Localizer);
@@ -255,8 +259,12 @@ public class GameBuilders
                 artistCountry = this._countryService.GetValidCountry(databaseArtist.CountryCode);
             }
 
-            var hints = GameService.GetJumbleAlbumHints(databaseAlbum, databaseArtist,
-                album.UserPlaycount.GetValueOrDefault(), context.Localizer, artistCountry);
+            var hintContext = databaseArtist != null
+                ? await this._artistsService.GetArtistHintContext(databaseArtist.Id)
+                : null;
+
+            var hints = GameService.GetJumbleAlbumHints(databaseAlbum, databaseArtist, game.CorrectAnswer,
+                album.UserPlaycount.GetValueOrDefault(), context.Localizer, artistCountry, hintContext);
             await this._gameService.JumbleStoreShowedHints(game, hints);
 
             BuildJumbleEmbed(response.Embed, game.JumbledArtist, game.Hints, context.Localizer,

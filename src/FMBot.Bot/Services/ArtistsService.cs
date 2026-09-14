@@ -605,6 +605,18 @@ public class ArtistsService
     }
 
 
+    public async Task<ArtistHintContext> GetArtistHintContext(int artistId)
+    {
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        return new ArtistHintContext
+        {
+            PopularAlbums = await ArtistRepository.GetPopularAlbumNamesForArtist(artistId, connection),
+            PopularTracks = await ArtistRepository.GetPopularTracksForArtist<ArtistHintTrack>(artistId, connection)
+        };
+    }
+
     public async Task<List<UserTrack>> GetTopTracksForArtist(int userId, string artistName)
     {
         const string sql = "SELECT ut.user_track_id, ut.user_id, t.name, t.artist_name, ut.playcount" +

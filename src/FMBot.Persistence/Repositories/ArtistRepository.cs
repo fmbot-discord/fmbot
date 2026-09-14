@@ -69,6 +69,34 @@ public class ArtistRepository
         return artist;
     }
 
+    public static async Task<List<string>> GetPopularAlbumNamesForArtist(int artistId, NpgsqlConnection connection,
+        int limit = 8)
+    {
+        const string sql = "SELECT name FROM public.albums " +
+                           "WHERE artist_id = @artistId AND popularity IS NOT NULL AND type = 'album' " +
+                           "ORDER BY popularity DESC LIMIT @limit";
+
+        return (await connection.QueryAsync<string>(sql, new
+        {
+            artistId,
+            limit
+        })).ToList();
+    }
+
+    public static async Task<List<T>> GetPopularTracksForArtist<T>(int artistId, NpgsqlConnection connection,
+        int limit = 8)
+    {
+        const string sql = "SELECT name AS Name, album_name AS AlbumName FROM public.tracks " +
+                           "WHERE artist_id = @artistId AND popularity IS NOT NULL " +
+                           "ORDER BY popularity DESC LIMIT @limit";
+
+        return (await connection.QueryAsync<T>(sql, new
+        {
+            artistId,
+            limit
+        })).ToList();
+    }
+
     private static async Task<ICollection<ArtistGenre>> GetArtistGenres(int artistId, NpgsqlConnection connection)
     {
         const string getArtistGenreQuery = "SELECT DISTINCT ON (name) id, artist_id, name FROM public.artist_genres " +
