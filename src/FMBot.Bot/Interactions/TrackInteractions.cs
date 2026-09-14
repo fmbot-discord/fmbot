@@ -126,17 +126,29 @@ public class TrackInteractions(
                 else
                 {
                     dbTrack = await trackService.GetTrackForId(parsedTrackId);
-                    var useSpotify = !string.IsNullOrEmpty(dbTrack.SpotifyPreviewUrl);
 
-                    var linkButton = useSpotify
-                        ? new LinkButtonProperties(
+                    LinkButtonProperties linkButton;
+                    if (!string.IsNullOrEmpty(dbTrack.SpotifyPreviewUrl))
+                    {
+                        linkButton = new LinkButtonProperties(
                             "https://open.spotify.com/track/" + dbTrack.SpotifyId,
                             "Open on Spotify",
-                            EmojiProperties.Custom(DiscordConstants.Spotify))
-                        : new LinkButtonProperties(
+                            EmojiProperties.Custom(DiscordConstants.Spotify));
+                    }
+                    else if (!string.IsNullOrEmpty(dbTrack.AppleMusicPreviewUrl))
+                    {
+                        linkButton = new LinkButtonProperties(
                             dbTrack.AppleMusicUrl,
                             "Open on Apple Music",
                             EmojiProperties.Custom(DiscordConstants.AppleMusic));
+                    }
+                    else
+                    {
+                        linkButton = new LinkButtonProperties(
+                            "https://www.deezer.com/track/" + dbTrack.DeezerId,
+                            "Open on Deezer",
+                            EmojiProperties.Custom(DiscordConstants.Deezer));
+                    }
 
                     messageEditTask = this.Context.AddLinkButton(linkButton).ObserveFaults();
                 }
@@ -152,6 +164,14 @@ public class TrackInteractions(
             var interactionReady = Task.WhenAll(this.Context.WaitForPendingDefer(), messageEditTask);
             var response = await trackBuilders.TrackPreviewAsync(new ContextModel(this.Context, contextUser),
                 $"{dbTrack.ArtistName} | {dbTrack.Name}", Context.Interaction.Token, interactionReady);
+
+            if (response.CommandResponse == CommandResponse.NotFound)
+            {
+                await interactionReady;
+                await this.Context.SendFollowUpResponse(interactivity, response, userService, ephemeral: true);
+                await this.Context.LogCommandUsedAsync(response, userService);
+                return;
+            }
 
             if (isFmContext && ephemeral)
             {

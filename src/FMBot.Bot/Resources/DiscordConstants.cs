@@ -62,6 +62,7 @@ public static class DiscordConstants
     public const ulong RateYourMusic = 1183851241151930399;
     public const ulong YouTube = 1230496939355934730;
     public const ulong AppleMusic = 1218182727149420544;
+    public const ulong Deezer = 1549144831203479623;
     public const ulong LastFm = 882227627287515166;
 
     public const ulong Loading = 821676038102056991;

@@ -910,10 +910,11 @@ public class SupporterService
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
+        var expiryCutoff = DateTime.UtcNow.AddHours(-6);
         return await db.PremiumGuildSubscriptions
             .Where(w => w.DiscordGuildId == discordGuildId &&
                         !w.EntitlementDeleted &&
-                        (w.DateEnding == null || w.DateEnding > DateTime.UtcNow))
+                        (w.DateEnding == null || w.DateEnding > expiryCutoff))
             .OrderByDescending(o => o.DateStarted)
             .FirstOrDefaultAsync();
     }
@@ -922,10 +923,11 @@ public class SupporterService
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
+        var expiryCutoff = DateTime.UtcNow.AddHours(-6);
         return await db.PremiumGuildSubscriptions
             .Where(w => w.PurchaserDiscordUserId == discordUserId &&
                         !w.EntitlementDeleted &&
-                        (w.DateEnding == null || w.DateEnding > DateTime.UtcNow))
+                        (w.DateEnding == null || w.DateEnding > expiryCutoff))
             .OrderByDescending(o => o.DateStarted)
             .ToListAsync();
     }
@@ -934,10 +936,11 @@ public class SupporterService
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
+        var expiryCutoff = DateTime.UtcNow.AddHours(-6);
         return await db.PremiumGuildSubscriptions
             .Where(w => w.Id == subscriptionId &&
                         !w.EntitlementDeleted &&
-                        (w.DateEnding == null || w.DateEnding > DateTime.UtcNow))
+                        (w.DateEnding == null || w.DateEnding > expiryCutoff))
             .FirstOrDefaultAsync();
     }
 
@@ -1561,10 +1564,11 @@ public class SupporterService
             .ToListAsync();
 
         var entitlementGuildIds = guildEntitlements.Select(s => s.DiscordGuildId).ToList();
+        var expiryCutoff = DateTime.UtcNow.AddHours(-6);
         var activeNonDiscordGuildIds = await db.PremiumGuildSubscriptions
             .Where(w => w.DiscordEntitlementId == null &&
                         !w.EntitlementDeleted &&
-                        (w.DateEnding == null || w.DateEnding > DateTime.UtcNow) &&
+                        (w.DateEnding == null || w.DateEnding > expiryCutoff) &&
                         entitlementGuildIds.Contains(w.DiscordGuildId))
             .Select(s => s.DiscordGuildId)
             .ToListAsync();
@@ -2562,7 +2566,7 @@ public class SupporterService
         foreach (var purchaser in subscriptions.GroupBy(g => g.PurchaserDiscordUserId.Value))
         {
             var active = purchaser.Any(a => !a.EntitlementDeleted &&
-                                            (a.DateEnding == null || a.DateEnding > DateTime.UtcNow));
+                                            (a.DateEnding == null || a.DateEnding > DateTime.UtcNow.AddHours(-6)));
 
             await ModifyPremiumGuildRole(purchaser.Key, active);
         }
@@ -2572,10 +2576,11 @@ public class SupporterService
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
+        var expiryCutoff = DateTime.UtcNow.AddHours(-6);
         return await db.PremiumGuildSubscriptions
             .AnyAsync(w => w.PurchaserDiscordUserId == discordUserId &&
                            !w.EntitlementDeleted &&
-                           (w.DateEnding == null || w.DateEnding > DateTime.UtcNow));
+                           (w.DateEnding == null || w.DateEnding > expiryCutoff));
     }
 
     private async Task<Supporter> AddDiscordSupporter(ulong id, DiscordEntitlement entitlement)

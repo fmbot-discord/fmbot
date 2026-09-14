@@ -52,6 +52,9 @@ public class AmSongAttributes
     [JsonPropertyName("isAppleDigitalMaster")]
     public bool IsAppleDigitalMaster { get; set; }
 
+    [JsonPropertyName("contentRating")]
+    public string ContentRating { get; set; }
+
     [JsonPropertyName("name")]
     public string Name { get; set; }
 

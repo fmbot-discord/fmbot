@@ -1,3 +1,5 @@
+using FMBot.Domain.Enums;
+
 namespace FMBot.Persistence.Domain.Models;
 
 public class AlbumGenre
@@ -7,6 +9,10 @@ public class AlbumGenre
     public int AlbumId { get; set; }
 
     public string Name { get; set; }
+
+    public GenreSource Source { get; set; }
+
+    public int? SourceGenreId { get; set; }
 
     public Album Album { get; set; }
 }

@@ -144,10 +144,11 @@ public class GuildService(
     {
         await using var db = await contextFactory.CreateDbContextAsync();
 
+        var expiryCutoff = DateTime.UtcNow.AddHours(-6);
         var paidGuildIds = await db.PremiumGuildSubscriptions
             .AsNoTracking()
             .Where(w => !w.EntitlementDeleted &&
-                        (w.DateEnding == null || w.DateEnding > DateTime.UtcNow))
+                        (w.DateEnding == null || w.DateEnding > expiryCutoff))
             .Select(s => s.DiscordGuildId)
             .ToListAsync();
 
