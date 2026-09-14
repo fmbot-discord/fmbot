@@ -58,4 +58,4 @@ ENV DOTNET_GCHighMemPercent=4B
 
 ENTRYPOINT ["dotnet", "FMBot.Bot.dll"]
 
-HEALTHCHECK --interval=20s --timeout=20s --retries=18 --start-period=180s CMD test -n "$(find healthcheck -mmin -1)"
+HEALTHCHECK --interval=5s --timeout=5s --retries=72 --start-period=180s CMD test -n "$(find healthcheck -mmin -1)"
