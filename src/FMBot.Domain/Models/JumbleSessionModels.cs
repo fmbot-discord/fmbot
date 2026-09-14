@@ -20,5 +20,9 @@ public enum JumbleHintType
     Country = 8,
     AppleMusicDescription = 9,
     Label = 10,
-    ReleaseDate = 11
+    ReleaseDate = 11,
+    FirstLetter = 12,
+    OtherAlbum = 13,
+    PopularTrack = 14,
+    MoreGenres = 15
 }

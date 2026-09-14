@@ -1,4 +1,8 @@
-﻿using FMBot.Bot.Services;
+﻿using System.Collections.Generic;
+using System.Linq;
+using FMBot.Bot.Models;
+using FMBot.Bot.Services;
+using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 
 namespace FMBot.Tests;
@@ -122,5 +126,113 @@ public class GameServiceTests
         // Assert
         Assert.That(result, Is.EqualTo(expectedResult),
             $"Expected '{userInput}' to be {(expectedResult ? "accepted" : "rejected")} for correct answer '{correctAnswer}'");
+    }
+
+    [Test]
+    public void OrderHints_KeepsGiveawayHintsOutOfTheOpening()
+    {
+        for (var i = 0; i < 50; i++)
+        {
+            var hints = new List<JumbleSessionHint>
+            {
+                new(JumbleHintType.PopularTrack, "track"),
+                new(JumbleHintType.Playcount, "plays"),
+                new(JumbleHintType.OtherAlbum, "album"),
+                new(JumbleHintType.MoreGenres, "more genres"),
+                new(JumbleHintType.StartDate, "start"),
+                new(JumbleHintType.FirstLetter, "letter"),
+                new(JumbleHintType.Genre, "genre")
+            };
+
+            var ordered = GameService.OrderHints(hints);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(ordered, Has.Count.EqualTo(7));
+                Assert.That(ordered.Count(c => c.HintShown), Is.EqualTo(3));
+                Assert.That(ordered.Take(3).Select(s => s.Type),
+                    Is.EquivalentTo(new[] { JumbleHintType.Playcount, JumbleHintType.StartDate, JumbleHintType.Genre }));
+                Assert.That(ordered.Skip(3).Select(s => s.Type),
+                    Is.EqualTo(new[]
+                    {
+                        JumbleHintType.MoreGenres, JumbleHintType.FirstLetter, JumbleHintType.OtherAlbum,
+                        JumbleHintType.PopularTrack
+                    }));
+                Assert.That(ordered.Select(s => s.Order), Is.EqualTo(Enumerable.Range(0, 7)));
+            });
+        }
+    }
+
+    [Test]
+    public void BuildExclusionSet_AlwaysExcludesTodayAndCapsAtSixtyPercentOfPool()
+    {
+        var recent = Enumerable.Range(0, 400)
+            .Select(i => new JumbleSession
+            {
+                CorrectAnswer = $"artist {i}",
+                DateStarted = i < 5 ? System.DateTime.Today.AddHours(1) : System.DateTime.Today.AddDays(-1 - i)
+            })
+            .ToList();
+
+        var excluded = GameService.BuildExclusionSet(recent, s => s.CorrectAnswer, 100);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(excluded, Has.Count.EqualTo(60));
+            Assert.That(excluded, Does.Contain("artist 0").And.Contain("artist 4"));
+            Assert.That(excluded, Does.Contain("artist 5").And.Not.Contain("artist 399"));
+        });
+
+        var tiny = GameService.BuildExclusionSet(recent, s => s.CorrectAnswer, 3);
+        Assert.That(tiny, Has.Count.EqualTo(5), "today's answers are always excluded even past the cap");
+    }
+
+    [Test]
+    public void PickHintCandidate_ExcludesNamesThatGiveAwayTheAnswer()
+    {
+        Assert.Multiple(() =>
+        {
+            Assert.That(GameService.PickHintCandidate(null, "Weezer"), Is.Null);
+            Assert.That(GameService.PickHintCandidate(["Weezer", "Weezer (Deluxe)"], "Weezer"), Is.Null);
+            Assert.That(GameService.PickHintCandidate(["Weezer", "Pinkerton (Deluxe Edition)"], "Weezer"), Is.EqualTo("Pinkerton"));
+            Assert.That(GameService.PickHintCandidate(["IGOR", "Igor's Theme", "EARFQUAKE"], "IGOR"), Is.EqualTo("EARFQUAKE"));
+            Assert.That(GameService.PickHintCandidate(["Chromakopia", "Flower Boy"], "Chromakopia", "Tyler, The Creator"), Is.EqualTo("Flower Boy"));
+            Assert.That(GameService.PickHintCandidate(["Strings of Fear", "Other Song"], "6 Feet Deep", "Strings of Fear"), Is.EqualTo("Other Song"));
+            Assert.That(GameService.PickHintCandidate(["Strings of Fear"], "6 Feet Deep", null), Is.EqualTo("Strings of Fear"));
+        });
+    }
+
+    [TestCase("Weezer", "W")]
+    [TestCase("  the strokes", "T")]
+    [TestCase("$uicideboy$", "U")]
+    [TestCase("(G)I-DLE", "G")]
+    [TestCase("*NSYNC", "N")]
+    [TestCase("21 Savage", "2")]
+    [TestCase("Édith Piaf", "É")]
+    [TestCase("𝔐orbid", "𝔐")]
+    [TestCase("¥$", null)]
+    [TestCase("", null)]
+    [TestCase(null, null)]
+    public void FirstLetter_SkipsSymbolsAndKeepsWholeCharacters(string? answer, string? expected)
+    {
+        Assert.That(GameService.FirstLetter(answer), Is.EqualTo(expected));
+    }
+
+    [Test]
+    public void TracksFromOtherAlbums_DropsTracksOnTheAlbumBeingGuessed()
+    {
+        var tracks = new List<ArtistHintTrack>
+        {
+            new() { Name = "EARFQUAKE", AlbumName = "IGOR" },
+            new() { Name = "NEW MAGIC WAND", AlbumName = "IGOR (Deluxe)" },
+            new() { Name = "See You Again", AlbumName = "Flower Boy" },
+            new() { Name = "Yonkers", AlbumName = null }
+        };
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(GameService.TracksFromOtherAlbums(tracks, "IGOR"), Is.EqualTo(new[] { "See You Again" }));
+            Assert.That(GameService.TracksFromOtherAlbums(null, "IGOR"), Is.Null);
+        });
     }
 }

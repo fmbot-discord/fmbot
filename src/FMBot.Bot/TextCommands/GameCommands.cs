@@ -112,10 +112,12 @@ public class GameCommands(
 
         await this.Context.Client.Rest.ModifyMessageAsync(context.DiscordChannel.Id, responseId, m =>
         {
-            m.Components = [];
-            m.Embeds = [response.Embed];
+            m.AllowedMentions = AllowedMentionsProperties.None;
+            m.Flags = MessageFlags.IsComponentsV2;
+            m.Embeds = [];
+            m.Components = response.GetComponentsV2();
             m.Attachments = response.Stream != null
-                ? [new AttachmentProperties(response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName, response.Stream)]
+                ? [new AttachmentProperties(response.FileName, response.Stream)]
                 : null;
         });
 

@@ -376,6 +376,7 @@ public static class InteractionConstants
         public const string GenreUser = "genre-user";
 
         public const string GenreSelectMenu = "genre-picker";
+        public const string GenreButton = "genre-btn";
     }
 
     public const string GuildMembers = "guild-members";
@@ -433,6 +434,8 @@ public static class InteractionConstants
         public const string JumbleGiveUp = "jumble-giveup";
         public const string JumbleReshuffle = "jumble-reshuffle";
         public const string JumblePlayAgain = "jumble-playagain";
+        public const string JumbleStats = "jumble-stats";
+        public const string JumbleShowStats = "jumble-showstats";
     }
 
     public static class Faq
