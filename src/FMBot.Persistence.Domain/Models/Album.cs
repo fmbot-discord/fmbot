@@ -40,6 +40,10 @@ public class Album
     public string AppleMusicShortDescription { get; set; }
     public DateTime? AppleMusicDate { get; set; }
 
+    public long? DeezerId { get; set; }
+    public DateTime? DeezerDate { get; set; }
+    public bool? Explicit { get; set; }
+
     public string ReleaseDate { get; set; }
     public string ReleaseDatePrecision { get; set; }
 

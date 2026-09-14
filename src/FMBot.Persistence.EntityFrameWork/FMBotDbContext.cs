@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.EntityFrameworkCore;
@@ -590,11 +591,14 @@ namespace FMBot.Persistence.EntityFrameWork
             {
                 entity.HasKey(a => a.Id);
 
-                entity.HasIndex(i => new { i.AlbumId, i.Name })
+                entity.HasIndex(i => new { i.AlbumId, i.Source, i.Name })
                     .IsUnique();
 
                 entity.Property(e => e.Name)
                     .HasColumnType("citext");
+
+                entity.Property(e => e.Source)
+                    .HasDefaultValue(GenreSource.AppleMusic);
 
                 entity.HasOne(d => d.Album)
                     .WithMany(p => p.AlbumGenres)

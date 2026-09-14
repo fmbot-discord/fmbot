@@ -431,6 +431,15 @@ public class Startup
             client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("(+contact@fm.bot)"));
         });
         services.AddSingleton<MusicBrainzService>();
+
+        services.AddHttpClient<DeezerService>(client =>
+        {
+            client.BaseAddress = new Uri("https://api.deezer.com/");
+            client.Timeout = TimeSpan.FromSeconds(10);
+            client.DefaultRequestHeaders.Add("Accept-Language", "en");
+            client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("fmbot", "1.0"));
+            client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("(+contact@fm.bot)"));
+        });
     }
 
     private void RegisterThirdPartyServices(IServiceCollection services)

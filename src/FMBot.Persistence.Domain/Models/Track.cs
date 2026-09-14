@@ -52,9 +52,13 @@ public class Track
     public string SpotifyPreviewUrl { get; set; }
     public string AppleMusicPreviewUrl { get; set; }
 
+    public long? DeezerId { get; set; }
+    public bool? Explicit { get; set; }
+
     public DateTime? AppleMusicDate { get; set; }
     public DateTime? SpotifyLastUpdated { get; set; }
     public DateTime? MusicBrainzDate { get; set; }
+    public DateTime? DeezerDate { get; set; }
 
 
     public DateTime? LyricsDate { get; set; }

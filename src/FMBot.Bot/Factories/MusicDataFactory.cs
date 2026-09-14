@@ -33,7 +33,8 @@ public class MusicDataFactory(
     AppleMusicService appleMusicService,
     AppleMusicVideoService appleMusicVideoService,
     TrackEnrichment.TrackEnrichmentClient trackEnrichment,
-    IDataSourceFactory dataSourceFactory)
+    IDataSourceFactory dataSourceFactory,
+    DeezerService deezerService)
 {
     private readonly BotSettings _botSettings = botSettings.Value;
 
@@ -63,10 +64,12 @@ public class MusicDataFactory(
                 var spotifyArtistTask = spotifyService.GetArtistFromSpotify(artistInfo.ArtistName);
                 var musicBrainzUpdatedTask = musicBrainzService.AddMusicBrainzDataToArtistAsync(artistToAdd);
                 var appleMusicArtistTask = appleMusicService.GetAppleMusicArtist(artistInfo.ArtistName);
+                var deezerArtistTask = deezerService.GetArtist(artistInfo.ArtistName);
 
                 var spotifyArtist = (await spotifyArtistTask).Item;
                 var musicBrainzUpdated = await musicBrainzUpdatedTask;
                 var amArtist = await appleMusicArtistTask;
+                var deezerArtistLookup = await deezerArtistTask;
 
                 if (musicBrainzUpdated.Updated)
                 {
@@ -161,6 +164,11 @@ public class MusicDataFactory(
                     await db.SaveChangesAsync();
                 }
 
+                ApplyDeezerArtist(artistToAdd, deezerArtistLookup);
+                await StoreDeezerArtistImage(db, artistToAdd, deezerArtistLookup.Item);
+                db.Entry(artistToAdd).State = EntityState.Modified;
+                await db.SaveChangesAsync();
+
                 if (artistInfo.Tags != null && artistInfo.Tags.Count != 0)
                 {
                     await TagRepository.AddArtistTagsIfMissing(artistToAdd.Id,
@@ -173,6 +181,7 @@ public class MusicDataFactory(
             Task<SpotifyLookup<FullArtist>> updateSpotify = null;
             Task<ArtistUpdated> updateMusicBrainz = null;
             Task<AmData<AmArtistAttributes>> updateAppleMusic = null;
+            Task<DeezerLookup<DeezerArtist>> updateDeezer = null;
 
             if (dbArtist.SpotifyImageUrl == null || dbArtist.SpotifyImageDate < DateTime.UtcNow.AddDays(-60))
             {
@@ -187,6 +196,13 @@ public class MusicDataFactory(
             if (dbArtist.AppleMusicDate == null || dbArtist.AppleMusicDate < DateTime.UtcNow.AddDays(-120))
             {
                 updateAppleMusic = appleMusicService.GetAppleMusicArtist(artistInfo.ArtistName);
+            }
+
+            if (dbArtist.DeezerDate == null || dbArtist.DeezerDate < DateTime.UtcNow.AddDays(-120))
+            {
+                updateDeezer = dbArtist.DeezerId.HasValue
+                    ? deezerService.GetArtistById(dbArtist.DeezerId.Value)
+                    : deezerService.GetArtist(artistInfo.ArtistName);
             }
 
             if (redirectsEnabled &&
@@ -309,6 +325,18 @@ public class MusicDataFactory(
                 await db.SaveChangesAsync();
             }
 
+            if (updateDeezer != null)
+            {
+                await using var db = await contextFactory.CreateDbContextAsync();
+                var deezerArtistLookup = await updateDeezer;
+
+                ApplyDeezerArtist(dbArtist, deezerArtistLookup);
+                await StoreDeezerArtistImage(db, dbArtist, deezerArtistLookup.Item);
+
+                db.Entry(dbArtist).State = EntityState.Modified;
+                await db.SaveChangesAsync();
+            }
+
             if (artistInfo.Tags != null && artistInfo.Tags.Count != 0)
             {
                 await TagRepository.AddArtistTagsIfMissing(dbArtist.Id,
@@ -326,6 +354,140 @@ public class MusicDataFactory(
                 Name = artistInfo.ArtistName,
                 LastFmUrl = artistInfo.ArtistUrl
             };
+        }
+    }
+
+    private static bool? ExplicitFromContentRating(string contentRating)
+    {
+        return contentRating switch
+        {
+            "explicit" => true,
+            "clean" => false,
+            _ => null
+        };
+    }
+
+    private static void ApplyDeezerArtist(Artist artist, DeezerLookup<DeezerArtist> lookup)
+    {
+        if (lookup.Item != null)
+        {
+            artist.DeezerId = lookup.Item.Id;
+        }
+
+        if (!lookup.Failed)
+        {
+            artist.DeezerDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+        }
+    }
+
+    private static async Task StoreDeezerArtistImage(FMBotDbContext db, Artist artist, DeezerArtist deezerArtist)
+    {
+        if (deezerArtist == null || artist.Id == 0 || artist.SpotifyImageUrl != null || artist.AppleMusicId != null ||
+            DeezerService.IsPlaceholderImage(deezerArtist.PictureXl))
+        {
+            return;
+        }
+
+        await AddOrUpdateArtistImage(db, artist.Id, ImageSource.Deezer, deezerArtist.PictureXl, 1000, 1000);
+    }
+
+    private static void ApplyDeezerAlbum(Album album, DeezerLookup<DeezerAlbum> lookup)
+    {
+        var deezerAlbum = lookup.Item;
+        if (deezerAlbum != null)
+        {
+            album.DeezerId = deezerAlbum.Id;
+            album.Upc ??= string.IsNullOrEmpty(deezerAlbum.Upc) ? null : deezerAlbum.Upc;
+            album.Explicit ??= DeezerService.ExplicitFromContentCode(deezerAlbum.ExplicitContentLyrics);
+            album.Label ??= string.IsNullOrEmpty(deezerAlbum.Label) ? null : deezerAlbum.Label;
+
+            if (album.ReleaseDate == null && DeezerService.IsValidReleaseDate(deezerAlbum.ReleaseDate))
+            {
+                album.ReleaseDate = deezerAlbum.ReleaseDate;
+                album.ReleaseDatePrecision = "day";
+            }
+        }
+
+        if (!lookup.Failed)
+        {
+            album.DeezerDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+        }
+    }
+
+    private async Task StoreDeezerAlbumExtras(FMBotDbContext db, Album album, DeezerAlbum deezerAlbum,
+        NpgsqlConnection connection)
+    {
+        if (deezerAlbum == null || album.Id == 0)
+        {
+            return;
+        }
+
+        if (album.SpotifyImageUrl == null && album.AppleMusicId == null &&
+            !DeezerService.IsPlaceholderImage(deezerAlbum.CoverXl))
+        {
+            await AddOrUpdateAlbumImage(db, album.Id, ImageSource.Deezer, deezerAlbum.CoverXl, 1000, 1000);
+        }
+
+        var genres = deezerAlbum.Genres?.Data?
+            .Where(g => !string.IsNullOrEmpty(g.Name))
+            .Select(g => (g.Name, (int?)g.Id))
+            .ToList();
+
+        if (genres is { Count: > 0 })
+        {
+            await AlbumRepository.AddOrUpdateAlbumGenres(album.Id, GenreSource.Deezer, genres, connection);
+        }
+    }
+
+    private static void ApplyDeezerTrack(Track track, DeezerLookup<DeezerTrack> lookup)
+    {
+        var deezerTrack = lookup.Item;
+        if (deezerTrack != null)
+        {
+            track.DeezerId = deezerTrack.Id;
+            track.Isrc ??= string.IsNullOrEmpty(deezerTrack.Isrc) ? null : deezerTrack.Isrc;
+            track.Explicit ??= DeezerService.ExplicitFromContentCode(deezerTrack.ExplicitContentLyrics);
+
+            if (!track.Tempo.HasValue && deezerTrack.Bpm > 0)
+            {
+                track.Tempo = deezerTrack.Bpm;
+            }
+
+            if (!track.DurationMs.HasValue && deezerTrack.Duration > 0)
+            {
+                track.DurationMs = deezerTrack.Duration * 1000;
+            }
+        }
+
+        if (!lookup.Failed)
+        {
+            track.DeezerDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+        }
+    }
+
+    private static async Task PropagateDeezerIds(FMBotDbContext db, Track track, DeezerTrack deezerTrack)
+    {
+        if (deezerTrack == null)
+        {
+            return;
+        }
+
+        if (track.ArtistId.HasValue && deezerTrack.Artist?.Id > 0 &&
+            string.Equals(deezerTrack.Artist.Name, track.ArtistName, StringComparison.OrdinalIgnoreCase))
+        {
+            var deezerArtistId = deezerTrack.Artist.Id;
+            await db.Artists
+                .Where(a => a.Id == track.ArtistId.Value && a.DeezerId == null)
+                .ExecuteUpdateAsync(s => s.SetProperty(a => a.DeezerId, deezerArtistId));
+        }
+
+        if (track.AlbumId.HasValue && deezerTrack.Album?.Id > 0 &&
+            string.Equals(deezerTrack.Album.Title, track.AlbumName, StringComparison.OrdinalIgnoreCase))
+        {
+            var deezerAlbumId = deezerTrack.Album.Id;
+            await db.Albums
+                .Where(a => a.Id == track.AlbumId.Value && a.DeezerId == null)
+                .ExecuteUpdateAsync(s => s.SetProperty(a => a.DeezerId, deezerAlbumId));
         }
     }
 
@@ -436,6 +598,7 @@ public class MusicDataFactory(
                 albumToAdd.AppleMusicDescription = amAlbum.Attributes.EditorialNotes?.Standard;
                 albumToAdd.AppleMusicShortDescription = amAlbum.Attributes.EditorialNotes?.Short;
                 albumToAdd.Upc = amAlbum.Attributes.Upc;
+                albumToAdd.Explicit = ExplicitFromContentRating(amAlbum.Attributes.ContentRating) ?? albumToAdd.Explicit;
 
                 if (albumToAdd.ReleaseDate == null && amAlbum.Attributes.ReleaseDate != null)
                 {
@@ -443,6 +606,10 @@ public class MusicDataFactory(
                     albumToAdd.ReleaseDatePrecision = amAlbum.Attributes.ReleaseDate.Length == 4 ? "year" : "day";
                 }
             }
+
+            var deezerAlbumLookup =
+                await deezerService.GetAlbum(albumToAdd.Upc, albumInfo.ArtistName, albumInfo.AlbumName);
+            ApplyDeezerAlbum(albumToAdd, deezerAlbumLookup);
 
             if (!spotifyAlbumLookup.Failed)
             {
@@ -483,6 +650,8 @@ public class MusicDataFactory(
             {
                 await AlbumRepository.AddOrUpdateAlbumGenres(albumToAdd.Id, amAlbum.Attributes.GenreNames, connection);
             }
+
+            await StoreDeezerAlbumExtras(db, albumToAdd, deezerAlbumLookup.Item, connection);
 
             if (albumInfo.Tags != null && albumInfo.Tags.Count != 0)
             {
@@ -601,6 +770,7 @@ public class MusicDataFactory(
                 dbAlbum.AppleMusicShortDescription = amAlbum.Attributes.EditorialNotes?.Short;
                 dbAlbum.AppleMusicTagline = amAlbum.Attributes.EditorialNotes?.Tagline;
                 dbAlbum.Upc = amAlbum.Attributes.Upc;
+                dbAlbum.Explicit = ExplicitFromContentRating(amAlbum.Attributes.ContentRating) ?? dbAlbum.Explicit;
 
                 if (amAlbum.Attributes.Artwork?.Url != null)
                 {
@@ -620,6 +790,19 @@ public class MusicDataFactory(
                     await AlbumRepository.AddOrUpdateAlbumGenres(dbAlbum.Id, amAlbum.Attributes.GenreNames, connection);
                 }
             }
+
+            db.Entry(dbAlbum).State = EntityState.Modified;
+            await db.SaveChangesAsync();
+        }
+
+        if (dbAlbum.DeezerDate == null || dbAlbum.DeezerDate < refreshCutoff)
+        {
+            var deezerAlbumLookup = dbAlbum.DeezerId.HasValue
+                ? await deezerService.GetAlbumById(dbAlbum.DeezerId.Value)
+                : await deezerService.GetAlbum(dbAlbum.Upc, albumInfo.ArtistName, albumInfo.AlbumName);
+
+            ApplyDeezerAlbum(dbAlbum, deezerAlbumLookup);
+            await StoreDeezerAlbumExtras(db, dbAlbum, deezerAlbumLookup.Item, connection);
 
             db.Entry(dbAlbum).State = EntityState.Modified;
             await db.SaveChangesAsync();
@@ -870,6 +1053,8 @@ public class MusicDataFactory(
                     trackToAdd.DurationMs = spotifyTrack.DurationMs > 0 ? spotifyTrack.DurationMs : trackToAdd.DurationMs;
                     trackToAdd.Popularity = spotifyTrack.Popularity > 0 ? spotifyTrack.Popularity : null;
                     trackToAdd.SpotifyPreviewUrl = spotifyTrack.PreviewUrl;
+                    trackToAdd.Isrc = spotifyTrack.ExternalIds?.GetValueOrDefault("isrc") ?? trackToAdd.Isrc;
+                    trackToAdd.Explicit = spotifyTrack.Explicit;
 
                     var audioFeatures = await spotifyService.GetAudioFeaturesFromSpotify(spotifyTrack.Id);
 
@@ -895,13 +1080,18 @@ public class MusicDataFactory(
                     trackToAdd.AppleMusicTagline = amSong.Attributes.EditorialNotes?.Tagline;
                     trackToAdd.AppleMusicDescription = amSong.Attributes.EditorialNotes?.Standard;
                     trackToAdd.AppleMusicShortDescription = amSong.Attributes.EditorialNotes?.Short;
-                    trackToAdd.Isrc = amSong.Attributes.Isrc;
+                    trackToAdd.Isrc = amSong.Attributes.Isrc ?? trackToAdd.Isrc;
+                    trackToAdd.Explicit = ExplicitFromContentRating(amSong.Attributes.ContentRating) ?? trackToAdd.Explicit;
                     trackToAdd.AppleMusicPreviewUrl = amSong.Attributes.Previews?.FirstOrDefault()?.Url;
                     if (!trackToAdd.DurationMs.HasValue && amSong.Attributes.DurationInMillis != 0)
                     {
                         trackToAdd.DurationMs = amSong.Attributes.DurationInMillis;
                     }
                 }
+
+                var deezerTrackLookup =
+                    await deezerService.GetTrack(trackToAdd.Isrc, trackInfo.ArtistName, trackInfo.TrackName);
+                ApplyDeezerTrack(trackToAdd, deezerTrackLookup);
 
                 if (lyrics.Result && !string.IsNullOrWhiteSpace(lyrics.PlainLyrics))
                 {
@@ -929,6 +1119,8 @@ public class MusicDataFactory(
                 {
                     return await TrackRepository.GetTrackForName(trackInfo.ArtistName, trackInfo.TrackName, connection, getSyncedLyrics);
                 }
+
+                await PropagateDeezerIds(db, trackToAdd, deezerTrackLookup.Item);
 
                 if (lyrics.Result && lyrics.SyncedLyrics != null && lyrics.SyncedLyrics.Count != 0)
                 {
@@ -1042,6 +1234,8 @@ public class MusicDataFactory(
                     dbTrack.DurationMs = spotifyTrack.DurationMs > 0 ? spotifyTrack.DurationMs : dbTrack.DurationMs;
                     dbTrack.Popularity = spotifyTrack.Popularity > 0 ? spotifyTrack.Popularity : dbTrack.Popularity;
                     dbTrack.SpotifyPreviewUrl = spotifyTrack.PreviewUrl ?? dbTrack.SpotifyPreviewUrl;
+                    dbTrack.Isrc = spotifyTrack.ExternalIds?.GetValueOrDefault("isrc") ?? dbTrack.Isrc;
+                    dbTrack.Explicit = spotifyTrack.Explicit;
 
                     var audioFeatures = await spotifyService.GetAudioFeaturesFromSpotify(spotifyTrack.Id);
 
@@ -1079,7 +1273,8 @@ public class MusicDataFactory(
                     dbTrack.AppleMusicTagline = amSong.Attributes.EditorialNotes?.Tagline;
                     dbTrack.AppleMusicDescription = amSong.Attributes.EditorialNotes?.Standard;
                     dbTrack.AppleMusicShortDescription = amSong.Attributes.EditorialNotes?.Short;
-                    dbTrack.Isrc = amSong.Attributes.Isrc;
+                    dbTrack.Isrc = amSong.Attributes.Isrc ?? dbTrack.Isrc;
+                    dbTrack.Explicit = ExplicitFromContentRating(amSong.Attributes.ContentRating) ?? dbTrack.Explicit;
                     dbTrack.AppleMusicPreviewUrl = amSong.Attributes.Previews?.FirstOrDefault()?.Url;
 
                     if (!dbTrack.DurationMs.HasValue && amSong.Attributes.DurationInMillis != 0)
@@ -1089,6 +1284,17 @@ public class MusicDataFactory(
                 }
 
                 dbTrack.AppleMusicDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+                db.Entry(dbTrack).State = EntityState.Modified;
+            }
+
+            if (dbTrack.DeezerDate == null || dbTrack.DeezerDate < DateTime.UtcNow.AddDays(-180))
+            {
+                var deezerTrackLookup = dbTrack.DeezerId.HasValue
+                    ? await deezerService.GetTrackById(dbTrack.DeezerId.Value)
+                    : await deezerService.GetTrack(dbTrack.Isrc, trackInfo.ArtistName, trackInfo.TrackName);
+
+                ApplyDeezerTrack(dbTrack, deezerTrackLookup);
+                await PropagateDeezerIds(db, dbTrack, deezerTrackLookup.Item);
                 db.Entry(dbTrack).State = EntityState.Modified;
             }
 

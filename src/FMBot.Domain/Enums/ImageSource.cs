@@ -6,5 +6,6 @@ public enum ImageSource
     Spotify = 2,
     AppleMusic = 3,
     MusicBrainz = 4,
-    Discogs = 5
+    Discogs = 5,
+    Deezer = 6
 }

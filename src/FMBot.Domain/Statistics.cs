@@ -104,6 +104,9 @@ public static class Statistics
     public static readonly Counter AppleMusicApiCalls = Metrics
         .CreateCounter("applemusic_api_calls", "Amount of Apple Music API calls");
 
+    public static readonly Counter DeezerApiCalls = Metrics
+        .CreateCounter("deezer_api_calls", "Amount of Deezer API calls");
+
     public static readonly Counter LyricsApiCalls = Metrics
         .CreateCounter("lyrics_api_calls", "Amount of Lyric service API calls");
 

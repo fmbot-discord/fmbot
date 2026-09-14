@@ -37,6 +37,9 @@ public class Artist
     public string AppleMusicUrl { get; set; }
     public DateTime? AppleMusicDate { get; set; }
 
+    public long? DeezerId { get; set; }
+    public DateTime? DeezerDate { get; set; }
+
     public ICollection<Track> Tracks { get; set; }
     public ICollection<Album> Albums { get; set; }
     public ICollection<ArtistAlias> ArtistAliases { get; set; }

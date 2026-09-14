@@ -875,7 +875,8 @@ public class PlayBuilder
 
                 if (flag == FmButton.TrackPreview &&
                     string.IsNullOrEmpty(dbTrack.SpotifyPreviewUrl) &&
-                    string.IsNullOrEmpty(dbTrack.AppleMusicPreviewUrl))
+                    string.IsNullOrEmpty(dbTrack.AppleMusicPreviewUrl) &&
+                    dbTrack.DeezerId == null)
                 {
                     continue;
                 }

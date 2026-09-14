@@ -38,6 +38,7 @@ public class TrackBuilders
     private readonly WhoKnowsTrackService _whoKnowsTrackService;
     private readonly PlayService _playService;
     private readonly SpotifyService _spotifyService;
+    private readonly DeezerService _deezerService;
     private readonly TimeService _timeService;
     private readonly IDataSourceFactory _dataSourceFactory;
     private readonly PuppeteerService _puppeteerService;
@@ -64,6 +65,7 @@ public class TrackBuilders
         WhoKnowsTrackService whoKnowsTrackService,
         PlayService playService,
         SpotifyService spotifyService,
+        DeezerService deezerService,
         TimeService timeService,
         IDataSourceFactory dataSourceFactory,
         PuppeteerService puppeteerService,
@@ -90,6 +92,7 @@ public class TrackBuilders
         this._whoKnowsTrackService = whoKnowsTrackService;
         this._playService = playService;
         this._spotifyService = spotifyService;
+        this._deezerService = deezerService;
         this._timeService = timeService;
         this._dataSourceFactory = dataSourceFactory;
         this._puppeteerService = puppeteerService;
@@ -294,18 +297,22 @@ public class TrackBuilders
                 ("duration", StringExtensions.GetTrackLength(trackDuration.GetValueOrDefault()))));
         }
 
-        if (dbTrack != null && !string.IsNullOrEmpty(dbTrack.SpotifyId))
+        if (dbTrack != null)
         {
-            var pitch = StringExtensions.KeyIntToPitchString(dbTrack.Key.GetValueOrDefault());
-
-            if (dbTrack.Tempo.HasValue)
+            if (dbTrack.Key.HasValue && dbTrack.Tempo.HasValue)
             {
                 infoSection.AppendLine(context.Localize("track.keyBpm",
-                    ("key", pitch), ("bpm", dbTrack.Tempo.Value.ToString("0.0"))));
+                    ("key", StringExtensions.KeyIntToPitchString(dbTrack.Key.Value)),
+                    ("bpm", dbTrack.Tempo.Value.ToString("0.0"))));
             }
-            else
+            else if (dbTrack.Key.HasValue)
             {
-                infoSection.AppendLine(context.Localize("track.key", ("key", pitch)));
+                infoSection.AppendLine(context.Localize("track.key",
+                    ("key", StringExtensions.KeyIntToPitchString(dbTrack.Key.Value))));
+            }
+            else if (dbTrack.Tempo.HasValue)
+            {
+                infoSection.AppendLine(context.Localize("track.bpm", ("bpm", dbTrack.Tempo.Value.ToString("0.0"))));
             }
 
             if (dbTrack.Danceability.HasValue && dbTrack.Energy.HasValue &&
@@ -523,7 +530,8 @@ public class TrackBuilders
                 emote: EmojiProperties.Custom(DiscordConstants.YouTube), url: eurovisionEntry.VideoLink);
         }
 
-        if (!string.IsNullOrEmpty(dbTrack?.SpotifyPreviewUrl) || !string.IsNullOrEmpty(dbTrack?.AppleMusicPreviewUrl))
+        if (!string.IsNullOrEmpty(dbTrack?.SpotifyPreviewUrl) || !string.IsNullOrEmpty(dbTrack?.AppleMusicPreviewUrl) ||
+            dbTrack?.DeezerId != null)
         {
             actionRow.WithButton(
                 context.Localize("track.buttons.preview"),
@@ -1156,12 +1164,16 @@ public class TrackBuilders
 
         var formattedTrackLength = StringExtensions.GetTrackLength(duration.GetValueOrDefault());
 
-        if (spotifyTrack is { Tempo: not null } && duration.HasValue)
+        if (spotifyTrack is { Tempo: not null, Key: not null } && duration.HasValue)
         {
             var bpm = $"{spotifyTrack.Tempo.Value:0.0}";
-            var pitch = StringExtensions.KeyIntToPitchString(spotifyTrack.Key.GetValueOrDefault());
+            var pitch = StringExtensions.KeyIntToPitchString(spotifyTrack.Key.Value);
 
             reply.Append($" has `{bpm}` bpm, is in key `{pitch}` and lasts `{formattedTrackLength}`");
+        }
+        else if (spotifyTrack is { Tempo: not null } && duration.HasValue)
+        {
+            reply.Append($" has `{spotifyTrack.Tempo.Value:0.0}` bpm and lasts `{formattedTrackLength}`");
         }
         else
         {
@@ -1178,7 +1190,8 @@ public class TrackBuilders
 
         response.Text = reply.ToString();
 
-        if (!string.IsNullOrEmpty(spotifyTrack?.SpotifyPreviewUrl) || !string.IsNullOrEmpty(spotifyTrack?.AppleMusicPreviewUrl))
+        if (!string.IsNullOrEmpty(spotifyTrack?.SpotifyPreviewUrl) || !string.IsNullOrEmpty(spotifyTrack?.AppleMusicPreviewUrl) ||
+            spotifyTrack?.DeezerId != null)
         {
             response.Components = new ActionRowProperties()
                 .WithButton(
@@ -1213,6 +1226,20 @@ public class TrackBuilders
         var track = await this._musicDataFactory.GetOrStoreTrackAsync(trackSearch.Track);
 
         var previewUrl = track.SpotifyPreviewUrl ?? track.AppleMusicPreviewUrl;
+
+        if (string.IsNullOrEmpty(previewUrl) && track.DeezerId.HasValue)
+        {
+            previewUrl = await this._deezerService.GetTrackPreviewUrl(track.DeezerId.Value);
+        }
+
+        if (string.IsNullOrEmpty(previewUrl))
+        {
+            response.Text = context.Localize("track.noPreview",
+                ("track", StringExtensions.Sanitize(track.Name)),
+                ("artist", StringExtensions.Sanitize(track.ArtistName)));
+            response.CommandResponse = CommandResponse.NotFound;
+            return response;
+        }
 
         try
         {
