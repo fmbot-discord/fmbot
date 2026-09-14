@@ -884,6 +884,24 @@ public class AlbumService
         return albums;
     }
 
+    public async Task<List<AlbumPopularity>> GetUserAllTimeTopAlbumsPopularity(int userId, List<TopAlbum> topAlbums)
+    {
+        var cacheKey = $"user-{userId}-topalbums-alltime-popularity";
+        if (this._cache.TryGetValue(cacheKey, out List<AlbumPopularity> cachedPopularity))
+        {
+            return cachedPopularity;
+        }
+
+        var popularity = await GetAlbumsPopularity(topAlbums);
+
+        if (topAlbums.Count > 100)
+        {
+            this._cache.Set(cacheKey, popularity, TimeSpan.FromMinutes(10));
+        }
+
+        return popularity;
+    }
+
     public async Task<List<AlbumPopularity>> GetAlbumsPopularity(List<TopAlbum> topAlbums)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);

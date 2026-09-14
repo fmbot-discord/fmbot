@@ -30,6 +30,12 @@ public class GameInteractions(
         var parsedGameId = int.Parse(gameId);
         var response = await gameBuilders.JumbleAddHint(new ContextModel(this.Context), parsedGameId);
 
+        if (response.CommandResponse == CommandResponse.NotFound)
+        {
+            await RespondAsync(InteractionCallback.DeferredModifyMessage);
+            return;
+        }
+
         await this.Context.UpdateInteractionEmbed(response);
     }
 
@@ -39,6 +45,12 @@ public class GameInteractions(
         var parsedGameId = int.Parse(gameId);
         var response = await gameBuilders.JumbleUnblur(new ContextModel(this.Context), parsedGameId);
 
+        if (response.CommandResponse == CommandResponse.NotFound)
+        {
+            await RespondAsync(InteractionCallback.DeferredModifyMessage);
+            return;
+        }
+
         await this.Context.UpdateInteractionEmbed(response);
     }
 
@@ -47,6 +59,12 @@ public class GameInteractions(
     {
         var parsedGameId = int.Parse(gameId);
         var response = await gameBuilders.JumbleReshuffle(new ContextModel(this.Context), parsedGameId);
+
+        if (response.CommandResponse == CommandResponse.NotFound)
+        {
+            await RespondAsync(InteractionCallback.DeferredModifyMessage);
+            return;
+        }
 
         await this.Context.UpdateInteractionEmbed(response);
     }
@@ -59,6 +77,12 @@ public class GameInteractions(
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var response = await gameBuilders.JumbleGiveUp(new ContextModel(this.Context, contextUser), parsedGameId);
 
+        if (response.CommandResponse == CommandResponse.NotFound)
+        {
+            await RespondAsync(InteractionCallback.DeferredModifyMessage);
+            return;
+        }
+
         if (response.CommandResponse == CommandResponse.NoPermission)
         {
             await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
@@ -69,7 +93,7 @@ public class GameInteractions(
         }
 
         var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
-        if (message != null &&
+        if (message != null && response.ReferencedMusic != null &&
             PublicProperties.UsedCommandsResponseContextId.TryGetValue(message.Id, out var contextId))
         {
             await userService.UpdateInteractionContext(contextId, response.ReferencedMusic);
@@ -106,8 +130,6 @@ public class GameInteractions(
                     cancellationTokenSource);
             }
 
-            await disableButtonsTask;
-
             var responseId = await this.Context.SendFollowUpResponse(interactivity, response, userService,
                 ephemeral: response.CommandResponse != CommandResponse.Ok);
             await this.Context.LogCommandUsedAsync(response, userService,
@@ -128,6 +150,7 @@ public class GameInteractions(
                 var components = new ActionRowProperties().WithButton(
                     context.Localize("jumble.playingAgain", ("user", name)), customId: "1",
                     url: null, disabled: true, style: ButtonStyle.Secondary);
+                await disableButtonsTask;
                 _ = Task.Run(() => message.ModifyAsync(m => m.Components = [components]));
 
                 if (responseId.HasValue && response.GameSessionId.HasValue)
@@ -140,6 +163,7 @@ public class GameInteractions(
             }
             else if (response.CommandResponse != CommandResponse.Cooldown)
             {
+                await disableButtonsTask;
                 await this.Context.EnableInteractionButtons();
             }
         }

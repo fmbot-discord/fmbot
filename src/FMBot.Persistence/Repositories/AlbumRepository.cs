@@ -340,10 +340,11 @@ WHERE s.id = (
         const string getAlbumsQuery = @"
         SELECT a.name, a.artist_name, a.popularity
         FROM public.albums a
-        WHERE (UPPER(a.artist_name), UPPER(a.name)) IN (
-            SELECT UPPER(CAST(unnest(@artistNames) AS CITEXT)),
-                   UPPER(CAST(unnest(@albumNames) AS CITEXT))
-        ) AND a.popularity IS NOT NULL";
+        JOIN (
+            SELECT CAST(unnest(@artistNames) AS CITEXT) AS artist_name,
+                   CAST(unnest(@albumNames) AS CITEXT) AS name
+        ) l ON a.artist_name = l.artist_name AND a.name = l.name
+        WHERE a.popularity IS NOT NULL";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         var albums = await connection.QueryAsync<AlbumPopularity>(getAlbumsQuery, new

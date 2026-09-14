@@ -76,7 +76,10 @@ public class GameBuilders
 
         try
         {
-            var recentJumbles = await this._gameService.GetRecentJumbles(context.ContextUser.UserId, JumbleType.Artist);
+            var recentJumblesTask = this._gameService.GetRecentJumbles(context.ContextUser.UserId, JumbleType.Artist);
+            var topArtistsTask = this._artistsService.GetUserAllTimeTopArtists(userId, true).ObserveFaults();
+
+            var recentJumbles = await recentJumblesTask;
             var jumblesPlayedToday = recentJumbles.Count(c => c.DateStarted.Date == DateTime.Today);
             var premiumGuild = context.DiscordGuild != null &&
                                PublicProperties.PremiumServers.ContainsKey(context.DiscordGuild.Id);
@@ -104,7 +107,7 @@ public class GameBuilders
                 return response;
             }
 
-            var topArtists = await this._artistsService.GetUserAllTimeTopArtists(userId, true);
+            var topArtists = await topArtistsTask;
             var artistPopularities = await this._artistsService.GetArtistsPopularity(topArtists);
             var artist = GameService.PickArtistForJumble(topArtists, artistPopularities, recentJumbles);
 
@@ -184,7 +187,10 @@ public class GameBuilders
 
         try
         {
-            var recentJumbles = await this._gameService.GetRecentJumbles(context.ContextUser.UserId, JumbleType.Pixelation);
+            var recentJumblesTask = this._gameService.GetRecentJumbles(context.ContextUser.UserId, JumbleType.Pixelation);
+            var topAlbumsTask = this._albumService.GetUserAllTimeTopAlbums(userId, true).ObserveFaults();
+
+            var recentJumbles = await recentJumblesTask;
             var jumblesPlayedToday = recentJumbles.Count(c => c.DateStarted.Date == DateTime.Today);
             var premiumGuild = context.DiscordGuild != null &&
                                PublicProperties.PremiumServers.ContainsKey(context.DiscordGuild.Id);
@@ -213,11 +219,11 @@ public class GameBuilders
                 return response;
             }
 
-            var topAlbums = await this._albumService.GetUserAllTimeTopAlbums(userId, true);
+            var topAlbums = await topAlbumsTask;
 
             await this._albumService.FillMissingAlbumCovers(topAlbums);
             topAlbums = await this._censorService.RemoveNsfwAlbums(topAlbums);
-            var albumPopularities = await this._albumService.GetAlbumsPopularity(topAlbums);
+            var albumPopularities = await this._albumService.GetUserAllTimeTopAlbumsPopularity(userId, topAlbums);
             var album = GameService.PickAlbumForPixelation(topAlbums, albumPopularities, recentJumbles);
 
             if (album == null)
@@ -236,10 +242,13 @@ public class GameBuilders
                 databaseAlbum = await this._albumService.GetAlbumFromDatabase(album.ArtistName, album.AlbumName);
             }
 
+            var coverImageTask = this._gameService.FetchCoverImage(album.AlbumCoverUrl, album.AlbumName, album.ArtistName);
+            var databaseArtistTask = this._artistsService.GetArtistFromDatabase(album.ArtistName);
+
             var game = await this._gameService.StartJumbleGame(userId, context, JumbleType.Pixelation, album.AlbumName,
                 cancellationTokenSource, album.ArtistName, album.AlbumName);
 
-            var databaseArtist = await this._artistsService.GetArtistFromDatabase(album.ArtistName);
+            var databaseArtist = await databaseArtistTask;
             CountryInfo artistCountry = null;
             if (databaseArtist?.CountryCode != null)
             {
@@ -253,8 +262,7 @@ public class GameBuilders
             BuildJumbleEmbed(response.Embed, game.JumbledArtist, game.Hints, context.Localizer,
                 jumbleType: JumbleType.Pixelation);
 
-            var image = await this._gameService.GetSkImage(album.AlbumCoverUrl, album.AlbumName, album.ArtistName,
-                game.JumbleSessionId);
+            var image = await coverImageTask;
             if (image == null)
             {
                 response.ResponseType = ResponseType.Embed;
@@ -264,6 +272,8 @@ public class GameBuilders
                 await this._gameService.JumbleEndSession(game);
                 return response;
             }
+
+            this._gameService.CacheSessionImage(game.JumbleSessionId, image);
 
             using var pixelated = GameService.PixelateCoverImage(image, game.BlurLevel.GetValueOrDefault());
 
@@ -474,6 +484,7 @@ public class GameBuilders
         var currentGame = await this._gameService.GetJumbleSessionForSessionId(parsedGameId);
         if (currentGame == null || currentGame.DateEnded.HasValue)
         {
+            response.CommandResponse = CommandResponse.NotFound;
             return response;
         }
 
@@ -519,6 +530,7 @@ public class GameBuilders
         var currentGame = await this._gameService.GetJumbleSessionForSessionId(parsedGameId);
         if (currentGame == null || currentGame.DateEnded.HasValue)
         {
+            response.CommandResponse = CommandResponse.NotFound;
             return response;
         }
 
@@ -575,6 +587,7 @@ public class GameBuilders
         var currentGame = await this._gameService.GetJumbleSessionForSessionId(parsedGameId);
         if (currentGame == null || currentGame.DateEnded.HasValue)
         {
+            response.CommandResponse = CommandResponse.NotFound;
             return response;
         }
 
@@ -611,6 +624,7 @@ public class GameBuilders
         var currentGame = await this._gameService.GetJumbleSessionForSessionId(parsedGameId);
         if (currentGame == null || currentGame.DateEnded.HasValue)
         {
+            response.CommandResponse = CommandResponse.NotFound;
             return response;
         }
 

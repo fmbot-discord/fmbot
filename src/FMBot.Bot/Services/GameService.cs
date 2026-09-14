@@ -984,27 +984,27 @@ public class GameService(
         return matrix[source1Length, source2Length];
     }
 
-    public async Task<SKBitmap> GetSkImage(string url, string albumName, string artistName, int sessionId)
+    public async Task<SKBitmap> FetchCoverImage(string url, string albumName, string artistName)
     {
-        SKBitmap coverImage;
         var localPath = ChartService.AlbumUrlToCacheFilePath(albumName, artistName);
 
         if (localPath != null && File.Exists(localPath))
         {
-            coverImage = SKBitmap.Decode(localPath);
-        }
-        else
-        {
-            var bytes = await client.GetByteArrayAsync(url);
-            await using var stream = new MemoryStream(bytes);
-            coverImage = SKBitmap.Decode(stream);
-
-            await ChartService.SaveCoverToCache(coverImage, localPath);
+            return SKBitmap.Decode(localPath);
         }
 
-        cache.Set(CacheKeyForJumbleSessionImage(sessionId), coverImage, TimeSpan.FromMinutes(2));
+        var bytes = await client.GetByteArrayAsync(url);
+        await using var stream = new MemoryStream(bytes);
+        var coverImage = SKBitmap.Decode(stream);
+
+        await ChartService.SaveCoverToCache(coverImage, localPath);
 
         return coverImage;
+    }
+
+    public void CacheSessionImage(int sessionId, SKBitmap coverImage)
+    {
+        cache.Set(CacheKeyForJumbleSessionImage(sessionId), coverImage, TimeSpan.FromMinutes(2));
     }
 
     public async Task<SKBitmap> GetImageFromCache(int sessionId)
