@@ -14,6 +14,12 @@ public class ArtistHintTrack
     public string AlbumName { get; set; }
 }
 
+public enum JumbleStatsView
+{
+    User,
+    Server
+}
+
 public class JumbleUserStats
 {
     public int TotalGamesPlayed { get; set; }

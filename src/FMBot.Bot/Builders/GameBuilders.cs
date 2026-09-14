@@ -49,7 +49,7 @@ public class GameBuilders
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed,
+            ResponseType = ResponseType.ComponentsV2,
         };
 
         var existingGame = await this._gameService.GetJumbleSessionForChannelId(context.DiscordChannel.Id);
@@ -61,7 +61,8 @@ public class GameBuilders
             }
             else
             {
-                response.Embed.WithDescription(context.Localize("jumble.gameInProgress"));
+                response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
+                response.ComponentsContainer.WithTextDisplay(context.Localize("jumble.gameInProgress"));
                 response.CommandResponse = CommandResponse.Cooldown;
                 return response;
             }
@@ -69,7 +70,8 @@ public class GameBuilders
 
         if (!GameService.TryClaimGameStart(context.DiscordChannel.Id))
         {
-            response.Embed.WithDescription(context.Localize("jumble.gameInProgress"));
+            response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
+            response.ComponentsContainer.WithTextDisplay(context.Localize("jumble.gameInProgress"));
             response.CommandResponse = CommandResponse.Cooldown;
             return response;
         }
@@ -86,23 +88,9 @@ public class GameBuilders
             var jumbleLimit = premiumGuild ? Constants.PremiumServerJumbleDailyLimit : Constants.JumbleDailyLimit;
             if (!SupporterService.IsSupporter(context.ContextUser.UserType) && jumblesPlayedToday > jumbleLimit)
             {
-                response.Embed.WithColor(DiscordConstants.InformationColorBlue);
-                var limitDescription = new StringBuilder();
-                limitDescription.AppendLine(context.Localize("jumble.dailyLimitReached",
-                    ("limit", jumbleLimit.ToString())));
-                response.Components = new ActionRowProperties()
-                    .WithButton(context.Localize("buttons.getFmbotSupporter"), style: ButtonStyle.Primary,
-                        customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "jumble-dailylimit"));
-
-                if (!premiumGuild)
-                {
-                    limitDescription.AppendLine(context.Localize("jumble.premiumServerUpsell",
-                        ("premiumLimit", Constants.PremiumServerJumbleDailyLimit.Format(context.NumberFormat))));
-                    response.Components.WithButton(context.Localize("buttons.premiumServer"), style: ButtonStyle.Secondary,
-                        customId: $"{InteractionConstants.PremiumServer.GetOverview}:jumble-dailylimit");
-                }
-
-                response.Embed.WithDescription(limitDescription.ToString());
+                BuildDailyLimitContainer(response, context, premiumGuild,
+                    context.Localize("jumble.dailyLimitReached", ("limit", jumbleLimit.ToString())),
+                    "jumble-dailylimit");
                 response.CommandResponse = CommandResponse.SupporterRequired;
                 return response;
             }
@@ -113,7 +101,8 @@ public class GameBuilders
 
             if (artist.artist == null)
             {
-                response.Embed.WithDescription(context.Localize("jumble.playedAllToday"));
+                response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
+                response.ComponentsContainer.WithTextDisplay(context.Localize("jumble.playedAllToday"));
                 response.CommandResponse = CommandResponse.NotFound;
                 return response;
             }
@@ -143,10 +132,10 @@ public class GameBuilders
                 context.Localizer, artistCountry, await hintContextTask);
             await this._gameService.JumbleStoreShowedHints(game, hints);
 
-            BuildJumbleEmbed(response.Embed, game.JumbledArtist, game.Hints, context.Localizer);
-            response.Components =
+            BuildJumbleContainer(response, game.JumbledArtist, game.Hints, context.Localizer);
+            response.ComponentsContainer.WithActionRow(
                 BuildJumbleComponents(game.JumbleSessionId, game.Hints, context.Localizer,
-                    shuffledHidden: game.JumbledArtist == null);
+                    shuffledHidden: game.JumbledArtist == null));
             response.GameSessionId = game.JumbleSessionId;
 
             return response;
@@ -162,7 +151,7 @@ public class GameBuilders
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.ImageWithEmbed
+            ResponseType = ResponseType.ComponentsV2
         };
 
         var existingGame = await this._gameService.GetJumbleSessionForChannelId(context.DiscordChannel.Id);
@@ -174,8 +163,8 @@ public class GameBuilders
             }
             else
             {
-                response.Embed.WithDescription(context.Localize("jumble.gameInProgress"));
-                response.ResponseType = ResponseType.Embed;
+                response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
+                response.ComponentsContainer.WithTextDisplay(context.Localize("jumble.gameInProgress"));
                 response.CommandResponse = CommandResponse.Cooldown;
                 return response;
             }
@@ -183,8 +172,8 @@ public class GameBuilders
 
         if (!GameService.TryClaimGameStart(context.DiscordChannel.Id))
         {
-            response.Embed.WithDescription(context.Localize("jumble.gameInProgress"));
-            response.ResponseType = ResponseType.Embed;
+            response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
+            response.ComponentsContainer.WithTextDisplay(context.Localize("jumble.gameInProgress"));
             response.CommandResponse = CommandResponse.Cooldown;
             return response;
         }
@@ -201,24 +190,9 @@ public class GameBuilders
             var jumbleLimit = premiumGuild ? Constants.PremiumServerJumbleDailyLimit : Constants.JumbleDailyLimit;
             if (!SupporterService.IsSupporter(context.ContextUser.UserType) && jumblesPlayedToday > jumbleLimit)
             {
-                response.ResponseType = ResponseType.Embed;
-                response.Embed.WithColor(DiscordConstants.InformationColorBlue);
-                var limitDescription = new StringBuilder();
-                limitDescription.AppendLine(context.Localize("jumble.dailyLimitReachedPixel",
-                    ("limit", jumbleLimit.ToString())));
-                response.Components = new ActionRowProperties()
-                    .WithButton(context.Localize("buttons.getFmbotSupporter"), style: ButtonStyle.Primary,
-                        customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "pixel-dailylimit"));
-
-                if (!premiumGuild)
-                {
-                    limitDescription.AppendLine(context.Localize("jumble.premiumServerUpsell",
-                        ("premiumLimit", Constants.PremiumServerJumbleDailyLimit.Format(context.NumberFormat))));
-                    response.Components.WithButton(context.Localize("buttons.premiumServer"), style: ButtonStyle.Secondary,
-                        customId: $"{InteractionConstants.PremiumServer.GetOverview}:pixel-dailylimit");
-                }
-
-                response.Embed.WithDescription(limitDescription.ToString());
+                BuildDailyLimitContainer(response, context, premiumGuild,
+                    context.Localize("jumble.dailyLimitReachedPixel", ("limit", jumbleLimit.ToString())),
+                    "pixel-dailylimit");
                 response.CommandResponse = CommandResponse.SupporterRequired;
                 return response;
             }
@@ -232,8 +206,8 @@ public class GameBuilders
 
             if (album == null)
             {
-                response.ResponseType = ResponseType.Embed;
-                response.Embed.WithDescription(context.Localize("jumble.playedAllToday"));
+                response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
+                response.ComponentsContainer.WithTextDisplay(context.Localize("jumble.playedAllToday"));
                 response.CommandResponse = CommandResponse.NotFound;
                 return response;
             }
@@ -267,31 +241,24 @@ public class GameBuilders
                 album.UserPlaycount.GetValueOrDefault(), context.Localizer, artistCountry, hintContext);
             await this._gameService.JumbleStoreShowedHints(game, hints);
 
-            BuildJumbleEmbed(response.Embed, game.JumbledArtist, game.Hints, context.Localizer,
-                jumbleType: JumbleType.Pixelation);
-
             var image = await coverImageTask;
             if (image == null)
             {
-                response.ResponseType = ResponseType.Embed;
-                response.Embed.WithDescription(context.Localize("jumble.albumCoverError"));
+                response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
+                response.ComponentsContainer.WithTextDisplay(context.Localize("jumble.albumCoverError"));
                 response.CommandResponse = CommandResponse.Error;
-                response.ResponseType = ResponseType.Embed;
                 await this._gameService.JumbleEndSession(game);
                 return response;
             }
 
             this._gameService.CacheSessionImage(game.JumbleSessionId, image);
+            AttachCoverImage(response, game.JumbleSessionId, image, game.BlurLevel.GetValueOrDefault());
 
-            using var pixelated = GameService.PixelateCoverImage(image, game.BlurLevel.GetValueOrDefault());
-
-            var encoded = pixelated.Encode(SKEncodedImageFormat.Png, 100);
-            response.Stream = encoded.AsStream(true);
-            response.FileName = $"pixelation-{game.JumbleSessionId}-{game.BlurLevel.GetValueOrDefault()}.png";
-
-            response.Components =
+            BuildJumbleContainer(response, game.JumbledArtist, game.Hints, context.Localizer,
+                jumbleType: JumbleType.Pixelation);
+            response.ComponentsContainer.WithActionRow(
                 BuildJumbleComponents(game.JumbleSessionId, game.Hints, context.Localizer, game.BlurLevel,
-                    game.JumbledArtist == null);
+                    game.JumbledArtist == null));
             response.GameSessionId = game.JumbleSessionId;
 
             return response;
@@ -302,13 +269,38 @@ public class GameBuilders
         }
     }
 
-    private static void BuildJumbleEmbed(EmbedProperties embed, string jumbledArtist, List<JumbleSessionHint> hints,
+    private static void BuildDailyLimitContainer(ResponseModel response, ContextModel context, bool premiumGuild,
+        string limitReachedText, string source)
+    {
+        response.ComponentsContainer.WithAccentColor(DiscordConstants.InformationColorBlue);
+
+        var limitDescription = new StringBuilder();
+        limitDescription.AppendLine(limitReachedText);
+
+        var limitButtons = new ActionRowProperties()
+            .WithButton(context.Localize("buttons.getFmbotSupporter"), style: ButtonStyle.Primary,
+                customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: source));
+
+        if (!premiumGuild)
+        {
+            limitDescription.AppendLine(context.Localize("jumble.premiumServerUpsell",
+                ("premiumLimit", Constants.PremiumServerJumbleDailyLimit.Format(context.NumberFormat))));
+            limitButtons.WithButton(context.Localize("buttons.premiumServer"), style: ButtonStyle.Secondary,
+                customId: $"{InteractionConstants.PremiumServer.GetOverview}:{source}");
+        }
+
+        response.ComponentsContainer.WithTextDisplay(limitDescription.ToString().TrimEnd());
+        response.ComponentsContainer.WithActionRow(limitButtons);
+    }
+
+    private static void BuildJumbleContainer(ResponseModel response, string jumbledArtist, List<JumbleSessionHint> hints,
         Localizer localizer, bool canBeAnswered = true, JumbleType jumbleType = JumbleType.Artist)
     {
         var hintsShown = hints.Count(w => w.HintShown);
         var hintString = GameService.HintsToString(hints, hintsShown);
 
-        embed.WithColor(DiscordConstants.InformationColorBlue);
+        var container = response.ComponentsContainer;
+        container.WithAccentColor(DiscordConstants.InformationColorBlue);
 
         var isSingle = hints.Count != 0 &&
                        hints.Any(a =>
@@ -321,9 +313,18 @@ public class GameBuilders
                 ? localizer.Translate("jumble.titleGuessSingle")
                 : localizer.Translate("jumble.titleGuessAlbum");
 
+        if (response.Stream != null)
+        {
+            container.AddComponent(new MediaGalleryProperties
+            {
+                new MediaGalleryItemProperties(new ComponentMediaProperties($"attachment://{response.FileName}"))
+            });
+        }
+
         if (jumbledArtist != null)
         {
-            embed.WithDescription($"### `{jumbledArtist}`");
+            container.WithTextDisplay($"### `{jumbledArtist}`");
+            container.WithSeparator();
         }
 
         if (hintsShown > 3)
@@ -331,33 +332,86 @@ public class GameBuilders
             hintTitle += $" {localizer.TranslateCount("jumble.extraHints", hintsShown - 3)}";
         }
 
-        embed.AddField(hintTitle, hintString);
+        container.WithTextDisplay($"**{hintTitle}**\n{hintString.TrimEnd()}");
 
         if (canBeAnswered)
         {
-            embed.AddField(localizer.Translate("jumble.addAnswerTitle"),
-                localizer.Translate("jumble.addAnswerDescription",
-                    ("seconds", (jumbleType == JumbleType.Artist
-                        ? GameService.JumbleSecondsToGuess
-                        : GameService.PixelationSecondsToGuess).ToString())));
+            container.WithSeparator();
+            container.WithTextDisplay($"**{localizer.Translate("jumble.addAnswerTitle")}**\n" +
+                                      localizer.Translate("jumble.addAnswerDescription",
+                                          ("seconds", (jumbleType == JumbleType.Artist
+                                              ? GameService.JumbleSecondsToGuess
+                                              : GameService.PixelationSecondsToGuess).ToString())));
+        }
+
+        response.ResponseType = ResponseType.ComponentsV2;
+    }
+
+    private static void AttachCoverImage(ResponseModel response, int sessionId, SKBitmap image, float? blurLevel = null)
+    {
+        if (blurLevel.HasValue)
+        {
+            using var pixelated = GameService.PixelateCoverImage(image, blurLevel.Value);
+            var encoded = pixelated.Encode(SKEncodedImageFormat.Png, 100);
+            response.Stream = encoded.AsStream(true);
+            response.FileName = $"pixelation-{sessionId}-{(int)Math.Round(blurLevel.Value * 1000)}.png";
+        }
+        else
+        {
+            var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
+            response.Stream = encoded.AsStream(true);
+            response.FileName = $"pixelation-{sessionId}.png";
         }
     }
 
     public async Task<ResponseModel> GetJumbleUserStats(ContextModel context, UserSettingsModel userSettings,
-        JumbleType jumbleType, TimeSettingsModel timeSettings = null)
+        JumbleType jumbleType, TimeSettingsModel timeSettings = null, JumbleStatsView view = JumbleStatsView.User)
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Paginator,
+            ResponseType = ResponseType.ComponentsV2,
         };
 
         var name = jumbleType == JumbleType.Artist ? "Jumble" : "Pixel Jumble";
-        var pages = new List<PageBuilder>();
 
-        var userPage = new PageBuilder();
-        userPage.WithColor(DiscordConstants.InformationColorBlue);
-        userPage.WithAuthor(context.Localize("jumble.userStatsTitle", ("game", name),
-            ("user", $"{userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}")));
+        var page = view == JumbleStatsView.Server && context.DiscordGuild != null
+            ? await BuildGuildStatsPage(context, jumbleType, name)
+            : await BuildUserStatsPage(context, userSettings, jumbleType, timeSettings, name);
+
+        response.Embed = BuildStatsEmbed(page);
+
+        var container = response.ComponentsContainer;
+        container.WithAccentColor(DiscordConstants.InformationColorBlue);
+        container.WithTextDisplay($"### {page.Title}");
+        container.WithSeparator();
+
+        if (page.Description != null)
+        {
+            container.WithTextDisplay(page.Description);
+        }
+
+        foreach (var (title, body) in page.Sections)
+        {
+            container.WithTextDisplay($"**{title}**\n{body.TrimEnd()}");
+        }
+
+        if (context.DiscordGuild != null)
+        {
+            container.WithSeparator();
+            container.WithActionRow(BuildStatsTabs(context, userSettings, jumbleType, view));
+        }
+
+        return response;
+    }
+
+    private async Task<JumbleStatsPage> BuildUserStatsPage(ContextModel context, UserSettingsModel userSettings,
+        JumbleType jumbleType, TimeSettingsModel timeSettings, string name)
+    {
+        var page = new JumbleStatsPage
+        {
+            Title = context.Localize("jumble.userStatsTitle", ("game", name),
+                ("user", $"{userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}"))
+        };
 
         var userStats =
             await this._gameService.GetJumbleUserStats(userSettings.UserId, userSettings.DiscordUserId, jumbleType,
@@ -365,96 +419,129 @@ public class GameBuilders
 
         if (userStats == null)
         {
-            userPage.WithDescription(userSettings.DifferentUser
+            page.Description = userSettings.DifferentUser
                 ? context.Localize("jumble.noStatsUser")
-                : context.Localize("jumble.noStatsSelf"));
+                : context.Localize("jumble.noStatsSelf");
+            return page;
         }
-        else
+
+        var gameStats = new StringBuilder();
+        gameStats.AppendLine(context.LocalizeCount("jumble.statTotalGamesPlayed", userStats.TotalGamesPlayed));
+        gameStats.AppendLine(context.LocalizeCount("jumble.statGamesStarted", userStats.GamesStarted));
+        gameStats.AppendLine(context.LocalizeCount("jumble.statGamesAnswered", userStats.GamesAnswered));
+        gameStats.AppendLine(context.LocalizeCount("jumble.statGamesWon", userStats.GamesWon));
+        gameStats.AppendLine(context.Localize("jumble.statAvgHintsShown",
+            ("avg", decimal.Round(userStats.AvgHintsShown, 1).ToString())));
+        page.Sections.Add((context.Localize("jumble.fieldGames"), gameStats.ToString()));
+
+        var answerStats = new StringBuilder();
+        answerStats.AppendLine(context.LocalizeCount("jumble.statTotalAnswers", userStats.TotalAnswers));
+        answerStats.AppendLine(context.Localize("jumble.statAvgAnswerTime",
+            ("seconds", decimal.Round(userStats.AvgAnsweringTime, 1).ToString())));
+        answerStats.AppendLine(context.Localize("jumble.statAvgCorrectAnswerTime",
+            ("seconds", decimal.Round(userStats.AvgCorrectAnsweringTime, 1).ToString())));
+        answerStats.AppendLine(context.Localize("jumble.statAvgAttempts",
+            ("avg", decimal.Round(userStats.AvgAttemptsUntilCorrect, 1).ToString())));
+        answerStats.AppendLine(context.Localize("jumble.statWinRate",
+            ("percentage", decimal.Round(userStats.WinRate, 1).ToString())));
+        page.Sections.Add((context.Localize("jumble.fieldAnswers"), answerStats.ToString()));
+
+        return page;
+    }
+
+    private async Task<JumbleStatsPage> BuildGuildStatsPage(ContextModel context, JumbleType jumbleType, string name)
+    {
+        var page = new JumbleStatsPage
         {
-            var gameStats = new StringBuilder();
-            gameStats.AppendLine(context.LocalizeCount("jumble.statTotalGamesPlayed", userStats.TotalGamesPlayed));
-            gameStats.AppendLine(context.LocalizeCount("jumble.statGamesStarted", userStats.GamesStarted));
-            gameStats.AppendLine(context.LocalizeCount("jumble.statGamesAnswered", userStats.GamesAnswered));
-            gameStats.AppendLine(context.LocalizeCount("jumble.statGamesWon", userStats.GamesWon));
-            gameStats.AppendLine(context.Localize("jumble.statAvgHintsShown",
-                ("avg", decimal.Round(userStats.AvgHintsShown, 1).ToString())));
-            userPage.AddField(context.Localize("jumble.fieldGames"), gameStats.ToString());
+            Title = context.Localize("jumble.serverStatsTitle", ("game", name),
+                ("server", context.DiscordGuild.Name))
+        };
 
-            var answerStats = new StringBuilder();
-            answerStats.AppendLine(context.LocalizeCount("jumble.statTotalAnswers", userStats.TotalAnswers));
-            answerStats.AppendLine(context.Localize("jumble.statAvgAnswerTime",
-                ("seconds", decimal.Round(userStats.AvgAnsweringTime, 1).ToString())));
-            answerStats.AppendLine(context.Localize("jumble.statAvgCorrectAnswerTime",
-                ("seconds", decimal.Round(userStats.AvgCorrectAnsweringTime, 1).ToString())));
-            answerStats.AppendLine(context.Localize("jumble.statAvgAttempts",
-                ("avg", decimal.Round(userStats.AvgAttemptsUntilCorrect, 1).ToString())));
-            answerStats.AppendLine(context.Localize("jumble.statWinRate",
-                ("percentage", decimal.Round(userStats.WinRate, 1).ToString())));
-            userPage.AddField(context.Localize("jumble.fieldAnswers"), answerStats.ToString());
-        }
+        var guildStats =
+            await this._gameService.GetJumbleGuildStats(context.DiscordGuild.Id, jumbleType);
 
-        if (timeSettings == null)
+        if (guildStats == null)
         {
-            userPage.WithFooter(context.Localize("jumble.serverStatsFooter"));
+            page.Description = context.Localize("jumble.noStatsServer");
+            return page;
         }
 
-        pages.Add(userPage);
-        response.Embed = userPage.GetEmbedProperties();
+        var gameStats = new StringBuilder();
+        gameStats.AppendLine(context.LocalizeCount("jumble.statTotalGamesPlayed", guildStats.TotalGamesPlayed));
+        gameStats.AppendLine(context.LocalizeCount("jumble.statGamesSolved", guildStats.GamesSolved));
+        gameStats.AppendLine(context.LocalizeCount("jumble.statTotalReshuffles", guildStats.TotalReshuffles));
+        gameStats.AppendLine(context.Localize("jumble.statAvgHintsShown",
+            ("avg", decimal.Round(guildStats.AvgHintsShown, 1).ToString())));
+        page.Sections.Add((context.Localize("jumble.fieldGames"), gameStats.ToString()));
 
-        if (context.DiscordGuild != null)
+        var answerStats = new StringBuilder();
+        answerStats.AppendLine(context.LocalizeCount("jumble.statTotalAnswers", guildStats.TotalAnswers));
+        answerStats.AppendLine(context.Localize("jumble.statAvgAnswerTime",
+            ("seconds", decimal.Round(guildStats.AvgAnsweringTime, 1).ToString())));
+        answerStats.AppendLine(context.Localize("jumble.statAvgCorrectAnswerTime",
+            ("seconds", decimal.Round(guildStats.AvgCorrectAnsweringTime, 1).ToString())));
+        answerStats.AppendLine(context.Localize("jumble.statAvgAttempts",
+            ("avg", decimal.Round(guildStats.AvgAttemptsUntilCorrect, 1).ToString())));
+        page.Sections.Add((context.Localize("jumble.fieldAnswers"), answerStats.ToString()));
+
+        var channels = new StringBuilder();
+        var counter = 1;
+        foreach (var channel in guildStats.Channels.Take(5))
         {
-            var guildPage = new PageBuilder();
-            guildPage.WithAuthor(context.Localize("jumble.serverStatsTitle", ("game", name),
-                ("server", context.DiscordGuild.Name)));
-            guildPage.WithColor(DiscordConstants.InformationColorBlue);
-
-            var guildStats =
-                await this._gameService.GetJumbleGuildStats(context.DiscordGuild.Id, jumbleType);
-
-            if (guildStats == null)
-            {
-                guildPage.WithDescription(context.Localize("jumble.noStatsServer"));
-            }
-            else
-            {
-                var gameStats = new StringBuilder();
-                gameStats.AppendLine(context.LocalizeCount("jumble.statTotalGamesPlayed", guildStats.TotalGamesPlayed));
-                gameStats.AppendLine(context.LocalizeCount("jumble.statGamesSolved", guildStats.GamesSolved));
-                gameStats.AppendLine(context.LocalizeCount("jumble.statTotalReshuffles", guildStats.TotalReshuffles));
-                gameStats.AppendLine(context.Localize("jumble.statAvgHintsShown",
-                    ("avg", decimal.Round(guildStats.AvgHintsShown, 1).ToString())));
-                guildPage.AddField(context.Localize("jumble.fieldGames"), gameStats.ToString());
-
-                var answerStats = new StringBuilder();
-                answerStats.AppendLine(context.LocalizeCount("jumble.statTotalAnswers", guildStats.TotalAnswers));
-                answerStats.AppendLine(context.Localize("jumble.statAvgAnswerTime",
-                    ("seconds", decimal.Round(guildStats.AvgAnsweringTime, 1).ToString())));
-                answerStats.AppendLine(context.Localize("jumble.statAvgCorrectAnswerTime",
-                    ("seconds", decimal.Round(guildStats.AvgCorrectAnsweringTime, 1).ToString())));
-                answerStats.AppendLine(context.Localize("jumble.statAvgAttempts",
-                    ("avg", decimal.Round(guildStats.AvgAttemptsUntilCorrect, 1).ToString())));
-                guildPage.AddField(context.Localize("jumble.fieldAnswers"), answerStats.ToString());
-
-                var channels = new StringBuilder();
-                var counter = 1;
-                foreach (var channel in guildStats.Channels.Take(5))
-                {
-                    channels.AppendLine(
-                        $"{counter}. <#{channel.Id}> - {context.LocalizeCount("shared.games", channel.Count)}");
-                    counter++;
-                }
-
-                guildPage.AddField(context.Localize("jumble.fieldTopChannels"), channels.ToString());
-            }
-
-            guildPage.WithFooter(context.Localize("jumble.userStatsFooter", ("user", userSettings.DisplayName)));
-
-            pages.Add(guildPage);
+            channels.AppendLine(
+                $"{counter}. <#{channel.Id}> - {context.LocalizeCount("shared.games", channel.Count)}");
+            counter++;
         }
 
-        response.ComponentPaginator = StringService.BuildSimpleComponentPaginator(pages);
+        page.Sections.Add((context.Localize("jumble.fieldTopChannels"), channels.ToString()));
 
-        return response;
+        return page;
+    }
+
+    private static ActionRowProperties BuildStatsTabs(ContextModel context, UserSettingsModel userSettings,
+        JumbleType jumbleType, JumbleStatsView view)
+    {
+        return new ActionRowProperties()
+            .WithButton(context.Localize("jumble.tabUserStats", ("user", userSettings.DisplayName)),
+                StatsTabId(context, userSettings, jumbleType, JumbleStatsView.User),
+                view == JumbleStatsView.User ? ButtonStyle.Primary : ButtonStyle.Secondary,
+                disabled: view == JumbleStatsView.User)
+            .WithButton(context.Localize("jumble.tabServerStats"),
+                StatsTabId(context, userSettings, jumbleType, JumbleStatsView.Server),
+                view == JumbleStatsView.Server ? ButtonStyle.Primary : ButtonStyle.Secondary,
+                disabled: view == JumbleStatsView.Server);
+    }
+
+    private static string StatsTabId(ContextModel context, UserSettingsModel userSettings, JumbleType jumbleType,
+        JumbleStatsView view)
+    {
+        return $"{InteractionConstants.Game.JumbleStats}:{jumbleType}:{view}:{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}";
+    }
+
+    private static EmbedProperties BuildStatsEmbed(JumbleStatsPage page)
+    {
+        var embed = new EmbedProperties();
+        embed.WithColor(DiscordConstants.InformationColorBlue);
+        embed.WithAuthor(page.Title);
+
+        if (page.Description != null)
+        {
+            embed.WithDescription(page.Description);
+        }
+
+        foreach (var (title, body) in page.Sections)
+        {
+            embed.AddField(title, body);
+        }
+
+        return embed;
+    }
+
+    private sealed class JumbleStatsPage
+    {
+        public string Title { get; set; }
+        public string Description { get; set; }
+        public List<(string Title, string Body)> Sections { get; } = [];
     }
 
     private static ActionRowProperties BuildJumbleComponents(int gameId, List<JumbleSessionHint> hints,
@@ -482,11 +569,32 @@ public class GameBuilders
                 $"{InteractionConstants.Game.JumbleGiveUp}:{gameId}", ButtonStyle.Secondary);
     }
 
+    public static ActionRowProperties BuildPlayAgainRow(Localizer localizer, JumbleType jumbleType)
+    {
+        return new ActionRowProperties()
+            .WithButton(localizer.Translate("jumble.buttonPlayAgain"),
+                $"{InteractionConstants.Game.JumblePlayAgain}:{jumbleType}", ButtonStyle.Primary)
+            .WithButton(localizer.Translate("jumble.buttonStats"),
+                $"{InteractionConstants.Game.JumbleShowStats}:{jumbleType}", ButtonStyle.Secondary);
+    }
+
+    private static void AddResult(ComponentContainerProperties container, string resultText,
+        ActionRowProperties playAgainRow = null)
+    {
+        container.WithSeparator();
+        container.WithTextDisplay(resultText);
+
+        if (playAgainRow != null)
+        {
+            container.WithActionRow(playAgainRow);
+        }
+    }
+
     public async Task<ResponseModel> JumbleAddHint(ContextModel context, int parsedGameId)
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed,
+            ResponseType = ResponseType.ComponentsV2,
         };
 
         var currentGame = await this._gameService.GetJumbleSessionForSessionId(parsedGameId);
@@ -504,26 +612,23 @@ public class GameBuilders
             var image = await this._gameService.GetImageFromCache(currentGame.JumbleSessionId);
             if (image == null)
             {
-                response.Embed.WithDescription(context.Localize("jumble.albumCoverError"));
+                response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
+                response.ComponentsContainer.WithTextDisplay(context.Localize("jumble.albumCoverError"));
                 response.CommandResponse = CommandResponse.Error;
-                response.ResponseType = ResponseType.Embed;
                 return response;
             }
 
             var blurLevel = GetNextBlurLevel(currentGame.BlurLevel.Value);
 
             await this._gameService.JumbleStoreBlurLevel(currentGame, blurLevel);
-            using var pixelated = GameService.PixelateCoverImage(image, blurLevel);
-
-            var encoded = pixelated.Encode(SKEncodedImageFormat.Png, 100);
-            response.Stream = encoded.AsStream(true);
-            response.FileName = $"pixelation-{currentGame.JumbleSessionId}-{blurLevel}.png";
+            AttachCoverImage(response, currentGame.JumbleSessionId, image, blurLevel);
         }
 
-        BuildJumbleEmbed(response.Embed, currentGame.JumbledArtist, currentGame.Hints, context.Localizer, true,
+        BuildJumbleContainer(response, currentGame.JumbledArtist, currentGame.Hints, context.Localizer, true,
             currentGame.JumbleType);
-        response.Components = BuildJumbleComponents(currentGame.JumbleSessionId, currentGame.Hints, context.Localizer,
-            currentGame.BlurLevel, currentGame.JumbledArtist == null);
+        response.ComponentsContainer.WithActionRow(
+            BuildJumbleComponents(currentGame.JumbleSessionId, currentGame.Hints, context.Localizer,
+                currentGame.BlurLevel, currentGame.JumbledArtist == null));
 
         return response;
     }
@@ -532,7 +637,7 @@ public class GameBuilders
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed,
+            ResponseType = ResponseType.ComponentsV2,
         };
 
         var currentGame = await this._gameService.GetJumbleSessionForSessionId(parsedGameId);
@@ -547,26 +652,23 @@ public class GameBuilders
             var image = await this._gameService.GetImageFromCache(currentGame.JumbleSessionId);
             if (image == null)
             {
-                response.Embed.WithDescription(context.Localize("jumble.albumCoverError"));
+                response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
+                response.ComponentsContainer.WithTextDisplay(context.Localize("jumble.albumCoverError"));
                 response.CommandResponse = CommandResponse.Error;
-                response.ResponseType = ResponseType.Embed;
                 return response;
             }
 
             var blurLevel = GetNextBlurLevel(currentGame.BlurLevel.Value);
 
             await this._gameService.JumbleStoreBlurLevel(currentGame, blurLevel);
-            using var pixelated = GameService.PixelateCoverImage(image, blurLevel);
-
-            var encoded = pixelated.Encode(SKEncodedImageFormat.Png, 100);
-            response.Stream = encoded.AsStream(true);
-            response.FileName = $"pixelation-{currentGame.JumbleSessionId}-{blurLevel}.png";
+            AttachCoverImage(response, currentGame.JumbleSessionId, image, blurLevel);
         }
 
-        BuildJumbleEmbed(response.Embed, currentGame.JumbledArtist, currentGame.Hints, context.Localizer,
+        BuildJumbleContainer(response, currentGame.JumbledArtist, currentGame.Hints, context.Localizer,
             jumbleType: currentGame.JumbleType);
-        response.Components = BuildJumbleComponents(currentGame.JumbleSessionId, currentGame.Hints, context.Localizer,
-            currentGame.BlurLevel, currentGame.JumbledArtist == null);
+        response.ComponentsContainer.WithActionRow(
+            BuildJumbleComponents(currentGame.JumbleSessionId, currentGame.Hints, context.Localizer,
+                currentGame.BlurLevel, currentGame.JumbledArtist == null));
 
         return response;
     }
@@ -589,7 +691,7 @@ public class GameBuilders
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed,
+            ResponseType = ResponseType.ComponentsV2,
         };
 
         var currentGame = await this._gameService.GetJumbleSessionForSessionId(parsedGameId);
@@ -601,23 +703,20 @@ public class GameBuilders
 
         await this._gameService.JumbleReshuffleArtist(currentGame);
 
-        BuildJumbleEmbed(response.Embed, currentGame.JumbledArtist, currentGame.Hints, context.Localizer, true,
-            currentGame.JumbleType);
-        response.Components = BuildJumbleComponents(currentGame.JumbleSessionId, currentGame.Hints, context.Localizer,
-            currentGame.BlurLevel, currentGame.JumbledArtist == null);
-
         if (currentGame.JumbleType == JumbleType.Pixelation && currentGame.BlurLevel.HasValue)
         {
             var image = await this._gameService.GetImageFromCache(currentGame.JumbleSessionId);
             if (image != null)
             {
-                using var pixelated = GameService.PixelateCoverImage(image, currentGame.BlurLevel.Value);
-
-                var encoded = pixelated.Encode(SKEncodedImageFormat.Png, 100);
-                response.Stream = encoded.AsStream(true);
-                response.FileName = $"pixelation-{currentGame.JumbleSessionId}-{currentGame.BlurLevel.Value}.png";
+                AttachCoverImage(response, currentGame.JumbleSessionId, image, currentGame.BlurLevel.Value);
             }
         }
+
+        BuildJumbleContainer(response, currentGame.JumbledArtist, currentGame.Hints, context.Localizer, true,
+            currentGame.JumbleType);
+        response.ComponentsContainer.WithActionRow(
+            BuildJumbleComponents(currentGame.JumbleSessionId, currentGame.Hints, context.Localizer,
+                currentGame.BlurLevel, currentGame.JumbledArtist == null));
 
         return response;
     }
@@ -626,7 +725,7 @@ public class GameBuilders
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed,
+            ResponseType = ResponseType.ComponentsV2,
         };
 
         var currentGame = await this._gameService.GetJumbleSessionForSessionId(parsedGameId);
@@ -638,8 +737,8 @@ public class GameBuilders
 
         if (currentGame.StarterUserId != context.ContextUser.UserId)
         {
-            response.Embed.WithDescription(context.Localize("jumble.giveUpNotYours"));
-            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+            response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
+            response.ComponentsContainer.WithTextDisplay(context.Localize("jumble.giveUpNotYours"));
             response.CommandResponse = CommandResponse.NoPermission;
             return response;
         }
@@ -649,48 +748,55 @@ public class GameBuilders
         await this._gameService.JumbleEndSession(currentGame);
         await this._gameService.CancelToken(context.DiscordChannel.Id);
 
-        BuildJumbleEmbed(response.Embed, currentGame.JumbledArtist, currentGame.Hints, context.Localizer, false,
+        if (currentGame.JumbleType == JumbleType.Pixelation)
+        {
+            var image = await this._gameService.GetImageFromCache(currentGame.JumbleSessionId);
+            if (image != null)
+            {
+                AttachCoverImage(response, currentGame.JumbleSessionId, image);
+            }
+        }
+
+        BuildJumbleContainer(response, currentGame.JumbledArtist, currentGame.Hints, context.Localizer, false,
             currentGame.JumbleType);
 
         var userTitle = await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser);
 
-        response.Embed.AddField(context.Localize("jumble.gaveUpTitle", ("user", userTitle)),
-            currentGame.JumbleType == JumbleType.Artist
-                ? context.Localize("jumble.itWasArtist", ("answer", currentGame.CorrectAnswer))
-                : context.Localize("jumble.itWasAlbum", ("answer", currentGame.CorrectAnswer),
-                    ("artist", currentGame.ArtistName)));
-        response.Components = null;
-        response.Embed.WithColor(DiscordConstants.AppleMusicRed);
+        var resultText = $"**{context.Localize("jumble.gaveUpTitle", ("user", userTitle))}**\n" +
+                         (currentGame.JumbleType == JumbleType.Artist
+                             ? context.Localize("jumble.itWasArtist", ("answer", currentGame.CorrectAnswer))
+                             : context.Localize("jumble.itWasAlbum", ("answer", currentGame.CorrectAnswer),
+                                 ("artist", currentGame.ArtistName)));
+        response.ComponentsContainer.WithAccentColor(DiscordConstants.AppleMusicRed);
 
-        var playAgainButton = new ActionRowProperties().WithButton(context.Localize("jumble.buttonPlayAgain"),
-            $"{InteractionConstants.Game.JumblePlayAgain}:{currentGame.JumbleType}",
-            ButtonStyle.Secondary);
+        var playAgainRow = BuildPlayAgainRow(context.Localizer, currentGame.JumbleType);
 
         if (currentGame.Answers is { Count: >= 1 })
         {
+            AddResult(response.ComponentsContainer, resultText);
+
             var dayCount = await dayStreakTask;
-            var separateResponse = new EmbedProperties();
-            separateResponse.WithDescription(currentGame.JumbleType == JumbleType.Artist
-                ? context.Localize("jumble.gaveUpDescriptionArtist", ("user", userTitle),
-                    ("answer", currentGame.CorrectAnswer))
-                : context.Localize("jumble.gaveUpDescriptionAlbum", ("user", userTitle),
-                    ("answer", currentGame.CorrectAnswer), ("artist", currentGame.ArtistName)));
-            separateResponse.WithColor(DiscordConstants.AppleMusicRed);
+            var footer = new StringBuilder();
             if (dayCount > 1)
             {
-                var footer = new StringBuilder();
                 if (dayCount >= 10)
                 {
                     footer.Append($"🔥");
                 }
 
                 footer.Append(context.LocalizeCount("jumble.dayStreak", dayCount));
-                separateResponse.WithFooter(footer.ToString());
             }
+
+            var separateResponse = BuildSeparateResponse(currentGame.JumbleType == JumbleType.Artist
+                    ? context.Localize("jumble.gaveUpDescriptionArtist", ("user", userTitle),
+                        ("answer", currentGame.CorrectAnswer))
+                    : context.Localize("jumble.gaveUpDescriptionAlbum", ("user", userTitle),
+                        ("answer", currentGame.CorrectAnswer), ("artist", currentGame.ArtistName)),
+                footer.ToString(), DiscordConstants.AppleMusicRed, playAgainRow);
 
             if (context.DiscordChannel is TextGuildChannel msgChannel)
             {
-                _ = Task.Run(() => SendSeparateResponse(msgChannel, separateResponse, playAgainButton,
+                _ = Task.Run(() => SendSeparateResponse(msgChannel, separateResponse,
                     new ReferencedMusic
                     {
                         Artist = currentGame.ArtistName,
@@ -700,18 +806,7 @@ public class GameBuilders
         }
         else
         {
-            response.Components = playAgainButton;
-        }
-
-        if (currentGame.JumbleType == JumbleType.Pixelation)
-        {
-            var image = await this._gameService.GetImageFromCache(currentGame.JumbleSessionId);
-            if (image != null)
-            {
-                var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
-                response.Stream = encoded.AsStream(true);
-                response.FileName = $"pixelation-{currentGame.JumbleSessionId}.png";
-            }
+            AddResult(response.ComponentsContainer, resultText, playAgainRow);
         }
 
         response.ReferencedMusic = new ReferencedMusic
@@ -723,13 +818,30 @@ public class GameBuilders
         return response;
     }
 
-    private static async Task SendSeparateResponse(TextGuildChannel msgChannel, EmbedProperties separateResponse,
-        ActionRowProperties components, ReferencedMusic referencedMusic)
+    private static ComponentContainerProperties BuildSeparateResponse(string description, string footer,
+        Color accentColor, ActionRowProperties playAgainRow)
+    {
+        var container = new ComponentContainerProperties();
+        container.WithAccentColor(accentColor);
+
+        var text = string.IsNullOrEmpty(footer)
+            ? description
+            : $"{description}\n-# {footer}";
+
+        container.WithTextDisplay(text);
+        container.WithActionRow(playAgainRow);
+
+        return container;
+    }
+
+    private static async Task SendSeparateResponse(TextGuildChannel msgChannel, ComponentContainerProperties container,
+        ReferencedMusic referencedMusic)
     {
         var msg = await msgChannel.SendMessageAsync(new MessageProperties
         {
-            Embeds = [separateResponse],
-            Components = [components]
+            Components = [container],
+            Flags = MessageFlags.IsComponentsV2,
+            AllowedMentions = AllowedMentionsProperties.None
         });
 
         PublicProperties.UsedCommandsReferencedMusic.TryAdd(msg.Id, referencedMusic);
@@ -739,7 +851,7 @@ public class GameBuilders
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed,
+            ResponseType = ResponseType.ComponentsV2,
         };
 
         try
@@ -777,13 +889,6 @@ public class GameBuilders
 
                     var userTitle = await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser);
 
-                    var separateResponse = new EmbedProperties();
-                    separateResponse.WithDescription(
-                        currentGame.JumbleType == JumbleType.Artist
-                            ? context.Localize("jumble.gotItArtist", ("user", userTitle),
-                                ("answer", currentGame.CorrectAnswer))
-                            : context.Localize("jumble.gotItAlbum", ("user", userTitle),
-                                ("answer", currentGame.CorrectAnswer), ("artist", currentGame.ArtistName)));
                     var timeTaken = DateTime.UtcNow - currentGame.DateStarted;
 
                     var footer = new StringBuilder();
@@ -802,15 +907,17 @@ public class GameBuilders
                         footer.Append(context.LocalizeCount("jumble.dayStreak", dayCount));
                     }
 
-                    separateResponse.WithFooter(footer.ToString());
-                    separateResponse.WithColor(DiscordConstants.SpotifyColorGreen);
-                    var playAgainComponent = new ActionRowProperties().WithButton(
-                        context.Localize("jumble.buttonPlayAgain"),
-                        $"{InteractionConstants.Game.JumblePlayAgain}:{currentGame.JumbleType}",
-                        ButtonStyle.Secondary);
+                    var separateResponse = BuildSeparateResponse(currentGame.JumbleType == JumbleType.Artist
+                            ? context.Localize("jumble.gotItArtist", ("user", userTitle),
+                                ("answer", currentGame.CorrectAnswer))
+                            : context.Localize("jumble.gotItAlbum", ("user", userTitle),
+                                ("answer", currentGame.CorrectAnswer), ("artist", currentGame.ArtistName)),
+                        footer.ToString(), DiscordConstants.SpotifyColorGreen,
+                        BuildPlayAgainRow(context.Localizer, currentGame.JumbleType));
+
                     if (context.DiscordChannel is TextGuildChannel msgChannel)
                     {
-                        _ = Task.Run(() => SendSeparateResponse(msgChannel, separateResponse, playAgainComponent,
+                        _ = Task.Run(() => SendSeparateResponse(msgChannel, separateResponse,
                             new ReferencedMusic
                             {
                                 Artist = currentGame.ArtistName,
@@ -820,18 +927,15 @@ public class GameBuilders
 
                     if (currentGame.DiscordResponseId.HasValue)
                     {
-                        BuildJumbleEmbed(response.Embed, currentGame.JumbledArtist, currentGame.Hints,
-                            context.Localizer, false, currentGame.JumbleType);
-                        response.Components = null;
-                        response.Embed.WithColor(DiscordConstants.SpotifyColorGreen);
-
                         var image = await this._gameService.GetImageFromCache(currentGame.JumbleSessionId);
                         if (image != null)
                         {
-                            var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
-                            response.Stream = encoded.AsStream(true);
-                            response.FileName = $"pixelation-{currentGame.JumbleSessionId}.png";
+                            AttachCoverImage(response, currentGame.JumbleSessionId, image);
                         }
+
+                        BuildJumbleContainer(response, currentGame.JumbledArtist, currentGame.Hints,
+                            context.Localizer, false, currentGame.JumbleType);
+                        response.ComponentsContainer.WithAccentColor(DiscordConstants.SpotifyColorGreen);
 
                         var msg = await commandContext.Channel.GetMessageAsync(currentGame.DiscordResponseId.Value);
                         if (msg is not RestMessage message)
@@ -850,12 +954,12 @@ public class GameBuilders
 
                         await message.ModifyAsync(m =>
                         {
-                            m.Components = [];
-                            m.Embeds = [response.Embed];
+                            m.AllowedMentions = AllowedMentionsProperties.None;
+                            m.Flags = MessageFlags.IsComponentsV2;
+                            m.Embeds = [];
+                            m.Components = response.GetComponentsV2();
                             m.Attachments = response.Stream != null
-                                ? [new AttachmentProperties(response.Spoiler
-                                    ? $"SPOILER_{response.FileName}"
-                                    : response.FileName, response.Stream)]
+                                ? [new AttachmentProperties(response.FileName, response.Stream)]
                                 : null;
                         });
                     }
@@ -898,7 +1002,7 @@ public class GameBuilders
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed,
+            ResponseType = ResponseType.ComponentsV2,
         };
 
         var currentGame = await this._gameService.GetJumbleSessionForSessionId(gameSessionId);
@@ -908,32 +1012,41 @@ public class GameBuilders
         }
 
         await this._gameService.JumbleEndSession(currentGame);
-        BuildJumbleEmbed(response.Embed, currentGame.JumbledArtist, currentGame.Hints, context.Localizer, false,
+
+        if (currentGame.JumbleType == JumbleType.Pixelation)
+        {
+            var image = await this._gameService.GetImageFromCache(currentGame.JumbleSessionId);
+            if (image != null)
+            {
+                AttachCoverImage(response, currentGame.JumbleSessionId, image);
+            }
+        }
+
+        BuildJumbleContainer(response, currentGame.JumbledArtist, currentGame.Hints, context.Localizer, false,
             currentGame.JumbleType);
 
-        response.Embed.AddField(context.Localize("jumble.timeUpTitle"),
-            currentGame.JumbleType == JumbleType.Artist
-                ? context.Localize("jumble.itWasArtist", ("answer", currentGame.CorrectAnswer))
-                : context.Localize("jumble.itWasAlbum", ("answer", currentGame.CorrectAnswer),
-                    ("artist", currentGame.ArtistName)));
-        response.Components = null;
-        response.Embed.WithColor(DiscordConstants.AppleMusicRed);
+        var resultText = $"**{context.Localize("jumble.timeUpTitle")}**\n" +
+                         (currentGame.JumbleType == JumbleType.Artist
+                             ? context.Localize("jumble.itWasArtist", ("answer", currentGame.CorrectAnswer))
+                             : context.Localize("jumble.itWasAlbum", ("answer", currentGame.CorrectAnswer),
+                                 ("artist", currentGame.ArtistName)));
+        response.ComponentsContainer.WithAccentColor(DiscordConstants.AppleMusicRed);
 
-        var playAgainComponent = new ActionRowProperties().WithButton(context.Localize("jumble.buttonPlayAgain"),
-            $"{InteractionConstants.Game.JumblePlayAgain}:{currentGame.JumbleType}",
-            ButtonStyle.Secondary);
+        var playAgainRow = BuildPlayAgainRow(context.Localizer, currentGame.JumbleType);
 
         if (currentGame.Answers is { Count: >= 1 })
         {
-            var separateResponse = new EmbedProperties();
-            separateResponse.WithDescription(currentGame.JumbleType == JumbleType.Artist
-                ? context.Localize("jumble.nobodyGuessedArtist", ("answer", currentGame.CorrectAnswer))
-                : context.Localize("jumble.nobodyGuessedAlbum", ("answer", currentGame.CorrectAnswer),
-                    ("artist", currentGame.ArtistName)));
-            separateResponse.WithColor(DiscordConstants.AppleMusicRed);
+            AddResult(response.ComponentsContainer, resultText);
+
+            var separateResponse = BuildSeparateResponse(currentGame.JumbleType == JumbleType.Artist
+                    ? context.Localize("jumble.nobodyGuessedArtist", ("answer", currentGame.CorrectAnswer))
+                    : context.Localize("jumble.nobodyGuessedAlbum", ("answer", currentGame.CorrectAnswer),
+                        ("artist", currentGame.ArtistName)),
+                null, DiscordConstants.AppleMusicRed, playAgainRow);
+
             if (context.DiscordChannel is TextGuildChannel msgChannel)
             {
-                _ = Task.Run(() => SendSeparateResponse(msgChannel, separateResponse, playAgainComponent,
+                _ = Task.Run(() => SendSeparateResponse(msgChannel, separateResponse,
                     new ReferencedMusic
                     {
                         Artist = currentGame.ArtistName,
@@ -943,18 +1056,7 @@ public class GameBuilders
         }
         else
         {
-            response.Components = playAgainComponent;
-        }
-
-        if (currentGame.JumbleType == JumbleType.Pixelation)
-        {
-            var image = await this._gameService.GetImageFromCache(currentGame.JumbleSessionId);
-            if (image != null)
-            {
-                var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
-                response.Stream = encoded.AsStream(true);
-                response.FileName = $"pixelation-{currentGame.JumbleSessionId}.png";
-            }
+            AddResult(response.ComponentsContainer, resultText, playAgainRow);
         }
 
         response.ReferencedMusic = new ReferencedMusic

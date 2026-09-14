@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Fergun.Interactive;
@@ -21,6 +23,7 @@ public class GameInteractions(
     GameBuilders gameBuilders,
     UserService userService,
     GameService gameService,
+    SettingService settingService,
     InteractiveService interactivity)
     : ComponentInteractionModule<ComponentInteractionContext>
 {
@@ -107,7 +110,8 @@ public class GameInteractions(
         try
         {
             this.Context.DeferUpdateInBackground();
-            var disableButtonsTask = this.Context.DisableInteractionButtons().ObserveFaults();
+            var disableButtonsTask = this.Context.DisableButtonsAndMenus().ObserveFaults();
+            var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
 
             var jumbleTypeEnum = (JumbleType)Enum.Parse(typeof(JumbleType), jumbleType);
 
@@ -140,18 +144,20 @@ public class GameInteractions(
 
             if (response.CommandResponse == CommandResponse.Ok)
             {
-                var message = (this.Context.Interaction as MessageComponentInteraction)?.Message;
                 if (message == null)
                 {
                     return;
                 }
 
                 var name = await UserService.GetNameAsync(this.Context.Guild, this.Context.User);
-                var components = new ActionRowProperties().WithButton(
-                    context.Localize("jumble.playingAgain", ("user", name)), customId: "1",
-                    url: null, disabled: true, style: ButtonStyle.Secondary);
+                var playingAgainButton = new ButtonProperties("1",
+                    context.Localize("jumble.playingAgain", ("user", name)), ButtonStyle.Secondary)
+                {
+                    Disabled = true
+                };
                 await disableButtonsTask;
-                _ = Task.Run(() => message.ModifyAsync(m => m.Components = [components]));
+                _ = Task.Run(() => message.ModifyAsync(m =>
+                    m.Components = ReplacePlayAgainButton(message.Components, playingAgainButton)));
 
                 if (responseId.HasValue && response.GameSessionId.HasValue)
                 {
@@ -161,10 +167,13 @@ public class GameInteractions(
                         response.GameSessionId.Value, secondsToGuess);
                 }
             }
-            else if (response.CommandResponse != CommandResponse.Cooldown)
+            else if (response.CommandResponse != CommandResponse.Cooldown && message != null)
             {
                 await disableButtonsTask;
-                await this.Context.EnableInteractionButtons();
+                var playAgainButton = GameBuilders.BuildPlayAgainRow(context.Localizer, jumbleTypeEnum)
+                    .Components.OfType<ButtonProperties>().First();
+                await message.ModifyAsync(m =>
+                    m.Components = ReplacePlayAgainButton(message.Components, playAgainButton));
             }
         }
         catch (OperationCanceledException)
@@ -173,6 +182,111 @@ public class GameInteractions(
         catch (Exception e)
         {
             await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.Game.JumbleShowStats)]
+    [UsernameSetRequired]
+    public async Task JumbleShowStats(string jumbleType)
+    {
+        try
+        {
+            this.Context.DeferInBackground(MessageFlags.Ephemeral);
+
+            var jumbleTypeEnum = Enum.Parse<JumbleType>(jumbleType);
+
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+            var context = new ContextModel(this.Context, contextUser);
+            var userSettings = await settingService.GetOriginalContextUser(this.Context.User.Id,
+                this.Context.User.Id, this.Context.Guild, this.Context.User);
+
+            var response = await gameBuilders.GetJumbleUserStats(context, userSettings, jumbleTypeEnum);
+
+            await this.Context.SendFollowUpResponse(interactivity, response, userService, ephemeral: true);
+            await this.Context.LogCommandUsedAsync(response, userService,
+                flowCommand: jumbleTypeEnum == JumbleType.Artist ? "jumble" : "pixel");
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.Game.JumbleStats)]
+    [UsernameSetRequired]
+    public async Task JumbleStats(string jumbleType, string view, string discordUserId, string requesterDiscordUserId)
+    {
+        try
+        {
+            this.Context.DeferUpdateInBackground();
+            var disableButtonsTask = this.Context.DisableButtonsAndMenus().ObserveFaults();
+
+            var jumbleTypeEnum = Enum.Parse<JumbleType>(jumbleType);
+            var statsView = Enum.Parse<JumbleStatsView>(view);
+            var targetDiscordUserId = ulong.Parse(discordUserId);
+            var requesterId = ulong.Parse(requesterDiscordUserId);
+
+            var contextUser = await userService.GetUserAsync(requesterId);
+            var discordContextUser = await this.Context.GetUserAsync(requesterId);
+            var userSettings = await settingService.GetOriginalContextUser(targetDiscordUserId, requesterId,
+                this.Context.Guild, this.Context.User);
+
+            var response = await gameBuilders.GetJumbleUserStats(
+                new ContextModel(this.Context, contextUser, discordContextUser), userSettings, jumbleTypeEnum,
+                view: statsView);
+
+            await disableButtonsTask;
+            await this.Context.UpdateInteractionEmbed(response, interactivity, false);
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
+    private static List<IMessageComponentProperties> ReplacePlayAgainButton(
+        IReadOnlyList<IMessageComponent> messageComponents, ButtonProperties replacement)
+    {
+        var components = messageComponents.WithDisabled();
+
+        foreach (var component in components)
+        {
+            switch (component)
+            {
+                case ActionRowProperties row:
+                    ReplaceInRow(row);
+                    break;
+                case ComponentContainerProperties container:
+                    container.Components = container.Components.ToList();
+                    foreach (var row in container.Components.OfType<ActionRowProperties>())
+                    {
+                        ReplaceInRow(row);
+                    }
+
+                    break;
+            }
+        }
+
+        return components;
+
+        void ReplaceInRow(ActionRowProperties row)
+        {
+            row.Components = row.Components.Select(IActionRowComponentProperties (c) =>
+            {
+                if (c is not ButtonProperties button)
+                {
+                    return c;
+                }
+
+                if (button.CustomId.StartsWith(InteractionConstants.Game.JumblePlayAgain))
+                {
+                    return replacement;
+                }
+
+                button.Disabled = false;
+                return button;
+            }).ToList();
         }
     }
 
@@ -195,10 +309,12 @@ public class GameInteractions(
 
         await this.Context.Client.Rest.ModifyMessageAsync(context.DiscordChannel.Id, responseId, m =>
         {
-            m.Components = [];
-            m.Embeds = [response.Embed];
+            m.AllowedMentions = AllowedMentionsProperties.None;
+            m.Flags = MessageFlags.IsComponentsV2;
+            m.Embeds = [];
+            m.Components = response.GetComponentsV2();
             m.Attachments = response.Stream != null
-                ? [new AttachmentProperties(response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName, response.Stream)]
+                ? [new AttachmentProperties(response.FileName, response.Stream)]
                 : null;
         });
 
