@@ -1,0 +1,176 @@
+syntax = "proto3";
+
+option csharp_namespace = "Web.InternalApi";
+
+package appchannel;
+
+service AppChannelService {
+  rpc GetViewer (AppChannelViewerRequest) returns (AppChannelViewerReply);
+  rpc GetNowListening (AppChannelGuildRequest) returns (AppChannelNowListeningReply);
+  rpc GetServerTop (AppChannelServerTopRequest) returns (AppChannelServerTopReply);
+  rpc GetWhoKnows (AppChannelWhoKnowsRequest) returns (AppChannelWhoKnowsReply);
+  rpc GetTasteMatches (AppChannelGuildRequest) returns (AppChannelTasteReply);
+  rpc VerifyMembership (AppChannelViewerRequest) returns (AppChannelMembershipReply);
+  rpc GetTasteComparison (AppChannelTasteCompareRequest) returns (AppChannelTasteCompareReply);
+}
+
+enum AppChannelEntity {
+  ARTIST = 0;
+  ALBUM = 1;
+  TRACK = 2;
+}
+
+enum AppChannelPeriod {
+  WEEK = 0;
+  MONTH = 1;
+  ALL_TIME = 2;
+}
+
+message AppChannelViewerRequest {
+  int64 discordUserId = 1;
+  int64 discordGuildId = 2;
+}
+
+message AppChannelViewerReply {
+  bool registered = 1;
+  string lastFmUserName = 2;
+  bool guildKnown = 3;
+  string guildName = 4;
+  int32 linkedMembers = 5;
+  int64 totalPlaycount = 6;
+  bool inGuild = 7;
+}
+
+message AppChannelMembershipReply {
+  bool member = 1;
+  string source = 2;
+}
+
+message AppChannelGuildRequest {
+  int64 discordUserId = 1;
+  int64 discordGuildId = 2;
+  int32 limit = 3;
+}
+
+message AppChannelMember {
+  int64 discordUserId = 1;
+  string displayName = 2;
+  string avatarUrl = 3;
+  string lastFmUserName = 4;
+}
+
+message AppChannelNowListeningEntry {
+  AppChannelMember member = 1;
+  string trackName = 2;
+  string artistName = 3;
+  string albumName = 4;
+  int64 timePlayedUnix = 5;
+  string coverUrl = 6;
+  bool isViewer = 7;
+}
+
+message AppChannelNowListeningReply {
+  repeated AppChannelNowListeningEntry entries = 1;
+  int64 generatedAtUnix = 2;
+}
+
+message AppChannelServerTopRequest {
+  int64 discordGuildId = 1;
+  int64 discordUserId = 2;
+  AppChannelEntity entity = 3;
+  AppChannelPeriod period = 4;
+  int32 limit = 5;
+}
+
+message AppChannelServerTopEntry {
+  int32 rank = 1;
+  string name = 2;
+  string artistName = 3;
+  int64 playcount = 4;
+  int32 listeners = 5;
+  string imageUrl = 6;
+  int64 viewerPlaycount = 7;
+}
+
+message AppChannelServerTopReply {
+  repeated AppChannelServerTopEntry entries = 1;
+  int64 totalPlays = 2;
+  int32 totalListeners = 3;
+  int64 generatedAtUnix = 4;
+}
+
+message AppChannelWhoKnowsRequest {
+  int64 discordGuildId = 1;
+  int64 discordUserId = 2;
+  AppChannelEntity entity = 3;
+  string name = 4;
+  string artistName = 5;
+  int32 limit = 6;
+  AppChannelPeriod period = 7;
+}
+
+message AppChannelWhoKnowsEntry {
+  AppChannelMember member = 1;
+  int64 playcount = 2;
+  bool isViewer = 3;
+  int32 rank = 4;
+}
+
+message AppChannelWhoKnowsReply {
+  repeated AppChannelWhoKnowsEntry entries = 1;
+  string name = 2;
+  string artistName = 3;
+  string imageUrl = 4;
+  int64 totalPlays = 5;
+  int32 listeners = 6;
+  bool found = 7;
+}
+
+message AppChannelTasteMatch {
+  AppChannelMember member = 1;
+  double totalPercent = 2;
+  double artistPercent = 3;
+  double genrePercent = 4;
+  double countryPercent = 5;
+  int32 sharedArtists = 6;
+  repeated string topSharedArtists = 7;
+}
+
+message AppChannelTasteReply {
+  repeated AppChannelTasteMatch matches = 1;
+  int32 membersCompared = 2;
+  bool viewerInResults = 3;
+}
+
+message AppChannelTasteCompareRequest {
+  int64 discordGuildId = 1;
+  int64 discordUserId = 2;
+  int64 otherDiscordUserId = 3;
+}
+
+message AppChannelTasteRow {
+  string name = 1;
+  int64 ownPlaycount = 2;
+  int64 otherPlaycount = 3;
+  string imageUrl = 4;
+}
+
+message AppChannelTasteSection {
+  string type = 1;
+  repeated AppChannelTasteRow rows = 2;
+  int32 ownTotal = 3;
+  int32 matches = 4;
+}
+
+message AppChannelTasteCompareReply {
+  bool found = 1;
+  AppChannelMember other = 2;
+  string viewerName = 3;
+  repeated AppChannelTasteSection sections = 4;
+  AppChannelMember viewer = 5;
+  double totalPercent = 6;
+  double artistPercent = 7;
+  double genrePercent = 8;
+  double countryPercent = 9;
+  bool affinityAvailable = 10;
+}
