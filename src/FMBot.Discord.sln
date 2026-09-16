@@ -36,6 +36,30 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Shared.Domain", "Shared.Dom
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Web.PublicApi", "..\..\fmbot-web-backend\src\Web.PublicApi\Web.PublicApi.csproj", "{ED57B400-E0FA-4A7C-8171-13F957F1693A}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Web.AppChannel", "Web.AppChannel", "{3C2A7D41-6F1B-4E8A-9B5D-1F0C2E7A8B61}"
+	ProjectSection(SolutionItems) = preProject
+		..\..\fmbot-web-backend\src\Web.AppChannel\.env.example = ..\..\fmbot-web-backend\src\Web.AppChannel\.env.example
+		..\..\fmbot-web-backend\src\Web.AppChannel\.gitignore = ..\..\fmbot-web-backend\src\Web.AppChannel\.gitignore
+		..\..\fmbot-web-backend\src\Web.AppChannel\index.html = ..\..\fmbot-web-backend\src\Web.AppChannel\index.html
+		..\..\fmbot-web-backend\src\Web.AppChannel\package.json = ..\..\fmbot-web-backend\src\Web.AppChannel\package.json
+		..\..\fmbot-web-backend\src\Web.AppChannel\README.md = ..\..\fmbot-web-backend\src\Web.AppChannel\README.md
+		..\..\fmbot-web-backend\src\Web.AppChannel\tsconfig.json = ..\..\fmbot-web-backend\src\Web.AppChannel\tsconfig.json
+		..\..\fmbot-web-backend\src\Web.AppChannel\vite.config.ts = ..\..\fmbot-web-backend\src\Web.AppChannel\vite.config.ts
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{5E9B1C22-7A3D-4F6E-8C1A-2D4F6B8E0A73}"
+	ProjectSection(SolutionItems) = preProject
+		..\..\fmbot-web-backend\src\Web.AppChannel\src\api.ts = ..\..\fmbot-web-backend\src\Web.AppChannel\src\api.ts
+		..\..\fmbot-web-backend\src\Web.AppChannel\src\main.ts = ..\..\fmbot-web-backend\src\Web.AppChannel\src\main.ts
+		..\..\fmbot-web-backend\src\Web.AppChannel\src\style.css = ..\..\fmbot-web-backend\src\Web.AppChannel\src\style.css
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "public", "public", "{7A1D3E44-9C5F-4B2A-A3E6-3F5A7C9D1B85}"
+	ProjectSection(SolutionItems) = preProject
+		..\..\fmbot-web-backend\src\Web.AppChannel\public\favicon.png = ..\..\fmbot-web-backend\src\Web.AppChannel\public\favicon.png
+		..\..\fmbot-web-backend\src\Web.AppChannel\public\logo.png = ..\..\fmbot-web-backend\src\Web.AppChannel\public\logo.png
+	EndProjectSection
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FMBot.AppleMusic", "FMBot.AppleMusic\FMBot.AppleMusic.csproj", "{EB6E0F72-42BE-4246-A355-EE68139BA368}"
 EndProject
 Global
@@ -110,6 +134,9 @@ Global
 		{B2464F03-8E0A-448E-AF32-2F67FBCEEC53} = {8934F160-CC0F-4C75-B7EA-BAD9B7977371}
 		{02842C9F-DB8F-41B7-93B1-529AB023488B} = {8934F160-CC0F-4C75-B7EA-BAD9B7977371}
 		{ED57B400-E0FA-4A7C-8171-13F957F1693A} = {8934F160-CC0F-4C75-B7EA-BAD9B7977371}
+		{3C2A7D41-6F1B-4E8A-9B5D-1F0C2E7A8B61} = {8934F160-CC0F-4C75-B7EA-BAD9B7977371}
+		{5E9B1C22-7A3D-4F6E-8C1A-2D4F6B8E0A73} = {3C2A7D41-6F1B-4E8A-9B5D-1F0C2E7A8B61}
+		{7A1D3E44-9C5F-4B2A-A3E6-3F5A7C9D1B85} = {3C2A7D41-6F1B-4E8A-9B5D-1F0C2E7A8B61}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {8048CCF2-244E-48E9-ABAC-87AB5DBEA77C}
