@@ -402,6 +402,20 @@ public class StaticInteractions(
         }
     }
 
+    [ComponentInteraction(InteractionConstants.LaunchActivity)]
+    public async Task LaunchActivity()
+    {
+        try
+        {
+            await RespondAsync(InteractionCallback.LaunchActivity);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService, deferFirst: true);
+        }
+    }
+
     [ComponentInteraction(InteractionConstants.Faq.Overview)]
     public async Task FaqOverviewSelected()
     {
