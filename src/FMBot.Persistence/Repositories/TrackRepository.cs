@@ -110,6 +110,20 @@ public class TrackRepository
         })).ToList();
     }
 
+    public static async Task<List<TopTrack>> GetTopUserTracks(int userId, int limit, NpgsqlConnection connection)
+    {
+        const string sql = "SELECT ut.name AS track_name, ut.artist_name, ut.playcount AS user_playcount, t.album_name, " +
+                           "COALESCE(a.spotify_image_url, a.lastfm_image_url) AS album_cover_url " +
+                           "FROM public.user_tracks ut " +
+                           "LEFT JOIN public.tracks t ON t.id = ut.track_id " +
+                           "LEFT JOIN public.albums a ON a.id = t.album_id " +
+                           "WHERE ut.user_id = @userId ORDER BY ut.playcount DESC LIMIT @limit";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+
+        return (await connection.QueryAsync<TopTrack>(sql, new { userId, limit })).ToList();
+    }
+
     public static async Task<int> GetUserTrackCount(int userId, NpgsqlConnection connection)
     {
         const string sql = "SELECT COUNT(*) FROM public.user_tracks WHERE user_id = @userId";

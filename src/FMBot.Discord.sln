@@ -55,6 +55,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{5E9B1C22-7A3
 		..\..\fmbot-web-backend\src\Web.AppChannel\src\events.ts = ..\..\fmbot-web-backend\src\Web.AppChannel\src\events.ts
 		..\..\fmbot-web-backend\src\Web.AppChannel\src\main.ts = ..\..\fmbot-web-backend\src\Web.AppChannel\src\main.ts
 		..\..\fmbot-web-backend\src\Web.AppChannel\src\state.ts = ..\..\fmbot-web-backend\src\Web.AppChannel\src\state.ts
+		..\..\fmbot-web-backend\src\Web.AppChannel\src\timing.ts = ..\..\fmbot-web-backend\src\Web.AppChannel\src\timing.ts
 		..\..\fmbot-web-backend\src\Web.AppChannel\src\style.css = ..\..\fmbot-web-backend\src\Web.AppChannel\src\style.css
 	EndProjectSection
 EndProject
