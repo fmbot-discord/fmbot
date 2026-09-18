@@ -6,12 +6,15 @@ using System.Threading.Tasks;
 using Dapper;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
+using FMBot.Bot.Services.Guild;
+using FMBot.Core;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
+using FMBot.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Npgsql;
@@ -80,7 +83,7 @@ public class CrownService(
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        var currentCrownHolder = await GetCurrentCrownHolder(connection, guild.GuildId, artistName);
+        var currentCrownHolder = await CrownRepository.GetCurrentCrownHolder(connection, guild.GuildId, artistName);
 
         if (topUser == null)
         {
@@ -249,7 +252,7 @@ public class CrownService(
                 await db.DisposeAsync();
                 await connection.CloseAsync();
 
-                return new Models.CrownModel
+                return new CrownModel
                 {
                     Crown = newCrown,
                     Claimed = true,
@@ -283,57 +286,24 @@ public class CrownService(
     public static CrownEligibility GetCrownEligibility(Persistence.Domain.Models.Guild guild,
         IDictionary<int, FullGuildUser> guildUsers, int userId, ulong[] roles = null)
     {
-        if (guildUsers.TryGetValue(userId, out var guildUser) && guildUser.BlockedFromCrowns)
-        {
-            return CrownEligibility.Crownblocked;
-        }
-
-        if (CrownRolesActive(guild) && !HasCrownRole(guild.CrownRoles.ToHashSet(), guildUsers, userId, roles))
-        {
-            return CrownEligibility.MissingCrownRole;
-        }
-
-        return CrownEligibility.Eligible;
+        return (CrownEligibility)CrownRules.GetCrownEligibility(guild,
+            PremiumGuildLookup.IsPremiumGuild(guild.DiscordGuildId), guildUsers, userId, roles);
     }
 
     private static bool CrownRolesActive(Persistence.Domain.Models.Guild guild)
     {
-        return guild.CrownRoles is { Length: > 0 } &&
-               PublicProperties.PremiumServers.ContainsKey(guild.DiscordGuildId);
+        return CrownRules.CrownRolesActive(guild, PremiumGuildLookup.IsPremiumGuild(guild.DiscordGuildId));
     }
 
     private static bool HasCrownRole(HashSet<ulong> crownRoles, IDictionary<int, FullGuildUser> guildUsers, int userId,
         ulong[] roles)
     {
-        var userRoles = roles ?? (guildUsers.TryGetValue(userId, out var guildUser) ? guildUser.Roles : null);
-        return userRoles != null && userRoles.Any(crownRoles.Contains);
+        return CrownRules.HasCrownRole(crownRoles, guildUsers, userId, roles);
     }
 
     private static bool CrownHolderNoLongerAllowed(IDictionary<int, FullGuildUser> guildUsers, int crownHolderUserId)
     {
-        if (guildUsers.Count == 0)
-        {
-            return false;
-        }
-
-        return !guildUsers.TryGetValue(crownHolderUserId, out var crownHolder) || crownHolder.BlockedFromCrowns;
-    }
-
-    private static async Task<UserCrown> GetCurrentCrownHolder(NpgsqlConnection connection, int guildId, string artistName)
-    {
-        const string sql = "SELECT * FROM public.user_crowns AS uc " +
-                           "WHERE uc.guild_id = @guildId AND " +
-                           "uc.active = true AND " +
-                           "UPPER(uc.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
-                           "ORDER BY current_playcount desc";
-
-        DefaultTypeMap.MatchNamesWithUnderscores = true;
-
-        return await connection.QueryFirstOrDefaultAsync<UserCrown>(sql, new
-        {
-            guildId,
-            artistName
-        });
+        return CrownRules.CrownHolderNoLongerAllowed(guildUsers, crownHolderUserId);
     }
 
     public static async Task<CurrentCrownHolderDto> GetCurrentCrownHolderWithName(NpgsqlConnection connection, int guildId, string artistName)

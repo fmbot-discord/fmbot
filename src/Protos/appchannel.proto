@@ -12,6 +12,7 @@ service AppChannelService {
   rpc GetTasteMatches (AppChannelGuildRequest) returns (AppChannelTasteReply);
   rpc VerifyMembership (AppChannelViewerRequest) returns (AppChannelMembershipReply);
   rpc GetTasteComparison (AppChannelTasteCompareRequest) returns (AppChannelTasteCompareReply);
+  rpc GetProfile (AppChannelViewerRequest) returns (AppChannelProfileReply);
 }
 
 enum AppChannelEntity {
@@ -114,6 +115,18 @@ message AppChannelWhoKnowsEntry {
   int64 playcount = 2;
   bool isViewer = 3;
   int32 rank = 4;
+  bool hasCrown = 5;
+}
+
+message AppChannelFilterStats {
+  int32 startCount = 1;
+  int32 endCount = 2;
+  int32 activityThresholdFiltered = 3;
+  int32 guildActivityThresholdFiltered = 4;
+  int32 blockedFiltered = 5;
+  int32 allowedRolesFiltered = 6;
+  int32 blockedRolesFiltered = 7;
+  bool requesterFiltered = 8;
 }
 
 message AppChannelWhoKnowsReply {
@@ -124,6 +137,8 @@ message AppChannelWhoKnowsReply {
   int64 totalPlays = 5;
   int32 listeners = 6;
   bool found = 7;
+  AppChannelFilterStats filterStats = 8;
+  int64 viewerUpdatedAtUnix = 9;
 }
 
 message AppChannelTasteMatch {
@@ -140,6 +155,7 @@ message AppChannelTasteReply {
   repeated AppChannelTasteMatch matches = 1;
   int32 membersCompared = 2;
   bool viewerInResults = 3;
+  int64 viewerUpdatedAtUnix = 4;
 }
 
 message AppChannelTasteCompareRequest {
@@ -173,4 +189,43 @@ message AppChannelTasteCompareReply {
   double genrePercent = 8;
   double countryPercent = 9;
   bool affinityAvailable = 10;
+}
+
+message AppChannelRecentTrack {
+  string trackName = 1;
+  string artistName = 2;
+  string albumName = 3;
+  string coverUrl = 4;
+  bool nowPlaying = 5;
+  int64 timePlayedUnix = 6;
+  bool loved = 7;
+}
+
+message AppChannelProfileArtist {
+  int32 rank = 1;
+  string name = 2;
+  int64 playcount = 3;
+  string imageUrl = 4;
+}
+
+message AppChannelProfileReply {
+  bool registered = 1;
+  AppChannelMember member = 2;
+  string userType = 3;
+  int64 totalPlaycount = 4;
+  int64 registeredUnix = 5;
+  int64 artistCount = 6;
+  int64 albumCount = 7;
+  int64 trackCount = 8;
+  string lastFmImageUrl = 9;
+  int64 updatedAtUnix = 10;
+  bool recentTracksAvailable = 11;
+  repeated AppChannelRecentTrack recentTracks = 12;
+  int64 currentArtistPlaycount = 13;
+  int64 currentAlbumPlaycount = 14;
+  int64 currentTrackPlaycount = 15;
+  int64 playsThisWeek = 16;
+  repeated AppChannelProfileArtist topArtists = 17;
+  bool statsAvailable = 18;
+  double averagePerDay = 19;
 }

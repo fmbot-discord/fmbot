@@ -3,28 +3,6 @@ using FMBot.Domain.Models;
 
 namespace FMBot.Bot.Models;
 
-public class GuildTrack
-{
-    public string ArtistName { get; set; }
-
-    public string TrackName { get; set; }
-
-    public int? TrackId { get; set; }
-
-    public int TotalPlaycount { get; set; }
-
-    public int ListenerCount { get; set; }
-}
-
-public class WhoKnowsTrackDto
-{
-    public int UserId { get; set; }
-
-    public string UserNameLastFm { get; set; }
-
-    public int Playcount { get; set; }
-}
-
 public class WhoKnowsGlobalTrackDto
 {
     public int UserId { get; set; }

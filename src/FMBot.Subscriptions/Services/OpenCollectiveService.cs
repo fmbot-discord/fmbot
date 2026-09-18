@@ -119,7 +119,7 @@ public class OpenCollectiveService
         };
 
         var response = await this._graphQLClient.SendQueryAsync<OpenCollectiveResponseModel>(query);
-        Statistics.OpenCollectiveApiCalls.Inc();
+        SubscriptionStatistics.OpenCollectiveApiCalls.Inc();
 
         if (response.Errors != null && response.Errors.Any())
         {

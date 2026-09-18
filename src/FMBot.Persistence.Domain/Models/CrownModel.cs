@@ -1,6 +1,4 @@
-using FMBot.Persistence.Domain.Models;
-
-namespace FMBot.Bot.Models;
+namespace FMBot.Persistence.Domain.Models;
 
 public class CrownModel
 {

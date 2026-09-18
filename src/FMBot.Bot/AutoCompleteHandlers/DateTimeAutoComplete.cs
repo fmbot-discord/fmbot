@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using FMBot.Bot.Extensions;
+using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
 using NetCord;
 using NetCord.Rest;

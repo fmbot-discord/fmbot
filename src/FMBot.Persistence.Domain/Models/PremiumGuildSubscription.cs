@@ -1,6 +1,7 @@
-namespace Shared.Domain.Models;
+using System;
 
-// This file is managed in Shared.Domain and copied to child projects
+namespace FMBot.Persistence.Domain.Models;
+
 public class PremiumGuildSubscription
 {
     public int Id { get; set; }

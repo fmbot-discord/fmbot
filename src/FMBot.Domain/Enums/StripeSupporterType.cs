@@ -1,4 +1,4 @@
-﻿namespace Shared.Domain.Enums;
+namespace FMBot.Domain.Enums;
 
 public enum StripeSupporterType
 {

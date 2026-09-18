@@ -18,7 +18,6 @@ using NetCord.Gateway;
 using NetCord.Rest;
 using NetCord.Services.Commands;
 using Serilog;
-using Shared.Domain.Enums;
 using SkiaSharp;
 using Webhook = FMBot.Persistence.Domain.Models.Webhook;
 

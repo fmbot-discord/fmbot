@@ -59,7 +59,7 @@ dotnet ef database update --project ./src/FMBot.Persistence.EntityFrameWork --st
 - **FMBot.Subscriptions** - Supporter/subscription logic (Stripe, Discord entitlements, OpenCollective)
 - **FMBot.Youtube** / **FMBot.YoutubeSearch** - YouTube search integration
 - **FMBot.BotLists** - Bot list site stat reporting
-- **Shared.Domain** - Contract shared with the web backend (protos, models, enums) — see `../CLAUDE.md`
+- **Protos/** - gRPC contract shared with the web backend (proto files only, no project) — see `../CLAUDE.md`
 - **FMBot.Tests** - NUnit test suite
 
 ### Key Entry Points

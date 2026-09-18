@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using FMBot.Bot.Extensions;
+using FMBot.Domain.Extensions;
 using FMBot.Bot.Services;
 using NetCord;
 using NetCord.Rest;

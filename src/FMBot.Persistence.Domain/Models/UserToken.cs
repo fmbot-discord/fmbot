@@ -1,6 +1,7 @@
-﻿using Shared.Domain.Enums;
+using System;
+using FMBot.Domain.Enums;
 
-namespace Shared.Domain.Models;
+namespace FMBot.Persistence.Domain.Models;
 
 public class UserToken
 {

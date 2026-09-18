@@ -39,7 +39,7 @@ public class DiscogsApi
         var request = new RestRequest("oauth/request_token");
         request.AddHeader("User-Agent", UserAgent);
         var response = await client.ExecuteAsync(request);
-        Statistics.DiscogsApiCalls.Inc();
+        DiscogsStatistics.DiscogsApiCalls.Inc();
 
         if (response.IsSuccessful)
         {
@@ -73,7 +73,7 @@ public class DiscogsApi
         var request = new RestRequest("oauth/access_token", Method.Post);
         request.AddHeader("User-Agent", UserAgent);
         var response = await client.ExecuteAsync(request);
-        Statistics.DiscogsApiCalls.Inc();
+        DiscogsStatistics.DiscogsApiCalls.Inc();
 
         if (response.IsSuccessful)
         {
@@ -112,7 +112,7 @@ public class DiscogsApi
 
         var request = new RestRequest("oauth/identity");
         var response = await client.ExecuteAsync<DiscogsIdentity>(request);
-        Statistics.DiscogsApiCalls.Inc();
+        DiscogsStatistics.DiscogsApiCalls.Inc();
 
         if (!response.IsSuccessful)
         {
@@ -134,7 +134,7 @@ public class DiscogsApi
         request.AddParameter("sort_order", "desc");
 
         var response = await client.ExecuteAsync<DiscogsUserReleases>(request);
-        Statistics.DiscogsApiCalls.Inc();
+        DiscogsStatistics.DiscogsApiCalls.Inc();
 
         if (!response.IsSuccessful)
         {
@@ -161,7 +161,7 @@ public class DiscogsApi
                 request.AddParameter("page", i);
 
                 var pageResponse = await client.ExecuteAsync<DiscogsUserReleases>(request);
-                Statistics.DiscogsApiCalls.Inc();
+                DiscogsStatistics.DiscogsApiCalls.Inc();
 
                 if (!pageResponse.IsSuccessful)
                 {
@@ -195,7 +195,7 @@ public class DiscogsApi
         var request = new RestRequest($"users/{discogsUser}/collection/value");
 
         var response = await client.ExecuteAsync<DiscogsCollectionValue>(request);
-        Statistics.DiscogsApiCalls.Inc();
+        DiscogsStatistics.DiscogsApiCalls.Inc();
 
         if (!response.IsSuccessful)
         {
@@ -218,7 +218,7 @@ public class DiscogsApi
         var request = new RestRequest($"releases/{releaseId}");
 
         var response = await client.ExecuteAsync<DiscogsFullRelease>(request);
-        Statistics.DiscogsApiCalls.Inc();
+        DiscogsStatistics.DiscogsApiCalls.Inc();
 
         if (!response.IsSuccessful)
         {

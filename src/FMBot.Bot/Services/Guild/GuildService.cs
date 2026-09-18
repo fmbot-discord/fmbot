@@ -6,11 +6,13 @@ using Dapper;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
+using FMBot.Core;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
+using FMBot.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
@@ -28,7 +30,8 @@ namespace FMBot.Bot.Services.Guild;
 public class GuildService(
     IDbContextFactory<FMBotDbContext> contextFactory,
     IMemoryCache cache,
-    IOptions<BotSettings> botSettings)
+    IOptions<BotSettings> botSettings,
+    Core.GuildLookup guildLookup)
 {
     private readonly BotSettings _botSettings = botSettings.Value;
 
@@ -100,65 +103,12 @@ public class GuildService(
             return new Dictionary<int, FullGuildUser>();
         }
 
-        var cacheKey = $"guild-users-{discordGuildId}";
-        return await cache.GetOrCreateAsync(cacheKey, async entry =>
-        {
-            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(12);
-
-            const string sql = "SELECT gu.user_id, " +
-                               "gu.user_name, " +
-                               "gu.bot, " +
-                               "gu.last_message, " +
-                               "gu.roles AS dto_roles, " +
-                               "u.user_name_last_fm, " +
-                               "u.discord_user_id, " +
-                               "u.last_used, " +
-                               "COALESCE(gbu.blocked_from_crowns, false) as blocked_from_crowns, " +
-                               "COALESCE(gbu.blocked_from_who_knows, false) as blocked_from_who_knows, " +
-                               "COALESCE(gbu.self_block_from_who_knows, false) as self_block_from_who_knows " +
-                               "FROM public.guild_users AS gu " +
-                               "LEFT JOIN users AS u ON gu.user_id = u.user_id " +
-                               "LEFT JOIN guilds AS g ON gu.guild_id = g.guild_id " +
-                               "LEFT OUTER JOIN guild_blocked_users AS gbu ON gu.user_id = gbu.user_id AND gbu.guild_id = gu.guild_id " +
-                               "WHERE g.discord_guild_id = @discordGuildId";
-
-            DefaultTypeMap.MatchNamesWithUnderscores = true;
-            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
-            await connection.OpenAsync();
-
-            var result = (await connection.QueryAsync<FullGuildUser>(sql, new
-            {
-                discordGuildId = Convert.ToInt64(discordGuildId)
-            })).ToList();
-
-            foreach (var row in result.Where(w => w.DtoRoles != null))
-            {
-                row.Roles = row.DtoRoles.Select(s => (ulong)s).ToArray();
-            }
-
-            return (IDictionary<int, FullGuildUser>)result.ToDictionary(d => d.UserId, d => d);
-        });
+        return await guildLookup.GetGuildUsers(discordGuildId.Value);
     }
 
     public async Task<List<Persistence.Domain.Models.Guild>> GetPremiumGuilds()
     {
-        await using var db = await contextFactory.CreateDbContextAsync();
-
-        var expiryCutoff = DateTime.UtcNow.AddHours(-6);
-        var paidGuildIds = await db.PremiumGuildSubscriptions
-            .AsNoTracking()
-            .Where(w => !w.EntitlementDeleted &&
-                        (w.DateEnding == null || w.DateEnding > expiryCutoff))
-            .Select(s => s.DiscordGuildId)
-            .ToListAsync();
-
-        return await db.Guilds
-            .AsNoTracking()
-            .Where(w => (w.GuildFlags.HasValue && (w.GuildFlags.Value.HasFlag(GuildFlags.LegacyWhoKnowsWhitelist) ||
-                                                   w.GuildFlags.Value.HasFlag(GuildFlags.PremiumServerTester) ||
-                                                   w.GuildFlags.Value.HasFlag(GuildFlags.StaffCommandsAvailable))) ||
-                        paidGuildIds.Contains(w.DiscordGuildId))
-            .ToListAsync();
+        return await guildLookup.GetPremiumGuilds();
     }
 
     public async Task<List<ulong>> RefreshPremiumGuilds(bool postAuditLog = true)
@@ -295,13 +245,13 @@ public class GuildService(
 
     private Task RemoveGuildFromCache(ulong discordGuildId)
     {
-        cache.Remove(CacheKeyForGuild(discordGuildId));
+        guildLookup.RemoveGuildFromCache(discordGuildId);
         return Task.CompletedTask;
     }
 
     private static string CacheKeyForGuild(ulong discordGuildId)
     {
-        return $"guild-{discordGuildId}";
+        return Core.GuildLookup.CacheKeyForGuild(discordGuildId);
     }
 
     private void RemoveChannelFromCache(ulong discordChannelId)
@@ -321,23 +271,7 @@ public class GuildService(
             return null;
         }
 
-        var cacheKey = CacheKeyForGuild(discordGuildId.Value);
-        if (cache.TryGetValue(cacheKey, out Persistence.Domain.Models.Guild guild))
-        {
-            return guild;
-        }
-
-        await using var db = await contextFactory.CreateDbContextAsync();
-        guild = await db.Guilds
-            .AsNoTracking()
-            .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuildId);
-
-        if (guild != null)
-        {
-            cache.Set(cacheKey, guild, TimeSpan.FromMinutes(5));
-        }
-
-        return guild;
+        return await guildLookup.GetGuild(discordGuildId.Value);
     }
 
     public async Task<Channel> GetCachedChannelAsync(ulong? discordChannelId)
@@ -368,91 +302,8 @@ public class GuildService(
         Persistence.Domain.Models.Guild guild,
         List<ulong> roles = null)
     {
-        var stats = new FilterStats
-        {
-            StartCount = users.Count,
-            Roles = roles
-        };
-
-        var premiumGuild = PublicProperties.PremiumServers.ContainsKey(guild.DiscordGuildId);
-
-        if (guild.ActivityThresholdDays.HasValue)
-        {
-            var preFilterCount = users.Count;
-
-            users = users.Where(w =>
-                    w.Value.LastUsed != null &&
-                    w.Value.LastUsed >= DateTime.UtcNow.AddDays(-guild.ActivityThresholdDays.Value))
-                .ToDictionary(i => i.Key, i => i.Value);
-
-            stats.ActivityThresholdFiltered = preFilterCount - users.Count;
-        }
-
-        if (premiumGuild && guild.UserActivityThresholdDays.HasValue)
-        {
-            var preFilterCount = users.Count;
-
-            users = users.Where(w =>
-                    w.Value.LastMessage != null &&
-                    w.Value.LastMessage >= DateTime.UtcNow.AddDays(-guild.UserActivityThresholdDays.Value))
-                .ToDictionary(i => i.Key, i => i.Value);
-
-            stats.GuildActivityThresholdFiltered = preFilterCount - users.Count;
-        }
-
-        if (users.Any(a => a.Value.BlockedFromWhoKnows || a.Value.SelfBlockFromWhoKnows))
-        {
-            var preFilterCount = users.Count;
-
-            var usersToFilter = users
-                .Where(w => w.Value.BlockedFromWhoKnows || w.Value.SelfBlockFromWhoKnows)
-                .Select(s => s.Key)
-                .ToHashSet();
-
-            users = users
-                .Where(w => !usersToFilter.Contains(w.Value.UserId))
-                .ToDictionary(i => i.Key, i => i.Value);
-
-            stats.BlockedFiltered = preFilterCount - users.Count;
-        }
-
-        if (premiumGuild && guild.AllowedRoles != null && guild.AllowedRoles.Any())
-        {
-            var preFilterCount = users.Count;
-
-            users = users
-                .Where(w => w.Value.Roles != null && guild.AllowedRoles.Any(a => w.Value.Roles.Contains(a)))
-                .ToDictionary(i => i.Key, i => i.Value);
-
-            stats.AllowedRolesFiltered = preFilterCount - users.Count;
-        }
-
-        if (premiumGuild && guild.BlockedRoles != null && guild.BlockedRoles.Any())
-        {
-            var preFilterCount = users.Count;
-
-            users = users
-                .Where(w => w.Value.Roles == null || !guild.BlockedRoles.Any(a => w.Value.Roles.Contains(a)))
-                .ToDictionary(i => i.Key, i => i.Value);
-
-            stats.BlockedRolesFiltered = preFilterCount - users.Count;
-        }
-
-        if (roles != null && roles.Count != 0)
-        {
-            var preFilterCount = users.Count;
-
-            users = users
-                .Where(w => w.Value.Roles != null && roles.Any(a => w.Value.Roles.Contains(a)))
-                .ToDictionary(i => i.Key, i => i.Value);
-            ;
-
-            stats.ManualRoleFilter = preFilterCount - users.Count;
-        }
-
-        stats.EndCount = users.Count;
-
-        return (stats, users);
+        return WhoKnowsFilter.FilterGuildUsers(users, guild, PremiumGuildLookup.IsPremiumGuild(guild.DiscordGuildId),
+            null, roles);
     }
 
     public static async Task<Permissions> GetChannelPermissionsAsync(CommandContext context)

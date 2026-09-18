@@ -31,60 +31,13 @@ public class WhoKnowsAlbumService
     public async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForAlbum(NetCord.Gateway.Guild discordGuild,
         IDictionary<int, FullGuildUser> guildUsers, int guildId, int albumId)
     {
-        const string sql = "BEGIN; " +
-                           "SET LOCAL enable_nestloop = OFF; " +
-                           "SELECT ub.user_id, " +
-                           "ub.playcount " +
-                           "FROM user_albums AS ub " +
-                           "WHERE ub.album_id = @albumId " +
-                           "AND ub.user_id = ANY(SELECT user_id FROM guild_users WHERE guild_id = @guildId) " +
-                           "ORDER BY ub.playcount DESC; " +
-                           "COMMIT; ";
-
-        DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        var userAlbums = (await connection.QueryAsync<WhoKnowsAlbumDto>(sql, new
-        {
-            guildId,
-            albumId
-        })).ToList();
+        var whoKnowsAlbumList =
+            await WhoKnowsRepository.GetIndexedUsersForAlbum(guildUsers, guildId, albumId, connection);
 
-        var whoKnowsAlbumList = new List<WhoKnowsObjectWithUser>();
-
-        for (var i = 0; i < userAlbums.Count; i++)
-        {
-            var userAlbum = userAlbums[i];
-
-            if (!guildUsers.TryGetValue(userAlbum.UserId, out var guildUser))
-            {
-                continue;
-            }
-
-            var userName = guildUser.UserName ?? guildUser.UserNameLastFM;
-
-            if (discordGuild != null)
-            {
-                if (discordGuild.Users.TryGetValue(guildUser.DiscordUserId, out var discordGuildUser))
-                {
-                    userName = discordGuildUser.GetDisplayName();
-                }
-            }
-
-            whoKnowsAlbumList.Add(new WhoKnowsObjectWithUser
-            {
-                DiscordName = userName,
-                Playcount = userAlbum.Playcount,
-                LastFMUsername = guildUser.UserNameLastFM,
-                UserId = userAlbum.UserId,
-                Roles = guildUser.Roles,
-                LastUsed = guildUser.LastUsed,
-                LastMessage = guildUser.LastMessage
-            });
-        }
-
-        return whoKnowsAlbumList;
+        return whoKnowsAlbumList.WithDiscordDisplayNames(discordGuild, guildUsers);
     }
 
     public async Task<IList<WhoKnowsObjectWithUser>> GetGlobalUsersForAlbum(NetCord.Gateway.Guild guild, int albumId)
@@ -215,57 +168,15 @@ public class WhoKnowsAlbumService
             return cachedAlbums;
         }
 
-        var dbArgs = new DynamicParameters();
-        dbArgs.Add("guildId", guildId);
-
-        var orderColumn = orderType == OrderType.Playcount ? "total_playcount" : "listener_count";
-        var thenByColumn = orderType == OrderType.Playcount ? "listener_count" : "total_playcount";
-
-        var artistFilter = "";
-        if (!string.IsNullOrWhiteSpace(artistName))
-        {
-            artistFilter = "AND ub.album_id = ANY(SELECT id FROM albums WHERE UPPER(artist_name) = UPPER(CAST(@artistName AS CITEXT))) ";
-            dbArgs.Add("artistName", artistName);
-        }
-
-        var userFilter = "";
-        if (userIds != null)
-        {
-            userFilter = "AND ub.user_id = ANY(@userIds) ";
-            dbArgs.Add("userIds", userIds);
-        }
-
-        var sql = "SELECT a.name AS album_name, a.artist_name, " +
-                  "agg.album_id, " +
-                  "agg.total_playcount, agg.listener_count " +
-                  "FROM ( " +
-                  "    SELECT ub.album_id, " +
-                  "           SUM(ub.playcount) AS total_playcount, " +
-                  "           COUNT(ub.user_id) AS listener_count " +
-                  "    FROM user_albums AS ub " +
-                  "    INNER JOIN guild_users AS gu ON gu.user_id = ub.user_id " +
-                  "    WHERE gu.guild_id = @guildId AND gu.bot != true " +
-                  "    AND ub.album_id IS NOT NULL " +
-                  $"    {artistFilter}" +
-                  $"    {userFilter}" +
-                  "    AND NOT ub.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
-                  "    AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL) " +
-                  "    GROUP BY ub.album_id " +
-                  $"    ORDER BY {orderColumn} DESC, {thenByColumn} DESC " +
-                  "    LIMIT 120 " +
-                  ") agg " +
-                  "INNER JOIN albums a ON a.id = agg.album_id " +
-                  $"ORDER BY agg.{orderColumn} DESC, agg.{thenByColumn} DESC";
-
-        DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        var results = (await connection.QueryAsync<GuildAlbum>(sql, dbArgs)).ToList();
+        var results =
+            await WhoKnowsRepository.GetTopAllTimeAlbumsForGuild(guildId, orderType, artistName, userIds, connection);
 
         if (userIds == null)
         {
-            this._cache.Set<ICollection<GuildAlbum>>(cacheKey, results, TimeSpan.FromMinutes(10));
+            this._cache.Set(cacheKey, results, TimeSpan.FromMinutes(10));
         }
 
         return results;

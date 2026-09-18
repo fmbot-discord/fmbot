@@ -1,0 +1,475 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Dapper;
+using FMBot.Domain.Models;
+using FMBot.Persistence.Domain.Models;
+using Npgsql;
+
+namespace FMBot.Persistence.Repositories;
+
+public static class GenreRepository
+{
+    public static async Task<List<TopGenre>> GetTopGenresForUser(int userId, NpgsqlConnection connection)
+    {
+        const string sql = "SELECT ag.name AS GenreName, SUM(ua.playcount)::bigint AS UserPlaycount " +
+                           "FROM user_artists ua " +
+                           "INNER JOIN artist_genres ag ON ag.artist_id = ua.artist_id " +
+                           "WHERE ua.user_id = @userId AND ua.artist_id IS NOT NULL " +
+                           "GROUP BY ag.name " +
+                           "ORDER BY UserPlaycount DESC";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+
+        return (await connection.QueryAsync<TopGenre>(sql, new { userId })).ToList();
+    }
+
+    public static async Task<List<TopArtist>> GetUserArtistsForGenre(int userId, string genreName,
+        NpgsqlConnection connection)
+    {
+        const string sql = "SELECT ua.name AS ArtistName, ua.playcount AS UserPlaycount " +
+                           "FROM user_artists ua " +
+                           "INNER JOIN artist_genres ag ON ag.artist_id = ua.artist_id " +
+                           "WHERE ua.user_id = @userId AND ua.artist_id IS NOT NULL " +
+                           "AND LOWER(ag.name) = LOWER(CAST(@genreName AS CITEXT)) " +
+                           "ORDER BY ua.playcount DESC";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+
+        return (await connection.QueryAsync<TopArtist>(sql, new { userId, genreName })).ToList();
+    }
+
+    public static async Task<List<TopGenre>> GetUserArtistsForGenres(int userId, IEnumerable<string> genreNames,
+        NpgsqlConnection connection)
+    {
+        const string sql = "SELECT ag.name AS Genre, ua.name AS ArtistName, ua.playcount AS UserPlaycount " +
+                           "FROM user_artists ua " +
+                           "INNER JOIN artist_genres ag ON ag.artist_id = ua.artist_id " +
+                           "WHERE ua.user_id = @userId AND ua.artist_id IS NOT NULL " +
+                           "AND LOWER(ag.name) = ANY(@genreNamesLower) " +
+                           "ORDER BY ua.playcount DESC";
+
+        var genreNamesLower = genreNames.Select(g => g.ToLower()).ToArray();
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+
+        var rows = (await connection.QueryAsync<(string Genre, string ArtistName, long UserPlaycount)>(sql,
+            new { userId, genreNamesLower })).ToList();
+
+        return rows
+            .GroupBy(r => r.Genre, StringComparer.OrdinalIgnoreCase)
+            .Select(g => new TopGenre
+            {
+                GenreName = g.Key,
+                Artists = g.Select(r => new TopArtist
+                {
+                    ArtistName = r.ArtistName,
+                    UserPlaycount = r.UserPlaycount
+                }).OrderByDescending(a => a.UserPlaycount).ToList()
+            })
+            .ToList();
+    }
+
+    public static async Task<List<GuildGenre>> GetTopGenresForGuildAllTime(int guildId, OrderType orderType, int limit,
+        NpgsqlConnection connection)
+    {
+        var orderColumn = orderType == OrderType.Listeners ? "ListenerCount" : "TotalPlaycount";
+        var thenByColumn = orderType == OrderType.Listeners ? "TotalPlaycount" : "ListenerCount";
+
+        var sql = "SELECT ag.name AS GenreName, " +
+                  "       SUM(ua.playcount)::bigint AS TotalPlaycount, " +
+                  "       COUNT(DISTINCT ua.user_id)::bigint AS ListenerCount " +
+                  "FROM user_artists ua " +
+                  "INNER JOIN guild_users gu ON gu.user_id = ua.user_id " +
+                  "INNER JOIN artist_genres ag ON ag.artist_id = ua.artist_id " +
+                  "WHERE gu.guild_id = @guildId AND gu.bot != true " +
+                  "AND ua.artist_id IS NOT NULL " +
+                  "AND NOT ua.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
+                  "AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL) " +
+                  "GROUP BY ag.name " +
+                  $"ORDER BY {orderColumn} DESC, {thenByColumn} DESC " +
+                  "LIMIT @limit";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+
+        return (await connection.QueryAsync<GuildGenre>(sql, new { guildId, limit })).ToList();
+    }
+
+    public static async Task<List<TopArtist>> GetGuildArtistsForGenre(int guildId, string genreName, int limit,
+        NpgsqlConnection connection)
+    {
+        const string sql = "SELECT ua.name AS ArtistName, SUM(ua.playcount)::bigint AS UserPlaycount " +
+                           "FROM user_artists ua " +
+                           "INNER JOIN guild_users gu ON gu.user_id = ua.user_id " +
+                           "INNER JOIN artist_genres ag ON ag.artist_id = ua.artist_id " +
+                           "WHERE gu.guild_id = @guildId AND gu.bot != true " +
+                           "AND ua.artist_id IS NOT NULL " +
+                           "AND LOWER(ag.name) = LOWER(CAST(@genreName AS CITEXT)) " +
+                           "AND NOT ua.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
+                           "AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL) " +
+                           "GROUP BY ua.name " +
+                           "ORDER BY UserPlaycount DESC " +
+                           "LIMIT @limit";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+
+        return (await connection.QueryAsync<TopArtist>(sql, new { guildId, genreName, limit })).ToList();
+    }
+
+    public static async Task<ICollection<WhoKnowsObjectWithUser>> GetGuildUsersForGenre(int guildId, string genreName,
+        IDictionary<int, FullGuildUser> guildUsers, NpgsqlConnection connection)
+    {
+        const string sql = "SELECT ua.user_id AS UserId, SUM(ua.playcount) AS Playcount " +
+                           "FROM user_artists ua " +
+                           "INNER JOIN guild_users gu ON gu.user_id = ua.user_id " +
+                           "WHERE gu.guild_id = @guildId AND gu.bot != true " +
+                           "AND ua.artist_id IN ( " +
+                           "    SELECT ag.artist_id FROM artist_genres ag " +
+                           "    WHERE LOWER(ag.name) = LOWER(CAST(@genreName AS CITEXT)) " +
+                           ") " +
+                           "AND NOT ua.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
+                           "AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL) " +
+                           "GROUP BY ua.user_id " +
+                           "ORDER BY Playcount DESC";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+
+        var userPlaycounts = (await connection.QueryAsync<(int UserId, int Playcount)>(sql,
+            new { guildId, genreName })).ToList();
+
+        var list = new List<WhoKnowsObjectWithUser>();
+        foreach (var (userId, playcount) in userPlaycounts)
+        {
+            if (guildUsers != null && guildUsers.TryGetValue(userId, out var guildUser))
+            {
+                list.Add(new WhoKnowsObjectWithUser
+                {
+                    UserId = userId,
+                    Playcount = playcount,
+                    DiscordName = guildUser.UserName,
+                    LastFMUsername = guildUser.UserNameLastFM,
+                    Name = guildUser.UserName,
+                    LastUsed = guildUser.LastUsed,
+                    LastMessage = guildUser.LastMessage,
+                    Roles = guildUser.Roles
+                });
+            }
+        }
+
+        return list;
+    }
+
+    public static async Task<ICollection<WhoKnowsObjectWithUser>> GetFriendUsersForGenre(int userId, string genreName,
+        IDictionary<int, FullGuildUser> guildUsers, ICollection<Friend> friends, NpgsqlConnection connection)
+    {
+        const string sql = "SELECT ua.user_id AS UserId, SUM(ua.playcount) AS Playcount " +
+                           "FROM user_artists ua " +
+                           "WHERE ua.user_id = ANY(@userIds) " +
+                           "AND ua.artist_id IN ( " +
+                           "    SELECT ag.artist_id FROM artist_genres ag " +
+                           "    WHERE LOWER(ag.name) = LOWER(CAST(@genreName AS CITEXT)) " +
+                           ") " +
+                           "GROUP BY ua.user_id " +
+                           "ORDER BY Playcount DESC";
+
+        var friendUserIds = friends?.Where(f => f.FriendUserId.HasValue).Select(f => f.FriendUserId.Value).ToList()
+                            ?? new List<int>();
+        friendUserIds.Add(userId);
+        var userIds = friendUserIds.ToArray();
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+
+        var userPlaycounts = (await connection.QueryAsync<(int UserId, int Playcount)>(sql,
+            new { userIds, genreName })).ToList();
+
+        var list = new List<WhoKnowsObjectWithUser>();
+        foreach (var (uid, playcount) in userPlaycounts)
+        {
+            if (guildUsers != null && guildUsers.TryGetValue(uid, out var guildUser))
+            {
+                list.Add(new WhoKnowsObjectWithUser
+                {
+                    UserId = uid,
+                    Playcount = playcount,
+                    DiscordName = guildUser.UserName,
+                    LastFMUsername = guildUser.UserNameLastFM,
+                    Name = guildUser.UserName,
+                    LastUsed = guildUser.LastUsed,
+                    LastMessage = guildUser.LastMessage,
+                    Roles = guildUser.Roles
+                });
+            }
+            else if (friends != null && friends.Any(a => a.FriendUserId == uid))
+            {
+                var friend = friends.First(f => f.FriendUserId == uid);
+                list.Add(new WhoKnowsObjectWithUser
+                {
+                    UserId = uid,
+                    Playcount = playcount,
+                    DiscordName = friend.FriendUser.UserNameLastFM,
+                    LastFMUsername = friend.FriendUser.UserNameLastFM,
+                    Name = friend.FriendUser.UserNameLastFM,
+                    LastUsed = friend.FriendUser.LastUsed,
+                });
+            }
+        }
+
+        return list;
+    }
+
+    public static async Task<List<string>> GetGenresForArtist(string artistName, NpgsqlConnection connection)
+    {
+        const string sql = "SELECT ag.name " +
+                           "FROM artist_genres ag " +
+                           "INNER JOIN artists a ON a.id = ag.artist_id " +
+                           "WHERE UPPER(a.name) = UPPER(CAST(@artistName AS CITEXT))";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+
+        var result = (await connection.QueryAsync<string>(sql, new { artistName })).ToList();
+        return result.Count != 0 ? result : null;
+    }
+
+    public static async Task<List<(string Genre, string ArtistName)>> GetGenreMappingsForArtists(string[] artistNames,
+        NpgsqlConnection connection)
+    {
+        const string sql = "SELECT ag.name AS Genre, a.name AS ArtistName " +
+                           "FROM artists a " +
+                           "INNER JOIN artist_genres ag ON ag.artist_id = a.id " +
+                           "WHERE a.name = ANY(@artistNames::citext[])";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+
+        return (await connection.QueryAsync<(string Genre, string ArtistName)>(sql,
+            new { artistNames })).ToList();
+    }
+
+    public static async Task<List<TopGenre>> GetTopGenresForTopArtists(IEnumerable<TopArtist> topArtists,
+        NpgsqlConnection connection)
+    {
+        if (topArtists == null)
+        {
+            return [];
+        }
+
+        var artistList = topArtists.ToList();
+        if (artistList.Count == 0)
+        {
+            return [];
+        }
+
+        var artistNames = artistList.Select(a => a.ArtistName).Distinct().ToArray();
+
+        var genreMappings = await GetGenreMappingsForArtists(artistNames, connection);
+
+        var artistGenreMap = genreMappings
+            .GroupBy(g => g.ArtistName, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.Select(x => x.Genre).ToList(), StringComparer.OrdinalIgnoreCase);
+
+        var allGenres = new List<GenreWithPlaycount>();
+        foreach (var artist in artistList)
+        {
+            if (artistGenreMap.TryGetValue(artist.ArtistName, out var genres))
+            {
+                foreach (var genre in genres)
+                {
+                    var playcount = artist.UserPlaycount;
+                    if (playcount > 0)
+                    {
+                        allGenres.Add(new GenreWithPlaycount(genre, playcount));
+                    }
+                }
+            }
+        }
+
+        return allGenres
+            .GroupBy(g => g.Name)
+            .OrderByDescending(o => o.Sum(s => s.Playcount))
+            .Where(w => w.Key != null)
+            .Select(s => new TopGenre
+            {
+                UserPlaycount = s.Sum(se => se.Playcount),
+                GenreName = s.Key
+            }).ToList();
+    }
+
+    public static async Task<List<AffinityItemDto>> GetTopGenresWithPositionForTopArtists(
+        IEnumerable<AffinityItemDto> topArtists, NpgsqlConnection connection)
+    {
+        if (topArtists == null)
+        {
+            return new List<AffinityItemDto>();
+        }
+
+        var artistList = topArtists.ToList();
+        if (!artistList.Any())
+        {
+            return new List<AffinityItemDto>();
+        }
+
+        var artistNames = artistList.Select(a => a.Name).Distinct().ToArray();
+
+        var genreMappings = await GetGenreMappingsForArtists(artistNames, connection);
+
+        var artistGenreMap = genreMappings
+            .GroupBy(g => g.ArtistName, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.Select(x => x.Genre).ToList(), StringComparer.OrdinalIgnoreCase);
+
+        var allGenres = new List<GenreWithPlaycount>();
+        foreach (var artist in artistList)
+        {
+            if (artistGenreMap.TryGetValue(artist.Name, out var genres))
+            {
+                foreach (var genre in genres)
+                {
+                    if (artist.Playcount > 0)
+                    {
+                        allGenres.Add(new GenreWithPlaycount(genre, artist.Playcount));
+                    }
+                }
+            }
+        }
+
+        return allGenres
+            .GroupBy(g => g.Name)
+            .OrderByDescending(o => o.Sum(s => s.Playcount))
+            .Where(w => w.Key != null)
+            .Select((s, i) => new AffinityItemDto
+            {
+                Name = s.Key,
+                Playcount = s.Sum(se => se.Playcount),
+                Position = i
+            }).ToList();
+    }
+
+    public static async Task<List<string>> GetTopGenresForTopArtistsString(IEnumerable<string> topArtists,
+        NpgsqlConnection connection)
+    {
+        if (topArtists == null)
+        {
+            return new List<string>();
+        }
+
+        var artistNames = topArtists.Distinct().ToArray();
+        if (artistNames.Length == 0)
+        {
+            return new List<string>();
+        }
+
+        var genreMappings = await GetGenreMappingsForArtists(artistNames, connection);
+
+        return genreMappings
+            .GroupBy(g => g.Genre)
+            .OrderByDescending(o => o.Count())
+            .Where(w => w.Key != null)
+            .Select(s => s.Key)
+            .ToList();
+    }
+
+    public static async Task<Dictionary<int, List<string>>> GetGenresByArtistIds(IEnumerable<int> artistIds,
+        NpgsqlConnection connection)
+    {
+        var ids = artistIds.Distinct().ToArray();
+        if (ids.Length == 0)
+        {
+            return new Dictionary<int, List<string>>();
+        }
+
+        const string sql = "SELECT ag.artist_id AS ArtistId, ag.name AS Genre " +
+                           "FROM artist_genres ag " +
+                           "WHERE ag.artist_id = ANY(@ids)";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+
+        var rows = (await connection.QueryAsync<(int ArtistId, string Genre)>(sql, new { ids })).ToList();
+
+        return rows
+            .GroupBy(r => r.ArtistId)
+            .ToDictionary(g => g.Key, g => g.Select(r => r.Genre).ToList());
+    }
+
+    public static async Task<List<TopGenre>> GetArtistsForGenres(IEnumerable<string> selectedGenres,
+        List<TopArtist> topArtists, NpgsqlConnection connection)
+    {
+        var genreList = selectedGenres.ToList();
+        var artistNames = topArtists.Select(a => a.ArtistName).Distinct().ToArray();
+        var genreNames = genreList.ToArray();
+
+        const string sql = "SELECT ag.name AS Genre, a.name AS ArtistName " +
+                           "FROM artists a " +
+                           "INNER JOIN artist_genres ag ON ag.artist_id = a.id " +
+                           "WHERE a.name = ANY(@artistNames::citext[]) " +
+                           "AND ag.name = ANY(@genreNames::citext[])";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+
+        var genreMappings = (await connection.QueryAsync<(string Genre, string ArtistName)>(sql,
+            new { artistNames, genreNames })).ToList();
+
+        var genreArtistMap = genreMappings
+            .GroupBy(g => g.Genre, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => new HashSet<string>(g.Select(x => x.ArtistName), StringComparer.OrdinalIgnoreCase), StringComparer.OrdinalIgnoreCase);
+
+        var foundGenres = new List<TopGenre>();
+        foreach (var selectedGenre in genreList)
+        {
+            if (genreArtistMap.TryGetValue(selectedGenre, out var artistsInGenre))
+            {
+                foundGenres.Add(new TopGenre
+                {
+                    GenreName = selectedGenre,
+                    Artists = topArtists
+                        .Where(w => artistsInGenre.Contains(w.ArtistName))
+                        .OrderByDescending(o => o.UserPlaycount)
+                        .ToList()
+                });
+            }
+        }
+
+        return foundGenres;
+    }
+
+    public static async Task<List<string>> GetAllGenreNames(NpgsqlConnection connection)
+    {
+        const string sql = "SELECT DISTINCT name FROM public.artist_genres";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+
+        return (await connection.QueryAsync<string>(sql)).ToList();
+    }
+
+    public static async Task<List<string>> GetDistinctGenres(NpgsqlConnection connection)
+    {
+        const string sql = "SELECT DISTINCT ag.name AS genre " +
+                           "FROM public.artist_genres AS ag ";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+
+        return (await connection.QueryAsync<string>(sql)).ToList();
+    }
+
+    public static async Task<HashSet<string>> GetArtistsInGenres(IEnumerable<string> artistNames,
+        IEnumerable<string> genreNames, NpgsqlConnection connection)
+    {
+        var names = artistNames.Distinct().ToArray();
+        var genres = genreNames.Distinct().ToArray();
+        if (names.Length == 0 || genres.Length == 0)
+        {
+            return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        const string sql = "SELECT DISTINCT a.name " +
+                           "FROM artists a " +
+                           "INNER JOIN artist_genres ag ON ag.artist_id = a.id " +
+                           "WHERE a.name = ANY(@names::citext[]) " +
+                           "AND ag.name = ANY(@genres::citext[])";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+
+        var rows = await connection.QueryAsync<string>(sql, new { names, genres });
+        return new HashSet<string>(rows, StringComparer.OrdinalIgnoreCase);
+    }
+
+    private record GenreWithPlaycount(string Name, long Playcount);
+}

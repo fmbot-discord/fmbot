@@ -15,8 +15,8 @@ using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Serilog;
-using Shared.Domain.Enums;
-using Shared.Domain.Models;
+using FMBot.Domain.Enums;
+using FMBot.Persistence.Domain.Models;
 using SpotifyAPI.Web;
 using SpotifyAPI.Web.Http;
 

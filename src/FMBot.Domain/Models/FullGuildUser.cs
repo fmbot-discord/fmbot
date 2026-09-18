@@ -20,4 +20,9 @@ public class FullGuildUser
     public bool SelfBlockFromWhoKnows { get; set; }
 
     public ulong[] Roles { get; set; }
+
+    public FullGuildUser Copy()
+    {
+        return (FullGuildUser)MemberwiseClone();
+    }
 }

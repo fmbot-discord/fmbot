@@ -366,4 +366,16 @@ WHERE s.id = (
 
         return albums.ToList();
     }
+
+
+    public static async Task<List<EntityImageUrl>> GetImageUrlsForAlbumIds(int[] albumIds, NpgsqlConnection connection)
+    {
+        const string sql = "SELECT ab.id, ab.artist_name, ab.name, COALESCE(ab.spotify_image_url, ab.lastfm_image_url) AS image_url " +
+                           "FROM public.albums ab WHERE ab.id = ANY(@albumIds) " +
+                           "AND COALESCE(ab.spotify_image_url, ab.lastfm_image_url) IS NOT NULL";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+
+        return (await connection.QueryAsync<EntityImageUrl>(sql, new { albumIds })).ToList();
+    }
 }

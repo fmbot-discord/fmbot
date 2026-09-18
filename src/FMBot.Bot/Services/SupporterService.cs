@@ -22,8 +22,6 @@ using NetCord.Gateway;
 using NetCord.Rest;
 using Serilog;
 using FMBot.Bot.Services.Guild;
-using Shared.Domain.Enums;
-using Shared.Domain.Models;
 using Web.InternalApi;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 using User = FMBot.Persistence.Domain.Models.User;
@@ -131,7 +129,7 @@ public class SupporterService
 
     public static bool IsSupporter(UserType? userType)
     {
-        return userType != null && userType != UserType.User;
+        return Core.SupporterRules.IsSupporter(userType);
     }
 
     public bool ShowSupporterPromotionalMessage(UserType userType, ulong? guildId)

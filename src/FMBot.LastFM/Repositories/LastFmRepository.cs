@@ -520,7 +520,7 @@ public class LastFmRepository : ILastfmRepository
     public async Task<Response<TrackInfo>> SearchTrackAsync(string searchQuery)
     {
         var trackSearch = await this._lastFmClient.Track.SearchAsync(searchQuery, itemsPerPage: 10);
-        Statistics.LastfmApiCalls.WithLabels("track.search").Inc();
+        LastFmStatistics.LastfmApiCalls.WithLabels("track.search").Inc();
 
         if (!trackSearch.Success)
         {
@@ -765,7 +765,7 @@ public class LastFmRepository : ILastfmRepository
     public async Task<Response<AlbumInfo>> SearchAlbumAsync(string searchQuery)
     {
         var albumSearch = await this._lastFmClient.Album.SearchAsync(searchQuery, itemsPerPage: 10);
-        Statistics.LastfmApiCalls.WithLabels("album.search").Inc();
+        LastFmStatistics.LastfmApiCalls.WithLabels("album.search").Inc();
 
         if (!albumSearch.Success)
         {

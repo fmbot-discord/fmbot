@@ -94,7 +94,7 @@ public class SmallIndexRepository
         }
 
         this._cache.Remove(concurrencyCacheKey);
-        Statistics.SmallIndexedUsers.Inc();
+        LastFmStatistics.SmallIndexedUsers.Inc();
     }
 
     public async Task UpdateUserArtists(User indexUser, IEnumerable<TopArtist> artists)

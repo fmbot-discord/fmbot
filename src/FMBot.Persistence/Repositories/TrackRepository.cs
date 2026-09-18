@@ -220,4 +220,17 @@ WHERE s.id = (
 
         return null;
     }
+
+
+    public static async Task<List<EntityImageUrl>> GetImageUrlsForTrackIds(int[] trackIds, NpgsqlConnection connection)
+    {
+        const string sql = "SELECT t.id, t.artist_name, t.name, ab.name AS album_name, COALESCE(ab.spotify_image_url, ab.lastfm_image_url) AS image_url " +
+                           "FROM public.tracks t INNER JOIN public.albums ab ON ab.id = t.album_id " +
+                           "WHERE t.id = ANY(@trackIds) " +
+                           "AND COALESCE(ab.spotify_image_url, ab.lastfm_image_url) IS NOT NULL";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+
+        return (await connection.QueryAsync<EntityImageUrl>(sql, new { trackIds })).ToList();
+    }
 }

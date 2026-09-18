@@ -85,11 +85,11 @@ public class LastfmApi : ILastfmApi
             signature.Append(this._publicKeySecret);
             parameters.Add("api_sig", CreateMd5(signature.ToString()));
 
-            Statistics.LastfmAuthorizedApiCalls.WithLabels(call).Inc();
+            LastFmStatistics.LastfmAuthorizedApiCalls.WithLabels(call).Inc();
         }
         else
         {
-            Statistics.LastfmApiCalls.WithLabels(call).Inc();
+            LastFmStatistics.LastfmApiCalls.WithLabels(call).Inc();
         }
 
         var url = QueryHelpers.AddQueryString(ApiUrl, parameters);
@@ -100,7 +100,7 @@ public class LastfmApi : ILastfmApi
             Method = HttpMethod.Post
         };
 
-        var timer = Statistics.LastfmApiResponseTime.WithLabels(call).NewTimer();
+        var timer = LastFmStatistics.LastfmApiResponseTime.WithLabels(call).NewTimer();
         using var httpResponse = await this._client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
 
         if (httpResponse.StatusCode == HttpStatusCode.NotFound)
@@ -115,8 +115,8 @@ public class LastfmApi : ILastfmApi
 
         if (httpResponse.StatusCode is HttpStatusCode.InternalServerError or HttpStatusCode.BadGateway or HttpStatusCode.ServiceUnavailable or HttpStatusCode.GatewayTimeout)
         {
-            Statistics.LastfmErrors.WithLabels(call).Inc();
-            Statistics.LastfmFailureErrors.WithLabels(call).Inc();
+            LastFmStatistics.LastfmErrors.WithLabels(call).Inc();
+            LastFmStatistics.LastfmFailureErrors.WithLabels(call).Inc();
             return new Response<T>
             {
                 Success = false,
@@ -130,8 +130,8 @@ public class LastfmApi : ILastfmApi
 
         if (string.IsNullOrWhiteSpace(requestBody))
         {
-            Statistics.LastfmErrors.WithLabels(call).Inc();
-            Statistics.LastfmFailureErrors.WithLabels(call).Inc();
+            LastFmStatistics.LastfmErrors.WithLabels(call).Inc();
+            LastFmStatistics.LastfmFailureErrors.WithLabels(call).Inc();
             Log.Warning("LastfmApi: Empty response body for {call} ({statusCode})", call, (int)httpResponse.StatusCode);
             timer.Dispose();
             return new Response<T>
@@ -158,16 +158,16 @@ public class LastfmApi : ILastfmApi
                 response.Success = false;
                 response.Message = errorResponse.Message;
                 response.Error = errorResponse.Error;
-                Statistics.LastfmErrors.WithLabels(call).Inc();
+                LastFmStatistics.LastfmErrors.WithLabels(call).Inc();
 
                 if (response.Error == ResponseStatus.Failure)
                 {
-                    Statistics.LastfmFailureErrors.WithLabels(call).Inc();
+                    LastFmStatistics.LastfmFailureErrors.WithLabels(call).Inc();
                 }
 
                 if (response.Error == ResponseStatus.BadAuth)
                 {
-                    Statistics.LastfmBadAuthErrors.WithLabels(call).Inc();
+                    LastFmStatistics.LastfmBadAuthErrors.WithLabels(call).Inc();
                 }
             }
         }
@@ -188,7 +188,7 @@ public class LastfmApi : ILastfmApi
 
             Log.Error("Object error - Call: {call} - Parameters: {errorParameters} - RequestBody {requestBody}",
                 call, errorParameters, requestBody);
-            Statistics.LastfmErrors.WithLabels(call).Inc();
+            LastFmStatistics.LastfmErrors.WithLabels(call).Inc();
         }
 
         timer.Dispose();

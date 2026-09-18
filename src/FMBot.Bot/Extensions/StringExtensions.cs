@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Web;
 using FMBot.Domain.Enums;
+using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
 using NetCord;
 
@@ -96,16 +97,7 @@ public static partial class StringExtensions
 
     public static string SanitizeTrackNameForComparison(string trackName)
     {
-        trackName = trackName.ToLower();
-        trackName = trackName.Replace("(", "");
-        trackName = trackName.Replace(")", "");
-        trackName = trackName.Replace("-", "");
-        trackName = trackName.Replace("'", "");
-        trackName = trackName.Replace(" ", "");
-        trackName = trackName.Replace("[", "");
-        trackName = trackName.Replace("]", "");
-
-        return trackName;
+        return TrackNameExtensions.SanitizeTrackNameForComparison(trackName);
     }
 
     public static long ToUnixEpochDate(this DateTime @this)
@@ -516,28 +508,6 @@ public static partial class StringExtensions
         var years = Convert.ToInt32(Math.Floor((double)ts.Days / 365));
         return years + "y";
     }
-
-    public static void ReplaceOrAddToList(this List<string> currentList, IEnumerable<string> optionsToAdd)
-    {
-        foreach (var optionToAdd in optionsToAdd)
-        {
-            var existingOption = currentList.FirstOrDefault(f => f.ToLower() == optionToAdd.ToLower());
-
-            if (existingOption != null && existingOption != optionToAdd)
-            {
-                var index = currentList.IndexOf(existingOption);
-                if (index != -1)
-                {
-                    currentList[index] = optionToAdd;
-                }
-            }
-            else if (existingOption == null)
-            {
-                currentList.Add(optionToAdd);
-            }
-        }
-    }
-
     public static void ReplaceOrAddToDictionary(this Dictionary<string, string> currentDictionary,
         Dictionary<string, string> optionsToAdd)
     {

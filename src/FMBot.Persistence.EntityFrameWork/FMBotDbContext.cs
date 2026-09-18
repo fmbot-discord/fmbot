@@ -6,7 +6,6 @@ using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Shared.Domain.Models;
 using Tag = FMBot.Persistence.Domain.Models.Tag;
 
 namespace FMBot.Persistence.EntityFrameWork

@@ -32,7 +32,6 @@ using NetCord.Services.ApplicationCommands;
 using NetCord.Services.Commands;
 using Npgsql;
 using Serilog;
-using Shared.Domain.Models;
 using User = FMBot.Persistence.Domain.Models.User;
 
 namespace FMBot.Bot.Services;
@@ -55,6 +54,8 @@ public class UserService
     private readonly HttpClient _httpClient;
     private readonly EurovisionService _eurovisionService;
 
+    private readonly Core.UserLookup _userLookup;
+
     public UserService(IMemoryCache cache,
         IDbContextFactory<FMBotDbContext> contextFactory,
         IDataSourceFactory dataSourceFactory,
@@ -69,9 +70,11 @@ public class UserService
         TemplateService templateService,
         ShardedGatewayClient client,
         HttpClient httpClient,
-        EurovisionService eurovisionService)
+        EurovisionService eurovisionService,
+        Core.UserLookup userLookup)
     {
         this._cache = cache;
+        this._userLookup = userLookup;
         this._contextFactory = contextFactory;
         this._dataSourceFactory = dataSourceFactory;
         this._countryService = countryService;
@@ -146,17 +149,17 @@ public class UserService
 
     public static string UserInternalIdCacheKey(int userId)
     {
-        return $"user-i{userId}";
+        return Core.UserLookup.UserInternalIdCacheKey(userId);
     }
 
     public static string UserDiscordIdCacheKey(ulong discordUserId)
     {
-        return $"user-{discordUserId}";
+        return Core.UserLookup.UserDiscordIdCacheKey(discordUserId);
     }
 
     public static string UserLastFmCacheKey(string userNameLastFm)
     {
-        return $"user-{userNameLastFm.ToLower()}";
+        return Core.UserLookup.UserLastFmCacheKey(userNameLastFm);
     }
 
     public async Task<User> GetUserOrTempUser(NetCord.User discordUser)
@@ -181,16 +184,7 @@ public class UserService
 
     public async Task<User> GetUserForIdAsync(int userId)
     {
-        var userIdCacheKey = UserInternalIdCacheKey(userId);
-        if (this._cache.TryGetValue(userIdCacheKey, out User user))
-        {
-            return user;
-        }
-
-        await using var db = await this._contextFactory.CreateDbContextAsync();
-        return await db.Users
-            .AsNoTracking()
-            .FirstOrDefaultAsync(f => f.UserId == userId);
+        return await this._userLookup.GetUserForIdAsync(userId);
     }
 
     public async Task<User> GetUserWithDiscogs(ulong discordUserId)
@@ -1921,14 +1915,14 @@ public class UserService
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         return await db.UserTokens.AnyAsync(f =>
-            f.DiscordUserId == discordUserId && f.Service == Shared.Domain.Enums.TokenService.Discord);
+            f.DiscordUserId == discordUserId && f.Service == TokenService.Discord);
     }
 
     public async Task<bool> UserHasSpotifyConnectedAsync(ulong discordUserId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         return await db.UserTokens.AnyAsync(f =>
-            f.DiscordUserId == discordUserId && f.Service == Shared.Domain.Enums.TokenService.Spotify);
+            f.DiscordUserId == discordUserId && f.Service == TokenService.Spotify);
     }
 
     public async Task<bool> SpotifyConnectionStillExpired(string lastFmUserName)
@@ -1962,7 +1956,7 @@ public class UserService
         var userToken =
             await db.UserTokens.FirstOrDefaultAsync(f =>
                 f.BotType == botType && f.DiscordUserId == discordUserId &&
-                f.Service == Shared.Domain.Enums.TokenService.Discord);
+                f.Service == TokenService.Discord);
 
         if (userToken == null)
         {

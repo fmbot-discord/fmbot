@@ -1,8 +1,8 @@
-﻿using Shared.Domain.Enums;
+using System;
+using FMBot.Domain.Enums;
 
-namespace Shared.Domain.Models;
+namespace FMBot.Persistence.Domain.Models;
 
-// This file is managed in Shared.Domain and copied to child projects
 public class StripeSupporter
 {
     public int Id { get; set; }

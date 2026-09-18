@@ -34,7 +34,6 @@ using NetCord.Services.Commands;
 using NetCord;
 using Fergun.Interactive;
 using NetCord.Gateway;
-using Shared.Domain.Models;
 
 namespace FMBot.Bot.TextCommands;
 
@@ -1602,7 +1601,7 @@ public class AdminCommands(
                 return;
             }
 
-            var stripeSupporter = new StripeSupporter()
+            var stripeSupporter = new Persistence.Domain.Models.StripeSupporter()
             {
                 PurchaseSource = source
             };

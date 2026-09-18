@@ -27,14 +27,16 @@ public class CensorService
     private readonly BotSettings _botSettings;
     private readonly ShardedGatewayClient _client;
     private readonly CensorHandler.CensorHandlerClient _censorHandler;
+    private readonly Core.MusicCensorService _musicCensorService;
 
 
-    public CensorService(IDbContextFactory<FMBotDbContext> contextFactory, IMemoryCache cache, IOptions<BotSettings> botSettings, ShardedGatewayClient client, CensorHandler.CensorHandlerClient censorHandler)
+    public CensorService(IDbContextFactory<FMBotDbContext> contextFactory, IMemoryCache cache, IOptions<BotSettings> botSettings, ShardedGatewayClient client, CensorHandler.CensorHandlerClient censorHandler, Core.MusicCensorService musicCensorService)
     {
         this._contextFactory = contextFactory;
         this._cache = cache;
         this._client = client;
         this._censorHandler = censorHandler;
+        this._musicCensorService = musicCensorService;
         this._botSettings = botSettings.Value;
     }
 
@@ -94,120 +96,22 @@ public class CensorService
 
     private async Task<List<CensoredMusic>> GetCachedCensoredMusic()
     {
-        const string cacheKey = "censored-music";
-        var cacheTime = TimeSpan.FromMinutes(5);
-
-        if (this._cache.TryGetValue(cacheKey, out List<CensoredMusic> cachedCensoredMusic))
-        {
-            return cachedCensoredMusic;
-        }
-
-        await using var db = await this._contextFactory.CreateDbContextAsync();
-        var censoredMusic = await db.CensoredMusic
-            .AsQueryable()
-            .ToListAsync();
-
-        this._cache.Set(cacheKey, censoredMusic, cacheTime);
-
-        return censoredMusic;
+        return await this._musicCensorService.GetCachedCensoredMusic();
     }
 
     private void ClearCensoredCache()
     {
-        this._cache.Remove("censored-music");
+        this._musicCensorService.ClearCache();
     }
 
     public async Task<CensorResult> AlbumResult(string albumName, string artistName, bool featured = false)
     {
-        var censoredMusic = await GetCachedCensoredMusic();
-
-        var censoredArtist = censoredMusic
-            .Where(w => w.Artist)
-            .FirstOrDefault(f => string.Equals(f.ArtistName, artistName, StringComparison.OrdinalIgnoreCase));
-        if (censoredArtist != null)
-        {
-            await IncreaseCensoredCount(censoredArtist.CensoredMusicId);
-
-            if (censoredArtist.CensorType.HasFlag(CensorType.ArtistAlbumsCensored))
-            {
-                return CensorResult.NotSafe;
-            }
-            if (censoredArtist.CensorType.HasFlag(CensorType.ArtistAlbumsNsfw))
-            {
-                return CensorResult.Nsfw;
-            }
-            if (featured && censoredArtist.CensorType.HasFlag(CensorType.ArtistFeaturedBan))
-            {
-                return CensorResult.NotSafe;
-            }
-        }
-
-        if (albumName != null)
-        {
-            if (censoredMusic
-                .Select(s => s.ArtistName)
-                .Contains(artistName, StringComparer.OrdinalIgnoreCase))
-            {
-                var album = censoredMusic
-                    .Where(w => !w.Artist && w.AlbumName != null)
-                    .FirstOrDefault(f => string.Equals(f.ArtistName, artistName, StringComparison.OrdinalIgnoreCase) &&
-                                         string.Equals(f.AlbumName, albumName, StringComparison.OrdinalIgnoreCase));
-
-                if (album != null)
-                {
-                    await IncreaseCensoredCount(album.CensoredMusicId);
-                    if (album.CensorType.HasFlag(CensorType.AlbumCoverCensored))
-                    {
-                        return CensorResult.NotSafe;
-                    }
-                    if (album.CensorType.HasFlag(CensorType.AlbumCoverNsfw))
-                    {
-                        return CensorResult.Nsfw;
-                    }
-                }
-            }
-        }
-
-        return CensorResult.Safe;
+        return (CensorResult)(int)await this._musicCensorService.AlbumResult(albumName, artistName, featured);
     }
 
     public async Task<CensorResult> ArtistResult(string artistName)
     {
-        var censoredMusic = await GetCachedCensoredMusic();
-
-        var censoredArtist = censoredMusic
-            .Where(w => w.Artist)
-            .FirstOrDefault(f => string.Equals(f.ArtistName, artistName, StringComparison.OrdinalIgnoreCase));
-
-        if (censoredArtist != null)
-        {
-            await IncreaseCensoredCount(censoredArtist.CensoredMusicId);
-            if (censoredArtist.CensorType.HasFlag(CensorType.ArtistImageCensored))
-            {
-                return CensorResult.NotSafe;
-            }
-            if (censoredArtist.CensorType.HasFlag(CensorType.ArtistImageNsfw))
-            {
-                return CensorResult.Nsfw;
-            }
-        }
-
-        return CensorResult.Safe;
-    }
-
-    private async Task IncreaseCensoredCount(int censoredMusicId)
-    {
-        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
-        await connection.OpenAsync();
-
-        const string sql = "UPDATE censored_music SET times_censored = COALESCE(times_censored, 0) + 1 WHERE censored_music_id = @censoredMusicId;";
-        DefaultTypeMap.MatchNamesWithUnderscores = true;
-
-        await connection.QueryAsync(sql, new
-        {
-            censoredMusicId
-        });
-        await connection.CloseAsync();
+        return (CensorResult)(int)await this._musicCensorService.ArtistResult(artistName);
     }
 
     public async Task<CensoredMusic> GetCurrentAlbum(string albumName, string artistName)

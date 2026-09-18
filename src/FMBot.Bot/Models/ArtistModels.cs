@@ -30,45 +30,6 @@ public class GuildRankingSettings
     public bool DisplayRoleFilter { get; set; }
 }
 
-public enum OrderType
-{
-    Playcount = 1,
-    Listeners = 2
-}
-
-public class CachedAlias
-{
-    public int ArtistId { get; set; }
-
-    public string Alias { get; set; }
-
-    public string ArtistName { get; set; }
-
-    public AliasOption Options { get; set; }
-}
-
-public class GuildArtist
-{
-    public string ArtistName { get; set; }
-
-    public int? ArtistId { get; set; }
-
-    public int TotalPlaycount { get; set; }
-
-    public int ListenerCount { get; set; }
-
-    public List<int> ListenerUserIds { get; set; }
-}
-
-public class WhoKnowsArtistDto
-{
-    public int UserId { get; set; }
-
-    public string UserNameLastFm { get; set; }
-
-    public int Playcount { get; set; }
-}
-
 public class WhoKnowsGlobalArtistDto
 {
     public int UserId { get; set; }
@@ -82,28 +43,6 @@ public class WhoKnowsGlobalArtistDto
     public DateTime? RegisteredLastFm { get; set; }
 
     public PrivacyLevel PrivacyLevel { get; set; }
-}
-
-public class AffinityItemDto
-{
-    public int UserId { get; set; }
-
-    public string Name { get; set; }
-    public long Playcount { get; set; }
-    public int Position { get; set; }
-}
-
-public class AffinityUser
-{
-    public int UserId { get; set; }
-
-    public double GenrePoints { get; set; }
-
-    public double ArtistPoints { get; set; }
-
-    public double CountryPoints { get; set; }
-
-    public double TotalPoints { get; set; }
 }
 
 public class ArtistSearch

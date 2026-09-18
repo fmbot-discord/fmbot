@@ -60,6 +60,24 @@ public class UserRepository
         return user;
     }
 
+    public static async Task<bool> TryClaimUpdateSlot(int userId, TimeSpan minimumAge, NpgsqlConnection connection)
+    {
+        const string sql = "UPDATE public.users SET last_updated = now() " +
+                           "WHERE user_id = @userId AND (last_updated IS NULL OR last_updated < now() - @minimumAge) " +
+                           "RETURNING user_id";
+
+        var claimed = await connection.ExecuteScalarAsync<int?>(sql, new { userId, minimumAge });
+        return claimed.HasValue;
+    }
+
+    public static async Task SetUserUpdateTime(int userId, DateTime updateTime, NpgsqlConnection connection)
+    {
+        await using var setUpdateTime =
+            new NpgsqlCommand($"UPDATE public.users SET last_updated = '{updateTime:u}' WHERE user_id = {userId};",
+                connection);
+        await setUpdateTime.ExecuteNonQueryAsync();
+    }
+
     public static async Task SetUserIndexTime(int userId, NpgsqlConnection connection, IEnumerable<UserPlay> plays)
     {
         Log.Information("UserRepository: Setting user index time for user {userId}", userId);

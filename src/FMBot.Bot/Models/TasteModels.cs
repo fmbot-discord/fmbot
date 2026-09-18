@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using FMBot.Domain.Models;
 using NetCord;
 
 namespace FMBot.Bot.Models;
@@ -19,19 +20,6 @@ public class TasteTwoUserModel
     public long OwnPlaycount { get; set; }
 
     public long OtherPlaycount { get; set; }
-}
-
-public class TasteItem
-{
-    public TasteItem(string name, long playcount)
-    {
-        this.Name = name;
-        this.Playcount = playcount;
-    }
-
-    public string Name { get; set; }
-
-    public long Playcount { get; set; }
 }
 
 public class TasteCacheModel
