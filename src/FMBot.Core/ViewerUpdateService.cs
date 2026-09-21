@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using FMBot.Domain.Models;
 using FMBot.Domain.Types;
@@ -20,7 +21,32 @@ public class ViewerUpdateService
         this._botSettings = botSettings.Value;
     }
 
+    private static readonly ConcurrentDictionary<int, Task<Response<RecentTrackList>>> InFlight = new();
+
     public async Task<Response<RecentTrackList>> UpdateIfStale(int userId, TimeSpan minimumAge)
+    {
+        if (InFlight.TryGetValue(userId, out var running))
+        {
+            return await running;
+        }
+
+        var task = Update(userId, minimumAge);
+        if (!InFlight.TryAdd(userId, task))
+        {
+            return await InFlight[userId];
+        }
+
+        try
+        {
+            return await task;
+        }
+        finally
+        {
+            InFlight.TryRemove(userId, out _);
+        }
+    }
+
+    private async Task<Response<RecentTrackList>> Update(int userId, TimeSpan minimumAge)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();

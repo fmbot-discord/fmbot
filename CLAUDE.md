@@ -50,17 +50,18 @@ dotnet ef database update --project ./src/FMBot.Persistence.EntityFrameWork --st
 
 ### Project Structure
 - **FMBot.Bot** - Main Discord bot application and entry point
-- **FMBot.Persistence.*** - Data layer with EF Core, PostgreSQL, and repository pattern
-- **FMBot.Domain** - Shared domain models and business logic
+- **FMBot.Core** - Shared helpers used by both the bot and the web backend
+- **FMBot.Persistence** / **FMBot.Persistence.Domain** / **FMBot.Persistence.EntityFrameWork** - Data layer with EF Core, Dapper repositories, entities and migrations
+- **FMBot.Domain** - Shared domain models, enums and interfaces
 - **FMBot.LastFM** / **FMBot.LastFM.Domain** - Last.fm API integration and music data services
 - **FMBot.Images** - Image generation using Puppeteer and SkiaSharp
 - **FMBot.AppleMusic** - Apple Music API integration
 - **FMBot.Discogs** - Discogs API integration for record collections
 - **FMBot.Subscriptions** - Supporter/subscription logic (Stripe, Discord entitlements, OpenCollective)
-- **FMBot.Youtube** / **FMBot.YoutubeSearch** - YouTube search integration
-- **FMBot.BotLists** - Bot list site stat reporting
 - **Protos/** - gRPC contract shared with the web backend (proto files only, no project) — see `../CLAUDE.md`
 - **FMBot.Tests** - NUnit test suite
+
+`FMBot.Youtube` still exists on disk but is not in the solution and nothing references it; ignore it.
 
 ### Key Entry Points
 - `src/FMBot.Bot/Program.cs` - Application bootstrap
@@ -94,9 +95,9 @@ dotnet ef database update --project ./src/FMBot.Persistence.EntityFrameWork --st
 ### Database Architecture
 - **PostgreSQL** with Entity Framework Core
 - **Snake_case** naming convention
-- **Extensive migration history** (100+ migrations)
+- **Migrations were reset in March 2026** (`InitialMigration` 2026-03-14); everything before that is gone from the repo, so don't look for older history
 - **Key entities**: Users, Guilds, Artists, Albums, Tracks, UserPlays, UserCrowns
-- **PostgreSQL extensions**: citext, pg_trgm for text search
+- **PostgreSQL extensions**: citext, pg_trgm (text search), hstore (`user_interactions.command_options`), unaccent
 
 ### External API Integrations
 Primary services: Last.fm (core), Spotify (features), Apple Music (metadata), YouTube (videos), Discogs (collections), MusicBrainz (metadata), OpenAI (AI features), Genius (lyrics)
@@ -121,8 +122,8 @@ Primary services: Last.fm (core), Spotify (features), Apple Music (metadata), Yo
 - Multiple environment support (local, dev, prod)
 
 ### Code Conventions
-- **C# 14+ features** with nullable reference types enabled
-- **NetCord** framework for Discord API interactions (migrated from Discord.Net). When unsure about NetCord APIs or types, you can look up documentation, search online, or read the local source code at `P:\NetCord`
+- **`LangVersion` latest** (C# 14). Nullable reference types are **not** enabled in the bot projects (only `FMBot.Tests` turns them on), so `?` annotations are informational, not enforced — hence the `userSettings` null gotcha below
+- **NetCord** framework for Discord API interactions (migrated from Discord.Net). When unsure about NetCord APIs or types, you can look up documentation, search online, or read the local source code at `P:\NetCord` (Windows) / `/Users/thom/projects/NetCord` (macOS)
 - **Async/await** patterns throughout
 - **Structured logging** with Serilog
 - **Extension methods** for common operations
@@ -136,7 +137,7 @@ Primary services: Last.fm (core), Spotify (features), Apple Music (metadata), Yo
 - C# properties: `PascalCase`
 
 ### Testing
-- **NUnit** testing framework with Moq for mocking
+- **NUnit 4** testing framework (no mocking library; tests are mostly pure-function and file-based, e.g. `LocalizationTests`, `HelpServiceTests`)
 - Test files organized in `FMBot.Tests/` project
 - Focus on service layer and business logic testing
 - Minimal integration tests due to external API dependencies

@@ -332,7 +332,8 @@ ORDER BY playcount DESC;";
     public static async Task<List<EntityImageUrl>> GetImageUrlsForArtists(string[] artistNames, NpgsqlConnection connection)
     {
         const string sql = "SELECT a.id, a.name AS artist_name, a.name, " +
-                           "COALESCE(a.spotify_image_url, (SELECT ai.url FROM artist_images ai WHERE ai.artist_id = a.id ORDER BY ai.last_updated DESC LIMIT 1)) AS image_url " +
+                           "COALESCE(a.spotify_image_url, (SELECT REPLACE(REPLACE(ai.url, '{w}', '640'), '{h}', '640') " +
+                           "  FROM artist_images ai WHERE ai.artist_id = a.id ORDER BY ai.last_updated DESC LIMIT 1)) AS image_url " +
                            "FROM public.artists a WHERE a.name = ANY(@artistNames::citext[])";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;

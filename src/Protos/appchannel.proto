@@ -58,7 +58,7 @@ message AppChannelGuildRequest {
 message AppChannelMember {
   int64 discordUserId = 1;
   string displayName = 2;
-  string avatarUrl = 3;
+  reserved 3;
   string lastFmUserName = 4;
 }
 
@@ -70,12 +70,14 @@ message AppChannelNowListeningEntry {
   int64 timePlayedUnix = 5;
   string coverUrl = 6;
   bool isViewer = 7;
+  bool nowPlaying = 8;
 }
 
 message AppChannelNowListeningReply {
   repeated AppChannelNowListeningEntry entries = 1;
   int64 generatedAtUnix = 2;
   bool refreshing = 3;
+  int32 refreshCap = 4;
 }
 
 message AppChannelServerTopRequest {
