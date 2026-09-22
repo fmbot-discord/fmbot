@@ -181,7 +181,7 @@ public class LastfmApi : ILastfmApi
                 call, requestBody);
 
             var errorParameters = "";
-            foreach (var parameter in parameters)
+            foreach (var parameter in parameters.Where(w => w.Key is not ("sk" or "api_sig" or "token")))
             {
                 errorParameters += $"{parameter.Key}: {parameter.Value} - ";
             }
