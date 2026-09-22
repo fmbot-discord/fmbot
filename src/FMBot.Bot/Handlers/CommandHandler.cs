@@ -160,7 +160,7 @@ public class CommandHandler
             !char.IsWhiteSpace(message.Content[fmPrefixLength]))
         {
             argPos = fmPrefixLength;
-            _ = Task.Run(async () => await ExecuteCommand(message, commandContext, argPos, prfx, update));
+            _ = Task.Run(async () => await TryExecuteCommand(message, commandContext, argPos, prfx, update));
             return true;
         }
 
@@ -174,7 +174,7 @@ public class CommandHandler
                 searchResult.Command != null &&
                 searchResult.Command.Aliases.Any(a => a == "fm"))
             {
-                _ = Task.Run(async () => await ExecuteCommand(message, commandContext, argPos, prfx, update));
+                _ = Task.Run(async () => await TryExecuteCommand(message, commandContext, argPos, prfx, update));
                 return true;
             }
         }
@@ -183,7 +183,7 @@ public class CommandHandler
         if (message.Content.StartsWith(prfx, StringComparison.OrdinalIgnoreCase))
         {
             argPos = prfx.Length;
-            _ = Task.Run(async () => await ExecuteCommand(message, commandContext, argPos, prfx, update));
+            _ = Task.Run(async () => await TryExecuteCommand(message, commandContext, argPos, prfx, update));
             return true;
         }
 
@@ -192,18 +192,30 @@ public class CommandHandler
         if (currentUser != null && message.Content.StartsWith($"<@{currentUser.Id}>"))
         {
             argPos = $"<@{currentUser.Id}>".Length;
-            _ = Task.Run(async () => await ExecuteCommand(message, commandContext, argPos, prfx, update));
+            _ = Task.Run(async () => await TryExecuteCommand(message, commandContext, argPos, prfx, update));
             return true;
         }
 
         if (currentUser != null && message.Content.StartsWith($"<@!{currentUser.Id}>"))
         {
             argPos = $"<@!{currentUser.Id}>".Length;
-            _ = Task.Run(async () => await ExecuteCommand(message, commandContext, argPos, prfx, update));
+            _ = Task.Run(async () => await TryExecuteCommand(message, commandContext, argPos, prfx, update));
             return true;
         }
 
         return false;
+    }
+
+    private async Task TryExecuteCommand(Message msg, CommandContext context, int argPos, string prfx, bool update)
+    {
+        try
+        {
+            await ExecuteCommand(msg, context, argPos, prfx, update);
+        }
+        catch (Exception e)
+        {
+            await context.HandleCommandException(e, this._userService);
+        }
     }
 
     private async Task ExecuteCommand(Message msg, CommandContext context, int argPos, string prfx,
