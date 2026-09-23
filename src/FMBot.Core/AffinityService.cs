@@ -121,7 +121,6 @@ public class AffinityService
                 value.ArtistPoints += result.ArtistPoints * 2;
                 value.GenrePoints += result.GenrePoints * 2;
                 value.CountryPoints += result.CountryPoints * 2;
-                value.TotalPoints += result.TotalPoints * 2;
             }
             else
             {
@@ -129,7 +128,53 @@ public class AffinityService
             }
         });
 
+        var viewerUserId = ownAllTime.FirstOrDefault()?.UserId ?? ownQuarterly.FirstOrDefault()?.UserId;
+        if (viewerUserId.HasValue)
+        {
+            SetTotalPoints(results, viewerUserId.Value);
+        }
+
         return results;
+    }
+
+    public static void SetTotalPoints(IReadOnlyDictionary<int, AffinityUser> results, int viewerUserId)
+    {
+        if (!results.TryGetValue(viewerUserId, out var self))
+        {
+            return;
+        }
+
+        var ownArtistPoints = self.ArtistPoints;
+        var ownGenrePoints = self.GenrePoints;
+        var ownCountryPoints = self.CountryPoints;
+
+        foreach (var result in results.Values)
+        {
+            result.TotalPoints = Share(result.ArtistPoints, ownArtistPoints) +
+                                 Share(result.GenrePoints, ownGenrePoints) * 0.05 +
+                                 Share(result.CountryPoints, ownCountryPoints) * 0.05;
+        }
+    }
+
+    private static double Share(double points, double ownPoints)
+    {
+        return ownPoints > 0 ? points / ownPoints : 0;
+    }
+
+    public static int GetArtistPoints(IReadOnlyDictionary<string, int> artistDictionary,
+        IEnumerable<AffinityItemDto> otherTopArtists)
+    {
+        var artistPoints = 0;
+
+        foreach (var otherArtist in otherTopArtists)
+        {
+            if (artistDictionary.TryGetValue(otherArtist.Name, out var value))
+            {
+                artistPoints += AddPoints(value, otherArtist.Position) + 2;
+            }
+        }
+
+        return artistPoints;
     }
 
     public async Task<AffinityUser> GetAffinityUser(int userId,
@@ -138,17 +183,9 @@ public class AffinityService
         IReadOnlyDictionary<string, int> countryDictionary,
         ICollection<AffinityItemDto> otherTopArtists)
     {
-        var artistPoints = 0;
+        var artistPoints = GetArtistPoints(artistDictionary, otherTopArtists);
         var genrePoints = 0;
         var countryPoints = 0;
-
-        foreach (var otherArtist in otherTopArtists)
-        {
-            if (artistDictionary.TryGetValue(otherArtist.Name, out var value))
-            {
-                artistPoints += AddPoints(value, otherArtist.Position);
-            }
-        }
 
         var otherTopGenres = await this._genreService.GetTopGenresWithPositionForTopArtists(otherTopArtists);
 
@@ -175,7 +212,6 @@ public class AffinityService
             ArtistPoints = artistPoints,
             GenrePoints = genrePoints,
             CountryPoints = countryPoints,
-            TotalPoints = artistPoints * 0.42 + genrePoints * 0.42 + countryPoints * 0.16,
             UserId = userId
         };
     }
