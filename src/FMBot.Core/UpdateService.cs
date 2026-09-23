@@ -578,7 +578,8 @@ SELECT 3 AS Type, user_track_id AS Id, artist_name, name, playcount FROM public.
                 : null;
 
             var artistName = track.First().ArtistName;
-            if (alias != null && !alias.Options.HasFlag(AliasOption.DisableInPlays))
+            var aliasRedirected = alias != null && !alias.Options.HasFlag(AliasOption.DisableInPlays);
+            if (aliasRedirected)
             {
                 artistName = alias.ArtistName;
             }
@@ -591,9 +592,11 @@ SELECT 3 AS Type, user_track_id AS Id, artist_name, name, playcount FROM public.
             if (existingUserTrack != null)
             {
                 var resolvedTrackId = track.First().TrackId;
-                var setTrackId = resolvedTrackId.HasValue
-                    ? $", track_id = COALESCE(track_id, {resolvedTrackId.Value})"
-                    : "";
+                var setTrackId = !resolvedTrackId.HasValue
+                    ? ""
+                    : aliasRedirected
+                        ? $", track_id = COALESCE(track_id, {resolvedTrackId.Value})"
+                        : $", track_id = {resolvedTrackId.Value}";
 
                 updateExistingTracks.Append(
                     $"UPDATE public.user_tracks SET playcount = {existingUserTrack.Playcount + track.Count()}{setTrackId} " +

@@ -112,12 +112,12 @@ public class TrackRepository
 
     public static async Task<List<TopTrack>> GetTopUserTracks(int userId, int limit, NpgsqlConnection connection)
     {
-        const string sql = "SELECT ut.name AS track_name, ut.artist_name, ut.playcount AS user_playcount, t.album_name, " +
-                           "COALESCE(a.spotify_image_url, a.lastfm_image_url) AS album_cover_url " +
-                           "FROM public.user_tracks ut " +
-                           "LEFT JOIN public.tracks t ON t.id = ut.track_id " +
-                           "LEFT JOIN public.albums a ON a.id = t.album_id " +
-                           "WHERE ut.user_id = @userId ORDER BY ut.playcount DESC LIMIT @limit";
+        var sql = "SELECT ut.name AS track_name, ut.artist_name, ut.playcount AS user_playcount, cover.album_name, " +
+                  "cover.image_url AS album_cover_url " +
+                  "FROM (SELECT name, artist_name, playcount FROM public.user_tracks " +
+                  "WHERE user_id = @userId ORDER BY playcount DESC LIMIT @limit) ut " +
+                  $"LEFT JOIN LATERAL ({TrackCoverLateral("ut")}) cover ON TRUE " +
+                  "ORDER BY ut.playcount DESC";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
 
@@ -236,15 +236,24 @@ WHERE s.id = (
     }
 
 
-    public static async Task<List<EntityImageUrl>> GetImageUrlsForTrackIds(int[] trackIds, NpgsqlConnection connection)
+    private static string TrackCoverLateral(string source) =>
+        "SELECT ab.name AS album_name, COALESCE(ab.spotify_image_url, ab.lastfm_image_url) AS image_url " +
+        "FROM public.tracks t " +
+        "INNER JOIN public.albums ab ON ab.artist_name = t.artist_name AND ab.name = t.album_name " +
+        $"WHERE t.artist_name = {source}.artist_name AND t.name = {source}.name " +
+        "AND COALESCE(ab.spotify_image_url, ab.lastfm_image_url) IS NOT NULL " +
+        "ORDER BY ab.popularity DESC NULLS LAST, t.id " +
+        "LIMIT 1";
+
+    public static async Task<List<EntityImageUrl>> GetImageUrlsForTracks(string[] artistNames, string[] trackNames,
+        NpgsqlConnection connection)
     {
-        const string sql = "SELECT t.id, t.artist_name, t.name, ab.name AS album_name, COALESCE(ab.spotify_image_url, ab.lastfm_image_url) AS image_url " +
-                           "FROM public.tracks t INNER JOIN public.albums ab ON ab.id = t.album_id " +
-                           "WHERE t.id = ANY(@trackIds) " +
-                           "AND COALESCE(ab.spotify_image_url, ab.lastfm_image_url) IS NOT NULL";
+        var sql = "SELECT input.artist_name, input.name, cover.album_name, cover.image_url " +
+                  "FROM unnest(@artistNames::citext[], @trackNames::citext[]) AS input(artist_name, name) " +
+                  $"CROSS JOIN LATERAL ({TrackCoverLateral("input")}) cover";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
 
-        return (await connection.QueryAsync<EntityImageUrl>(sql, new { trackIds })).ToList();
+        return (await connection.QueryAsync<EntityImageUrl>(sql, new { artistNames, trackNames })).ToList();
     }
 }
