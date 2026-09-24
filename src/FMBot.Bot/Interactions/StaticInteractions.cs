@@ -149,7 +149,9 @@ public class StaticInteractions(
                 contextUser.UserNameLastFM,
                 priceId,
                 currency,
-                existingStripeSupporter?.StripeCustomerId);
+                existingStripeSupporter?.PurchaserDiscordUserId == contextUser.DiscordUserId
+                    ? existingStripeSupporter.StripeCustomerId
+                    : null);
 
             var embed = new EmbedProperties();
             embed.WithColor(DiscordConstants.InformationColorBlue);
@@ -371,7 +373,9 @@ public class StaticInteractions(
                 $"gift-{duration}",
                 recipientDiscordId,
                 recipientUser.UserNameLastFM,
-                existingStripeSupporter?.StripeCustomerId);
+                existingStripeSupporter?.PurchaserDiscordUserId == this.Context.User.Id
+                    ? existingStripeSupporter.StripeCustomerId
+                    : null);
 
             if (string.IsNullOrEmpty(checkoutLink))
             {

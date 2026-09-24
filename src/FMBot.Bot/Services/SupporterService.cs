@@ -945,7 +945,8 @@ public class SupporterService
     public async Task<string> GetExistingStripeCustomerId(ulong discordUserId)
     {
         var stripeSupporter = await GetStripeSupporter(discordUserId);
-        if (!string.IsNullOrWhiteSpace(stripeSupporter?.StripeCustomerId))
+        if (stripeSupporter?.PurchaserDiscordUserId == discordUserId &&
+            !string.IsNullOrWhiteSpace(stripeSupporter.StripeCustomerId))
         {
             return stripeSupporter.StripeCustomerId;
         }
@@ -1012,7 +1013,7 @@ public class SupporterService
 
             var activeStripeSupporter = await db.StripeSupporters
                 .FirstOrDefaultAsync(w =>
-                    (w.PurchaserDiscordUserId == supporter.DiscordUserId.Value ||
+                    (w.PurchaserDiscordUserId == supporter.DiscordUserId.Value && w.Type == StripeSupporterType.Supporter ||
                      w.GiftReceiverDiscordUserId == supporter.DiscordUserId.Value) &&
                     !w.EntitlementDeleted &&
                     (!w.DateEnding.HasValue || w.DateEnding > DateTime.UtcNow));
@@ -2049,7 +2050,7 @@ public class SupporterService
 
         var activeStripeSupporter = await db.StripeSupporters
             .FirstOrDefaultAsync(w =>
-                (w.PurchaserDiscordUserId == existingSupporter.DiscordUserId.Value ||
+                (w.PurchaserDiscordUserId == existingSupporter.DiscordUserId.Value && w.Type == StripeSupporterType.Supporter ||
                  w.GiftReceiverDiscordUserId == existingSupporter.DiscordUserId.Value) &&
                 !w.EntitlementDeleted &&
                 (!w.DateEnding.HasValue || w.DateEnding > DateTime.UtcNow));
@@ -2225,7 +2226,7 @@ public class SupporterService
                 var otherActiveStripeSupporter = await db.StripeSupporters
                     .FirstOrDefaultAsync(w =>
                         w.Id != existingStripeSupporter.Id &&
-                        (w.PurchaserDiscordUserId == discordUserId ||
+                        (w.PurchaserDiscordUserId == discordUserId && w.Type == StripeSupporterType.Supporter ||
                          w.GiftReceiverDiscordUserId == discordUserId) &&
                         !w.EntitlementDeleted &&
                         (!w.DateEnding.HasValue || w.DateEnding > DateTime.UtcNow));
@@ -2795,7 +2796,7 @@ public class SupporterService
         StripePricing pricing, StripeSupporter existingStripeSupporter = null, string source = "unknown")
     {
         var existingStripeCustomerId = "";
-        if (existingStripeSupporter != null)
+        if (existingStripeSupporter != null && existingStripeSupporter.PurchaserDiscordUserId == discordUserId)
         {
             existingStripeCustomerId = existingStripeSupporter.StripeCustomerId;
         }
