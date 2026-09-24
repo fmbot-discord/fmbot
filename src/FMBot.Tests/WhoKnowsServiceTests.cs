@@ -136,6 +136,30 @@ public class WhoKnowsServiceTests
     }
 
     [Test]
+    public void Filter_BlockedUsers_LastFmNameBlockAppliesRegardlessOfMemberOrder()
+    {
+        var members = Members(
+            Member(1),
+            Member(5, lastFm: "sharedname"),
+            Member(6, lastFm: "SharedName", blocked: true));
+        var users = new List<WhoKnowsObjectWithUser>
+        {
+            Wk(1, 50),
+            Wk(5, 40, lastFm: "sharedname"),
+            Wk(6, 30, lastFm: "SharedName"),
+            Wk(99, 20, lastFm: "SHAREDNAME")
+        };
+
+        var (stats, filtered) = WhoKnowsService.FilterWhoKnowsObjects(users, members, NewGuild(), contextUserId: 1);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Ids(filtered), Is.EqualTo(new[] { 1 }));
+            Assert.That(stats.BlockedFiltered, Is.EqualTo(3));
+        });
+    }
+
+    [Test]
     public void Filter_BlockedUsers_StillApplyWhenOtherFiltersAreDisabled()
     {
         var guild = NewGuild();
