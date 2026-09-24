@@ -102,7 +102,7 @@ public class IndexService
 
     public static string IndexConcurrencyCacheKey(int userId)
     {
-        return $"index-started-{userId}";
+        return Core.IndexKeys.IndexConcurrencyCacheKey(userId);
     }
 
     public bool IndexStarted(int userId)

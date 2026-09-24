@@ -16,7 +16,7 @@ using NetCord;
 using NetCord.Rest;
 using NetCord.Services.Commands;
 using NetCord.Services.ComponentInteractions;
-using Shared.Domain.Enums;
+using FMBot.Domain.Enums;
 
 namespace FMBot.Bot.Interactions;
 
@@ -149,7 +149,9 @@ public class StaticInteractions(
                 contextUser.UserNameLastFM,
                 priceId,
                 currency,
-                existingStripeSupporter?.StripeCustomerId);
+                existingStripeSupporter?.PurchaserDiscordUserId == contextUser.DiscordUserId
+                    ? existingStripeSupporter.StripeCustomerId
+                    : null);
 
             var embed = new EmbedProperties();
             embed.WithColor(DiscordConstants.InformationColorBlue);
@@ -371,7 +373,9 @@ public class StaticInteractions(
                 $"gift-{duration}",
                 recipientDiscordId,
                 recipientUser.UserNameLastFM,
-                existingStripeSupporter?.StripeCustomerId);
+                existingStripeSupporter?.PurchaserDiscordUserId == this.Context.User.Id
+                    ? existingStripeSupporter.StripeCustomerId
+                    : null);
 
             if (string.IsNullOrEmpty(checkoutLink))
             {
@@ -399,6 +403,20 @@ public class StaticInteractions(
         catch (Exception ex)
         {
             await this.Context.HandleCommandException(ex, userService);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.LaunchActivity)]
+    public async Task LaunchActivity()
+    {
+        try
+        {
+            await RespondAsync(InteractionCallback.LaunchActivity);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService, deferFirst: true);
         }
     }
 

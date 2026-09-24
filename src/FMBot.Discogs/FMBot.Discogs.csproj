@@ -11,6 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="prometheus-net" Version="8.2.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.12" />
     <PackageReference Include="RestSharp" Version="114.0.0" />
     <PackageReference Include="Serilog" Version="4.4.0" />

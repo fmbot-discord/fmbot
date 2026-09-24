@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-See also `../CLAUDE.md` for workspace-level context covering both repos, the full database schema, and how the bot and web backend connect.
+See also `../CLAUDE.md` for workspace-level context covering both repos, the database schema, and how the bot and web backend connect.
 
 ## Project Overview
 
@@ -50,17 +50,18 @@ dotnet ef database update --project ./src/FMBot.Persistence.EntityFrameWork --st
 
 ### Project Structure
 - **FMBot.Bot** - Main Discord bot application and entry point
-- **FMBot.Persistence.*** - Data layer with EF Core, PostgreSQL, and repository pattern
-- **FMBot.Domain** - Shared domain models and business logic
+- **FMBot.Core** - Shared helpers used by both the bot and the web backend
+- **FMBot.Persistence** / **FMBot.Persistence.Domain** / **FMBot.Persistence.EntityFrameWork** - Data layer with EF Core, Dapper repositories, entities and migrations
+- **FMBot.Domain** - Shared domain models, enums and interfaces
 - **FMBot.LastFM** / **FMBot.LastFM.Domain** - Last.fm API integration and music data services
 - **FMBot.Images** - Image generation using Puppeteer and SkiaSharp
 - **FMBot.AppleMusic** - Apple Music API integration
 - **FMBot.Discogs** - Discogs API integration for record collections
 - **FMBot.Subscriptions** - Supporter/subscription logic (Stripe, Discord entitlements, OpenCollective)
-- **FMBot.Youtube** / **FMBot.YoutubeSearch** - YouTube search integration
-- **FMBot.BotLists** - Bot list site stat reporting
-- **Shared.Domain** - Contract shared with the web backend (protos, models, enums) — see `../CLAUDE.md`
+- **Protos/** - gRPC contract shared with the web backend (proto files only, no project) — see `../CLAUDE.md`
 - **FMBot.Tests** - NUnit test suite
+
+`FMBot.Youtube` still exists on disk but is not in the solution and nothing references it; ignore it.
 
 ### Key Entry Points
 - `src/FMBot.Bot/Program.cs` - Application bootstrap
@@ -94,9 +95,9 @@ dotnet ef database update --project ./src/FMBot.Persistence.EntityFrameWork --st
 ### Database Architecture
 - **PostgreSQL** with Entity Framework Core
 - **Snake_case** naming convention
-- **Extensive migration history** (100+ migrations)
+- **Migrations were reset in March 2026** (`InitialMigration` 2026-03-14); everything before that is gone from the repo, so don't look for older history
 - **Key entities**: Users, Guilds, Artists, Albums, Tracks, UserPlays, UserCrowns
-- **PostgreSQL extensions**: citext, pg_trgm for text search
+- **PostgreSQL extensions**: citext, pg_trgm (text search), hstore (`user_interactions.command_options`), unaccent
 
 ### External API Integrations
 Primary services: Last.fm (core), Spotify (features), Apple Music (metadata), YouTube (videos), Discogs (collections), MusicBrainz (metadata), OpenAI (AI features), Genius (lyrics)
@@ -121,8 +122,8 @@ Primary services: Last.fm (core), Spotify (features), Apple Music (metadata), Yo
 - Multiple environment support (local, dev, prod)
 
 ### Code Conventions
-- **C# 14+ features** with nullable reference types enabled
-- **NetCord** framework for Discord API interactions (migrated from Discord.Net). When unsure about NetCord APIs or types, you can look up documentation, search online, or read the local source code at `P:\NetCord`
+- **`LangVersion` latest** (C# 14). Nullable reference types are **not** enabled in the bot projects (only `FMBot.Tests` turns them on), so `?` annotations are informational, not enforced — hence the `userSettings` null gotcha below
+- **NetCord** framework for Discord API interactions (migrated from Discord.Net). When unsure about NetCord APIs or types, you can look up documentation, search online, or read the local source code at `P:\NetCord` (Windows) / `/Users/thom/projects/NetCord` (macOS)
 - **Async/await** patterns throughout
 - **Structured logging** with Serilog
 - **Extension methods** for common operations
@@ -136,49 +137,19 @@ Primary services: Last.fm (core), Spotify (features), Apple Music (metadata), Yo
 - C# properties: `PascalCase`
 
 ### Testing
-- **NUnit** testing framework with Moq for mocking
+- **NUnit 4** testing framework (no mocking library; tests are mostly pure-function and file-based, e.g. `LocalizationTests`, `HelpServiceTests`)
 - Test files organized in `FMBot.Tests/` project
 - Focus on service layer and business logic testing
 - Minimal integration tests due to external API dependencies
 
 ## Localization
 
-User-facing strings are localized via JSON files, managed in Weblate. Weblate/glossary/rollout details live in `../LOCALIZATION_NOTES.md`. When adding or migrating user-facing strings, follow ALL of these rules:
+User-facing strings are localized via JSON files, managed in Weblate. The full rules (code API, key and plural conventions, protected terms, never-localize list, translation style) are in the `localization` skill at `.claude/skills/localization/SKILL.md` — read it before adding or migrating user-facing strings, editing locale files, writing translations, or changing any slash command or parameter description (those changes include writing 11 translations). Weblate/glossary/rollout details live in `../LOCALIZATION_NOTES.md`. Never skip these:
 
-### Code API
-- In builders (with `ContextModel context`): `context.Localize("key", ("name", value))` and `context.LocalizeCount("key", count, ("name", value))`. All interpolation arg values are **strings**, pre-formatted in C#: numbers via `.Format(context.NumberFormat)`, timestamps pre-rendered as `<t:unix:D>`, names already `Sanitize`d.
-- Without a ContextModel (handlers, static helpers, background sends): `Localizer.ForGuild(guildId)` — guild id from `context.Guild?.Id` (text) or `context.Interaction.GuildId` (interactions).
-- Helpers on `Localizer`: `TimeAgo(dateTime)`, `LongListeningTime(timeSpan)`, `Ordinal(n)` (returns "5th" complete), `FormatMonthDay(date)`/`FormatMonthDayYear(date)` (culture-aware month names AND day/month order), `PeriodLabel(timeSettings)` (localized label for `{{period}}` args — never feed `TimeSettingsModel.Description` into a localized key). Use these instead of `StringExtensions.GetTimeAgo`/`GetLongListeningTimeString`/`GetAmountEnd` — the English statics remain only for locale-less callers.
-- Time periods: pass `language:` to `SettingService.GetTimePeriod` (from `context.Localizer.Language` or `LocalizationService.GetLanguage(...)`) so users can also TYPE periods in the guild's language. Input aliases are code-owned per language in `Models/PeriodAliases.cs` (lowercase, curated against search-text collisions — parsing must never depend on Weblate JSON); English tokens always keep working. `Contains` matches on space-padded boundaries, so an alias may be multiple words (`"3 aylık"`, `"senaste veckan"`); within a category list the longest form goes FIRST, because `ContainsAndRemove` strips values in array order and a short form matching first leaves debris in the search value. `Merge` puts localized aliases before the English tokens for the same reason. Categories are matched most-specific-first (quarterly/halfYearly before monthly, twoYear before yearly) so a label containing another period's word still resolves correctly. Localized month-name input comes from CLDR in `GetMonth`, full names only (abbreviations are uncurated and collide with search text; English `jan`–`dec` work in every guild), minus `PeriodTokens.ExcludedMonths` for names that are common search terms (`mars` in fr/sv-SE would eat "Bruno Mars"). Every `shared.period.*` display label MUST parse back to its own period — `PeriodLabelsRoundTripAsInput` enforces this, so a new or reworded label needs a matching alias. `TimeSettingsModel.Description` stays English — it round-trips through custom_ids, cache keys and URL/API parameters.
-- Locale resolution: explicit guild setting → `UseDiscordGuildLocale` config flag (Discord guild locale) → English. DMs are always English. Any cache that stores rendered text MUST include the locale in its key.
-
-### Key + file conventions
-- Files: `src/FMBot.Bot/Resources/Locales/{code}.json` — flat i18next v4 JSON. `en.json` is the source of truth and code-owned (changes via PRs only); other languages are Weblate-owned. Locale codes: en, pt-BR, es-ES, hi, de, pl, nl, fr, it, tr, sv-SE, id (Discord-supported locales only, ever). "Weblate-owned" governs *editing* existing translations, NOT adding keys: a NEW en.json key must be seeded into all 11 other locale files in the same change, because `EveryEnglishKeyExistsInEveryLocale` fails otherwise. Seed the plural forms each language actually requests — most take `_one`+`_other`, `id` takes only `_other`, `pl` takes `_one`+`_few`+`_many`+`_other` (fr/es-ES/pt-BR/it fall back to `_other` for `_many`).
-- Keys: flat dotted camelCase, namespaced per domain (`shared.*`, `errors.*`, `fm.*`, `artist.whoknows.*`, `footer.*`, ...). Full-sentence keys — NEVER concatenate translated fragments into a sentence (word order differs per language). Conditional sentence variants get their own keys (`titleSelf`/`titleOther`).
-- Plurals: code references the base key via `LocalizeCount`; JSON carries `key_one`/`key_other` (other languages may add `_few`/`_many` per CLDR). `{{count}}` is reserved for the plural driver and auto-formatted with the user's NumberFormat. Reuse `shared.*` plural units (plays, scrobbles, listeners, ...) when the English matches exactly.
-- The bold listener unit keys (`artist.listenersBold`, `track.boldListeners`, `album.listenersBold`) are context-locked fragments: they only ever render inside a "by {{listeners}}" sentence in their own domain, and translations depend on that governing preposition (German uses the dative "Hörern", Polish the genitive). Never render them standalone and never add a consumer with different framing — mint a new key instead.
-- Markdown stays inside JSON values (`###`, `**`, `-#`, backticks, complete links `[label]({{url}})` so labels translate). Custom emote tags (`<:name:id>`) must NEVER appear in JSON — concatenate them in C# or pass as an `{{emote}}` arg.
-- When migrating existing hardcoded strings: rendered English output must stay byte-for-byte identical (grammar fixes like "1 plays"→"1 play" only when explicitly flagged in the report).
-
-### Protected terms (never translated, stay verbatim in every language)
-Command **names** (`fm`, `whoknows`, ... — the generic noun "command" in prose DOES translate), WhoKnows, GlobalWhoKnows, scrobble/scrobbles/scrobbling, plays (loanword), billboard/bb (literal input token, matched in `SettingService`), Top (as feature prefix), .fmbot, Last.fm, Spotify and other brand names, the .fmbot user types (supporter, owner, admin, contributor), Jumble. Protected loanwords may still take local casing/inflection where the file already does that (German capitalization/hyphen compounds, Polish case endings like `supporterem`, Turkish apostrophe suffixes like `supporter'ı`). **Polish exception (decided 2026-07-16)**: "plays" translates to the native noun odtworzenie (`{{count}} odtworzenie` / `_few` `odtworzenia` / `_many` `odtworzeń`) because an uninflected English noun after a numeral is broken Polish and the inflected loanword ("playe") is a non-word; do not revert `pl.json` to English "plays". Scrobble still inflects as a loanword in Polish (scrobble/scrobbli, zescrobblowanych). Literal input tokens (e.g. "plays i listeners" in `server.hintSorting`) stay English everywhere. crown/crowns is protected (decided 2026-07-20, reversing the earlier carve-out): the loanword stays verbatim in every locale, with the usual local casing/inflection allowances (German `Crown`/`Crowns` capitalized with hyphen compounds like `Crown-Verlauf`, Polish declension `crowny`/`crownów` like scrobble, Turkish apostrophe suffixes like `crown'u`), and Hindi uses Latin script like Roast/Jumble.
-
-### Never localize
-Log messages, exception text, SQL, custom ids, cache keys, admin/censor-only strings, featured descriptions (rendered once, broadcast to all guilds), user-authored template content, autocomplete option VALUES (labels may localize later; values round-trip into English parsing), `TimeSettingsModel.Description` and other stored/round-tripped period tokens (localized period display goes through `Localizer.PeriodLabel`; localized period INPUT is code-owned in `PeriodAliases.cs`, never JSON-driven — but each `shared.period.*` label must have an alias so it round-trips).
-
-### Translation content style (for agents writing translations)
-- Informal address (du/tu/je/jij), concise natural phrasing; preserve every `{{placeholder}}` exactly.
-- In `` `{{value}}` label `` lines (`track.duration`, `track.keyBpm`, `track.danceableEnergetic`, `track.acousticInstrumental`, `track.speechfulLiveness`, `track.happy`), the backticked `{{...}}` is a pre-formatted value (usually a percentage) and the bare word next to it is a visible label that MUST translate. The English labels are adjectives (danceable, energetic, speechful) — keep them adjectives, not nouns.
-- Dutch specifics (reference: `nl.json`): plays/scrobbles stay English; always "track"/"tracks", never "nummer" (de-word: "de track", "deze track", "die je zoekt"); luisteraars/artiesten; crowns stays English ("de crown"); "Pagina" for page; "Aangevraagd door" for requested by; ordinals are `{{count}}e`; "uur" is uninflected in plural.
-- German specifics (reference: `de.json`): "Befehl" for command; compounds with a protected English term or proper noun KEEP the hyphen (`Künstler-Plays`, `Mitglieder-Cache`, `Last.fm-Account`), pure-German compounds don't (`Künstlerinfos`); `{{date}}` needs a preposition ("entdeckt am {{date}}") since German has no bare adverbial date; generic masculine ("der Künstler", "der Nutzer") throughout.
-
-### Slash command descriptions
-`src/FMBot.Bot/Resources/SlashCommandLocalizations/{locale}.json` (NetCord nested schema: `commands` → `description`/`parameters`/`subcommands`). NEVER add `name` keys — command names stay identical in every locale, and the test suite fails if one appears. `en.json` there is generated from the `[SlashCommand]` attributes: regenerate with `FMBOT_REGEN_SLASH_LOCALIZATIONS=1 dotnet test --filter EnglishBaseFileMatchesSlashCommandAttributes`. Its `CopyToOutputDirectory=Never` csproj entry must stay (bare `en` is an invalid Discord locale and breaks command registration).
-
-**ALWAYS update all 11 translated locale files in the same change** whenever you edit a `[SlashCommand]` description, edit a `[SlashCommandParameter]` description, or add/remove a parameter. Regenerating `en.json` is only half the job — **no test catches drift in the translated files**, so a stale locale silently keeps showing the old description in Discord (or omits a new parameter's description entirely) for every non-English guild. Discord hard-caps descriptions at 100 characters per locale, so check length while translating. This is the one localization file set with no automated safety net; treat the slash-command edit and the 11 translations as a single atomic change.
-
-### Verification
-After touching locale files or adding `Localize` calls, always run `dotnet test ./src/FMBot.Tests/FMBot.Tests.csproj` — `LocalizationTests` enforce key completeness (every referenced key exists in en.json, `_one`+`_other` for count keys), per-locale placeholder subsets, plural rules, and the no-`name`-keys guard.
+- A NEW `en.json` key must be seeded into all 11 other locale files in the same change (`EveryEnglishKeyExistsInEveryLocale` fails otherwise)
+- Editing a `[SlashCommand]`/`[SlashCommandParameter]` description or adding/removing a parameter means updating all 11 translated `SlashCommandLocalizations` files in the same change — no test catches drift there. Never add `name` keys
+- Full-sentence keys only — NEVER concatenate translated fragments into a sentence
+- After touching locale files or adding `Localize` calls, run `dotnet test ./src/FMBot.Tests/FMBot.Tests.csproj`
 
 ## Common Gotchas
 - Always check `userSettings` for null - user may not be registered with Last.fm

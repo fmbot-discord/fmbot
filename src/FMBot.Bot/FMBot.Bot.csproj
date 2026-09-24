@@ -28,7 +28,7 @@
         <PackageReference Include="Google.Protobuf" Version="3.36.1" />
         <PackageReference Include="Grpc.Net.Client" Version="2.83.0" />
         <PackageReference Include="Grpc.Net.ClientFactory" Version="2.83.0" />
-        <PackageReference Include="Grpc.Tools" Version="2.83.0">
+        <PackageReference Include="Grpc.Tools" Version="2.84.0">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
@@ -67,21 +67,22 @@
         <PackageReference Include="SpotifyAPI.Web" Version="7.4.2" />
         <PackageReference Include="SpotifyAPI.Web.Auth" Version="7.4.2" />
         <PackageReference Include="System.Reactive" Version="7.0.0" />
-        <Protobuf Include="..\Shared.Domain\Protos\time.proto" GrpcServices="Client" Link="Protos\time.proto" />
-        <Protobuf Include="..\Shared.Domain\Protos\status.proto" GrpcServices="Client" Link="Protos\status.proto" />
-        <Protobuf Include="..\Shared.Domain\Protos\censor.proto" GrpcServices="Client" Link="Protos\censor.proto" />
-        <Protobuf Include="..\Shared.Domain\Protos\album.proto" GrpcServices="Client" Link="Protos\album.proto" />
-        <Protobuf Include="..\Shared.Domain\Protos\artist.proto" GrpcServices="Client" Link="Protos\artist.proto" />
-        <Protobuf Include="..\Shared.Domain\Protos\track.proto" GrpcServices="Client" Link="Protos\track.proto" />
-        <Protobuf Include="..\Shared.Domain\Protos\supporter.proto" GrpcServices="Client" Link="Protos\supporter.proto" />
-        <Protobuf Include="..\Shared.Domain\Protos\eurovision.proto" GrpcServices="Client" Link="Protos\eurovision.proto" />
-        <Protobuf Include="..\Shared.Domain\Protos\idresolution.proto" GrpcServices="Client" Link="Protos\idresolution.proto" />
+        <Protobuf Include="..\Protos\time.proto" GrpcServices="Client" Link="Protos\time.proto" />
+        <Protobuf Include="..\Protos\status.proto" GrpcServices="Client" Link="Protos\status.proto" />
+        <Protobuf Include="..\Protos\censor.proto" GrpcServices="Client" Link="Protos\censor.proto" />
+        <Protobuf Include="..\Protos\album.proto" GrpcServices="Client" Link="Protos\album.proto" />
+        <Protobuf Include="..\Protos\artist.proto" GrpcServices="Client" Link="Protos\artist.proto" />
+        <Protobuf Include="..\Protos\track.proto" GrpcServices="Client" Link="Protos\track.proto" />
+        <Protobuf Include="..\Protos\supporter.proto" GrpcServices="Client" Link="Protos\supporter.proto" />
+        <Protobuf Include="..\Protos\eurovision.proto" GrpcServices="Client" Link="Protos\eurovision.proto" />
+        <Protobuf Include="..\Protos\idresolution.proto" GrpcServices="Client" Link="Protos\idresolution.proto" />
     </ItemGroup>
     <ItemGroup>
         <RuntimeHostConfigurationOption Include="System.Net.SocketsHttpHandler.Http3Support" Value="false" />
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\FMBot.AppleMusic\FMBot.AppleMusic.csproj" />
+        <ProjectReference Include="..\FMBot.Core\FMBot.Core.csproj" />
         <ProjectReference Include="..\FMBot.Discogs\FMBot.Discogs.csproj" />
         <ProjectReference Include="..\FMBot.Domain\FMBot.Domain.csproj" />
         <ProjectReference Include="..\FMBot.Images\FMBot.Images.csproj" />
@@ -113,9 +114,6 @@
         </None>
         <None Update="Resources\Images\unknown.png">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Update="Resources\countries.json">
-            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
         <None Update="Resources\faqs.json">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>

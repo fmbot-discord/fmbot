@@ -17,7 +17,6 @@ using NetCord;
 using NetCord.Rest;
 using NetCord.Services.Commands;
 using Serilog;
-using Shared.Domain.Enums;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 
 namespace FMBot.Bot.Builders;

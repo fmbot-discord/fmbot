@@ -11,6 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="prometheus-net" Version="8.2.1" />
     <PackageReference Include="GraphQL.Client" Version="6.1.0" />
     <PackageReference Include="GraphQL.Client.Serializer.SystemTextJson" Version="6.1.0" />
     <PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="10.0.12" />

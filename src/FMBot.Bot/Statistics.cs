@@ -1,9 +1,19 @@
+using FMBot.Discogs;
+using FMBot.LastFM;
+using FMBot.Subscriptions;
 using Prometheus;
 
-namespace FMBot.Domain;
+namespace FMBot.Bot;
 
 public static class Statistics
 {
+    static Statistics()
+    {
+        _ = LastFmStatistics.SmallIndexedUsers;
+        _ = DiscogsStatistics.DiscogsApiCalls;
+        _ = SubscriptionStatistics.OpenCollectiveApiCalls;
+    }
+
     public static readonly Gauge TotalDiscordServerCount = Metrics
         .CreateGauge("discord_server_count", "Total count of all servers the bot is in");
 
@@ -15,32 +25,11 @@ public static class Statistics
             });
 
 
-    public static readonly Counter LastfmApiCalls = Metrics
-        .CreateCounter("lastfm_api_calls", "Amount of last.fm API calls",
-            new CounterConfiguration
-            {
-                LabelNames = ["method"]
-            });
-
-    public static readonly Counter LastfmAuthorizedApiCalls = Metrics
-        .CreateCounter("lastfm_authorized_api_calls", "Amount of authorized last.fm API calls",
-            new CounterConfiguration
-            {
-                LabelNames = ["method"]
-            });
-
     public static readonly Counter LastfmImageCalls = Metrics
         .CreateCounter("lastfm_image_cdn_calls", "Amount of calls to the last.fm image cdn");
 
     public static readonly Counter LastfmCachedImageCalls = Metrics
         .CreateCounter("lastfm_cached_image_cdn_calls", "Amount of calls locally cached to last.fm images");
-
-    public static readonly Histogram LastfmApiResponseTime = Metrics
-        .CreateHistogram("lastfm_api_response_time", "Histogram of Last.fm API response time",
-            new HistogramConfiguration
-            {
-                LabelNames = ["method"]
-            });
 
 
     public static readonly Counter LastfmNowPlayingUpdates = Metrics
@@ -57,27 +46,6 @@ public static class Statistics
                 LabelNames = ["bot"]
             });
 
-    public static readonly Counter LastfmErrors = Metrics
-        .CreateCounter("lastfm_errors", "Amount of errors Last.fm is returning",
-            new CounterConfiguration
-            {
-                LabelNames = ["method"]
-            });
-
-    public static readonly Counter LastfmFailureErrors = Metrics
-        .CreateCounter("lastfm_errors_failure", "Amount of failure errors Last.fm is returning",
-            new CounterConfiguration
-            {
-                LabelNames = ["method"]
-            });
-
-    public static readonly Counter LastfmBadAuthErrors = Metrics
-        .CreateCounter("lastfm_errors_badauth", "Amount of badauth errors Last.fm is returning",
-            new CounterConfiguration
-            {
-                LabelNames = ["method"]
-            });
-
 
     public static readonly Counter SpotifyApiCalls = Metrics
         .CreateCounter("spotify_api_calls", "Amount of Spotify API calls");
@@ -85,11 +53,6 @@ public static class Statistics
     public static readonly Counter MusicBrainzApiCalls = Metrics
         .CreateCounter("musicbrainz_api_calls", "Amount of MusicBrainz API calls");
 
-    public static readonly Counter DiscogsApiCalls = Metrics
-        .CreateCounter("discogs_api_calls", "Amount of Discogs API calls");
-
-    public static readonly Counter OpenCollectiveApiCalls = Metrics
-        .CreateCounter("opencollective_api_calls", "Amount of OpenCollective API calls");
 
     public static readonly Counter OpenAiCalls = Metrics
         .CreateCounter("openai_api_calls", "Amount of OpenAI API calls");
@@ -220,14 +183,8 @@ public static class Statistics
             LabelNames = ["reason"]
         });
 
-    public static readonly Counter UpdatedUsers = Metrics
-        .CreateCounter("bot_updated_users", "Amount of updated users", new CounterConfiguration
-        {
-            LabelNames = ["reason"]
-        });
+    public static readonly Counter UpdatedUsers = Core.CoreStatistics.UpdatedUsers;
 
-    public static readonly Counter SmallIndexedUsers = Metrics
-        .CreateCounter("bot_smallindexed_users", "Amount of small indexed users");
 
     public static readonly Gauge UpdateOutdatedUsers = Metrics
         .CreateGauge("bot_update_outdated_users", "Amount of outdated users");

@@ -18,7 +18,7 @@ using Microsoft.EntityFrameworkCore;
 using NetCord;
 using NetCord.Rest;
 using NetCord.Services.Commands;
-using Shared.Domain.Enums;
+using FMBot.Domain.Enums;
 using User = FMBot.Persistence.Domain.Models.User;
 
 namespace FMBot.Bot.Builders;

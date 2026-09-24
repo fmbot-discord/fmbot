@@ -11,7 +11,7 @@ using FMBot.Domain.Models;
 using Microsoft.Extensions.Caching.Memory;
 using NetCord.Gateway;
 using Serilog;
-using Shared.Domain.Enums;
+using FMBot.Domain.Enums;
 using DiscordGuild = NetCord.Gateway.Guild;
 using DiscordGuildUser = NetCord.GuildUser;
 

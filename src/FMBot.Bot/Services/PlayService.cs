@@ -1054,56 +1054,14 @@ public class PlayService
         IDictionary<int, FullGuildUser> guildUsers,
         int guildId)
     {
-        const string sql = "SELECT u.total_playcount AS playcount, " +
-                           "u.user_id " +
-                           "FROM users AS u " +
-                           "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
-                           "WHERE gu.guild_id = @guildId AND u.total_playcount is not null " +
-                           "ORDER BY u.total_playcount DESC ";
-
-        DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        var userPlaycounts = (await connection.QueryAsync<WhoKnowsAlbumDto>(sql, new
-        {
-            guildId,
-        })).ToList();
+        var whoKnowsList = await PlayRepository.GetGuildUsersTotalPlaycount(guildUsers, guildId, connection);
 
-        var whoKnowsAlbumList = new List<WhoKnowsObjectWithUser>();
+        whoKnowsList.WithDiscordDisplayNames(discordGuild, guildUsers, 11);
 
-        for (var i = 0; i < userPlaycounts.Count; i++)
-        {
-            var userAlbum = userPlaycounts[i];
-
-            if (!guildUsers.TryGetValue(userAlbum.UserId, out var guildUser))
-            {
-                continue;
-            }
-
-            var userName = guildUser.UserName ?? guildUser.UserNameLastFM;
-
-            if (i <= 10)
-            {
-                if (discordGuild.Users.TryGetValue(guildUser.DiscordUserId, out var discordUser))
-                {
-                    userName = discordUser.GetDisplayName();
-                }
-            }
-
-            whoKnowsAlbumList.Add(new WhoKnowsObjectWithUser
-            {
-                DiscordName = userName,
-                Playcount = userAlbum.Playcount,
-                LastFMUsername = guildUser.UserNameLastFM,
-                UserId = userAlbum.UserId,
-                LastUsed = guildUser.LastUsed,
-                LastMessage = guildUser.LastMessage,
-                Roles = guildUser.Roles
-            });
-        }
-
-        return whoKnowsAlbumList;
+        return whoKnowsList;
     }
 
     public async Task<int> GetWeekArtistPlaycountForGuildAsync(int guildId, string artistName)
@@ -1410,61 +1368,11 @@ public class PlayService
             return cachedTracks;
         }
 
-        var artistFilter = !string.IsNullOrWhiteSpace(searchValue)
-            ? "AND UPPER(up.artist_name) = UPPER(CAST(@searchValue AS CITEXT)) "
-            : "";
-
-        var endDateFilter = endDateTime.HasValue
-            ? "AND up.time_played < @endDateTime "
-            : "";
-
-        var userFilter = userIds != null
-            ? "AND up.user_id = ANY(@userIds) "
-            : "";
-
-        var orderColumn = orderType == OrderType.Listeners ? "ListenerCount" : "TotalPlaycount";
-        var thenByColumn = orderType == OrderType.Listeners ? "TotalPlaycount" : "ListenerCount";
-
-        var sql = "SELECT t.name AS TrackName, " +
-                  "t.artist_name AS ArtistName, " +
-                  "agg.track_id AS TrackId, " +
-                  "agg.TotalPlaycount, " +
-                  "agg.ListenerCount " +
-                  "FROM ( " +
-                  "    SELECT up.track_id, " +
-                  "           COUNT(*)::int AS TotalPlaycount, " +
-                  "           COUNT(DISTINCT up.user_id)::int AS ListenerCount " +
-                  "    FROM user_plays up " +
-                  "    INNER JOIN guild_users gu ON gu.user_id = up.user_id " +
-                  "    WHERE gu.guild_id = @guildId " +
-                  "      AND gu.bot != true " +
-                  "      AND up.time_played > @startDateTime " +
-                  $"      {endDateFilter}" +
-                  "      AND up.track_id IS NOT NULL " +
-                  $"      {artistFilter}" +
-                  $"      {userFilter}" +
-                  "      AND NOT up.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
-                  "      AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL) " +
-                  "    GROUP BY up.track_id " +
-                  $"    ORDER BY {orderColumn} DESC, {thenByColumn} DESC " +
-                  "    LIMIT @limit " +
-                  ") agg " +
-                  "INNER JOIN tracks t ON t.id = agg.track_id " +
-                  $"ORDER BY agg.{orderColumn} DESC, agg.{thenByColumn} DESC";
-
-        DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        var tracks = (await connection.QueryAsync<GuildTrack>(sql, new
-        {
-            guildId,
-            startDateTime,
-            endDateTime,
-            searchValue,
-            limit,
-            userIds
-        }, commandTimeout: 300)).ToList();
+        var tracks = await PlayRepository.GetGuildTopTracksPlays(guildId, startDateTime, orderType, searchValue,
+            endDateTime, limit, userIds, connection);
 
         if (userIds == null)
         {
@@ -1484,54 +1392,11 @@ public class PlayService
             return cachedArtists;
         }
 
-        var endDateFilter = endDateTime.HasValue
-            ? "AND up.time_played < @endDateTime "
-            : "";
-
-        var userFilter = userIds != null
-            ? "AND up.user_id = ANY(@userIds) "
-            : "";
-
-        var orderColumn = orderType == OrderType.Listeners ? "ListenerCount" : "TotalPlaycount";
-        var thenByColumn = orderType == OrderType.Listeners ? "TotalPlaycount" : "ListenerCount";
-
-        var sql = "SELECT a.name AS ArtistName, " +
-                  "agg.artist_id AS ArtistId, " +
-                  "agg.TotalPlaycount, " +
-                  "agg.ListenerCount " +
-                  "FROM ( " +
-                  "    SELECT up.artist_id, " +
-                  "           COUNT(*)::int AS TotalPlaycount, " +
-                  "           COUNT(DISTINCT up.user_id)::int AS ListenerCount " +
-                  "    FROM user_plays up " +
-                  "    INNER JOIN guild_users gu ON gu.user_id = up.user_id " +
-                  "    WHERE gu.guild_id = @guildId " +
-                  "      AND gu.bot != true " +
-                  "      AND up.time_played > @startDateTime " +
-                  $"      {endDateFilter}" +
-                  "      AND up.artist_id IS NOT NULL " +
-                  $"      {userFilter}" +
-                  "      AND NOT up.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
-                  "      AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL) " +
-                  "    GROUP BY up.artist_id " +
-                  $"    ORDER BY {orderColumn} DESC, {thenByColumn} DESC " +
-                  "    LIMIT @limit " +
-                  ") agg " +
-                  "INNER JOIN artists a ON a.id = agg.artist_id " +
-                  $"ORDER BY agg.{orderColumn} DESC, agg.{thenByColumn} DESC";
-
-        DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        var artists = (await connection.QueryAsync<GuildArtist>(sql, new
-        {
-            guildId,
-            startDateTime,
-            endDateTime,
-            limit,
-            userIds
-        }, commandTimeout: 300)).ToList();
+        var artists = await PlayRepository.GetGuildTopArtistsPlays(guildId, startDateTime, orderType, endDateTime,
+            limit, userIds, connection);
 
         if (userIds == null)
         {
@@ -1552,61 +1417,11 @@ public class PlayService
             return cachedAlbums;
         }
 
-        var artistFilter = !string.IsNullOrWhiteSpace(searchValue)
-            ? "AND UPPER(up.artist_name) = UPPER(CAST(@searchValue AS CITEXT)) "
-            : "";
-
-        var endDateFilter = endDateTime.HasValue
-            ? "AND up.time_played < @endDateTime "
-            : "";
-
-        var userFilter = userIds != null
-            ? "AND up.user_id = ANY(@userIds) "
-            : "";
-
-        var orderColumn = orderType == OrderType.Listeners ? "ListenerCount" : "TotalPlaycount";
-        var thenByColumn = orderType == OrderType.Listeners ? "TotalPlaycount" : "ListenerCount";
-
-        var sql = "SELECT al.name AS AlbumName, " +
-                  "al.artist_name AS ArtistName, " +
-                  "agg.album_id AS AlbumId, " +
-                  "agg.TotalPlaycount, " +
-                  "agg.ListenerCount " +
-                  "FROM ( " +
-                  "    SELECT up.album_id, " +
-                  "           COUNT(*)::int AS TotalPlaycount, " +
-                  "           COUNT(DISTINCT up.user_id)::int AS ListenerCount " +
-                  "    FROM user_plays up " +
-                  "    INNER JOIN guild_users gu ON gu.user_id = up.user_id " +
-                  "    WHERE gu.guild_id = @guildId " +
-                  "      AND gu.bot != true " +
-                  "      AND up.time_played > @startDateTime " +
-                  $"      {endDateFilter}" +
-                  "      AND up.album_id IS NOT NULL " +
-                  $"      {artistFilter}" +
-                  $"      {userFilter}" +
-                  "      AND NOT up.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
-                  "      AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL) " +
-                  "    GROUP BY up.album_id " +
-                  $"    ORDER BY {orderColumn} DESC, {thenByColumn} DESC " +
-                  "    LIMIT @limit " +
-                  ") agg " +
-                  "INNER JOIN albums al ON al.id = agg.album_id " +
-                  $"ORDER BY agg.{orderColumn} DESC, agg.{thenByColumn} DESC";
-
-        DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        var albums = (await connection.QueryAsync<GuildAlbum>(sql, new
-        {
-            guildId,
-            startDateTime,
-            endDateTime,
-            searchValue,
-            limit,
-            userIds
-        }, commandTimeout: 300)).ToList();
+        var albums = await PlayRepository.GetGuildTopAlbumsPlays(guildId, startDateTime, orderType, searchValue,
+            endDateTime, limit, userIds, connection);
 
         if (userIds == null)
         {

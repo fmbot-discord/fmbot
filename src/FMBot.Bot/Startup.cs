@@ -334,6 +334,7 @@ public class Startup
             .AddSingleton<AdminService>()
             .AddSingleton<AlbumService>()
             .AddSingleton<AliasService>()
+            .AddSingleton<Core.AliasService>(sp => sp.GetRequiredService<AliasService>())
             .AddSingleton<ArtistsService>()
             .AddSingleton<CensorService>()
             .AddSingleton<ChartService>()
@@ -360,14 +361,22 @@ public class Startup
             .AddSingleton<ShortcutService>()
             .AddSingleton<SupporterService>()
             .AddSingleton<TemplateService>()
+            .AddSingleton<Core.ITimeEnrichment, GrpcTimeEnrichment>()
             .AddSingleton<TimeService>()
+            .AddSingleton<Core.ListeningTimeService>(sp => sp.GetRequiredService<TimeService>())
             .AddSingleton<TimerService>()
             .AddSingleton<TrackService>()
             .AddSingleton<UpdateService, UpdateService>()
+            .AddSingleton<Core.UpdateService>(sp => sp.GetRequiredService<UpdateService>())
+            .AddSingleton<Core.UserLookup>()
+            .AddSingleton<Core.GuildLookup>()
+            .AddSingleton<Core.MusicCensorService>()
+            .AddSingleton<Core.IdBackfillService>()
             .AddSingleton<UserService>()
             .AddSingleton<FmSettingService>()
             .AddSingleton<YoutubeService>()
-            .AddSingleton<IdResolutionService>();
+            .AddSingleton<IdResolutionService>()
+            .AddSingleton<Core.IIdResolver>(sp => sp.GetRequiredService<IdResolutionService>());
 
         // Guild-specific services
         services
@@ -387,6 +396,11 @@ public class Startup
         // WhoKnows services
         services
             .AddSingleton<WhoKnowsService>()
+            .AddSingleton<Core.GlobalWhoKnowsFilter>()
+            .AddSingleton<Core.AffinityService>()
+            .AddSingleton<Core.GenreService>(sp => sp.GetRequiredService<GenreService>())
+            .AddSingleton<Core.CountryService>(sp => sp.GetRequiredService<CountryService>())
+            .AddSingleton<Core.IPremiumGuildLookup, PremiumGuildLookup>()
             .AddSingleton<WhoKnowsAlbumService>()
             .AddSingleton<WhoKnowsArtistService>()
             .AddSingleton<WhoKnowsPlayService>()

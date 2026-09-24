@@ -11,7 +11,7 @@ using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
 using NetCord.Services.Commands;
-using Shared.Domain.Models;
+using FMBot.Persistence.Domain.Models;
 
 namespace FMBot.Bot.TextCommands;
 

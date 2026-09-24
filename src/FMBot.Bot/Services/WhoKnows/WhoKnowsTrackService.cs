@@ -40,57 +40,13 @@ public class WhoKnowsTrackService
             return new List<WhoKnowsObjectWithUser>();
         }
 
-        const string sql = "SELECT ut.user_id, " +
-                           "ut.playcount " +
-                           "FROM user_tracks AS ut " +
-                           "WHERE ut.track_id = @trackId " +
-                           "AND ut.user_id = ANY(SELECT user_id FROM guild_users WHERE guild_id = @guildId) " +
-                           "ORDER BY ut.playcount DESC";
-
-        DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        var userTracks = (await connection.QueryAsync<WhoKnowsTrackDto>(sql, new
-        {
-            guildId,
-            trackId = trackId.Value
-        })).ToList();
+        var whoKnowsTrackList =
+            await WhoKnowsRepository.GetIndexedUsersForTrack(guildUsers, guildId, trackId.Value, connection);
 
-        var whoKnowsTrackList = new List<WhoKnowsObjectWithUser>();
-
-        for (var i = 0; i < userTracks.Count; i++)
-        {
-            var userTrack = userTracks[i];
-
-            if (!guildUsers.TryGetValue(userTrack.UserId, out var guildUser))
-            {
-                continue;
-            }
-
-            var userName = guildUser.UserName ?? guildUser.UserNameLastFM;
-
-            if (discordGuild != null)
-            {
-                if (discordGuild.Users.TryGetValue(guildUser.DiscordUserId, out var discordUser))
-                {
-                    userName = discordUser.GetDisplayName();
-                }
-            }
-
-            whoKnowsTrackList.Add(new WhoKnowsObjectWithUser
-            {
-                DiscordName = userName,
-                Playcount = userTrack.Playcount,
-                LastFMUsername = guildUser.UserNameLastFM,
-                UserId = userTrack.UserId,
-                LastUsed = guildUser.LastUsed,
-                LastMessage = guildUser.LastMessage,
-                Roles = guildUser.Roles
-            });
-        }
-
-        return whoKnowsTrackList;
+        return whoKnowsTrackList.WithDiscordDisplayNames(discordGuild, guildUsers);
     }
 
     public async Task<IList<WhoKnowsObjectWithUser>> GetGlobalUsersForTrack(NetCord.Gateway.Guild discordGuild,
@@ -240,57 +196,15 @@ public class WhoKnowsTrackService
             return cachedTracks;
         }
 
-        var dbArgs = new DynamicParameters();
-        dbArgs.Add("guildId", guildId);
-
-        var orderColumn = orderType == OrderType.Playcount ? "total_playcount" : "listener_count";
-        var thenByColumn = orderType == OrderType.Playcount ? "listener_count" : "total_playcount";
-
-        var artistFilter = "";
-        if (!string.IsNullOrWhiteSpace(artistName))
-        {
-            artistFilter = "AND ut.track_id = ANY(SELECT id FROM tracks WHERE UPPER(artist_name) = UPPER(CAST(@artistName AS CITEXT))) ";
-            dbArgs.Add("artistName", artistName);
-        }
-
-        var userFilter = "";
-        if (userIds != null)
-        {
-            userFilter = "AND ut.user_id = ANY(@userIds) ";
-            dbArgs.Add("userIds", userIds);
-        }
-
-        var sql = "SELECT t.name AS track_name, t.artist_name, " +
-                  "agg.track_id, " +
-                  "agg.total_playcount, agg.listener_count " +
-                  "FROM ( " +
-                  "    SELECT ut.track_id, " +
-                  "           SUM(ut.playcount) AS total_playcount, " +
-                  "           COUNT(ut.user_id) AS listener_count " +
-                  "    FROM user_tracks AS ut " +
-                  "    INNER JOIN guild_users AS gu ON gu.user_id = ut.user_id " +
-                  "    WHERE gu.guild_id = @guildId AND gu.bot != true " +
-                  "    AND ut.track_id IS NOT NULL " +
-                  $"    {artistFilter}" +
-                  $"    {userFilter}" +
-                  "    AND NOT ut.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
-                  "    AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL) " +
-                  "    GROUP BY ut.track_id " +
-                  $"    ORDER BY {orderColumn} DESC, {thenByColumn} DESC " +
-                  "    LIMIT 120 " +
-                  ") agg " +
-                  "INNER JOIN tracks t ON t.id = agg.track_id " +
-                  $"ORDER BY agg.{orderColumn} DESC, agg.{thenByColumn} DESC";
-
-        DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        var results = (await connection.QueryAsync<GuildTrack>(sql, dbArgs)).ToList();
+        var results =
+            await WhoKnowsRepository.GetTopAllTimeTracksForGuild(guildId, orderType, artistName, userIds, connection);
 
         if (userIds == null)
         {
-            this._cache.Set<ICollection<GuildTrack>>(cacheKey, results, TimeSpan.FromMinutes(10));
+            this._cache.Set(cacheKey, results, TimeSpan.FromMinutes(10));
         }
 
         return results;

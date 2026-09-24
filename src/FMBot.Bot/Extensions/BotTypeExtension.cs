@@ -1,6 +1,6 @@
 using FMBot.Domain;
 using NetCord.Services.Commands;
-using Shared.Domain.Enums;
+using FMBot.Domain.Enums;
 
 namespace FMBot.Bot.Extensions;
 

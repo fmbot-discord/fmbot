@@ -278,10 +278,16 @@ public class WhoKnowsFilterService
                                     """;
 
         const string topShortTrackSql = """
-                                        SELECT ut.name, ut.artist_name, ut.playcount, t.duration_ms
+                                        SELECT ut.name, ut.artist_name, ut.playcount, d.duration_ms
                                         FROM user_tracks AS ut
-                                        JOIN tracks AS t ON t.id = ut.track_id
-                                        WHERE ut.user_id = @userId AND t.duration_ms > 0 AND t.duration_ms < 90000
+                                        JOIN LATERAL (
+                                            SELECT t.duration_ms
+                                            FROM tracks AS t
+                                            WHERE t.artist_name = ut.artist_name AND t.name = ut.name AND t.duration_ms > 0
+                                            ORDER BY t.id
+                                            LIMIT 1
+                                        ) AS d ON TRUE
+                                        WHERE ut.user_id = @userId AND ut.playcount >= 500 AND d.duration_ms < 90000
                                         ORDER BY ut.playcount DESC
                                         LIMIT 1
                                         """;

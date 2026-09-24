@@ -1,5 +1,5 @@
 using System;
-using Shared.Domain.Enums;
+using FMBot.Domain.Enums;
 
 namespace FMBot.Persistence.Domain.Models;
 

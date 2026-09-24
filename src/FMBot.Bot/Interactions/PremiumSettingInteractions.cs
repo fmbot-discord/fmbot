@@ -18,7 +18,6 @@ using FMBot.Domain.Models;
 using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ComponentInteractions;
-using Shared.Domain.Enums;
 
 namespace FMBot.Bot.Interactions;
 

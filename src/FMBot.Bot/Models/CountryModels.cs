@@ -25,12 +25,3 @@ public class CountryTimezoneInfo
     public string IsoAlpha2 { get; set; }
 }
 
-
-public class CountryInfo
-{
-    public string Name { get; set; }
-    public string Code { get; set; }
-    public string Emoji { get; set; }
-    public string Image { get; set; }
-    public List<string> Aliases { get; set; }
-}

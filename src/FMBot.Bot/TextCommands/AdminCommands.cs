@@ -34,7 +34,6 @@ using NetCord.Services.Commands;
 using NetCord;
 using Fergun.Interactive;
 using NetCord.Gateway;
-using Shared.Domain.Models;
 
 namespace FMBot.Bot.TextCommands;
 
@@ -1602,7 +1601,7 @@ public class AdminCommands(
                 return;
             }
 
-            var stripeSupporter = new StripeSupporter()
+            var stripeSupporter = new Persistence.Domain.Models.StripeSupporter()
             {
                 PurchaseSource = source
             };
@@ -2032,7 +2031,7 @@ public class AdminCommands(
                 new MessageProperties
                 {
                     Content =
-                        "Pick an embed type that you want to post. Currently available: `rules`, `gwkreporter`, `nsfwreporter`, `buysupporter`, `buylifetime` and `faq`"
+                        "Pick an embed type that you want to post. Currently available: `rules`, `gwkreporter`, `nsfwreporter`, `buysupporter`, `buylifetime`, `faq` and `activity`"
                 });
             return;
         }
@@ -2278,6 +2277,32 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties()
                 .AddEmbeds(this._embed)
                 .WithComponents([components]));
+        }
+
+        if (type == "activity")
+        {
+            var containers = new List<ComponentContainerProperties>
+            {
+                new()
+                {
+                    AccentColor = DiscordConstants.InformationColorBlue,
+                    Components =
+                    [
+                        new TextDisplayProperties("### .fmbot activity\n" +
+                                                  "See what everyone in this server is listening to, browse server charts and find members with similar taste."),
+                        new ComponentSeparatorProperties(),
+                        new ActionRowProperties().AddComponents(
+                            new ButtonProperties(InteractionConstants.LaunchActivity, "Open .fmbot", ButtonStyle.Primary))
+                    ]
+                }
+            };
+
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
+            {
+                Components = containers,
+                Flags = MessageFlags.IsComponentsV2,
+                AllowedMentions = AllowedMentionsProperties.None
+            });
         }
 
         if (type == "faq")

@@ -30,28 +30,6 @@ public class AlbumAutoCompleteSearchModel
     public int? Popularity { get; }
 }
 
-public class GuildAlbum
-{
-    public string ArtistName { get; set; }
-
-    public string AlbumName { get; set; }
-
-    public int? AlbumId { get; set; }
-
-    public int TotalPlaycount { get; set; }
-
-    public int ListenerCount { get; set; }
-}
-
-public class WhoKnowsAlbumDto
-{
-    public int UserId { get; set; }
-
-    public string UserNameLastFm { get; set; }
-
-    public int Playcount { get; set; }
-}
-
 public class WhoKnowsGlobalAlbumDto
 {
     public int UserId { get; set; }

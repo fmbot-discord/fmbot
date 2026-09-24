@@ -33,12 +33,12 @@ COPY ["src/FMBot.Images/FMBot.Images.csproj", "FMBot.Images/"]
 COPY ["src/FMBot.Persistence.Domain/FMBot.Persistence.Domain.csproj", "FMBot.Persistence.Domain/"]
 COPY ["src/FMBot.Domain/FMBot.Domain.csproj", "FMBot.Domain/"]
 COPY ["src/FMBot.Persistence/FMBot.Persistence.csproj", "FMBot.Persistence/"]
+COPY ["src/FMBot.Core/FMBot.Core.csproj", "FMBot.Core/"]
 COPY ["src/FMBot.Persistence.EntityFrameWork/FMBot.Persistence.EntityFrameWork.csproj", "FMBot.Persistence.EntityFrameWork/"]
 COPY ["src/FMBot.LastFM/FMBot.LastFM.csproj", "FMBot.LastFM/"]
 COPY ["src/FMBot.LastFM.Domain/FMBot.LastFM.Domain.csproj", "FMBot.LastFM.Domain/"]
 COPY ["src/FMBot.Subscriptions/FMBot.Subscriptions.csproj", "FMBot.Subscriptions/"]
 COPY ["src/FMBot.Discogs/FMBot.Discogs.csproj", "FMBot.Discogs/"]
-COPY ["src/Shared.Domain/Shared.Domain.csproj", "Shared.Domain/"]
 COPY ["src/FMBot.AppleMusic/FMBot.AppleMusic.csproj", "FMBot.AppleMusic/"]
 RUN dotnet restore "FMBot.Bot/FMBot.Bot.csproj"
 COPY src/ ./

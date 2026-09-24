@@ -40,8 +40,8 @@ public class IndexSlashCommands(
         try
         {
             var embed = new EmbedProperties();
-            var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
-            if (guild.LastIndexed > DateTime.UtcNow.AddMinutes(-1))
+            var lastIndex = await guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
+            if (lastIndex > DateTime.UtcNow.AddMinutes(-1))
             {
                 embed.WithColor(DiscordConstants.InformationColorBlue);
                 embed.WithDescription("This server has already been updated in the last minute, please wait.");

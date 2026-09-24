@@ -7,14 +7,13 @@ using Fergun.Interactive;
 using Fergun.Interactive.Pagination;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
+using FMBot.Bot.Services.Guild;
+using FMBot.Core;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
-using FMBot.Persistence.EntityFrameWork;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
 using NetCord.Rest;
 
 namespace FMBot.Bot.Services.WhoKnows;
@@ -30,13 +29,11 @@ public class WhoKnowsService
         return response;
     }
 
-    private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
-    private readonly IMemoryCache _cache;
+    private readonly GlobalWhoKnowsFilter _globalFilter;
 
-    public WhoKnowsService(IDbContextFactory<FMBotDbContext> contextFactory, IMemoryCache cache)
+    public WhoKnowsService(GlobalWhoKnowsFilter globalFilter)
     {
-        this._contextFactory = contextFactory;
-        this._cache = cache;
+        this._globalFilter = globalFilter;
     }
 
     public static async Task<IList<WhoKnowsObjectWithUser>> AddOrReplaceUserToIndexList(
@@ -94,28 +91,8 @@ public class WhoKnowsService
         int contextUserId,
         List<ulong> roles = null)
     {
-        var wkObjects = guildUsers.Select(s => new WhoKnowsObjectWithUser
-        {
-            DiscordName = s.Value.UserName,
-            LastFMUsername = s.Value.UserNameLastFM,
-            LastMessage = s.Value.LastMessage,
-            LastUsed = s.Value.LastUsed,
-            Name = s.Value.UserName,
-            Roles = s.Value.Roles,
-            UserId = s.Key
-        }).ToList();
-
-        var (stats, filteredUsers) = FilterWhoKnowsObjects(wkObjects, guildUsers, guild, contextUserId, roles);
-
-        var userIdsLeft = filteredUsers
-            .Select(s => s.UserId)
-            .ToHashSet();
-
-        var guildUsersLeft = guildUsers
-            .Where(w => userIdsLeft.Contains(w.Key))
-            .ToDictionary(d => d.Key, d => d.Value);
-
-        return (stats, guildUsersLeft);
+        return WhoKnowsFilter.FilterGuildUsers(guildUsers, guild,
+            PremiumGuildLookup.IsPremiumGuild(guild.DiscordGuildId), contextUserId, roles);
     }
 
     public static (FilterStats stats, List<WhoKnowsObjectWithUser> filteredUsers) FilterWhoKnowsObjects(
@@ -126,220 +103,17 @@ public class WhoKnowsService
         List<ulong> roles = null,
         bool filterDisabled = false)
     {
-        var stats = new FilterStats
-        {
-            StartCount = users.Count,
-            Roles = roles
-        };
-
-        if (filterDisabled)
-        {
-            if (guildUsers.Any(w => w.Value is { BlockedFromWhoKnows: true } or { SelfBlockFromWhoKnows: true }))
-            {
-                var usersToFilter = guildUsers
-                    .Where(w => w.Value.BlockedFromWhoKnows || w.Value.SelfBlockFromWhoKnows)
-                    .Select(s => s.Value.UserId)
-                    .ToHashSet();
-
-                var lastFmUsersToFilter = guildUsers
-                    .Where(w => w.Value.BlockedFromWhoKnows || w.Value.SelfBlockFromWhoKnows)
-                    .Select(s => s.Value.UserNameLastFM)
-                    .ToHashSet();
-
-                var insensitiveLastFmUsersToFilter = new HashSet<string>(
-                    lastFmUsersToFilter, StringComparer.OrdinalIgnoreCase);
-
-                users = users
-                    .Where(w => !usersToFilter.Contains(w.UserId) &&
-                                !insensitiveLastFmUsersToFilter.Contains(w.LastFMUsername))
-                    .ToList();
-            }
-
-            stats.EndCount = users.Count;
-            return (stats, users.ToList());
-        }
-
-        var premiumGuild = PublicProperties.PremiumServers.ContainsKey(guild.DiscordGuildId);
-
-        if (users.Select(s => s.UserId).Contains(contextUserId))
-        {
-            stats.RequesterFiltered = false;
-        }
-
-        if (guild.ActivityThresholdDays.HasValue)
-        {
-            var preFilterCount = users.Count;
-
-            users = users.Where(w =>
-                    w.LastUsed != null &&
-                    w.LastUsed >= DateTime.UtcNow.AddDays(-guild.ActivityThresholdDays.Value))
-                .ToList();
-
-            stats.ActivityThresholdFiltered = preFilterCount - users.Count;
-        }
-
-        if (premiumGuild && guild.UserActivityThresholdDays.HasValue)
-        {
-            var preFilterCount = users.Count;
-
-            users = users.Where(w =>
-                    w.LastMessage != null &&
-                    w.LastMessage >= DateTime.UtcNow.AddDays(-guild.UserActivityThresholdDays.Value))
-                .ToList();
-
-            stats.GuildActivityThresholdFiltered = preFilterCount - users.Count;
-        }
-
-        if (guildUsers.Any(w => w.Value is { BlockedFromWhoKnows: true } or { SelfBlockFromWhoKnows: true }))
-        {
-            var preFilterCount = users.Count;
-
-            var usersToFilter = guildUsers
-                .DistinctBy(d => d.Value.UserId)
-                .Where(w => w.Value.BlockedFromWhoKnows || w.Value.SelfBlockFromWhoKnows)
-                .Select(s => s.Value.UserId)
-                .ToHashSet();
-
-            var lastFmUsersToFilter = guildUsers
-                .DistinctBy(d => d.Value.UserNameLastFM, comparer: StringComparer.OrdinalIgnoreCase)
-                .Where(w => w.Value.BlockedFromWhoKnows || w.Value.SelfBlockFromWhoKnows)
-                .Select(s => s.Value.UserNameLastFM)
-                .ToHashSet();
-
-            var insensitiveLastFmUsersToFilter = new HashSet<string>(
-                lastFmUsersToFilter, StringComparer.OrdinalIgnoreCase);
-
-            users = users
-                .Where(w => !usersToFilter.Contains(w.UserId) &&
-                            !insensitiveLastFmUsersToFilter.Contains(w.LastFMUsername))
-                .ToList();
-
-            stats.BlockedFiltered = preFilterCount - users.Count;
-        }
-
-        if (premiumGuild && guild.AllowedRoles != null && guild.AllowedRoles.Any())
-        {
-            var preFilterCount = users.Count;
-
-            users = users
-                .Where(w => w.Roles != null && guild.AllowedRoles.Any(a => w.Roles.Contains(a)))
-                .ToList();
-
-            stats.AllowedRolesFiltered = preFilterCount - users.Count;
-        }
-
-        if (premiumGuild && guild.BlockedRoles != null && guild.BlockedRoles.Any())
-        {
-            var preFilterCount = users.Count;
-
-            users = users
-                .Where(w => w.Roles != null && !guild.BlockedRoles.Any(a => w.Roles.Contains(a)))
-                .ToList();
-
-            stats.BlockedRolesFiltered = preFilterCount - users.Count;
-        }
-
-        if (roles != null && roles.Any())
-        {
-            var preFilterCount = users.Count;
-
-            users = users
-                .Where(w => w.Roles != null && roles.Any(a => w.Roles.Contains(a)))
-                .ToList();
-
-            stats.ManualRoleFilter = preFilterCount - users.Count;
-        }
-
-        stats.EndCount = users.Count;
-
-        if (stats.RequesterFiltered.HasValue &&
-            !users.Select(s => s.UserId).Contains(contextUserId))
-        {
-            stats.RequesterFiltered = true;
-        }
-
-        return (stats, users.ToList());
+        return WhoKnowsFilter.FilterWhoKnowsObjects(users, guildUsers, guild,
+            PremiumGuildLookup.IsPremiumGuild(guild.DiscordGuildId), contextUserId, roles, filterDisabled);
     }
 
-    public async Task<IList<WhoKnowsObjectWithUser>> FilterGlobalUsersAsync(IEnumerable<WhoKnowsObjectWithUser> users,
+    public Task<IList<WhoKnowsObjectWithUser>> FilterGlobalUsersAsync(IEnumerable<WhoKnowsObjectWithUser> users,
         bool qualityFilterDisabled = false)
     {
-        if (qualityFilterDisabled)
-        {
-            return users.ToList();
-        }
-
-        var (insensitiveUserNames, userDatesToFilter) = await GetGlobalFilterSetsAsync();
-
-        return users
-            .Where(w =>
-                !insensitiveUserNames.Contains(w.LastFMUsername)
-                &&
-                !userDatesToFilter.Contains(w.RegisteredLastFm))
-            .ToList();
+        return this._globalFilter.FilterGlobalUsersAsync(users, qualityFilterDisabled);
     }
 
-    public const string GlobalFilterSetsCacheKey = "global-whoknows-filter-sets";
-
-    private async Task<(HashSet<string> FilteredUserNames, HashSet<DateTime?> FilteredRegisterDates)>
-        GetGlobalFilterSetsAsync()
-    {
-        const string cacheKey = GlobalFilterSetsCacheKey;
-        if (this._cache.TryGetValue(cacheKey,
-                out (HashSet<string>, HashSet<DateTime?>) cachedSets))
-        {
-            return cachedSets;
-        }
-
-        await using var db = await this._contextFactory.CreateDbContextAsync();
-        var bottedUsers = await db.BottedUsers
-            .AsNoTracking()
-            .Where(w => w.BanActive)
-            .ToListAsync();
-
-        var userNamesToFilter = bottedUsers
-            .DistinctBy(d => d.UserNameLastFM, StringComparer.OrdinalIgnoreCase)
-            .Select(s => s.UserNameLastFM)
-            .ToHashSet();
-
-        var insensitiveUserNames = new HashSet<string>(
-            userNamesToFilter, StringComparer.OrdinalIgnoreCase);
-
-        var userDatesToFilter = bottedUsers
-            .Where(w => w.LastFmRegistered != null)
-            .DistinctBy(d => d.LastFmRegistered)
-            .Select(s => s.LastFmRegistered)
-            .ToHashSet();
-
-        var existingFilterDate = DateTime.UtcNow.AddMonths(-3);
-        var existingRepeatOffenderFilterDate = DateTime.UtcNow.AddMonths(-6);
-        var filteredUsers = await db.GlobalFilteredUsers
-            .AsNoTracking()
-            .Where(w => w.OccurrenceEnd.HasValue
-                ? w.OccurrenceEnd.Value > (w.MonthLength == null || w.MonthLength == 3
-                    ? existingFilterDate
-                    : existingRepeatOffenderFilterDate)
-                : w.Created > (w.MonthLength == null || w.MonthLength == 3
-                    ? existingFilterDate
-                    : existingRepeatOffenderFilterDate))
-            .ToListAsync();
-
-        foreach (var filteredUser in filteredUsers)
-        {
-            insensitiveUserNames.Add(filteredUser.UserNameLastFm);
-
-            if (filteredUser.RegisteredLastFm.HasValue &&
-                !userDatesToFilter.Contains(filteredUser.RegisteredLastFm.Value))
-            {
-                userDatesToFilter.Add(filteredUser.RegisteredLastFm);
-            }
-        }
-
-        var sets = (insensitiveUserNames, userDatesToFilter);
-        this._cache.Set(cacheKey, sets, TimeSpan.FromMinutes(10));
-
-        return sets;
-    }
+    public const string GlobalFilterSetsCacheKey = GlobalWhoKnowsFilter.CacheKey;
 
     public static StringBuilder GetGlobalWhoKnowsFooter(StringBuilder footer, WhoKnowsSettings settings,
         ContextModel context)
@@ -370,13 +144,7 @@ public class WhoKnowsService
     public static IList<WhoKnowsObjectWithUser> ShowGuildMembersInGlobalWhoKnowsAsync(
         IList<WhoKnowsObjectWithUser> users, IDictionary<int, FullGuildUser> guildUsers)
     {
-        foreach (var user in users.Where(w => guildUsers.ContainsKey(w.UserId)))
-        {
-            user.PrivacyLevel = PrivacyLevel.Global;
-            user.SameServer = true;
-        }
-
-        return users;
+        return WhoKnowsFilter.ShowGuildMembersInGlobalWhoKnows(users, guildUsers);
     }
 
     public static string WhoKnowsListToString(IList<WhoKnowsObjectWithUser> whoKnowsObjects, int requestedUserId,

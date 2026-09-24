@@ -112,6 +112,19 @@ public class AlbumRepository
         });
     }
 
+    public static async Task<List<TopAlbum>> GetTopUserAlbums(int userId, int limit, NpgsqlConnection connection)
+    {
+        const string sql = "SELECT ua.name AS album_name, ua.artist_name, ua.playcount AS user_playcount, " +
+                           "COALESCE(a.spotify_image_url, a.lastfm_image_url) AS album_cover_url " +
+                           "FROM public.user_albums ua " +
+                           "LEFT JOIN public.albums a ON a.id = ua.album_id " +
+                           "WHERE ua.user_id = @userId ORDER BY ua.playcount DESC LIMIT @limit";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+
+        return (await connection.QueryAsync<TopAlbum>(sql, new { userId, limit })).ToList();
+    }
+
     public static async Task<int> GetUserAlbumCount(int userId, NpgsqlConnection connection)
     {
         const string sql = "SELECT COUNT(*) FROM public.user_albums WHERE user_id = @userId";
@@ -365,5 +378,17 @@ WHERE s.id = (
         });
 
         return albums.ToList();
+    }
+
+
+    public static async Task<List<EntityImageUrl>> GetImageUrlsForAlbumIds(int[] albumIds, NpgsqlConnection connection)
+    {
+        const string sql = "SELECT ab.id, ab.artist_name, ab.name, COALESCE(ab.spotify_image_url, ab.lastfm_image_url) AS image_url " +
+                           "FROM public.albums ab WHERE ab.id = ANY(@albumIds) " +
+                           "AND COALESCE(ab.spotify_image_url, ab.lastfm_image_url) IS NOT NULL";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+
+        return (await connection.QueryAsync<EntityImageUrl>(sql, new { albumIds })).ToList();
     }
 }

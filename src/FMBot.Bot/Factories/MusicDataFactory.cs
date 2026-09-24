@@ -690,6 +690,14 @@ public class MusicDataFactory(
             db.Entry(dbAlbum).State = EntityState.Modified;
         }
 
+        if (dbAlbum.Name != albumInfo.AlbumName)
+        {
+            dbAlbum.Name = albumInfo.AlbumName;
+            dbAlbum.LastfmDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+            db.Entry(dbAlbum).State = EntityState.Modified;
+            await db.SaveChangesAsync();
+        }
+
         if (!dbAlbum.ArtistId.HasValue)
         {
             var artist = await ArtistRepository.GetArtistForName(albumInfo.ArtistName, connection);
@@ -1159,6 +1167,13 @@ public class MusicDataFactory(
             if (dbTrack.LastFmUrl == null && trackInfo.TrackUrl != null)
             {
                 dbTrack.LastFmUrl = trackInfo.TrackUrl;
+                dbTrack.LastfmDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+                db.Entry(dbTrack).State = EntityState.Modified;
+            }
+
+            if (dbTrack.Name != trackInfo.TrackName)
+            {
+                dbTrack.Name = trackInfo.TrackName;
                 dbTrack.LastfmDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
                 db.Entry(dbTrack).State = EntityState.Modified;
             }

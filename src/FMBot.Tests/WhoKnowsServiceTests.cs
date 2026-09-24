@@ -1,5 +1,6 @@
 using FMBot.Bot.Models;
 using FMBot.Bot.Services;
+using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
@@ -189,6 +190,36 @@ public class WhoKnowsServiceTests
             Assert.That(premiumStats.GuildActivityThresholdFiltered, Is.EqualTo(1));
             Assert.That(premiumStats.AllowedRolesFiltered, Is.EqualTo(2));
             Assert.That(premiumStats.BlockedRolesFiltered, Is.EqualTo(1));
+        });
+    }
+
+    [Test]
+    public void Filter_BlockedRoles_KeepMembersWithoutStoredRolesInPremiumGuilds()
+    {
+        var guild = NewGuild();
+        guild.BlockedRoles = [200];
+        var users = new List<WhoKnowsObjectWithUser>
+        {
+            Wk(1, 50, roles: [100]),
+            Wk(2, 40, roles: [200]),
+            Wk(3, 30, roles: null)
+        };
+
+        MakeGuildPremium();
+        var (stats, filtered) = WhoKnowsService.FilterWhoKnowsObjects(users, Members(), guild, contextUserId: 1);
+        var (_, filteredGuildUsers) = GuildService.FilterGuildUsers(
+            new Dictionary<int, FullGuildUser>
+            {
+                [1] = Member(1, roles: [100]),
+                [2] = Member(2, roles: [200]),
+                [3] = Member(3, roles: null)
+            }, guild);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Ids(filtered), Is.EqualTo(new[] { 1, 3 }));
+            Assert.That(stats.BlockedRolesFiltered, Is.EqualTo(1));
+            Assert.That(filteredGuildUsers.Keys.Order(), Is.EqualTo(new[] { 1, 3 }));
         });
     }
 

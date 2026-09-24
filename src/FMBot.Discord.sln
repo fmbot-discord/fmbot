@@ -14,6 +14,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.LastFM", "FMBot.LastF
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.Persistence", "FMBot.Persistence\FMBot.Persistence.csproj", "{2A6ECC70-CF19-408F-B092-9530EE6DD06F}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.Core", "FMBot.Core\FMBot.Core.csproj", "{D2526CC9-D7E8-42DE-A893-31C36AF9FD0D}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.Persistence.Domain", "FMBot.Persistence.Domain\FMBot.Persistence.Domain.csproj", "{BE7C2F06-785E-4BCE-9413-3197ECBD9790}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.LastFM.Domain", "FMBot.LastFM.Domain\FMBot.LastFM.Domain.csproj", "{FE7500D8-093E-405A-B767-2A9C49D8DE7F}"
@@ -32,9 +34,46 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Web", "Web", "{8934F160-CC0
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Web.InternalApi", "..\..\fmbot-web-backend\src\Web.InternalApi\Web.InternalApi.csproj", "{B2464F03-8E0A-448E-AF32-2F67FBCEEC53}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Shared.Domain", "Shared.Domain\Shared.Domain.csproj", "{02842C9F-DB8F-41B7-93B1-529AB023488B}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Web.PublicApi", "..\..\fmbot-web-backend\src\Web.PublicApi\Web.PublicApi.csproj", "{ED57B400-E0FA-4A7C-8171-13F957F1693A}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Web.AppChannel", "Web.AppChannel", "{3C2A7D41-6F1B-4E8A-9B5D-1F0C2E7A8B61}"
+	ProjectSection(SolutionItems) = preProject
+		..\..\fmbot-web-backend\src\Web.AppChannel\.env.example = ..\..\fmbot-web-backend\src\Web.AppChannel\.env.example
+		..\..\fmbot-web-backend\src\Web.AppChannel\.gitignore = ..\..\fmbot-web-backend\src\Web.AppChannel\.gitignore
+		..\..\fmbot-web-backend\src\Web.AppChannel\index.html = ..\..\fmbot-web-backend\src\Web.AppChannel\index.html
+		..\..\fmbot-web-backend\src\Web.AppChannel\package.json = ..\..\fmbot-web-backend\src\Web.AppChannel\package.json
+		..\..\fmbot-web-backend\src\Web.AppChannel\README.md = ..\..\fmbot-web-backend\src\Web.AppChannel\README.md
+		..\..\fmbot-web-backend\src\Web.AppChannel\tsconfig.json = ..\..\fmbot-web-backend\src\Web.AppChannel\tsconfig.json
+		..\..\fmbot-web-backend\src\Web.AppChannel\vite.config.ts = ..\..\fmbot-web-backend\src\Web.AppChannel\vite.config.ts
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{5E9B1C22-7A3D-4F6E-8C1A-2D4F6B8E0A73}"
+	ProjectSection(SolutionItems) = preProject
+		..\..\fmbot-web-backend\src\Web.AppChannel\src\actions.ts = ..\..\fmbot-web-backend\src\Web.AppChannel\src\actions.ts
+		..\..\fmbot-web-backend\src\Web.AppChannel\src\api.ts = ..\..\fmbot-web-backend\src\Web.AppChannel\src\api.ts
+		..\..\fmbot-web-backend\src\Web.AppChannel\src\discord.ts = ..\..\fmbot-web-backend\src\Web.AppChannel\src\discord.ts
+		..\..\fmbot-web-backend\src\Web.AppChannel\src\events.ts = ..\..\fmbot-web-backend\src\Web.AppChannel\src\events.ts
+		..\..\fmbot-web-backend\src\Web.AppChannel\src\main.ts = ..\..\fmbot-web-backend\src\Web.AppChannel\src\main.ts
+		..\..\fmbot-web-backend\src\Web.AppChannel\src\state.ts = ..\..\fmbot-web-backend\src\Web.AppChannel\src\state.ts
+		..\..\fmbot-web-backend\src\Web.AppChannel\src\timing.ts = ..\..\fmbot-web-backend\src\Web.AppChannel\src\timing.ts
+		..\..\fmbot-web-backend\src\Web.AppChannel\src\style.css = ..\..\fmbot-web-backend\src\Web.AppChannel\src\style.css
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ui", "ui", "{4B7E2F19-3D8C-4A61-9E5B-6C2D8F1A3E97}"
+	ProjectSection(SolutionItems) = preProject
+		..\..\fmbot-web-backend\src\Web.AppChannel\src\ui\charts.ts = ..\..\fmbot-web-backend\src\Web.AppChannel\src\ui\charts.ts
+		..\..\fmbot-web-backend\src\Web.AppChannel\src\ui\html.ts = ..\..\fmbot-web-backend\src\Web.AppChannel\src\ui\html.ts
+		..\..\fmbot-web-backend\src\Web.AppChannel\src\ui\live.ts = ..\..\fmbot-web-backend\src\Web.AppChannel\src\ui\live.ts
+		..\..\fmbot-web-backend\src\Web.AppChannel\src\ui\shell.ts = ..\..\fmbot-web-backend\src\Web.AppChannel\src\ui\shell.ts
+		..\..\fmbot-web-backend\src\Web.AppChannel\src\ui\taste.ts = ..\..\fmbot-web-backend\src\Web.AppChannel\src\ui\taste.ts
+		..\..\fmbot-web-backend\src\Web.AppChannel\src\ui\whoknows.ts = ..\..\fmbot-web-backend\src\Web.AppChannel\src\ui\whoknows.ts
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "public", "public", "{7A1D3E44-9C5F-4B2A-A3E6-3F5A7C9D1B85}"
+	ProjectSection(SolutionItems) = preProject
+		..\..\fmbot-web-backend\src\Web.AppChannel\public\favicon.png = ..\..\fmbot-web-backend\src\Web.AppChannel\public\favicon.png
+		..\..\fmbot-web-backend\src\Web.AppChannel\public\logo.png = ..\..\fmbot-web-backend\src\Web.AppChannel\public\logo.png
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FMBot.AppleMusic", "FMBot.AppleMusic\FMBot.AppleMusic.csproj", "{EB6E0F72-42BE-4246-A355-EE68139BA368}"
 EndProject
@@ -60,6 +99,10 @@ Global
 		{2A6ECC70-CF19-408F-B092-9530EE6DD06F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2A6ECC70-CF19-408F-B092-9530EE6DD06F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2A6ECC70-CF19-408F-B092-9530EE6DD06F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D2526CC9-D7E8-42DE-A893-31C36AF9FD0D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D2526CC9-D7E8-42DE-A893-31C36AF9FD0D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D2526CC9-D7E8-42DE-A893-31C36AF9FD0D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D2526CC9-D7E8-42DE-A893-31C36AF9FD0D}.Release|Any CPU.Build.0 = Release|Any CPU
 		{BE7C2F06-785E-4BCE-9413-3197ECBD9790}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{BE7C2F06-785E-4BCE-9413-3197ECBD9790}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BE7C2F06-785E-4BCE-9413-3197ECBD9790}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -91,10 +134,6 @@ Global
 		{B2464F03-8E0A-448E-AF32-2F67FBCEEC53}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{B2464F03-8E0A-448E-AF32-2F67FBCEEC53}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B2464F03-8E0A-448E-AF32-2F67FBCEEC53}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{02842C9F-DB8F-41B7-93B1-529AB023488B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{02842C9F-DB8F-41B7-93B1-529AB023488B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{02842C9F-DB8F-41B7-93B1-529AB023488B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{02842C9F-DB8F-41B7-93B1-529AB023488B}.Release|Any CPU.Build.0 = Release|Any CPU
 		{ED57B400-E0FA-4A7C-8171-13F957F1693A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{ED57B400-E0FA-4A7C-8171-13F957F1693A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{ED57B400-E0FA-4A7C-8171-13F957F1693A}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -108,8 +147,11 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{B2464F03-8E0A-448E-AF32-2F67FBCEEC53} = {8934F160-CC0F-4C75-B7EA-BAD9B7977371}
-		{02842C9F-DB8F-41B7-93B1-529AB023488B} = {8934F160-CC0F-4C75-B7EA-BAD9B7977371}
 		{ED57B400-E0FA-4A7C-8171-13F957F1693A} = {8934F160-CC0F-4C75-B7EA-BAD9B7977371}
+		{3C2A7D41-6F1B-4E8A-9B5D-1F0C2E7A8B61} = {8934F160-CC0F-4C75-B7EA-BAD9B7977371}
+		{5E9B1C22-7A3D-4F6E-8C1A-2D4F6B8E0A73} = {3C2A7D41-6F1B-4E8A-9B5D-1F0C2E7A8B61}
+		{7A1D3E44-9C5F-4B2A-A3E6-3F5A7C9D1B85} = {3C2A7D41-6F1B-4E8A-9B5D-1F0C2E7A8B61}
+		{4B7E2F19-3D8C-4A61-9E5B-6C2D8F1A3E97} = {5E9B1C22-7A3D-4F6E-8C1A-2D4F6B8E0A73}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {8048CCF2-244E-48E9-ABAC-87AB5DBEA77C}

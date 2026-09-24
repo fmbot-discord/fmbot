@@ -438,6 +438,8 @@ public static class InteractionConstants
         public const string JumbleShowStats = "jumble-showstats";
     }
 
+    public const string LaunchActivity = "launch-activity";
+
     public static class Faq
     {
         public const string Overview = "faq-overview";

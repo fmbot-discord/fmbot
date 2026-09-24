@@ -10,7 +10,7 @@ using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain.Models;
 using NetCord;
 using NetCord.Rest;
-using Shared.Domain.Models;
+using FMBot.Persistence.Domain.Models;
 using SpotifyAPI.Web;
 
 namespace FMBot.Bot.Builders;

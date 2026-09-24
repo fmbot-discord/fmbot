@@ -12,6 +12,7 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
+using FMBot.Core;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
@@ -392,47 +393,23 @@ public class ArtistsService
         int amount, Localizer localizer, string timeDescription, string mainUser, string userToCompare,
         string typeColumn, string noMatches)
     {
-        var artistsToShow = ArtistsToShow(leftUserArtists, rightUserArtists);
+        var matches = TasteCalculator.GetMatches(leftUserArtists, rightUserArtists, StringComparer.Ordinal);
 
-        var artists = artistsToShow.Select(s =>
+        var description = new StringBuilder();
+        description.AppendLine($"{Description(leftUserArtists, localizer, timeDescription, matches.Count)}");
+
+        if (matches.Count > 0)
         {
-            var ownPlaycount = s.Playcount;
-            var otherPlaycount = rightUserArtists.First(f => f.Name == s.Name).Playcount;
-
-            return new TasteTwoUserModel
+            var artists = TasteCalculator.SelectRows(matches, amount).Select(s => new TasteTwoUserModel
             {
                 Artist = !string.IsNullOrWhiteSpace(s.Name) && s.Name.Length > AllowedCharacterCount(s.Name)
                     ? $"{s.Name.Substring(0, AllowedCharacterCount(s.Name) - 2)}.."
                     : s.Name,
-                OwnPlaycount = ownPlaycount,
-                OtherPlaycount = otherPlaycount
-            };
+                OwnPlaycount = s.OwnPlaycount,
+                OtherPlaycount = s.OtherPlaycount
+            });
 
-            static int AllowedCharacterCount(string name)
-            {
-                return (StringExtensions.ContainsUnicodeCharacter(name) ? 10 : 18);
-            }
-        }).ToList();
-
-        var description = new StringBuilder();
-        description.AppendLine($"{Description(leftUserArtists, localizer, timeDescription, artistsToShow)}");
-
-        var filterAmount = 0;
-        for (var i = 0; i < 100; i++)
-        {
-            if (artists.Count(w => w.OwnPlaycount >= i && w.OtherPlaycount >= i) <= amount)
-            {
-                filterAmount = i;
-                break;
-            }
-        }
-
-        artists = artists.Where(w => w.OwnPlaycount >= filterAmount && w.OtherPlaycount >= filterAmount).ToList();
-
-        if (artistsToShow.Count > 0)
-        {
             var customTable = artists
-                .Take(amount)
                 .ToTasteTable([typeColumn, mainUser, "   ", userToCompare],
                     u => u.Artist,
                     u => u.OwnPlaycount,
@@ -448,43 +425,28 @@ public class ArtistsService
             description.AppendLine(noMatches);
         }
 
-        return (description.ToString(), artistsToShow.Count);
+        return (description.ToString(), matches.Count);
+
+        static int AllowedCharacterCount(string name)
+        {
+            return (StringExtensions.ContainsUnicodeCharacter(name) ? 10 : 18);
+        }
     }
 
-    private static string Description(IEnumerable<TasteItem> mainUserArtists, Localizer localizer, string timeDescription,
-        IReadOnlyCollection<TasteItem> matchedArtists)
+    private static string Description(IReadOnlyCollection<TasteItem> mainUserArtists, Localizer localizer, string timeDescription,
+        int matchCount)
     {
-        decimal percentage;
+        var percentage = TasteCalculator.MatchPercentage(mainUserArtists.Count, matchCount);
 
-        if (!mainUserArtists.Any() || !matchedArtists.Any())
-        {
-            percentage = 0;
-        }
-        else
-        {
-            percentage = ((decimal)matchedArtists.Count / (decimal)mainUserArtists.Count()) * 100;
-        }
-
-        return localizer.TranslateCount("taste.matchStats", matchedArtists.Count,
+        return localizer.TranslateCount("taste.matchStats", matchCount,
             ("percentage", percentage.ToString("0.0", CultureInfo.InvariantCulture)),
-            ("total", mainUserArtists.Count().Format(localizer.NumberFormat)),
+            ("total", mainUserArtists.Count.Format(localizer.NumberFormat)),
             ("period", timeDescription));
     }
 
     private static string GetCompareChar(long ownPlaycount, long otherPlaycount)
     {
         return ownPlaycount == otherPlaycount ? " • " : ownPlaycount > otherPlaycount ? " > " : " < ";
-    }
-
-    private static List<TasteItem> ArtistsToShow(IEnumerable<TasteItem> leftUserArtists,
-        IEnumerable<TasteItem> rightUserArtists)
-    {
-        var artistsToShow =
-            leftUserArtists
-                .Where(w => rightUserArtists.Any(a => a.Name == w.Name))
-                .OrderByDescending(o => o.Playcount)
-                .ToList();
-        return artistsToShow;
     }
 
     public EmbedSize SetTasteEmbedSize(string extraOptions)

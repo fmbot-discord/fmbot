@@ -2894,7 +2894,7 @@ public class ArtistBuilders
                     $"**{CalculateAffinityPercentage(neighbor.Value.TotalPoints, self.TotalPoints)}** — " +
                     $"**{StringExtensions.MarkdownLink(StringExtensions.Sanitize(guildUser?.UserName), LastfmUrlExtensions.GetUserUrl(guildUser?.UserNameLastFM))}** — " +
                     $"`{CalculateAffinityPercentage(neighbor.Value.ArtistPoints, self.ArtistPoints)}` artists, " +
-                    $"`{CalculateAffinityPercentage(neighbor.Value.GenrePoints, self.GenrePoints)}` genres, " +
+                    $"`{CalculateAffinityPercentage(neighbor.Value.GenrePoints, self.GenrePoints, 1)}` genres, " +
                     $"`{CalculateAffinityPercentage(neighbor.Value.CountryPoints, self.CountryPoints, 1)}` countries");
             }
 
