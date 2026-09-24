@@ -59,7 +59,7 @@ public class CensorService
         return result.HasBadWord;
     }
 
-    public async Task<CensorResult> IsSafeForChannel(NetCord.Gateway.Guild guild, NetCord.Channel channel, string albumName, string artistName, string url, EmbedProperties embedToUpdate = null)
+    public async Task<CensorResult> IsSafeForChannel(NetCord.Channel channel, string albumName, string artistName, string url, EmbedProperties embedToUpdate = null)
     {
         var result = await AlbumResult(albumName, artistName);
         if (result == CensorResult.NotSafe)
@@ -69,7 +69,7 @@ public class CensorService
             return result;
         }
 
-        if (result == CensorResult.Nsfw && (guild == null || ((TextGuildChannel)channel).Nsfw))
+        if (result == CensorResult.Nsfw && channel.NsfwAllowed())
         {
             return CensorResult.Safe;
         }
@@ -77,7 +77,7 @@ public class CensorService
         return result;
     }
 
-    public async Task<CensorResult> IsSafeForChannel(NetCord.Gateway.Guild guild, NetCord.Channel channel, string artistName, EmbedProperties embedToUpdate = null)
+    public async Task<CensorResult> IsSafeForChannel(NetCord.Channel channel, string artistName, EmbedProperties embedToUpdate = null)
     {
         var result = await ArtistResult(artistName);
         if (result == CensorResult.NotSafe)
@@ -86,7 +86,7 @@ public class CensorService
             return result;
         }
 
-        if (result == CensorResult.Nsfw && (guild == null || ((TextGuildChannel)channel).Nsfw))
+        if (result == CensorResult.Nsfw && channel.NsfwAllowed())
         {
             return CensorResult.Safe;
         }

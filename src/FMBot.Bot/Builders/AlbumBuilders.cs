@@ -167,8 +167,7 @@ public class AlbumBuilders
         var showThumbnail = false;
         if (albumCoverUrl != null)
         {
-            var safeForChannelTask = this._censorService.IsSafeForChannel(context.DiscordGuild,
-                context.DiscordChannel,
+            var safeForChannelTask = this._censorService.IsSafeForChannel(context.DiscordChannel,
                 albumSearch.Album.AlbumName, albumSearch.Album.ArtistName, albumSearch.Album.AlbumUrl);
             var accentColorTask = this._albumService.GetAccentColorWithAlbum(context,
                 albumCoverUrl, databaseAlbum?.Id, albumSearch.Album.AlbumName, albumSearch.Album.ArtistName,
@@ -504,8 +503,7 @@ public class AlbumBuilders
 
         if (albumCoverUrl != null)
         {
-            var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild,
-                context.DiscordChannel,
+            var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordChannel,
                 albumSearch.Album.AlbumName, albumSearch.Album.ArtistName, albumSearch.Album.AlbumUrl);
             if (safeForChannel == CensorService.CensorResult.Safe)
             {
@@ -701,8 +699,7 @@ public class AlbumBuilders
 
         if (albumCoverUrl != null)
         {
-            var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild,
-                context.DiscordChannel,
+            var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordChannel,
                 albumSearch.Album.AlbumName, albumSearch.Album.ArtistName, albumSearch.Album.AlbumUrl);
             if (safeForChannel == CensorService.CensorResult.Safe)
             {
@@ -854,8 +851,7 @@ public class AlbumBuilders
 
         if (albumCoverUrl != null)
         {
-            var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild,
-                context.DiscordChannel,
+            var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordChannel,
                 albumSearch.Album.AlbumName, albumSearch.Album.ArtistName, albumSearch.Album.AlbumUrl);
             if (safeForChannel == CensorService.CensorResult.Safe)
             {
@@ -1503,7 +1499,7 @@ public class AlbumBuilders
             return response;
         }
 
-        var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel,
+        var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordChannel,
             albumSearch.Album.AlbumName, albumSearch.Album.ArtistName, albumSearch.Album.AlbumUrl, response.Embed);
 
         if (safeForChannel == CensorService.CensorResult.NotSafe)

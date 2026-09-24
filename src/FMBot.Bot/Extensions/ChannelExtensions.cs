@@ -22,6 +22,13 @@ public static class ChannelExtensions
         return channelsInCategory;
     }
 
+    public static bool NsfwAllowed(this Channel channel) => channel switch
+    {
+        DMChannel => true,
+        TextGuildChannel textGuildChannel => textGuildChannel.Nsfw,
+        _ => false
+    };
+
     private static int ChannelGroup(IGuildChannel type) => type switch
     {
         VoiceGuildChannel or StageGuildChannel => 2,

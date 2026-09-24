@@ -554,8 +554,7 @@ public class PlayBuilder
 
                     if (albumCoverUrl != null)
                     {
-                        var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild,
-                            context.DiscordChannel,
+                        var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordChannel,
                             currentTrack.AlbumName, currentTrack.ArtistName, albumCoverUrl);
                         if (safeForChannel != CensorService.CensorResult.Safe)
                         {
@@ -1757,8 +1756,7 @@ public class PlayBuilder
             : mileStonePlay.Content.AlbumCoverUrl;
         if (albumCoverUrl != null)
         {
-            var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild,
-                context.DiscordChannel,
+            var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordChannel,
                 mileStonePlay.Content.AlbumName, mileStonePlay.Content.ArtistName, albumCoverUrl);
             if (safeForChannel == CensorService.CensorResult.Safe)
             {

@@ -8,6 +8,7 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain;
+using FMBot.Bot.Extensions;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
@@ -319,7 +320,7 @@ public class ChartBuilders
         ChartService.AddSettingsToDescription(chartSettings, embedDescription, supporter, context.Prefix,
             context.Localizer);
 
-        var nsfwAllowed = context.DiscordGuild == null || ((TextGuildChannel)context.DiscordChannel).Nsfw;
+        var nsfwAllowed = context.DiscordChannel.NsfwAllowed();
         using var chart = await this._chartService.GenerateChartAsync(chartSettings);
 
         if (chartSettings.CensoredItems is > 0)
@@ -542,7 +543,7 @@ public class ChartBuilders
         ChartService.AddSettingsToDescription(chartSettings, embedDescription, supporter, context.Prefix,
             context.Localizer);
 
-        var nsfwAllowed = context.DiscordGuild == null || ((TextGuildChannel)context.DiscordChannel).Nsfw;
+        var nsfwAllowed = context.DiscordChannel.NsfwAllowed();
         using var chart = await this._chartService.GenerateChartAsync(chartSettings);
 
         if (chartSettings.CensoredItems is > 0)

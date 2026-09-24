@@ -507,7 +507,7 @@ public class GenreBuilders
             var sectionText = $"{headerText}\n{genreDescription.ToString().TrimEnd()}";
 
             var safeForChannel =
-                await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel, artist.Name);
+                await this._censorService.IsSafeForChannel(context.DiscordChannel, artist.Name);
             if (artist.SpotifyImageUrl != null && safeForChannel == CensorService.CensorResult.Safe)
             {
                 var accentColor = await this._artistsService.GetArtistAccentColorAsync(
@@ -574,7 +574,7 @@ public class GenreBuilders
                 var sectionText = $"{headerText}\n{genreDescription.ToString().TrimEnd()}";
 
                 var safeForChannel =
-                    await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel,
+                    await this._censorService.IsSafeForChannel(context.DiscordChannel,
                         artist.Name);
                 if (artist.SpotifyImageUrl != null && safeForChannel == CensorService.CensorResult.Safe)
                 {
