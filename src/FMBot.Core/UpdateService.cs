@@ -195,7 +195,7 @@ public class UpdateService
 
             await connection.CloseAsync();
 
-            recentTracks.Content.NewRecentTracksAmount = 0;
+            recentTracks.Content = recentTracks.Content with { NewRecentTracksAmount = 0 };
             return recentTracks;
         }
 
@@ -205,8 +205,11 @@ public class UpdateService
                 await PlayRepository.InsertLatestPlays(recentTracks.Content.RecentTracks, user.UserId, connection,
                     this._idResolver.ResolvePlayIds);
 
-            recentTracks.Content.NewRecentTracksAmount = playUpdate.NewPlays.Count;
-            recentTracks.Content.RemovedRecentTracksAmount = playUpdate.RemovedPlays.Count;
+            recentTracks.Content = recentTracks.Content with
+            {
+                NewRecentTracksAmount = playUpdate.NewPlays.Count,
+                RemovedRecentTracksAmount = playUpdate.RemovedPlays.Count
+            };
 
             if (!playUpdate.NewPlays.Any())
             {
@@ -216,8 +219,11 @@ public class UpdateService
 
                 if (!user.TotalPlaycount.HasValue)
                 {
-                    recentTracks.Content.TotalAmount = await SetOrUpdateUserPlaycount(user, playUpdate.NewPlays.Count,
-                        connection, totalPlaycountCorrect ? recentTracks.Content.TotalAmount : null);
+                    recentTracks.Content = recentTracks.Content with
+                    {
+                        TotalAmount = await SetOrUpdateUserPlaycount(user, playUpdate.NewPlays.Count,
+                            connection, totalPlaycountCorrect ? recentTracks.Content.TotalAmount : null)
+                    };
                 }
                 else if (totalPlaycountCorrect)
                 {
@@ -226,7 +232,7 @@ public class UpdateService
                 }
                 else
                 {
-                    recentTracks.Content.TotalAmount = user.TotalPlaycount.Value;
+                    recentTracks.Content = recentTracks.Content with { TotalAmount = user.TotalPlaycount.Value };
                 }
 
                 await connection.CloseAsync();
@@ -244,8 +250,11 @@ public class UpdateService
 
             this._cache.Set(cacheKey, true, TimeSpan.FromSeconds(1));
 
-            recentTracks.Content.TotalAmount = await SetOrUpdateUserPlaycount(user, playUpdate.NewPlays.Count,
-                connection, totalPlaycountCorrect ? recentTracks.Content.TotalAmount : null);
+            recentTracks.Content = recentTracks.Content with
+            {
+                TotalAmount = await SetOrUpdateUserPlaycount(user, playUpdate.NewPlays.Count,
+                    connection, totalPlaycountCorrect ? recentTracks.Content.TotalAmount : null)
+            };
 
             var newPlayArtistNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var artist in playUpdate.NewPlays.GroupBy(g => g.ArtistName.ToLower()))

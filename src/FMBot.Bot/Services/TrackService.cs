@@ -719,7 +719,7 @@ public class TrackService
 
     public record AudioFeaturesOverview(int Total, InternalTrackAudioFeatures Average);
 
-    public async Task<AudioFeaturesOverview> GetAverageTrackAudioFeaturesForTopTracks(List<TopTrack> topTracks)
+    public async Task<AudioFeaturesOverview> GetAverageTrackAudioFeaturesForTopTracks(IReadOnlyList<TopTrack> topTracks)
     {
         var averageAudioFeatures = new InternalTrackAudioFeatures();
 

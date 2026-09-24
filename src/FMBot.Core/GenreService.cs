@@ -165,7 +165,7 @@ public class GenreService
             .ToList();
     }
 
-    public async Task<List<TopGenre>> GetArtistsForGenres(IEnumerable<string> selectedGenres, List<TopArtist> topArtists)
+    public async Task<List<TopGenre>> GetArtistsForGenres(IEnumerable<string> selectedGenres, IReadOnlyList<TopArtist> topArtists)
     {
         await using var connection = await OpenConnection();
         return await GenreRepository.GetArtistsForGenres(selectedGenres, topArtists, connection);

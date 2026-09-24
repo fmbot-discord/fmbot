@@ -1389,7 +1389,7 @@ public class UserInteractions(
             {
                 topArtists =
                     (await dataSourceFactory.GetTopArtistsAsync(userSettings.UserNameLastFm, timeSettings, 20))
-                    ?.Content?.TopArtists;
+                    ?.Content?.TopArtists?.ToList();
             }
 
             List<TopTrack> topTracks;
@@ -1402,7 +1402,7 @@ public class UserInteractions(
             {
                 topTracks =
                     (await dataSourceFactory.GetTopTracksAsync(userSettings.UserNameLastFm, timeSettings, 20))
-                    ?.Content?.TopTracks;
+                    ?.Content?.TopTracks?.ToList();
             }
 
             if (topArtists == null || !topArtists.Any() || topTracks == null || !topTracks.Any())

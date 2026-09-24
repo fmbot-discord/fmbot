@@ -975,13 +975,19 @@ public class PlayBuilder
 
         if (!string.IsNullOrWhiteSpace(artistToFilter))
         {
-            recentTracks.Content.RecentTracks = recentTracks.Content.RecentTracks
-                .Where(w => artistToFilter.Equals(w.ArtistName, StringComparison.OrdinalIgnoreCase)).ToList();
+            recentTracks.Content = recentTracks.Content with
+            {
+                RecentTracks = recentTracks.Content.RecentTracks
+                    .Where(w => artistToFilter.Equals(w.ArtistName, StringComparison.OrdinalIgnoreCase)).ToList()
+            };
         }
 
         if (!SupporterService.IsSupporter(userSettings.UserType))
         {
-            recentTracks.Content.RecentTracks = recentTracks.Content.RecentTracks.Take(479).ToList();
+            recentTracks.Content = recentTracks.Content with
+            {
+                RecentTracks = recentTracks.Content.RecentTracks.Take(479).ToList()
+            };
         }
 
         var trackPages = recentTracks.Content.RecentTracks

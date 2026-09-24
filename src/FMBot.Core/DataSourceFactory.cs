@@ -134,7 +134,7 @@ public class DataSourceFactory : IDataSourceFactory
 
             if (total.HasValue)
             {
-                recentTracks.Content.TotalAmount = total.Value;
+                recentTracks.Content = recentTracks.Content with { TotalAmount = total.Value };
             }
         }
 

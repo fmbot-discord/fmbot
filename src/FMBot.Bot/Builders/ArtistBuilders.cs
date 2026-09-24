@@ -1394,7 +1394,7 @@ public class ArtistBuilders
             var totalPlays = await this._dataSourceFactory.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm,
                 timeSettings.TimeFrom,
                 userSettings.SessionKeyLastFm, timeSettings.TimeUntil);
-            artists.Content.TopArtists = await this._artistsService.FillArtistImages(artists.Content.TopArtists);
+            await this._artistsService.FillArtistImages(artists.Content.TopArtists);
 
             var firstArtistImage =
                 artists.Content.TopArtists.FirstOrDefault(f => f.ArtistImageUrl != null)?.ArtistImageUrl;
@@ -2537,8 +2537,8 @@ public class ArtistBuilders
 
     private async Task EnrichTasteRawDataAsync(
         TasteRawData rawData,
-        List<TopArtist> ownTopArtistsFull,
-        List<TopArtist> otherTopArtistsFull,
+        IReadOnlyList<TopArtist> ownTopArtistsFull,
+        IReadOnlyList<TopArtist> otherTopArtistsFull,
         Persistence.Domain.Models.User ownUserWithDiscogs,
         Persistence.Domain.Models.User otherUserWithDiscogs)
     {

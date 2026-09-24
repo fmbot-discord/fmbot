@@ -140,10 +140,13 @@ public class ChartBuilders
 
             if (chartSettings.FilteredArtist != null)
             {
-                albums.Content.TopAlbums = albums.Content.TopAlbums
-                    .Where(f => f.ArtistName.Equals(chartSettings.FilteredArtist.Name,
-                        StringComparison.OrdinalIgnoreCase))
-                    .ToList();
+                albums.Content = albums.Content with
+                {
+                    TopAlbums = albums.Content.TopAlbums
+                        .Where(f => f.ArtistName.Equals(chartSettings.FilteredArtist.Name,
+                            StringComparison.OrdinalIgnoreCase))
+                        .ToList()
+                };
             }
         }
 
@@ -152,9 +155,12 @@ public class ChartBuilders
             var artistsInGenres = await this._genreService.GetArtistsInGenres(
                 albums.Content.TopAlbums.Select(f => f.ArtistName), chartSettings.FilteredGenres);
 
-            albums.Content.TopAlbums = albums.Content.TopAlbums
-                .Where(f => artistsInGenres.Contains(f.ArtistName))
-                .ToList();
+            albums.Content = albums.Content with
+            {
+                TopAlbums = albums.Content.TopAlbums
+                    .Where(f => artistsInGenres.Contains(f.ArtistName))
+                    .ToList()
+            };
         }
 
         if (albums?.Content?.TopAlbums == null || albums.Content.TopAlbums.Count < chartSettings.ImagesNeeded)
@@ -224,8 +230,7 @@ public class ChartBuilders
                 topAllTimeDb = topAllTimeDb.Where(f => artistsInGenres.Contains(f.ArtistName)).ToList();
             }
 
-            albums.Content.TopAlbums = topAllTimeDb;
-            albums.Content.TotalAmount = topAllTimeDb.Count;
+            albums.Content = albums.Content with { TopAlbums = topAllTimeDb, TotalAmount = topAllTimeDb.Count };
         }
 
         if (chartSettings.ReleaseYearFilter.HasValue)
@@ -275,12 +280,10 @@ public class ChartBuilders
             }
         }
 
-        var topAlbums = albums.Content.TopAlbums;
-
         var imagesToRequest = chartSettings.ImagesNeeded + extraAlbums;
-        topAlbums = topAlbums.Take(imagesToRequest).ToList();
+        var topAlbums = albums.Content.TopAlbums.Take(imagesToRequest).ToList();
 
-        topAlbums = await this._albumService.PreferStoredAlbumCovers(topAlbums);
+        await this._albumService.PreferStoredAlbumCovers(topAlbums);
 
         var albumsWithoutImage = topAlbums.Where(f => f.AlbumCoverUrl == null).ToList();
 
@@ -438,7 +441,7 @@ public class ChartBuilders
         var artists = await this._dataSourceFactory.GetTopArtistsAsync(userSettings.UserNameLastFm,
             chartSettings.TimeSettings, imagesToRequest, useCache: true);
 
-        var topArtists = artists?.Content?.TopArtists ?? [];
+        var topArtists = artists?.Content?.TopArtists?.ToList() ?? [];
 
         if (chartSettings.HasGenreFilter && topArtists.Count != 0)
         {
@@ -485,7 +488,7 @@ public class ChartBuilders
 
         topArtists = topArtists.Take(chartSettings.ImagesNeeded + extraArtists).ToList();
 
-        topArtists = await this._artistService.FillArtistImages(topArtists);
+        await this._artistService.FillArtistImages(topArtists);
 
         var artistsWithoutImages = topArtists.Where(w => w.ArtistImageUrl == null).ToList();
 

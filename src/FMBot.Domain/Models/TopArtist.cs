@@ -3,14 +3,14 @@ using System.Collections.Generic;
 
 namespace FMBot.Domain.Models;
 
-public class TopArtistList
+public record TopArtistList
 {
-    public long? TotalAmount { get; set; }
+    public long? TotalAmount { get; init; }
 
-    public string UserUrl { get; set; }
-    public string UserTopArtistsUrl { get; set; }
+    public string UserUrl { get; init; }
+    public string UserTopArtistsUrl { get; init; }
 
-    public List<TopArtist> TopArtists { get; set; }
+    public IReadOnlyList<TopArtist> TopArtists { get; init; }
 }
 
 public class TopArtist

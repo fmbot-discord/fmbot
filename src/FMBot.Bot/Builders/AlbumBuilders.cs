@@ -1691,7 +1691,7 @@ public class AlbumBuilders
                 : await this._albumService.GetUserAllTimeTopAlbumsByReleaseDecade(userSettings.UserId,
                     topListSettings.ReleaseDecadeFilter.Value);
 
-            albums.Content.TopAlbums = topAllTimeDb;
+            albums.Content = albums.Content with { TopAlbums = topAllTimeDb };
         }
 
         if (topListSettings.ReleaseYearFilter.HasValue)
@@ -1714,7 +1714,7 @@ public class AlbumBuilders
             var totalPlays = await this._dataSourceFactory.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm,
                 timeSettings.TimeFrom,
                 userSettings.SessionKeyLastFm, timeSettings.TimeUntil);
-            albums.Content.TopAlbums = await this._albumService.FillMissingAlbumCovers(albums.Content.TopAlbums);
+            await this._albumService.FillMissingAlbumCovers(albums.Content.TopAlbums);
 
             var firstAlbumImage =
                 albums.Content.TopAlbums.FirstOrDefault(f => f.AlbumCoverUrl != null)?.AlbumCoverUrl;
