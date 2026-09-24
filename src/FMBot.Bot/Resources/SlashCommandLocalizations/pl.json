@@ -25,7 +25,7 @@
       }
     },
     "albumplays": {
-      "description": "Pokazuje liczbę playów dla obecnego albumu lub tego, którego szukasz",
+      "description": "Pokazuje liczbę odtworzeń obecnego albumu lub tego, którego szukasz",
       "parameters": {
         "album": {
           "description": "Album do wyszukania (domyślnie aktualnie odtwarzany)"
@@ -36,13 +36,13 @@
       }
     },
     "albumtracks": {
-      "description": "Pokazuje liczby playów utworów z albumu, którego słuchasz lub szukasz",
+      "description": "Pokazuje liczby odtworzeń utworów z albumu, którego słuchasz lub szukasz",
       "parameters": {
         "album": {
           "description": "Album do wyszukania (domyślnie aktualnie odtwarzany)"
         },
         "playcount-order": {
-          "description": "Czy lista ma być posortowana według liczby playów"
+          "description": "Czy lista ma być posortowana według liczby odtworzeń"
         },
         "user": {
           "description": "Użytkownik do wyświetlenia (domyślnie ty)"
@@ -53,7 +53,7 @@
       "description": "Przeszukuj Apple Music",
       "parameters": {
         "private": {
-          "description": "Pokaż odpowiedź tylko tobie"
+          "description": "Odpowiedź widoczna tylko dla ciebie"
         },
         "search": {
           "description": "Szukana fraza"
@@ -103,10 +103,10 @@
       }
     },
     "artistpace": {
-      "description": "Pokazuje szacowaną datę osiągnięcia danej liczby playów artysty",
+      "description": "Pokazuje szacowaną datę osiągnięcia danej liczby odtworzeń artysty",
       "parameters": {
         "amount": {
-          "description": "Docelowa liczba playów"
+          "description": "Docelowa liczba odtworzeń"
         },
         "artist": {
           "description": "Artysta do wyszukania (domyślnie aktualnie odtwarzany)"
@@ -115,7 +115,7 @@
           "description": "Przełącz przekierowania nazw artystów Last.fm (domyślnie włączone)"
         },
         "time-period": {
-          "description": "Okres do obliczenia średniej liczby playów"
+          "description": "Okres do obliczenia średniej liczby odtworzeń"
         },
         "user": {
           "description": "Użytkownik do wyświetlenia (domyślnie ty)"
@@ -123,7 +123,7 @@
       }
     },
     "artistplays": {
-      "description": "Pokazuje liczbę playów dla obecnego artysty lub tego, którego szukasz",
+      "description": "Pokazuje liczbę odtworzeń obecnego artysty lub tego, którego szukasz",
       "parameters": {
         "artist": {
           "description": "Artysta do wyszukania (domyślnie aktualnie odtwarzany)"
@@ -180,7 +180,7 @@
               "description": "Ukryj single z chartu"
             },
             "private": {
-              "description": "Pokaż odpowiedź tylko tobie"
+              "description": "Odpowiedź widoczna tylko dla ciebie"
             },
             "rainbow": {
               "description": "Eksperymentalne ustawienie tęczy"
@@ -195,7 +195,7 @@
               "description": "Rozmiar chartu"
             },
             "skip": {
-              "description": "Pomiń albumy bez grafiki"
+              "description": "Pomiń albumy bez okładki"
             },
             "time-period": {
               "description": "Okres"
@@ -212,7 +212,7 @@
           "description": "Generuje chart ze zdjęciami artystów",
           "parameters": {
             "private": {
-              "description": "Pokaż odpowiedź tylko tobie"
+              "description": "Odpowiedź widoczna tylko dla ciebie"
             },
             "rainbow": {
               "description": "Eksperymentalne ustawienie tęczy"
@@ -221,7 +221,7 @@
               "description": "Rozmiar chartu"
             },
             "skip": {
-              "description": "Pomiń artystów bez grafiki"
+              "description": "Pomiń artystów bez zdjęcia"
             },
             "time-period": {
               "description": "Okres"
@@ -265,7 +265,7 @@
       "description": "Generuje mapę lokalizacji twoich top artystów",
       "parameters": {
         "private": {
-          "description": "Pokaż odpowiedź tylko tobie"
+          "description": "Odpowiedź widoczna tylko dla ciebie"
         },
         "theme": {
           "description": "Motyw kolorystyczny mapy"
@@ -318,7 +318,7 @@
           "description": "Typ odpowiedzi - domyślny zmienisz przez /mode"
         },
         "private": {
-          "description": "Pokaż odpowiedź tylko tobie"
+          "description": "Odpowiedź widoczna tylko dla ciebie"
         },
         "size": {
           "description": "Liczba odkryć artystów na stronę"
@@ -382,7 +382,7 @@
       "description": "Udostępnia link do tekstu na Genius dla tego, czego słuchasz, lub wyszukanego utworu",
       "parameters": {
         "private": {
-          "description": "Pokaż odpowiedź tylko tobie"
+          "description": "Odpowiedź widoczna tylko dla ciebie"
         },
         "search": {
           "description": "Utwór do wyszukania (domyślnie: to, czego słuchasz)"
@@ -390,10 +390,10 @@
       }
     },
     "lastfm": {
-      "description": "Pokazuje link do Twojego profilu Last.fm lub profilu innej osoby",
+      "description": "Pokazuje link do twojego lub czyjegoś profilu Last.fm",
       "parameters": {
         "private": {
-          "description": "Pokaż odpowiedź tylko tobie"
+          "description": "Odpowiedź widoczna tylko dla ciebie"
         },
         "user": {
           "description": "Użytkownik do wyświetlenia (domyślnie ty)"
@@ -419,7 +419,7 @@
           "description": "Typ odpowiedzi - domyślny zmienisz przez /mode"
         },
         "private": {
-          "description": "Pokaż odpowiedź tylko tobie"
+          "description": "Odpowiedź widoczna tylko dla ciebie"
         },
         "redirects": {
           "description": "Przełącz przekierowania nazw artystów Last.fm (domyślnie włączone)"
@@ -436,7 +436,7 @@
           "description": "Typ odpowiedzi - domyślny zmienisz przez /mode"
         },
         "private": {
-          "description": "Pokaż odpowiedź tylko tobie"
+          "description": "Odpowiedź widoczna tylko dla ciebie"
         }
       }
     },
@@ -447,7 +447,7 @@
           "description": "Typ odpowiedzi - domyślny zmienisz przez /mode"
         },
         "private": {
-          "description": "Pokaż odpowiedź tylko tobie"
+          "description": "Odpowiedź widoczna tylko dla ciebie"
         },
         "search": {
           "description": "Gatunek lub artysta do wyświetlenia"
@@ -461,7 +461,7 @@
           "description": "Typ odpowiedzi - domyślny zmienisz przez /mode"
         },
         "private": {
-          "description": "Pokaż odpowiedź tylko tobie"
+          "description": "Odpowiedź widoczna tylko dla ciebie"
         },
         "track": {
           "description": "Utwór do wyszukania (domyślnie aktualnie odtwarzany)"
@@ -475,7 +475,7 @@
           "description": "Typ odpowiedzi - domyślny zmienisz przez /mode"
         },
         "private": {
-          "description": "Pokaż odpowiedź tylko tobie"
+          "description": "Odpowiedź widoczna tylko dla ciebie"
         },
         "size": {
           "description": "Liczba przerw w słuchaniu na stronę"
@@ -562,7 +562,7 @@
           "description": "Komenda, której szczegóły chcesz zobaczyć"
         },
         "private": {
-          "description": "Pokaż odpowiedź tylko tobie"
+          "description": "Odpowiedź widoczna tylko dla ciebie"
         }
       }
     },
@@ -570,7 +570,7 @@
       "description": "Pokazuje twoją górę lodową na podstawie popularności artystów",
       "parameters": {
         "private": {
-          "description": "Pokaż odpowiedź tylko tobie"
+          "description": "Odpowiedź widoczna tylko dla ciebie"
         },
         "time-period": {
           "description": "Okres"
@@ -700,7 +700,7 @@
       "description": "Oznacza utwór, którego słuchasz lub szukasz, jako ulubiony na Last.fm",
       "parameters": {
         "private": {
-          "description": "Pokaż odpowiedź tylko tobie"
+          "description": "Odpowiedź widoczna tylko dla ciebie"
         },
         "track": {
           "description": "Utwór do oznaczenia jako ulubiony (domyślnie aktualnie odtwarzany)"
@@ -711,7 +711,7 @@
       "description": "Utwory oznaczone jako ulubione na Last.fm",
       "parameters": {
         "private": {
-          "description": "Pokaż odpowiedź tylko tobie"
+          "description": "Odpowiedź widoczna tylko dla ciebie"
         },
         "user": {
           "description": "Użytkownik do wyświetlenia (domyślnie ty)"
@@ -749,7 +749,10 @@
       "description": "Co zrobić, gdy twoje Last.fm nie jest zsynchronizowane ze Spotify",
       "parameters": {
         "private": {
-          "description": "Pokaż odpowiedź tylko tobie"
+          "description": "Odpowiedź widoczna tylko dla ciebie"
+        },
+        "user": {
+          "description": "Użytkownik do sprawdzenia (domyślnie ty)"
         }
       }
     },
@@ -779,7 +782,7 @@
       }
     },
     "play": {
-      "description": "Odtwarza utwór na Twoim Spotify lub wznawia odtwarzanie, gdy nic nie podasz",
+      "description": "Odtwarza utwór na twoim Spotify lub wznawia odtwarzanie, gdy nic nie podasz",
       "parameters": {
         "search": {
           "description": "Utwór lub link Spotify do odtworzenia (zostaw puste, aby wznowić odtwarzanie)"
@@ -834,7 +837,7 @@
       "description": "Pokazuje paragon z utworami, na wzór Receiptify",
       "parameters": {
         "private": {
-          "description": "Pokaż odpowiedź tylko tobie"
+          "description": "Odpowiedź widoczna tylko dla ciebie"
         },
         "time-period": {
           "description": "Okres"
@@ -876,7 +879,7 @@
       "description": "Scrobbluje utwór na Last.fm",
       "parameters": {
         "private": {
-          "description": "Pokaż odpowiedź tylko tobie"
+          "description": "Odpowiedź widoczna tylko dla ciebie"
         },
         "track": {
           "description": "Utwór do zescrobblowania"
@@ -974,7 +977,7 @@
       "description": "Przeszukuj Spotify",
       "parameters": {
         "private": {
-          "description": "Pokaż odpowiedź tylko tobie"
+          "description": "Odpowiedź widoczna tylko dla ciebie"
         },
         "search": {
           "description": "Szukana fraza"
@@ -1010,7 +1013,7 @@
       "description": "Porównuje twoich top artystów, gatunki i kraje z innym użytkownikiem",
       "parameters": {
         "private": {
-          "description": "Pokaż odpowiedź tylko tobie"
+          "description": "Odpowiedź widoczna tylko dla ciebie"
         },
         "size": {
           "description": "Liczba porównań do pokazania"
@@ -1042,7 +1045,7 @@
               "description": "Typ odpowiedzi - domyślny zmienisz przez /mode"
             },
             "private": {
-              "description": "Pokaż odpowiedź tylko tobie"
+              "description": "Odpowiedź widoczna tylko dla ciebie"
             },
             "released": {
               "description": "Filtruj do albumów wydanych w roku"
@@ -1071,7 +1074,7 @@
               "description": "Typ odpowiedzi - domyślny zmienisz przez /mode"
             },
             "private": {
-              "description": "Pokaż odpowiedź tylko tobie"
+              "description": "Odpowiedź widoczna tylko dla ciebie"
             },
             "size": {
               "description": "Liczba artystów do pokazania"
@@ -1094,7 +1097,7 @@
               "description": "Typ odpowiedzi - domyślny zmienisz przez /mode"
             },
             "private": {
-              "description": "Pokaż odpowiedź tylko tobie"
+              "description": "Odpowiedź widoczna tylko dla ciebie"
             },
             "size": {
               "description": "Liczba krajów do pokazania"
@@ -1117,7 +1120,7 @@
               "description": "Typ odpowiedzi - domyślny zmienisz przez /mode"
             },
             "private": {
-              "description": "Pokaż odpowiedź tylko tobie"
+              "description": "Odpowiedź widoczna tylko dla ciebie"
             },
             "size": {
               "description": "Liczba gatunków do pokazania"
@@ -1140,7 +1143,7 @@
               "description": "Typ odpowiedzi - domyślny zmienisz przez /mode"
             },
             "private": {
-              "description": "Pokaż odpowiedź tylko tobie"
+              "description": "Odpowiedź widoczna tylko dla ciebie"
             },
             "size": {
               "description": "Liczba utworów do pokazania"
@@ -1172,7 +1175,7 @@
       }
     },
     "trackplays": {
-      "description": "Pokazuje liczbę playów dla obecnego utworu lub tego, którego szukasz",
+      "description": "Pokazuje liczbę odtworzeń obecnego utworu lub tego, którego szukasz",
       "parameters": {
         "track": {
           "description": "Utwór do wyszukania (domyślnie aktualnie odtwarzany)"
@@ -1194,7 +1197,7 @@
       "description": "Usuwa utwór, którego słuchasz lub szukasz, z twoich ulubionych utworów",
       "parameters": {
         "private": {
-          "description": "Pokaż odpowiedź tylko tobie"
+          "description": "Odpowiedź widoczna tylko dla ciebie"
         },
         "track": {
           "description": "Utwór do usunięcia (domyślnie aktualnie odtwarzany)"
@@ -1300,7 +1303,7 @@
       "description": "Przeszukuj YouTube",
       "parameters": {
         "private": {
-          "description": "Pokaż odpowiedź tylko tobie"
+          "description": "Odpowiedź widoczna tylko dla ciebie"
         },
         "search": {
           "description": "Szukana fraza"

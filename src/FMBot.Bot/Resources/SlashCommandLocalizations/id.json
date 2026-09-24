@@ -368,7 +368,7 @@
       }
     },
     "fm": {
-      "description": "Now Playing - Menampilkan lagu saat ini milik kamu atau orang lain",
+      "description": "Now Playing - Menampilkan lagu yang sedang diputar olehmu atau orang lain",
       "parameters": {
         "embed-type": {
           "description": "Jenis embed yang digunakan, juga bisa diatur sebagai pengaturan"
@@ -506,7 +506,7 @@
       "description": "🎁 Hadiahkan supporter ke pengguna lain",
       "parameters": {
         "user": {
-          "description": "Pengguna yang ingin kamu hadiahkan supporter"
+          "description": "Pengguna yang ingin kamu beri hadiah supporter"
         }
       }
     },
@@ -678,7 +678,7 @@
       "description": "Tambahkan lagu ke lagu yang kamu sukai di Spotify",
       "parameters": {
         "search": {
-          "description": "Lagu yang disukai (default: yang sedang kamu putar)"
+          "description": "Lagu yang ingin kamu sukai (default: yang sedang kamu putar)"
         }
       }
     },
@@ -697,18 +697,18 @@
       "description": "Memberikan link untuk menghubungkan akun Last.fm kamu ke .fmbot"
     },
     "love": {
-      "description": "Menyukai lagu yang sedang kamu dengarkan atau cari di Last.fm",
+      "description": "Memfavoritkan lagu yang sedang kamu dengarkan atau cari di Last.fm",
       "parameters": {
         "private": {
           "description": "Hanya tampilkan respons ke kamu"
         },
         "track": {
-          "description": "Lagu yang ingin kamu sukai (default: yang sedang diputar)"
+          "description": "Lagu yang ingin kamu favoritkan (default: yang sedang diputar)"
         }
       }
     },
     "loved": {
-      "description": "Lagu yang kamu sukai di Last.fm",
+      "description": "Lagu favoritmu di Last.fm",
       "parameters": {
         "private": {
           "description": "Hanya tampilkan respons ke kamu"
@@ -750,6 +750,9 @@
       "parameters": {
         "private": {
           "description": "Hanya tampilkan respons ke kamu"
+        },
+        "user": {
+          "description": "Pengguna yang ingin diperiksa (default: kamu sendiri)"
         }
       }
     },
@@ -1191,7 +1194,7 @@
       }
     },
     "unlove": {
-      "description": "Menghapus lagu yang sedang kamu dengarkan atau cari dari lagu yang kamu sukai",
+      "description": "Menghapus lagu yang sedang kamu dengarkan atau cari dari lagu favoritmu",
       "parameters": {
         "private": {
           "description": "Hanya tampilkan respons ke kamu"

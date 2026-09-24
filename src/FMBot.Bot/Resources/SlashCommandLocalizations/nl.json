@@ -379,13 +379,13 @@
       }
     },
     "genius": {
-      "description": "Deelt een Genius-songtekstlink voor wat je luistert of een nummer waar je naar zoekt",
+      "description": "Deelt een Genius-songtekstlink voor de track waar je naar luistert of die je zoekt",
       "parameters": {
         "private": {
           "description": "Toon de reactie alleen aan jou"
         },
         "search": {
-          "description": "Nummer om op te zoeken (standaard: wat je nu afspeelt)"
+          "description": "Track om op te zoeken (standaard wat je nu speelt)"
         }
       }
     },
@@ -556,7 +556,7 @@
       }
     },
     "help": {
-      "description": "Hulpoverzicht en details voor elk .fmbot commando",
+      "description": "Hulpoverzicht en details voor elk .fmbot-commando",
       "parameters": {
         "command": {
           "description": "Commando om details voor te bekijken"
@@ -750,6 +750,9 @@
       "parameters": {
         "private": {
           "description": "Toon de reactie alleen aan jou"
+        },
+        "user": {
+          "description": "De gebruiker om te controleren (standaard jijzelf)"
         }
       }
     },
@@ -779,10 +782,10 @@
       }
     },
     "play": {
-      "description": "Speelt een nummer af op je Spotify, of hervat het afspelen als je niets opgeeft",
+      "description": "Speelt een track af op je Spotify, of hervat het afspelen als je niets opgeeft",
       "parameters": {
         "search": {
-          "description": "Nummer of Spotify-link om af te spelen (laat leeg om het afspelen te hervatten)"
+          "description": "Track of Spotify-link om af te spelen (laat leeg om het afspelen te hervatten)"
         }
       }
     },
@@ -901,7 +904,7 @@
       "description": "Verwijdert een blokkade die je jezelf met selfblock hebt opgelegd in deze server"
     },
     "server": {
-      "description": "Server billboard-commando's",
+      "description": "Billboard-commando's voor je server",
       "subcommands": {
         "albums": {
           "description": "Top albums voor je server",

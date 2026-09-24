@@ -287,7 +287,7 @@
       }
     },
     "crown": {
-      "description": "Bir sanatçının crown'unu kimin tuttuğu ve onu çalıp çalamayacağın",
+      "description": "Bir sanatçının crown'unun kimde olduğunu ve onu çalıp çalamayacağını gösterir",
       "parameters": {
         "artist": {
           "description": "Aramak istediğin sanatçı (varsayılan: şu an çalan)"
@@ -385,7 +385,7 @@
           "description": "Yanıtı yalnızca sana göster"
         },
         "search": {
-          "description": "Aranacak parça (varsayılan: şu an çaldığın)"
+          "description": "Aranacak parça (varsayılan: şu an çalan)"
         }
       }
     },
@@ -750,6 +750,9 @@
       "parameters": {
         "private": {
           "description": "Yanıtı yalnızca sana göster"
+        },
+        "user": {
+          "description": "Kontrol edilecek kullanıcı (varsayılan: sen)"
         }
       }
     },
@@ -999,7 +1002,7 @@
           "description": "Sonuçları filtrelemek istediğin sanatçı"
         },
         "editmode": {
-          "description": "Düzenleyici modunu aç veya kapat"
+          "description": "Düzenleme modunu aç veya kapat"
         },
         "user": {
           "description": "Gösterilecek kullanıcı (varsayılan: sen)"

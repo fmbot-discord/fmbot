@@ -357,7 +357,7 @@
       "description": "Mostra o que está em destaque agora (e o avatar do bot)"
     },
     "featuredlog": {
-      "description": "Mostra o histórico de destaques seu ou de outra pessoa",
+      "description": "Mostra o seu histórico de destaques ou o de outra pessoa",
       "parameters": {
         "user": {
           "description": "O usuário para ver o histórico de destaques (padrão: você)"
@@ -368,7 +368,7 @@
       }
     },
     "fm": {
-      "description": "Tocando agora - Mostra a faixa atual sua ou de outra pessoa",
+      "description": "Tocando agora - Mostra a sua faixa atual ou a de outra pessoa",
       "parameters": {
         "embed-type": {
           "description": "O tipo de embed a usar, também pode ser configurado nas configurações"
@@ -379,7 +379,7 @@
       }
     },
     "genius": {
-      "description": "Compartilha um link de letra do Genius do que você está ouvindo ou de uma faixa que buscar",
+      "description": "Compartilha um link de letra do Genius do que você está ouvindo ou de uma faixa que você buscar",
       "parameters": {
         "private": {
           "description": "Mostrar a resposta só para você"
@@ -469,7 +469,7 @@
       }
     },
     "gaps": {
-      "description": "⭐ Músicas que você voltou a ouvir depois de um tempo",
+      "description": "⭐ Artistas, álbuns ou faixas que você voltou a ouvir depois de um tempo",
       "parameters": {
         "mode": {
           "description": "O tipo de resposta que você quer - mude o padrão com /mode"
@@ -481,7 +481,7 @@
           "description": "Quantidade de intervalos de escuta a mostrar por página"
         },
         "type": {
-          "description": "Tipo de intervalo musical"
+          "description": "Tipo de intervalo de escuta"
         },
         "user": {
           "description": "O usuário a mostrar (padrão: você)"
@@ -750,6 +750,9 @@
       "parameters": {
         "private": {
           "description": "Mostrar a resposta só para você"
+        },
+        "user": {
+          "description": "O usuário a verificar (padrão: você)"
         }
       }
     },
@@ -804,7 +807,7 @@
       "description": "Muda sua visibilidade para outros usuários do .fmbot no Global WhoKnows"
     },
     "profile": {
-      "description": "Mostra o perfil seu ou de outra pessoa",
+      "description": "Mostra o seu perfil ou o de outra pessoa",
       "parameters": {
         "user": {
           "description": "O usuário a mostrar (padrão: você)"
@@ -845,7 +848,7 @@
       }
     },
     "recent": {
-      "description": "Mostra as faixas recentes suas ou de outra pessoa",
+      "description": "Mostra as suas faixas recentes ou as de outra pessoa",
       "parameters": {
         "artist": {
           "description": "Artista pelo qual você quer filtrar"
@@ -993,7 +996,7 @@
       }
     },
     "streaks": {
-      "description": "Mostra o histórico de sequências seu ou de outra pessoa",
+      "description": "Mostra o seu histórico de sequências ou o de outra pessoa",
       "parameters": {
         "artist": {
           "description": "O artista pelo qual você quer filtrar os resultados"
@@ -1019,12 +1022,12 @@
           "description": "Período"
         },
         "user": {
-          "description": "O usuário para comparar seu gosto"
+          "description": "O usuário com quem comparar seu gosto"
         }
       }
     },
     "top": {
-      "description": "Listas top - Artistas/Álbuns/Faixas/Gêneros/Países",
+      "description": "Tops - Artistas/Álbuns/Faixas/Gêneros/Países",
       "subcommands": {
         "albums": {
           "description": "Mostra seus top álbuns",

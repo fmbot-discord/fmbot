@@ -293,7 +293,7 @@
           "description": "Der Künstler, den du suchst (Standard: was gerade läuft)"
         },
         "user": {
-          "description": "Der Nutzer, den du mit dem Crown-Halter vergleichst (Standard: du selbst)"
+          "description": "Der Nutzer, den du mit dem Crown-Inhaber vergleichst (standardmäßig du selbst)"
         }
       }
     },
@@ -750,6 +750,9 @@
       "parameters": {
         "private": {
           "description": "Antwort nur dir anzeigen"
+        },
+        "user": {
+          "description": "Der zu prüfende Nutzer (standardmäßig du selbst)"
         }
       }
     },
@@ -765,7 +768,7 @@
       }
     },
     "pace": {
-      "description": "Zeigt das voraussichtliche Datum, an dem du dein Scrobble-Ziel erreichst",
+      "description": "Zeigt, wann du dein Scrobble-Ziel voraussichtlich erreichst, basierend auf deinem Tagesdurchschnitt",
       "parameters": {
         "amount": {
           "description": "Ziel-Anzahl an Scrobbles"

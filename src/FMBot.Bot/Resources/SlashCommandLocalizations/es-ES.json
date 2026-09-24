@@ -332,7 +332,7 @@
       }
     },
     "discoverydate": {
-      "description": "⭐ Muestra la fecha en que descubriste el artista, el álbum y la canción",
+      "description": "⭐ Muestra la fecha en que descubriste al artista, el álbum y la canción",
       "parameters": {
         "track": {
           "description": "La canción que quieres buscar (por defecto, lo que estás escuchando)"
@@ -343,10 +343,10 @@
       }
     },
     "eurovision": {
-      "description": "Ver el resumen de Eurovision de un año y/o un país",
+      "description": "Ver el resumen de Eurovisión de un año y/o un país",
       "parameters": {
         "country": {
-          "description": "País de Eurovision"
+          "description": "País de Eurovisión"
         },
         "year": {
           "description": "Año (de 1956 a hoy)"
@@ -481,7 +481,7 @@
           "description": "Cantidad de pausas de escucha a mostrar por página"
         },
         "type": {
-          "description": "Tipo de pausa musical"
+          "description": "Tipo de pausa de escucha"
         },
         "user": {
           "description": "El usuario a mostrar (por defecto, tú)"
@@ -675,7 +675,7 @@
       }
     },
     "like": {
-      "description": "Añade una canción a tus canciones que te gustan de Spotify",
+      "description": "Añade una canción a «Canciones que te gustan» en Spotify",
       "parameters": {
         "search": {
           "description": "Canción a la que dar me gusta (por defecto, lo que estás escuchando)"
@@ -750,6 +750,9 @@
       "parameters": {
         "private": {
           "description": "Mostrar la respuesta solo a ti"
+        },
+        "user": {
+          "description": "El usuario a comprobar (por defecto, tú)"
         }
       }
     },
