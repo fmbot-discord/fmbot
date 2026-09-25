@@ -1919,8 +1919,8 @@ public class TrackBuilders
         }
 
         var commandExecutedCount = await this._userService.GetCommandExecutedAmount(context.ContextUser.UserId,
-            "scrobble", DateTime.UtcNow.AddMinutes(-30));
-        var maxCount = SupporterService.IsSupporter(context.ContextUser.UserType) ? 25 : 12;
+            "scrobble", DateTime.UtcNow.AddMinutes(-20));
+        var maxCount = SupporterService.IsSupporter(context.ContextUser.UserType) ? 18 : 12;
 
         if (commandExecutedCount > maxCount)
         {

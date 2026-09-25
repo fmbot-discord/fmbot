@@ -322,10 +322,8 @@ public class TimerService : IDisposable
                     ]
                 };
 
-                var count = this._client.Count;
-                for (var i = 0; i < count; i++)
+                foreach (var client in this._client)
                 {
-                    var client = this._client[i];
                     await client.UpdatePresenceAsync(newPresence);
                 }
             }

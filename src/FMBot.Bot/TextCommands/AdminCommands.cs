@@ -1975,7 +1975,7 @@ public class AdminCommands(
             var shardIndex = (int)guildId.Value;
             if (shardIndex < client1.Count)
             {
-                shard = client1[shardIndex];
+                shard = client1.ToList()[shardIndex];
             }
         }
         else
