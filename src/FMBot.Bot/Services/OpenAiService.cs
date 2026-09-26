@@ -112,7 +112,7 @@ public class OpenAiService(
             },
             Reasoning = new ReasoningConfig
             {
-                Effort = "none",
+                Effort = "low",
                 Summary = "auto"
             }
         };
