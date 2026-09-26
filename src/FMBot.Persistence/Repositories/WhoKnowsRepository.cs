@@ -161,7 +161,7 @@ public static class WhoKnowsRepository
         var artistFilter = "";
         if (!string.IsNullOrWhiteSpace(artistName))
         {
-            artistFilter = "AND ub.album_id = ANY(SELECT id FROM albums WHERE UPPER(artist_name) = UPPER(CAST(@artistName AS CITEXT))) ";
+            artistFilter = "AND ub.album_id = ANY(SELECT id FROM albums WHERE artist_name = CAST(@artistName AS CITEXT)) ";
             dbArgs.Add("artistName", artistName);
         }
 
@@ -211,7 +211,7 @@ public static class WhoKnowsRepository
         var artistFilter = "";
         if (!string.IsNullOrWhiteSpace(artistName))
         {
-            artistFilter = "AND ut.track_id = ANY(SELECT id FROM tracks WHERE UPPER(artist_name) = UPPER(CAST(@artistName AS CITEXT))) ";
+            artistFilter = "AND ut.track_id = ANY(SELECT id FROM tracks WHERE artist_name = CAST(@artistName AS CITEXT)) ";
             dbArgs.Add("artistName", artistName);
         }
 
