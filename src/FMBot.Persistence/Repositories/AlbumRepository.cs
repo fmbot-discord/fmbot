@@ -339,9 +339,9 @@ WHERE s.id = (
         const string query = @"
         SELECT a.name, a.artist_name, a.id
         FROM public.albums a
-        WHERE (UPPER(a.name), UPPER(a.artist_name)) IN (
-            SELECT UPPER(CAST(unnest(@albumNames) AS CITEXT)),
-                   UPPER(CAST(unnest(@artistNames) AS CITEXT))
+        WHERE (a.name, a.artist_name) IN (
+            SELECT CAST(unnest(@albumNames) AS CITEXT),
+                   CAST(unnest(@artistNames) AS CITEXT)
         )";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
