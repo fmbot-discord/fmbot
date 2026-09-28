@@ -409,7 +409,11 @@ public class UserInteractions(
                         response = await userBuilder.ListShortcutsAsync(new ContextModel(this.Context,
                             contextUser));
                         var dmChannel = await userService.GetDmChannel(this.Context.User);
-                        await dmChannel.SendMessageAsync(new MessageProperties { Components = response.ComponentsV2 });
+                        await dmChannel.SendMessageAsync(new MessageProperties
+                        {
+                            Components = response.GetComponentsV2(),
+                            Flags = MessageFlags.IsComponentsV2
+                        });
                         break;
                     }
                     case UserSetting.UserReactions:
