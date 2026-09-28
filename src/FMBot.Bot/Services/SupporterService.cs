@@ -886,9 +886,44 @@ public class SupporterService
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
         return await db.StripeSupporters
+            .OrderBy(o => o.EntitlementDeleted)
+            .ThenByDescending(o => o.DateStarted)
             .FirstOrDefaultAsync(f =>
                 f.PurchaserDiscordUserId == discordUserId && f.Type == StripeSupporterType.Supporter ||
                 f.GiftReceiverDiscordUserId == discordUserId && !f.EntitlementDeleted);
+    }
+
+    public async Task<(List<(StripeSupporter row, string unlinkedCustomerId)> unlinked, List<StripeSupporter> skipped)>
+        UnlinkEndedStripeCustomers(ulong purchaserDiscordUserId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        var rows = await db.StripeSupporters
+            .Where(w => w.PurchaserDiscordUserId == purchaserDiscordUserId &&
+                        w.Type == StripeSupporterType.Supporter &&
+                        w.StripeCustomerId != null && w.StripeCustomerId != "")
+            .ToListAsync();
+
+        var unlinked = new List<(StripeSupporter row, string unlinkedCustomerId)>();
+        var skipped = new List<StripeSupporter>();
+        foreach (var row in rows)
+        {
+            if (!row.EntitlementDeleted || !row.DateEnding.HasValue || row.DateEnding > DateTime.UtcNow)
+            {
+                skipped.Add(row);
+                continue;
+            }
+
+            Log.Information("Unlinking Stripe customer {customerId} from stripe supporter {id} - Discord {discordUserId}",
+                row.StripeCustomerId, row.Id, purchaserDiscordUserId);
+
+            unlinked.Add((row, row.StripeCustomerId));
+            row.StripeCustomerId = null;
+        }
+
+        await db.SaveChangesAsync();
+
+        return (unlinked, skipped);
     }
 
     public async Task<StripeSupporter> GetStripeSupporterByRecipient(ulong discordUserId)
@@ -2798,7 +2833,7 @@ public class SupporterService
         var existingStripeCustomerId = "";
         if (existingStripeSupporter != null && existingStripeSupporter.PurchaserDiscordUserId == discordUserId)
         {
-            existingStripeCustomerId = existingStripeSupporter.StripeCustomerId;
+            existingStripeCustomerId = existingStripeSupporter.StripeCustomerId ?? "";
         }
 
         var priceId = pricing.MonthlyPriceId;

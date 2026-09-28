@@ -3679,6 +3679,75 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
         }
     }
 
+    [Command("unlinkstripecustomer")]
+    [Summary("Removes the Stripe customer from a user's ended Stripe supporter rows so new checkouts create a fresh customer")]
+    public async Task UnlinkStripeCustomer(string userId = null)
+    {
+        try
+        {
+            if (!await adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            {
+                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
+                    new MessageProperties { Content = "You are not authorized to use this command." });
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
+                return;
+            }
+
+            if (userId == null || !ulong.TryParse(userId.Trim('@', '!', '<', '>', '&'), out var discordUserId))
+            {
+                await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
+                    new MessageProperties { Content = "Enter a Discord user id. For example, `.unlinkstripecustomer 125740103539621888`" });
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
+                return;
+            }
+
+            var (unlinked, skipped) = await supporterService.UnlinkEndedStripeCustomers(discordUserId);
+
+            var description = new StringBuilder();
+            if (unlinked.Count == 0)
+            {
+                description.AppendLine($"No ended Stripe supporter rows with a customer found for `{discordUserId}` - <@{discordUserId}>.");
+            }
+            else
+            {
+                description.AppendLine($"Unlinked Stripe customers for `{discordUserId}` - <@{discordUserId}>:");
+                foreach (var (row, customerId) in unlinked)
+                {
+                    var ending = row.DateEnding.HasValue
+                        ? $"<t:{((DateTimeOffset)DateTime.SpecifyKind(row.DateEnding.Value, DateTimeKind.Utc)).ToUnixTimeSeconds()}:D>"
+                        : "no end date";
+                    description.AppendLine($"- Row `{row.Id}` - customer `{customerId}` - sub `{row.StripeSubscriptionId}` - ended {ending}");
+                }
+
+                description.AppendLine();
+                description.AppendLine("Their next checkout will create a new Stripe customer.");
+            }
+
+            if (skipped.Count > 0)
+            {
+                description.AppendLine();
+                description.AppendLine("⚠️ Not changed, still active or not yet processed by the Stripe expiry job:");
+                foreach (var row in skipped)
+                {
+                    description.AppendLine($"- Row `{row.Id}` - customer `{row.StripeCustomerId}` - sub `{row.StripeSubscriptionId}`");
+                }
+            }
+
+            var embed = new EmbedProperties()
+                .WithColor(DiscordConstants.InformationColorBlue)
+                .WithDescription(description.ToString());
+
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties()
+                .AddEmbeds(embed)
+                .WithAllowedMentions(AllowedMentionsProperties.None));
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
     [Command("deleteuser", "removeuser")]
     [Summary("Remove a user")]
     public async Task DeleteUser(string userToDelete = null)
