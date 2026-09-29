@@ -343,7 +343,7 @@ public class StaticBuilders
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed
+            ResponseType = ResponseType.ComponentsV2
         };
 
         if (recipient == null)
@@ -370,53 +370,51 @@ public class StaticBuilders
             return response;
         }
 
-        response.Embed
-            .WithTitle("🎁 Gift .fmbot supporter")
-            .WithDescription(
-                $"You are gifting supporter to **{recipient.UserNameLastFM}** (<@{recipient.DiscordUserId}>)")
-            .WithColor(DiscordConstants.Gold);
+        var container = response.ComponentsContainer;
+        container.WithAccentColor(DiscordConstants.Gold);
+
+        container.WithTextDisplay("## 🎁 Gift .fmbot supporter");
+        container.WithTextDisplay(
+            $"You are gifting supporter to **{recipient.UserNameLastFM}** (<@{recipient.DiscordUserId}>)");
+        container.WithTextDisplay(
+            "- This is a gift purchase - no subscription will be created\n" +
+            "- The recipient will receive all supporter benefits\n" +
+            "- Your identity will not be revealed");
 
         var existingStripeSupporter = await this._supporterService.GetStripeSupporter(purchaserDiscordId);
         var pricing = await this._supporterService.GetPricing(userLocale, existingStripeSupporter?.Currency,
             StripeSupporterType.GiftedSupporter);
 
-        response.Embed.AddField("Note",
-            "- This is a gift purchase - no subscription will be created\n" +
-            "- The recipient will receive all supporter benefits\n" +
-            "- Your identity will not be revealed",
-            false);
-
-        var actionRow = new ActionRowProperties();
-
         if (!string.IsNullOrEmpty(pricing.QuarterlyPriceId))
         {
-            response.Embed.AddField($"Quarter - {pricing.QuarterlyPriceString}",
-                $"-# {pricing.QuarterlySubText}", true);
-            actionRow.WithButton("Gift quarter", $"gift-supporter-purchase:quarterly:{recipient.DiscordUserId}");
+            AddGiftOption("quarterly", "Gift quarter",
+                $"**Quarter - {pricing.QuarterlyPriceString}**\n-# 3 months - {pricing.QuarterlySubText}");
         }
 
         if (!string.IsNullOrEmpty(pricing.YearlyPriceId))
         {
-            response.Embed.AddField($"Yearly - {pricing.YearlyPriceString}",
-                $"-# {pricing.YearlySubText}", true);
-            actionRow.WithButton("Gift year", $"gift-supporter-purchase:yearly:{recipient.DiscordUserId}");
+            AddGiftOption("yearly", "Gift year",
+                $"**Yearly - {pricing.YearlyPriceString}**\n-# 12 months - {pricing.YearlySubText}");
         }
 
         if (!string.IsNullOrEmpty(pricing.TwoYearPriceId))
         {
-            response.Embed.AddField($"Two years - {pricing.TwoYearPriceString}",
-                $"-# {pricing.TwoYearSubText}", true);
-            actionRow.WithButton("Gift two years", $"gift-supporter-purchase:twoyear:{recipient.DiscordUserId}");
+            AddGiftOption("twoyear", "Gift two years",
+                $"**Two years - {pricing.TwoYearPriceString}**\n-# 24 months - {pricing.TwoYearSubText}");
         }
 
-        // if (!string.IsNullOrEmpty(pricing.LifetimePriceId))
-        // {
-        //     actionRow.WithButton("Lifetime", $"gift-supporter-purchase-lifetime-{recipient.DiscordUserId}", ButtonStyle.Success, EmojiProperties.Standard("⭐"));
-        // }
-
-        response.Components = actionRow;
-
         return response;
+
+        void AddGiftOption(string duration, string buttonLabel, string text)
+        {
+            container.WithSeparator();
+            container.AddComponent(new ComponentSectionProperties(
+                new ButtonProperties($"gift-supporter-purchase:{duration}:{recipient.DiscordUserId}", buttonLabel,
+                    ButtonStyle.Primary))
+            {
+                Components = [new TextDisplayProperties(text)]
+            });
+        }
     }
 
     public async Task<ResponseModel> SupportersAsync(
