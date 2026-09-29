@@ -701,12 +701,7 @@ public class AlbumService
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        const string sql = @"
-            SELECT bg_color FROM album_images
-            WHERE album_id = @albumId AND bg_color IS NOT NULL
-            LIMIT 1";
-
-        return await connection.QueryFirstOrDefaultAsync<string>(sql, new { albumId });
+        return await AlbumRepository.GetAlbumBackgroundColor(albumId, connection);
     }
 
     public async Task<Color> GetAlbumAccentColor(string albumCoverUrl, string albumName, string artistName,

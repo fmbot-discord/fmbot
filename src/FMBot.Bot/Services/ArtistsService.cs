@@ -651,21 +651,10 @@ public class ArtistsService
 
     public async Task<List<UserTrack>> GetTopTracksForArtist(int userId, string artistName)
     {
-        const string sql = "SELECT ut.user_track_id, ut.user_id, t.name, t.artist_name, ut.playcount" +
-                           " FROM public.user_tracks ut" +
-                           " INNER JOIN public.tracks t ON t.id = ut.track_id" +
-                           " WHERE ut.user_id = @userId AND UPPER(t.artist_name) = UPPER(CAST(@artistName AS CITEXT))" +
-                           " ORDER BY ut.playcount DESC";
-
-        DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        return (await connection.QueryAsync<UserTrack>(sql, new
-        {
-            userId,
-            artistName
-        })).ToList();
+        return await TrackRepository.GetUserTracksForArtist(userId, artistName, connection);
     }
 
     public async Task<TopAlbumList> GetTopAlbumsForArtist(int userId, string artistName)
@@ -686,13 +675,10 @@ public class ArtistsService
 
     public async Task<List<UserAlbum>> GetUserAlbumsForArtist(int userId, string artistName)
     {
-        await using var db = await this._contextFactory.CreateDbContextAsync();
-        return await db.UserAlbums
-            .AsNoTracking()
-            .Where(w => w.ArtistName.ToLower() == artistName.ToLower()
-                        && w.UserId == userId)
-            .OrderByDescending(o => o.Playcount)
-            .ToListAsync();
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        return await AlbumRepository.GetUserAlbumsForArtist(userId, artistName, connection);
     }
 
     public async Task<List<UserAlbum>> FilterSinglesFromUserAlbums(List<UserAlbum> userAlbums)
@@ -867,12 +853,7 @@ public class ArtistsService
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        const string sql = @"
-            SELECT bg_color FROM artist_images
-            WHERE artist_id = @artistId AND bg_color IS NOT NULL
-            LIMIT 1";
-
-        return await connection.QueryFirstOrDefaultAsync<string>(sql, new { artistId });
+        return await ArtistRepository.GetArtistBackgroundColor(artistId, connection);
     }
 
     public async Task<Color> GetArtistAccentColorAsync(string artistImageUrl, int? artistId, string artistName)

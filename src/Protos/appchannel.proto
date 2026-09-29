@@ -15,6 +15,11 @@ service AppChannelService {
   rpc GetProfile (AppChannelProfileRequest) returns (AppChannelProfileReply);
   rpc GetEntityInfo (AppChannelEntityInfoRequest) returns (AppChannelEntityInfoReply);
   rpc GetProfileTop (AppChannelProfileTopRequest) returns (AppChannelProfileTopReply);
+  rpc GetTrackPreview (AppChannelTrackPreviewRequest) returns (AppChannelTrackPreviewReply);
+  rpc Search (AppChannelSearchRequest) returns (AppChannelSearchReply);
+  rpc GetViewerTrack (AppChannelViewerRequest) returns (AppChannelViewerTrackReply);
+  rpc ShareToChannel (AppChannelShareRequest) returns (AppChannelShareReply);
+  rpc GetArtistTop (AppChannelArtistTopRequest) returns (AppChannelArtistTopReply);
 }
 
 enum AppChannelEntity {
@@ -286,6 +291,7 @@ message AppChannelTrackInfo {
   double speechiness = 12;
   double liveness = 13;
   double valence = 14;
+  bool previewAvailable = 15;
 }
 
 message AppChannelEntityInfoReply {
@@ -327,4 +333,119 @@ message AppChannelProfileTopEntry {
 message AppChannelProfileTopReply {
   bool registered = 1;
   repeated AppChannelProfileTopEntry entries = 2;
+}
+
+message AppChannelTrackPreviewRequest {
+  int64 discordGuildId = 1;
+  int64 discordUserId = 2;
+  string name = 3;
+  string artistName = 4;
+}
+
+message AppChannelTrackPreviewReply {
+  bool found = 1;
+  string previewUrl = 2;
+}
+
+enum AppChannelScope {
+  GLOBAL = 0;
+  LIBRARY = 1;
+  FRIENDS = 2;
+  SERVER = 3;
+}
+
+message AppChannelSearchRequest {
+  int64 discordGuildId = 1;
+  int64 discordUserId = 2;
+  string query = 3;
+  AppChannelScope scope = 4;
+  AppChannelEntity entity = 5;
+  int32 limit = 6;
+  bool includeFacets = 7;
+  string genre = 8;
+  string country = 9;
+  int32 decade = 10;
+  string albumType = 11;
+  string mood = 12;
+}
+
+message AppChannelSearchFriend {
+  string displayName = 1;
+  int64 playcount = 2;
+}
+
+message AppChannelSearchItem {
+  string name = 1;
+  string artistName = 2;
+  string imageUrl = 3;
+  int64 playcount = 4;
+  int32 rank = 5;
+  int32 listeners = 6;
+  int64 viewerPlaycount = 7;
+  repeated AppChannelSearchFriend friends = 8;
+  string countryCode = 9;
+  string countryFlag = 10;
+  repeated string genres = 11;
+  int32 releaseYear = 12;
+  string albumType = 13;
+  string albumName = 14;
+  int32 durationMs = 15;
+}
+
+message AppChannelSearchFacetValue {
+  string value = 1;
+  string label = 2;
+  int32 count = 3;
+}
+
+message AppChannelSearchFacet {
+  string key = 1;
+  repeated AppChannelSearchFacetValue values = 2;
+}
+
+message AppChannelSearchReply {
+  repeated AppChannelSearchItem items = 1;
+  repeated AppChannelSearchFacet facets = 2;
+  int32 total = 3;
+  bool registered = 4;
+  bool tooShort = 5;
+  int32 friends = 6;
+  int32 unlinkedFriends = 7;
+}
+
+message AppChannelShareRequest {
+  int64 discordGuildId = 1;
+  int64 discordUserId = 2;
+  int64 discordChannelId = 3;
+  int64 applicationId = 4;
+  AppChannelEntity entity = 5;
+  string name = 6;
+  string artistName = 7;
+}
+
+message AppChannelShareReply {
+  bool success = 1;
+  string error = 2;
+  int32 retryAfterSeconds = 3;
+}
+
+message AppChannelViewerTrackReply {
+  bool found = 1;
+  AppChannelRecentTrack track = 2;
+}
+
+message AppChannelArtistTopRequest {
+  int64 discordGuildId = 1;
+  int64 discordUserId = 2;
+  string artistName = 3;
+  AppChannelScope scope = 4;
+  AppChannelEntity entity = 5;
+  int32 limit = 6;
+}
+
+message AppChannelArtistTopReply {
+  bool registered = 1;
+  bool available = 2;
+  int32 total = 3;
+  repeated AppChannelServerTopEntry entries = 4;
 }

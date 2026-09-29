@@ -62,6 +62,23 @@ public class TrackRepository
         return track;
     }
 
+    public static async Task<IReadOnlyList<Track>> GetTrackPreviewSources(string artistName, string trackName,
+        NpgsqlConnection connection)
+    {
+        const string getPreviewSourcesQuery = "SELECT id, spotify_preview_url, apple_music_preview_url, deezer_id FROM public.tracks " +
+                                              "WHERE artist_name = CAST(@artistName AS CITEXT) AND " +
+                                              "name = CAST(@trackName AS CITEXT) AND " +
+                                              "(spotify_preview_url IS NOT NULL OR apple_music_preview_url IS NOT NULL OR deezer_id IS NOT NULL) " +
+                                              "ORDER BY id";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        return (await connection.QueryAsync<Track>(getPreviewSourcesQuery, new
+        {
+            artistName,
+            trackName
+        })).ToList();
+    }
+
     private static async Task<ICollection<TrackSyncedLyrics>> GetSyncedLyrics(int trackId, NpgsqlConnection connection)
     {
         const string getTrackSyncedLyricsQuery = "SELECT * FROM public.track_synced_lyrics " +
@@ -124,6 +141,24 @@ public class TrackRepository
         return (await connection.QueryAsync<TopTrack>(sql, new { userId, limit })).ToList();
     }
 
+    public static async Task<List<UserTrack>> GetUserTracksForArtist(int userId, string artistName,
+        NpgsqlConnection connection)
+    {
+        const string sql = "SELECT ut.user_track_id, ut.user_id, t.name, t.artist_name, ut.playcount" +
+                           " FROM public.user_tracks ut" +
+                           " INNER JOIN public.tracks t ON t.id = ut.track_id" +
+                           " WHERE ut.user_id = @userId AND UPPER(t.artist_name) = UPPER(CAST(@artistName AS CITEXT))" +
+                           " ORDER BY ut.playcount DESC";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+
+        return (await connection.QueryAsync<UserTrack>(sql, new
+        {
+            userId,
+            artistName
+        })).ToList();
+    }
+
     public static async Task<int> GetUserTrackCount(int userId, NpgsqlConnection connection)
     {
         const string sql = "SELECT COUNT(*) FROM public.user_tracks WHERE user_id = @userId";
@@ -133,7 +168,7 @@ public class TrackRepository
     public record UserTrackSearchResult(string Name, string ArtistName, int Playcount, int Rank);
 
     public static async Task<IReadOnlyList<UserTrackSearchResult>> SearchUserTracks(int userId, string query,
-        NpgsqlConnection connection)
+        int? limit, NpgsqlConnection connection)
     {
         var patterns = UserLibrarySearch.BuildPatterns(query);
         if (patterns.Length == 0)
@@ -151,10 +186,56 @@ WITH ranked AS (
 SELECT name, artist_name, playcount, rank
 FROM ranked
 WHERE (artist_name || ' ' || name) ILIKE ALL(@patterns)
-ORDER BY playcount DESC;";
+ORDER BY playcount DESC
+LIMIT @limit;";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
-        return (await connection.QueryAsync<UserTrackSearchResult>(sql, new { userId, patterns })).ToList();
+        return (await connection.QueryAsync<UserTrackSearchResult>(sql, new { userId, patterns, limit })).ToList();
+    }
+
+    public static async Task<IReadOnlyList<FriendEntitySearchResult>> SearchFriendTracks(int[] userIds, string query,
+        int limit, NpgsqlConnection connection)
+    {
+        var patterns = UserLibrarySearch.BuildPatterns(query);
+        if (patterns.Length == 0 || userIds.Length == 0)
+        {
+            return [];
+        }
+
+        const string sql = @"
+SELECT name,
+       artist_name,
+       CAST(COUNT(DISTINCT user_id) AS int) AS listeners,
+       SUM(playcount) AS playcount,
+       (array_agg(user_id ORDER BY playcount DESC))[1:3] AS user_ids,
+       (array_agg(playcount ORDER BY playcount DESC))[1:3] AS user_playcounts
+FROM public.user_tracks
+WHERE user_id = ANY(@userIds)
+  AND (artist_name || ' ' || name) ILIKE ALL(@patterns)
+GROUP BY artist_name, name
+ORDER BY listeners DESC, playcount DESC
+LIMIT @limit;";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        return (await connection.QueryAsync<FriendEntitySearchResult>(sql, new { userIds, patterns, limit })).ToList();
+    }
+
+    public static async Task<List<EntitySearchDetails>> GetTrackSearchDetails(string[] artistNames, string[] trackNames,
+        NpgsqlConnection connection)
+    {
+        var sql = "SELECT input.artist_name, input.name, t.album_name, t.duration_ms, t.danceability, t.energy, " +
+                  "t.acousticness, t.instrumentalness, t.valence, rel.release_date, rel.type AS album_type, cover.image_url " +
+                  "FROM unnest(@artistNames::citext[], @trackNames::citext[]) AS input(artist_name, name) " +
+                  "CROSS JOIN LATERAL (SELECT tr.album_name, tr.album_id, tr.duration_ms, tr.danceability, tr.energy, " +
+                  "  tr.acousticness, tr.instrumentalness, tr.valence FROM public.tracks tr " +
+                  "  WHERE tr.artist_name = input.artist_name AND tr.name = input.name " +
+                  "  ORDER BY tr.popularity DESC NULLS LAST, tr.id LIMIT 1) t " +
+                  "LEFT JOIN public.albums rel ON rel.id = t.album_id " +
+                  $"LEFT JOIN LATERAL ({TrackCoverLateral("input")}) cover ON TRUE";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+
+        return (await connection.QueryAsync<EntitySearchDetails>(sql, new { artistNames, trackNames })).ToList();
     }
 
     private static string BuildTrackSearchSql(string candidateFilter) => $@"

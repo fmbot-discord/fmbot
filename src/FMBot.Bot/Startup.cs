@@ -13,6 +13,7 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.Guild.Renderers;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
+using FMBot.Core.ThirdParty;
 using FMBot.Discogs.Apis;
 using FMBot.Domain.Models;
 using FMBot.Images.Generators;

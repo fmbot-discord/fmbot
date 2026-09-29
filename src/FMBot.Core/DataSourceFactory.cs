@@ -296,6 +296,54 @@ public class DataSourceFactory : IDataSourceFactory
         return artist;
     }
 
+    public async Task<Response<TopTrackList>> GetArtistTopTracksAsync(string artistName, int count,
+        bool redirectsEnabled = true)
+    {
+        var artistAlias = await this._aliasService.GetAlias(artistName);
+
+        if (artistAlias != null && artistAlias.Options.HasFlag(AliasOption.NoRedirectInLastfmCalls) && redirectsEnabled)
+        {
+            redirectsEnabled = false;
+        }
+
+        var topTracks = await this._lastfmRepository.GetArtistTopTracksAsync(artistName, count, redirectsEnabled);
+
+        if (topTracks.Success && topTracks.Content != null &&
+            artistAlias != null && artistAlias.Options.HasFlag(AliasOption.ApplyInternallyLastfmData))
+        {
+            foreach (var track in topTracks.Content.TopTracks)
+            {
+                track.ArtistName = artistAlias.ArtistName;
+            }
+        }
+
+        return topTracks;
+    }
+
+    public async Task<Response<TopAlbumList>> GetArtistTopAlbumsAsync(string artistName, int count,
+        bool redirectsEnabled = true)
+    {
+        var artistAlias = await this._aliasService.GetAlias(artistName);
+
+        if (artistAlias != null && artistAlias.Options.HasFlag(AliasOption.NoRedirectInLastfmCalls) && redirectsEnabled)
+        {
+            redirectsEnabled = false;
+        }
+
+        var topAlbums = await this._lastfmRepository.GetArtistTopAlbumsAsync(artistName, count, redirectsEnabled);
+
+        if (topAlbums.Success && topAlbums.Content != null &&
+            artistAlias != null && artistAlias.Options.HasFlag(AliasOption.ApplyInternallyLastfmData))
+        {
+            foreach (var album in topAlbums.Content.TopAlbums)
+            {
+                album.ArtistName = artistAlias.ArtistName;
+            }
+        }
+
+        return topAlbums;
+    }
+
     public async Task<Response<AlbumInfo>> GetAlbumInfoAsync(string artistName, string albumName,
         string username = null, bool redirectsEnabled = true)
     {

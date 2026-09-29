@@ -9,4 +9,7 @@ public static class CoreStatistics
         {
             LabelNames = ["reason"]
         });
+
+    public static readonly Counter DeezerApiCalls = Metrics
+        .CreateCounter("deezer_api_calls", "Amount of Deezer API calls");
 }

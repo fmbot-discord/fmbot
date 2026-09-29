@@ -6,6 +6,7 @@ using FMBot.AppleMusic;
 using FMBot.AppleMusic.Models;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.ThirdParty;
+using FMBot.Core.ThirdParty;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Interfaces;

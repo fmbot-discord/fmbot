@@ -42,6 +42,16 @@ public class AlbumRepository
         return await copyHelper.SaveAllAsync(connection, albums);
     }
 
+    public static async Task<string> GetAlbumBackgroundColor(int albumId, NpgsqlConnection connection)
+    {
+        const string sql = @"
+            SELECT bg_color FROM album_images
+            WHERE album_id = @albumId AND bg_color IS NOT NULL
+            LIMIT 1";
+
+        return await connection.QueryFirstOrDefaultAsync<string>(sql, new { albumId });
+    }
+
     public static async Task<Album> GetAlbumForName(string artistName, string albumName, NpgsqlConnection connection)
     {
         const string getAlbumQuery = "SELECT * FROM public.albums " +
@@ -125,6 +135,22 @@ public class AlbumRepository
         return (await connection.QueryAsync<TopAlbum>(sql, new { userId, limit })).ToList();
     }
 
+    public static async Task<List<UserAlbum>> GetUserAlbumsForArtist(int userId, string artistName,
+        NpgsqlConnection connection)
+    {
+        const string sql = "SELECT * FROM public.user_albums " +
+                           "WHERE LOWER(artist_name) = LOWER(@artistName) AND user_id = @userId " +
+                           "ORDER BY playcount DESC";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+
+        return (await connection.QueryAsync<UserAlbum>(sql, new
+        {
+            userId,
+            artistName
+        })).ToList();
+    }
+
     public static async Task<int> GetUserAlbumCount(int userId, NpgsqlConnection connection)
     {
         const string sql = "SELECT COUNT(*) FROM public.user_albums WHERE user_id = @userId";
@@ -134,7 +160,7 @@ public class AlbumRepository
     public record UserAlbumSearchResult(string Name, string ArtistName, int Playcount, int Rank);
 
     public static async Task<IReadOnlyList<UserAlbumSearchResult>> SearchUserAlbums(int userId, string query,
-        NpgsqlConnection connection)
+        int? limit, NpgsqlConnection connection)
     {
         var patterns = UserLibrarySearch.BuildPatterns(query);
         if (patterns.Length == 0)
@@ -152,10 +178,51 @@ WITH ranked AS (
 SELECT name, artist_name, playcount, rank
 FROM ranked
 WHERE (artist_name || ' ' || name) ILIKE ALL(@patterns)
-ORDER BY playcount DESC;";
+ORDER BY playcount DESC
+LIMIT @limit;";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
-        return (await connection.QueryAsync<UserAlbumSearchResult>(sql, new { userId, patterns })).ToList();
+        return (await connection.QueryAsync<UserAlbumSearchResult>(sql, new { userId, patterns, limit })).ToList();
+    }
+
+    public static async Task<IReadOnlyList<FriendEntitySearchResult>> SearchFriendAlbums(int[] userIds, string query,
+        int limit, NpgsqlConnection connection)
+    {
+        var patterns = UserLibrarySearch.BuildPatterns(query);
+        if (patterns.Length == 0 || userIds.Length == 0)
+        {
+            return [];
+        }
+
+        const string sql = @"
+SELECT name,
+       artist_name,
+       CAST(COUNT(DISTINCT user_id) AS int) AS listeners,
+       SUM(playcount) AS playcount,
+       (array_agg(user_id ORDER BY playcount DESC))[1:3] AS user_ids,
+       (array_agg(playcount ORDER BY playcount DESC))[1:3] AS user_playcounts
+FROM public.user_albums
+WHERE user_id = ANY(@userIds)
+  AND (artist_name || ' ' || name) ILIKE ALL(@patterns)
+GROUP BY artist_name, name
+ORDER BY listeners DESC, playcount DESC
+LIMIT @limit;";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        return (await connection.QueryAsync<FriendEntitySearchResult>(sql, new { userIds, patterns, limit })).ToList();
+    }
+
+    public static async Task<List<EntitySearchDetails>> GetAlbumSearchDetails(string[] artistNames, string[] albumNames,
+        NpgsqlConnection connection)
+    {
+        const string sql = "SELECT ab.artist_name, ab.name, ab.type AS album_type, ab.release_date, " +
+                           "COALESCE(ab.spotify_image_url, ab.lastfm_image_url) AS image_url " +
+                           "FROM unnest(@artistNames::citext[], @albumNames::citext[]) AS input(artist_name, name) " +
+                           "INNER JOIN public.albums ab ON ab.artist_name = input.artist_name AND ab.name = input.name";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+
+        return (await connection.QueryAsync<EntitySearchDetails>(sql, new { artistNames, albumNames })).ToList();
     }
 
     private static string BuildAlbumSearchSql(string candidateFilter) => $@"

@@ -2531,7 +2531,7 @@ public class PlayBuilder
         {
             case SearchTab.Tracks:
             {
-                var tracks = await TrackRepository.SearchUserTracks(userId, query, connection);
+                var tracks = await TrackRepository.SearchUserTracks(userId, query, null, connection);
                 return tracks.Select(t => new SearchResultRow
                 {
                     Primary = t.Name,
@@ -2542,7 +2542,7 @@ public class PlayBuilder
             }
             case SearchTab.Albums:
             {
-                var albums = await AlbumRepository.SearchUserAlbums(userId, query, connection);
+                var albums = await AlbumRepository.SearchUserAlbums(userId, query, null, connection);
                 return albums.Select(a => new SearchResultRow
                 {
                     Primary = a.Name,
@@ -2553,7 +2553,7 @@ public class PlayBuilder
             }
             case SearchTab.Artists:
             {
-                var artists = await ArtistRepository.SearchUserArtists(userId, query, connection);
+                var artists = await ArtistRepository.SearchUserArtists(userId, query, null, connection);
                 return artists.Select(a => new SearchResultRow
                 {
                     Primary = a.Name,

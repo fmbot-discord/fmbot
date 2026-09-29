@@ -5,11 +5,11 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
-using FMBot.Bot.Extensions;
 using FMBot.Domain;
+using FMBot.Domain.Extensions;
 using Serilog;
 
-namespace FMBot.Bot.Services.ThirdParty;
+namespace FMBot.Core.ThirdParty;
 
 public sealed record DeezerLookup<T>(T Item, bool Failed) where T : class
 {
@@ -182,8 +182,8 @@ public class DeezerService
             return false;
         }
 
-        var left = StringExtensions.SanitizeTrackNameForComparison(a);
-        var right = StringExtensions.SanitizeTrackNameForComparison(b);
+        var left = TrackNameExtensions.SanitizeTrackNameForComparison(a);
+        var right = TrackNameExtensions.SanitizeTrackNameForComparison(b);
         return left.Length > 0 && left == right;
     }
 
@@ -206,7 +206,7 @@ public class DeezerService
 
         try
         {
-            Statistics.DeezerApiCalls.Inc();
+            CoreStatistics.DeezerApiCalls.Inc();
             using var response = await this._httpClient.GetAsync(path);
 
             if (!response.IsSuccessStatusCode)

@@ -25,6 +25,10 @@ public interface IDataSourceFactory
 
     Task<Response<ArtistInfo>> GetArtistInfoAsync(string artistName, string username, bool redirectsEnabled = true);
 
+    Task<Response<TopTrackList>> GetArtistTopTracksAsync(string artistName, int count, bool redirectsEnabled = true);
+
+    Task<Response<TopAlbumList>> GetArtistTopAlbumsAsync(string artistName, int count, bool redirectsEnabled = true);
+
     Task<Response<AlbumInfo>> GetAlbumInfoAsync(string artistName, string albumName, string username = null,
         bool redirectsEnabled = true);
 
