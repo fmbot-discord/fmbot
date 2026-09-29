@@ -1376,10 +1376,15 @@ public class GuildSettingBuilder(
         if (!botDisabled)
         {
             fmType.Disabled = fmToggled;
-            container.AddComponent(fmType);
         }
-        else if (fmToggled)
+
+        if (!botDisabled || fmToggled)
         {
+            if (channel is { FmEmbedType: not null })
+            {
+                container.WithTextDisplay("**Forced 'fm' mode**");
+            }
+
             container.AddComponent(fmType);
         }
 
@@ -1396,6 +1401,7 @@ public class GuildSettingBuilder(
 
         if (channel?.RecommendedAlternativeChannelIds is { Length: > 0 })
         {
+            container.WithTextDisplay("**Recommended alternative channels**");
             recommendedChannels.DefaultValues = channel.RecommendedAlternativeChannelIds;
         }
 
