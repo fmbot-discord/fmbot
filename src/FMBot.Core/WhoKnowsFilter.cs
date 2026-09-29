@@ -122,7 +122,6 @@ public static class WhoKnowsFilter
                 .ToHashSet();
 
             var lastFmUsersToFilter = guildUsers
-                .DistinctBy(d => d.Value.UserNameLastFM, comparer: StringComparer.OrdinalIgnoreCase)
                 .Where(w => w.Value.BlockedFromWhoKnows || w.Value.SelfBlockFromWhoKnows)
                 .Select(s => s.Value.UserNameLastFM)
                 .ToHashSet();

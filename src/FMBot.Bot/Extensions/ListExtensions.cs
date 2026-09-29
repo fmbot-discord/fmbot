@@ -13,4 +13,17 @@ public static class ListExtensions
             .Select(x => x.Select(v => v.Value).ToList())
             .ToList();
     }
+
+    public static int IndexOf<T>(this IReadOnlyList<T> source, T item)
+    {
+        for (var i = 0; i < source.Count; i++)
+        {
+            if (EqualityComparer<T>.Default.Equals(source[i], item))
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
 }

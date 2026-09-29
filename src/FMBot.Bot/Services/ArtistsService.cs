@@ -284,12 +284,12 @@ public class ArtistsService
         };
     }
 
-    public async Task<List<TopArtist>> FillArtistImages(List<TopArtist> topArtists)
+    public async Task FillArtistImages(IReadOnlyList<TopArtist> topArtists)
     {
         var artistsToFill = topArtists.Where(w => string.IsNullOrWhiteSpace(w.ArtistImageUrl)).ToList();
         if (artistsToFill.Count == 0)
         {
-            return topArtists;
+            return;
         }
 
         var names = artistsToFill.Select(s => s.ArtistName).ToArray();
@@ -328,8 +328,6 @@ public class ArtistsService
                 topArtist.ArtistImageUrl = url;
             }
         }
-
-        return topArtists;
     }
 
     public async Task<List<TopArtist>> GetUserAllTimeTopArtists(int userId, bool useCache = false)
@@ -360,7 +358,7 @@ public class ArtistsService
         return freshTopArtists;
     }
 
-    public async Task<List<ArtistPopularity>> GetArtistsPopularity(List<TopArtist> topArtists)
+    public async Task<List<ArtistPopularity>> GetArtistsPopularity(IReadOnlyList<TopArtist> topArtists)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();

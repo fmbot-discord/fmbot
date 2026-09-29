@@ -3,14 +3,14 @@ using System.Collections.Generic;
 
 namespace FMBot.Domain.Models;
 
-public class TopTrackList
+public record TopTrackList
 {
-    public long? TotalAmount { get; set; }
+    public long? TotalAmount { get; init; }
 
-    public string UserUrl { get; set; }
-    public string UserTopTracksUrl { get; set; }
+    public string UserUrl { get; init; }
+    public string UserTopTracksUrl { get; init; }
 
-    public List<TopTrack> TopTracks{ get; set; }
+    public IReadOnlyList<TopTrack> TopTracks { get; init; }
 }
 
 public class TopTrack

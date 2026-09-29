@@ -292,7 +292,7 @@ public class GenreBuilders
             var totalPlays = await this._dataSourceFactory.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm,
                 timeSettings.TimeFrom,
                 userSettings.SessionKeyLastFm, timeSettings.TimeUntil);
-            artists.Content.TopArtists = await this._artistsService.FillArtistImages(artists.Content.TopArtists);
+            await this._artistsService.FillArtistImages(artists.Content.TopArtists);
 
             var genresAsString = genres.Select(s => s.GenreName).Take(1).ToList();
             var userArtistsWithGenres =

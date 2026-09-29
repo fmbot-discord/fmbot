@@ -69,7 +69,7 @@ public class CensorService
             return result;
         }
 
-        if (result == CensorResult.Nsfw && (guild == null || ((TextGuildChannel)channel).Nsfw))
+        if (result == CensorResult.Nsfw && channel.NsfwAllowed(guild))
         {
             return CensorResult.Safe;
         }
@@ -86,7 +86,7 @@ public class CensorService
             return result;
         }
 
-        if (result == CensorResult.Nsfw && (guild == null || ((TextGuildChannel)channel).Nsfw))
+        if (result == CensorResult.Nsfw && channel.NsfwAllowed(guild))
         {
             return CensorResult.Safe;
         }

@@ -4,16 +4,16 @@ using FMBot.Domain.Enums;
 
 namespace FMBot.Domain.Models;
 
-public class RecentTrackList
+public record RecentTrackList
 {
-    public long TotalAmount { get; set; }
-    public long NewRecentTracksAmount { get; set; }
-    public long RemovedRecentTracksAmount { get; set; }
+    public long TotalAmount { get; init; }
+    public long NewRecentTracksAmount { get; init; }
+    public long RemovedRecentTracksAmount { get; init; }
 
-    public string UserUrl { get; set; }
-    public string UserRecentTracksUrl { get; set; }
+    public string UserUrl { get; init; }
+    public string UserRecentTracksUrl { get; init; }
 
-    public List<RecentTrack> RecentTracks { get; set; }
+    public IReadOnlyList<RecentTrack> RecentTracks { get; init; }
 }
 
 public class RecentTrack

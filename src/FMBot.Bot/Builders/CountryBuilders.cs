@@ -411,7 +411,7 @@ public class CountryBuilders(
             var totalPlays = await dataSourceFactory.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm,
                 timeSettings.TimeFrom,
                 userSettings.SessionKeyLastFm, timeSettings.TimeUntil);
-            artists.Content.TopArtists = await artistsService.FillArtistImages(artists.Content.TopArtists);
+            await artistsService.FillArtistImages(artists.Content.TopArtists);
 
             var validArtists = countries.First().Artists.Select(s => s.ArtistName.ToLower()).ToArray();
             var firstArtistImage =

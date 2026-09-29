@@ -293,7 +293,7 @@
           "description": "जो artist तुम खोजना चाहते हो (डिफ़ॉल्ट: अभी बज रहा)"
         },
         "user": {
-          "description": "जिस user की तुलना crown होल्डर से करनी है (डिफ़ॉल्ट: तुम)"
+          "description": "जिस user की तुलना crown होल्डर से करनी है (डिफ़ॉल्ट: तुम खुद)"
         }
       }
     },
@@ -379,18 +379,18 @@
       }
     },
     "genius": {
-      "description": "जो आप सुन रहे हैं या जो ट्रैक आप खोजें, उसके Genius लिरिक्स का लिंक शेयर करता है",
+      "description": "जो तुम सुन रहे हो या जो track तुम खोजो, उसके Genius लिरिक्स का लिंक शेयर करता है",
       "parameters": {
         "private": {
           "description": "जवाब सिर्फ़ तुम्हें दिखे"
         },
         "search": {
-          "description": "खोजने के लिए ट्रैक (डिफ़ॉल्ट: जो आप सुन रहे हैं)"
+          "description": "खोजने के लिए track (डिफ़ॉल्ट: अभी बज रहा)"
         }
       }
     },
     "lastfm": {
-      "description": "आपकी या किसी और की Last.fm प्रोफ़ाइल का लिंक दिखाता है",
+      "description": "तुम्हारी या किसी और की Last.fm प्रोफ़ाइल का लिंक दिखाता है",
       "parameters": {
         "private": {
           "description": "जवाब सिर्फ़ तुम्हें दिखे"
@@ -697,7 +697,7 @@
       "description": "तुम्हारा Last.fm अकाउंट .fmbot से कनेक्ट करने का लिंक देता है"
     },
     "love": {
-      "description": "मौजूदा या खोजा गया track Last.fm पर पसंदीदा (love) करता है",
+      "description": "मौजूदा या खोजे गए track को Last.fm पर पसंदीदा (loved) tracks में जोड़ता है",
       "parameters": {
         "private": {
           "description": "जवाब सिर्फ़ तुम्हें दिखे"
@@ -750,6 +750,9 @@
       "parameters": {
         "private": {
           "description": "जवाब सिर्फ़ तुम्हें दिखे"
+        },
+        "user": {
+          "description": "जिस यूज़र को चेक करना है (डिफ़ॉल्ट: तुम खुद)"
         }
       }
     },
@@ -779,10 +782,10 @@
       }
     },
     "play": {
-      "description": "आपके Spotify पर ट्रैक चलाता है, या कुछ न देने पर प्लेबैक फिर से शुरू करता है",
+      "description": "अपने Spotify पर कोई track चलाओ, या कुछ न देने पर प्लेबैक फिर से शुरू करो",
       "parameters": {
         "search": {
-          "description": "चलाने के लिए ट्रैक या Spotify लिंक (प्लेबैक फिर से शुरू करने के लिए खाली छोड़ें)"
+          "description": "चलाने के लिए track या Spotify लिंक (प्लेबैक फिर से शुरू करने के लिए खाली छोड़ो)"
         }
       }
     },

@@ -230,8 +230,7 @@ public class TrackBuilders
 
             if (albumCoverUrl != null)
             {
-                var safeForChannelTask = this._censorService.IsSafeForChannel(context.DiscordGuild,
-                    context.DiscordChannel,
+                var safeForChannelTask = this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel,
                     trackSearch.Track.AlbumName, trackSearch.Track.ArtistName, trackSearch.Track.AlbumUrl);
                 var accentColorTask = this._albumService.GetAccentColorWithAlbum(context,
                     albumCoverUrl, databaseAlbum.Id, trackSearch.Track.AlbumName, trackSearch.Track.ArtistName);
@@ -1038,8 +1037,7 @@ public class TrackBuilders
 
         if (albumCoverUrl != null)
         {
-            var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild,
-                context.DiscordChannel,
+            var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel,
                 track.Track.AlbumName, track.Track.ArtistName, track.Track.AlbumUrl);
             if (safeForChannel == CensorService.CensorResult.Safe)
             {
@@ -1921,8 +1919,8 @@ public class TrackBuilders
         }
 
         var commandExecutedCount = await this._userService.GetCommandExecutedAmount(context.ContextUser.UserId,
-            "scrobble", DateTime.UtcNow.AddMinutes(-30));
-        var maxCount = SupporterService.IsSupporter(context.ContextUser.UserType) ? 25 : 12;
+            "scrobble", DateTime.UtcNow.AddMinutes(-20));
+        var maxCount = SupporterService.IsSupporter(context.ContextUser.UserType) ? 18 : 12;
 
         if (commandExecutedCount > maxCount)
         {

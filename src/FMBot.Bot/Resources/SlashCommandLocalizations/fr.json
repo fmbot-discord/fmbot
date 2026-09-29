@@ -12,7 +12,7 @@
       "description": "Affiche les membres du serveur avec un goût musical similaire (artistes, genres et pays)",
       "parameters": {
         "user": {
-          "description": "L'utilisateur dont calculer l'affinité"
+          "description": "L'utilisateur pour qui calculer l'affinité"
         }
       }
     },
@@ -293,7 +293,7 @@
           "description": "L'artiste à rechercher (par défaut celui en cours d'écoute)"
         },
         "user": {
-          "description": "L'utilisateur à comparer au détenteur de la crown (par défaut toi-même)"
+          "description": "L'utilisateur à comparer au détenteur de la crown (toi par défaut)"
         }
       }
     },
@@ -309,7 +309,7 @@
       }
     },
     "discogs": {
-      "description": "Connecte ton compte Discogs en envoyant un lien en message privé"
+      "description": "Connecte ton compte Discogs via un lien envoyé en message privé"
     },
     "discoveries": {
       "description": "⭐ Affiche les artistes que tu as découverts récemment",
@@ -360,7 +360,7 @@
       "description": "Historique des mises en avant pour toi ou quelqu'un d'autre",
       "parameters": {
         "user": {
-          "description": "L'utilisateur dont afficher l'historique (toi par défaut)"
+          "description": "L'utilisateur dont tu veux voir l'historique (toi par défaut)"
         },
         "view": {
           "description": "Type d'historique à afficher"
@@ -481,7 +481,7 @@
           "description": "Nombre de pauses d'écoute à afficher par page"
         },
         "type": {
-          "description": "Type de pause musicale"
+          "description": "Type de pause d'écoute"
         },
         "user": {
           "description": "L'utilisateur à afficher (toi par défaut)"
@@ -664,7 +664,7 @@
       }
     },
     "lastlistened": {
-      "description": "⭐ Affiche ta dernière écoute de l'artiste, l'album et le titre",
+      "description": "⭐ Affiche la date de ta dernière écoute de l'artiste, de l'album et du titre",
       "parameters": {
         "track": {
           "description": "Le titre à rechercher (par défaut celui en cours d'écoute)"
@@ -694,7 +694,7 @@
       }
     },
     "login": {
-      "description": "Donne un lien pour connecter ton compte Last.fm à .fmbot"
+      "description": "Te donne un lien pour connecter ton compte Last.fm à .fmbot"
     },
     "love": {
       "description": "Ajoute le titre en cours d'écoute ou recherché à tes coups de cœur Last.fm",
@@ -750,6 +750,9 @@
       "parameters": {
         "private": {
           "description": "N'afficher la réponse qu'à toi"
+        },
+        "user": {
+          "description": "L'utilisateur à vérifier (toi par défaut)"
         }
       }
     },

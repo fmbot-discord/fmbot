@@ -358,7 +358,7 @@ public class AlbumService
         return albumInfo;
     }
 
-    public async Task<List<TopAlbum>> FillMissingAlbumCovers(List<TopAlbum> topAlbums)
+    public async Task FillMissingAlbumCovers(IReadOnlyList<TopAlbum> topAlbums)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
@@ -371,23 +371,19 @@ public class AlbumService
         {
             await AlbumRepository.GetAlbumCovers(albumsToUpdate, connection);
         }
-
-        return topAlbums;
     }
 
-    public async Task<List<TopAlbum>> PreferStoredAlbumCovers(List<TopAlbum> topAlbums)
+    public async Task PreferStoredAlbumCovers(List<TopAlbum> topAlbums)
     {
         if (topAlbums.Count == 0)
         {
-            return topAlbums;
+            return;
         }
 
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
         await AlbumRepository.GetAlbumCovers(topAlbums, connection);
-
-        return topAlbums;
     }
 
     public async Task<Response<TopAlbumList>> FilterAlbumToReleaseYear(Response<TopAlbumList> albums, int year)
@@ -396,11 +392,14 @@ public class AlbumService
 
         var yearStart = new DateTime(year, 1, 1);
         var yearEnd = yearStart.AddYears(1).AddSeconds(-1);
-        albums.Content.TopAlbums = albums.Content.TopAlbums
-            .Where(w => w.ReleaseDate.HasValue &&
-                        w.ReleaseDate.Value >= yearStart &&
-                        w.ReleaseDate.Value <= yearEnd)
-            .ToList();
+        albums.Content = albums.Content with
+        {
+            TopAlbums = albums.Content.TopAlbums
+                .Where(w => w.ReleaseDate.HasValue &&
+                            w.ReleaseDate.Value >= yearStart &&
+                            w.ReleaseDate.Value <= yearEnd)
+                .ToList()
+        };
 
         DataSourceFactory.AddAlbumTopList(albums, null);
 
@@ -413,11 +412,14 @@ public class AlbumService
 
         var decadeStart = new DateTime(decade, 1, 1);
         var decadeEnd = decadeStart.AddYears(10).AddSeconds(-1);
-        albums.Content.TopAlbums = albums.Content.TopAlbums
-            .Where(w => w.ReleaseDate.HasValue &&
-                        w.ReleaseDate.Value >= decadeStart &&
-                        w.ReleaseDate.Value <= decadeEnd)
-            .ToList();
+        albums.Content = albums.Content with
+        {
+            TopAlbums = albums.Content.TopAlbums
+                .Where(w => w.ReleaseDate.HasValue &&
+                            w.ReleaseDate.Value >= decadeStart &&
+                            w.ReleaseDate.Value <= decadeEnd)
+                .ToList()
+        };
 
         DataSourceFactory.AddAlbumTopList(albums, null);
 
@@ -428,9 +430,12 @@ public class AlbumService
     {
         await EnrichTopAlbums(albums.Content.TopAlbums);
 
-        albums.Content.TopAlbums = albums.Content.TopAlbums
-            .Where(w => !string.Equals(w.AlbumType, "single", StringComparison.OrdinalIgnoreCase))
-            .ToList();
+        albums.Content = albums.Content with
+        {
+            TopAlbums = albums.Content.TopAlbums
+                .Where(w => !string.Equals(w.AlbumType, "single", StringComparison.OrdinalIgnoreCase))
+                .ToList()
+        };
 
         DataSourceFactory.AddAlbumTopList(albums, null);
 

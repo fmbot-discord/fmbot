@@ -167,8 +167,7 @@ public class AlbumBuilders
         var showThumbnail = false;
         if (albumCoverUrl != null)
         {
-            var safeForChannelTask = this._censorService.IsSafeForChannel(context.DiscordGuild,
-                context.DiscordChannel,
+            var safeForChannelTask = this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel,
                 albumSearch.Album.AlbumName, albumSearch.Album.ArtistName, albumSearch.Album.AlbumUrl);
             var accentColorTask = this._albumService.GetAccentColorWithAlbum(context,
                 albumCoverUrl, databaseAlbum?.Id, albumSearch.Album.AlbumName, albumSearch.Album.ArtistName,
@@ -504,8 +503,7 @@ public class AlbumBuilders
 
         if (albumCoverUrl != null)
         {
-            var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild,
-                context.DiscordChannel,
+            var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel,
                 albumSearch.Album.AlbumName, albumSearch.Album.ArtistName, albumSearch.Album.AlbumUrl);
             if (safeForChannel == CensorService.CensorResult.Safe)
             {
@@ -701,8 +699,7 @@ public class AlbumBuilders
 
         if (albumCoverUrl != null)
         {
-            var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild,
-                context.DiscordChannel,
+            var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel,
                 albumSearch.Album.AlbumName, albumSearch.Album.ArtistName, albumSearch.Album.AlbumUrl);
             if (safeForChannel == CensorService.CensorResult.Safe)
             {
@@ -854,8 +851,7 @@ public class AlbumBuilders
 
         if (albumCoverUrl != null)
         {
-            var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild,
-                context.DiscordChannel,
+            var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel,
                 albumSearch.Album.AlbumName, albumSearch.Album.ArtistName, albumSearch.Album.AlbumUrl);
             if (safeForChannel == CensorService.CensorResult.Safe)
             {
@@ -1695,7 +1691,7 @@ public class AlbumBuilders
                 : await this._albumService.GetUserAllTimeTopAlbumsByReleaseDecade(userSettings.UserId,
                     topListSettings.ReleaseDecadeFilter.Value);
 
-            albums.Content.TopAlbums = topAllTimeDb;
+            albums.Content = albums.Content with { TopAlbums = topAllTimeDb };
         }
 
         if (topListSettings.ReleaseYearFilter.HasValue)
@@ -1718,7 +1714,7 @@ public class AlbumBuilders
             var totalPlays = await this._dataSourceFactory.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm,
                 timeSettings.TimeFrom,
                 userSettings.SessionKeyLastFm, timeSettings.TimeUntil);
-            albums.Content.TopAlbums = await this._albumService.FillMissingAlbumCovers(albums.Content.TopAlbums);
+            await this._albumService.FillMissingAlbumCovers(albums.Content.TopAlbums);
 
             var firstAlbumImage =
                 albums.Content.TopAlbums.FirstOrDefault(f => f.AlbumCoverUrl != null)?.AlbumCoverUrl;

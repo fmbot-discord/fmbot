@@ -241,6 +241,32 @@ public class LastFmRepositoryTopListTests
         Assert.That(api.AttemptsPerPage[2], Is.EqualTo(2));
     }
 
+    [Test]
+    public async Task TopAlbums_ReplacingFetchedContent_DoesNotChangeCachedList()
+    {
+        var api = new FakeLastfmApi((_, page, _) => AlbumPage(page, 50, 50));
+        var repository = CreateRepository(api);
+        var timeSettings = new TimeSettingsModel
+        {
+            TimePeriod = TimePeriod.AllTime, Description = "alltime", UrlParameter = "overall"
+        };
+
+        var first = await repository.GetTopAlbumsAsync("user", timeSettings, 50, useCache: true);
+        first.Content = first.Content with
+        {
+            TopAlbums = first.Content.TopAlbums.Where(w => w.AlbumName.EndsWith("7")).ToList()
+        };
+
+        var second = await repository.GetTopAlbumsAsync("user", timeSettings, 3, useCache: true);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(api.AttemptsPerPage[1], Is.EqualTo(1));
+            Assert.That(second.Content.TopAlbums.Select(s => s.AlbumName),
+                Is.EqualTo(new[] { "Album 1-0", "Album 1-1", "Album 1-2" }));
+        });
+    }
+
     private static readonly JsonSerializerOptions LastfmJsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,

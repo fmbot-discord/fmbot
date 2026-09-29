@@ -409,7 +409,11 @@ public class UserInteractions(
                         response = await userBuilder.ListShortcutsAsync(new ContextModel(this.Context,
                             contextUser));
                         var dmChannel = await userService.GetDmChannel(this.Context.User);
-                        await dmChannel.SendMessageAsync(new MessageProperties { Components = response.ComponentsV2 });
+                        await dmChannel.SendMessageAsync(new MessageProperties
+                        {
+                            Components = response.GetComponentsV2(),
+                            Flags = MessageFlags.IsComponentsV2
+                        });
                         break;
                     }
                     case UserSetting.UserReactions:
@@ -1389,7 +1393,7 @@ public class UserInteractions(
             {
                 topArtists =
                     (await dataSourceFactory.GetTopArtistsAsync(userSettings.UserNameLastFm, timeSettings, 20))
-                    ?.Content?.TopArtists;
+                    ?.Content?.TopArtists?.ToList();
             }
 
             List<TopTrack> topTracks;
@@ -1402,7 +1406,7 @@ public class UserInteractions(
             {
                 topTracks =
                     (await dataSourceFactory.GetTopTracksAsync(userSettings.UserNameLastFm, timeSettings, 20))
-                    ?.Content?.TopTracks;
+                    ?.Content?.TopTracks?.ToList();
             }
 
             if (topArtists == null || !topArtists.Any() || topTracks == null || !topTracks.Any())

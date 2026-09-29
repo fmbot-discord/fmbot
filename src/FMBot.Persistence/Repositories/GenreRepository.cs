@@ -390,7 +390,7 @@ public static class GenreRepository
     }
 
     public static async Task<List<TopGenre>> GetArtistsForGenres(IEnumerable<string> selectedGenres,
-        List<TopArtist> topArtists, NpgsqlConnection connection)
+        IReadOnlyList<TopArtist> topArtists, NpgsqlConnection connection)
     {
         var genreList = selectedGenres.ToList();
         var artistNames = topArtists.Select(a => a.ArtistName).Distinct().ToArray();

@@ -719,7 +719,7 @@ public class TrackService
 
     public record AudioFeaturesOverview(int Total, InternalTrackAudioFeatures Average);
 
-    public async Task<AudioFeaturesOverview> GetAverageTrackAudioFeaturesForTopTracks(List<TopTrack> topTracks)
+    public async Task<AudioFeaturesOverview> GetAverageTrackAudioFeaturesForTopTracks(IReadOnlyList<TopTrack> topTracks)
     {
         var averageAudioFeatures = new InternalTrackAudioFeatures();
 
@@ -733,9 +733,9 @@ public class TrackService
 
         const string sql = "SELECT name, artist_name, danceability, energy, speechiness, acousticness, instrumentalness, valence, tempo " +
                            "FROM public.tracks " +
-                           "WHERE (UPPER(artist_name), UPPER(name)) IN (" +
-                           "    SELECT UPPER(CAST(unnest(@artistNames) AS CITEXT)), " +
-                           "           UPPER(CAST(unnest(@trackNames) AS CITEXT))" +
+                           "WHERE (artist_name, name) IN (" +
+                           "    SELECT CAST(unnest(@artistNames) AS CITEXT), " +
+                           "           CAST(unnest(@trackNames) AS CITEXT)" +
                            ") AND valence IS NOT NULL AND tempo IS NOT NULL";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;

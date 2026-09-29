@@ -1660,7 +1660,9 @@ public class UserService
                 $"DELETE FROM public.user_albums WHERE user_id = {user.UserId}; " +
                 $"DELETE FROM public.user_tracks WHERE user_id = {user.UserId}; " +
                 $"DELETE FROM public.friends WHERE user_id = {user.UserId} OR friend_user_id = {user.UserId}; " +
-                $"UPDATE public.featured_logs SET user_id = NULL WHERE user_id = {user.UserId}; ",
+                $"UPDATE public.featured_logs SET user_id = NULL WHERE user_id = {user.UserId}; " +
+                $"DELETE FROM public.user_tokens WHERE discord_user_id = {user.DiscordUserId} " +
+                $"AND NOT EXISTS (SELECT 1 FROM public.users WHERE discord_user_id = {user.DiscordUserId} AND user_id <> {user.UserId}); ",
                 connection);
 
             await deleteRelatedTables.ExecuteNonQueryAsync();

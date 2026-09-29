@@ -1652,22 +1652,17 @@ public class PlayService
             ? Enumerable.Empty<UserPlay>()
             : plays.Where(w => w.TimePlayed < firstRecentTrack.TimePlayed);
 
-        foreach (var play in playsToAdd)
-        {
-            recentTracks.RecentTracks.Add(UserPlayToRecentTrack(play));
-        }
-
-        if (limit == int.MaxValue)
-        {
-            recentTracks.TotalAmount = recentTracks.RecentTracks.Count;
-        }
-
-        recentTracks.RecentTracks = recentTracks.RecentTracks
+        var mergedTracks = recentTracks.RecentTracks
+            .Concat(playsToAdd.Select(UserPlayToRecentTrack))
             .OrderByDescending(o => o.NowPlaying)
             .ThenByDescending(o => o.TimePlayed)
             .ToList();
 
-        return recentTracks;
+        return recentTracks with
+        {
+            RecentTracks = mergedTracks,
+            TotalAmount = limit == int.MaxValue ? mergedTracks.Count : recentTracks.TotalAmount
+        };
     }
 
     public async Task<bool> HasPlayNearTimestamp(int userId, DateTime timestamp, int secondsRange = 30)

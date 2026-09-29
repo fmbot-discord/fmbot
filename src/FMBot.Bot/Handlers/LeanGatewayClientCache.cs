@@ -31,7 +31,7 @@ public sealed class LeanGatewayClientCache(ConcurrentGatewayClientCache inner) :
 
     private static class Empty<TKey, TValue> where TKey : notnull where TValue : class
     {
-        public static readonly IReadOnlyDictionary<TKey, TValue> Instance = new Dictionary<TKey, TValue>(0);
+        public static readonly IReadOnlyDictionary<TKey, TValue> Instance = new ConcurrentDictionary<TKey, TValue>(1, 0);
     }
 
     public IReadOnlyDictionary<TKey, TValue> CreateDictionary<TSource, TKey, TValue>(IEnumerable<TSource> source,
