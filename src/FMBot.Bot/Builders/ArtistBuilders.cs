@@ -195,7 +195,8 @@ public class ArtistBuilders
         var showThumbnail = false;
         if (fullArtist.SpotifyImageUrl != null)
         {
-            var safeForChannelTask = this._censorService.IsSafeForChannel(context.DiscordChannel, fullArtist.Name);
+            var safeForChannelTask = this._censorService.IsSafeForChannel(context.DiscordGuild,
+                context.DiscordChannel, fullArtist.Name);
             var accentColorTask = this._artistsService.GetArtistAccentColorAsync(
                 fullArtist.SpotifyImageUrl, fullArtist.Id, fullArtist.Name);
 
@@ -595,7 +596,8 @@ public class ArtistBuilders
         var showThumbnail = false;
         if (fullArtist.SpotifyImageUrl != null)
         {
-            var safeForChannelTask = this._censorService.IsSafeForChannel(context.DiscordChannel, fullArtist.Name);
+            var safeForChannelTask = this._censorService.IsSafeForChannel(context.DiscordGuild,
+                context.DiscordChannel, fullArtist.Name);
             var accentColorTask = this._artistsService.GetArtistAccentColorAsync(
                 fullArtist.SpotifyImageUrl, fullArtist.Id, fullArtist.Name);
 
@@ -1876,7 +1878,7 @@ public class ArtistBuilders
         var cachedArtist = await cachedArtistTask;
 
         var safeForChannel =
-            await this._censorService.IsSafeForChannel(context.DiscordChannel, cachedArtist.Name);
+            await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel, cachedArtist.Name);
         var imgUrl = cachedArtist.SpotifyImageUrl;
 
         if (safeForChannel == CensorService.CensorResult.NotSafe)
@@ -2110,7 +2112,7 @@ public class ArtistBuilders
             artistSearch.Artist.ArtistName, settings.RedirectsEnabled);
 
         var safeForChannel =
-            await this._censorService.IsSafeForChannel(context.DiscordChannel, cachedArtist.Name);
+            await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel, cachedArtist.Name);
         var imgUrl = cachedArtist.SpotifyImageUrl;
 
         if (safeForChannel == CensorService.CensorResult.NotSafe)
@@ -2273,7 +2275,7 @@ public class ArtistBuilders
                 redirectsEnabled);
 
         var safeForChannel =
-            await this._censorService.IsSafeForChannel(context.DiscordChannel, cachedArtist.Name);
+            await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel, cachedArtist.Name);
         var imgUrl = cachedArtist.SpotifyImageUrl;
 
         if (safeForChannel == CensorService.CensorResult.NotSafe)

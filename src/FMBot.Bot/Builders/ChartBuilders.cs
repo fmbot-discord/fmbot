@@ -323,7 +323,7 @@ public class ChartBuilders
         ChartService.AddSettingsToDescription(chartSettings, embedDescription, supporter, context.Prefix,
             context.Localizer);
 
-        var nsfwAllowed = context.DiscordChannel.NsfwAllowed();
+        var nsfwAllowed = context.DiscordChannel.NsfwAllowed(context.DiscordGuild);
         using var chart = await this._chartService.GenerateChartAsync(chartSettings);
 
         if (chartSettings.CensoredItems is > 0)
@@ -546,7 +546,7 @@ public class ChartBuilders
         ChartService.AddSettingsToDescription(chartSettings, embedDescription, supporter, context.Prefix,
             context.Localizer);
 
-        var nsfwAllowed = context.DiscordChannel.NsfwAllowed();
+        var nsfwAllowed = context.DiscordChannel.NsfwAllowed(context.DiscordGuild);
         using var chart = await this._chartService.GenerateChartAsync(chartSettings);
 
         if (chartSettings.CensoredItems is > 0)
