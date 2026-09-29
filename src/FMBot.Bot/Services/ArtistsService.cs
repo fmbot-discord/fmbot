@@ -286,48 +286,15 @@ public class ArtistsService
 
     public async Task FillArtistImages(IReadOnlyList<TopArtist> topArtists)
     {
-        var artistsToFill = topArtists.Where(w => string.IsNullOrWhiteSpace(w.ArtistImageUrl)).ToList();
-        if (artistsToFill.Count == 0)
+        if (!topArtists.Any(w => string.IsNullOrWhiteSpace(w.ArtistImageUrl)))
         {
             return;
         }
 
-        var names = artistsToFill.Select(s => s.ArtistName).ToArray();
-
-        const string sql = "SELECT a.name, " +
-                           "       COALESCE(a.spotify_image_url, " +
-                           "                REPLACE(REPLACE(ai.url, '{w}', ai.width::text), '{h}', ai.height::text)) AS image_url " +
-                           "FROM artists a " +
-                           "INNER JOIN unnest(@names::citext[]) AS q(name) ON a.name = q.name " +
-                           "LEFT JOIN LATERAL (" +
-                           "    SELECT url, width, height FROM artist_images " +
-                           "    WHERE a.spotify_image_url IS NULL " +
-                           "      AND artist_id = a.id " +
-                           "      AND image_source = 3 " +
-                           "      AND width IS NOT NULL " +
-                           "      AND height IS NOT NULL " +
-                           "    LIMIT 1" +
-                           ") ai ON TRUE " +
-                           "WHERE a.last_fm_url IS NOT NULL " +
-                           "AND (a.spotify_image_url IS NOT NULL OR ai.url IS NOT NULL)";
-
-        DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        var rows = (await connection.QueryAsync<ArtistImageRow>(sql, new { names })).ToList();
-
-        var lookup = rows
-            .GroupBy(g => g.Name, StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(g => g.Key, g => g.First().ImageUrl, StringComparer.OrdinalIgnoreCase);
-
-        foreach (var topArtist in artistsToFill)
-        {
-            if (lookup.TryGetValue(topArtist.ArtistName, out var url))
-            {
-                topArtist.ArtistImageUrl = url;
-            }
-        }
+        await ArtistRepository.FillArtistImages(topArtists, connection);
     }
 
     public async Task<List<TopArtist>> GetUserAllTimeTopArtists(int userId, bool useCache = false)
@@ -655,22 +622,6 @@ public class ArtistsService
         await connection.OpenAsync();
 
         return await TrackRepository.GetUserTracksForArtist(userId, artistName, connection);
-    }
-
-    public async Task<TopAlbumList> GetTopAlbumsForArtist(int userId, string artistName)
-    {
-        var userAlbums = await GetUserAlbumsForArtist(userId, artistName);
-        var topAlbums = userAlbums.Select(s => new TopAlbum
-        {
-            AlbumName = s.Name,
-            ArtistName = s.ArtistName,
-            UserPlaycount = s.Playcount
-        });
-
-        return new TopAlbumList
-        {
-            TopAlbums = topAlbums.ToList()
-        };
     }
 
     public async Task<List<UserAlbum>> GetUserAlbumsForArtist(int userId, string artistName)

@@ -9,6 +9,7 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain;
 using FMBot.Bot.Extensions;
+using FMBot.Core.Charts;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
@@ -23,28 +24,16 @@ namespace FMBot.Bot.Builders;
 public class ChartBuilders
 {
     private readonly ChartService _chartService;
-    private readonly IDataSourceFactory _dataSourceFactory;
-    private readonly AlbumService _albumService;
     private readonly SupporterService _supporterService;
-    private readonly ArtistsService _artistService;
-    private readonly MusicDataFactory _musicDataFactory;
-    private readonly GenreService _genreService;
+    private readonly ChartDataService _chartDataService;
 
     public ChartBuilders(ChartService chartService,
-        IDataSourceFactory dataSourceFactory,
-        AlbumService albumService,
         SupporterService supporterService,
-        ArtistsService artistService,
-        MusicDataFactory musicDataFactory,
-        GenreService genreService)
+        ChartDataService chartDataService)
     {
         this._chartService = chartService;
-        this._dataSourceFactory = dataSourceFactory;
-        this._albumService = albumService;
         this._supporterService = supporterService;
-        this._artistService = artistService;
-        this._musicDataFactory = musicDataFactory;
-        this._genreService = genreService;
+        this._chartDataService = chartDataService;
     }
 
     private static ResponseModel BuildChartValidationError(
@@ -92,220 +81,89 @@ public class ChartBuilders
             ResponseType = ResponseType.ImageWithEmbed,
         };
 
-        if (chartSettings.ImagesNeeded > ChartService.MaxImages)
-        {
-            return BuildChartValidationError(context,
-                context.Localize("chart.tooManyImages", ("max", ChartService.MaxImages.ToString()),
-                    ("size", $"{(int)Math.Sqrt(ChartService.MaxImages)}x{(int)Math.Sqrt(ChartService.MaxImages)}")),
-                InteractionConstants.Chart.AlbumType, chartSettings, userSettings.UserNameLastFm);
-        }
+        var data = await this._chartDataService.GetAlbumsAsync(chartSettings, userSettings.UserId,
+            userSettings.UserNameLastFm);
 
-        var extraAlbums = 0;
-        if (chartSettings.SkipWithoutImage)
+        switch (data.Status)
         {
-            extraAlbums = chartSettings.Height * 2 + (chartSettings.Height > 5 ? 8 : 2);
-        }
-
-        if (chartSettings.SkipNsfw)
-        {
-            extraAlbums += chartSettings.Height;
-        }
-
-        Response<TopAlbumList> albums = null;
-
-        if (chartSettings.FilteredArtist != null && chartSettings.TimeSettings.TimePeriod == TimePeriod.AllTime)
-        {
-            var artistTopAlbums = await this._artistService.GetTopAlbumsForArtist(userSettings.UserId,
-                chartSettings.FilteredArtist.Name);
-            if (artistTopAlbums.TopAlbums.Count != 0)
+            case ChartDataStatus.TooManyImages:
+                return BuildChartValidationError(context,
+                    context.Localize("chart.tooManyImages", ("max", ChartRenderer.MaxImages.ToString()),
+                        ("size", $"{(int)Math.Sqrt(ChartRenderer.MaxImages)}x{(int)Math.Sqrt(ChartRenderer.MaxImages)}")),
+                    InteractionConstants.Chart.AlbumType, chartSettings, userSettings.UserNameLastFm);
+            case ChartDataStatus.NotEnough:
             {
-                albums = new Response<TopAlbumList>
+                var count = data.Amount;
+                var reply = new StringBuilder();
+                if (chartSettings.FilteredArtist != null)
                 {
-                    Content = artistTopAlbums,
-                    Success = true
-                };
-            }
-        }
-        else
-        {
-            var imagesToGet = chartSettings.ReleaseYearFilter.HasValue ||
-                              chartSettings.ReleaseDecadeFilter.HasValue ||
-                              chartSettings.FilteredArtist != null ||
-                              chartSettings.FilterSingles ||
-                              chartSettings.HasGenreFilter
-                ? 1000
-                : 250;
-            albums = await this._dataSourceFactory.GetTopAlbumsAsync(userSettings.UserNameLastFm,
-                chartSettings.TimeSettings, imagesToGet, useCache: true);
-
-            if (chartSettings.FilteredArtist != null)
-            {
-                albums.Content = albums.Content with
+                    reply.AppendLine(context.Localize("chart.notEnoughAlbumsArtist",
+                        ("amount", count.ToString()),
+                        ("required", chartSettings.ImagesNeeded.ToString()),
+                        ("artist", chartSettings.FilteredArtist.Name),
+                        ("url", LastfmUrlExtensions.GetArtistUrl(chartSettings.FilteredArtist.Name)),
+                        ("period", context.Localizer.PeriodLabel(chartSettings.TimeSettings))));
+                    reply.AppendLine();
+                    reply.AppendLine(context.Localize("chart.tryDifferentArtistFilter",
+                        ("periods", Constants.CompactTimePeriodList)));
+                }
+                else if (chartSettings.HasGenreFilter)
                 {
-                    TopAlbums = albums.Content.TopAlbums
-                        .Where(f => f.ArtistName.Equals(chartSettings.FilteredArtist.Name,
-                            StringComparison.OrdinalIgnoreCase))
-                        .ToList()
-                };
+                    reply.AppendLine(context.LocalizeCount("chart.notEnoughAlbumsGenre",
+                        chartSettings.FilteredGenres.Count,
+                        ("amount", count.ToString()),
+                        ("required", chartSettings.ImagesNeeded.ToString()),
+                        ("genres", string.Join("**, **", chartSettings.FilteredGenres.Select(StringExtensions.Sanitize))),
+                        ("period", context.Localizer.PeriodLabel(chartSettings.TimeSettings))));
+                    reply.AppendLine();
+                    reply.AppendLine(context.Localize("chart.tryDifferentGenres",
+                        ("periods", Constants.CompactTimePeriodList)));
+                }
+                else
+                {
+                    reply.AppendLine(context.Localize("chart.notEnoughAlbums",
+                        ("amount", count.ToString()),
+                        ("required", chartSettings.ImagesNeeded.ToString()),
+                        ("period", context.Localizer.PeriodLabel(chartSettings.TimeSettings))));
+                    reply.AppendLine();
+                    reply.AppendLine(context.Localize("chart.tryDifferent",
+                        ("periods", Constants.CompactTimePeriodList)));
+                }
+
+                if (chartSettings.SkipWithoutImage && chartSettings.FilteredArtist == null && !chartSettings.HasGenreFilter)
+                {
+                    reply.AppendLine();
+                    reply.AppendLine(context.Localize("chart.extraAlbumsRequired",
+                        ("amount", data.Extra.ToString())));
+                }
+
+                return BuildChartValidationError(context, reply.ToString(),
+                    InteractionConstants.Chart.AlbumType, chartSettings, userSettings.UserNameLastFm);
             }
-        }
-
-        if (chartSettings.HasGenreFilter && albums?.Content?.TopAlbums != null)
-        {
-            var artistsInGenres = await this._genreService.GetArtistsInGenres(
-                albums.Content.TopAlbums.Select(f => f.ArtistName), chartSettings.FilteredGenres);
-
-            albums.Content = albums.Content with
-            {
-                TopAlbums = albums.Content.TopAlbums
-                    .Where(f => artistsInGenres.Contains(f.ArtistName))
-                    .ToList()
-            };
-        }
-
-        if (albums?.Content?.TopAlbums == null || albums.Content.TopAlbums.Count < chartSettings.ImagesNeeded)
-        {
-            var count = albums?.Content?.TopAlbums?.Count ?? 0;
-            var reply = new StringBuilder();
-            if (chartSettings.FilteredArtist != null)
-            {
-                reply.AppendLine(context.Localize("chart.notEnoughAlbumsArtist",
-                    ("amount", count.ToString()),
-                    ("required", chartSettings.ImagesNeeded.ToString()),
-                    ("artist", chartSettings.FilteredArtist.Name),
-                    ("url", LastfmUrlExtensions.GetArtistUrl(chartSettings.FilteredArtist.Name)),
-                    ("period", context.Localizer.PeriodLabel(chartSettings.TimeSettings))));
-                reply.AppendLine();
-                reply.AppendLine(context.Localize("chart.tryDifferentArtistFilter",
-                    ("periods", Constants.CompactTimePeriodList)));
-            }
-            else if (chartSettings.HasGenreFilter)
-            {
-                reply.AppendLine(context.LocalizeCount("chart.notEnoughAlbumsGenre",
-                    chartSettings.FilteredGenres.Count,
-                    ("amount", count.ToString()),
-                    ("required", chartSettings.ImagesNeeded.ToString()),
-                    ("genres", string.Join("**, **", chartSettings.FilteredGenres.Select(StringExtensions.Sanitize))),
-                    ("period", context.Localizer.PeriodLabel(chartSettings.TimeSettings))));
-                reply.AppendLine();
-                reply.AppendLine(context.Localize("chart.tryDifferentGenres",
-                    ("periods", Constants.CompactTimePeriodList)));
-            }
-            else
-            {
-                reply.AppendLine(context.Localize("chart.notEnoughAlbums",
-                    ("amount", count.ToString()),
-                    ("required", chartSettings.ImagesNeeded.ToString()),
-                    ("period", context.Localizer.PeriodLabel(chartSettings.TimeSettings))));
-                reply.AppendLine();
-                reply.AppendLine(context.Localize("chart.tryDifferent",
-                    ("periods", Constants.CompactTimePeriodList)));
-            }
-
-            if (chartSettings.SkipWithoutImage && chartSettings.FilteredArtist == null && !chartSettings.HasGenreFilter)
-            {
-                reply.AppendLine();
-                reply.AppendLine(context.Localize("chart.extraAlbumsRequired",
-                    ("amount", extraAlbums.ToString())));
-            }
-
-            return BuildChartValidationError(context, reply.ToString(),
-                InteractionConstants.Chart.AlbumType, chartSettings, userSettings.UserNameLastFm);
-        }
-
-        if ((chartSettings.ReleaseYearFilter.HasValue || chartSettings.ReleaseDecadeFilter.HasValue) &&
-            chartSettings.TimeSettings.TimePeriod == TimePeriod.AllTime)
-        {
-            var topAllTimeDb = chartSettings.ReleaseYearFilter.HasValue
-                ? await this._albumService.GetUserAllTimeTopAlbumsByReleaseYear(userSettings.UserId,
-                    chartSettings.ReleaseYearFilter.Value)
-                : await this._albumService.GetUserAllTimeTopAlbumsByReleaseDecade(userSettings.UserId,
-                    chartSettings.ReleaseDecadeFilter.Value);
-
-            if (chartSettings.HasGenreFilter)
-            {
-                var artistsInGenres = await this._genreService.GetArtistsInGenres(
-                    topAllTimeDb.Select(f => f.ArtistName), chartSettings.FilteredGenres);
-
-                topAllTimeDb = topAllTimeDb.Where(f => artistsInGenres.Contains(f.ArtistName)).ToList();
-            }
-
-            albums.Content = albums.Content with { TopAlbums = topAllTimeDb, TotalAmount = topAllTimeDb.Count };
-        }
-
-        if (chartSettings.ReleaseYearFilter.HasValue)
-        {
-            albums = await this._albumService.FilterAlbumToReleaseYear(albums, chartSettings.ReleaseYearFilter.Value);
-
-            if (albums.Content.TopAlbums.Count < chartSettings.ImagesNeeded)
-            {
+            case ChartDataStatus.NotEnoughReleaseYear:
                 return BuildChartValidationError(context,
                     context.Localize("chart.notEnoughReleaseYear",
                         ("year", chartSettings.ReleaseYearFilter.Value.ToString()),
-                        ("amount", albums.Content.TopAlbums.Count.ToString()),
+                        ("amount", data.Amount.ToString()),
                         ("required", chartSettings.ImagesNeeded.ToString()),
                         ("periods", Constants.CompactTimePeriodList)),
                     InteractionConstants.Chart.AlbumType, chartSettings, userSettings.UserNameLastFm);
-            }
-        }
-        else if (chartSettings.ReleaseDecadeFilter.HasValue)
-        {
-            albums = await this._albumService.FilterAlbumToReleaseDecade(albums,
-                chartSettings.ReleaseDecadeFilter.Value);
-
-            if (albums.Content.TopAlbums.Count < chartSettings.ImagesNeeded)
-            {
+            case ChartDataStatus.NotEnoughReleaseDecade:
                 return BuildChartValidationError(context,
                     context.Localize("chart.notEnoughReleaseDecade",
                         ("decade", chartSettings.ReleaseDecadeFilter.Value.ToString()),
-                        ("amount", albums.Content.TopAlbums.Count.ToString()),
+                        ("amount", data.Amount.ToString()),
                         ("required", chartSettings.ImagesNeeded.ToString()),
                         ("periods", Constants.CompactTimePeriodList)),
                     InteractionConstants.Chart.AlbumType, chartSettings, userSettings.UserNameLastFm);
-            }
-        }
-
-        if (chartSettings.FilterSingles)
-        {
-            albums = await this._albumService.FilterAlbumsThatAreSingles(albums);
-
-            if (albums.Content.TopAlbums.Count < chartSettings.ImagesNeeded)
-            {
+            case ChartDataStatus.NotEnoughNonSingles:
                 return BuildChartValidationError(context,
                     context.Localize("chart.notEnoughNonSingles",
-                        ("amount", albums.Content.TopAlbums.Count.ToString()),
+                        ("amount", data.Amount.ToString()),
                         ("required", chartSettings.ImagesNeeded.ToString()),
                         ("periods", Constants.CompactTimePeriodList)),
                     InteractionConstants.Chart.AlbumType, chartSettings, userSettings.UserNameLastFm);
-            }
         }
-
-        var imagesToRequest = chartSettings.ImagesNeeded + extraAlbums;
-        var topAlbums = albums.Content.TopAlbums.Take(imagesToRequest).ToList();
-
-        await this._albumService.PreferStoredAlbumCovers(topAlbums);
-
-        var albumsWithoutImage = topAlbums.Where(f => f.AlbumCoverUrl == null).ToList();
-
-        var amountToFetch = albumsWithoutImage.Count > 3 ? 3 : albumsWithoutImage.Count;
-        for (var i = 0; i < amountToFetch; i++)
-        {
-            var albumWithoutImage = albumsWithoutImage[i];
-            var albumCall = await this._dataSourceFactory.GetAlbumInfoAsync(albumWithoutImage.ArtistName,
-                albumWithoutImage.AlbumName, userSettings.UserNameLastFm);
-            if (albumCall.Success && albumCall.Content?.AlbumUrl != null)
-            {
-                var spotifyArtistImage = await this._musicDataFactory.GetOrStoreAlbumAsync(albumCall.Content);
-                if (spotifyArtistImage?.SpotifyImageUrl != null)
-                {
-                    var index = topAlbums.FindIndex(f => f.ArtistName == albumWithoutImage.ArtistName &&
-                                                         f.AlbumName == albumWithoutImage.AlbumName);
-                    topAlbums[index].AlbumCoverUrl = spotifyArtistImage.SpotifyImageUrl;
-                }
-            }
-        }
-
-        chartSettings.Albums = topAlbums;
 
         var url =
             $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library/albums?{chartSettings.TimespanUrlString}";
@@ -340,7 +198,7 @@ public class ChartBuilders
 
         response.FileDescription = StringExtensions.TruncateLongString(chartSettings.FileDescription.ToString(), 1024);
         response.FileName =
-            $"album-chart-{chartSettings.Width}w-{chartSettings.Height}h-{chartSettings.TimeSettings.TimePeriod}-{userSettings.UserNameLastFm}{ChartService.ChartFileExtension}";
+            $"album-chart-{chartSettings.Width}w-{chartSettings.Height}h-{chartSettings.TimeSettings.TimePeriod}-{userSettings.UserNameLastFm}{ChartRenderer.ChartFileExtension}";
 
         var mediaGallery =
             new MediaGalleryItemProperties(new ComponentMediaProperties($"attachment://{response.FileName}"))
@@ -385,7 +243,7 @@ public class ChartBuilders
             response.ComponentsContainer.AddComponent(new TextDisplayProperties(footerText));
         }
 
-        var encoded = ChartService.EncodeChart(chart);
+        var encoded = ChartRenderer.EncodeChart(chart);
         response.Stream = encoded.AsStream(true);
         response.ResponseType = ResponseType.ComponentsV2;
         response.ComponentsContainer.WithAccentColor(DiscordConstants.LastFmColorRed);
@@ -420,98 +278,47 @@ public class ChartBuilders
             ResponseType = ResponseType.ImageWithEmbed,
         };
 
-        if (chartSettings.ImagesNeeded > ChartService.MaxImages)
+        var data = await this._chartDataService.GetArtistsAsync(chartSettings, userSettings.UserNameLastFm);
+
+        switch (data.Status)
         {
-            return BuildChartValidationError(context,
-                context.Localize("chart.tooManyImages", ("max", ChartService.MaxImages.ToString()),
-                    ("size", $"{(int)Math.Sqrt(ChartService.MaxImages)}x{(int)Math.Sqrt(ChartService.MaxImages)}")),
-                InteractionConstants.Chart.ArtistType, chartSettings, userSettings.UserNameLastFm);
-        }
-
-        var extraArtists = 0;
-        if (chartSettings.SkipWithoutImage)
-        {
-            extraArtists = chartSettings.Height * 2 + (chartSettings.Height > 5 ? 8 : 2);
-        }
-
-        var imagesToRequest = chartSettings.HasGenreFilter
-            ? 1000
-            : chartSettings.ImagesNeeded + extraArtists;
-
-        var artists = await this._dataSourceFactory.GetTopArtistsAsync(userSettings.UserNameLastFm,
-            chartSettings.TimeSettings, imagesToRequest, useCache: true);
-
-        var topArtists = artists?.Content?.TopArtists?.ToList() ?? [];
-
-        if (chartSettings.HasGenreFilter && topArtists.Count != 0)
-        {
-            var genreArtists =
-                await this._genreService.GetArtistsForGenres(chartSettings.FilteredGenres, topArtists);
-            var artistsInGenres = new HashSet<string>(
-                genreArtists.SelectMany(g => g.Artists.Select(a => a.ArtistName)),
-                StringComparer.OrdinalIgnoreCase);
-
-            topArtists = topArtists.Where(w => artistsInGenres.Contains(w.ArtistName)).ToList();
-        }
-
-        if (topArtists.Count < chartSettings.ImagesNeeded)
-        {
-            var count = topArtists.Count;
-
-            string reply;
-            if (chartSettings.HasGenreFilter)
+            case ChartDataStatus.TooManyImages:
+                return BuildChartValidationError(context,
+                    context.Localize("chart.tooManyImages", ("max", ChartRenderer.MaxImages.ToString()),
+                        ("size", $"{(int)Math.Sqrt(ChartRenderer.MaxImages)}x{(int)Math.Sqrt(ChartRenderer.MaxImages)}")),
+                    InteractionConstants.Chart.ArtistType, chartSettings, userSettings.UserNameLastFm);
+            case ChartDataStatus.NotEnough:
             {
-                reply = context.LocalizeCount("chart.notEnoughArtistsGenre",
-                    chartSettings.FilteredGenres.Count,
-                    ("amount", count.ToString()),
-                    ("required", chartSettings.ImagesNeeded.ToString()),
-                    ("genres", string.Join("**, **", chartSettings.FilteredGenres.Select(g => StringExtensions.Sanitize(g)))),
-                    ("periods", Constants.CompactTimePeriodList));
-            }
-            else
-            {
-                reply = context.Localize("chart.notEnoughArtists",
-                    ("amount", count.ToString()),
-                    ("required", chartSettings.ImagesNeeded.ToString()),
-                    ("periods", Constants.CompactTimePeriodList));
+                var count = data.Amount;
 
-                if (chartSettings.SkipWithoutImage)
+                string reply;
+                if (chartSettings.HasGenreFilter)
                 {
-                    reply += "\n\n" + context.Localize("chart.extraArtistsRequired",
-                        ("amount", extraArtists.ToString()));
+                    reply = context.LocalizeCount("chart.notEnoughArtistsGenre",
+                        chartSettings.FilteredGenres.Count,
+                        ("amount", count.ToString()),
+                        ("required", chartSettings.ImagesNeeded.ToString()),
+                        ("genres", string.Join("**, **", chartSettings.FilteredGenres.Select(g => StringExtensions.Sanitize(g)))),
+                        ("periods", Constants.CompactTimePeriodList));
                 }
-            }
-
-            return BuildChartValidationError(context, reply,
-                InteractionConstants.Chart.ArtistType, chartSettings, userSettings.UserNameLastFm);
-        }
-
-        topArtists = topArtists.Take(chartSettings.ImagesNeeded + extraArtists).ToList();
-
-        await this._artistService.FillArtistImages(topArtists);
-
-        var artistsWithoutImages = topArtists.Where(w => w.ArtistImageUrl == null).ToList();
-
-        var amountToFetch = artistsWithoutImages.Count > 3 ? 3 : artistsWithoutImages.Count;
-        for (int i = 0; i < amountToFetch; i++)
-        {
-            var artistWithoutImage = artistsWithoutImages[i];
-
-            var artistCall =
-                await this._dataSourceFactory.GetArtistInfoAsync(artistWithoutImage.ArtistName,
-                    userSettings.UserNameLastFm);
-            if (artistCall.Success && artistCall.Content?.ArtistUrl != null)
-            {
-                var spotifyArtistImage = await this._musicDataFactory.GetOrStoreArtistAsync(artistCall.Content);
-                if (spotifyArtistImage != null)
+                else
                 {
-                    var index = topArtists.FindIndex(f => f.ArtistName == artistWithoutImage.ArtistName);
-                    topArtists[index].ArtistImageUrl = spotifyArtistImage.SpotifyImageUrl;
+                    reply = context.Localize("chart.notEnoughArtists",
+                        ("amount", count.ToString()),
+                        ("required", chartSettings.ImagesNeeded.ToString()),
+                        ("periods", Constants.CompactTimePeriodList));
+
+                    if (chartSettings.SkipWithoutImage)
+                    {
+                        reply += "\n\n" + context.Localize("chart.extraArtistsRequired",
+                            ("amount", data.Extra.ToString()));
+                    }
                 }
+
+                return BuildChartValidationError(context, reply,
+                    InteractionConstants.Chart.ArtistType, chartSettings, userSettings.UserNameLastFm);
             }
         }
-
-        chartSettings.Artists = topArtists;
 
         var url =
             $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library/artists?{chartSettings.TimespanUrlString}";
@@ -563,7 +370,7 @@ public class ChartBuilders
 
         response.FileDescription = StringExtensions.TruncateLongString(chartSettings.FileDescription.ToString(), 1024);
         response.FileName =
-            $"artist-chart-{chartSettings.Width}w-{chartSettings.Height}h-{chartSettings.TimeSettings.TimePeriod}-{userSettings.UserNameLastFm}{ChartService.ChartFileExtension}";
+            $"artist-chart-{chartSettings.Width}w-{chartSettings.Height}h-{chartSettings.TimeSettings.TimePeriod}-{userSettings.UserNameLastFm}{ChartRenderer.ChartFileExtension}";
 
         var mediaGallery =
             new MediaGalleryItemProperties(new ComponentMediaProperties($"attachment://{response.FileName}"))
@@ -602,7 +409,7 @@ public class ChartBuilders
             response.ComponentsContainer.AddComponent(new TextDisplayProperties(footer.ToString()));
         }
 
-        var encoded = ChartService.EncodeChart(chart);
+        var encoded = ChartRenderer.EncodeChart(chart);
         response.Stream = encoded.AsStream(true);
         response.ResponseType = ResponseType.ComponentsV2;
         response.ComponentsContainer.WithAccentColor(DiscordConstants.LastFmColorRed);

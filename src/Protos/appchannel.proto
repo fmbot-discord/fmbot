@@ -20,6 +20,8 @@ service AppChannelService {
   rpc GetViewerTrack (AppChannelViewerRequest) returns (AppChannelViewerTrackReply);
   rpc ShareToChannel (AppChannelShareRequest) returns (AppChannelShareReply);
   rpc GetArtistTop (AppChannelArtistTopRequest) returns (AppChannelArtistTopReply);
+  rpc GetChart (AppChannelChartRequest) returns (AppChannelChartReply);
+  rpc ShareChartToChannel (AppChannelChartShareRequest) returns (AppChannelShareReply);
 }
 
 enum AppChannelEntity {
@@ -245,6 +247,7 @@ message AppChannelProfileReply {
   repeated AppChannelProfileArtist topArtists = 17;
   bool statsAvailable = 18;
   double averagePerDay = 19;
+  repeated AppChannelProfileTopEntry recentAlbums = 20;
 }
 
 message AppChannelEntityInfoRequest {
@@ -448,4 +451,51 @@ message AppChannelArtistTopReply {
   bool available = 2;
   int32 total = 3;
   repeated AppChannelServerTopEntry entries = 4;
+}
+
+message AppChannelChartRequest {
+  int64 discordGuildId = 1;
+  int64 discordUserId = 2;
+  int64 targetDiscordUserId = 3;
+  bool artistChart = 4;
+  string size = 5;
+  string timePeriod = 6;
+  bool titles = 7;
+  bool skipWithoutImage = 8;
+  bool sfwOnly = 9;
+  bool rainbow = 10;
+  bool hideSingles = 11;
+  string releaseFilter = 12;
+  repeated string genres = 13;
+}
+
+message AppChannelChartReply {
+  bool registered = 1;
+  bool success = 2;
+  string error = 3;
+  bytes image = 4;
+  int32 width = 5;
+  int32 height = 6;
+  string title = 7;
+  repeated string details = 8;
+  bool containsNsfw = 9;
+  repeated string genreOptions = 10;
+  string lastFmUrl = 11;
+  string lastFmUserName = 12;
+  string description = 13;
+}
+
+message AppChannelChartShareRequest {
+  int64 discordGuildId = 1;
+  int64 discordUserId = 2;
+  int64 discordChannelId = 3;
+  int64 applicationId = 4;
+  bytes image = 5;
+  string fileName = 6;
+  string title = 7;
+  string lastFmUrl = 8;
+  repeated string details = 9;
+  bool containsNsfw = 10;
+  bool artistChart = 11;
+  string description = 12;
 }

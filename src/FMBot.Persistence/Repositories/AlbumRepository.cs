@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
 using FMBot.Domain.Enums;
+using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
@@ -149,6 +150,57 @@ public class AlbumRepository
             userId,
             artistName
         })).ToList();
+    }
+
+    public static async Task<List<AlbumEnrichmentRow>> GetAlbumEnrichmentRows(string[] artistNames,
+        string[] albumNames, NpgsqlConnection connection)
+    {
+        const string sql = "SELECT a.name AS album_name, a.artist_name, a.release_date, a.release_date_precision, a.type AS album_type " +
+                           "FROM albums a " +
+                           "INNER JOIN unnest(@artistNames::citext[], @albumNames::citext[]) AS q(artist_name, album_name) " +
+                           "  ON a.artist_name = q.artist_name AND a.name = q.album_name " +
+                           "WHERE a.release_date IS NOT NULL AND a.release_date <> '0000'";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+
+        return (await connection.QueryAsync<AlbumEnrichmentRow>(sql, new { artistNames, albumNames })).ToList();
+    }
+
+    public static async Task<List<TopAlbum>> GetUserAllTimeTopAlbumsByReleasePrefix(int userId, string prefix,
+        int prefixLength, NpgsqlConnection connection)
+    {
+        const string sql = @"
+            SELECT ua.name AS album_name,
+                   ua.artist_name,
+                   ua.playcount AS user_playcount,
+                   COALESCE(a.spotify_image_url, a.lastfm_image_url) AS album_cover_url,
+                   TO_DATE(
+                     CASE a.release_date_precision
+                       WHEN 'year' THEN a.release_date || '-01-01'
+                       WHEN 'month' THEN a.release_date || '-01'
+                       ELSE a.release_date
+                     END, 'YYYY-MM-DD')::timestamp AS release_date,
+                   a.release_date_precision,
+                   a.type AS album_type
+            FROM user_albums ua
+            INNER JOIN albums a ON ua.album_id = a.id
+            WHERE ua.user_id = @userId
+              AND a.release_date IS NOT NULL
+              AND a.release_date <> '0000'
+              AND LEFT(a.release_date, @prefixLength) = @prefix
+            ORDER BY ua.playcount DESC";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+
+        var albums = (await connection.QueryAsync<TopAlbum>(sql, new { userId, prefix, prefixLength })).ToList();
+
+        foreach (var album in albums)
+        {
+            album.ArtistUrl = LastfmUrlExtensions.GetArtistUrl(album.ArtistName);
+            album.AlbumUrl = LastfmUrlExtensions.GetAlbumUrl(album.ArtistName, album.AlbumName);
+        }
+
+        return albums;
     }
 
     public static async Task<int> GetUserAlbumCount(int userId, NpgsqlConnection connection)

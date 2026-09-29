@@ -49,6 +49,7 @@ public class AlbumService
     private readonly UserService _userService;
     private readonly AlbumEnrichment.AlbumEnrichmentClient _albumEnrichment;
     private readonly FeaturedService _featuredService;
+    private readonly Core.AlbumFilterService _albumFilterService;
 
     public AlbumService(IMemoryCache cache,
         IOptions<BotSettings> botSettings,
@@ -62,7 +63,8 @@ public class AlbumService
         AliasService aliasService,
         UserService userService,
         AlbumEnrichment.AlbumEnrichmentClient albumEnrichment,
-        FeaturedService featuredService)
+        FeaturedService featuredService,
+        Core.AlbumFilterService albumFilterService)
     {
         this._cache = cache;
         this._dataSourceFactory = dataSourceFactory;
@@ -76,6 +78,7 @@ public class AlbumService
         this._userService = userService;
         this._albumEnrichment = albumEnrichment;
         this._featuredService = featuredService;
+        this._albumFilterService = albumFilterService;
         this._botSettings = botSettings.Value;
     }
 
@@ -373,74 +376,14 @@ public class AlbumService
         }
     }
 
-    public async Task PreferStoredAlbumCovers(List<TopAlbum> topAlbums)
-    {
-        if (topAlbums.Count == 0)
-        {
-            return;
-        }
+    public Task<Response<TopAlbumList>> FilterAlbumToReleaseYear(Response<TopAlbumList> albums, int year) =>
+        this._albumFilterService.FilterAlbumToReleaseYear(albums, year);
 
-        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
-        await connection.OpenAsync();
+    public Task<Response<TopAlbumList>> FilterAlbumToReleaseDecade(Response<TopAlbumList> albums, int decade) =>
+        this._albumFilterService.FilterAlbumToReleaseDecade(albums, decade);
 
-        await AlbumRepository.GetAlbumCovers(topAlbums, connection);
-    }
-
-    public async Task<Response<TopAlbumList>> FilterAlbumToReleaseYear(Response<TopAlbumList> albums, int year)
-    {
-        await EnrichTopAlbums(albums.Content.TopAlbums);
-
-        var yearStart = new DateTime(year, 1, 1);
-        var yearEnd = yearStart.AddYears(1).AddSeconds(-1);
-        albums.Content = albums.Content with
-        {
-            TopAlbums = albums.Content.TopAlbums
-                .Where(w => w.ReleaseDate.HasValue &&
-                            w.ReleaseDate.Value >= yearStart &&
-                            w.ReleaseDate.Value <= yearEnd)
-                .ToList()
-        };
-
-        DataSourceFactory.AddAlbumTopList(albums, null);
-
-        return albums;
-    }
-
-    public async Task<Response<TopAlbumList>> FilterAlbumToReleaseDecade(Response<TopAlbumList> albums, int decade)
-    {
-        await EnrichTopAlbums(albums.Content.TopAlbums);
-
-        var decadeStart = new DateTime(decade, 1, 1);
-        var decadeEnd = decadeStart.AddYears(10).AddSeconds(-1);
-        albums.Content = albums.Content with
-        {
-            TopAlbums = albums.Content.TopAlbums
-                .Where(w => w.ReleaseDate.HasValue &&
-                            w.ReleaseDate.Value >= decadeStart &&
-                            w.ReleaseDate.Value <= decadeEnd)
-                .ToList()
-        };
-
-        DataSourceFactory.AddAlbumTopList(albums, null);
-
-        return albums;
-    }
-
-    public async Task<Response<TopAlbumList>> FilterAlbumsThatAreSingles(Response<TopAlbumList> albums)
-    {
-        await EnrichTopAlbums(albums.Content.TopAlbums);
-
-        albums.Content = albums.Content with
-        {
-            TopAlbums = albums.Content.TopAlbums
-                .Where(w => !string.Equals(w.AlbumType, "single", StringComparison.OrdinalIgnoreCase))
-                .ToList()
-        };
-
-        DataSourceFactory.AddAlbumTopList(albums, null);
-
-        return albums;
-    }
+    public Task<Response<TopAlbumList>> FilterAlbumsThatAreSingles(Response<TopAlbumList> albums) =>
+        this._albumFilterService.FilterAlbumsThatAreSingles(albums);
 
     public async Task<List<GuildAlbum>> FilterAlbumsToReleasePeriod(List<GuildAlbum> albums, DateTime periodStart,
         DateTime periodEnd)
@@ -450,7 +393,7 @@ public class AlbumService
             return albums;
         }
 
-        var lookup = await GetAlbumEnrichmentLookup(
+        var lookup = await this._albumFilterService.GetAlbumEnrichmentLookup(
             albums.Select(s => s.ArtistName).ToArray(),
             albums.Select(s => s.AlbumName).ToArray());
 
@@ -484,7 +427,7 @@ public class AlbumService
             return albums;
         }
 
-        var lookup = await GetAlbumEnrichmentLookup(
+        var lookup = await this._albumFilterService.GetAlbumEnrichmentLookup(
             albums.Select(s => s.ArtistName).ToArray(),
             albums.Select(s => s.AlbumName).ToArray());
 
@@ -494,75 +437,8 @@ public class AlbumService
             .ToList();
     }
 
-    private async Task EnrichTopAlbums(IReadOnlyCollection<TopAlbum> list)
-    {
-        var albumsToEnrich = list.Where(w => w.ReleaseDate == null || w.AlbumType == null).ToList();
-        if (albumsToEnrich.Count == 0)
-        {
-            return;
-        }
-
-        var lookup = await GetAlbumEnrichmentLookup(
-            albumsToEnrich.Select(s => s.ArtistName).ToArray(),
-            albumsToEnrich.Select(s => s.AlbumName).ToArray());
-
-        foreach (var topAlbum in albumsToEnrich)
-        {
-            var key = (topAlbum.AlbumName.ToLower(), topAlbum.ArtistName.ToLower());
-
-            if (lookup.TryGetValue(key, out var row))
-            {
-                topAlbum.ReleaseDate ??= ParseReleaseDate(row.ReleaseDate, row.ReleaseDatePrecision);
-                topAlbum.ReleaseDatePrecision ??= row.ReleaseDatePrecision;
-                topAlbum.AlbumType ??= !string.IsNullOrEmpty(row.AlbumType) ? row.AlbumType : null;
-            }
-        }
-    }
-
-    private async Task<Dictionary<(string AlbumName, string ArtistName), AlbumEnrichmentRow>> GetAlbumEnrichmentLookup(
-        string[] artistNames, string[] albumNames)
-    {
-        const string sql = "SELECT a.name AS album_name, a.artist_name, a.release_date, a.release_date_precision, a.type AS album_type " +
-                           "FROM albums a " +
-                           "INNER JOIN unnest(@artistNames::citext[], @albumNames::citext[]) AS q(artist_name, album_name) " +
-                           "  ON a.artist_name = q.artist_name AND a.name = q.album_name " +
-                           "WHERE a.release_date IS NOT NULL AND a.release_date <> '0000'";
-
-        DefaultTypeMap.MatchNamesWithUnderscores = true;
-        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
-        await connection.OpenAsync();
-
-        var rows = (await connection.QueryAsync<AlbumEnrichmentRow>(sql, new { artistNames, albumNames })).ToList();
-
-        return rows
-            .GroupBy(g => (g.AlbumName.ToLower(), g.ArtistName.ToLower()))
-            .ToDictionary(g => g.Key, g => g.First());
-    }
-
-    public static DateTime? ParseReleaseDate(string releaseDate, string precision)
-    {
-        if (string.IsNullOrEmpty(releaseDate) || releaseDate == "0000")
-        {
-            return null;
-        }
-
-        try
-        {
-            var parsed = precision switch
-            {
-                "year" => DateTime.Parse($"{releaseDate}-1-1", CultureInfo.InvariantCulture),
-                "month" => DateTime.Parse($"{releaseDate}-1", CultureInfo.InvariantCulture),
-                "day" => DateTime.Parse(releaseDate, CultureInfo.InvariantCulture),
-                _ => (DateTime?)null
-            };
-
-            return parsed.HasValue ? DateTime.SpecifyKind(parsed.Value, DateTimeKind.Utc) : null;
-        }
-        catch (FormatException)
-        {
-            return null;
-        }
-    }
+    public static DateTime? ParseReleaseDate(string releaseDate, string precision) =>
+        Core.AlbumFilterService.ParseReleaseDate(releaseDate, precision);
 
     public async Task<Album> GetAlbumForId(int albumId)
     {
@@ -872,53 +748,11 @@ public class AlbumService
         return freshTopAlbums;
     }
 
-    public async Task<List<TopAlbum>> GetUserAllTimeTopAlbumsByReleaseYear(int userId, int year)
-    {
-        return await GetUserAllTimeTopAlbumsByReleasePrefix(userId, year.ToString(), prefixLength: 4);
-    }
+    public Task<List<TopAlbum>> GetUserAllTimeTopAlbumsByReleaseYear(int userId, int year) =>
+        this._albumFilterService.GetUserAllTimeTopAlbumsByReleaseYear(userId, year);
 
-    public async Task<List<TopAlbum>> GetUserAllTimeTopAlbumsByReleaseDecade(int userId, int decade)
-    {
-        return await GetUserAllTimeTopAlbumsByReleasePrefix(userId, (decade / 10).ToString(), prefixLength: 3);
-    }
-
-    private async Task<List<TopAlbum>> GetUserAllTimeTopAlbumsByReleasePrefix(int userId, string prefix, int prefixLength)
-    {
-        const string sql = @"
-            SELECT ua.name AS album_name,
-                   ua.artist_name,
-                   ua.playcount AS user_playcount,
-                   COALESCE(a.spotify_image_url, a.lastfm_image_url) AS album_cover_url,
-                   TO_DATE(
-                     CASE a.release_date_precision
-                       WHEN 'year' THEN a.release_date || '-01-01'
-                       WHEN 'month' THEN a.release_date || '-01'
-                       ELSE a.release_date
-                     END, 'YYYY-MM-DD')::timestamp AS release_date,
-                   a.release_date_precision,
-                   a.type AS album_type
-            FROM user_albums ua
-            INNER JOIN albums a ON ua.album_id = a.id
-            WHERE ua.user_id = @userId
-              AND a.release_date IS NOT NULL
-              AND a.release_date <> '0000'
-              AND LEFT(a.release_date, @prefixLength) = @prefix
-            ORDER BY ua.playcount DESC";
-
-        DefaultTypeMap.MatchNamesWithUnderscores = true;
-        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
-        await connection.OpenAsync();
-
-        var albums = (await connection.QueryAsync<TopAlbum>(sql, new { userId, prefix, prefixLength })).ToList();
-
-        foreach (var album in albums)
-        {
-            album.ArtistUrl = LastfmUrlExtensions.GetArtistUrl(album.ArtistName);
-            album.AlbumUrl = LastfmUrlExtensions.GetAlbumUrl(album.ArtistName, album.AlbumName);
-        }
-
-        return albums;
-    }
+    public Task<List<TopAlbum>> GetUserAllTimeTopAlbumsByReleaseDecade(int userId, int decade) =>
+        this._albumFilterService.GetUserAllTimeTopAlbumsByReleaseDecade(userId, decade);
 
     public async Task<List<AlbumPopularity>> GetUserAllTimeTopAlbumsPopularity(int userId, List<TopAlbum> topAlbums)
     {

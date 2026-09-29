@@ -381,6 +381,50 @@ LIMIT @limit;";
         return (await connection.QueryAsync<TopArtist>(sql, new { userId, limit })).ToList();
     }
 
+    public static async Task FillArtistImages(IReadOnlyList<TopArtist> topArtists, NpgsqlConnection connection)
+    {
+        var artistsToFill = topArtists.Where(w => string.IsNullOrWhiteSpace(w.ArtistImageUrl)).ToList();
+        if (artistsToFill.Count == 0)
+        {
+            return;
+        }
+
+        var names = artistsToFill.Select(s => s.ArtistName).ToArray();
+
+        const string sql = "SELECT a.name, " +
+                           "       COALESCE(a.spotify_image_url, " +
+                           "                REPLACE(REPLACE(ai.url, '{w}', ai.width::text), '{h}', ai.height::text)) AS image_url " +
+                           "FROM artists a " +
+                           "INNER JOIN unnest(@names::citext[]) AS q(name) ON a.name = q.name " +
+                           "LEFT JOIN LATERAL (" +
+                           "    SELECT url, width, height FROM artist_images " +
+                           "    WHERE a.spotify_image_url IS NULL " +
+                           "      AND artist_id = a.id " +
+                           "      AND image_source = 3 " +
+                           "      AND width IS NOT NULL " +
+                           "      AND height IS NOT NULL " +
+                           "    LIMIT 1" +
+                           ") ai ON TRUE " +
+                           "WHERE a.last_fm_url IS NOT NULL " +
+                           "AND (a.spotify_image_url IS NOT NULL OR ai.url IS NOT NULL)";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+
+        var rows = (await connection.QueryAsync<ArtistImageRow>(sql, new { names })).ToList();
+
+        var lookup = rows
+            .GroupBy(g => g.Name, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First().ImageUrl, StringComparer.OrdinalIgnoreCase);
+
+        foreach (var topArtist in artistsToFill)
+        {
+            if (lookup.TryGetValue(topArtist.ArtistName, out var url))
+            {
+                topArtist.ArtistImageUrl = url;
+            }
+        }
+    }
+
     public static async Task<List<EntityImageUrl>> GetImageUrlsForArtists(string[] artistNames, NpgsqlConnection connection)
     {
         const string sql = "SELECT a.id, a.name AS artist_name, a.name, " +

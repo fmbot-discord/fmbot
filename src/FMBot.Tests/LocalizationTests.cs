@@ -9,6 +9,7 @@ using FMBot.Domain.Attributes;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using NetCord.Services.ApplicationCommands;
+using PeriodAliases = FMBot.Core.PeriodAliases;
 
 namespace FMBot.Tests;
 
@@ -708,10 +709,11 @@ public class LocalizationTests
     public void NoOrphanedEnglishKeys()
     {
         var english = LoadLocaleFile("en");
-        var sourceFiles = Directory.EnumerateFiles(Path.Combine(RepoRoot(), "src", "FMBot.Bot"), "*.cs", SearchOption.AllDirectories);
+        var sourceFiles = Directory.EnumerateFiles(Path.Combine(RepoRoot(), "src", "FMBot.Bot"), "*.cs", SearchOption.AllDirectories)
+            .Concat(Directory.EnumerateFiles(Path.Combine(RepoRoot(), "src", "FMBot.Core"), "*.cs", SearchOption.AllDirectories));
 
-        var plainKeyRegex = new Regex(@"\.(?:Localize|Translate)\(\s*""(?<key>[a-zA-Z][a-zA-Z0-9.]+)""", RegexOptions.Compiled);
-        var countKeyRegex = new Regex(@"\.(?:LocalizeCount|TranslateCount)\(\s*""(?<key>[a-zA-Z][a-zA-Z0-9.]+)""", RegexOptions.Compiled);
+        var plainKeyRegex = new Regex(@"(?:\.(?:Localize|Translate)|\btranslate)\(\s*""(?<key>[a-zA-Z][a-zA-Z0-9.]+)""", RegexOptions.Compiled);
+        var countKeyRegex = new Regex(@"(?:\.(?:LocalizeCount|TranslateCount)|\btranslateCount)\(\s*""(?<key>[a-zA-Z][a-zA-Z0-9.]+)""", RegexOptions.Compiled);
 
         var plainRefs = new HashSet<string>(RuntimeKeys.Concat(DynamicPlainKeys).Concat(TemplateOptionKeys()).Concat(OptionLocalizationKeys()));
         var pluralRefs = new HashSet<string>(DynamicPluralBaseKeys);
@@ -752,7 +754,7 @@ public class LocalizationTests
         }
 
         Assert.That(orphans, Is.Empty,
-            "These en.json keys have no call site anywhere in FMBot.Bot, so they cost translator effort across 11 " +
+            "These en.json keys have no call site anywhere in FMBot.Bot or FMBot.Core, so they cost translator effort across 11 " +
             "languages for output that never renders. Delete them from en.json and every locale file, or register " +
             $"them in DynamicPlainKeys/DynamicPluralBaseKeys/RuntimeKeys if they are referenced dynamically:\n{string.Join("\n", orphans)}");
     }

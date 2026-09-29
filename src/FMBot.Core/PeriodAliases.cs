@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using FMBot.Domain.Enums;
 
-namespace FMBot.Bot.Models;
+namespace FMBot.Core;
 
 public static class PeriodAliases
 {

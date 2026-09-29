@@ -8,7 +8,7 @@ using FMBot.Bot.Factories;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
-using FMBot.Domain.Interfaces;
+using FMBot.Core.Charts;
 using FMBot.Domain.Models;
 using NetCord;
 using NetCord.Rest;
@@ -21,8 +21,7 @@ public class ChartInteractions(
     SettingService settingService,
     ChartBuilders chartBuilders,
     ArtistsService artistsService,
-    GenreService genreService,
-    IDataSourceFactory dataSourceFactory)
+    ChartDataService chartDataService)
     : ComponentInteractionModule<ComponentInteractionContext>
 {
     [ComponentInteraction(InteractionConstants.Chart.EditButton)]
@@ -54,7 +53,7 @@ public class ChartInteractions(
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-            var chartSettings = new ChartSettings(this.Context.User);
+            var chartSettings = new ChartSettings();
             chartSettings = ChartService.GetDimensions(chartSettings, size).newChartSettings;
 
             var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
@@ -95,52 +94,8 @@ public class ChartInteractions(
     {
         var timeSettings = SettingService.GetTimePeriod(timePeriodStr, timeZone: userSettings.TimeZone, language: LocalizationService.GetLanguage(this.Context.Interaction.GuildId, this.Context.Interaction.GuildLocale));
 
-        List<string> artistNames;
-        if (chartType == "a")
-        {
-            var topAlbums = await dataSourceFactory.GetTopAlbumsAsync(
-                userSettings.UserNameLastFm, timeSettings, 250, useCache: true);
-            artistNames = topAlbums?.Content?.TopAlbums?
-                .Select(a => a.ArtistName)
-                .Where(n => !string.IsNullOrEmpty(n))
-                .Distinct()
-                .ToList() ?? [];
-        }
-        else
-        {
-            var topArtists = await dataSourceFactory.GetTopArtistsAsync(
-                userSettings.UserNameLastFm, timeSettings, 250, useCache: true);
-            artistNames = topArtists?.Content?.TopArtists?
-                .Select(a => a.ArtistName)
-                .Where(n => !string.IsNullOrEmpty(n))
-                .ToList() ?? [];
-        }
-
-        var chartGenres = await genreService.GetTopGenresForTopArtistsString(artistNames);
-
-        var menuGenres = new List<string>();
-        foreach (var genre in selectedGenres)
-        {
-            if (!menuGenres.Contains(genre, StringComparer.OrdinalIgnoreCase))
-            {
-                menuGenres.Add(genre);
-            }
-        }
-
-        foreach (var genre in chartGenres)
-        {
-            if (menuGenres.Count >= 25)
-            {
-                break;
-            }
-
-            if (!menuGenres.Contains(genre, StringComparer.OrdinalIgnoreCase))
-            {
-                menuGenres.Add(genre);
-            }
-        }
-
-        return menuGenres;
+        return await chartDataService.GetGenreOptions(chartType != "a", userSettings.UserNameLastFm, timeSettings,
+            selectedGenres);
     }
 
     [ComponentInteraction(InteractionConstants.Chart.EditModal)]
@@ -175,15 +130,6 @@ public class ChartInteractions(
             var timePeriodValue = this.Context.GetModalMenuValue("time_period");
             var checkedOptions = this.Context.GetModalCheckboxValues("options");
 
-            var hasTitles = checkedOptions.Contains("titles");
-            var hasSkip = checkedOptions.Contains("skip");
-            var hasSfw = checkedOptions.Contains("sfw");
-            var hasRainbow = checkedOptions.Contains("rainbow");
-            var hasHideSingles = checkedOptions.Contains("hidesingles");
-
-            var titleSetting = hasTitles ? TitleSetting.Titles : TitleSetting.TitlesDisabled;
-            var skip = hasSkip || hasRainbow;
-
             Persistence.Domain.Models.Artist filteredArtist = null;
             if (int.TryParse(artistFilterId, out var artId) && artId > 0)
             {
@@ -195,53 +141,20 @@ public class ChartInteractions(
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-            int? releaseYear = null;
-            int? releaseDecade = null;
-            if (chartType == "a")
-            {
-                var releaseFilterStr = this.Context.GetModalValue("release_filter")?.Trim();
-                if (!string.IsNullOrWhiteSpace(releaseFilterStr))
-                {
-                    if (releaseFilterStr.EndsWith("s") &&
-                        int.TryParse(releaseFilterStr.TrimEnd('s'), out var decade) &&
-                        decade >= 1900 && decade % 10 == 0)
-                    {
-                        releaseDecade = decade;
-                    }
-                    else if (int.TryParse(releaseFilterStr, out var year) && year is >= 1900 and <= 2100)
-                    {
-                        releaseYear = year;
-                    }
-                }
-            }
-
-            var hasFilters = releaseYear.HasValue || releaseDecade.HasValue || filteredArtist != null;
-            var timeSettings = SettingService.GetTimePeriod(
+            var chartSettings = ChartOptions.FromEditOptions(
+                chartType == "r",
+                sizeStr,
                 timePeriodValue,
-                hasFilters ? TimePeriod.AllTime : TimePeriod.Weekly,
-                timeZone: userSettings.TimeZone,
-                language: LocalizationService.GetLanguage(this.Context.Interaction.GuildId, this.Context.Interaction.GuildLocale));
-
-            var chartSettings = new ChartSettings(this.Context.User)
-            {
-                ArtistChart = chartType == "r",
-                FilteredArtist = filteredArtist,
-                TitleSetting = titleSetting,
-                SkipWithoutImage = skip,
-                SkipNsfw = hasSfw,
-                RainbowSortingEnabled = hasRainbow,
-                FilterSingles = hasHideSingles,
-                TimeSettings = timeSettings,
-                TimespanString = timeSettings.Description,
-                TimespanUrlString = timeSettings.UrlParameter,
-                ReleaseYearFilter = releaseYear,
-                ReleaseDecadeFilter = releaseDecade,
-                FilteredGenres = filteredGenres,
-                CustomOptionsEnabled = titleSetting != TitleSetting.Titles || skip || hasSfw || hasRainbow ||
-                                       hasHideSingles || filteredGenres.Count > 0
-            };
-
-            chartSettings = ChartService.GetDimensions(chartSettings, sizeStr).newChartSettings;
+                checkedOptions.Contains("titles"),
+                checkedOptions.Contains("skip"),
+                checkedOptions.Contains("sfw"),
+                checkedOptions.Contains("rainbow"),
+                checkedOptions.Contains("hidesingles"),
+                chartType == "a" ? this.Context.GetModalValue("release_filter") : null,
+                filteredGenres,
+                filteredArtist,
+                userSettings.TimeZone,
+                LocalizationService.GetLanguage(this.Context.Interaction.GuildId, this.Context.Interaction.GuildLocale));
 
             ResponseModel response;
             if (chartType == "a")

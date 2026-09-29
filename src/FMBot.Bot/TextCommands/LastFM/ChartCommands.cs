@@ -8,6 +8,7 @@ using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
+using FMBot.Core.Charts;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
@@ -79,7 +80,7 @@ public class ChartCommands(
         {
             _ = this.Context.Channel?.TriggerTypingAsync()!;
 
-            var chartSettings = new ChartSettings(this.Context.User)
+            var chartSettings = new ChartSettings()
             {
                 ArtistChart = false
             };
@@ -144,7 +145,7 @@ public class ChartCommands(
         {
             _ = this.Context.Channel?.TriggerTypingAsync()!;
 
-            var chartSettings = new ChartSettings(this.Context.User) { ArtistChart = true };
+            var chartSettings = new ChartSettings() { ArtistChart = true };
 
             chartSettings = await chartService.SetSettings(chartSettings, userSettings,
                 language: LocalizationService.GetLanguage(this.Context.Guild?.Id, this.Context.Guild?.PreferredLocale));

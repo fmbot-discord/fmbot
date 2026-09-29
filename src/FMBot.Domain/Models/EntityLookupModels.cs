@@ -9,6 +9,21 @@ public class EntityImageUrl
     public string ImageUrl { get; set; }
 }
 
+public class AlbumEnrichmentRow
+{
+    public string AlbumName { get; set; }
+    public string ArtistName { get; set; }
+    public string ReleaseDate { get; set; }
+    public string ReleaseDatePrecision { get; set; }
+    public string AlbumType { get; set; }
+}
+
+public class ArtistImageRow
+{
+    public string Name { get; set; }
+    public string ImageUrl { get; set; }
+}
+
 public class EntityPlaycount
 {
     public string ArtistName { get; set; }

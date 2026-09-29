@@ -25,13 +25,6 @@ public static class Statistics
             });
 
 
-    public static readonly Counter LastfmImageCalls = Metrics
-        .CreateCounter("lastfm_image_cdn_calls", "Amount of calls to the last.fm image cdn");
-
-    public static readonly Counter LastfmCachedImageCalls = Metrics
-        .CreateCounter("lastfm_cached_image_cdn_calls", "Amount of calls locally cached to last.fm images");
-
-
     public static readonly Counter LastfmNowPlayingUpdates = Metrics
         .CreateCounter("lastfm_scrobbling_nowplaying", "Amount of now playing updates sent to Last.fm",
             new CounterConfiguration
