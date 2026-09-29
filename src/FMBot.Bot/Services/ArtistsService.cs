@@ -528,6 +528,78 @@ public class ArtistsService
 
                     break;
                 }
+                case MusicLinkExtensions.MusicLinkType.SpotifyTrack:
+                {
+                    await using var db = await this._contextFactory.CreateDbContextAsync();
+                    var dbTrack = await db.Tracks.FirstOrDefaultAsync(f => f.SpotifyId == linkResult.Id);
+                    if (dbTrack?.ArtistName != null)
+                    {
+                        return dbTrack.ArtistName;
+                    }
+
+                    var spotifyTrack = await this._spotifyService.GetTrackById(linkResult.Id);
+                    if (spotifyTrack != null)
+                    {
+                        return spotifyTrack.Artists.First().Name;
+                    }
+
+                    break;
+                }
+                case MusicLinkExtensions.MusicLinkType.SpotifyAlbum:
+                {
+                    await using var db = await this._contextFactory.CreateDbContextAsync();
+                    var dbAlbum = await db.Albums.FirstOrDefaultAsync(f => f.SpotifyId == linkResult.Id);
+                    if (dbAlbum?.ArtistName != null)
+                    {
+                        return dbAlbum.ArtistName;
+                    }
+
+                    var spotifyAlbum = await this._spotifyService.GetAlbumById(linkResult.Id);
+                    if (spotifyAlbum != null)
+                    {
+                        return spotifyAlbum.Artists.First().Name;
+                    }
+
+                    break;
+                }
+                case MusicLinkExtensions.MusicLinkType.AppleMusicSong:
+                {
+                    if (long.TryParse(linkResult.Id, out var appleMusicId))
+                    {
+                        var dbTrack = await this._appleMusicService.GetTrackForAppleMusicId(appleMusicId);
+                        if (dbTrack?.ArtistName != null)
+                        {
+                            return dbTrack.ArtistName;
+                        }
+                    }
+
+                    var appleMusicSong = await this._appleMusicService.GetAppleMusicSongById(linkResult.Id);
+                    if (appleMusicSong?.Attributes != null)
+                    {
+                        return appleMusicSong.Attributes.ArtistName;
+                    }
+
+                    break;
+                }
+                case MusicLinkExtensions.MusicLinkType.AppleMusicAlbum:
+                {
+                    if (long.TryParse(linkResult.Id, out var appleMusicId))
+                    {
+                        var dbAlbum = await this._appleMusicService.GetAlbumForAppleMusicId(appleMusicId);
+                        if (dbAlbum?.ArtistName != null)
+                        {
+                            return dbAlbum.ArtistName;
+                        }
+                    }
+
+                    var appleMusicAlbum = await this._appleMusicService.GetAppleMusicAlbumById(linkResult.Id);
+                    if (appleMusicAlbum?.Attributes != null)
+                    {
+                        return appleMusicAlbum.Attributes.ArtistName;
+                    }
+
+                    break;
+                }
             }
         }
         catch (Exception e)

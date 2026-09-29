@@ -625,6 +625,42 @@ public class AlbumService
 
                     break;
                 }
+                case MusicLinkExtensions.MusicLinkType.SpotifyTrack:
+                {
+                    await using var db = await this._contextFactory.CreateDbContextAsync();
+                    var dbTrack = await db.Tracks.FirstOrDefaultAsync(f => f.SpotifyId == linkResult.Id);
+                    if (dbTrack is { ArtistName: not null, AlbumName: not null })
+                    {
+                        return $"{dbTrack.ArtistName} | {dbTrack.AlbumName}";
+                    }
+
+                    var spotifyTrack = await this._spotifyService.GetTrackById(linkResult.Id);
+                    if (spotifyTrack?.Album != null)
+                    {
+                        return $"{spotifyTrack.Artists.First().Name} | {spotifyTrack.Album.Name}";
+                    }
+
+                    break;
+                }
+                case MusicLinkExtensions.MusicLinkType.AppleMusicSong:
+                {
+                    if (long.TryParse(linkResult.Id, out var appleMusicId))
+                    {
+                        var dbTrack = await this._appleMusicService.GetTrackForAppleMusicId(appleMusicId);
+                        if (dbTrack?.ArtistName != null && dbTrack.AlbumName != null)
+                        {
+                            return $"{dbTrack.ArtistName} | {dbTrack.AlbumName}";
+                        }
+                    }
+
+                    var appleMusicSong = await this._appleMusicService.GetAppleMusicSongById(linkResult.Id);
+                    if (appleMusicSong?.Attributes?.AlbumName != null)
+                    {
+                        return $"{appleMusicSong.Attributes.ArtistName} | {appleMusicSong.Attributes.AlbumName}";
+                    }
+
+                    break;
+                }
             }
         }
         catch (Exception e)
