@@ -1002,7 +1002,7 @@ public static class InteractionContextExtensions
             var componentMessage = (context.Interaction as MessageComponentInteraction)?.Message
                                    ?? (context.Interaction as ModalInteraction)?.Message;
             var singleCallback = defer && !hadPendingDefer && componentMessage != null &&
-                                 (response.Stream == null || response.Stream is { CanSeek: true, Length: <= 512_000 });
+                                 (response.Stream == null || response.Stream is { CanSeek: true, Length: <= 1_000_000 });
             if (defer && !hadPendingDefer && !singleCallback)
             {
                 await context.Interaction.SendResponseAsync(InteractionCallback.DeferredModifyMessage);
