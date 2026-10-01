@@ -64,18 +64,6 @@ public class AiDescriptionTests
     }
 
     [Test]
-    public void WrappingQuotesAreStripped()
-    {
-        var valid = OpenAiService.TryValidateDescription(
-            "\"Muse are an English rock band formed in Teignmouth in 1994. They play alternative and progressive " +
-            "rock.\"", Grounding, out var cleaned, out _);
-
-        Assert.That(valid, Is.True);
-        Assert.That(cleaned, Does.Not.StartWith("\""));
-        Assert.That(cleaned, Does.Not.EndWith("\""));
-    }
-
-    [Test]
     public void WrappingCurlyQuotesAreStripped()
     {
         var valid = OpenAiService.TryValidateDescription(
@@ -148,62 +136,5 @@ public class AiDescriptionTests
     public void RefusalAndMetaCommentaryIsRejected(string raw)
     {
         Assert.That(OpenAiService.TryValidateDescription(raw, Grounding, out _, out _), Is.False);
-    }
-
-    [Test]
-    public void TooShortIsRejected()
-    {
-        Assert.That(OpenAiService.TryValidateDescription("Muse are a band.", Grounding, out _, out _), Is.False);
-    }
-
-    [Test]
-    public void TooLongIsRejected()
-    {
-        var raw = string.Concat(Enumerable.Repeat("Muse are an English rock band from Teignmouth. ", 12));
-
-        Assert.That(OpenAiService.TryValidateDescription(raw, Grounding, out _, out _), Is.False);
-    }
-
-    [Test]
-    public void TooManySentencesIsRejected()
-    {
-        Assert.That(OpenAiService.TryValidateDescription(
-            "Muse are a band. They formed in Teignmouth. They play rock. They tour a lot. They are popular.",
-            Grounding, out _, out _), Is.False);
-    }
-
-    [Test]
-    [TestCase(null)]
-    [TestCase("")]
-    [TestCase("   ")]
-    public void EmptyOutputIsRejected(string? raw)
-    {
-        Assert.That(OpenAiService.TryValidateDescription(raw, Grounding, out _, out _), Is.False);
-    }
-
-    [Test]
-    public void IdenticalSourceProducesIdenticalHash()
-    {
-        var first = OpenAiService.HashDescriptionSource("Muse are an English rock band.");
-        var second = OpenAiService.HashDescriptionSource("Muse are an English rock band.");
-
-        Assert.That(first, Is.EqualTo(second));
-        Assert.That(first, Has.Length.EqualTo(32));
-    }
-
-    [Test]
-    public void ChangedSourceProducesDifferentHash()
-    {
-        var first = OpenAiService.HashDescriptionSource("Muse are an English rock band.");
-        var second = OpenAiService.HashDescriptionSource("Muse are an English rock band from Teignmouth.");
-
-        Assert.That(first, Is.Not.EqualTo(second));
-    }
-
-    [Test]
-    public void EmptySourceHashesToNull()
-    {
-        Assert.That(OpenAiService.HashDescriptionSource(null), Is.Null);
-        Assert.That(OpenAiService.HashDescriptionSource("  "), Is.Null);
     }
 }

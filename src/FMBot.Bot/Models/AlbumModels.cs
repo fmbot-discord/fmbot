@@ -65,12 +65,3 @@ public class AlbumSearch
     public long? RandomAlbumPlaycount { get; set; }
     public RecentTrack LatestScrobble { get; set; }
 }
-
-public class AlbumEnrichmentRow
-{
-    public string AlbumName { get; set; }
-    public string ArtistName { get; set; }
-    public string ReleaseDate { get; set; }
-    public string ReleaseDatePrecision { get; set; }
-    public string AlbumType { get; set; }
-}

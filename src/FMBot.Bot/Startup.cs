@@ -13,6 +13,7 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.Guild.Renderers;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
+using FMBot.Core.ThirdParty;
 using FMBot.Discogs.Apis;
 using FMBot.Domain.Models;
 using FMBot.Images.Generators;
@@ -316,9 +317,7 @@ public class Startup
     private static void RegisterDataRepositories(IServiceCollection services)
     {
         services
-            .AddSingleton<AlbumRepository>()
             .AddSingleton<ArtistRepository>()
-            .AddSingleton<TrackRepository>()
             .AddSingleton<SmallIndexRepository>()
             .AddSingleton<IDataSourceFactory, DataSourceFactory>()
             .AddSingleton<IPlayDataSourceRepository, PlayDataSourceRepository>()
@@ -338,6 +337,9 @@ public class Startup
             .AddSingleton<ArtistsService>()
             .AddSingleton<CensorService>()
             .AddSingleton<ChartService>()
+            .AddSingleton<Core.AlbumFilterService>()
+            .AddSingleton<Core.Charts.ChartDataService>()
+            .AddSingleton<Core.Charts.IChartImageFallback, ChartImageFallback>()
             .AddSingleton<CountryService>()
             .AddSingleton<FaqService>()
             .AddSingleton<CrownService>()

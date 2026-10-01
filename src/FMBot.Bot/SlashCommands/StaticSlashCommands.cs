@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using Fergun.Interactive;
+using FMBot.Bot.Attributes;
 using FMBot.Bot.AutoCompleteHandlers;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
@@ -61,6 +62,7 @@ public class StaticSlashCommands(
         ApplicationIntegrationType.GuildInstall,
         ApplicationIntegrationType.UserInstall
     ])]
+    [UsernameSetRequired]
     public async Task GetSupporterAsync()
     {
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);

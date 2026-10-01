@@ -25,6 +25,10 @@ public interface ILastfmRepository
 
     Task<Response<ArtistInfo>> GetArtistInfoAsync(string artistName, string username, bool redirectsEnabled);
 
+    Task<Response<TopTrackList>> GetArtistTopTracksAsync(string artistName, int count, bool redirectsEnabled);
+
+    Task<Response<TopAlbumList>> GetArtistTopAlbumsAsync(string artistName, int count, bool redirectsEnabled);
+
     Task<Response<AlbumInfo>> GetAlbumInfoAsync(string artistName, string albumName, bool redirectsEnabled,
         string username = null);
 

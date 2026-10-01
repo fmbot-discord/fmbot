@@ -30,6 +30,9 @@
         "album": {
           "description": "L'album da cercare (predefinito: in riproduzione)"
         },
+        "time-period": {
+          "description": "Periodo di tempo per cui mostrare i plays"
+        },
         "user": {
           "description": "L'utente da mostrare (predefinito: te stesso)"
         }
@@ -83,6 +86,9 @@
         "redirects": {
           "description": "Attiva o disattiva i redirect dei nomi artista di Last.fm (predefinito: attivi)"
         },
+        "time-period": {
+          "description": "Periodo di tempo per cui mostrare gli album"
+        },
         "user": {
           "description": "L'utente da mostrare (predefinito: te stesso)"
         }
@@ -130,6 +136,9 @@
         },
         "redirects": {
           "description": "Attiva o disattiva i redirect dei nomi artista di Last.fm (predefinito: attivi)"
+        },
+        "time-period": {
+          "description": "Periodo di tempo per cui mostrare i plays"
         },
         "user": {
           "description": "L'utente da mostrare (predefinito: te stesso)"
@@ -1177,6 +1186,9 @@
     "trackplays": {
       "description": "Mostra il playcount del brano attuale o di quello che stai cercando",
       "parameters": {
+        "time-period": {
+          "description": "Periodo di tempo per cui mostrare i plays"
+        },
         "track": {
           "description": "Il brano da cercare (predefinito: in riproduzione)"
         },

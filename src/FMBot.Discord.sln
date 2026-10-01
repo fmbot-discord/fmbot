@@ -51,22 +51,48 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{5E9B1C22-7A3
 	ProjectSection(SolutionItems) = preProject
 		..\..\fmbot-web-backend\src\Web.AppChannel\src\actions.ts = ..\..\fmbot-web-backend\src\Web.AppChannel\src\actions.ts
 		..\..\fmbot-web-backend\src\Web.AppChannel\src\api.ts = ..\..\fmbot-web-backend\src\Web.AppChannel\src\api.ts
+		..\..\fmbot-web-backend\src\Web.AppChannel\src\avatars.ts = ..\..\fmbot-web-backend\src\Web.AppChannel\src\avatars.ts
 		..\..\fmbot-web-backend\src\Web.AppChannel\src\discord.ts = ..\..\fmbot-web-backend\src\Web.AppChannel\src\discord.ts
 		..\..\fmbot-web-backend\src\Web.AppChannel\src\events.ts = ..\..\fmbot-web-backend\src\Web.AppChannel\src\events.ts
 		..\..\fmbot-web-backend\src\Web.AppChannel\src\main.ts = ..\..\fmbot-web-backend\src\Web.AppChannel\src\main.ts
+		..\..\fmbot-web-backend\src\Web.AppChannel\src\player.ts = ..\..\fmbot-web-backend\src\Web.AppChannel\src\player.ts
+		..\..\fmbot-web-backend\src\Web.AppChannel\src\share.ts = ..\..\fmbot-web-backend\src\Web.AppChannel\src\share.ts
 		..\..\fmbot-web-backend\src\Web.AppChannel\src\state.ts = ..\..\fmbot-web-backend\src\Web.AppChannel\src\state.ts
 		..\..\fmbot-web-backend\src\Web.AppChannel\src\timing.ts = ..\..\fmbot-web-backend\src\Web.AppChannel\src\timing.ts
-		..\..\fmbot-web-backend\src\Web.AppChannel\src\style.css = ..\..\fmbot-web-backend\src\Web.AppChannel\src\style.css
+		..\..\fmbot-web-backend\src\Web.AppChannel\src\toast.ts = ..\..\fmbot-web-backend\src\Web.AppChannel\src\toast.ts
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ui", "ui", "{4B7E2F19-3D8C-4A61-9E5B-6C2D8F1A3E97}"
 	ProjectSection(SolutionItems) = preProject
+		..\..\fmbot-web-backend\src\Web.AppChannel\src\ui\chart.ts = ..\..\fmbot-web-backend\src\Web.AppChannel\src\ui\chart.ts
 		..\..\fmbot-web-backend\src\Web.AppChannel\src\ui\charts.ts = ..\..\fmbot-web-backend\src\Web.AppChannel\src\ui\charts.ts
 		..\..\fmbot-web-backend\src\Web.AppChannel\src\ui\html.ts = ..\..\fmbot-web-backend\src\Web.AppChannel\src\ui\html.ts
-		..\..\fmbot-web-backend\src\Web.AppChannel\src\ui\live.ts = ..\..\fmbot-web-backend\src\Web.AppChannel\src\ui\live.ts
+		..\..\fmbot-web-backend\src\Web.AppChannel\src\ui\home.ts = ..\..\fmbot-web-backend\src\Web.AppChannel\src\ui\home.ts
+		..\..\fmbot-web-backend\src\Web.AppChannel\src\ui\profile.ts = ..\..\fmbot-web-backend\src\Web.AppChannel\src\ui\profile.ts
+		..\..\fmbot-web-backend\src\Web.AppChannel\src\ui\search.ts = ..\..\fmbot-web-backend\src\Web.AppChannel\src\ui\search.ts
 		..\..\fmbot-web-backend\src\Web.AppChannel\src\ui\shell.ts = ..\..\fmbot-web-backend\src\Web.AppChannel\src\ui\shell.ts
 		..\..\fmbot-web-backend\src\Web.AppChannel\src\ui\taste.ts = ..\..\fmbot-web-backend\src\Web.AppChannel\src\ui\taste.ts
 		..\..\fmbot-web-backend\src\Web.AppChannel\src\ui\whoknows.ts = ..\..\fmbot-web-backend\src\Web.AppChannel\src\ui\whoknows.ts
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "styles", "styles", "{9D4C6A18-2E7B-4F3D-B5A9-8C1E4F7A2D60}"
+	ProjectSection(SolutionItems) = preProject
+		..\..\fmbot-web-backend\src\Web.AppChannel\src\styles\base.css = ..\..\fmbot-web-backend\src\Web.AppChannel\src\styles\base.css
+		..\..\fmbot-web-backend\src\Web.AppChannel\src\styles\chart.css = ..\..\fmbot-web-backend\src\Web.AppChannel\src\styles\chart.css
+		..\..\fmbot-web-backend\src\Web.AppChannel\src\styles\compare.css = ..\..\fmbot-web-backend\src\Web.AppChannel\src\styles\compare.css
+		..\..\fmbot-web-backend\src\Web.AppChannel\src\styles\controls.css = ..\..\fmbot-web-backend\src\Web.AppChannel\src\styles\controls.css
+		..\..\fmbot-web-backend\src\Web.AppChannel\src\styles\debug.css = ..\..\fmbot-web-backend\src\Web.AppChannel\src\styles\debug.css
+		..\..\fmbot-web-backend\src\Web.AppChannel\src\styles\index.css = ..\..\fmbot-web-backend\src\Web.AppChannel\src\styles\index.css
+		..\..\fmbot-web-backend\src\Web.AppChannel\src\styles\media.css = ..\..\fmbot-web-backend\src\Web.AppChannel\src\styles\media.css
+		..\..\fmbot-web-backend\src\Web.AppChannel\src\styles\profile.css = ..\..\fmbot-web-backend\src\Web.AppChannel\src\styles\profile.css
+		..\..\fmbot-web-backend\src\Web.AppChannel\src\styles\rows.css = ..\..\fmbot-web-backend\src\Web.AppChannel\src\styles\rows.css
+		..\..\fmbot-web-backend\src\Web.AppChannel\src\styles\search.css = ..\..\fmbot-web-backend\src\Web.AppChannel\src\styles\search.css
+		..\..\fmbot-web-backend\src\Web.AppChannel\src\styles\sections.css = ..\..\fmbot-web-backend\src\Web.AppChannel\src\styles\sections.css
+		..\..\fmbot-web-backend\src\Web.AppChannel\src\styles\sheet.css = ..\..\fmbot-web-backend\src\Web.AppChannel\src\styles\sheet.css
+		..\..\fmbot-web-backend\src\Web.AppChannel\src\styles\shell.css = ..\..\fmbot-web-backend\src\Web.AppChannel\src\styles\shell.css
+		..\..\fmbot-web-backend\src\Web.AppChannel\src\styles\skeleton.css = ..\..\fmbot-web-backend\src\Web.AppChannel\src\styles\skeleton.css
+		..\..\fmbot-web-backend\src\Web.AppChannel\src\styles\taste.css = ..\..\fmbot-web-backend\src\Web.AppChannel\src\styles\taste.css
+		..\..\fmbot-web-backend\src\Web.AppChannel\src\styles\tokens.css = ..\..\fmbot-web-backend\src\Web.AppChannel\src\styles\tokens.css
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "public", "public", "{7A1D3E44-9C5F-4B2A-A3E6-3F5A7C9D1B85}"
@@ -152,6 +178,7 @@ Global
 		{5E9B1C22-7A3D-4F6E-8C1A-2D4F6B8E0A73} = {3C2A7D41-6F1B-4E8A-9B5D-1F0C2E7A8B61}
 		{7A1D3E44-9C5F-4B2A-A3E6-3F5A7C9D1B85} = {3C2A7D41-6F1B-4E8A-9B5D-1F0C2E7A8B61}
 		{4B7E2F19-3D8C-4A61-9E5B-6C2D8F1A3E97} = {5E9B1C22-7A3D-4F6E-8C1A-2D4F6B8E0A73}
+		{9D4C6A18-2E7B-4F3D-B5A9-8C1E4F7A2D60} = {5E9B1C22-7A3D-4F6E-8C1A-2D4F6B8E0A73}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {8048CCF2-244E-48E9-ABAC-87AB5DBEA77C}

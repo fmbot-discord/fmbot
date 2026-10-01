@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using FMBot.Persistence.Repositories;
 using Npgsql;
@@ -15,10 +16,7 @@ public partial class SearchBenchmarkTests
     private const double MinimumAlbumAccuracy = 0.95;
     private const double MinimumTrackAccuracy = 0.80;
 
-    public record SearchCase(string Query, string ExpectedArtist, string ExpectedName)
-    {
-        public override string ToString() => this.Query;
-    }
+    private record SearchCase(string Query, string ExpectedArtist, string ExpectedName);
 
     private static readonly SearchCase[] AlbumCases =
     [
@@ -244,45 +242,13 @@ public partial class SearchBenchmarkTests
     }
 
     [Test]
-    [Explicit("Per-case drill-down. The accuracy tests are the regression gate; some cases are known " +
-              "unwinnable while Spotify popularity stays deprecated.")]
-    [TestCaseSource(nameof(AlbumCases))]
-    public async Task AlbumSearchResolvesToExpectedAlbum(SearchCase searchCase)
-    {
-        await using var connection = await OpenAsync();
-
-        var album = await AlbumRepository.SearchAlbum(searchCase.Query, connection);
-
-        Assert.That(album, Is.Not.Null, $"'{searchCase.Query}' returned no album at all");
-        Assert.That(Matches(searchCase, album.Name, album.ArtistName), Is.True,
-            $"'{searchCase.Query}' resolved to '{album.Name}' by '{album.ArtistName}', " +
-            $"expected '{searchCase.ExpectedName}' by '{searchCase.ExpectedArtist}'");
-    }
-
-    [Test]
-    [Explicit("Per-case drill-down. The accuracy tests are the regression gate; some cases are known " +
-              "unwinnable while Spotify popularity stays deprecated.")]
-    [TestCaseSource(nameof(TrackCases))]
-    public async Task TrackSearchResolvesToExpectedTrack(SearchCase searchCase)
-    {
-        await using var connection = await OpenAsync();
-
-        var track = await TrackRepository.SearchTrack(searchCase.Query, connection);
-
-        Assert.That(track, Is.Not.Null, $"'{searchCase.Query}' returned no track at all");
-        Assert.That(Matches(searchCase, track.Name, track.ArtistName), Is.True,
-            $"'{searchCase.Query}' resolved to '{track.Name}' by '{track.ArtistName}', " +
-            $"expected '{searchCase.ExpectedName}' by '{searchCase.ExpectedArtist}'");
-    }
-
-    [Test]
     public async Task AlbumSearchMeetsAccuracyAndReportsLatency()
     {
         await using var connection = await OpenAsync();
 
         var accuracy = await RunBenchmarkAsync("albums", AlbumCases, async (query, c) =>
         {
-            var album = await AlbumRepository.SearchAlbum(query, c);
+            var album = await AlbumRepository.SearchAlbum(query, null, c);
             return (album?.Name, album?.ArtistName);
         }, connection);
 
@@ -296,11 +262,63 @@ public partial class SearchBenchmarkTests
 
         var accuracy = await RunBenchmarkAsync("tracks", TrackCases, async (query, c) =>
         {
-            var track = await TrackRepository.SearchTrack(query, c);
+            var track = await TrackRepository.SearchTrack(query, null, c);
             return (track?.Name, track?.ArtistName);
         }, connection);
 
         Assert.That(accuracy, Is.GreaterThanOrEqualTo(MinimumTrackAccuracy));
+    }
+
+    [Test]
+    [TestCase("album_test.jsonl", 0.86)]
+    [TestCase("album_test2.jsonl", 0.85)]
+    public async Task AlbumSearchMeetsAccuracyOnExtendedCases(string fileName, double minimumAccuracy)
+    {
+        var cases = LoadExtendedCases(fileName);
+        await using var connection = await OpenAsync();
+
+        var accuracy = await RunBenchmarkAsync(fileName, cases, async (query, c) =>
+        {
+            var album = await AlbumRepository.SearchAlbum(query, null, c);
+            return (album?.Name, album?.ArtistName);
+        }, connection);
+
+        Assert.That(accuracy, Is.GreaterThanOrEqualTo(minimumAccuracy));
+    }
+
+    [Test]
+    [TestCase("track_test.jsonl", 0.79)]
+    [TestCase("track_test2.jsonl", 0.83)]
+    public async Task TrackSearchMeetsAccuracyOnExtendedCases(string fileName, double minimumAccuracy)
+    {
+        var cases = LoadExtendedCases(fileName);
+        await using var connection = await OpenAsync();
+
+        var accuracy = await RunBenchmarkAsync(fileName, cases, async (query, c) =>
+        {
+            var track = await TrackRepository.SearchTrack(query, null, c);
+            return (track?.Name, track?.ArtistName);
+        }, connection);
+
+        Assert.That(accuracy, Is.GreaterThanOrEqualTo(minimumAccuracy));
+    }
+
+    private record ExtendedCase(string Query, string Artist, string Name);
+
+    private static SearchCase[] LoadExtendedCases(string fileName)
+    {
+        var directory = Environment.GetEnvironmentVariable("FMBOT_SEARCH_BENCHMARK_CASES");
+        if (string.IsNullOrWhiteSpace(directory))
+        {
+            Assert.Ignore("Set FMBOT_SEARCH_BENCHMARK_CASES to the folder with the extended benchmark case files.");
+        }
+
+        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
+        return File.ReadLines(Path.Combine(directory, fileName))
+            .Select(line => JsonSerializer.Deserialize<ExtendedCase>(line, options)!)
+            .Select(s => new SearchCase(s.Query, s.Artist, s.Name))
+            .ToArray();
     }
 
     private static async Task<double> RunBenchmarkAsync(string label, SearchCase[] cases,
@@ -348,7 +366,10 @@ public partial class SearchBenchmarkTests
         if (misses.Count > 0)
         {
             TestContext.Out.WriteLine($"[{label}] misses:");
-            misses.ForEach(TestContext.Out.WriteLine);
+            foreach (var miss in misses.Take(100))
+            {
+                TestContext.Out.WriteLine(miss);
+            }
         }
 
         return accuracy;

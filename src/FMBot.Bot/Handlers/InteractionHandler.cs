@@ -113,6 +113,7 @@ public class InteractionHandler
         using (Statistics.SlashCommandHandlerDuration.NewTimer())
         {
             var context = new ApplicationCommandContext(slashCommand, client);
+            context.Guild?.CacheInvoker(context.User);
             var contextUser = await this._userService.GetUserAsync(context.User.Id);
 
             var registeredCommandName = slashCommand.Data.Name;
@@ -221,6 +222,7 @@ public class InteractionHandler
     private async Task ExecuteSelectMenu(MessageComponentInteraction component, GatewayClient client)
     {
         var context = new ComponentInteractionContext(component, client);
+        context.Guild?.CacheInvoker(context.User);
         var contextUser = await this._userService.GetUserAsync(context.User.Id);
 
         var customId = component.Data.CustomId;
@@ -260,6 +262,7 @@ public class InteractionHandler
     private async Task ExecuteButton(MessageComponentInteraction component, GatewayClient client)
     {
         var context = new ComponentInteractionContext(component, client);
+        context.Guild?.CacheInvoker(context.User);
         var contextUser = await this._userService.GetUserAsync(context.User.Id);
 
         var customId = component.Data.CustomId;

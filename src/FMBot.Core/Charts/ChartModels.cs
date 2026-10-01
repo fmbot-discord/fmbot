@@ -7,14 +7,12 @@ using SkiaSharp;
 
 using Color = System.Drawing.Color;
 
-namespace FMBot.Bot.Models;
+namespace FMBot.Core.Charts;
 
 public class ChartSettings
 {
-    public ChartSettings(NetCord.User discordUser)
+    public ChartSettings()
     {
-        this.DiscordUser = discordUser;
-
         this.ChartImages = new List<ChartImage>();
 
         this.TitleSetting = TitleSetting.Titles;
@@ -63,8 +61,6 @@ public class ChartSettings
     public List<ChartImage> ChartImages { get; set; }
 
     public TimeSettingsModel TimeSettings { get; set; }
-
-    public NetCord.User DiscordUser { get; set; }
 
     public string TimespanString { get; set; }
 

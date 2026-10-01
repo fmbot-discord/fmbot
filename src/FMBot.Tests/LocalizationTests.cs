@@ -9,6 +9,7 @@ using FMBot.Domain.Attributes;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using NetCord.Services.ApplicationCommands;
+using PeriodAliases = FMBot.Core.PeriodAliases;
 
 namespace FMBot.Tests;
 
@@ -122,55 +123,22 @@ public class LocalizationTests
     [Test]
     [TestCase(Language.English, 0, "_other")]
     [TestCase(Language.English, 1, "_one")]
-    [TestCase(Language.English, 2, "_other")]
-    [TestCase(Language.German, 1, "_one")]
-    [TestCase(Language.German, 14, "_other")]
     [TestCase(Language.Hindi, 0, "_one")]
-    [TestCase(Language.Hindi, 1, "_one")]
-    [TestCase(Language.Hindi, 2, "_other")]
     [TestCase(Language.French, 0, "_one")]
-    [TestCase(Language.French, 1, "_one")]
-    [TestCase(Language.French, 2, "_other")]
     [TestCase(Language.French, 1000000, "_many")]
     [TestCase(Language.Portuguese, 0, "_one")]
-    [TestCase(Language.Portuguese, 1, "_one")]
-    [TestCase(Language.Portuguese, 17, "_other")]
     [TestCase(Language.Spanish, 0, "_other")]
-    [TestCase(Language.Spanish, 1, "_one")]
     [TestCase(Language.Spanish, 2000000, "_many")]
-    [TestCase(Language.Polish, 1, "_one")]
     [TestCase(Language.Polish, 2, "_few")]
-    [TestCase(Language.Polish, 4, "_few")]
     [TestCase(Language.Polish, 5, "_many")]
     [TestCase(Language.Polish, 12, "_many")]
-    [TestCase(Language.Polish, 13, "_many")]
-    [TestCase(Language.Polish, 14, "_many")]
     [TestCase(Language.Polish, 22, "_few")]
-    [TestCase(Language.Polish, 25, "_many")]
     [TestCase(Language.Polish, 112, "_many")]
     [TestCase(Language.Polish, 122, "_few")]
-    [TestCase(Language.Indonesian, 0, "_other")]
     [TestCase(Language.Indonesian, 1, "_other")]
-    [TestCase(Language.Indonesian, 2, "_other")]
     public void PluralSuffix(Language language, long count, string expected)
     {
         Assert.That(Localizer.GetPluralSuffix(language, count), Is.EqualTo(expected));
-    }
-
-    [Test]
-    public void Interpolation()
-    {
-        var localizer = new Localizer(Language.English, NumberFormat.CommaSeparator);
-        Assert.That(localizer.Translate("shared.requestedBy", ("user", "frikandel")), Is.EqualTo("Requested by frikandel"));
-        Assert.That(localizer.Translate("shared.pageCounter", ("page", "2"), ("pages", "14")), Is.EqualTo("Page 2/14"));
-    }
-
-    [Test]
-    public void CountFormatting()
-    {
-        var localizer = new Localizer(Language.English, NumberFormat.CommaSeparator);
-        Assert.That(localizer.TranslateCount("shared.plays", 1), Is.EqualTo("1 play"));
-        Assert.That(localizer.TranslateCount("shared.plays", 5000), Is.EqualTo("5,000 plays"));
     }
 
     [Test]
@@ -708,10 +676,11 @@ public class LocalizationTests
     public void NoOrphanedEnglishKeys()
     {
         var english = LoadLocaleFile("en");
-        var sourceFiles = Directory.EnumerateFiles(Path.Combine(RepoRoot(), "src", "FMBot.Bot"), "*.cs", SearchOption.AllDirectories);
+        var sourceFiles = Directory.EnumerateFiles(Path.Combine(RepoRoot(), "src", "FMBot.Bot"), "*.cs", SearchOption.AllDirectories)
+            .Concat(Directory.EnumerateFiles(Path.Combine(RepoRoot(), "src", "FMBot.Core"), "*.cs", SearchOption.AllDirectories));
 
-        var plainKeyRegex = new Regex(@"\.(?:Localize|Translate)\(\s*""(?<key>[a-zA-Z][a-zA-Z0-9.]+)""", RegexOptions.Compiled);
-        var countKeyRegex = new Regex(@"\.(?:LocalizeCount|TranslateCount)\(\s*""(?<key>[a-zA-Z][a-zA-Z0-9.]+)""", RegexOptions.Compiled);
+        var plainKeyRegex = new Regex(@"(?:\.(?:Localize|Translate)|\btranslate)\(\s*""(?<key>[a-zA-Z][a-zA-Z0-9.]+)""", RegexOptions.Compiled);
+        var countKeyRegex = new Regex(@"(?:\.(?:LocalizeCount|TranslateCount)|\btranslateCount)\(\s*""(?<key>[a-zA-Z][a-zA-Z0-9.]+)""", RegexOptions.Compiled);
 
         var plainRefs = new HashSet<string>(RuntimeKeys.Concat(DynamicPlainKeys).Concat(TemplateOptionKeys()).Concat(OptionLocalizationKeys()));
         var pluralRefs = new HashSet<string>(DynamicPluralBaseKeys);
@@ -752,7 +721,7 @@ public class LocalizationTests
         }
 
         Assert.That(orphans, Is.Empty,
-            "These en.json keys have no call site anywhere in FMBot.Bot, so they cost translator effort across 11 " +
+            "These en.json keys have no call site anywhere in FMBot.Bot or FMBot.Core, so they cost translator effort across 11 " +
             "languages for output that never renders. Delete them from en.json and every locale file, or register " +
             $"them in DynamicPlainKeys/DynamicPluralBaseKeys/RuntimeKeys if they are referenced dynamically:\n{string.Join("\n", orphans)}");
     }

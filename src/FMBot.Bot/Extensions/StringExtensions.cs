@@ -107,18 +107,6 @@ public static partial class StringExtensions
         return dateTimeOffset.ToUnixTimeSeconds();
     }
 
-    private static readonly string[] SensitiveCharacters =
-    {
-        "\\",
-        "*",
-        "_",
-        "`",
-        ">",
-    };
-
-    [GeneratedRegex(@"^(#{1,3}|-#)(?= )", RegexOptions.Multiline)]
-    private static partial Regex LineStartMarkdownRegex();
-
     [GeneratedRegex(@"<[^>]{0,200}>")]
     private static partial Regex HtmlTagRegex();
 
@@ -145,19 +133,7 @@ public static partial class StringExtensions
 
     public static string Sanitize(string text)
     {
-        if (text != null)
-        {
-            foreach (string sensitiveCharacter in SensitiveCharacters)
-            {
-                text = text.Replace(sensitiveCharacter, "\\" + sensitiveCharacter);
-            }
-
-            text = text.Replace("~~", "\\~\\~");
-            text = text.Replace("||", "\\|\\|");
-            text = LineStartMarkdownRegex().Replace(text, @"\$1");
-        }
-
-        return text;
+        return DiscordStringExtensions.Sanitize(text);
     }
 
     public static string UserTypeToIcon(this UserType userType)
@@ -385,13 +361,7 @@ public static partial class StringExtensions
 
     public static string GetRymUrl(string albumName, string artistName)
     {
-        var albumRymUrl = new StringBuilder();
-        albumRymUrl.Append(@"https://rateyourmusic.com/search?searchterm=");
-        albumRymUrl.Append(
-            HttpUtility.UrlEncode($"{artistName} {albumName.Replace("- Single", "").Replace("- EP", "").TrimEnd()}"));
-        albumRymUrl.Append($"&searchtype=l");
-
-        return albumRymUrl.ToString();
+        return DiscordStringExtensions.GetRymUrl(albumName, artistName);
     }
 
     public static string GetAmountEnd(long amount)

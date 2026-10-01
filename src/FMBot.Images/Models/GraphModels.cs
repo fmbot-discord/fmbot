@@ -36,7 +36,8 @@ public class LineGraph
 
     public int MaxYTicks { get; init; } = 5;
 
-    public List<GraphTick> Ticks { get; init; } = [];
+    public CultureInfo Culture { get; init; } = CultureInfo.InvariantCulture;
+    public GraphInterval? Interval { get; init; }
 
     public Func<double, string> ValueLabel { get; init; }
 }
@@ -71,44 +72,58 @@ public static class GraphTicks
         (GraphTickUnit.Year, 1), (GraphTickUnit.Year, 2), (GraphTickUnit.Year, 5), (GraphTickUnit.Year, 10)
     ];
 
-    public static List<GraphTick> Plan(IReadOnlyList<GraphPoint> points, int maxTicks, CultureInfo culture,
-        GraphInterval? interval = null)
+    public static List<GraphTick> Plan(IReadOnlyList<GraphPoint> points, CultureInfo culture, GraphInterval? interval,
+        int currentYear, Func<List<GraphTick>, bool> fits)
     {
-        if (points.Count < 2 || maxTicks < 2)
+        if (points.Count < 2)
         {
             return [];
         }
 
-        var first = points[0].Date;
-        var last = points[^1].Date;
-
-        var step = Steps[^1];
-        foreach (var candidate in Steps)
+        List<GraphTick> coarsest = [];
+        foreach (var step in Steps)
         {
-            if (interval == GraphInterval.Year && candidate.Unit != GraphTickUnit.Year)
+            if (interval == GraphInterval.Year && step.Unit != GraphTickUnit.Year)
             {
                 continue;
             }
 
-            if (interval == GraphInterval.Month && candidate.Unit == GraphTickUnit.Day)
+            if (interval == GraphInterval.Month && step.Unit == GraphTickUnit.Day)
             {
                 continue;
             }
 
-            if (CountBoundaries(first, last, candidate) <= maxTicks)
+            var ticks = Build(points, step, culture, currentYear);
+            if (ticks.Count == 0)
             {
-                step = candidate;
-                break;
+                continue;
             }
+
+            if (fits(ticks))
+            {
+                return ticks;
+            }
+
+            coarsest = ticks;
         }
 
-        var label = LabelFor(step.Unit, first.Year != last.Year, culture);
+        return coarsest;
+    }
 
-        var ticks = new List<GraphTick>();
+    private static List<GraphTick> Build(IReadOnlyList<GraphPoint> points, (GraphTickUnit Unit, int Amount) step,
+        CultureInfo culture, int currentYear)
+    {
+        var first = points[0].Date;
+        var indexes = new List<int>();
         var index = 0;
 
-        foreach (var boundary in Boundaries(first, last, step))
+        foreach (var boundary in Boundaries(first, points[^1].Date, step))
         {
+            if (first - boundary >= TimeSpan.FromDays(7))
+            {
+                continue;
+            }
+
             while (index < points.Count && points[index].Date < boundary)
             {
                 index++;
@@ -119,38 +134,46 @@ public static class GraphTicks
                 break;
             }
 
-            if (ticks.Count > 0 && ticks[^1].Index == index)
+            if (indexes.Count > 0 && indexes[^1] == index)
             {
                 continue;
             }
 
-            ticks.Add(new GraphTick(index, label(points[index].Date)));
+            indexes.Add(index);
         }
 
-        if (ticks.Count >= 3 && ticks[0].Index == 0 &&
-            (ticks[1].Index - ticks[0].Index) * 2 < ticks[2].Index - ticks[1].Index)
-        {
-            ticks.RemoveAt(0);
-        }
+        var dates = indexes.Select(s => points[s].Date).ToList();
+        var labels = Labels(dates, step.Unit, culture,
+            points[0].Date.Year != currentYear || points[^1].Date.Year != currentYear);
 
-        return ticks;
+        return indexes.Select((s, i) => new GraphTick(s, labels[i])).ToList();
     }
 
-    private static Func<DateTime, string> LabelFor(GraphTickUnit unit, bool multipleYears, CultureInfo culture)
+    private static List<string> Labels(List<DateTime> dates, GraphTickUnit unit, CultureInfo culture,
+        bool outsideCurrentYear)
     {
+        string Year(DateTime date) => date.ToString("yyyy", culture);
+        string ShortYear(DateTime date) => $"'{date.ToString("yy", culture)}";
+        string Month(DateTime date) => date.ToString("MMM", culture);
+
         switch (unit)
         {
             case GraphTickUnit.Year:
-                return date => date.ToString("yyyy", culture);
+                return dates.Select(Year).ToList();
             case GraphTickUnit.Month:
-                return multipleYears
-                    ? date => $"{date.ToString("MMM", culture)} '{date.ToString("yy", culture)}"
-                    : date => date.ToString("MMM", culture);
+                var labels = dates.Select(s => s.Month == 1 ? Year(s) : Month(s)).ToList();
+                if (outsideCurrentYear && labels.Count > 0 && dates.All(a => a.Month != 1))
+                {
+                    labels[0] = $"{Month(dates[0])} {ShortYear(dates[0])}";
+                }
+
+                return labels;
             default:
                 var pattern = culture.DateTimeFormat.MonthDayPattern.Replace("MMMM", "MMM");
-                return multipleYears
-                    ? date => $"{date.ToString(pattern, culture)} '{date.ToString("yy", culture)}"
-                    : date => date.ToString(pattern, culture);
+                return dates.Select((s, i) =>
+                    outsideCurrentYear && (i == 0 || s.Year != dates[i - 1].Year)
+                        ? $"{s.ToString(pattern, culture)} {ShortYear(s)}"
+                        : s.ToString(pattern, culture)).ToList();
         }
     }
 
@@ -172,23 +195,6 @@ public static class GraphTicks
         }
     }
 
-    private static int CountBoundaries(DateTime first, DateTime last, (GraphTickUnit Unit, int Amount) step)
-    {
-        var start = AlignedStart(first, step);
-
-        if (last.Date < start.Date)
-        {
-            return 0;
-        }
-
-        return step.Unit switch
-        {
-            GraphTickUnit.Year => (last.Year - start.Year) / step.Amount + 1,
-            GraphTickUnit.Month => ((last.Year - start.Year) * 12 + last.Month - start.Month) / step.Amount + 1,
-            _ => (int)((last.Date - start.Date).TotalDays / step.Amount) + 1
-        };
-    }
-
     private static DateTime AlignedStart(DateTime first, (GraphTickUnit Unit, int Amount) step)
     {
         switch (step.Unit)
@@ -199,9 +205,7 @@ public static class GraphTicks
                 var month = first.Month - 1;
                 return new DateTime(first.Year, month - month % step.Amount + 1, 1, 0, 0, 0, first.Kind);
             default:
-                return step.Amount % 7 == 0
-                    ? GraphSeries.StartOfInterval(first, GraphInterval.Week)
-                    : first.Date;
+                return first.Date;
         }
     }
 }
@@ -211,20 +215,22 @@ public static class GraphSeries
     private const int MaxDailyPoints = 62;
     private const int MaxPoints = 140;
     private const int MaxRenderPoints = 320;
-    private const int MaxBarPoints = 40;
+    private const int MaxBarPoints = 16;
 
     public static GraphInterval PickInterval(DateTime from, DateTime to, int sampleCount = int.MaxValue,
         GraphType style = GraphType.Line)
     {
         var days = (to.Date - from.Date).TotalDays + 1;
 
-        var maxDaily = style == GraphType.Bar ? MaxBarPoints : MaxDailyPoints;
-        var maxWeekly = style == GraphType.Bar ? MaxBarPoints : MaxPoints;
-        var maxMonthly = style == GraphType.Bar ? MaxBarPoints : MaxRenderPoints;
+        var bar = style == GraphType.Bar;
 
-        var interval = days <= maxDaily ? GraphInterval.Day :
-            days / 7 <= maxWeekly ? GraphInterval.Week :
-            days / 30.44 <= maxMonthly ? GraphInterval.Month : GraphInterval.Year;
+        var interval = bar
+            ? days <= MaxBarPoints ? GraphInterval.Day :
+            days / 7 <= MaxBarPoints ? GraphInterval.Week :
+            days / 30.44 <= MaxBarPoints ? GraphInterval.Month : GraphInterval.Year
+            : days <= MaxDailyPoints ? GraphInterval.Day :
+            days / 7 <= MaxPoints ? GraphInterval.Week :
+            days / 30.44 <= MaxRenderPoints ? GraphInterval.Month : GraphInterval.Year;
 
         while (interval < GraphInterval.Year && BucketCount(days, interval) > sampleCount)
         {
@@ -246,8 +252,12 @@ public static class GraphSeries
     }
 
     public static List<GraphPoint> FromDailyCounts(IEnumerable<GraphPoint> dailyCounts, GraphInterval interval,
-        DateTime from, DateTime to)
+        DateTime from, DateTime to, DateTime? weekAnchor = null)
     {
+        DateTime Bucket(DateTime date) => interval == GraphInterval.Week && weekAnchor.HasValue
+            ? weekAnchor.Value.Date.AddDays(Math.Floor((date.Date - weekAnchor.Value.Date).TotalDays / 7) * 7)
+            : StartOfInterval(date, interval);
+
         var counts = new Dictionary<DateTime, double>();
         foreach (var day in dailyCounts)
         {
@@ -256,14 +266,14 @@ public static class GraphSeries
                 continue;
             }
 
-            var bucket = StartOfInterval(day.Date, interval);
+            var bucket = Bucket(day.Date);
             counts.TryGetValue(bucket, out var existing);
             counts[bucket] = existing + day.Value;
         }
 
         var points = new List<GraphPoint>();
-        var current = StartOfInterval(from, interval);
-        var last = StartOfInterval(to, interval);
+        var current = Bucket(from);
+        var last = Bucket(to);
 
         while (current <= last)
         {

@@ -286,48 +286,15 @@ public class ArtistsService
 
     public async Task FillArtistImages(IReadOnlyList<TopArtist> topArtists)
     {
-        var artistsToFill = topArtists.Where(w => string.IsNullOrWhiteSpace(w.ArtistImageUrl)).ToList();
-        if (artistsToFill.Count == 0)
+        if (!topArtists.Any(w => string.IsNullOrWhiteSpace(w.ArtistImageUrl)))
         {
             return;
         }
 
-        var names = artistsToFill.Select(s => s.ArtistName).ToArray();
-
-        const string sql = "SELECT a.name, " +
-                           "       COALESCE(a.spotify_image_url, " +
-                           "                REPLACE(REPLACE(ai.url, '{w}', ai.width::text), '{h}', ai.height::text)) AS image_url " +
-                           "FROM artists a " +
-                           "INNER JOIN unnest(@names::citext[]) AS q(name) ON a.name = q.name " +
-                           "LEFT JOIN LATERAL (" +
-                           "    SELECT url, width, height FROM artist_images " +
-                           "    WHERE a.spotify_image_url IS NULL " +
-                           "      AND artist_id = a.id " +
-                           "      AND image_source = 3 " +
-                           "      AND width IS NOT NULL " +
-                           "      AND height IS NOT NULL " +
-                           "    LIMIT 1" +
-                           ") ai ON TRUE " +
-                           "WHERE a.last_fm_url IS NOT NULL " +
-                           "AND (a.spotify_image_url IS NOT NULL OR ai.url IS NOT NULL)";
-
-        DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        var rows = (await connection.QueryAsync<ArtistImageRow>(sql, new { names })).ToList();
-
-        var lookup = rows
-            .GroupBy(g => g.Name, StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(g => g.Key, g => g.First().ImageUrl, StringComparer.OrdinalIgnoreCase);
-
-        foreach (var topArtist in artistsToFill)
-        {
-            if (lookup.TryGetValue(topArtist.ArtistName, out var url))
-            {
-                topArtist.ArtistImageUrl = url;
-            }
-        }
+        await ArtistRepository.FillArtistImages(topArtists, connection);
     }
 
     public async Task<List<TopArtist>> GetUserAllTimeTopArtists(int userId, bool useCache = false)
@@ -454,12 +421,12 @@ public class ArtistsService
             return EmbedSize.Default;
         }
 
-        if (extraOptions.Contains("xl") || extraOptions.Contains("xxl") || extraOptions.Contains("extralarge"))
+        if (SettingService.Contains(extraOptions, ["xl", "xxl", "extralarge"]))
         {
             return EmbedSize.Large;
         }
 
-        if (extraOptions.Contains("xs") || extraOptions.Contains("xxs") || extraOptions.Contains("extrasmall"))
+        if (SettingService.Contains(extraOptions, ["xs", "xxs", "extrasmall"]))
         {
             return EmbedSize.Small;
         }
@@ -528,6 +495,78 @@ public class ArtistsService
 
                     break;
                 }
+                case MusicLinkExtensions.MusicLinkType.SpotifyTrack:
+                {
+                    await using var db = await this._contextFactory.CreateDbContextAsync();
+                    var dbTrack = await db.Tracks.FirstOrDefaultAsync(f => f.SpotifyId == linkResult.Id);
+                    if (dbTrack?.ArtistName != null)
+                    {
+                        return dbTrack.ArtistName;
+                    }
+
+                    var spotifyTrack = await this._spotifyService.GetTrackById(linkResult.Id);
+                    if (spotifyTrack != null)
+                    {
+                        return spotifyTrack.Artists.First().Name;
+                    }
+
+                    break;
+                }
+                case MusicLinkExtensions.MusicLinkType.SpotifyAlbum:
+                {
+                    await using var db = await this._contextFactory.CreateDbContextAsync();
+                    var dbAlbum = await db.Albums.FirstOrDefaultAsync(f => f.SpotifyId == linkResult.Id);
+                    if (dbAlbum?.ArtistName != null)
+                    {
+                        return dbAlbum.ArtistName;
+                    }
+
+                    var spotifyAlbum = await this._spotifyService.GetAlbumById(linkResult.Id);
+                    if (spotifyAlbum != null)
+                    {
+                        return spotifyAlbum.Artists.First().Name;
+                    }
+
+                    break;
+                }
+                case MusicLinkExtensions.MusicLinkType.AppleMusicSong:
+                {
+                    if (long.TryParse(linkResult.Id, out var appleMusicId))
+                    {
+                        var dbTrack = await this._appleMusicService.GetTrackForAppleMusicId(appleMusicId);
+                        if (dbTrack?.ArtistName != null)
+                        {
+                            return dbTrack.ArtistName;
+                        }
+                    }
+
+                    var appleMusicSong = await this._appleMusicService.GetAppleMusicSongById(linkResult.Id);
+                    if (appleMusicSong?.Attributes != null)
+                    {
+                        return appleMusicSong.Attributes.ArtistName;
+                    }
+
+                    break;
+                }
+                case MusicLinkExtensions.MusicLinkType.AppleMusicAlbum:
+                {
+                    if (long.TryParse(linkResult.Id, out var appleMusicId))
+                    {
+                        var dbAlbum = await this._appleMusicService.GetAlbumForAppleMusicId(appleMusicId);
+                        if (dbAlbum?.ArtistName != null)
+                        {
+                            return dbAlbum.ArtistName;
+                        }
+                    }
+
+                    var appleMusicAlbum = await this._appleMusicService.GetAppleMusicAlbumById(linkResult.Id);
+                    if (appleMusicAlbum?.Attributes != null)
+                    {
+                        return appleMusicAlbum.Attributes.ArtistName;
+                    }
+
+                    break;
+                }
             }
         }
         catch (Exception e)
@@ -579,48 +618,18 @@ public class ArtistsService
 
     public async Task<List<UserTrack>> GetTopTracksForArtist(int userId, string artistName)
     {
-        const string sql = "SELECT ut.user_track_id, ut.user_id, t.name, t.artist_name, ut.playcount" +
-                           " FROM public.user_tracks ut" +
-                           " INNER JOIN public.tracks t ON t.id = ut.track_id" +
-                           " WHERE ut.user_id = @userId AND UPPER(t.artist_name) = UPPER(CAST(@artistName AS CITEXT))" +
-                           " ORDER BY ut.playcount DESC";
-
-        DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        return (await connection.QueryAsync<UserTrack>(sql, new
-        {
-            userId,
-            artistName
-        })).ToList();
-    }
-
-    public async Task<TopAlbumList> GetTopAlbumsForArtist(int userId, string artistName)
-    {
-        var userAlbums = await GetUserAlbumsForArtist(userId, artistName);
-        var topAlbums = userAlbums.Select(s => new TopAlbum
-        {
-            AlbumName = s.Name,
-            ArtistName = s.ArtistName,
-            UserPlaycount = s.Playcount
-        });
-
-        return new TopAlbumList
-        {
-            TopAlbums = topAlbums.ToList()
-        };
+        return await TrackRepository.GetUserTracksForArtist(userId, artistName, connection);
     }
 
     public async Task<List<UserAlbum>> GetUserAlbumsForArtist(int userId, string artistName)
     {
-        await using var db = await this._contextFactory.CreateDbContextAsync();
-        return await db.UserAlbums
-            .AsNoTracking()
-            .Where(w => w.ArtistName.ToLower() == artistName.ToLower()
-                        && w.UserId == userId)
-            .OrderByDescending(o => o.Playcount)
-            .ToListAsync();
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        return await AlbumRepository.GetUserAlbumsForArtist(userId, artistName, connection);
     }
 
     public async Task<List<UserAlbum>> FilterSinglesFromUserAlbums(List<UserAlbum> userAlbums)
@@ -795,12 +804,7 @@ public class ArtistsService
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        const string sql = @"
-            SELECT bg_color FROM artist_images
-            WHERE artist_id = @artistId AND bg_color IS NOT NULL
-            LIMIT 1";
-
-        return await connection.QueryFirstOrDefaultAsync<string>(sql, new { artistId });
+        return await ArtistRepository.GetArtistBackgroundColor(artistId, connection);
     }
 
     public async Task<Color> GetArtistAccentColorAsync(string artistImageUrl, int? artistId, string artistName)

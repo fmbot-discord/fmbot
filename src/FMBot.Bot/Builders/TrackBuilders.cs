@@ -14,6 +14,7 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
+using FMBot.Core.ThirdParty;
 using FMBot.Domain;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
@@ -1061,18 +1062,41 @@ public class TrackBuilders
     public async Task<ResponseModel> TrackPlays(
         ContextModel context,
         UserSettingsModel userSettings,
-        string searchValue)
+        string searchValue,
+        TimeSettingsModel timeSettings = null,
+        string searchValueWithoutPeriod = null)
     {
         var response = new ResponseModel
         {
             ResponseType = ResponseType.ComponentsV2,
         };
 
-        var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, context.Localizer, searchValue,
-            context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
-            otherUserUsername: userSettings.UserNameLastFm, userId: context.ContextUser.UserId,
-            interactionId: context.InteractionId,
-            referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
+        Task<TrackSearch> SearchTrack(ResponseModel searchResponse, string trackValues) =>
+            this._trackService.SearchTrack(searchResponse, context.DiscordUser, context.Localizer, trackValues,
+                context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
+                otherUserUsername: userSettings.UserNameLastFm, userId: context.ContextUser.UserId,
+                interactionId: context.InteractionId,
+                referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
+
+        var trackSearch = await SearchTrack(response, searchValue);
+        if (searchValueWithoutPeriod != null)
+        {
+            if (trackSearch.Track != null &&
+                SettingService.NameContainsPeriodWords(searchValue, searchValueWithoutPeriod,
+                    trackSearch.Track.TrackName, trackSearch.Track.ArtistName))
+            {
+                timeSettings = null;
+            }
+            else
+            {
+                response = new ResponseModel
+                {
+                    ResponseType = ResponseType.ComponentsV2,
+                };
+                trackSearch = await SearchTrack(response, searchValueWithoutPeriod);
+            }
+        }
+
         if (trackSearch.Track == null)
         {
             trackSearch.Response.ResponseType = ResponseType.ComponentsV2;
@@ -1080,18 +1104,23 @@ public class TrackBuilders
             return trackSearch.Response;
         }
 
-        Task<PlayHistorySummary> playHistoryTask = null;
-        if (context.ContextUser.UserType != UserType.User && trackSearch.Track.UserPlaycount > 0)
+        var periodNote = await this._playService.GetPlaysPeriodUnavailableNote(context, userSettings, timeSettings);
+        if (periodNote != null)
         {
-            playHistoryTask = this._playService.GetTrackPlayHistory(userSettings.UserId,
-                trackSearch.Track.ArtistName, trackSearch.Track.TrackName);
+            timeSettings = null;
         }
 
-        var reply = context.LocalizeCount("track.plays.userPlays",
-            trackSearch.Track.UserPlaycount.GetValueOrDefault(),
-            ("user", $"{StringExtensions.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()}"),
-            ("track", StringExtensions.Sanitize(trackSearch.Track.TrackName)),
-            ("artist", StringExtensions.Sanitize(trackSearch.Track.ArtistName)));
+        var showGraph = context.ContextUser.UserType != UserType.User && userSettings.UserType != UserType.User;
+
+        Task<PlayHistorySummary> playHistoryTask = null;
+        if ((showGraph || timeSettings != null) && trackSearch.Track.UserPlaycount > 0)
+        {
+            playHistoryTask = this._playService.GetTrackPlayHistory(userSettings.UserId,
+                trackSearch.Track.ArtistName, trackSearch.Track.TrackName,
+                timeSettings?.StartDateTime, timeSettings?.EndDateTime);
+        }
+
+        var userTitle = $"{StringExtensions.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()}";
 
         if (trackSearch.Track.UserPlaycount.HasValue && !userSettings.DifferentUser)
         {
@@ -1107,21 +1136,51 @@ public class TrackBuilders
 
         var playHistory = playHistoryTask != null ? await playHistoryTask : null;
 
-        (int week, int month) recentTrackPlaycounts = playHistory != null
-            ? (playHistory.WeekPlays, playHistory.MonthPlays)
-            : await this._playService.GetRecentTrackPlaycounts(userSettings.UserId, trackSearch.Track.TrackName,
-                trackSearch.Track.ArtistName);
-
-        if (recentTrackPlaycounts.month != 0)
+        string reply;
+        if (timeSettings != null)
         {
-            reply += $"\n{context.Localize("shared.recentWeekMonthPlays",
-                ("week", context.LocalizeCount("shared.plays", recentTrackPlaycounts.week)),
-                ("month", context.LocalizeCount("shared.plays", recentTrackPlaycounts.month)))}";
+            var periodPlays = playHistory?.DailyPlays.Sum(s => s.Plays) ?? 0;
+            reply = context.LocalizeCount("track.plays.userPlaysInPeriod",
+                periodPlays,
+                ("user", userTitle),
+                ("track", StringExtensions.Sanitize(trackSearch.Track.TrackName)),
+                ("artist", StringExtensions.Sanitize(trackSearch.Track.ArtistName)),
+                ("period", context.Localizer.AltPeriodLabel(timeSettings)));
+
+            reply += $"\n{PlayService.GetPeriodPlaysFooter(context, timeSettings, periodPlays,
+                trackSearch.Track.UserPlaycount.GetValueOrDefault())}";
+        }
+        else
+        {
+            reply = context.LocalizeCount("track.plays.userPlays",
+                trackSearch.Track.UserPlaycount.GetValueOrDefault(),
+                ("user", userTitle),
+                ("track", StringExtensions.Sanitize(trackSearch.Track.TrackName)),
+                ("artist", StringExtensions.Sanitize(trackSearch.Track.ArtistName)));
+
+            (int week, int month) recentTrackPlaycounts = playHistory != null
+                ? (playHistory.WeekPlays, playHistory.MonthPlays)
+                : await this._playService.GetRecentTrackPlaycounts(userSettings.UserId, trackSearch.Track.TrackName,
+                    trackSearch.Track.ArtistName);
+
+            if (recentTrackPlaycounts.month != 0)
+            {
+                reply += $"\n{context.Localize("shared.recentWeekMonthPlays",
+                    ("week", context.LocalizeCount("shared.plays", recentTrackPlaycounts.week)),
+                    ("month", context.LocalizeCount("shared.plays", recentTrackPlaycounts.month)))}";
+            }
         }
 
-        var playHistoryGraph = playHistory != null
+        if (periodNote != null)
+        {
+            reply += $"\n{periodNote}";
+        }
+
+        var playHistoryGraph = showGraph && playHistory != null
             ? await this._graphService.BuildPlayHistoryGraph(context, response, playHistory.DailyPlays,
-                "track-plays.png", height: GraphExtensions.CompactGraphHeight)
+                "track-plays.png", height: GraphExtensions.CompactGraphHeight,
+                windowFrom: timeSettings?.StartDateTime, windowUntil: timeSettings?.EndDateTime,
+                windowTimeZone: userSettings.TimeZone)
             : null;
 
         response.TopLevelComponents.Add(new TextDisplayProperties(reply));

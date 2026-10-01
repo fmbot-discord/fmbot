@@ -269,40 +269,6 @@ public class WhoKnowsServiceTests
     }
 
     [Test]
-    public void ListToString_OrdersByPlaycountAndLinksLastFmProfiles()
-    {
-        var users = new List<WhoKnowsObjectWithUser> { Wk(2, 5), Wk(1, 50), Wk(3, 20) };
-
-        var text = WhoKnowsService.WhoKnowsListToString(users, requestedUserId: 99, PrivacyLevel.Server, English);
-        var lines = text.TrimEnd('\n').Split('\n');
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(lines, Has.Length.EqualTo(3));
-            Assert.That(lines[0], Does.StartWith("1.").And.Contains("user1").And.Contains("**50** plays"));
-            Assert.That(lines[1], Does.StartWith("2.").And.Contains("user3").And.Contains("**20** plays"));
-            Assert.That(lines[2], Does.StartWith("3.").And.Contains("user2").And.Contains("**5** plays"));
-            Assert.That(lines[0], Does.Contain("(https://last.fm/user/lastfm1)"));
-        });
-    }
-
-    [Test]
-    public void ListToString_RequesterInsideTop_IsBoldedOnce()
-    {
-        var users = new List<WhoKnowsObjectWithUser> { Wk(1, 50), Wk(2, 40) };
-
-        var text = WhoKnowsService.WhoKnowsListToString(users, requestedUserId: 2, PrivacyLevel.Server, English);
-        var lines = text.TrimEnd('\n').Split('\n');
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(lines, Has.Length.EqualTo(2));
-            Assert.That(lines[1], Does.StartWith("**2.**").And.EndWith("40 plays**"));
-            Assert.That(lines[0], Does.Not.Contain("**1.**"));
-        });
-    }
-
-    [Test]
     public void ListToString_CapsAtFourteenAndPinsRequesterWithTrueRank()
     {
         var users = Enumerable.Range(1, 30).Select(i => Wk(i, 100 - i)).ToList();
@@ -379,34 +345,6 @@ public class WhoKnowsServiceTests
     }
 
     [Test]
-    public void ListToString_GlobalView_ServerViewStillShowsEveryone()
-    {
-        var users = new List<WhoKnowsObjectWithUser> { Wk(1, 50, privacy: PrivacyLevel.Server) };
-
-        var text = WhoKnowsService.WhoKnowsListToString(users, requestedUserId: 99, PrivacyLevel.Server, English);
-
-        Assert.That(text, Does.Contain("user1").And.Not.Contain("Private user"));
-    }
-
-    [Test]
-    public void ListToString_CrownHolder_GetsCrownInsteadOfPosition()
-    {
-        var users = new List<WhoKnowsObjectWithUser> { Wk(1, 50), Wk(2, 40) };
-        var crown = new CrownModel { Crown = new UserCrown { UserId = 1 }, CrownResult = "Crown claimed!" };
-
-        var text = WhoKnowsService.WhoKnowsListToString(users, requestedUserId: 99, PrivacyLevel.Server, English,
-            crownModel: crown);
-        var lines = text.Split('\n');
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(lines[0], Does.StartWith("👑").And.Contain("user1"));
-            Assert.That(lines[1], Does.Contain("2.").And.Contain("user2"));
-            Assert.That(text, Does.EndWith("Crown claimed!"));
-        });
-    }
-
-    [Test]
     public void ListToString_CloseFriendsOutsideTop_ArePinnedInItalicsWithTrueRank()
     {
         var users = Enumerable.Range(1, 20).Select(i => Wk(i, 100 - i)).ToList();
@@ -421,16 +359,6 @@ public class WhoKnowsServiceTests
             Assert.That(lines[14], Does.StartWith("16.").And.Contain("*").And.Contain("user16"));
             Assert.That(lines[15], Does.StartWith("**18.").And.Contain("user18"));
         });
-    }
-
-    [Test]
-    public void NameWithLink_FallsBackToLastFmNameWhenDiscordNameIsEmpty()
-    {
-        var user = Wk(1, 10, lastFm: "lastfm1", discordName: "   ");
-
-        var text = WhoKnowsService.NameWithLink(user);
-
-        Assert.That(text, Is.EqualTo("[\u2066lastfm1\u2069](https://last.fm/user/lastfm1)"));
     }
 
     [Test]

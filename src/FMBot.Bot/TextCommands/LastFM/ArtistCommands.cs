@@ -52,9 +52,9 @@ public class ArtistCommands(
 
         var contextUser = await userService.GetUserWithDiscogs(this.Context.User.Id);
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
-        var redirectsEnabled = SettingService.RedirectsEnabled(artistValues);
 
         var userSettings = await settingService.GetUser(artistValues, contextUser, this.Context);
+        var redirectsEnabled = SettingService.RedirectsEnabled(userSettings.NewSearchValue);
 
         try
         {
@@ -107,13 +107,16 @@ public class ArtistCommands(
     [Command("artisttracks", "at", "att", "artisttrack", "artistrack", "artisttoptracks",
         "artisttoptrack", "favs")]
     [Summary("Top tracks for an artist")]
+    [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample)]
     [Examples(
         "at",
         "artisttracks",
-        "artisttracks DMX")]
+        "artisttracks DMX",
+        "at weekly",
+        "artisttracks DMX 2024")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Artists)]
-    [SupporterEnhanced("Supporters have their complete Last.fm history cached in the bot, so the artisttracks command always contains all their tracks")]
+    [SupporterEnhanced("Supporters have their complete Last.fm history cached in the bot, so the artisttracks command always contains all their tracks and works for time periods older than two months")]
     public async Task ArtistTracksAsync([CommandParameter(Remainder = true)] string artistValues = null)
     {
         _ = this.Context.Channel?.TriggerTypingAsync()!;
@@ -123,12 +126,12 @@ public class ArtistCommands(
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
         var redirectsEnabled = SettingService.RedirectsEnabled(userSettings.NewSearchValue);
-        var timeSettings = SettingService.GetTimePeriod(redirectsEnabled.NewSearchValue, TimePeriod.AllTime,
-            cachedOnly: true, dailyTimePeriods: false, language: LocalizationService.GetLanguage(this.Context.Guild?.Id, this.Context.Guild?.PreferredLocale));
+        var period = SettingService.GetPlaysTimePeriod(redirectsEnabled.NewSearchValue, userSettings.TimeZone,
+            LocalizationService.GetLanguage(this.Context.Guild?.Id, this.Context.Guild?.PreferredLocale));
 
         var response = await artistBuilders.ArtistTracksAsync(new ContextModel(this.Context, prfx, contextUser),
-            timeSettings,
-            userSettings, redirectsEnabled.NewSearchValue, redirectsEnabled.Enabled);
+            period.TimeSettings,
+            userSettings, period.SearchValue, redirectsEnabled.Enabled, period.SearchValueWithoutPeriod);
 
         await this.Context.SendResponse(this.Interactivity, response, userService);
         await this.Context.LogCommandUsedAsync(response, userService);
@@ -137,15 +140,16 @@ public class ArtistCommands(
     [Command("artistalbums", "aa", "aab", "atab", "artistalbum", "artistopalbum", "artisttopalbums",
         "artisttab")]
     [Summary("Top albums for an artist.")]
-    [Options("Hide singles: `ns`, `nosingles`")]
+    [Options(Constants.CompactTimePeriodList, "Hide singles: `ns`, `nosingles`", Constants.UserMentionExample)]
     [Examples(
         "aa",
         "artistalbums",
         "artistalbums The Prodigy",
-        "artistalbums The Prodigy nosingles")]
+        "artistalbums The Prodigy nosingles",
+        "aa monthly")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Artists)]
-    [SupporterEnhanced("Supporters have their complete Last.fm history cached in the bot, so the artistalbums command always contains all their albums")]
+    [SupporterEnhanced("Supporters have their complete Last.fm history cached in the bot, so the artistalbums command always contains all their albums and works for time periods older than two months")]
     public async Task ArtistAlbumsAsync([CommandParameter(Remainder = true)] string artistValues = null)
     {
         _ = this.Context.Channel?.TriggerTypingAsync()!;
@@ -156,9 +160,12 @@ public class ArtistCommands(
 
         var hideSingles = SettingService.HideSingles(userSettings.NewSearchValue);
         var redirectsEnabled = SettingService.RedirectsEnabled(hideSingles.NewSearchValue);
+        var period = SettingService.GetPlaysTimePeriod(redirectsEnabled.NewSearchValue, userSettings.TimeZone,
+            LocalizationService.GetLanguage(this.Context.Guild?.Id, this.Context.Guild?.PreferredLocale));
 
         var response = await artistBuilders.ArtistAlbumsAsync(new ContextModel(this.Context, prfx, contextUser),
-            userSettings, redirectsEnabled.NewSearchValue, redirectsEnabled.Enabled, hideSingles.Enabled);
+            userSettings, period.SearchValue, redirectsEnabled.Enabled, hideSingles.Enabled, period.TimeSettings,
+            period.SearchValueWithoutPeriod);
 
         await this.Context.SendResponse(this.Interactivity, response, userService);
         await this.Context.LogCommandUsedAsync(response, userService);
@@ -167,15 +174,18 @@ public class ArtistCommands(
     [Command("artistplays", "ap")]
     [Summary("Shows playcount for current artist or the one you're searching for.\n\n" +
              "You can also mention another user to see their playcount.")]
+    [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample)]
     [Examples(
         "ap",
         "artistplays",
         "artistplays @user",
         "ap lfm:fm-bot",
-        "artistplays Mall Grab @user")]
+        "artistplays Mall Grab @user",
+        "ap weekly",
+        "artistplays Mall Grab 2025")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Artists)]
-    [SupporterEnhanced("Supporters get a graph of their listening history for the artist")]
+    [SupporterEnhanced("Supporters get a graph of their listening history for the artist and can see their plays for time periods older than two months")]
     public async Task ArtistPlaysAsync([CommandParameter(Remainder = true)] string artistValues = null)
     {
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
@@ -185,10 +195,12 @@ public class ArtistCommands(
         var userSettings = await settingService.GetUser(artistValues, contextUser, this.Context);
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
         var redirectsEnabled = SettingService.RedirectsEnabled(userSettings.NewSearchValue);
+        var period = SettingService.GetPlaysTimePeriod(redirectsEnabled.NewSearchValue, userSettings.TimeZone,
+            LocalizationService.GetLanguage(this.Context.Guild?.Id, this.Context.Guild?.PreferredLocale));
 
         var response = await artistBuilders.ArtistPlaysAsync(new ContextModel(this.Context, prfx, contextUser),
             userSettings,
-            redirectsEnabled.NewSearchValue, redirectsEnabled.Enabled);
+            period.SearchValue, redirectsEnabled.Enabled, period.TimeSettings, period.SearchValueWithoutPeriod);
 
         await this.Context.SendResponse(this.Interactivity, response, userService);
         await this.Context.LogCommandUsedAsync(response, userService);
@@ -363,22 +375,26 @@ public class ArtistCommands(
             }
         }
 
-        var otherUser =
-            await settingService.GetUser(extraOptions, userSettings, this.Context,
-                firstOptionIsLfmUsername: true);
+        var language = LocalizationService.GetLanguage(this.Context.Guild?.Id, this.Context.Guild?.PreferredLocale);
 
         var timeSettings = SettingService.GetTimePeriod(
-            string.IsNullOrWhiteSpace(otherUser.NewSearchValue) ? "two-year" : otherUser.NewSearchValue,
+            string.IsNullOrWhiteSpace(extraOptions) ? "two-year" : extraOptions,
             timeZone: userSettings.TimeZone,
-            language: LocalizationService.GetLanguage(this.Context.Guild?.Id, this.Context.Guild?.PreferredLocale));
+            language: language);
 
         if (timeSettings.DefaultPicked)
         {
-            timeSettings = SettingService.GetTimePeriod("two-year " + otherUser.NewSearchValue,
-                timeZone: userSettings.TimeZone, language: LocalizationService.GetLanguage(this.Context.Guild?.Id, this.Context.Guild?.PreferredLocale));
+            timeSettings = SettingService.GetTimePeriod("two-year " + extraOptions,
+                timeZone: userSettings.TimeZone, language: language);
         }
 
         var embedSize = artistsService.SetTasteEmbedSize(timeSettings.NewSearchValue);
+        var userOptions = SettingService.ContainsAndRemove(timeSettings.NewSearchValue,
+            ["xl", "xxl", "extralarge", "xs", "xxs", "extrasmall"], true);
+
+        var otherUser =
+            await settingService.GetUser(userOptions, userSettings, this.Context,
+                firstOptionIsLfmUsername: true);
 
         try
         {

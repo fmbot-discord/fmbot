@@ -1,5 +1,6 @@
 using System.Linq;
 using FMBot.Bot.Models;
+using FMBot.Core.Charts;
 
 namespace FMBot.Bot.Resources;
 

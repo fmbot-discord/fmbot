@@ -30,6 +30,9 @@
         "album": {
           "description": "The album you want to search for (defaults to currently playing)"
         },
+        "time-period": {
+          "description": "Time period to show plays for"
+        },
         "user": {
           "description": "The user to show (defaults to self)"
         }
@@ -83,6 +86,9 @@
         "redirects": {
           "description": "Toggle Last.fm artist name redirects (defaults to enabled)"
         },
+        "time-period": {
+          "description": "Time period to show albums for"
+        },
         "user": {
           "description": "The user to show (defaults to self)"
         }
@@ -130,6 +136,9 @@
         },
         "redirects": {
           "description": "Toggle Last.fm artist name redirects (defaults to enabled)"
+        },
+        "time-period": {
+          "description": "Time period to show plays for"
         },
         "user": {
           "description": "The user to show (defaults to self)"
@@ -1177,6 +1186,9 @@
     "trackplays": {
       "description": "Shows playcount for current track or the one you're searching for",
       "parameters": {
+        "time-period": {
+          "description": "Time period to show plays for"
+        },
         "track": {
           "description": "The track you want to search for (defaults to currently playing)"
         },

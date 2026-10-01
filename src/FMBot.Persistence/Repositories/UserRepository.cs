@@ -13,6 +13,14 @@ namespace FMBot.Persistence.Repositories;
 
 public class UserRepository
 {
+    public static async Task<UserFmSetting> GetFmSetting(int userId, NpgsqlConnection connection)
+    {
+        const string sql = "SELECT user_id, accent_color, custom_color FROM public.user_fm_settings WHERE user_id = @userId";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        return await connection.QueryFirstOrDefaultAsync<UserFmSetting>(sql, new { userId });
+    }
+
     public static async Task<ImportUser> GetImportUserForLastFmUserName(string lastFmUserName, NpgsqlConnection connection, bool getLastImportPlayDate = false)
     {
         const string getUserQuery = "SELECT user_id, discord_user_id, user_name_last_fm, data_source " +
@@ -116,5 +124,16 @@ public class UserRepository
         await setIndexTime.ExecuteNonQueryAsync().ConfigureAwait(false);
 
         return dataSourceUser.Registered;
+    }
+
+    public static async Task<List<FriendLookup>> GetFriends(int userId, NpgsqlConnection connection)
+    {
+        const string sql = "SELECT f.friend_user_id, COALESCE(u.user_name_last_fm, f.last_fm_user_name) AS user_name_last_fm " +
+                           "FROM public.friends f " +
+                           "LEFT JOIN public.users u ON u.user_id = f.friend_user_id " +
+                           "WHERE f.user_id = @userId";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        return (await connection.QueryAsync<FriendLookup>(sql, new { userId })).ToList();
     }
 }

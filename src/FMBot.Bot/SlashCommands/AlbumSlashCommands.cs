@@ -231,6 +231,9 @@ public class AlbumSlashCommands(
         [SlashCommandParameter(Name = "album", Description = "The album you want to search for (defaults to currently playing)",
             AutocompleteProviderType = typeof(AlbumAutoComplete))]
         string name = null,
+        [SlashCommandParameter(Name = "time-period", Description = "Time period to show plays for",
+            AutocompleteProviderType = typeof(DateTimeAutoComplete))]
+        string timePeriod = null,
         [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
         string user = null)
     {
@@ -241,7 +244,10 @@ public class AlbumSlashCommands(
 
         try
         {
-            var response = await albumBuilders.AlbumPlaysAsync(new ContextModel(this.Context, contextUser), userSettings, name);
+            var timeSettings = SettingService.GetPlaysTimePeriod(timePeriod, userSettings.TimeZone,
+                LocalizationService.GetLanguage(this.Context.Interaction.GuildId, this.Context.Interaction.GuildLocale)).TimeSettings;
+
+            var response = await albumBuilders.AlbumPlaysAsync(new ContextModel(this.Context, contextUser), userSettings, name, timeSettings);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);

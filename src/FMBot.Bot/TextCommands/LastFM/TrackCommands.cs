@@ -76,15 +76,18 @@ public class TrackCommands(
     [Command("trackplays", "tp", "trackplay", "tplays", "trackp")]
     [Summary("Shows playcount for current track or the one you're searching for.\n\n" +
              "You can also mention another user to see their playcount.")]
+    [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample)]
     [Examples(
         "tp",
         "trackplays",
         "trackplays Mac DeMarco Here Comes The Cowboy",
         "tp lfm:fm-bot",
-        "trackplays Cocteau Twins | Heaven or Las Vegas @user")]
+        "trackplays Cocteau Twins | Heaven or Las Vegas @user",
+        "tp weekly",
+        "trackplays Heaven or Las Vegas 2025")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks)]
-    [SupporterEnhanced("Supporters get a graph of their listening history for the track")]
+    [SupporterEnhanced("Supporters get a graph of their listening history for the track and can see their plays for time periods older than two months")]
     public async Task TrackPlaysAsync([CommandParameter(Remainder = true)] string trackValues = null)
     {
         _ = this.Context.Channel?.TriggerTypingAsync()!;
@@ -93,8 +96,11 @@ public class TrackCommands(
         var userSettings = await settingService.GetUser(trackValues, contextUser, this.Context);
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
+        var period = SettingService.GetPlaysTimePeriod(userSettings.NewSearchValue, userSettings.TimeZone,
+            LocalizationService.GetLanguage(this.Context.Guild?.Id, this.Context.Guild?.PreferredLocale));
+
         var response = await trackBuilders.TrackPlays(new ContextModel(this.Context, prfx, contextUser),
-            userSettings, userSettings.NewSearchValue);
+            userSettings, period.SearchValue, period.TimeSettings, period.SearchValueWithoutPeriod);
 
         await this.Context.SendResponse(this.Interactivity, response, userService);
         await this.Context.LogCommandUsedAsync(response, userService);

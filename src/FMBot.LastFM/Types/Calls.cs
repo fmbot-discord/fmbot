@@ -5,6 +5,8 @@ public abstract class Call
 {
     public static readonly string
         ArtistInfo = "artist.getInfo",
+        ArtistTopTracks = "artist.getTopTracks",
+        ArtistTopAlbums = "artist.getTopAlbums",
         AlbumInfo = "album.getInfo",
         TrackInfo = "track.getInfo",
         TrackLove = "track.love",

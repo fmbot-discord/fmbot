@@ -20,35 +20,7 @@ public static class StringService
 {
     public static string TrackToLinkedString(RecentTrack track, bool? rymEnabled = null, bool bigTrackName = true)
     {
-        var description = new StringBuilder();
-
-        if (bigTrackName)
-        {
-            description.AppendLine($"### [{StringExtensions.Sanitize(track.TrackName)}]({track.TrackUrl})");
-        }
-        else
-        {
-            description.AppendLine($"**[{StringExtensions.Sanitize(track.TrackName)}]({track.TrackUrl})**");
-        }
-
-        description.Append($"**{StringExtensions.Sanitize(track.ArtistName)}**");
-
-        if (!string.IsNullOrWhiteSpace(track.AlbumName))
-        {
-            if (rymEnabled == true)
-            {
-                var albumRymUrl = StringExtensions.GetRymUrl(track.AlbumName, track.ArtistName);
-
-                description.Append($" • *[{StringExtensions.Sanitize(track.AlbumName)}]({albumRymUrl})*");
-            }
-            else
-            {
-                description.Append($" • *{StringExtensions.Sanitize(track.AlbumName)}*");
-            }
-        }
-
-        description.AppendLine();
-        return description.ToString();
+        return FMBot.Domain.Extensions.DiscordStringExtensions.TrackToLinkedString(track, rymEnabled, bigTrackName);
     }
 
     public static string TrackToLinkedStringWithTimestamp(RecentTrack track, bool? rymEnabled = null,

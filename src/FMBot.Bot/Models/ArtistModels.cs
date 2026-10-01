@@ -65,10 +65,3 @@ public class ArtistSearch
     public long? RandomArtistPlaycount { get; set; }
     public RecentTrack LatestScrobble { get; set; }
 }
-
-public class ArtistImageRow
-{
-    public string Name { get; set; }
-    public string ImageUrl { get; set; }
-}
-

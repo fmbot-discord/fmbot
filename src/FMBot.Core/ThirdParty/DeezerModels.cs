@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
-namespace FMBot.Bot.Services.ThirdParty;
+namespace FMBot.Core.ThirdParty;
 
 public class DeezerList<T>
 {

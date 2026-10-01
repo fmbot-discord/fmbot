@@ -7,6 +7,7 @@ using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services;
+using FMBot.Core.Charts;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using NetCord;
@@ -74,7 +75,7 @@ public class ChartSlashCommands(
             timeZone: userSettings.TimeZone,
             language: LocalizationService.GetLanguage(this.Context.Interaction.GuildId, this.Context.Interaction.GuildLocale));
 
-        var chartSettings = new ChartSettings(this.Context.User)
+        var chartSettings = new ChartSettings()
         {
             ArtistChart = false,
             FilteredArtist = filteredArtist,
@@ -131,7 +132,7 @@ public class ChartSlashCommands(
         var userSettings = await settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
         var timeSettings = SettingService.GetTimePeriod(timePeriod, timeZone: userSettings.TimeZone, language: LocalizationService.GetLanguage(this.Context.Interaction.GuildId, this.Context.Interaction.GuildLocale));
 
-        var chartSettings = new ChartSettings(this.Context.User)
+        var chartSettings = new ChartSettings()
         {
             ArtistChart = true,
             TitleSetting = titleSetting,

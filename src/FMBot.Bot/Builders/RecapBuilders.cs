@@ -7,6 +7,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Core.Charts;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
@@ -84,7 +85,7 @@ public class RecapBuilders
             EmbedSize = EmbedSize.Large
         };
 
-        var chartSettings = new ChartSettings(context.DiscordUser)
+        var chartSettings = new ChartSettings()
         {
             Width = 3,
             Height = 3,

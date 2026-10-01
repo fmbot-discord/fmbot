@@ -688,6 +688,91 @@ public class LastFmRepository : ILastfmRepository
         };
     }
 
+    public async Task<Response<TopTrackList>> GetArtistTopTracksAsync(string artistName, int count,
+        bool redirectsEnabled)
+    {
+        var queryParams = new Dictionary<string, string>
+        {
+            { "artist", artistName },
+            { "limit", count.ToString() },
+            { "autocorrect", redirectsEnabled ? "1" : "0" }
+        };
+
+        var topTracksCall = await CallApiWithRetryAsync<TopTracksLfmResponse>(
+            queryParams, Call.ArtistTopTracks, false, 1, artistName);
+
+        if (!topTracksCall.Success)
+        {
+            return new Response<TopTrackList>
+            {
+                Success = false,
+                Error = topTracksCall.Error,
+                Message = topTracksCall.Message
+            };
+        }
+
+        return new Response<TopTrackList>
+        {
+            Success = true,
+            Content = new TopTrackList
+            {
+                TotalAmount = topTracksCall.Content.TopTracks?.Attr?.Total,
+                TopTracks = (topTracksCall.Content.TopTracks?.Track ?? [])
+                    .Where(w => !string.IsNullOrWhiteSpace(w.Name))
+                    .Select(s => new TopTrack
+                    {
+                        TrackName = s.Name,
+                        ArtistName = s.Artist?.Name ?? artistName,
+                        TrackUrl = Uri.IsWellFormedUriString(s.Url, UriKind.Absolute) ? s.Url : null,
+                        Mbid = Guid.TryParse(s.Mbid, out var mbid) ? mbid : null
+                    }).ToList()
+            }
+        };
+    }
+
+    public async Task<Response<TopAlbumList>> GetArtistTopAlbumsAsync(string artistName, int count,
+        bool redirectsEnabled)
+    {
+        var queryParams = new Dictionary<string, string>
+        {
+            { "artist", artistName },
+            { "limit", count.ToString() },
+            { "autocorrect", redirectsEnabled ? "1" : "0" }
+        };
+
+        var topAlbumsCall = await CallApiWithRetryAsync<TopAlbumsLfmResponse>(
+            queryParams, Call.ArtistTopAlbums, false, 1, artistName);
+
+        if (!topAlbumsCall.Success)
+        {
+            return new Response<TopAlbumList>
+            {
+                Success = false,
+                Error = topAlbumsCall.Error,
+                Message = topAlbumsCall.Message
+            };
+        }
+
+        return new Response<TopAlbumList>
+        {
+            Success = true,
+            Content = new TopAlbumList
+            {
+                TotalAmount = topAlbumsCall.Content.TopAlbums?.Attr?.Total,
+                TopAlbums = (topAlbumsCall.Content.TopAlbums?.Album ?? [])
+                    .Where(w => !string.IsNullOrWhiteSpace(w.Name) && w.Name != "(null)")
+                    .Select(s => new TopAlbum
+                    {
+                        AlbumName = s.Name,
+                        ArtistName = s.Artist?.Name ?? artistName,
+                        AlbumUrl = s.Url,
+                        AlbumCoverUrl = PickExtraLargeImage(s.Image),
+                        Mbid = Guid.TryParse(s.Mbid, out var mbid) ? mbid : null
+                    }).ToList()
+            }
+        };
+    }
+
     public async Task<Response<AlbumInfo>> GetAlbumInfoAsync(string artistName, string albumName, bool redirectsEnabled,
         string username = null)
     {

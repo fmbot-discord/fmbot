@@ -20,7 +20,7 @@ public static class GraphExtensions
     public static async Task<MediaGalleryProperties> BuildPlayHistoryGraph(this GraphService graphService,
         ContextModel context, ResponseModel response, IReadOnlyList<DayPlayCount> dailyPlays, string fileName,
         GraphInterval? fixedInterval = null, int height = DefaultGraphHeight, DateTime? windowFrom = null,
-        DateTime? windowUntil = null)
+        DateTime? windowUntil = null, string windowTimeZone = null)
     {
         if (dailyPlays == null || dailyPlays.Count == 0)
         {
@@ -48,12 +48,43 @@ public static class GraphExtensions
             await GetLineColor(context, response),
             value => value.Format(context.NumberFormat),
             fixedInterval,
-            windowFrom,
-            windowUntil,
+            ToWindowStart(windowFrom, windowTimeZone),
+            ToWindowEnd(windowUntil, windowTimeZone),
             height: height,
             style: graphType);
 
         return AttachGraph(response, graph, fileName);
+    }
+
+    private static DateTime? ToWindowStart(DateTime? start, string timeZone)
+    {
+        if (!start.HasValue)
+        {
+            return null;
+        }
+
+        var localStart = ToLocalTime(start.Value, timeZone);
+        var nearestMidnight = localStart.AddHours(12).Date;
+
+        return (localStart - nearestMidnight).Duration() <= TimeSpan.FromHours(1)
+            ? DateTime.SpecifyKind(nearestMidnight, DateTimeKind.Utc)
+            : start;
+    }
+
+    private static DateTime? ToWindowEnd(DateTime? end, string timeZone)
+    {
+        if (!end.HasValue || end.Value >= DateTime.UtcNow.AddHours(-1))
+        {
+            return end;
+        }
+
+        return DateTime.SpecifyKind(ToLocalTime(end.Value, timeZone).AddHours(-12).Date, DateTimeKind.Utc);
+    }
+
+    private static DateTime ToLocalTime(DateTime utcTime, string timeZone)
+    {
+        return TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(utcTime, DateTimeKind.Utc),
+            SettingService.ResolveTimeZone(timeZone));
     }
 
     private static MediaGalleryProperties AttachGraph(ResponseModel response, PlayHistoryGraph graph, string fileName)

@@ -23,7 +23,6 @@ public class GraphService
     private const float LineWidth = 2.5f;
     private const float DotRadius = 4.5f;
     private const double MinimumPlays = 5;
-    private const int MaxDateTicks = 9;
 
     private static readonly SKColor AxisColor = new(0x8B, 0x9B, 0xA0);
     private static readonly SKColor LabelColor = new(0x93, 0xA1, 0xA6);
@@ -100,7 +99,8 @@ public class GraphService
             (from, until) = GraphSeries.TrimToWholeIntervals(from, until, interval);
         }
 
-        var points = GraphSeries.FromDailyCounts(dailyPlays, interval, from, until);
+        var points = GraphSeries.FromDailyCounts(dailyPlays, interval, from, until,
+            style == GraphType.Bar && windowFrom.HasValue ? from : null);
 
         if (!windowFrom.HasValue)
         {
@@ -112,13 +112,6 @@ public class GraphService
             return null;
         }
 
-        var typeface = GetTypeface();
-        var ticks = GraphTicks.Plan(points, MaxDateTicks, culture, interval);
-        if (ticks.Any(a => !typeface.ContainsGlyphs(a.Label)))
-        {
-            ticks = GraphTicks.Plan(points, MaxDateTicks, CultureInfo.InvariantCulture, interval);
-        }
-
         var image = RenderLineGraph(new LineGraph
         {
             Points = points,
@@ -126,7 +119,8 @@ public class GraphService
             Height = height,
             LineColor = lineColor,
             ValueLabel = valueLabel,
-            Ticks = ticks,
+            Culture = culture,
+            Interval = interval,
             Style = style
         });
 
@@ -184,12 +178,18 @@ public class GraphService
             dataMax = Math.Max(dataMax, point.Value);
         }
 
-        var axis = NiceAxis(dataMin, dataMax, graph.MaxYTicks, graph.ZeroBased, graph.IntegerValues);
         var scale = graph.Width / BaseWidth;
+        var barStyle = graph.Style == GraphType.Bar;
 
         using var font = new SKFont(GetTypeface())
         {
             Size = FontSize * scale,
+            Subpixel = true,
+            Edging = SKFontEdging.SubpixelAntialias
+        };
+        using var valueFont = new SKFont(GetTypeface())
+        {
+            Size = FontSize * 0.8f * scale,
             Subpixel = true,
             Edging = SKFontEdging.SubpixelAntialias
         };
@@ -199,25 +199,23 @@ public class GraphService
             Color = LabelColor
         };
 
-        var tickCount = (int)Math.Round((axis.Max - axis.Min) / axis.Step) + 1;
-        var unit = AxisUnit(axis.Max, axis.Step);
-        var valueLabels = new string[tickCount];
-        var widestLabel = 0f;
-        for (var i = 0; i < tickCount; i++)
-        {
-            var value = axis.Min + i * axis.Step;
-            valueLabels[i] = value == 0
-                ? FormatValue(graph, 0)
-                : FormatValue(graph, value / unit.Divisor) + unit.Suffix;
-            widestLabel = Math.Max(widestLabel, font.MeasureText(valueLabels[i], labelPaint));
-        }
-
-        var plotLeft = (EdgeMargin + LabelSpacing) * scale + widestLabel;
         var plotRight = graph.Width - PaddingRight * scale;
         var plotTop = PaddingTop * scale;
         var plotBottom = graph.Height - AxisHeight * scale;
-        var plotWidth = plotRight - plotLeft;
         var plotHeight = plotBottom - plotTop;
+        var maxYTicks = Math.Clamp((int)(plotHeight / (FontSize * 1.3f * scale)) + 1, 2, graph.MaxYTicks);
+        var valueGap = 2f * scale;
+
+        var barValues = barStyle
+            ? BarValueLabels(graph, valueFont, labelPaint, (plotRight - EdgeMargin * scale) / graph.Points.Count)
+            : null;
+
+        var axis = barValues == null
+            ? LayoutYAxis(graph, font, labelPaint, dataMin, dataMax, maxYTicks, scale)
+            : ValueOnlyAxis(graph, valueFont, labelPaint, dataMin, dataMax, plotTop, plotHeight, valueGap, scale);
+
+        var plotLeft = axis.PlotLeft;
+        var plotWidth = plotRight - plotLeft;
 
         if (plotWidth < 60 || plotHeight < 30)
         {
@@ -225,7 +223,6 @@ public class GraphService
         }
 
         var range = axis.Max - axis.Min;
-        var barStyle = graph.Style == GraphType.Bar;
         var xPositions = new float[graph.Points.Count];
         var yPositions = new float[graph.Points.Count];
         for (var i = 0; i < graph.Points.Count; i++)
@@ -235,6 +232,8 @@ public class GraphService
                 : plotLeft + (float)i / (graph.Points.Count - 1) * plotWidth;
             yPositions[i] = plotTop + (float)(1 - (graph.Points[i].Value - axis.Min) / range) * plotHeight;
         }
+
+        var ticks = PlanDateTicks(graph, xPositions, font, labelPaint, scale);
 
         var imageInfo = new SKImageInfo((int)(graph.Width * RenderScale), (int)(graph.Height * RenderScale),
             SKColorType.Rgba8888, SKAlphaType.Premul);
@@ -258,22 +257,27 @@ public class GraphService
             Color = AxisColor.WithAlpha(115)
         };
 
-        for (var i = 0; i < tickCount; i++)
+        for (var i = 0; i < axis.Labels.Length; i++)
         {
             var y = plotTop + (float)(1 - i * axis.Step / range) * plotHeight;
 
             canvas.DrawLine(plotLeft, y, plotRight, y, gridPaint);
-            canvas.DrawShapedText(valueLabels[i], plotLeft - LabelSpacing * scale, y + LabelCenter * scale,
+            canvas.DrawShapedText(axis.Labels[i], plotLeft - LabelSpacing * scale, y + LabelCenter * scale,
                 SKTextAlign.Right, font, labelPaint);
         }
 
-        canvas.DrawLine(plotLeft, plotTop, plotLeft, plotBottom, axisPaint);
+        if (axis.Labels.Length > 0)
+        {
+            canvas.DrawLine(plotLeft, plotTop, plotLeft, plotBottom, axisPaint);
+        }
+
         canvas.DrawLine(plotLeft, plotBottom, plotRight, plotBottom, axisPaint);
 
         if (barStyle)
         {
             DrawBars(canvas, graph, xPositions, yPositions, plotBottom, plotWidth, scale);
-            DrawDateLabels(canvas, graph, xPositions, plotBottom, scale, font, labelPaint);
+            DrawBarValues(canvas, barValues, xPositions, yPositions, plotBottom, valueGap, scale, valueFont);
+            DrawDateLabels(canvas, graph, ticks, xPositions, plotBottom, scale, font, labelPaint);
 
             return EncodeSurface(surface);
         }
@@ -331,7 +335,7 @@ public class GraphService
             canvas.DrawCircle(xPositions[^1], yPositions[^1], DotRadius * scale, dotPaint);
         }
 
-        DrawDateLabels(canvas, graph, xPositions, plotBottom, scale, font, labelPaint);
+        DrawDateLabels(canvas, graph, ticks, xPositions, plotBottom, scale, font, labelPaint);
 
         return EncodeSurface(surface);
     }
@@ -400,10 +404,117 @@ public class GraphService
         }
     }
 
-    private static void DrawDateLabels(SKCanvas canvas, LineGraph graph, float[] xPositions, float plotBottom,
-        float scale, SKFont font, SKPaint labelPaint)
+    private static void DrawBarValues(SKCanvas canvas, string[] barValues, float[] xPositions, float[] yPositions,
+        float plotBottom, float valueGap, float scale, SKFont valueFont)
+    {
+        if (barValues == null)
+        {
+            return;
+        }
+
+        using var valuePaint = new SKPaint
+        {
+            IsAntialias = true,
+            Color = LabelColor.WithAlpha(190)
+        };
+
+        for (var i = 0; i < barValues.Length; i++)
+        {
+            if (barValues[i] == null)
+            {
+                continue;
+            }
+
+            var top = Math.Min(yPositions[i], plotBottom - LineWidth * scale);
+            canvas.DrawShapedText(barValues[i], xPositions[i], top - valueGap, SKTextAlign.Center, valueFont,
+                valuePaint);
+        }
+    }
+
+    private static string[] BarValueLabels(LineGraph graph, SKFont valueFont, SKPaint paint, float slot)
+    {
+        if (slot < valueFont.Size * 1.4f)
+        {
+            return null;
+        }
+
+        return FittingBarValues(graph, valueFont, paint, slot, value => FormatValue(graph, value)) ??
+               FittingBarValues(graph, valueFont, paint, slot, value => CompactValue(graph, value));
+    }
+
+    private static string[] FittingBarValues(LineGraph graph, SKFont valueFont, SKPaint paint, float slot,
+        Func<double, string> format)
+    {
+        var labels = new string[graph.Points.Count];
+        for (var i = 0; i < graph.Points.Count; i++)
+        {
+            if (graph.Points[i].Value <= 0)
+            {
+                continue;
+            }
+
+            labels[i] = format(graph.Points[i].Value);
+            if (valueFont.MeasureText(labels[i], paint) > slot - valueFont.Size * 0.5f)
+            {
+                return null;
+            }
+        }
+
+        return labels;
+    }
+
+    private static string CompactValue(LineGraph graph, double value)
+    {
+        var (divisor, suffix) = value >= 1000000 ? (1000000d, "M") : value >= 1000 ? (1000d, "k") : (1d, "");
+        var scaled = value / divisor;
+
+        return FormatValue(graph, divisor == 1 ? scaled : Math.Round(scaled, scaled < 10 ? 1 : 0)) + suffix;
+    }
+
+    private List<GraphTick> PlanDateTicks(LineGraph graph, float[] xPositions, SKFont font, SKPaint paint, float scale)
+    {
+        var currentYear = DateTime.UtcNow.Year;
+
+        bool Fits(List<GraphTick> ticks)
+        {
+            var previousRight = float.MinValue;
+            foreach (var tick in ticks)
+            {
+                var (left, width) = DateLabelBounds(tick, graph, xPositions, font, paint, scale);
+                if (left < previousRight + FontSize * 0.5f * scale)
+                {
+                    return false;
+                }
+
+                previousRight = left + width;
+            }
+
+            return true;
+        }
+
+        var ticks = GraphTicks.Plan(graph.Points, graph.Culture, graph.Interval, currentYear, Fits);
+        if (ticks.Any(a => !font.ContainsGlyphs(a.Label)))
+        {
+            ticks = GraphTicks.Plan(graph.Points, CultureInfo.InvariantCulture, graph.Interval, currentYear, Fits);
+        }
+
+        return ticks;
+    }
+
+    private static (float Left, float Width) DateLabelBounds(GraphTick tick, LineGraph graph, float[] xPositions,
+        SKFont font, SKPaint paint, float scale)
     {
         var margin = EdgeMargin * scale;
+        var width = font.MeasureText(tick.Label, paint);
+        var left = Math.Clamp(xPositions[tick.Index] - width / 2, margin,
+            Math.Max(margin, graph.Width - margin - width));
+
+        return (left, width);
+    }
+
+    private static void DrawDateLabels(SKCanvas canvas, LineGraph graph, List<GraphTick> ticks, float[] xPositions,
+        float plotBottom, float scale, SKFont font, SKPaint labelPaint)
+    {
         var minGap = FontSize * 0.5f * scale;
         var previousRight = float.MinValue;
 
@@ -415,7 +526,7 @@ public class GraphService
             Color = AxisColor.WithAlpha(160)
         };
 
-        foreach (var tick in graph.Ticks)
+        foreach (var tick in ticks)
         {
             if (string.IsNullOrWhiteSpace(tick.Label))
             {
@@ -423,8 +534,7 @@ public class GraphService
             }
 
             var x = xPositions[tick.Index];
-            var labelWidth = font.MeasureText(tick.Label, labelPaint);
-            var left = Math.Clamp(x - labelWidth / 2, margin, Math.Max(margin, graph.Width - margin - labelWidth));
+            var (left, labelWidth) = DateLabelBounds(tick, graph, xPositions, font, labelPaint, scale);
 
             if (left < previousRight + minGap)
             {
@@ -439,6 +549,38 @@ public class GraphService
         }
     }
 
+    private static (double Min, double Max, double Step, string[] Labels, float PlotLeft) LayoutYAxis(
+        LineGraph graph, SKFont font, SKPaint paint, double dataMin, double dataMax, int maxTicks, float scale)
+    {
+        var axis = NiceAxis(dataMin, dataMax, maxTicks, graph.ZeroBased, graph.IntegerValues);
+        var tickCount = (int)Math.Round((axis.Max - axis.Min) / axis.Step) + 1;
+        var unit = AxisUnit(axis.Max, axis.Step);
+        var labels = new string[tickCount];
+        var widestLabel = 0f;
+        for (var i = 0; i < tickCount; i++)
+        {
+            var value = axis.Min + i * axis.Step;
+            labels[i] = value == 0
+                ? FormatValue(graph, 0)
+                : FormatValue(graph, value / unit.Divisor) + unit.Suffix;
+            widestLabel = Math.Max(widestLabel, font.MeasureText(labels[i], paint));
+        }
+
+        return (axis.Min, axis.Max, axis.Step, labels, (EdgeMargin + LabelSpacing) * scale + widestLabel);
+    }
+
+    private static (double Min, double Max, double Step, string[] Labels, float PlotLeft) ValueOnlyAxis(
+        LineGraph graph, SKFont valueFont, SKPaint paint, double dataMin, double dataMax, float plotTop,
+        float plotHeight, float valueGap, float scale)
+    {
+        valueFont.MeasureText("0", out var digitBounds, paint);
+        var headroom = Math.Max(0, (-digitBounds.Top + valueGap - plotTop) / plotHeight);
+        var min = graph.ZeroBased ? Math.Min(0, dataMin) : dataMin;
+        var max = Math.Max(dataMax / (1 - headroom), min + 1);
+
+        return (min, max, 0, [], EdgeMargin * scale);
+    }
+
     private static (double Divisor, string Suffix) AxisUnit(double max, double step)
     {
         if (max >= 1000000 && step % 1000000 == 0)
@@ -446,7 +588,7 @@ public class GraphService
             return (1000000, "M");
         }
 
-        if (max >= 1000 && step % 1000 == 0)
+        if (max >= 1000 && (step % 1000 == 0 || step % 2500 == 0))
         {
             return (1000, "k");
         }
@@ -503,6 +645,7 @@ public class GraphService
         {
             <= 1 => 1,
             <= 2 => 2,
+            <= 2.5 when magnitude >= 10 => 2.5,
             <= 5 => 5,
             _ => 10
         };

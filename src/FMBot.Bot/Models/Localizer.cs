@@ -262,18 +262,7 @@ public class Localizer(Language language, NumberFormat numberFormat)
 
     private static string Interpolate(string translation, (string Name, string Value)[] args)
     {
-        if (args == null || args.Length == 0)
-        {
-            return translation;
-        }
-
-        var result = new StringBuilder(translation);
-        foreach (var arg in args)
-        {
-            result.Replace($"{{{{{arg.Name}}}}}", arg.Value ?? string.Empty);
-        }
-
-        return result.ToString();
+        return Core.LocaleText.Interpolate(translation, args);
     }
 
     public static string GetPluralSuffix(Language language, long count)
