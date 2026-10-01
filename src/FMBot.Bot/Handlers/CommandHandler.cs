@@ -251,6 +251,8 @@ public class CommandHandler
             }
         }
 
+        context.Guild?.CacheInvoker(context.User);
+
         using (Statistics.TextCommandHandlerDuration.NewTimer())
         {
             if (!searchResult.IsSuccess &&

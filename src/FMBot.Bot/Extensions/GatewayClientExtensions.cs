@@ -56,6 +56,16 @@ public static class GatewayClientExtensions
         return freshUser;
     }
 
+    public static void CacheInvoker(this Guild guild, User user)
+    {
+        if (guild.Users is ConcurrentDictionary<ulong, GuildUser> writableUsers &&
+            user is GuildUser guildUser &&
+            guildUser.GuildId == guild.Id)
+        {
+            writableUsers[guildUser.Id] = guildUser;
+        }
+    }
+
     public static async Task<User> GetCachedUserAsync(this GatewayClient client, ulong userId, ulong? guildId = null)
     {
         if (guildId.HasValue &&
