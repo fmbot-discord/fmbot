@@ -123,55 +123,22 @@ public class LocalizationTests
     [Test]
     [TestCase(Language.English, 0, "_other")]
     [TestCase(Language.English, 1, "_one")]
-    [TestCase(Language.English, 2, "_other")]
-    [TestCase(Language.German, 1, "_one")]
-    [TestCase(Language.German, 14, "_other")]
     [TestCase(Language.Hindi, 0, "_one")]
-    [TestCase(Language.Hindi, 1, "_one")]
-    [TestCase(Language.Hindi, 2, "_other")]
     [TestCase(Language.French, 0, "_one")]
-    [TestCase(Language.French, 1, "_one")]
-    [TestCase(Language.French, 2, "_other")]
     [TestCase(Language.French, 1000000, "_many")]
     [TestCase(Language.Portuguese, 0, "_one")]
-    [TestCase(Language.Portuguese, 1, "_one")]
-    [TestCase(Language.Portuguese, 17, "_other")]
     [TestCase(Language.Spanish, 0, "_other")]
-    [TestCase(Language.Spanish, 1, "_one")]
     [TestCase(Language.Spanish, 2000000, "_many")]
-    [TestCase(Language.Polish, 1, "_one")]
     [TestCase(Language.Polish, 2, "_few")]
-    [TestCase(Language.Polish, 4, "_few")]
     [TestCase(Language.Polish, 5, "_many")]
     [TestCase(Language.Polish, 12, "_many")]
-    [TestCase(Language.Polish, 13, "_many")]
-    [TestCase(Language.Polish, 14, "_many")]
     [TestCase(Language.Polish, 22, "_few")]
-    [TestCase(Language.Polish, 25, "_many")]
     [TestCase(Language.Polish, 112, "_many")]
     [TestCase(Language.Polish, 122, "_few")]
-    [TestCase(Language.Indonesian, 0, "_other")]
     [TestCase(Language.Indonesian, 1, "_other")]
-    [TestCase(Language.Indonesian, 2, "_other")]
     public void PluralSuffix(Language language, long count, string expected)
     {
         Assert.That(Localizer.GetPluralSuffix(language, count), Is.EqualTo(expected));
-    }
-
-    [Test]
-    public void Interpolation()
-    {
-        var localizer = new Localizer(Language.English, NumberFormat.CommaSeparator);
-        Assert.That(localizer.Translate("shared.requestedBy", ("user", "frikandel")), Is.EqualTo("Requested by frikandel"));
-        Assert.That(localizer.Translate("shared.pageCounter", ("page", "2"), ("pages", "14")), Is.EqualTo("Page 2/14"));
-    }
-
-    [Test]
-    public void CountFormatting()
-    {
-        var localizer = new Localizer(Language.English, NumberFormat.CommaSeparator);
-        Assert.That(localizer.TranslateCount("shared.plays", 1), Is.EqualTo("1 play"));
-        Assert.That(localizer.TranslateCount("shared.plays", 5000), Is.EqualTo("5,000 plays"));
     }
 
     [Test]

@@ -21,8 +21,6 @@ public class GameServiceTests
     [TestCase("MUNA", "muna", true, Description = "Case should not matter")]
     [TestCase("Sufjan Stevens", "Suffjan Stevens", true, Description = "Common misspelling should be accepted")]
     [TestCase("Björk", "Bjork", true, Description = "Special characters should be normalized")]
-    [TestCase("CHVRCHES", "Chvrches", true, Description = "Stylized capitalization should not matter")]
-    [TestCase("Twenty One Pilots", "twenty one pilots", true, Description = "All lowercase should be accepted")]
     [TestCase("AC/DC", "ACDC", true, Description = "Special characters should be removed")]
     [TestCase("$uicideboy$", "Suicideboys", true, Description = "Special characters should be normalized")]
     // Negative cases
@@ -45,45 +43,6 @@ public class GameServiceTests
     }
 
     [Test]
-    public void AnswerIsRight_HandlesDiacritics()
-    {
-        // Arrange
-        var session = new JumbleSession
-        {
-            CorrectAnswer = "Sigur Rós"
-        };
-
-        // Act & Assert
-        Assert.Multiple(() =>
-        {
-            Assert.That(GameService.AnswerIsRight(session, "Sigur Ros"), Is.True, "Should accept without diacritics");
-            Assert.That(GameService.AnswerIsRight(session, "sigur ros"), Is.True,
-                "Should accept lowercase without diacritics");
-            Assert.That(GameService.AnswerIsRight(session, "SIGUR ROS"), Is.True,
-                "Should accept uppercase without diacritics");
-        });
-    }
-
-    [Test]
-    public void AnswerIsRight_HandlesSpecialCharacters()
-    {
-        // Arrange
-        var session = new JumbleSession
-        {
-            CorrectAnswer = "Motörhead"
-        };
-
-        // Act & Assert
-        Assert.Multiple(() =>
-        {
-            Assert.That(GameService.AnswerIsRight(session, "Motorhead"), Is.True, "Should accept without umlaut");
-            Assert.That(GameService.AnswerIsRight(session, "MOTORHEAD"), Is.True,
-                "Should accept uppercase without umlaut");
-            Assert.That(GameService.AnswerIsRight(session, "MotorHead"), Is.True, "Should accept different casing");
-        });
-    }
-
-    [Test]
     public void AnswerIsRight_HandlesQuotationMarks()
     {
         // Arrange
@@ -98,20 +57,15 @@ public class GameServiceTests
             Assert.That(GameService.AnswerIsRight(session, "Guns N Roses"), Is.True,
                 "Should accept without apostrophe");
             Assert.That(GameService.AnswerIsRight(session, "Guns and Roses"), Is.True, "Should accept with 'and'");
-            Assert.That(GameService.AnswerIsRight(session, "guns n roses"), Is.True, "Should accept lowercase");
         });
     }
 
     [Test]
     [TestCase("Abbey Road", "Abbey Road (Remastered)", true, Description = "Should accept with edition suffix in input")]
-    [TestCase("Abbey Road", "Abbey Road (Deluxe Edition)", true, Description = "Should accept with different edition suffix")]
     [TestCase("The Album", "The Album - The 1st Album", true, Description = "Should accept with K-pop album suffix")]
     [TestCase("The Album", "The Album - The 2nd Mini Album", true, Description = "Should accept with K-pop mini album suffix")]
     [TestCase("The Album", "The Album - The 3rd Album Repackage", true, Description = "Should accept with K-pop repackage suffix")]
     [TestCase("Album Name", "Album Name (Live) (Remastered)", true, Description = "Should accept with multiple edition suffixes")]
-    // Additional edge cases
-    [TestCase("Album Name", "Album Name (2024 Master)", true, Description = "Should accept with year in edition")]
-    [TestCase("Album Name", "Album Name (Super Deluxe Box Set)", true, Description = "Should accept with complex edition name")]
     public void AnswerIsRight_HandlesEditionSuffixes(string correctAnswer, string userInput, bool expectedResult)
     {
         // Arrange

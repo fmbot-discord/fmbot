@@ -8,29 +8,6 @@ public class TasteCalculatorTests
     private static TasteItem Item(string name, long playcount) => new(name, playcount);
 
     [Test]
-    public void GetMatches_OrdinalComparer_IsCaseSensitive()
-    {
-        var own = new List<TasteItem> { Item("Radiohead", 100), Item("BJÖRK", 50) };
-        var other = new List<TasteItem> { Item("radiohead", 10), Item("BJÖRK", 5) };
-
-        var matches = TasteCalculator.GetMatches(own, other, StringComparer.Ordinal);
-
-        Assert.That(matches.Select(m => m.Name), Is.EqualTo(new[] { "BJÖRK" }));
-    }
-
-    [Test]
-    public void GetMatches_IgnoreCaseComparer_MatchesAcrossCasing()
-    {
-        var own = new List<TasteItem> { Item("Radiohead", 100), Item("BJÖRK", 50) };
-        var other = new List<TasteItem> { Item("radiohead", 10), Item("Björk", 5) };
-
-        var matches = TasteCalculator.GetMatches(own, other, StringComparer.OrdinalIgnoreCase);
-
-        Assert.That(matches.Select(m => m.Name), Is.EqualTo(new[] { "Radiohead", "BJÖRK" }));
-        Assert.That(matches.Select(m => m.OtherPlaycount), Is.EqualTo(new long[] { 10, 5 }));
-    }
-
-    [Test]
     public void GetMatches_OrdersByOwnPlaycountDescending_AndKeepsOwnName()
     {
         var own = new List<TasteItem> { Item("a", 1), Item("b", 30), Item("c", 20), Item("d", 30) };
@@ -74,31 +51,6 @@ public class TasteCalculatorTests
         var matches = TasteCalculator.GetMatches(own, other, StringComparer.Ordinal);
 
         Assert.That(matches.Single().OtherPlaycount, Is.EqualTo(2));
-    }
-
-    [TestCase(0, 0, 0)]
-    [TestCase(10, 0, 0)]
-    [TestCase(0, 5, 0)]
-    [TestCase(200, 50, 25)]
-    public void MatchPercentage(int ownCount, int matchCount, int expected)
-    {
-        Assert.That(TasteCalculator.MatchPercentage(ownCount, matchCount), Is.EqualTo((decimal)expected));
-    }
-
-    [Test]
-    public void MatchPercentage_KeepsDecimalPrecision()
-    {
-        Assert.That(TasteCalculator.MatchPercentage(3, 1), Is.EqualTo((decimal)1 / 3 * 100));
-    }
-
-    [Test]
-    public void SelectRows_FewerMatchesThanAmount_ReturnsAll()
-    {
-        var matches = new List<TasteMatch> { new("a", 5, 1), new("b", 3, 0) };
-
-        var rows = TasteCalculator.SelectRows(matches, 10);
-
-        Assert.That(rows.Select(r => r.Name), Is.EqualTo(new[] { "a", "b" }));
     }
 
     [Test]

@@ -139,7 +139,7 @@ Primary services: Last.fm (core), Spotify (features), Apple Music (metadata), Yo
 ### Testing
 - **NUnit 4** testing framework (no mocking library; tests are mostly pure-function and file-based, e.g. `LocalizationTests`, `HelpServiceTests`)
 - Test files organized in `FMBot.Tests/` project
-- Focus on service layer and business logic testing
+- Only add tests that earn their keep: a regression test for a bug that was actually fixed, tricky parsing/math/ranking edge cases, or cross-file invariants nothing else enforces. No tests that restate the implementation, cover trivial helpers, or only verify your own change
 - Minimal integration tests due to external API dependencies
 
 ## Localization

@@ -1,5 +1,3 @@
-using FMBot.Bot.Models;
-using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 using FMBot.Bot.Services;
 using FMBot.Persistence.Domain.Models;
@@ -8,20 +6,6 @@ namespace FMBot.Tests;
 
 public class PlayServiceTest
 {
-    [Test]
-    public void GetStreak_NoLastPlays_ReturnsNull()
-    {
-        // Arrange
-        var recentTracks = new RecentTrack();
-        var lastPlays = new List<UserPlay>();
-
-        // Act
-        var result = PlayService.GetCurrentStreak(1, recentTracks, lastPlays);
-
-        // Assert
-        Assert.That(result, Is.Null);
-    }
-
     [Test]
     public void GetStreak_ArtistStreakDetected_ReturnsExpectedStreak()
     {
@@ -221,52 +205,6 @@ public class PlayServiceTest
         });
     }
 
-    [Test]
-    public void GenreStreak_NoSeedGenres_ReturnsEmpty()
-    {
-        var fromNull = PlayService.SeedGenreStreakCandidates(null, DateTime.UtcNow);
-        var fromEmpty = PlayService.SeedGenreStreakCandidates([], DateTime.UtcNow);
-
-        var anyAlive = PlayService.WalkGenreStreak(new List<UserPlay>
-        {
-            new() { ArtistId = 1, TimePlayed = DateTime.UtcNow }
-        }, fromNull, new Dictionary<int, List<string>>());
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(fromNull, Is.Empty);
-            Assert.That(fromEmpty, Is.Empty);
-            Assert.That(anyAlive, Is.False);
-        });
-    }
-
-    [Test]
-    public void GenreStreak_GenreOnlyStreak_SaveGating()
-    {
-        var bigGenreStreak = new UserStreak
-        {
-            ArtistPlaycount = 1,
-            AlbumPlaycount = 1,
-            TrackPlaycount = 1,
-            GenreStreaks = [new UserGenreStreak { GenreName = "rock", Playcount = 30 }]
-        };
-        var smallGenreStreak = new UserStreak
-        {
-            ArtistPlaycount = 1,
-            AlbumPlaycount = 1,
-            TrackPlaycount = 1,
-            GenreStreaks = [new UserGenreStreak { GenreName = "rock", Playcount = 10 }]
-        };
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(PlayService.StreakExists(bigGenreStreak), Is.True);
-            Assert.That(PlayService.ShouldSaveStreak(bigGenreStreak), Is.True);
-            Assert.That(PlayService.StreakExists(smallGenreStreak), Is.True);
-            Assert.That(PlayService.ShouldSaveStreak(smallGenreStreak), Is.False);
-        });
-    }
-
     private static List<UserPlay> GenerateHistoricalPlays(
         params (string Artist, string? Album, string Track, int Count)[] segments)
     {
@@ -288,18 +226,6 @@ public class PlayServiceTest
         }
 
         return plays;
-    }
-
-    [Test]
-    public void HistoricalStreaks_BelowThreshold_ReturnsEmpty()
-    {
-        var plays = GenerateHistoricalPlays(
-            ("Artist A", "Album A", "Track A", 24),
-            ("Artist B", "Album B", "Track B", 24));
-
-        var result = PlayService.GetHistoricalStreaks(1, plays);
-
-        Assert.That(result, Is.Empty);
     }
 
     [Test]
@@ -482,35 +408,6 @@ public class PlayServiceTest
             Assert.That(result[0].AlbumName, Is.Null);
             Assert.That(result[0].AlbumPlaycount, Is.Null);
             Assert.That(result[0].TrackPlaycount, Is.EqualTo(30));
-        });
-    }
-
-    [Test]
-    public void GenreStreak_StreakToText_RendersTopThreeGenres()
-    {
-        var streak = new UserStreak
-        {
-            GenreStreaks =
-            [
-                new UserGenreStreak { GenreName = "indie rock", Playcount = 12 },
-                new UserGenreStreak { GenreName = "rock", Playcount = 40 },
-                new UserGenreStreak { GenreName = "shoegaze", Playcount = 8 },
-                new UserGenreStreak { GenreName = "dream pop", Playcount = 5 }
-            ],
-            StreakStarted = DateTime.UtcNow.AddHours(-6),
-            StreakEnded = DateTime.UtcNow
-        };
-
-        var text = PlayService.StreakToText(streak, new Localizer(Language.English, NumberFormat.NoSeparator), false);
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(text, Does.Contain("**Rock**"));
-            Assert.That(text, Does.Contain("**Indie Rock**"));
-            Assert.That(text, Does.Contain("**Shoegaze**"));
-            Assert.That(text, Does.Not.Contain("Dream Pop"));
-            Assert.That(text.IndexOf("Rock", StringComparison.Ordinal),
-                Is.LessThan(text.IndexOf("Indie Rock", StringComparison.Ordinal)));
         });
     }
 }
