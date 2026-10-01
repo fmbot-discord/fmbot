@@ -937,13 +937,9 @@ public class GameBuilders
                             context.Localizer, false, currentGame.JumbleType);
                         response.ComponentsContainer.WithAccentColor(DiscordConstants.SpotifyColorGreen);
 
-                        var msg = await commandContext.Channel.GetMessageAsync(currentGame.DiscordResponseId.Value);
-                        if (msg is not RestMessage message)
-                        {
-                            return;
-                        }
+                        var responseId = currentGame.DiscordResponseId.Value;
 
-                        if (PublicProperties.UsedCommandsResponseContextId.TryGetValue(message.Id, out var contextId))
+                        if (PublicProperties.UsedCommandsResponseContextId.TryGetValue(responseId, out var contextId))
                         {
                             await this._userService.UpdateInteractionContext(contextId, new ReferencedMusic
                             {
@@ -952,7 +948,7 @@ public class GameBuilders
                             });
                         }
 
-                        await message.ModifyAsync(m =>
+                        await commandContext.Client.Rest.ModifyMessageAsync(commandContext.Message.ChannelId, responseId, m =>
                         {
                             m.AllowedMentions = AllowedMentionsProperties.None;
                             m.Flags = MessageFlags.IsComponentsV2;
