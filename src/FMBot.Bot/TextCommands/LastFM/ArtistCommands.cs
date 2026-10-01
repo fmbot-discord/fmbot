@@ -52,9 +52,9 @@ public class ArtistCommands(
 
         var contextUser = await userService.GetUserWithDiscogs(this.Context.User.Id);
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
-        var redirectsEnabled = SettingService.RedirectsEnabled(artistValues);
 
         var userSettings = await settingService.GetUser(artistValues, contextUser, this.Context);
+        var redirectsEnabled = SettingService.RedirectsEnabled(userSettings.NewSearchValue);
 
         try
         {
@@ -375,22 +375,26 @@ public class ArtistCommands(
             }
         }
 
-        var otherUser =
-            await settingService.GetUser(extraOptions, userSettings, this.Context,
-                firstOptionIsLfmUsername: true);
+        var language = LocalizationService.GetLanguage(this.Context.Guild?.Id, this.Context.Guild?.PreferredLocale);
 
         var timeSettings = SettingService.GetTimePeriod(
-            string.IsNullOrWhiteSpace(otherUser.NewSearchValue) ? "two-year" : otherUser.NewSearchValue,
+            string.IsNullOrWhiteSpace(extraOptions) ? "two-year" : extraOptions,
             timeZone: userSettings.TimeZone,
-            language: LocalizationService.GetLanguage(this.Context.Guild?.Id, this.Context.Guild?.PreferredLocale));
+            language: language);
 
         if (timeSettings.DefaultPicked)
         {
-            timeSettings = SettingService.GetTimePeriod("two-year " + otherUser.NewSearchValue,
-                timeZone: userSettings.TimeZone, language: LocalizationService.GetLanguage(this.Context.Guild?.Id, this.Context.Guild?.PreferredLocale));
+            timeSettings = SettingService.GetTimePeriod("two-year " + extraOptions,
+                timeZone: userSettings.TimeZone, language: language);
         }
 
         var embedSize = artistsService.SetTasteEmbedSize(timeSettings.NewSearchValue);
+        var userOptions = SettingService.ContainsAndRemove(timeSettings.NewSearchValue,
+            ["xl", "xxl", "extralarge", "xs", "xxs", "extrasmall"], true);
+
+        var otherUser =
+            await settingService.GetUser(userOptions, userSettings, this.Context,
+                firstOptionIsLfmUsername: true);
 
         try
         {

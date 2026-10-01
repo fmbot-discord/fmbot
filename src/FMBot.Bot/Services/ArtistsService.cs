@@ -421,12 +421,12 @@ public class ArtistsService
             return EmbedSize.Default;
         }
 
-        if (extraOptions.Contains("xl") || extraOptions.Contains("xxl") || extraOptions.Contains("extralarge"))
+        if (SettingService.Contains(extraOptions, ["xl", "xxl", "extralarge"]))
         {
             return EmbedSize.Large;
         }
 
-        if (extraOptions.Contains("xs") || extraOptions.Contains("xxs") || extraOptions.Contains("extrasmall"))
+        if (SettingService.Contains(extraOptions, ["xs", "xxs", "extrasmall"]))
         {
             return EmbedSize.Small;
         }

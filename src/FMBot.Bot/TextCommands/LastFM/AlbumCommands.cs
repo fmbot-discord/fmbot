@@ -119,7 +119,7 @@ public class AlbumCommands(
         try
         {
             var response = await albumBuilders.CoverAsync(new ContextModel(this.Context, prfx, contextUser),
-                userSettings, albumValues);
+                userSettings, userSettings.NewSearchValue);
 
             await this.Context.SendResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);
