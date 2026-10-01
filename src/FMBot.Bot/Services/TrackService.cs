@@ -315,7 +315,7 @@ public class TrackService
             return new TrackSearch(trackInfo.Content, response, latestScrobble: lastPlayedTrack);
         }
 
-        var trackSearch = await this.SearchTrackInDatabase(searchValue);
+        var trackSearch = await this.SearchTrackInDatabase(searchValue, userId);
         if (trackSearch != null)
         {
             if (otherUserUsername != null)
@@ -368,12 +368,12 @@ public class TrackService
         return new TrackSearch(null, response);
     }
 
-    private async Task<Track> SearchTrackInDatabase(string searchQuery)
+    private async Task<Track> SearchTrackInDatabase(string searchQuery, int? userId)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        return await TrackRepository.SearchTrack(searchQuery, connection);
+        return await TrackRepository.SearchTrack(searchQuery, userId, connection);
     }
 
     public async Task<List<TopTrack>> GetUserAllTimeTopTracks(int userId, bool useCache = false)

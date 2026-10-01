@@ -317,9 +317,7 @@ public class Startup
     private static void RegisterDataRepositories(IServiceCollection services)
     {
         services
-            .AddSingleton<AlbumRepository>()
             .AddSingleton<ArtistRepository>()
-            .AddSingleton<TrackRepository>()
             .AddSingleton<SmallIndexRepository>()
             .AddSingleton<IDataSourceFactory, DataSourceFactory>()
             .AddSingleton<IPlayDataSourceRepository, PlayDataSourceRepository>()

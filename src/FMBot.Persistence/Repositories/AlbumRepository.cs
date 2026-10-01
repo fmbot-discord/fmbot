@@ -8,22 +8,14 @@ using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
-using Microsoft.Extensions.Options;
 using Npgsql;
 using PostgreSQLCopyHelper;
 using Serilog;
 
 namespace FMBot.Persistence.Repositories;
 
-public class AlbumRepository
+public static class AlbumRepository
 {
-    private readonly BotSettings _botSettings;
-
-    public AlbumRepository(IOptions<BotSettings> botSettings)
-    {
-        this._botSettings = botSettings.Value;
-    }
-
     public static async Task<ulong> AddOrReplaceUserAlbumsInDatabase(IReadOnlyList<UserAlbum> albums, int userId,
         NpgsqlConnection connection)
     {
@@ -277,78 +269,104 @@ LIMIT @limit;";
         return (await connection.QueryAsync<EntitySearchDetails>(sql, new { artistNames, albumNames })).ToList();
     }
 
-    private static string BuildAlbumSearchSql(string candidateFilter) => $@"
-SELECT s.*
-FROM public.albums s
-WHERE s.id = (
-    WITH candidates AS MATERIALIZED (
-        SELECT t.id,
-               COALESCE(t.name, ''::citext)::text AS name,
-               COALESCE(t.artist_name, ''::citext)::text AS artist_name,
-               t.popularity,
-               t.artist_id
-        FROM public.albums t
-        WHERE {candidateFilter}
-        ORDER BY t.popularity DESC NULLS LAST
-        LIMIT 3000
-    ), normalised AS (
-        SELECT c.*,
-               btrim(lower(public.f_search_text(c.name))) AS norm_name,
-               btrim(lower(public.f_search_core(c.name))) AS norm_core,
-               btrim(lower(public.f_search_text(c.artist_name))) AS norm_artist
-        FROM candidates c
-    ), pooled AS (
-        SELECT n.*,
-               max(n.popularity) OVER (PARTITION BY n.norm_artist, n.norm_core) AS group_popularity
-        FROM normalised n
-    )
-    SELECT c.id
+    private static string BuildAlbumSearchSql(string candidates) => $@"
+WITH q AS MATERIALIZED (
+    SELECT btrim(lower(public.f_search_text(@searchTerm))) AS norm,
+           btrim(lower(public.f_search_core(@searchTerm))) AS core
+), candidates AS MATERIALIZED (
+    {candidates}
+), normalised AS (
+    SELECT c.*,
+           btrim(lower(public.f_search_text(c.name))) AS norm_name,
+           btrim(lower(public.f_search_core(c.name))) AS norm_core,
+           btrim(lower(public.f_search_text(c.artist_name))) AS norm_artist
+    FROM candidates c
+), pooled AS (
+    SELECT n.*,
+           max(n.popularity) OVER (PARTITION BY n.norm_artist, n.norm_core) AS group_popularity,
+           count(*) OVER (PARTITION BY n.norm_artist, n.norm_core) AS variants
+    FROM normalised n
+), scored AS (
+    SELECT c.id, c.name, c.artist_name,
+           (  0.9 * (CASE WHEN c.norm_artist || ' ' || c.norm_name = q.norm
+                            OR c.norm_name || ' ' || c.norm_artist = q.norm THEN 1 ELSE 0 END)
+            + 1.25 * (CASE WHEN c.norm_core = q.core THEN 1 ELSE 0 END)
+            + 0.2 * (CASE WHEN c.norm_name = q.norm THEN 1 ELSE 0 END)
+            + 0.55 * similarity(c.norm_core, q.core)
+            + 0.55 * (CASE WHEN c.norm_core LIKE q.core || '%' THEN 1 ELSE 0 END)
+            + 1.65 * word_similarity(@searchTerm, c.name || ' ' || c.artist_name)
+            + 2.4 * COALESCE(c.group_popularity, 0) / 100.0
+            + 1.15 * COALESCE(ar.popularity, 0) / 100.0
+            + 1.0 * COALESCE(c.popularity, 0) / 100.0
+            + 1.1 * ln(1 + c.variants) / ln(51)
+            + (CASE c.type WHEN 'album' THEN 1.5 WHEN 'compilation' THEN 1.05 WHEN 'single' THEN 1.0 ELSE 0 END)
+           ) AS score
     FROM pooled c
     LEFT JOIN public.artists ar ON ar.id = c.artist_id
-    CROSS JOIN LATERAL (
-        SELECT btrim(lower(public.f_search_text(@searchTerm))) AS norm,
-               btrim(lower(public.f_search_core(@searchTerm))) AS core
-    ) q
-    ORDER BY (
-              2.5 * (CASE WHEN c.norm_artist || ' ' || c.norm_name = q.norm
-                            OR c.norm_name || ' ' || c.norm_artist = q.norm THEN 1 ELSE 0 END)
-            + 1.0 * (CASE WHEN c.norm_core = q.core THEN 1 ELSE 0 END)
-            + 1.0 * similarity(c.norm_core, q.core)
-            + 0.4 * word_similarity(q.core, c.norm_core)
-            + 0.4 * (CASE WHEN c.norm_core LIKE q.core || '%' THEN 1 ELSE 0 END)
-            + 0.5 * word_similarity(@searchTerm, c.name || ' ' || c.artist_name)
-            + 0.4 * word_similarity(c.artist_name, @searchTerm)
-            + 0.3 * (CASE WHEN c.norm_name LIKE '%' || q.norm || '%' THEN 1 ELSE 0 END)
-            + 2.5 * (ln(COALESCE(c.group_popularity, 0) + 1) / 4.6151)
-            + 1.5 * (ln(COALESCE(ar.popularity, 0) + 1) / 4.6151)
-        ) DESC NULLS LAST, length(c.name) ASC
-    LIMIT 1
-);";
+    CROSS JOIN q
+)
+SELECT s.id, s.name, s.artist_name, s.score
+FROM scored s
+WHERE s.score >= (SELECT max(score) FROM scored) - @libraryWeight
+ORDER BY s.score DESC, length(s.name) ASC
+LIMIT 200;";
 
     private const string AlbumSearchMatch =
         "public.f_search_vector((COALESCE(t.name, ''::citext) || ' '::citext || COALESCE(t.artist_name, ''::citext))::text) " +
         "@@ public.f_search_query(@searchTerm)";
 
+    private const string AlbumSearchColumns =
+        "t.id, COALESCE(t.name, ''::citext)::text AS name, COALESCE(t.artist_name, ''::citext)::text AS artist_name, " +
+        "t.type, t.popularity, t.artist_id";
+
     private static readonly string[] AlbumSearchStages =
     [
-        BuildAlbumSearchSql($"{AlbumSearchMatch} AND t.popularity IS NOT NULL"),
-        BuildAlbumSearchSql($"{AlbumSearchMatch} AND (t.popularity IS NOT NULL OR t.artist_id IS NOT NULL)"),
-        BuildAlbumSearchSql(
-            "to_tsvector('english', (COALESCE(t.name, ''::citext) || ' '::citext || COALESCE(t.artist_name, ''::citext))::text) " +
-            "@@ plainto_tsquery('english', @searchTerm)")
+        BuildAlbumSearchSql($@"(SELECT {AlbumSearchColumns}
+        FROM public.albums t
+        WHERE {AlbumSearchMatch} AND t.popularity IS NOT NULL
+        ORDER BY t.popularity DESC
+        LIMIT 3000)
+    UNION ALL
+    (SELECT {AlbumSearchColumns}
+        FROM (SELECT t.id, t.name, t.artist_name, t.type, t.popularity, t.artist_id
+              FROM public.albums t
+              WHERE {AlbumSearchMatch}
+                AND (t.popularity IS NOT NULL OR t.artist_id IS NOT NULL) AND t.popularity IS NULL
+              LIMIT 3000) t
+        JOIN public.artists ar ON ar.id = t.artist_id
+        ORDER BY ar.popularity DESC NULLS LAST
+        LIMIT 1000)"),
+        BuildAlbumSearchSql($@"SELECT {AlbumSearchColumns}
+        FROM public.albums t
+        WHERE to_tsvector('english', (COALESCE(t.name, ''::citext) || ' '::citext || COALESCE(t.artist_name, ''::citext))::text)
+              @@ plainto_tsquery('english', @searchTerm)
+        ORDER BY t.popularity DESC NULLS LAST
+        LIMIT 3000")
     ];
 
-    public static async Task<Album> SearchAlbum(string searchTerm, NpgsqlConnection connection)
+    public static async Task<Album> SearchAlbum(string searchTerm, int? userId, NpgsqlConnection connection)
     {
+        const string librarySql = "SELECT ua.artist_name, ua.name " +
+                                  "FROM public.user_albums ua " +
+                                  "JOIN unnest(CAST(@names AS citext[])) AS candidate(name) ON candidate.name = ua.name " +
+                                  "WHERE ua.user_id = @userId AND ua.playcount >= 3";
+
         DefaultTypeMap.MatchNamesWithUnderscores = true;
+        var libraryWeight = userId.HasValue ? 2.0 : 0.0;
 
         foreach (var stage in AlbumSearchStages)
         {
-            var album = await connection.QueryFirstOrDefaultAsync<Album>(stage, new { searchTerm });
-            if (album != null)
+            var candidates = (await connection.QueryAsync<SearchCandidate>(stage, new { searchTerm, libraryWeight }))
+                .ToList();
+            if (candidates.Count == 0)
             {
-                return album;
+                continue;
             }
+
+            var best = await SearchCandidate.PickBest(candidates, userId, libraryWeight, librarySql, connection);
+
+            return await connection.QueryFirstOrDefaultAsync<Album>("SELECT * FROM public.albums WHERE id = @id",
+                new { id = best.Id });
         }
 
         return null;

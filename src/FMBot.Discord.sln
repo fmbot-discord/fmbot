@@ -59,6 +59,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{5E9B1C22-7A3
 		..\..\fmbot-web-backend\src\Web.AppChannel\src\share.ts = ..\..\fmbot-web-backend\src\Web.AppChannel\src\share.ts
 		..\..\fmbot-web-backend\src\Web.AppChannel\src\state.ts = ..\..\fmbot-web-backend\src\Web.AppChannel\src\state.ts
 		..\..\fmbot-web-backend\src\Web.AppChannel\src\timing.ts = ..\..\fmbot-web-backend\src\Web.AppChannel\src\timing.ts
+		..\..\fmbot-web-backend\src\Web.AppChannel\src\toast.ts = ..\..\fmbot-web-backend\src\Web.AppChannel\src\toast.ts
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ui", "ui", "{4B7E2F19-3D8C-4A61-9E5B-6C2D8F1A3E97}"

@@ -264,7 +264,7 @@ public class AlbumService
             return new AlbumSearch(albumInfo.Content, response, latestScrobble: lastPlayedTrack);
         }
 
-        var albumSearch = await this.SearchAlbumInDatabase(searchValue);
+        var albumSearch = await this.SearchAlbumInDatabase(searchValue, userId);
         if (albumSearch != null)
         {
 
@@ -315,12 +315,12 @@ public class AlbumService
         return new AlbumSearch(null, response);
     }
 
-    private async Task<Album> SearchAlbumInDatabase(string searchQuery)
+    private async Task<Album> SearchAlbumInDatabase(string searchQuery, int? userId)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        return await AlbumRepository.SearchAlbum(searchQuery, connection);
+        return await AlbumRepository.SearchAlbum(searchQuery, userId, connection);
     }
 
     private async Task<Response<AlbumInfo>> GetCachedAlbum(string artistName, string albumName, string lastFmUserName,
