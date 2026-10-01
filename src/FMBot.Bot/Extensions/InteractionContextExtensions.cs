@@ -999,7 +999,11 @@ public static class InteractionContextExtensions
             InteractiveService interactiveService = null)
         {
             var hadPendingDefer = await context.EnsureDeferCompleted();
-            if (defer && !hadPendingDefer)
+            var componentMessage = (context.Interaction as MessageComponentInteraction)?.Message
+                                   ?? (context.Interaction as ModalInteraction)?.Message;
+            var singleCallback = defer && !hadPendingDefer && componentMessage != null &&
+                                 (response.Stream == null || response.Stream is { CanSeek: true, Length: <= 512_000 });
+            if (defer && !hadPendingDefer && !singleCallback)
             {
                 await context.Interaction.SendResponseAsync(InteractionCallback.DeferredModifyMessage);
             }
@@ -1025,33 +1029,29 @@ public static class InteractionContextExtensions
                 }
                 : [];
 
-            if (context.RespondsThroughInteraction(interactionEdit))
+            void ApplyEdit(MessageOptions m)
             {
-                await context.Interaction.ModifyResponseAsync(m =>
+                m.Components = components;
+                m.Embeds = response.ResponseType == ResponseType.ComponentsV2 ? [] : [response.Embed];
+                m.Attachments = attachments;
+                m.AllowedMentions = AllowedMentionsProperties.None;
+                if (response.ResponseType == ResponseType.ComponentsV2)
                 {
-                    m.Components = components;
-                    m.Embeds = response.ResponseType == ResponseType.ComponentsV2 ? [] : [response.Embed];
-                    m.Attachments = attachments;
-                    m.AllowedMentions = AllowedMentionsProperties.None;
-                    if (response.ResponseType == ResponseType.ComponentsV2)
-                    {
-                        m.Flags = MessageFlags.IsComponentsV2;
-                    }
-                });
+                    m.Flags = MessageFlags.IsComponentsV2;
+                }
+            }
+
+            if (singleCallback)
+            {
+                await context.Interaction.SendResponseAsync(InteractionCallback.ModifyMessage(ApplyEdit));
+            }
+            else if (context.RespondsThroughInteraction(interactionEdit))
+            {
+                await context.Interaction.ModifyResponseAsync(ApplyEdit);
             }
             else
             {
-                await message.ModifyAsync(m =>
-                {
-                    m.Components = components;
-                    m.Embeds = response.ResponseType == ResponseType.ComponentsV2 ? [] : [response.Embed];
-                    m.Attachments = attachments;
-                    m.AllowedMentions = AllowedMentionsProperties.None;
-                    if (response.ResponseType == ResponseType.ComponentsV2)
-                    {
-                        m.Flags = MessageFlags.IsComponentsV2;
-                    }
-                });
+                await message.ModifyAsync(ApplyEdit);
             }
         }
 
