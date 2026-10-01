@@ -59,6 +59,14 @@ public class FriendEntitySearchResult
     public int[] UserPlaycounts { get; set; }
 }
 
+public class AutocompleteSearchResult
+{
+    public string Name { get; set; }
+    public string ArtistName { get; set; }
+    public int Popularity { get; set; }
+    public double Score { get; set; }
+}
+
 public class FriendLookup
 {
     public int? FriendUserId { get; set; }

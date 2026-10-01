@@ -230,7 +230,7 @@ LIMIT @limit;";
         return (await connection.QueryAsync<EntitySearchDetails>(sql, new { artistNames, trackNames })).ToList();
     }
 
-    private static string BuildTrackSearchSql(string candidates) => $@"
+    private static string BuildTrackSearchSql(string candidates, string result, string prefixBonus = "") => $@"
 WITH q AS MATERIALIZED (
     SELECT btrim(lower(public.f_search_text(@searchTerm))) AS norm,
            btrim(lower(public.f_search_core(@searchTerm))) AS core
@@ -252,7 +252,7 @@ WITH q AS MATERIALIZED (
     FROM normalised n
     CROSS JOIN q
 ), scored AS (
-    SELECT c.id, c.name, c.artist_name,
+    SELECT c.id, c.name, c.artist_name, c.norm_artist, c.norm_core, COALESCE(c.group_popularity, 0) AS popularity,
            (  2.65 * (CASE WHEN c.norm_artist || ' ' || c.norm_name = q.norm
                              OR c.norm_name || ' ' || c.norm_artist = q.norm THEN 1 ELSE 0 END)
             + 1.2 * (CASE WHEN c.norm_name || ' by ' || c.norm_artist = q.norm
@@ -266,49 +266,50 @@ WITH q AS MATERIALIZED (
             + 0.6 * COALESCE(c.popularity, 0) / 100.0
             + 3.25 * ln(1 + c.variants) / ln(51)
             + 1.75 * c.coverage
-           ) AS score
+{prefixBonus}           ) AS score
     FROM pooled c
     LEFT JOIN public.artists ar ON ar.id = c.artist_id
     CROSS JOIN q
 )
-SELECT s.id, s.name, s.artist_name, s.score
-FROM scored s
-WHERE s.score >= (SELECT max(score) FROM scored) - @libraryWeight
-ORDER BY s.score DESC, length(s.name) ASC
-LIMIT 200;";
-
-    private const string TrackSearchMatch =
-        "public.f_search_vector((COALESCE(t.name, ''::citext) || ' '::citext || COALESCE(t.artist_name, ''::citext))::text) " +
-        "@@ public.f_search_query(@searchTerm)";
+{result}";
 
     private const string TrackSearchColumns =
         "t.id, COALESCE(t.name, ''::citext)::text AS name, COALESCE(t.artist_name, ''::citext)::text AS artist_name, " +
         "COALESCE(t.album_name, ''::citext)::text AS album_name, t.popularity, t.artist_id";
 
-    private static readonly string[] TrackSearchStages =
-    [
-        BuildTrackSearchSql($@"(SELECT {TrackSearchColumns}
+    private static string TrackCandidates(string match) => $@"(SELECT {TrackSearchColumns}
         FROM public.tracks t
-        WHERE {TrackSearchMatch} AND t.popularity IS NOT NULL
+        WHERE {match} AND t.popularity IS NOT NULL
         ORDER BY t.popularity DESC
         LIMIT 3000)
     UNION ALL
     (SELECT {TrackSearchColumns}
         FROM (SELECT t.id, t.name, t.artist_name, t.album_name, t.popularity, t.artist_id
               FROM public.tracks t
-              WHERE {TrackSearchMatch}
+              WHERE {match}
                 AND (t.popularity IS NOT NULL OR t.artist_id IS NOT NULL) AND t.popularity IS NULL
               LIMIT 3000) t
         JOIN public.artists ar ON ar.id = t.artist_id
         ORDER BY ar.popularity DESC NULLS LAST
-        LIMIT 1000)"),
+        LIMIT 1000)";
+
+    private static readonly string[] TrackSearchStages =
+    [
+        BuildTrackSearchSql(TrackCandidates(SearchSql.WholeWordMatch), SearchSql.BestMatches),
         BuildTrackSearchSql($@"SELECT {TrackSearchColumns}
         FROM public.tracks t
         WHERE to_tsvector('english', (COALESCE(t.name, ''::citext) || ' '::citext || COALESCE(t.artist_name, ''::citext)
               || ' '::citext || COALESCE(t.album_name, ''::citext))::text) @@ plainto_tsquery('english', @searchTerm)
         ORDER BY t.popularity DESC NULLS LAST
-        LIMIT 3000")
+        LIMIT 3000", SearchSql.BestMatches)
     ];
+
+    private static readonly string TrackAutocompleteSql = BuildTrackSearchSql(TrackCandidates(SearchSql.PrefixMatch),
+        SearchSql.BestMatchPerTitle, prefixBonus: @"            + 0.15 * (CASE WHEN c.norm_name LIKE q.norm || '%' THEN 1 ELSE 0 END)
+            + 2.5 * (CASE WHEN c.norm_artist || ' ' || c.norm_name LIKE q.norm || '%'
+                            OR c.norm_name || ' ' || c.norm_artist LIKE q.norm || '%' THEN 1 ELSE 0 END)
+            + 0.5 * (CASE WHEN c.norm_core LIKE q.core || '%' THEN 1 ELSE 0 END)
+");
 
     public static async Task<Track> SearchTrack(string searchTerm, int? userId, NpgsqlConnection connection)
     {
@@ -336,6 +337,12 @@ LIMIT 200;";
         }
 
         return null;
+    }
+
+    public static async Task<List<AutocompleteSearchResult>> AutocompleteTracks(string searchTerm, NpgsqlConnection connection)
+    {
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        return (await connection.QueryAsync<AutocompleteSearchResult>(TrackAutocompleteSql, new { searchTerm })).ToList();
     }
 
 

@@ -269,7 +269,7 @@ LIMIT @limit;";
         return (await connection.QueryAsync<EntitySearchDetails>(sql, new { artistNames, albumNames })).ToList();
     }
 
-    private static string BuildAlbumSearchSql(string candidates) => $@"
+    private static string BuildAlbumSearchSql(string candidates, string result, string prefixBonus = "") => $@"
 WITH q AS MATERIALIZED (
     SELECT btrim(lower(public.f_search_text(@searchTerm))) AS norm,
            btrim(lower(public.f_search_core(@searchTerm))) AS core
@@ -287,7 +287,7 @@ WITH q AS MATERIALIZED (
            count(*) OVER (PARTITION BY n.norm_artist, n.norm_core) AS variants
     FROM normalised n
 ), scored AS (
-    SELECT c.id, c.name, c.artist_name,
+    SELECT c.id, c.name, c.artist_name, c.norm_artist, c.norm_core, COALESCE(c.group_popularity, 0) AS popularity,
            (  0.9 * (CASE WHEN c.norm_artist || ' ' || c.norm_name = q.norm
                             OR c.norm_name || ' ' || c.norm_artist = q.norm THEN 1 ELSE 0 END)
             + 1.25 * (CASE WHEN c.norm_core = q.core THEN 1 ELSE 0 END)
@@ -300,49 +300,50 @@ WITH q AS MATERIALIZED (
             + 1.0 * COALESCE(c.popularity, 0) / 100.0
             + 1.1 * ln(1 + c.variants) / ln(51)
             + (CASE c.type WHEN 'album' THEN 1.5 WHEN 'compilation' THEN 1.05 WHEN 'single' THEN 1.0 ELSE 0 END)
-           ) AS score
+{prefixBonus}           ) AS score
     FROM pooled c
     LEFT JOIN public.artists ar ON ar.id = c.artist_id
     CROSS JOIN q
 )
-SELECT s.id, s.name, s.artist_name, s.score
-FROM scored s
-WHERE s.score >= (SELECT max(score) FROM scored) - @libraryWeight
-ORDER BY s.score DESC, length(s.name) ASC
-LIMIT 200;";
-
-    private const string AlbumSearchMatch =
-        "public.f_search_vector((COALESCE(t.name, ''::citext) || ' '::citext || COALESCE(t.artist_name, ''::citext))::text) " +
-        "@@ public.f_search_query(@searchTerm)";
+{result}";
 
     private const string AlbumSearchColumns =
         "t.id, COALESCE(t.name, ''::citext)::text AS name, COALESCE(t.artist_name, ''::citext)::text AS artist_name, " +
         "t.type, t.popularity, t.artist_id";
 
-    private static readonly string[] AlbumSearchStages =
-    [
-        BuildAlbumSearchSql($@"(SELECT {AlbumSearchColumns}
+    private static string AlbumCandidates(string match) => $@"(SELECT {AlbumSearchColumns}
         FROM public.albums t
-        WHERE {AlbumSearchMatch} AND t.popularity IS NOT NULL
+        WHERE {match} AND t.popularity IS NOT NULL
         ORDER BY t.popularity DESC
         LIMIT 3000)
     UNION ALL
     (SELECT {AlbumSearchColumns}
         FROM (SELECT t.id, t.name, t.artist_name, t.type, t.popularity, t.artist_id
               FROM public.albums t
-              WHERE {AlbumSearchMatch}
+              WHERE {match}
                 AND (t.popularity IS NOT NULL OR t.artist_id IS NOT NULL) AND t.popularity IS NULL
               LIMIT 3000) t
         JOIN public.artists ar ON ar.id = t.artist_id
         ORDER BY ar.popularity DESC NULLS LAST
-        LIMIT 1000)"),
+        LIMIT 1000)";
+
+    private static readonly string[] AlbumSearchStages =
+    [
+        BuildAlbumSearchSql(AlbumCandidates(SearchSql.WholeWordMatch), SearchSql.BestMatches),
         BuildAlbumSearchSql($@"SELECT {AlbumSearchColumns}
         FROM public.albums t
         WHERE to_tsvector('english', (COALESCE(t.name, ''::citext) || ' '::citext || COALESCE(t.artist_name, ''::citext))::text)
               @@ plainto_tsquery('english', @searchTerm)
         ORDER BY t.popularity DESC NULLS LAST
-        LIMIT 3000")
+        LIMIT 3000", SearchSql.BestMatches)
     ];
+
+    private static readonly string AlbumAutocompleteSql = BuildAlbumSearchSql(AlbumCandidates(SearchSql.PrefixMatch),
+        SearchSql.BestMatchPerTitle, prefixBonus: @"            + 0.5 * (CASE WHEN c.norm_name LIKE q.norm || '%' THEN 1 ELSE 0 END)
+            + 1.0 * (CASE WHEN c.norm_artist = q.norm THEN 1 ELSE 0 END)
+            + 1.5 * (CASE WHEN c.norm_artist || ' ' || c.norm_name LIKE q.norm || '%'
+                            OR c.norm_name || ' ' || c.norm_artist LIKE q.norm || '%' THEN 1 ELSE 0 END)
+");
 
     public static async Task<Album> SearchAlbum(string searchTerm, int? userId, NpgsqlConnection connection)
     {
@@ -370,6 +371,12 @@ LIMIT 200;";
         }
 
         return null;
+    }
+
+    public static async Task<List<AutocompleteSearchResult>> AutocompleteAlbums(string searchTerm, NpgsqlConnection connection)
+    {
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        return (await connection.QueryAsync<AutocompleteSearchResult>(AlbumAutocompleteSql, new { searchTerm })).ToList();
     }
 
     public static async Task GetAlbumCovers(List<TopAlbum> topAlbums,
