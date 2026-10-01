@@ -26,20 +26,21 @@ namespace FMBot.Bot.Builders;
 public class StaticBuilders
 {
     private readonly SupporterService _supporterService;
-    private readonly UserService _userService;
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
     private readonly FaqService _faqService;
     private readonly IDataSourceFactory _dataSourceFactory;
+    private readonly ILastfmRepository _lastfmRepository;
 
 
-    public StaticBuilders(SupporterService supporterService, UserService userService,
-        IDbContextFactory<FMBotDbContext> contextFactory, FaqService faqService, IDataSourceFactory dataSourceFactory)
+    public StaticBuilders(SupporterService supporterService,
+        IDbContextFactory<FMBotDbContext> contextFactory, FaqService faqService, IDataSourceFactory dataSourceFactory,
+        ILastfmRepository lastfmRepository)
     {
         this._supporterService = supporterService;
-        this._userService = userService;
         this._contextFactory = contextFactory;
         this._faqService = faqService;
         this._dataSourceFactory = dataSourceFactory;
+        this._lastfmRepository = lastfmRepository;
     }
 
     public async Task<ResponseModel> OutOfSync(
@@ -58,85 +59,44 @@ public class StaticBuilders
         container.WithAccentColor(DiscordConstants.InformationColorBlue);
         container.WithTextDisplay(context.Localize("outofsync.title"));
 
-        var intro = new StringBuilder();
         var profileUrl = LastfmUrlExtensions.GetUserUrl(userNameLastFm) ?? "https://last.fm/user/_";
-        if (differentUser)
-        {
-            intro.Append(context.Localize("outofsync.introOther",
+        container.WithTextDisplay(differentUser
+            ? context.Localize("outofsync.introOther",
                 ("user", StringExtensions.Sanitize(userSettings.DisplayName)),
-                ("url", profileUrl)));
-        }
-        else
-        {
-            intro.Append(context.Localize("outofsync.intro", ("url", profileUrl)));
-        }
+                ("url", profileUrl))
+            : context.Localize("outofsync.intro", ("url", profileUrl)));
 
         if (userNameLastFm != null)
         {
-            var recentTracks = await this._dataSourceFactory.GetRecentTracksAsync(
-                userNameLastFm, useCache: false,
-                sessionKey: differentUser ? null : context.ContextUser.SessionKeyLastFm);
+            var status = await GetOutOfSyncStatus(context, userNameLastFm,
+                differentUser ? null : context.ContextUser.SessionKeyLastFm);
 
-            if (recentTracks.Success && recentTracks.Content?.RecentTracks != null &&
-                recentTracks.Content.RecentTracks.Any(a => a.NowPlaying))
+            if (status != null)
             {
-                intro.Append(differentUser
-                    ? $" {context.Localize("outofsync.currentlyPlayingOther")}"
-                    : $" {context.Localize("outofsync.currentlyPlaying")}");
-            }
-            else
-            {
-                var lastScrobble = recentTracks.Success
-                    ? recentTracks.Content?.RecentTracks?
-                        .Where(w => w.TimePlayed.HasValue)
-                        .MaxBy(o => o.TimePlayed)
-                    : null;
-
-                if (lastScrobble is { TimePlayed: not null })
-                {
-                    var timePlayed = DateTime.SpecifyKind(lastScrobble.TimePlayed.Value, DateTimeKind.Utc);
-                    var unixTime = ((DateTimeOffset)timePlayed).ToUnixTimeSeconds();
-                    var style = timePlayed > DateTime.UtcNow.AddHours(-12) ? "t" : "f";
-                    intro.Append(differentUser
-                        ? $" {context.Localize("outofsync.lastScrobbleOther",
-                            ("timestamp", $"<t:{unixTime}:{style}>"),
-                            ("relativeTimestamp", $"<t:{unixTime}:R>"))}"
-                        : $" {context.Localize("outofsync.lastScrobble",
-                            ("timestamp", $"<t:{unixTime}:{style}>"),
-                            ("relativeTimestamp", $"<t:{unixTime}:R>"))}");
-
-                    if (timePlayed < DateTime.UtcNow.AddHours(-2) &&
-                        await this._userService.SpotifyConnectionStillExpired(userNameLastFm))
-                    {
-                        intro.AppendLine();
-                        intro.AppendLine();
-                        intro.Append(differentUser
-                            ? context.Localize("outofsync.spotifyExpiredOther",
-                                ("user", StringExtensions.Sanitize(userSettings.DisplayName)))
-                            : context.Localize("shared.spotifyExpiredWarning",
-                                ("username", userNameLastFm)));
-                    }
-                }
+                container.WithSeparator();
+                container.WithTextDisplay(status);
             }
         }
 
-        intro.AppendLine();
-        intro.AppendLine();
-        intro.AppendLine(context.Localize("outofsync.notAffiliated"));
-
-        container.WithTextDisplay(intro.ToString());
         container.WithSeparator();
 
-        var expiredConnection = new StringBuilder();
-        expiredConnection.AppendLine(context.Localize("outofsync.stoppedScrobblingTitle"));
-        expiredConnection.AppendLine(context.Localize("outofsync.stoppedScrobblingDescription"));
+        var reconnect = new StringBuilder();
+        reconnect.AppendLine(context.Localize("outofsync.reconnectTitle"));
+        reconnect.AppendLine(userNameLastFm != null
+            ? context.Localize("outofsync.reconnectStepSettings", ("username", userNameLastFm))
+            : context.Localize("outofsync.reconnectStepSettingsNoUser"));
+        reconnect.AppendLine(context.Localize("outofsync.reconnectSteps"));
+        reconnect.Append(context.Localize("outofsync.reconnectInterval"));
 
-        container.WithTextDisplay(expiredConnection.ToString());
+        container.WithTextDisplay(reconnect.ToString());
+        container.WithActionRow(new ActionRowProperties()
+            .AddComponents(new LinkButtonProperties("https://www.last.fm/settings/applications",
+                context.Localize("outofsync.settingsButton"))));
         container.WithSeparator();
 
         var thingsToTry = new StringBuilder();
         thingsToTry.AppendLine(context.Localize("outofsync.stillNotWorkingTitle"));
-        thingsToTry.AppendLine(context.Localize("outofsync.stillNotWorkingDescription"));
+        thingsToTry.Append(context.Localize("outofsync.stillNotWorkingTips"));
 
         container.WithTextDisplay(thingsToTry.ToString());
 
@@ -147,6 +107,113 @@ public class StaticBuilders
         }
 
         return response;
+    }
+
+    private async Task<string> GetOutOfSyncStatus(ContextModel context, string userNameLastFm, string sessionKey)
+    {
+        var recentTracksTask = this._dataSourceFactory.GetRecentTracksAsync(userNameLastFm, useCache: false,
+            sessionKey: sessionKey);
+        var userInfo = await this._lastfmRepository.GetLfmUserInfoAsync(userNameLastFm);
+        var recentTracks = await recentTracksTask;
+
+        var status = new StringBuilder();
+        var nowPlaying = false;
+
+        if (recentTracks.Success && recentTracks.Content?.RecentTracks != null)
+        {
+            var nowPlayingTrack = recentTracks.Content.RecentTracks.FirstOrDefault(f => f.NowPlaying);
+            var lastScrobble = recentTracks.Content.RecentTracks
+                .Where(w => w.TimePlayed.HasValue)
+                .MaxBy(o => o.TimePlayed);
+
+            if (nowPlayingTrack != null)
+            {
+                nowPlaying = true;
+                status.AppendLine(context.Localize("outofsync.nowPlaying",
+                    ("track", StringExtensions.Sanitize(nowPlayingTrack.TrackName)),
+                    ("artist", StringExtensions.Sanitize(nowPlayingTrack.ArtistName))));
+            }
+            else if (lastScrobble != null)
+            {
+                var timePlayed = DateTime.SpecifyKind(lastScrobble.TimePlayed.Value, DateTimeKind.Utc);
+                status.AppendLine(context.Localize("outofsync.lastScrobble",
+                    ("track", StringExtensions.Sanitize(lastScrobble.TrackName)),
+                    ("artist", StringExtensions.Sanitize(lastScrobble.ArtistName)),
+                    ("relativeTimestamp", $"<t:{((DateTimeOffset)timePlayed).ToUnixTimeSeconds()}:R>")));
+            }
+            else
+            {
+                status.AppendLine(context.Localize("outofsync.noScrobbles"));
+            }
+        }
+
+        string verdict = null;
+
+        if (userInfo != null)
+        {
+            var now = DateTime.UtcNow;
+            var expiry = userInfo.SpotifyExpiryEstimateUnix.HasValue
+                ? DateTime.UnixEpoch.AddSeconds(userInfo.SpotifyExpiryEstimateUnix.Value)
+                : (DateTime?)null;
+
+            if (!expiry.HasValue)
+            {
+                status.AppendLine(context.Localize("outofsync.spotifyNone"));
+                verdict = context.Localize("outofsync.verdictNone");
+            }
+            else
+            {
+                var connected = expiry.Value.AddMonths(-6);
+
+                if (expiry.Value < now)
+                {
+                    status.AppendLine(context.Localize("outofsync.spotifyExpired", ("date", DateDisplay(expiry.Value))));
+                    verdict = context.Localize("outofsync.verdictExpired");
+                }
+                else if (expiry.Value < now.AddDays(10))
+                {
+                    status.AppendLine(context.Localize("outofsync.spotifyExpiring", ("date", DateDisplay(expiry.Value))));
+                    verdict = context.Localize("outofsync.verdictExpiring");
+                }
+                else if (connected > now.AddDays(-14))
+                {
+                    status.AppendLine(context.Localize("outofsync.spotifyRecent", ("date", DateDisplay(connected))));
+                    verdict = nowPlaying
+                        ? context.Localize("outofsync.verdictNowPlaying")
+                        : context.Localize("outofsync.verdictRecent");
+                }
+                else
+                {
+                    status.AppendLine(context.Localize("outofsync.spotifyActive", ("date", DateDisplay(expiry.Value))));
+                    verdict = nowPlaying
+                        ? context.Localize("outofsync.verdictNowPlaying")
+                        : context.Localize("outofsync.verdictActive");
+                }
+            }
+        }
+        else if (nowPlaying)
+        {
+            verdict = context.Localize("outofsync.verdictNowPlaying");
+        }
+
+        if (status.Length == 0)
+        {
+            return null;
+        }
+
+        if (verdict != null)
+        {
+            status.AppendLine();
+            status.Append(verdict);
+        }
+
+        return status.ToString();
+    }
+
+    private static string DateDisplay(DateTime date)
+    {
+        var midday = new DateTimeOffset(date.Date.AddHours(12), TimeSpan.Zero);
+        return $"<t:{midday.ToUnixTimeSeconds()}:D>";
     }
 
     public async Task<ResponseModel> SupporterButtons(
