@@ -34,6 +34,16 @@ public static class TimePeriodParser
         return TryResolveTimeZone(timeZone, out var timeZoneInfo) ? timeZoneInfo : fallback ?? TimeZoneInfo.Utc;
     }
 
+    private static DateTime LocalToUtc(DateTime localTime, TimeZoneInfo timeZoneInfo)
+    {
+        while (timeZoneInfo.IsInvalidTime(localTime))
+        {
+            localTime = localTime.AddMinutes(15);
+        }
+
+        return TimeZoneInfo.ConvertTimeToUtc(localTime, timeZoneInfo);
+    }
+
     public static TimeSettingsModel GetTimePeriod(string options,
         TimePeriod defaultTimePeriod = TimePeriod.Weekly,
         DateTime? registeredLastFm = null,
@@ -66,7 +76,7 @@ public static class TimePeriodParser
                 month?.monthNumber ?? 1,
                 1);
 
-            settingsModel.StartDateTime = TimeZoneInfo.ConvertTimeToUtc(startUnspecified.Date, timeZoneInfo);
+            settingsModel.StartDateTime = LocalToUtc(startUnspecified.Date, timeZoneInfo);
 
             if (month.HasValue && month.Value.monthNumber > localTime.Month && !year.HasValue)
             {
@@ -92,7 +102,7 @@ public static class TimePeriodParser
                 settingsModel.Description = startUnspecified.ToString("MMMM");
                 settingsModel.PeriodMonthDate = startUnspecified;
                 settingsModel.AltDescription = $"month {startUnspecified.ToString("MMMM")}";
-                settingsModel.EndDateTime = settingsModel.StartDateTime.Value.AddMonths(1).AddSeconds(-1);
+                settingsModel.EndDateTime = LocalToUtc(startUnspecified.AddMonths(1), timeZoneInfo).AddSeconds(-1);
                 settingsModel.BillboardTimeDescription = $"{startUnspecified.AddMonths(-1):MMMM}";
             }
 
@@ -106,7 +116,7 @@ public static class TimePeriodParser
                 settingsModel.PeriodMonthDate = startUnspecified;
                 settingsModel.PeriodMonthIncludesYear = true;
                 settingsModel.AltDescription = $"month {startUnspecified:MMMM} of {year}";
-                settingsModel.EndDateTime = settingsModel.StartDateTime.Value.AddMonths(1).AddSeconds(-1);
+                settingsModel.EndDateTime = LocalToUtc(startUnspecified.AddMonths(1), timeZoneInfo).AddSeconds(-1);
             }
 
             settingsModel.PlayDays =

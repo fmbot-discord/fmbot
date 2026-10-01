@@ -238,14 +238,19 @@ public class SettingServiceTimePeriodTests
     }
 
     [Test]
-    public void GetTimePeriod_MonthInUserTimeZone_StartsAtLocalMidnight()
+    public void GetTimePeriod_MonthInUserTimeZone_CoversLocalCalendarMonth()
     {
         var tz = TimeZoneInfo.FindSystemTimeZoneById("Asia/Tokyo");
 
         var result = SettingService.GetTimePeriod("march 2024", timeZone: "Asia/Tokyo");
 
-        Assert.That(result.StartDateTime,
-            Is.EqualTo(TimeZoneInfo.ConvertTimeToUtc(new DateTime(2024, 3, 1), tz)));
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.StartDateTime,
+                Is.EqualTo(TimeZoneInfo.ConvertTimeToUtc(new DateTime(2024, 3, 1), tz)));
+            Assert.That(result.EndDateTime,
+                Is.EqualTo(TimeZoneInfo.ConvertTimeToUtc(new DateTime(2024, 4, 1), tz).AddSeconds(-1)));
+        });
     }
 
     [Test]

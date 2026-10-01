@@ -122,7 +122,8 @@ public class ClientLogHandler
     private async Task ClientJoinedGuild(DiscordGuild guild)
     {
         Log.Information(
-            "JoinedGuild: {guildName} / {guildId} | {memberCount} members", guild.Name, guild.Id, guild.UserCount);
+            "JoinedGuild: {guildName} / {guildId} | {memberCount} members | locale {preferredLocale} (community: {isCommunity})",
+            guild.Name, guild.Id, guild.UserCount, guild.PreferredLocale, guild.Features.Contains("COMMUNITY"));
 
         var dbGuild = await this._guildService.GetGuildAsync(guild.Id);
         if (dbGuild?.GuildFlags.HasValue == true && dbGuild.GuildFlags.Value.HasFlag(GuildFlags.Banned))
