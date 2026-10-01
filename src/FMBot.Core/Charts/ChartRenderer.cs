@@ -110,7 +110,7 @@ public class ChartRenderer
 
             if (!chart.ArtistChart)
             {
-                var prepared = await Task.WhenAll(chart.Albums.Select(async (album, index) =>
+                var prepared = await Task.WhenAll(chart.Albums.Select((album, index) => Task.Run(async () =>
                 {
                     await semaphore.WaitAsync();
                     try
@@ -132,7 +132,7 @@ public class ChartRenderer
                     {
                         semaphore.Release();
                     }
-                }));
+                })));
 
                 for (var index = 0; index < chart.Albums.Count; index++)
                 {
@@ -143,7 +143,7 @@ public class ChartRenderer
             }
             else
             {
-                var prepared = await Task.WhenAll(chart.Artists.Select(async (artist, index) =>
+                var prepared = await Task.WhenAll(chart.Artists.Select((artist, index) => Task.Run(async () =>
                 {
                     await semaphore.WaitAsync();
                     try
@@ -164,7 +164,7 @@ public class ChartRenderer
                     {
                         semaphore.Release();
                     }
-                }));
+                })));
 
                 for (var index = 0; index < chart.Artists.Count; index++)
                 {

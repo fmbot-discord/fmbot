@@ -140,19 +140,56 @@ public static partial class AccentColors
 
     public static SKColor TextColorFor(SKBitmap skBitmap)
     {
-        var startY = skBitmap.Height * 3 / 4;
+        var width = skBitmap.Width;
+        var height = skBitmap.Height;
+        var startY = height * 3 / 4;
         long totalR = 0, totalG = 0, totalB = 0;
         var totalPixels = 0;
 
-        for (var x = 0; x < skBitmap.Width; x++)
+        var colorType = skBitmap.ColorType;
+        if (colorType is SKColorType.Bgra8888 or SKColorType.Rgba8888)
         {
-            for (var y = startY; y < skBitmap.Height; y++)
+            var pixels = skBitmap.GetPixelSpan();
+            var rowBytes = skBitmap.RowBytes;
+            var redOffset = colorType == SKColorType.Bgra8888 ? 2 : 0;
+            var blueOffset = 2 - redOffset;
+
+            for (var y = startY; y < height; y++)
             {
-                var clr = skBitmap.GetPixel(x, y);
-                totalR += clr.Red;
-                totalG += clr.Green;
-                totalB += clr.Blue;
-                totalPixels++;
+                var row = pixels.Slice(y * rowBytes, width * 4);
+                for (var x = 0; x < width; x++)
+                {
+                    var p = x * 4;
+                    if (row[p + 3] == 255)
+                    {
+                        totalR += row[p + redOffset];
+                        totalG += row[p + 1];
+                        totalB += row[p + blueOffset];
+                    }
+                    else
+                    {
+                        var clr = skBitmap.GetPixel(x, y);
+                        totalR += clr.Red;
+                        totalG += clr.Green;
+                        totalB += clr.Blue;
+                    }
+
+                    totalPixels++;
+                }
+            }
+        }
+        else
+        {
+            for (var x = 0; x < width; x++)
+            {
+                for (var y = startY; y < height; y++)
+                {
+                    var clr = skBitmap.GetPixel(x, y);
+                    totalR += clr.Red;
+                    totalG += clr.Green;
+                    totalB += clr.Blue;
+                    totalPixels++;
+                }
             }
         }
 
