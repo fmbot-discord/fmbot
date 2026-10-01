@@ -31,7 +31,7 @@
           "description": "L'album à rechercher (par défaut celui en cours d'écoute)"
         },
         "time-period": {
-          "description": "Période des plays à afficher (réservé aux supporters)"
+          "description": "Période des plays à afficher"
         },
         "user": {
           "description": "L'utilisateur à afficher (toi par défaut)"
@@ -86,6 +86,9 @@
         "redirects": {
           "description": "Activer/désactiver les redirections de nom d'artiste Last.fm (activées par défaut)"
         },
+        "time-period": {
+          "description": "Période des albums à afficher"
+        },
         "user": {
           "description": "L'utilisateur à afficher (toi par défaut)"
         }
@@ -135,7 +138,7 @@
           "description": "Activer/désactiver les redirections de nom d'artiste Last.fm (activées par défaut)"
         },
         "time-period": {
-          "description": "Période des plays à afficher (réservé aux supporters)"
+          "description": "Période des plays à afficher"
         },
         "user": {
           "description": "L'utilisateur à afficher (toi par défaut)"
@@ -1184,7 +1187,7 @@
       "description": "Affiche le nombre de plays du titre en cours ou recherché",
       "parameters": {
         "time-period": {
-          "description": "Période des plays à afficher (réservé aux supporters)"
+          "description": "Période des plays à afficher"
         },
         "track": {
           "description": "Le titre à rechercher (par défaut celui en cours d'écoute)"

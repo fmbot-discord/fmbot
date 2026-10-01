@@ -1398,8 +1398,10 @@ public class AlbumBuilders
             timeSettings = null;
         }
 
+        var showGraph = context.ContextUser.UserType != UserType.User && userSettings.UserType != UserType.User;
+
         Task<PlayHistorySummary> playHistoryTask = null;
-        if (context.ContextUser.UserType != UserType.User && albumSearch.Album.UserPlaycount > 0)
+        if ((showGraph || timeSettings != null) && albumSearch.Album.UserPlaycount > 0)
         {
             playHistoryTask = this._playService.GetAlbumPlayHistory(userSettings.UserId,
                 albumSearch.Album.ArtistName, albumSearch.Album.AlbumName,
@@ -1462,7 +1464,7 @@ public class AlbumBuilders
             reply += $"\n{periodNote}";
         }
 
-        var playHistoryGraph = playHistory != null
+        var playHistoryGraph = showGraph && playHistory != null
             ? await this._graphService.BuildPlayHistoryGraph(context, response, playHistory.DailyPlays,
                 "album-plays.png", height: GraphExtensions.CompactGraphHeight,
                 windowFrom: timeSettings?.StartDateTime, windowUntil: timeSettings?.EndDateTime,

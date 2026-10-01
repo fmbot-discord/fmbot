@@ -771,27 +771,90 @@ public class ArtistBuilders
         return response;
     }
 
+    private static async Task<(ArtistSearch ArtistSearch, ResponseModel Response, bool PeriodIsName)>
+        SearchArtistWithPeriod(Func<ResponseModel, string, Task<ArtistSearch>> searchArtist, ResponseModel response,
+            string searchValue, string searchValueWithoutPeriod)
+    {
+        var artistSearch = await searchArtist(response, searchValue);
+        if (searchValueWithoutPeriod == null)
+        {
+            return (artistSearch, response, false);
+        }
+
+        var periodResponse = new ResponseModel
+        {
+            ResponseType = ResponseType.ComponentsV2,
+        };
+        var periodSearch = await searchArtist(periodResponse, searchValueWithoutPeriod);
+
+        if (artistSearch.Artist != null &&
+            SettingService.NameContainsPeriodWords(searchValue, searchValueWithoutPeriod,
+                artistSearch.Artist.ArtistName) &&
+            !SettingService.PeriodMatchIsBetter(artistSearch.Artist, periodSearch.Artist))
+        {
+            return (artistSearch, response, true);
+        }
+
+        return (periodSearch, periodResponse, false);
+    }
+
     public async Task<ResponseModel> ArtistTracksAsync(ContextModel context,
         TimeSettingsModel timeSettings,
         UserSettingsModel userSettings,
         string searchValue,
-        bool redirectsEnabled)
+        bool redirectsEnabled,
+        string searchValueWithoutPeriod = null)
     {
         var response = new ResponseModel
         {
             ResponseType = ResponseType.ComponentsV2,
         };
 
-        var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, context.Localizer, searchValue,
-            context.ContextUser.UserNameLastFM,
-            context.ContextUser.SessionKeyLastFm, userSettings.UserNameLastFm, true, userSettings.UserId,
-            redirectsEnabled: redirectsEnabled, interactionId: context.InteractionId,
-            referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
+        Task<ArtistSearch> SearchArtist(ResponseModel searchResponse, string artistValues) =>
+            this._artistsService.SearchArtist(searchResponse, context.DiscordUser, context.Localizer, artistValues,
+                context.ContextUser.UserNameLastFM,
+                context.ContextUser.SessionKeyLastFm, userSettings.UserNameLastFm, true, userSettings.UserId,
+                redirectsEnabled: redirectsEnabled, interactionId: context.InteractionId,
+                referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
+
+        (var artistSearch, response, var periodIsName) =
+            await SearchArtistWithPeriod(SearchArtist, response, searchValue, searchValueWithoutPeriod);
+        if (periodIsName)
+        {
+            timeSettings = null;
+        }
+
         if (artistSearch.Artist == null)
         {
             artistSearch.Response.ResponseType = ResponseType.ComponentsV2;
             artistSearch.Response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
             return artistSearch.Response;
+        }
+
+        string periodNote = null;
+        if (timeSettings != null)
+        {
+            if (PlayService.PeriodRequiresSupporter(context.ContextUser.UserType, timeSettings))
+            {
+                periodNote = context.Localize("artist.tracks.periodSupporterPromo",
+                    ("url", Constants.GetSupporterOverviewLink));
+            }
+            else if (PlayService.PeriodRequiresSupporter(userSettings.UserType, timeSettings))
+            {
+                periodNote = context.Localize("artist.tracks.periodOtherNotSupporter",
+                    ("user", StringExtensions.Sanitize(userSettings.DisplayName)));
+            }
+            else if (await this._playService.GetPeriodNotStoredSince(userSettings, timeSettings) is { } notStoredSince)
+            {
+                periodNote = context.Localize("artist.tracks.periodNotStored",
+                    ("user", StringExtensions.Sanitize(userSettings.DisplayName)),
+                    ("date", $"<t:{((DateTimeOffset)notStoredSince).ToUnixTimeSeconds()}:D>"));
+            }
+
+            if (periodNote != null)
+            {
+                timeSettings = null;
+            }
         }
 
         var dbArtist =
@@ -803,25 +866,13 @@ public class ArtistBuilders
                 artistSearch.Artist.UserPlaycount.Value);
         }
 
-        List<UserTrack> topTracks;
-        switch (timeSettings.TimePeriod)
-        {
-            case TimePeriod.Weekly:
-                topTracks = await this._playService.GetUserTopTracksForArtist(userSettings.UserId, 7,
-                    artistSearch.Artist.ArtistName);
-                break;
-            case TimePeriod.Monthly:
-                topTracks = await this._playService.GetUserTopTracksForArtist(userSettings.UserId, 31,
-                    artistSearch.Artist.ArtistName);
-                break;
-            default:
-                topTracks = await this._artistsService.GetTopTracksForArtist(userSettings.UserId,
-                    artistSearch.Artist.ArtistName);
-                break;
-        }
+        var topTracks = timeSettings != null
+            ? await this._playService.GetUserTopTracksForArtist(userSettings.UserId, artistSearch.Artist.ArtistName,
+                timeSettings.StartDateTime, timeSettings.EndDateTime)
+            : await this._artistsService.GetTopTracksForArtist(userSettings.UserId, artistSearch.Artist.ArtistName);
 
         if (topTracks.Count == 0 &&
-            timeSettings.TimePeriod == TimePeriod.AllTime &&
+            timeSettings == null &&
             artistSearch.Artist.UserPlaycount >= 15 &&
             !userSettings.DifferentUser)
         {
@@ -833,7 +884,7 @@ public class ArtistBuilders
 
         var maybeMissingResults = !SupporterService.IsSupporter(userSettings.UserType) &&
                                   !userSettings.DifferentUser &&
-                                  timeSettings.TimePeriod == TimePeriod.AllTime &&
+                                  timeSettings == null &&
                                   (await this._artistsService.GetUserTrackCount(userSettings.UserId)) >= 6000 &&
                                   topTracks.Sum(s => s.Playcount) < artistSearch.Artist.UserPlaycount;
 
@@ -841,10 +892,20 @@ public class ArtistBuilders
 
         if (topTracks.Count == 0)
         {
+            var noTracksUser =
+                $"{StringExtensions.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()}";
             response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
-            response.ComponentsContainer.WithTextDisplay(context.Localize("artist.tracks.noTracks",
-                ("user", $"{StringExtensions.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()}"),
-                ("artist", StringExtensions.Sanitize(artistSearch.Artist.ArtistName))));
+            response.ComponentsContainer.WithTextDisplay(timeSettings != null
+                ? context.Localize("artist.tracks.noTracksInPeriod", ("user", noTracksUser),
+                    ("artist", StringExtensions.Sanitize(artistSearch.Artist.ArtistName)),
+                    ("period", context.Localizer.AltPeriodLabel(timeSettings)))
+                : context.Localize("artist.tracks.noTracks", ("user", noTracksUser),
+                    ("artist", StringExtensions.Sanitize(artistSearch.Artist.ArtistName))));
+
+            if (periodNote != null)
+            {
+                response.ComponentsContainer.WithTextDisplay(periodNote);
+            }
 
             var noResultsRow = new ActionRowProperties()
                 .WithButton(context.Localize("shared.overview"),
@@ -856,10 +917,24 @@ public class ArtistBuilders
             return response;
         }
 
-        var title = userSettings.DifferentUser
-            ? context.Localize("artist.tracks.titleOther", ("user", StringExtensions.Sanitize(userSettings.DisplayName)),
-                ("artist", StringExtensions.Sanitize(artistSearch.Artist.ArtistName)))
-            : context.Localize("artist.tracks.titleSelf", ("artist", StringExtensions.Sanitize(artistSearch.Artist.ArtistName)));
+        string title;
+        if (timeSettings != null)
+        {
+            var period = context.Localizer.AltPeriodLabel(timeSettings);
+            title = userSettings.DifferentUser
+                ? context.Localize("artist.tracks.titleOtherInPeriod",
+                    ("user", StringExtensions.Sanitize(userSettings.DisplayName)),
+                    ("artist", StringExtensions.Sanitize(artistSearch.Artist.ArtistName)), ("period", period))
+                : context.Localize("artist.tracks.titleSelfInPeriod",
+                    ("artist", StringExtensions.Sanitize(artistSearch.Artist.ArtistName)), ("period", period));
+        }
+        else
+        {
+            title = userSettings.DifferentUser
+                ? context.Localize("artist.tracks.titleOther", ("user", StringExtensions.Sanitize(userSettings.DisplayName)),
+                    ("artist", StringExtensions.Sanitize(artistSearch.Artist.ArtistName)))
+                : context.Localize("artist.tracks.titleSelf", ("artist", StringExtensions.Sanitize(artistSearch.Artist.ArtistName)));
+        }
 
         var footer = new StringBuilder();
 
@@ -916,6 +991,10 @@ public class ArtistBuilders
         var overviewId =
             $"{InteractionConstants.Artist.Overview}:{dbArtist.Id}:{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}";
         var footerLines = footerText.Replace("\n", "\n-# ");
+        if (periodNote != null)
+        {
+            footerLines += $"\n{periodNote}";
+        }
 
         if (pageDescriptions.Count == 1)
         {
@@ -985,22 +1064,59 @@ public class ArtistBuilders
         UserSettingsModel userSettings,
         string searchValue,
         bool redirectsEnabled,
-        bool hideSingles = false)
+        bool hideSingles = false,
+        TimeSettingsModel timeSettings = null,
+        string searchValueWithoutPeriod = null)
     {
         var response = new ResponseModel
         {
             ResponseType = ResponseType.ComponentsV2,
         };
 
-        var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, context.Localizer, searchValue,
-            context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, userSettings.UserNameLastFm,
-            true, userSettings.UserId, redirectsEnabled: redirectsEnabled, interactionId: context.InteractionId,
-            referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
+        Task<ArtistSearch> SearchArtist(ResponseModel searchResponse, string artistValues) =>
+            this._artistsService.SearchArtist(searchResponse, context.DiscordUser, context.Localizer, artistValues,
+                context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, userSettings.UserNameLastFm,
+                true, userSettings.UserId, redirectsEnabled: redirectsEnabled, interactionId: context.InteractionId,
+                referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
+
+        (var artistSearch, response, var periodIsName) =
+            await SearchArtistWithPeriod(SearchArtist, response, searchValue, searchValueWithoutPeriod);
+        if (periodIsName)
+        {
+            timeSettings = null;
+        }
+
         if (artistSearch.Artist == null)
         {
             artistSearch.Response.ResponseType = ResponseType.ComponentsV2;
             artistSearch.Response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
             return artistSearch.Response;
+        }
+
+        string periodNote = null;
+        if (timeSettings != null)
+        {
+            if (PlayService.PeriodRequiresSupporter(context.ContextUser.UserType, timeSettings))
+            {
+                periodNote = context.Localize("artist.albums.periodSupporterPromo",
+                    ("url", Constants.GetSupporterOverviewLink));
+            }
+            else if (PlayService.PeriodRequiresSupporter(userSettings.UserType, timeSettings))
+            {
+                periodNote = context.Localize("artist.albums.periodOtherNotSupporter",
+                    ("user", StringExtensions.Sanitize(userSettings.DisplayName)));
+            }
+            else if (await this._playService.GetPeriodNotStoredSince(userSettings, timeSettings) is { } notStoredSince)
+            {
+                periodNote = context.Localize("artist.albums.periodNotStored",
+                    ("user", StringExtensions.Sanitize(userSettings.DisplayName)),
+                    ("date", $"<t:{((DateTimeOffset)notStoredSince).ToUnixTimeSeconds()}:D>"));
+            }
+
+            if (periodNote != null)
+            {
+                timeSettings = null;
+            }
         }
 
         var dbArtist =
@@ -1012,11 +1128,14 @@ public class ArtistBuilders
                 artistSearch.Artist.UserPlaycount.Value);
         }
 
-        var topAlbums =
-            await this._artistsService.GetUserAlbumsForArtist(userSettings.UserId, artistSearch.Artist.ArtistName);
+        var topAlbums = timeSettings != null
+            ? await this._playService.GetUserTopAlbumsForArtist(userSettings.UserId, artistSearch.Artist.ArtistName,
+                timeSettings.StartDateTime, timeSettings.EndDateTime)
+            : await this._artistsService.GetUserAlbumsForArtist(userSettings.UserId, artistSearch.Artist.ArtistName);
         var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
 
         if (topAlbums.Count == 0 &&
+            timeSettings == null &&
             artistSearch.Artist.UserPlaycount >= 15 &&
             !userSettings.DifferentUser)
         {
@@ -1028,9 +1147,20 @@ public class ArtistBuilders
 
         if (topAlbums.Count == 0)
         {
+            var noAlbumsUser =
+                $"{StringExtensions.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()}";
             response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
-            response.ComponentsContainer.WithTextDisplay(context.Localize("artist.albums.noAlbums",
-                ("user", $"{StringExtensions.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()}")));
+            response.ComponentsContainer.WithTextDisplay(timeSettings != null
+                ? context.Localize("artist.albums.noAlbumsInPeriod", ("user", noAlbumsUser),
+                    ("artist", StringExtensions.Sanitize(artistSearch.Artist.ArtistName)),
+                    ("period", context.Localizer.AltPeriodLabel(timeSettings)))
+                : context.Localize("artist.albums.noAlbums", ("user", noAlbumsUser)));
+
+            if (periodNote != null)
+            {
+                response.ComponentsContainer.WithTextDisplay(periodNote);
+            }
+
             response.CommandResponse = CommandResponse.NoScrobbles;
             return response;
         }
@@ -1051,13 +1181,28 @@ public class ArtistBuilders
 
         var maybeMissingResults = !SupporterService.IsSupporter(userSettings.UserType) &&
                                   !userSettings.DifferentUser &&
+                                  timeSettings == null &&
                                   (await this._artistsService.GetUserAlbumCount(userSettings.UserId)) >= 5000 &&
                                   topAlbums.Sum(s => s.Playcount) < artistSearch.Artist.UserPlaycount;
 
-        var title = userSettings.DifferentUser
-            ? context.Localize("artist.albums.titleOther", ("user", StringExtensions.Sanitize(userSettings.DisplayName)),
-                ("artist", StringExtensions.Sanitize(artistSearch.Artist.ArtistName)))
-            : context.Localize("artist.albums.titleSelf", ("artist", StringExtensions.Sanitize(artistSearch.Artist.ArtistName)));
+        string title;
+        if (timeSettings != null)
+        {
+            var period = context.Localizer.AltPeriodLabel(timeSettings);
+            title = userSettings.DifferentUser
+                ? context.Localize("artist.albums.titleOtherInPeriod",
+                    ("user", StringExtensions.Sanitize(userSettings.DisplayName)),
+                    ("artist", StringExtensions.Sanitize(artistSearch.Artist.ArtistName)), ("period", period))
+                : context.Localize("artist.albums.titleSelfInPeriod",
+                    ("artist", StringExtensions.Sanitize(artistSearch.Artist.ArtistName)), ("period", period));
+        }
+        else
+        {
+            title = userSettings.DifferentUser
+                ? context.Localize("artist.albums.titleOther", ("user", StringExtensions.Sanitize(userSettings.DisplayName)),
+                    ("artist", StringExtensions.Sanitize(artistSearch.Artist.ArtistName)))
+                : context.Localize("artist.albums.titleSelf", ("artist", StringExtensions.Sanitize(artistSearch.Artist.ArtistName)));
+        }
 
         var footer = new StringBuilder();
 
@@ -1106,6 +1251,10 @@ public class ArtistBuilders
         var overviewId =
             $"{InteractionConstants.Artist.Overview}:{dbArtist.Id}:{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}";
         var footerLines = footerText.Replace("\n", "\n-# ");
+        if (periodNote != null)
+        {
+            footerLines += $"\n{periodNote}";
+        }
 
         if (pageDescriptions.Count == 1)
         {
@@ -1690,23 +1839,11 @@ public class ArtistBuilders
                 interactionId: context.InteractionId,
                 referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
 
-        var artistSearch = await SearchArtist(response, artistName);
-        if (artistNameWithoutPeriod != null)
+        (var artistSearch, response, var periodIsName) =
+            await SearchArtistWithPeriod(SearchArtist, response, artistName, artistNameWithoutPeriod);
+        if (periodIsName)
         {
-            if (artistSearch.Artist != null &&
-                SettingService.NameContainsPeriodWords(artistName, artistNameWithoutPeriod,
-                    artistSearch.Artist.ArtistName))
-            {
-                timeSettings = null;
-            }
-            else
-            {
-                response = new ResponseModel
-                {
-                    ResponseType = ResponseType.ComponentsV2,
-                };
-                artistSearch = await SearchArtist(response, artistNameWithoutPeriod);
-            }
+            timeSettings = null;
         }
 
         if (artistSearch.Artist == null)
@@ -1722,8 +1859,10 @@ public class ArtistBuilders
             timeSettings = null;
         }
 
+        var showGraph = context.ContextUser.UserType != UserType.User && userSettings.UserType != UserType.User;
+
         Task<PlayHistorySummary> playHistoryTask = null;
-        if (context.ContextUser.UserType != UserType.User && artistSearch.Artist.UserPlaycount > 0)
+        if ((showGraph || timeSettings != null) && artistSearch.Artist.UserPlaycount > 0)
         {
             playHistoryTask = this._playService.GetArtistPlayHistory(userSettings.UserId,
                 artistSearch.Artist.ArtistName, timeSettings?.StartDateTime, timeSettings?.EndDateTime);
@@ -1775,7 +1914,7 @@ public class ArtistBuilders
             reply += $"\n{periodNote}";
         }
 
-        var playHistoryGraph = playHistory != null
+        var playHistoryGraph = showGraph && playHistory != null
             ? await this._graphService.BuildPlayHistoryGraph(context, response, playHistory.DailyPlays,
                 "artist-plays.png", height: GraphExtensions.CompactGraphHeight,
                 windowFrom: timeSettings?.StartDateTime, windowUntil: timeSettings?.EndDateTime,

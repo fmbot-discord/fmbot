@@ -57,7 +57,7 @@ public class GraphService
     public PlayHistoryGraph RenderPlayHistory(IReadOnlyList<GraphPoint> dailyPlays, CultureInfo culture,
         SKColor lineColor, Func<double, string> valueLabel, GraphInterval? fixedInterval = null,
         DateTime? windowFrom = null, DateTime? windowUntil = null, int width = 660, int height = 165,
-        GraphType style = GraphType.Line, Func<int, string> quarterLabel = null)
+        GraphType style = GraphType.Line)
     {
         if (dailyPlays == null || dailyPlays.Count == 0)
         {
@@ -121,7 +121,6 @@ public class GraphService
             ValueLabel = valueLabel,
             Culture = culture,
             Interval = interval,
-            QuarterLabel = quarterLabel,
             Style = style
         });
 
@@ -493,7 +492,7 @@ public class GraphService
             return true;
         }
 
-        var ticks = GraphTicks.Plan(graph.Points, graph.Culture, graph.Interval, currentYear, Fits, graph.QuarterLabel);
+        var ticks = GraphTicks.Plan(graph.Points, graph.Culture, graph.Interval, currentYear, Fits);
         if (ticks.Any(a => !font.ContainsGlyphs(a.Label)))
         {
             ticks = GraphTicks.Plan(graph.Points, CultureInfo.InvariantCulture, graph.Interval, currentYear, Fits);

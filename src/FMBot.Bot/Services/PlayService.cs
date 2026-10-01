@@ -1030,24 +1030,26 @@ public class PlayService
         };
     }
 
-    public async Task<List<UserTrack>> GetUserTopTracksForArtist(int userId, int days, string artistName)
+    public async Task<List<UserTrack>> GetUserTopTracksForArtist(int userId, string artistName, DateTime? from,
+        DateTime? until)
     {
-        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
-        await connection.OpenAsync();
+        var (connection, dataSource) = await GetConnectionWithDataSource(userId);
+        await using (connection)
+        {
+            return await PlayRepository.GetUserTopTracksForArtist(userId, connection, dataSource, artistName, from,
+                until);
+        }
+    }
 
-        var start = DateTime.UtcNow.AddDays(-days);
-        var plays = await PlayRepository.GetUserPlaysWithinTimeRange(userId, connection, start);
-
-        return plays.Where(w => w.ArtistName.ToLower() == artistName.ToLower())
-            .GroupBy(x => new { x.ArtistName, x.TrackName })
-            .Select(s => new UserTrack
-            {
-                ArtistName = s.Key.ArtistName,
-                Name = s.Key.TrackName,
-                Playcount = s.Count()
-            })
-            .OrderByDescending(o => o.Playcount)
-            .ToList();
+    public async Task<List<UserAlbum>> GetUserTopAlbumsForArtist(int userId, string artistName, DateTime? from,
+        DateTime? until)
+    {
+        var (connection, dataSource) = await GetConnectionWithDataSource(userId);
+        await using (connection)
+        {
+            return await PlayRepository.GetUserTopAlbumsForArtist(userId, connection, dataSource, artistName, from,
+                until);
+        }
     }
 
     public async Task<List<WhoKnowsObjectWithUser>> GetGuildUsersTotalPlaycount(NetCord.Gateway.Guild discordGuild,
@@ -1195,6 +1197,13 @@ public class PlayService
         };
     }
 
+    public static bool PeriodRequiresSupporter(UserType userType, TimeSettingsModel timeSettings)
+    {
+        return timeSettings != null &&
+               !SupporterService.IsSupporter(userType) &&
+               timeSettings.StartDateTime < DateTime.UtcNow.Date.AddMonths(-2).AddDays(-1);
+    }
+
     public async Task<string> GetPlaysPeriodUnavailableNote(ContextModel context, UserSettingsModel userSettings,
         TimeSettingsModel timeSettings)
     {
@@ -1203,25 +1212,38 @@ public class PlayService
             return null;
         }
 
-        if (!SupporterService.IsSupporter(context.ContextUser.UserType))
+        if (PeriodRequiresSupporter(context.ContextUser.UserType, timeSettings))
         {
             return context.Localize("shared.playsPeriodSupporterPromo", ("url", Constants.GetSupporterOverviewLink));
         }
 
-        if (SupporterService.IsSupporter(userSettings.UserType))
+        if (PeriodRequiresSupporter(userSettings.UserType, timeSettings))
         {
-            return null;
+            return context.Localize("shared.playsPeriodOtherNotSupporter",
+                ("user", StringExtensions.Sanitize(userSettings.DisplayName)));
         }
 
-        var historyStart = await GetNonSupporterHistoryStart(userSettings.UserId);
-        if (timeSettings.StartDateTime >= historyStart)
+        var notStoredSince = await GetPeriodNotStoredSince(userSettings, timeSettings);
+        if (!notStoredSince.HasValue)
         {
             return null;
         }
 
         return context.Localize("shared.playsPeriodNotStored",
             ("user", StringExtensions.Sanitize(userSettings.DisplayName)),
-            ("date", $"<t:{((DateTimeOffset)historyStart).ToUnixTimeSeconds()}:D>"));
+            ("date", $"<t:{((DateTimeOffset)notStoredSince.Value).ToUnixTimeSeconds()}:D>"));
+    }
+
+    public async Task<DateTime?> GetPeriodNotStoredSince(UserSettingsModel userSettings,
+        TimeSettingsModel timeSettings)
+    {
+        if (timeSettings == null || SupporterService.IsSupporter(userSettings.UserType))
+        {
+            return null;
+        }
+
+        var historyStart = await GetNonSupporterHistoryStart(userSettings.UserId);
+        return timeSettings.StartDateTime >= historyStart ? null : historyStart;
     }
 
     public async Task<UserPlayHistory> GetUserPlayHistory(int userId, DateTime? from = null, DateTime? until = null)

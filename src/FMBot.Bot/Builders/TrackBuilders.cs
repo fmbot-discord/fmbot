@@ -1110,8 +1110,10 @@ public class TrackBuilders
             timeSettings = null;
         }
 
+        var showGraph = context.ContextUser.UserType != UserType.User && userSettings.UserType != UserType.User;
+
         Task<PlayHistorySummary> playHistoryTask = null;
-        if (context.ContextUser.UserType != UserType.User && trackSearch.Track.UserPlaycount > 0)
+        if ((showGraph || timeSettings != null) && trackSearch.Track.UserPlaycount > 0)
         {
             playHistoryTask = this._playService.GetTrackPlayHistory(userSettings.UserId,
                 trackSearch.Track.ArtistName, trackSearch.Track.TrackName,
@@ -1174,7 +1176,7 @@ public class TrackBuilders
             reply += $"\n{periodNote}";
         }
 
-        var playHistoryGraph = playHistory != null
+        var playHistoryGraph = showGraph && playHistory != null
             ? await this._graphService.BuildPlayHistoryGraph(context, response, playHistory.DailyPlays,
                 "track-plays.png", height: GraphExtensions.CompactGraphHeight,
                 windowFrom: timeSettings?.StartDateTime, windowUntil: timeSettings?.EndDateTime,

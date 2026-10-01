@@ -87,7 +87,7 @@ public class TrackCommands(
         "trackplays Heaven or Las Vegas 2025")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks)]
-    [SupporterEnhanced("Supporters get a graph of their listening history for the track and can see their plays for a specific time period")]
+    [SupporterEnhanced("Supporters get a graph of their listening history for the track and can see their plays for time periods older than two months")]
     public async Task TrackPlaysAsync([CommandParameter(Remainder = true)] string trackValues = null)
     {
         _ = this.Context.Channel?.TriggerTypingAsync()!;

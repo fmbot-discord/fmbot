@@ -51,8 +51,7 @@ public static class GraphExtensions
             ToWindowStart(windowFrom, windowTimeZone),
             ToWindowEnd(windowUntil, windowTimeZone),
             height: height,
-            style: graphType,
-            quarterLabel: quarter => context.Localize("shared.graphQuarter", ("quarter", quarter.ToString())));
+            style: graphType);
 
         return AttachGraph(response, graph, fileName);
     }

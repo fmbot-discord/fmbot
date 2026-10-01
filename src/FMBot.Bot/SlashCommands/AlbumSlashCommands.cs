@@ -231,7 +231,7 @@ public class AlbumSlashCommands(
         [SlashCommandParameter(Name = "album", Description = "The album you want to search for (defaults to currently playing)",
             AutocompleteProviderType = typeof(AlbumAutoComplete))]
         string name = null,
-        [SlashCommandParameter(Name = "time-period", Description = "Time period to show plays for (supporters only)",
+        [SlashCommandParameter(Name = "time-period", Description = "Time period to show plays for",
             AutocompleteProviderType = typeof(DateTimeAutoComplete))]
         string timePeriod = null,
         [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]

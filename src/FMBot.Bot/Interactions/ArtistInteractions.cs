@@ -124,9 +124,8 @@ public class ArtistInteractions(
         var userSettings = await settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
 
         var artist = await artistsService.GetArtistForId(int.Parse(artistId));
-        var timeSettings = SettingService.GetTimePeriod(Enum.GetName(PlayTimePeriod.AllTime), TimePeriod.AllTime, language: LocalizationService.GetLanguage(this.Context.Interaction.GuildId, this.Context.Interaction.GuildLocale));
 
-        var response = await artistBuilders.ArtistTracksAsync(new ContextModel(this.Context, contextUser, discordContextUser), timeSettings,
+        var response = await artistBuilders.ArtistTracksAsync(new ContextModel(this.Context, contextUser, discordContextUser), null,
             userSettings, artist.Name, false);
 
         if (isFmContext && ephemeral)

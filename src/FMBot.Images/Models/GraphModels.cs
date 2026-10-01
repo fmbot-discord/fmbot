@@ -9,8 +9,7 @@ public enum GraphInterval
     Day = 1,
     Week = 2,
     Month = 3,
-    Quarter = 4,
-    Year = 5
+    Year = 4
 }
 
 public class GraphPoint
@@ -39,7 +38,6 @@ public class LineGraph
 
     public CultureInfo Culture { get; init; } = CultureInfo.InvariantCulture;
     public GraphInterval? Interval { get; init; }
-    public Func<int, string> QuarterLabel { get; init; }
 
     public Func<double, string> ValueLabel { get; init; }
 }
@@ -75,12 +73,8 @@ public static class GraphTicks
     ];
 
     public static List<GraphTick> Plan(IReadOnlyList<GraphPoint> points, CultureInfo culture, GraphInterval? interval,
-        int currentYear, Func<List<GraphTick>, bool> fits, Func<int, string> quarterLabel = null)
+        int currentYear, Func<List<GraphTick>, bool> fits)
     {
-        var monthLabel = interval == GraphInterval.Quarter
-            ? quarterLabel ?? (quarter => $"Q{quarter}")
-            : null;
-
         if (points.Count < 2)
         {
             return [];
@@ -94,12 +88,12 @@ public static class GraphTicks
                 continue;
             }
 
-            if (interval is GraphInterval.Month or GraphInterval.Quarter && step.Unit == GraphTickUnit.Day)
+            if (interval == GraphInterval.Month && step.Unit == GraphTickUnit.Day)
             {
                 continue;
             }
 
-            var ticks = Build(points, step, culture, currentYear, monthLabel);
+            var ticks = Build(points, step, culture, currentYear);
             if (ticks.Count == 0)
             {
                 continue;
@@ -117,7 +111,7 @@ public static class GraphTicks
     }
 
     private static List<GraphTick> Build(IReadOnlyList<GraphPoint> points, (GraphTickUnit Unit, int Amount) step,
-        CultureInfo culture, int currentYear, Func<int, string> quarterLabel)
+        CultureInfo culture, int currentYear)
     {
         var first = points[0].Date;
         var indexes = new List<int>();
@@ -150,19 +144,17 @@ public static class GraphTicks
 
         var dates = indexes.Select(s => points[s].Date).ToList();
         var labels = Labels(dates, step.Unit, culture,
-            points[0].Date.Year != currentYear || points[^1].Date.Year != currentYear, quarterLabel);
+            points[0].Date.Year != currentYear || points[^1].Date.Year != currentYear);
 
         return indexes.Select((s, i) => new GraphTick(s, labels[i])).ToList();
     }
 
     private static List<string> Labels(List<DateTime> dates, GraphTickUnit unit, CultureInfo culture,
-        bool outsideCurrentYear, Func<int, string> quarterLabel)
+        bool outsideCurrentYear)
     {
         string Year(DateTime date) => date.ToString("yyyy", culture);
         string ShortYear(DateTime date) => $"'{date.ToString("yy", culture)}";
-        string Month(DateTime date) => quarterLabel != null
-            ? quarterLabel((date.Month - 1) / 3 + 1)
-            : date.ToString("MMM", culture);
+        string Month(DateTime date) => date.ToString("MMM", culture);
 
         switch (unit)
         {
@@ -235,8 +227,7 @@ public static class GraphSeries
         var interval = bar
             ? days <= MaxBarPoints ? GraphInterval.Day :
             days / 7 <= MaxBarPoints ? GraphInterval.Week :
-            days / 30.44 <= MaxBarPoints ? GraphInterval.Month :
-            days / 91.31 <= MaxBarPoints ? GraphInterval.Quarter : GraphInterval.Year
+            days / 30.44 <= MaxBarPoints ? GraphInterval.Month : GraphInterval.Year
             : days <= MaxDailyPoints ? GraphInterval.Day :
             days / 7 <= MaxPoints ? GraphInterval.Week :
             days / 30.44 <= MaxRenderPoints ? GraphInterval.Month : GraphInterval.Year;
@@ -244,10 +235,6 @@ public static class GraphSeries
         while (interval < GraphInterval.Year && BucketCount(days, interval) > sampleCount)
         {
             interval++;
-            if (interval == GraphInterval.Quarter && !bar)
-            {
-                interval++;
-            }
         }
 
         return interval;
@@ -259,7 +246,6 @@ public static class GraphSeries
         {
             GraphInterval.Week => days / 7,
             GraphInterval.Month => days / 30.44,
-            GraphInterval.Quarter => days / 91.31,
             GraphInterval.Year => days / 365.25,
             _ => days
         };
@@ -339,7 +325,6 @@ public static class GraphSeries
         {
             GraphInterval.Week => 8,
             GraphInterval.Month => 6,
-            GraphInterval.Quarter => 4,
             GraphInterval.Year => 5,
             _ => 14
         };
@@ -353,7 +338,6 @@ public static class GraphSeries
         {
             GraphInterval.Week => date.Date.AddDays(-(((int)date.DayOfWeek + 6) % 7)),
             GraphInterval.Month => new DateTime(date.Year, date.Month, 1, 0, 0, 0, date.Kind),
-            GraphInterval.Quarter => new DateTime(date.Year, (date.Month - 1) / 3 * 3 + 1, 1, 0, 0, 0, date.Kind),
             GraphInterval.Year => new DateTime(date.Year, 1, 1, 0, 0, 0, date.Kind),
             _ => date.Date
         };
@@ -365,7 +349,6 @@ public static class GraphSeries
         {
             GraphInterval.Week => date.AddDays(7 * amount),
             GraphInterval.Month => date.AddMonths(amount),
-            GraphInterval.Quarter => date.AddMonths(3 * amount),
             GraphInterval.Year => date.AddYears(amount),
             _ => date.AddDays(amount)
         };

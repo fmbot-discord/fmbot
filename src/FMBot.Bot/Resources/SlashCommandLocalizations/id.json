@@ -31,7 +31,7 @@
           "description": "Album yang ingin kamu cari (default: yang sedang diputar)"
         },
         "time-period": {
-          "description": "Periode waktu untuk menampilkan plays (khusus supporter)"
+          "description": "Periode waktu untuk menampilkan plays"
         },
         "user": {
           "description": "Pengguna yang ditampilkan (default: kamu sendiri)"
@@ -86,6 +86,9 @@
         "redirects": {
           "description": "Aktifkan/nonaktifkan redirect nama artis Last.fm (default: aktif)"
         },
+        "time-period": {
+          "description": "Periode waktu untuk menampilkan album"
+        },
         "user": {
           "description": "Pengguna yang ditampilkan (default: kamu sendiri)"
         }
@@ -135,7 +138,7 @@
           "description": "Aktifkan/nonaktifkan redirect nama artis Last.fm (default: aktif)"
         },
         "time-period": {
-          "description": "Periode waktu untuk menampilkan plays (khusus supporter)"
+          "description": "Periode waktu untuk menampilkan plays"
         },
         "user": {
           "description": "Pengguna yang ditampilkan (default: kamu sendiri)"
@@ -1184,7 +1187,7 @@
       "description": "Menampilkan playcount untuk lagu saat ini atau yang kamu cari",
       "parameters": {
         "time-period": {
-          "description": "Periode waktu untuk menampilkan plays (khusus supporter)"
+          "description": "Periode waktu untuk menampilkan plays"
         },
         "track": {
           "description": "Lagu yang ingin kamu cari (default: yang sedang diputar)"

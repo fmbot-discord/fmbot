@@ -412,6 +412,44 @@ ORDER BY time_played DESC;";
         });
     }
 
+    public static async Task<List<UserTrack>> GetUserTopTracksForArtist(int userId, NpgsqlConnection connection,
+        DataSource dataSource, string artistName, DateTime? start, DateTime? end)
+    {
+        var sql = GetUserPlaysSqlString(
+            "SELECT MIN(artist_name) AS artist_name, track_name AS name, COUNT(*)::int AS playcount ",
+            dataSource, start, end);
+        sql += GetEntityFilterSql(null, null);
+        sql += " GROUP BY track_name ORDER BY playcount DESC, track_name ";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        return (await connection.QueryAsync<UserTrack>(sql, new
+        {
+            userId,
+            artistName,
+            start,
+            end
+        })).ToList();
+    }
+
+    public static async Task<List<UserAlbum>> GetUserTopAlbumsForArtist(int userId, NpgsqlConnection connection,
+        DataSource dataSource, string artistName, DateTime? start, DateTime? end)
+    {
+        var sql = GetUserPlaysSqlString(
+            "SELECT MIN(artist_name) AS artist_name, album_name AS name, COUNT(*)::int AS playcount ",
+            dataSource, start, end);
+        sql += GetEntityFilterSql(null, null);
+        sql += " AND album_name IS NOT NULL GROUP BY album_name ORDER BY playcount DESC, album_name ";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        return (await connection.QueryAsync<UserAlbum>(sql, new
+        {
+            userId,
+            artistName,
+            start,
+            end
+        })).ToList();
+    }
+
     private static string GetEntityFilterSql(string albumName, string trackName)
     {
         var sql = " AND UPPER(artist_name) = UPPER(CAST(@artistName AS CITEXT)) ";

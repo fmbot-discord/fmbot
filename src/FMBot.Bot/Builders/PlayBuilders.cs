@@ -1103,7 +1103,7 @@ public class PlayBuilder
         var allTime = timeSettings.TimePeriod == TimePeriod.AllTime;
 
         Task<UserPlayHistory> playHistoryTask = null;
-        if (context.ContextUser.UserType != UserType.User)
+        if (context.ContextUser.UserType != UserType.User && userSettings.UserType != UserType.User)
         {
             playHistoryTask = this._playService.GetUserPlayHistory(userSettings.UserId,
                 allTime ? null : timeSettings.StartDateTime, allTime ? null : timeSettings.EndDateTime);

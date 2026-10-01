@@ -80,7 +80,7 @@ public class AlbumCommands(
         "albumplays The Slow Rush 2024")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Albums)]
-    [SupporterEnhanced("Supporters get a graph of their listening history for the album and can see their plays for a specific time period")]
+    [SupporterEnhanced("Supporters get a graph of their listening history for the album and can see their plays for time periods older than two months")]
     public async Task AlbumPlaysAsync([CommandParameter(Remainder = true)] string albumValues = null)
     {
         _ = this.Context.Channel?.TriggerTypingAsync()!;

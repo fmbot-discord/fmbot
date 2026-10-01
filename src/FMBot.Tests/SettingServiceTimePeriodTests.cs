@@ -489,4 +489,28 @@ public class SettingServiceTimePeriodTests
         Assert.That(SettingService.NameContainsPeriodWords(searchValue, searchValueWithoutPeriod, names),
             Is.EqualTo(expected));
     }
+
+    [Test]
+    [TestCase(0L, 3L, 4200L, 2_100_000L, true)]
+    [TestCase(5000L, 2_500_000L, 0L, 90_000L, false)]
+    [TestCase(0L, 2_500_000L, 0L, 90_000L, false)]
+    [TestCase(0L, 12L, 0L, 1_800_000L, true)]
+    [TestCase(30L, 40_000L, 2L, 900_000L, false)]
+    [TestCase(null, 12L, null, 1_800_000L, true)]
+    public void PeriodMatchIsBetter_PrefersUserPlaysThenListeners(long? namePlays, long nameListeners,
+        long? periodPlays, long periodListeners, bool expected)
+    {
+        var nameMatch = new ArtistInfo { UserPlaycount = namePlays, TotalListeners = nameListeners };
+        var periodMatch = new ArtistInfo { UserPlaycount = periodPlays, TotalListeners = periodListeners };
+
+        Assert.That(SettingService.PeriodMatchIsBetter(nameMatch, periodMatch), Is.EqualTo(expected));
+    }
+
+    [Test]
+    public void PeriodMatchIsBetter_NoPeriodMatch_KeepsName()
+    {
+        var nameMatch = new ArtistInfo { UserPlaycount = 0, TotalListeners = 3 };
+
+        Assert.That(SettingService.PeriodMatchIsBetter(nameMatch, null), Is.False);
+    }
 }

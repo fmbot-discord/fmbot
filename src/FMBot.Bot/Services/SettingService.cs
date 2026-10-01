@@ -81,6 +81,21 @@ public class SettingService
         return periodWords.Count > 0 && periodWords.All(nameWords.Contains);
     }
 
+    public static bool PeriodMatchIsBetter(ArtistInfo nameMatch, ArtistInfo periodMatch)
+    {
+        if (periodMatch == null)
+        {
+            return false;
+        }
+
+        var namePlays = nameMatch.UserPlaycount.GetValueOrDefault();
+        var periodPlays = periodMatch.UserPlaycount.GetValueOrDefault();
+
+        return periodPlays != namePlays
+            ? periodPlays > namePlays
+            : periodMatch.TotalListeners > nameMatch.TotalListeners;
+    }
+
     public static (Language? Language, string NewSearchValue) GetLanguage(string extraOptions)
     {
         if (string.IsNullOrWhiteSpace(extraOptions))
