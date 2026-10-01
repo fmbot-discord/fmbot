@@ -67,6 +67,7 @@ public class AlbumCommands(
     [Command("albumplays", "abp", "albumplay", "abplays", "albump")]
     [Summary("Shows playcount for current album or the one you're searching for.\n\n" +
              "You can also mention another user to see their playcount.")]
+    [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample)]
     [Examples(
         "abp",
         "albumplays",
@@ -74,10 +75,12 @@ public class AlbumCommands(
         "albumplays lfm:fm-bot",
         "albumplays The Slow Rush",
         "abp The Beatles | Yesterday",
-        "abp The Beatles | Yesterday @user")]
+        "abp The Beatles | Yesterday @user",
+        "abp monthly",
+        "albumplays The Slow Rush 2024")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Albums)]
-    [SupporterEnhanced("Supporters get a graph of their listening history for the album")]
+    [SupporterEnhanced("Supporters get a graph of their listening history for the album and can see their plays for a specific time period")]
     public async Task AlbumPlaysAsync([CommandParameter(Remainder = true)] string albumValues = null)
     {
         _ = this.Context.Channel?.TriggerTypingAsync()!;
@@ -86,8 +89,11 @@ public class AlbumCommands(
         var userSettings = await settingService.GetUser(albumValues, contextUser, this.Context);
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
+        var period = SettingService.GetPlaysTimePeriod(userSettings.NewSearchValue, userSettings.TimeZone,
+            LocalizationService.GetLanguage(this.Context.Guild?.Id, this.Context.Guild?.PreferredLocale));
+
         var response = await albumBuilders.AlbumPlaysAsync(new ContextModel(this.Context, prfx, contextUser),
-            userSettings, userSettings.NewSearchValue);
+            userSettings, period.SearchValue, period.TimeSettings, period.SearchValueWithoutPeriod);
 
         await this.Context.SendResponse(this.Interactivity, response, userService);
         await this.Context.LogCommandUsedAsync(response, userService);

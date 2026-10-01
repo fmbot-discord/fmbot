@@ -30,6 +30,9 @@
         "album": {
           "description": "Albumet du vill söka efter (standard: det som spelas nu)"
         },
+        "time-period": {
+          "description": "Tidsperiod att visa plays för (endast för supporters)"
+        },
         "user": {
           "description": "Användaren som ska visas (standard: du själv)"
         }
@@ -130,6 +133,9 @@
         },
         "redirects": {
           "description": "Slå av/på Last.fm-omdirigering av artistnamn (standard: på)"
+        },
+        "time-period": {
+          "description": "Tidsperiod att visa plays för (endast för supporters)"
         },
         "user": {
           "description": "Användaren som ska visas (standard: du själv)"
@@ -1177,6 +1183,9 @@
     "trackplays": {
       "description": "Visar playcount för nuvarande låt eller den du söker efter",
       "parameters": {
+        "time-period": {
+          "description": "Tidsperiod att visa plays för (endast för supporters)"
+        },
         "track": {
           "description": "Låten du vill söka efter (standard: det som spelas nu)"
         },

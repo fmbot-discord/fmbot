@@ -167,15 +167,18 @@ public class ArtistCommands(
     [Command("artistplays", "ap")]
     [Summary("Shows playcount for current artist or the one you're searching for.\n\n" +
              "You can also mention another user to see their playcount.")]
+    [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample)]
     [Examples(
         "ap",
         "artistplays",
         "artistplays @user",
         "ap lfm:fm-bot",
-        "artistplays Mall Grab @user")]
+        "artistplays Mall Grab @user",
+        "ap weekly",
+        "artistplays Mall Grab 2025")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Artists)]
-    [SupporterEnhanced("Supporters get a graph of their listening history for the artist")]
+    [SupporterEnhanced("Supporters get a graph of their listening history for the artist and can see their plays for a specific time period")]
     public async Task ArtistPlaysAsync([CommandParameter(Remainder = true)] string artistValues = null)
     {
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
@@ -185,10 +188,12 @@ public class ArtistCommands(
         var userSettings = await settingService.GetUser(artistValues, contextUser, this.Context);
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
         var redirectsEnabled = SettingService.RedirectsEnabled(userSettings.NewSearchValue);
+        var period = SettingService.GetPlaysTimePeriod(redirectsEnabled.NewSearchValue, userSettings.TimeZone,
+            LocalizationService.GetLanguage(this.Context.Guild?.Id, this.Context.Guild?.PreferredLocale));
 
         var response = await artistBuilders.ArtistPlaysAsync(new ContextModel(this.Context, prfx, contextUser),
             userSettings,
-            redirectsEnabled.NewSearchValue, redirectsEnabled.Enabled);
+            period.SearchValue, redirectsEnabled.Enabled, period.TimeSettings, period.SearchValueWithoutPeriod);
 
         await this.Context.SendResponse(this.Interactivity, response, userService);
         await this.Context.LogCommandUsedAsync(response, userService);

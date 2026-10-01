@@ -30,6 +30,9 @@
         "album": {
           "description": "Album do wyszukania (domyślnie aktualnie odtwarzany)"
         },
+        "time-period": {
+          "description": "Okres, dla którego pokazać odtworzenia (tylko dla supporterów)"
+        },
         "user": {
           "description": "Użytkownik do wyświetlenia (domyślnie ty)"
         }
@@ -130,6 +133,9 @@
         },
         "redirects": {
           "description": "Przełącz przekierowania nazw artystów Last.fm (domyślnie włączone)"
+        },
+        "time-period": {
+          "description": "Okres, dla którego pokazać odtworzenia (tylko dla supporterów)"
         },
         "user": {
           "description": "Użytkownik do wyświetlenia (domyślnie ty)"
@@ -1177,6 +1183,9 @@
     "trackplays": {
       "description": "Pokazuje liczbę odtworzeń obecnego utworu lub tego, którego szukasz",
       "parameters": {
+        "time-period": {
+          "description": "Okres, dla którego pokazać odtworzenia (tylko dla supporterów)"
+        },
         "track": {
           "description": "Utwór do wyszukania (domyślnie aktualnie odtwarzany)"
         },

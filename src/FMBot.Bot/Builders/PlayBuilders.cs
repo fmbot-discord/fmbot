@@ -1133,7 +1133,8 @@ public class PlayBuilder
             ? await this._graphService.BuildPlayHistoryGraph(context, response, playHistory.DailyPlays,
                 "plays.png", height: GraphExtensions.CompactGraphHeight,
                 windowFrom: allTime ? null : timeSettings.StartDateTime,
-                windowUntil: allTime ? null : timeSettings.EndDateTime)
+                windowUntil: allTime ? null : timeSettings.EndDateTime,
+                windowTimeZone: userSettings.TimeZone)
             : null;
 
         if (playHistoryGraph != null)

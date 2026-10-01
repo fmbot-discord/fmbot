@@ -1674,18 +1674,41 @@ public class ArtistBuilders
     public async Task<ResponseModel> ArtistPlaysAsync(ContextModel context,
         UserSettingsModel userSettings,
         string artistName,
-        bool redirectsEnabled)
+        bool redirectsEnabled,
+        TimeSettingsModel timeSettings = null,
+        string artistNameWithoutPeriod = null)
     {
         var response = new ResponseModel
         {
             ResponseType = ResponseType.ComponentsV2,
         };
 
-        var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, context.Localizer, artistName,
-            context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, userSettings.UserNameLastFm,
-            userId: context.ContextUser.UserId, redirectsEnabled: redirectsEnabled,
-            interactionId: context.InteractionId,
-            referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
+        Task<ArtistSearch> SearchArtist(ResponseModel searchResponse, string searchValue) =>
+            this._artistsService.SearchArtist(searchResponse, context.DiscordUser, context.Localizer, searchValue,
+                context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, userSettings.UserNameLastFm,
+                userId: context.ContextUser.UserId, redirectsEnabled: redirectsEnabled,
+                interactionId: context.InteractionId,
+                referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
+
+        var artistSearch = await SearchArtist(response, artistName);
+        if (artistNameWithoutPeriod != null)
+        {
+            if (artistSearch.Artist != null &&
+                SettingService.NameContainsPeriodWords(artistName, artistNameWithoutPeriod,
+                    artistSearch.Artist.ArtistName))
+            {
+                timeSettings = null;
+            }
+            else
+            {
+                response = new ResponseModel
+                {
+                    ResponseType = ResponseType.ComponentsV2,
+                };
+                artistSearch = await SearchArtist(response, artistNameWithoutPeriod);
+            }
+        }
+
         if (artistSearch.Artist == null)
         {
             artistSearch.Response.ResponseType = ResponseType.ComponentsV2;
@@ -1693,17 +1716,20 @@ public class ArtistBuilders
             return artistSearch.Response;
         }
 
+        var periodNote = await this._playService.GetPlaysPeriodUnavailableNote(context, userSettings, timeSettings);
+        if (periodNote != null)
+        {
+            timeSettings = null;
+        }
+
         Task<PlayHistorySummary> playHistoryTask = null;
         if (context.ContextUser.UserType != UserType.User && artistSearch.Artist.UserPlaycount > 0)
         {
             playHistoryTask = this._playService.GetArtistPlayHistory(userSettings.UserId,
-                artistSearch.Artist.ArtistName);
+                artistSearch.Artist.ArtistName, timeSettings?.StartDateTime, timeSettings?.EndDateTime);
         }
 
-        var reply = context.LocalizeCount("artist.plays.userPlays",
-            artistSearch.Artist.UserPlaycount.GetValueOrDefault(),
-            ("user", $"{StringExtensions.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()}"),
-            ("artist", StringExtensions.Sanitize(artistSearch.Artist.ArtistName)));
+        var userTitle = $"{StringExtensions.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()}";
 
         if (userSettings.DifferentUser)
         {
@@ -1712,20 +1738,48 @@ public class ArtistBuilders
 
         var playHistory = playHistoryTask != null ? await playHistoryTask : null;
 
-        (int week, int month) recentArtistPlaycounts = playHistory != null
-            ? (playHistory.WeekPlays, playHistory.MonthPlays)
-            : await this._playService.GetRecentArtistPlaycounts(userSettings.UserId, artistSearch.Artist.ArtistName);
-
-        if (recentArtistPlaycounts.month != 0)
+        string reply;
+        if (timeSettings != null)
         {
-            reply += $"\n{context.Localize("shared.recentWeekMonthPlays",
-                ("week", context.LocalizeCount("shared.plays", recentArtistPlaycounts.week)),
-                ("month", context.LocalizeCount("shared.plays", recentArtistPlaycounts.month)))}";
+            var periodPlays = playHistory?.DailyPlays.Sum(s => s.Plays) ?? 0;
+            reply = context.LocalizeCount("artist.plays.userPlaysInPeriod",
+                periodPlays,
+                ("user", userTitle),
+                ("artist", StringExtensions.Sanitize(artistSearch.Artist.ArtistName)),
+                ("period", context.Localizer.AltPeriodLabel(timeSettings)));
+
+            reply += $"\n{PlayService.GetPeriodPlaysFooter(context, timeSettings, periodPlays,
+                artistSearch.Artist.UserPlaycount.GetValueOrDefault())}";
+        }
+        else
+        {
+            reply = context.LocalizeCount("artist.plays.userPlays",
+                artistSearch.Artist.UserPlaycount.GetValueOrDefault(),
+                ("user", userTitle),
+                ("artist", StringExtensions.Sanitize(artistSearch.Artist.ArtistName)));
+
+            (int week, int month) recentArtistPlaycounts = playHistory != null
+                ? (playHistory.WeekPlays, playHistory.MonthPlays)
+                : await this._playService.GetRecentArtistPlaycounts(userSettings.UserId, artistSearch.Artist.ArtistName);
+
+            if (recentArtistPlaycounts.month != 0)
+            {
+                reply += $"\n{context.Localize("shared.recentWeekMonthPlays",
+                    ("week", context.LocalizeCount("shared.plays", recentArtistPlaycounts.week)),
+                    ("month", context.LocalizeCount("shared.plays", recentArtistPlaycounts.month)))}";
+            }
+        }
+
+        if (periodNote != null)
+        {
+            reply += $"\n{periodNote}";
         }
 
         var playHistoryGraph = playHistory != null
             ? await this._graphService.BuildPlayHistoryGraph(context, response, playHistory.DailyPlays,
-                "artist-plays.png", height: GraphExtensions.CompactGraphHeight)
+                "artist-plays.png", height: GraphExtensions.CompactGraphHeight,
+                windowFrom: timeSettings?.StartDateTime, windowUntil: timeSettings?.EndDateTime,
+                windowTimeZone: userSettings.TimeZone)
             : null;
 
         response.TopLevelComponents.Add(new TextDisplayProperties(reply));

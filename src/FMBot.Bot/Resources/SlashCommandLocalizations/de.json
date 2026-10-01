@@ -30,6 +30,9 @@
         "album": {
           "description": "Das Album, das du suchst (Standard: was gerade läuft)"
         },
+        "time-period": {
+          "description": "Zeitraum, für den Plays angezeigt werden (nur für Supporter)"
+        },
         "user": {
           "description": "Der anzuzeigende Nutzer (standardmäßig du selbst)"
         }
@@ -130,6 +133,9 @@
         },
         "redirects": {
           "description": "Last.fm-Weiterleitungen für Künstlernamen umschalten (Standard: aktiviert)"
+        },
+        "time-period": {
+          "description": "Zeitraum, für den Plays angezeigt werden (nur für Supporter)"
         },
         "user": {
           "description": "Der anzuzeigende Nutzer (standardmäßig du selbst)"
@@ -1177,6 +1183,9 @@
     "trackplays": {
       "description": "Zeigt den Playcount für den aktuellen oder gesuchten Track",
       "parameters": {
+        "time-period": {
+          "description": "Zeitraum, für den Plays angezeigt werden (nur für Supporter)"
+        },
         "track": {
           "description": "Der Track, den du suchst (Standard: was gerade läuft)"
         },

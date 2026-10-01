@@ -30,6 +30,9 @@
         "album": {
           "description": "Het album dat je zoekt (standaard wat je nu speelt)"
         },
+        "time-period": {
+          "description": "Periode om plays voor te tonen (alleen voor supporters)"
+        },
         "user": {
           "description": "De gebruiker om te tonen (standaard jijzelf)"
         }
@@ -130,6 +133,9 @@
         },
         "redirects": {
           "description": "Schakel Last.fm-artiestnaamredirects in of uit (standaard aan)"
+        },
+        "time-period": {
+          "description": "Periode om plays voor te tonen (alleen voor supporters)"
         },
         "user": {
           "description": "De gebruiker om te tonen (standaard jijzelf)"
@@ -1177,6 +1183,9 @@
     "trackplays": {
       "description": "Toont het aantal plays voor de huidige track of de track die je zoekt",
       "parameters": {
+        "time-period": {
+          "description": "Periode om plays voor te tonen (alleen voor supporters)"
+        },
         "track": {
           "description": "De track die je zoekt (standaard wat je nu speelt)"
         },

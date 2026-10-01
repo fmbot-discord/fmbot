@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Security.Cryptography;
-using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
@@ -13,11 +12,8 @@ using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
-using IF.Lastfm.Core.Api.Enums;
 using Microsoft.EntityFrameworkCore;
 using NetCord.Services.Commands;
-using NetCord.Gateway;
-using DiscordGuild = NetCord.Gateway.Guild;
 
 namespace FMBot.Bot.Services;
 
@@ -42,6 +38,48 @@ public class SettingService
         Language language = Language.English) =>
         Core.TimePeriodParser.GetTimePeriod(options, defaultTimePeriod, registeredLastFm, cachedOnly, dailyTimePeriods,
             timeZone, language);
+
+    public static (string SearchValue, string SearchValueWithoutPeriod, TimeSettingsModel TimeSettings)
+        GetPlaysTimePeriod(string options, string timeZone, Language language)
+    {
+        var timeSettings = GetTimePeriod(options, TimePeriod.AllTime, timeZone: timeZone, language: language);
+
+        if (timeSettings.DefaultPicked)
+        {
+            return (options, null, null);
+        }
+
+        var allTime = timeSettings.TimePeriod == TimePeriod.AllTime;
+
+        if (string.IsNullOrWhiteSpace(timeSettings.NewSearchValue))
+        {
+            return (null, null, allTime ? null : timeSettings);
+        }
+
+        return allTime
+            ? (options, null, null)
+            : (options, timeSettings.NewSearchValue, timeSettings);
+    }
+
+    public static bool NameContainsPeriodWords(string searchValue, string searchValueWithoutPeriod,
+        params string[] names)
+    {
+        var remainingWords = searchValueWithoutPeriod
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var periodWords = searchValue
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Where(w => !remainingWords.Contains(w))
+            .ToList();
+
+        var nameWords = names
+            .Where(w => w != null)
+            .SelectMany(s => Regex.Split(s, @"[^\p{L}\p{N}]+"))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        return periodWords.Count > 0 && periodWords.All(nameWords.Contains);
+    }
 
     public static (Language? Language, string NewSearchValue) GetLanguage(string extraOptions)
     {

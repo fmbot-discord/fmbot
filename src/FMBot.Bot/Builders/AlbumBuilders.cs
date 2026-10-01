@@ -1350,18 +1350,41 @@ public class AlbumBuilders
     public async Task<ResponseModel> AlbumPlaysAsync(
         ContextModel context,
         UserSettingsModel userSettings,
-        string searchValue)
+        string searchValue,
+        TimeSettingsModel timeSettings = null,
+        string searchValueWithoutPeriod = null)
     {
         var response = new ResponseModel
         {
             ResponseType = ResponseType.ComponentsV2,
         };
 
-        var albumSearch = await this._albumService.SearchAlbum(response, context.DiscordUser, context.Localizer, searchValue,
-            context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
-            otherUserUsername: userSettings.UserNameLastFm, userId: context.ContextUser.UserId,
-            interactionId: context.InteractionId,
-            referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
+        Task<AlbumSearch> SearchAlbum(ResponseModel searchResponse, string albumValues) =>
+            this._albumService.SearchAlbum(searchResponse, context.DiscordUser, context.Localizer, albumValues,
+                context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
+                otherUserUsername: userSettings.UserNameLastFm, userId: context.ContextUser.UserId,
+                interactionId: context.InteractionId,
+                referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
+
+        var albumSearch = await SearchAlbum(response, searchValue);
+        if (searchValueWithoutPeriod != null)
+        {
+            if (albumSearch.Album != null &&
+                SettingService.NameContainsPeriodWords(searchValue, searchValueWithoutPeriod,
+                    albumSearch.Album.AlbumName, albumSearch.Album.ArtistName))
+            {
+                timeSettings = null;
+            }
+            else
+            {
+                response = new ResponseModel
+                {
+                    ResponseType = ResponseType.ComponentsV2,
+                };
+                albumSearch = await SearchAlbum(response, searchValueWithoutPeriod);
+            }
+        }
+
         if (albumSearch.Album == null)
         {
             albumSearch.Response.ResponseType = ResponseType.ComponentsV2;
@@ -1369,18 +1392,21 @@ public class AlbumBuilders
             return albumSearch.Response;
         }
 
+        var periodNote = await this._playService.GetPlaysPeriodUnavailableNote(context, userSettings, timeSettings);
+        if (periodNote != null)
+        {
+            timeSettings = null;
+        }
+
         Task<PlayHistorySummary> playHistoryTask = null;
         if (context.ContextUser.UserType != UserType.User && albumSearch.Album.UserPlaycount > 0)
         {
             playHistoryTask = this._playService.GetAlbumPlayHistory(userSettings.UserId,
-                albumSearch.Album.ArtistName, albumSearch.Album.AlbumName);
+                albumSearch.Album.ArtistName, albumSearch.Album.AlbumName,
+                timeSettings?.StartDateTime, timeSettings?.EndDateTime);
         }
 
-        var reply = context.LocalizeCount("album.plays.userPlays",
-            albumSearch.Album.UserPlaycount.GetValueOrDefault(),
-            ("user", $"{StringExtensions.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()}"),
-            ("album", StringExtensions.Sanitize(albumSearch.Album.AlbumName)),
-            ("artist", StringExtensions.Sanitize(albumSearch.Album.ArtistName)));
+        var userTitle = $"{StringExtensions.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()}";
 
         if (albumSearch.Album.UserPlaycount.HasValue && !userSettings.DifferentUser)
         {
@@ -1396,21 +1422,51 @@ public class AlbumBuilders
 
         var playHistory = playHistoryTask != null ? await playHistoryTask : null;
 
-        (int week, int month) recentAlbumPlaycounts = playHistory != null
-            ? (playHistory.WeekPlays, playHistory.MonthPlays)
-            : await this._playService.GetRecentAlbumPlaycounts(userSettings.UserId, albumSearch.Album.AlbumName,
-                albumSearch.Album.ArtistName);
-
-        if (recentAlbumPlaycounts.month != 0)
+        string reply;
+        if (timeSettings != null)
         {
-            reply += $"\n{context.Localize("shared.recentWeekMonthPlays",
-                ("week", context.LocalizeCount("shared.plays", recentAlbumPlaycounts.week)),
-                ("month", context.LocalizeCount("shared.plays", recentAlbumPlaycounts.month)))}";
+            var periodPlays = playHistory?.DailyPlays.Sum(s => s.Plays) ?? 0;
+            reply = context.LocalizeCount("album.plays.userPlaysInPeriod",
+                periodPlays,
+                ("user", userTitle),
+                ("album", StringExtensions.Sanitize(albumSearch.Album.AlbumName)),
+                ("artist", StringExtensions.Sanitize(albumSearch.Album.ArtistName)),
+                ("period", context.Localizer.AltPeriodLabel(timeSettings)));
+
+            reply += $"\n{PlayService.GetPeriodPlaysFooter(context, timeSettings, periodPlays,
+                albumSearch.Album.UserPlaycount.GetValueOrDefault())}";
+        }
+        else
+        {
+            reply = context.LocalizeCount("album.plays.userPlays",
+                albumSearch.Album.UserPlaycount.GetValueOrDefault(),
+                ("user", userTitle),
+                ("album", StringExtensions.Sanitize(albumSearch.Album.AlbumName)),
+                ("artist", StringExtensions.Sanitize(albumSearch.Album.ArtistName)));
+
+            (int week, int month) recentAlbumPlaycounts = playHistory != null
+                ? (playHistory.WeekPlays, playHistory.MonthPlays)
+                : await this._playService.GetRecentAlbumPlaycounts(userSettings.UserId, albumSearch.Album.AlbumName,
+                    albumSearch.Album.ArtistName);
+
+            if (recentAlbumPlaycounts.month != 0)
+            {
+                reply += $"\n{context.Localize("shared.recentWeekMonthPlays",
+                    ("week", context.LocalizeCount("shared.plays", recentAlbumPlaycounts.week)),
+                    ("month", context.LocalizeCount("shared.plays", recentAlbumPlaycounts.month)))}";
+            }
+        }
+
+        if (periodNote != null)
+        {
+            reply += $"\n{periodNote}";
         }
 
         var playHistoryGraph = playHistory != null
             ? await this._graphService.BuildPlayHistoryGraph(context, response, playHistory.DailyPlays,
-                "album-plays.png", height: GraphExtensions.CompactGraphHeight)
+                "album-plays.png", height: GraphExtensions.CompactGraphHeight,
+                windowFrom: timeSettings?.StartDateTime, windowUntil: timeSettings?.EndDateTime,
+                windowTimeZone: userSettings.TimeZone)
             : null;
 
         response.TopLevelComponents.Add(new TextDisplayProperties(reply));

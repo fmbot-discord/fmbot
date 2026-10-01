@@ -30,6 +30,9 @@
         "album": {
           "description": "Aramak istediğin albüm (varsayılan: şu an çalan)"
         },
+        "time-period": {
+          "description": "Play'lerin gösterileceği zaman aralığı (yalnızca supporter'lar için)"
+        },
         "user": {
           "description": "Gösterilecek kullanıcı (varsayılan: sen)"
         }
@@ -130,6 +133,9 @@
         },
         "redirects": {
           "description": "Last.fm sanatçı adı yönlendirmelerini aç/kapat (varsayılan: açık)"
+        },
+        "time-period": {
+          "description": "Play'lerin gösterileceği zaman aralığı (yalnızca supporter'lar için)"
         },
         "user": {
           "description": "Gösterilecek kullanıcı (varsayılan: sen)"
@@ -1177,6 +1183,9 @@
     "trackplays": {
       "description": "Mevcut parçanın veya aradığın parçanın play sayısını gösterir",
       "parameters": {
+        "time-period": {
+          "description": "Play'lerin gösterileceği zaman aralığı (yalnızca supporter'lar için)"
+        },
         "track": {
           "description": "Aramak istediğin parça (varsayılan: şu an çalan)"
         },

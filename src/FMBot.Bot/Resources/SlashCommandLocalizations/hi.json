@@ -30,6 +30,9 @@
         "album": {
           "description": "जो album तुम खोजना चाहते हो (डिफ़ॉल्ट: अभी बज रहा)"
         },
+        "time-period": {
+          "description": "किस समय अवधि के plays दिखाने हैं (सिर्फ़ supporters के लिए)"
+        },
         "user": {
           "description": "जिस यूज़र का डेटा दिखाना है (डिफ़ॉल्ट: तुम खुद)"
         }
@@ -130,6 +133,9 @@
         },
         "redirects": {
           "description": "Last.fm artist नाम रीडायरेक्ट चालू/बंद करो (डिफ़ॉल्ट: चालू)"
+        },
+        "time-period": {
+          "description": "किस समय अवधि के plays दिखाने हैं (सिर्फ़ supporters के लिए)"
         },
         "user": {
           "description": "जिस यूज़र का डेटा दिखाना है (डिफ़ॉल्ट: तुम खुद)"
@@ -1177,6 +1183,9 @@
     "trackplays": {
       "description": "मौजूदा track या खोजे गए track का playcount दिखाता है",
       "parameters": {
+        "time-period": {
+          "description": "किस समय अवधि के plays दिखाने हैं (सिर्फ़ supporters के लिए)"
+        },
         "track": {
           "description": "जो track तुम खोजना चाहते हो (डिफ़ॉल्ट: अभी बज रहा)"
         },

@@ -1117,9 +1117,10 @@ public class PlayService
         return (connection, importUser?.DataSource ?? DataSource.LastFm);
     }
 
-    public async Task<PlayHistorySummary> GetArtistPlayHistory(int userId, string artistName)
+    public async Task<PlayHistorySummary> GetArtistPlayHistory(int userId, string artistName,
+        DateTime? from = null, DateTime? until = null)
     {
-        return await GetEntityPlayHistory(userId, artistName, null, null);
+        return await GetEntityPlayHistory(userId, artistName, null, null, from, until);
     }
 
     public async Task<DateTime?> GetAlbumFirstPlayDate(int userId, string artistName, string albumName)
@@ -1137,19 +1138,90 @@ public class PlayService
         }
     }
 
-    public async Task<PlayHistorySummary> GetAlbumPlayHistory(int userId, string artistName, string albumName)
+    public async Task<PlayHistorySummary> GetAlbumPlayHistory(int userId, string artistName, string albumName,
+        DateTime? from = null, DateTime? until = null)
     {
         if (albumName == null)
         {
             return new PlayHistorySummary();
         }
 
-        return await GetEntityPlayHistory(userId, artistName, albumName, null);
+        return await GetEntityPlayHistory(userId, artistName, albumName, null, from, until);
     }
 
-    public async Task<PlayHistorySummary> GetTrackPlayHistory(int userId, string artistName, string trackName)
+    public async Task<PlayHistorySummary> GetTrackPlayHistory(int userId, string artistName, string trackName,
+        DateTime? from = null, DateTime? until = null)
     {
-        return await GetEntityPlayHistory(userId, artistName, null, trackName);
+        return await GetEntityPlayHistory(userId, artistName, null, trackName, from, until);
+    }
+
+    public async Task<DateTime> GetNonSupporterHistoryStart(int userId)
+    {
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        var storedPlays = await PlayRepository.GetStoredLastFmPlays(userId, connection);
+        var retentionStart = DateTime.UtcNow.Date.AddMonths(-12);
+
+        return storedPlays.Plays >= Constants.NonSupporterMaxSavedPlayPages * 1000 &&
+               storedPlays.Oldest > retentionStart
+            ? storedPlays.Oldest.Value
+            : retentionStart;
+    }
+
+    public static string GetPeriodPlaysFooter(ContextModel context, TimeSettingsModel timeSettings, int periodPlays,
+        long alltimePlays)
+    {
+        var plays = context.LocalizeCount("shared.plays", alltimePlays);
+        var now = DateTime.UtcNow;
+        var end = timeSettings.EndDateTime.HasValue && timeSettings.EndDateTime.Value < now
+            ? timeSettings.EndDateTime.Value
+            : now;
+        var days = (end - timeSettings.StartDateTime.GetValueOrDefault(end)).TotalDays;
+
+        if (periodPlays == 0 || days < 2)
+        {
+            return context.Localize("shared.alltimePlays", ("plays", plays));
+        }
+
+        string Average(double units) => Math.Round(periodPlays / units, 1).Format(context.NumberFormat);
+
+        return days switch
+        {
+            <= 62 => context.Localize("shared.avgPerDayAlltimePlays", ("avg", Average(days)), ("plays", plays)),
+            <= 366 => context.Localize("shared.avgPerMonthAlltimePlays", ("avg", Average(days / 30.44)),
+                ("plays", plays)),
+            _ => context.Localize("shared.avgPerYearAlltimePlays", ("avg", Average(days / 365.25)), ("plays", plays))
+        };
+    }
+
+    public async Task<string> GetPlaysPeriodUnavailableNote(ContextModel context, UserSettingsModel userSettings,
+        TimeSettingsModel timeSettings)
+    {
+        if (timeSettings == null)
+        {
+            return null;
+        }
+
+        if (!SupporterService.IsSupporter(context.ContextUser.UserType))
+        {
+            return context.Localize("shared.playsPeriodSupporterPromo", ("url", Constants.GetSupporterOverviewLink));
+        }
+
+        if (SupporterService.IsSupporter(userSettings.UserType))
+        {
+            return null;
+        }
+
+        var historyStart = await GetNonSupporterHistoryStart(userSettings.UserId);
+        if (timeSettings.StartDateTime >= historyStart)
+        {
+            return null;
+        }
+
+        return context.Localize("shared.playsPeriodNotStored",
+            ("user", StringExtensions.Sanitize(userSettings.DisplayName)),
+            ("date", $"<t:{((DateTimeOffset)historyStart).ToUnixTimeSeconds()}:D>"));
     }
 
     public async Task<UserPlayHistory> GetUserPlayHistory(int userId, DateTime? from = null, DateTime? until = null)
@@ -1184,7 +1256,7 @@ public class PlayService
     }
 
     private async Task<PlayHistorySummary> GetEntityPlayHistory(int userId, string artistName, string albumName,
-        string trackName)
+        string trackName, DateTime? from, DateTime? until)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
@@ -1199,7 +1271,7 @@ public class PlayService
         var lastPlayCutoff = lastPlayTime - LastListenedExclusionWindow;
 
         var days = await PlayRepository.GetUserPlayDays(userId, connection, dataSource, artistName, albumName,
-            trackName, weekAgo, monthAgo, lastPlayCutoff);
+            trackName, weekAgo, monthAgo, lastPlayCutoff, from, until);
 
         if (days.Count == 0)
         {

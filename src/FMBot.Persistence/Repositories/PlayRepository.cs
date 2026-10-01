@@ -398,6 +398,20 @@ ORDER BY time_played DESC;";
         });
     }
 
+    public record StoredPlays(int Plays, DateTime? Oldest);
+
+    public static async Task<StoredPlays> GetStoredLastFmPlays(int userId, NpgsqlConnection connection)
+    {
+        var sql = GetUserPlaysSqlString("SELECT COUNT(*)::int AS plays, MIN(time_played) AS oldest ",
+            DataSource.LastFm);
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        return await connection.QueryFirstAsync<StoredPlays>(sql, new
+        {
+            userId
+        });
+    }
+
     private static string GetEntityFilterSql(string albumName, string trackName)
     {
         var sql = " AND UPPER(artist_name) = UPPER(CAST(@artistName AS CITEXT)) ";

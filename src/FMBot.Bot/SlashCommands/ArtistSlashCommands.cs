@@ -97,6 +97,9 @@ public class ArtistSlashCommands(
         [SlashCommandParameter(Name = "artist", Description = "The artist you want to search for (defaults to currently playing)",
             AutocompleteProviderType = typeof(ArtistAutoComplete))]
         string name = null,
+        [SlashCommandParameter(Name = "time-period", Description = "Time period to show plays for (supporters only)",
+            AutocompleteProviderType = typeof(DateTimeAutoComplete))]
+        string timePeriod = null,
         [SlashCommandParameter(Name = "redirects", Description = "Toggle Last.fm artist name redirects (defaults to enabled)")]
         bool redirectsEnabled = true,
         [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
@@ -109,7 +112,10 @@ public class ArtistSlashCommands(
 
         try
         {
-            var response = await artistBuilders.ArtistPlaysAsync(new ContextModel(this.Context, contextUser), userSettings, name, redirectsEnabled);
+            var timeSettings = SettingService.GetPlaysTimePeriod(timePeriod, userSettings.TimeZone,
+                LocalizationService.GetLanguage(this.Context.Interaction.GuildId, this.Context.Interaction.GuildLocale)).TimeSettings;
+
+            var response = await artistBuilders.ArtistPlaysAsync(new ContextModel(this.Context, contextUser), userSettings, name, redirectsEnabled, timeSettings);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);

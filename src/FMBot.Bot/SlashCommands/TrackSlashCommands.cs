@@ -193,6 +193,9 @@ public class TrackSlashCommands(
             Description = "The track you want to search for (defaults to currently playing)",
             AutocompleteProviderType = typeof(TrackAutoComplete))]
         string name = null,
+        [SlashCommandParameter(Name = "time-period", Description = "Time period to show plays for (supporters only)",
+            AutocompleteProviderType = typeof(DateTimeAutoComplete))]
+        string timePeriod = null,
         [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
         string user = null)
     {
@@ -204,8 +207,11 @@ public class TrackSlashCommands(
 
         try
         {
+            var timeSettings = SettingService.GetPlaysTimePeriod(timePeriod, userSettings.TimeZone,
+                LocalizationService.GetLanguage(this.Context.Interaction.GuildId, this.Context.Interaction.GuildLocale)).TimeSettings;
+
             var response =
-                await trackBuilders.TrackPlays(new ContextModel(this.Context, contextUser), userSettings, name);
+                await trackBuilders.TrackPlays(new ContextModel(this.Context, contextUser), userSettings, name, timeSettings);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);

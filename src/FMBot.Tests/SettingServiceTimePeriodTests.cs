@@ -396,4 +396,97 @@ public class SettingServiceTimePeriodTests
     {
         Assert.That(SettingService.GetAmount(options!, 8, 20), Is.EqualTo(expected));
     }
+
+    [Test]
+    [TestCase(null, null)]
+    [TestCase("radiohead", "radiohead")]
+    [TestCase("system of a down", "system of a down")]
+    [TestCase("panic at the disco", "panic at the disco")]
+    public void GetPlaysTimePeriod_NoPeriodOrAllTimeWordInName_KeepsSearchWithoutPeriod(string? options,
+        string? expectedSearch)
+    {
+        var result = SettingService.GetPlaysTimePeriod(options!, null, Language.English);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.SearchValue, Is.EqualTo(expectedSearch));
+            Assert.That(result.SearchValueWithoutPeriod, Is.Null);
+            Assert.That(result.TimeSettings, Is.Null);
+        });
+    }
+
+    [Test]
+    [TestCase("a")]
+    [TestCase("at")]
+    [TestCase("alltime")]
+    public void GetPlaysTimePeriod_OnlyAllTime_UsesCurrentWithoutPeriod(string options)
+    {
+        var result = SettingService.GetPlaysTimePeriod(options, null, Language.English);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.SearchValue, Is.Null);
+            Assert.That(result.TimeSettings, Is.Null);
+        });
+    }
+
+    [Test]
+    [TestCase("weekly", TimePeriod.Weekly)]
+    [TestCase("m", TimePeriod.Monthly)]
+    public void GetPlaysTimePeriod_OnlyPeriod_UsesCurrentWithPeriod(string options, TimePeriod expectedPeriod)
+    {
+        var result = SettingService.GetPlaysTimePeriod(options, null, Language.English);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.SearchValue, Is.Null);
+            Assert.That(result.SearchValueWithoutPeriod, Is.Null);
+            Assert.That(result.TimeSettings?.TimePeriod, Is.EqualTo(expectedPeriod));
+            Assert.That(result.TimeSettings?.StartDateTime, Is.Not.Null);
+        });
+    }
+
+    [Test]
+    public void GetPlaysTimePeriod_OnlyYear_UsesCurrentWithCalendarYear()
+    {
+        var result = SettingService.GetPlaysTimePeriod("2024", null, Language.English);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.SearchValue, Is.Null);
+            Assert.That(result.TimeSettings?.StartDateTime, Is.EqualTo(new DateTime(2024, 1, 1)));
+            Assert.That(result.TimeSettings?.EndDateTime, Is.EqualTo(new DateTime(2025, 1, 1).AddSeconds(-1)));
+        });
+    }
+
+    [Test]
+    [TestCase("Drake 2025", "drake")]
+    [TestCase("Green Day", "green")]
+    [TestCase("Mall Grab weekly", "mall grab")]
+    public void GetPlaysTimePeriod_NameAndPeriod_KeepsBothSearchValues(string options, string expectedWithoutPeriod)
+    {
+        var result = SettingService.GetPlaysTimePeriod(options, null, Language.English);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.SearchValue, Is.EqualTo(options));
+            Assert.That(result.SearchValueWithoutPeriod, Is.EqualTo(expectedWithoutPeriod));
+            Assert.That(result.TimeSettings, Is.Not.Null);
+        });
+    }
+
+    [Test]
+    [TestCase("green day", "green", new[] { "Green Day" }, true)]
+    [TestCase("the 1975", "the", new[] { "The 1975" }, true)]
+    [TestCase("schoolboy q", "schoolboy", new[] { "ScHoolboy Q" }, true)]
+    [TestCase("taylor swift 1989", "taylor swift", new[] { "1989 (Taylor's Version)", "Taylor Swift" }, true)]
+    [TestCase("drake 2025", "drake", new[] { "Drake" }, false)]
+    [TestCase("utopia july 2025", "utopia", new[] { "UTOPIA", "Travis Scott" }, false)]
+    [TestCase("utopia july 2025", "utopia", new[] { "UTOPIA July", "Travis Scott" }, false)]
+    public void NameContainsPeriodWords_MatchesWholeWordsInResolvedNames(string searchValue,
+        string searchValueWithoutPeriod, string[] names, bool expected)
+    {
+        Assert.That(SettingService.NameContainsPeriodWords(searchValue, searchValueWithoutPeriod, names),
+            Is.EqualTo(expected));
+    }
 }

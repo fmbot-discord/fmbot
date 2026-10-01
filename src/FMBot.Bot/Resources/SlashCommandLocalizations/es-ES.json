@@ -30,6 +30,9 @@
         "album": {
           "description": "El álbum que quieres buscar (por defecto, lo que estás escuchando)"
         },
+        "time-period": {
+          "description": "Periodo de los plays a mostrar (solo para supporters)"
+        },
         "user": {
           "description": "El usuario a mostrar (por defecto, tú)"
         }
@@ -130,6 +133,9 @@
         },
         "redirects": {
           "description": "Alternar redirecciones de nombres de artista de Last.fm (activadas por defecto)"
+        },
+        "time-period": {
+          "description": "Periodo de los plays a mostrar (solo para supporters)"
         },
         "user": {
           "description": "El usuario a mostrar (por defecto, tú)"
@@ -1177,6 +1183,9 @@
     "trackplays": {
       "description": "Muestra los plays de la canción actual o de la que estás buscando",
       "parameters": {
+        "time-period": {
+          "description": "Periodo de los plays a mostrar (solo para supporters)"
+        },
         "track": {
           "description": "La canción que quieres buscar (por defecto, lo que estás escuchando)"
         },
