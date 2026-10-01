@@ -120,10 +120,10 @@ public class IndexCommands(
         if (!updateType.optionPicked)
         {
             var initialResponse = UserBuilder.UpdatePlaysInit(new ContextModel(this.Context, prfx, contextUser));
+            var updateTask = userBuilder.UpdatePlays(new ContextModel(this.Context, prfx, contextUser)).ObserveFaults();
             var message = await this.Context.SendResponse(this.Interactivity, initialResponse, userService);
 
-            var updatedResponse =
-                await userBuilder.UpdatePlays(new ContextModel(this.Context, prfx, contextUser));
+            var updatedResponse = await updateTask;
 
             await message.ModifyAsync(m =>
             {
