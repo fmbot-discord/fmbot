@@ -493,7 +493,7 @@ public static class TimePeriodParser
         }
 
         var options = extraOptions.Split(' ');
-        foreach (var option in options)
+        foreach (var option in options.Reverse())
         {
             string cleaned;
             if (cleanSetter)

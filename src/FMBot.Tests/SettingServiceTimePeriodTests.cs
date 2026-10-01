@@ -363,6 +363,7 @@ public class SettingServiceTimePeriodTests
     [Test]
     [TestCase("Drake 2025", "drake")]
     [TestCase("Green Day", "green")]
+    [TestCase("the 1975 2020", "the 1975")]
     public void GetPlaysTimePeriod_NameAndPeriod_KeepsBothSearchValues(string options, string expectedWithoutPeriod)
     {
         var result = SettingService.GetPlaysTimePeriod(options, null, Language.English);
