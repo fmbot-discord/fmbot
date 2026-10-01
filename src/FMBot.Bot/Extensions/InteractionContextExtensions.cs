@@ -999,11 +999,7 @@ public static class InteractionContextExtensions
             InteractiveService interactiveService = null)
         {
             var hadPendingDefer = await context.EnsureDeferCompleted();
-            var componentMessage = (context.Interaction as MessageComponentInteraction)?.Message
-                                   ?? (context.Interaction as ModalInteraction)?.Message;
-            var singleCallback = defer && !hadPendingDefer && componentMessage != null &&
-                                 (response.Stream == null || response.Stream is { CanSeek: true, Length: <= 1_000_000 });
-            if (defer && !hadPendingDefer && !singleCallback)
+            if (defer && !hadPendingDefer)
             {
                 await context.Interaction.SendResponseAsync(InteractionCallback.DeferredModifyMessage);
             }
@@ -1029,29 +1025,33 @@ public static class InteractionContextExtensions
                 }
                 : [];
 
-            void ApplyEdit(MessageOptions m)
+            if (context.RespondsThroughInteraction(interactionEdit))
             {
-                m.Components = components;
-                m.Embeds = response.ResponseType == ResponseType.ComponentsV2 ? [] : [response.Embed];
-                m.Attachments = attachments;
-                m.AllowedMentions = AllowedMentionsProperties.None;
-                if (response.ResponseType == ResponseType.ComponentsV2)
+                await context.Interaction.ModifyResponseAsync(m =>
                 {
-                    m.Flags = MessageFlags.IsComponentsV2;
-                }
-            }
-
-            if (singleCallback)
-            {
-                await context.Interaction.SendResponseAsync(InteractionCallback.ModifyMessage(ApplyEdit));
-            }
-            else if (context.RespondsThroughInteraction(interactionEdit))
-            {
-                await context.Interaction.ModifyResponseAsync(ApplyEdit);
+                    m.Components = components;
+                    m.Embeds = response.ResponseType == ResponseType.ComponentsV2 ? [] : [response.Embed];
+                    m.Attachments = attachments;
+                    m.AllowedMentions = AllowedMentionsProperties.None;
+                    if (response.ResponseType == ResponseType.ComponentsV2)
+                    {
+                        m.Flags = MessageFlags.IsComponentsV2;
+                    }
+                });
             }
             else
             {
-                await message.ModifyAsync(ApplyEdit);
+                await message.ModifyAsync(m =>
+                {
+                    m.Components = components;
+                    m.Embeds = response.ResponseType == ResponseType.ComponentsV2 ? [] : [response.Embed];
+                    m.Attachments = attachments;
+                    m.AllowedMentions = AllowedMentionsProperties.None;
+                    if (response.ResponseType == ResponseType.ComponentsV2)
+                    {
+                        m.Flags = MessageFlags.IsComponentsV2;
+                    }
+                });
             }
         }
 
