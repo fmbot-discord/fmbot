@@ -467,6 +467,7 @@ message AppChannelChartRequest {
   bool hideSingles = 11;
   string releaseFilter = 12;
   repeated string genres = 13;
+  bool plays = 14;
 }
 
 message AppChannelChartReply {

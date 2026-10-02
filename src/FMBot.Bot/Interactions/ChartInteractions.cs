@@ -146,6 +146,7 @@ public class ChartInteractions(
                 sizeStr,
                 timePeriodValue,
                 checkedOptions.Contains("titles"),
+                checkedOptions.Contains("plays"),
                 checkedOptions.Contains("skip"),
                 checkedOptions.Contains("sfw"),
                 checkedOptions.Contains("rainbow"),

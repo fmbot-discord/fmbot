@@ -35,6 +35,14 @@ public class ChartService : ChartRenderer
         var splitOptions = optionsAsString?.Split(' ') ?? [];
         var cleanedOptions = optionsAsString;
 
+        var playsOptions = new[] { "playcounts", "plays", "pc" };
+        if (SettingService.Contains(optionsAsString, playsOptions))
+        {
+            cleanedOptions = SettingService.ContainsAndRemove(cleanedOptions, playsOptions);
+            chartSettings.TitleSetting = TitleSetting.TitlesWithPlays;
+            chartSettings.CustomOptionsEnabled = true;
+        }
+
         var noTitles = new[] { "notitles", "nt" };
         if (SettingService.Contains(optionsAsString, noTitles))
         {

@@ -43,6 +43,7 @@ public class ChartCommands(
         "Albums released in decade: `d:80s`, `decade:1990`",
         "Hide singles: `ns`, `nosingles`",
         "Disable titles: `notitles` / `nt`",
+        "Show playcounts: `plays` / `pc`",
         "Skip albums with no image: `skipemptyimages` / `s`",
         "Skip NSFW albums: `sfw`",
         "Size: `WidthxHeight` - `2x2`, `3x3`, `4x5`, `20x4` up to 100 total images",
@@ -109,6 +110,7 @@ public class ChartCommands(
     [Options(
         Constants.CompactTimePeriodList,
         "Disable titles: `notitles` / `nt`",
+        "Show playcounts: `plays` / `pc`",
         "Skip albums with no image: `skipemptyimages` / `s`",
         "Size: WidthxHeight - `2x2`, `3x3`, `4x5` up to `10x10`",
         Constants.UserMentionExample)]

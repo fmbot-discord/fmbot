@@ -182,7 +182,8 @@ public class ChartBuilders
             context.Localizer);
 
         var nsfwAllowed = context.DiscordChannel.NsfwAllowed(context.DiscordGuild);
-        using var chart = await this._chartService.GenerateChartAsync(chartSettings);
+        using var chart = await this._chartService.GenerateChartAsync(chartSettings,
+            count => context.LocalizeCount("shared.plays", count));
 
         if (chartSettings.CensoredItems is > 0)
         {
@@ -354,7 +355,8 @@ public class ChartBuilders
             context.Localizer);
 
         var nsfwAllowed = context.DiscordChannel.NsfwAllowed(context.DiscordGuild);
-        using var chart = await this._chartService.GenerateChartAsync(chartSettings);
+        using var chart = await this._chartService.GenerateChartAsync(chartSettings,
+            count => context.LocalizeCount("shared.plays", count));
 
         if (chartSettings.CensoredItems is > 0)
         {

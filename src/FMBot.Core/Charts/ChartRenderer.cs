@@ -97,7 +97,7 @@ public class ChartRenderer
         }
     }
 
-    public async Task<SKImage> GenerateChartAsync(ChartSettings chart)
+    public async Task<SKImage> GenerateChartAsync(ChartSettings chart, Func<long, string> playsLabel)
     {
         try
         {
@@ -105,6 +105,11 @@ public class ChartRenderer
             var chartImageHeight = cellSize;
             var chartImageWidth = cellSize;
             var scale = cellSize / (float)BaseCellSize;
+
+            string PlaysText(long? playcount) =>
+                chart.TitleSetting == TitleSetting.TitlesWithPlays && playcount.HasValue
+                    ? playsLabel(playcount.Value)
+                    : null;
 
             using var semaphore = new SemaphoreSlim(MaxConcurrentCoverLoads);
 
@@ -126,7 +131,8 @@ public class ChartRenderer
                             topName: chart.FilteredArtist == null ? album.ArtistName : album.AlbumName,
                             bottomName: chart.FilteredArtist == null ? album.AlbumName : null,
                             nsfw: cover.Nsfw,
-                            censored: cover.Censored);
+                            censored: cover.Censored,
+                            plays: PlaysText(album.UserPlaycount));
                     }
                     finally
                     {
@@ -158,7 +164,8 @@ public class ChartRenderer
                             cover.ValidImage,
                             topName: artist.ArtistName,
                             nsfw: cover.Nsfw,
-                            censored: cover.Censored);
+                            censored: cover.Censored,
+                            plays: PlaysText(artist.UserPlaycount));
                     }
                     finally
                     {
@@ -571,7 +578,8 @@ public class ChartRenderer
         string bottomName = null,
         string topName = null,
         bool nsfw = false,
-        bool censored = false)
+        bool censored = false,
+        string plays = null)
     {
         if (chartImage.Height != chartImageHeight || chartImage.Width != chartImageWidth)
         {
@@ -618,6 +626,13 @@ public class ChartRenderer
                 if (scale >= 0.4f)
                 {
                     AddTitleToChartImage(chartImage, scale, topName, bottomName);
+                }
+
+                break;
+            case TitleSetting.TitlesWithPlays:
+                if (scale >= 0.4f)
+                {
+                    AddFadeTitleToChartImage(chartImage, scale, topName, bottomName, plays);
                 }
 
                 break;
@@ -765,6 +780,81 @@ public class ChartRenderer
             bitmapCanvas.DrawShapedText(bottomName, (float)chartImage.Width / 2, yBottomName, SKTextAlign.Center, font,
                 textPaint);
         }
+    }
+
+    private void AddFadeTitleToChartImage(SKBitmap chartImage, float scale, string topName, string bottomName,
+        string plays)
+    {
+        var typeface = this._typeface.Value;
+
+        var fadeHeight = (bottomName != null ? 104 : 80) * scale;
+        var fadeTop = chartImage.Height - fadeHeight;
+
+        using var bitmapCanvas = new SKCanvas(chartImage);
+
+        using var fadeShader = SKShader.CreateLinearGradient(
+            new SKPoint(0, fadeTop),
+            new SKPoint(0, chartImage.Height),
+            [SKColors.Black.WithAlpha(0), SKColors.Black.WithAlpha(110), SKColors.Black.WithAlpha(170), SKColors.Black.WithAlpha(215)],
+            [0f, 0.35f, 0.65f, 1f],
+            SKShaderTileMode.Clamp);
+        using var fadePaint = new SKPaint { Shader = fadeShader };
+        bitmapCanvas.DrawRect(0, fadeTop, chartImage.Width, fadeHeight, fadePaint);
+
+        using var shadow = SKImageFilter.CreateDropShadow(0, 1 * scale, 2 * scale, 2 * scale,
+            SKColors.Black.WithAlpha(150));
+
+        using var topFont = new SKFont(typeface) { Size = 17 * scale };
+        using var bottomFont = new SKFont(typeface) { Size = 15 * scale };
+        using var playsFont = new SKFont(typeface) { Size = 13 * scale };
+
+        using var topPaint = new SKPaint { IsAntialias = true, Color = SKColors.White, ImageFilter = shadow };
+        using var bottomPaint = new SKPaint
+            { IsAntialias = true, Color = SKColors.White.WithAlpha(225), ImageFilter = shadow };
+        using var playsPaint = new SKPaint
+            { IsAntialias = true, Color = SKColors.White.WithAlpha(185), ImageFilter = shadow };
+
+        var left = 10 * scale;
+        var maxWidth = chartImage.Width - left * 2;
+        var y = chartImage.Height - 9 * scale;
+
+        if (plays != null)
+        {
+            playsFont.MeasureText("0", out var digitBounds, playsPaint);
+            bitmapCanvas.DrawShapedText(FitText(plays, playsFont, playsPaint, maxWidth), left, y, SKTextAlign.Left,
+                playsFont, playsPaint);
+            y -= digitBounds.Height + 8.5f * scale;
+        }
+
+        if (bottomName != null)
+        {
+            bottomFont.MeasureText("H", out var capBounds, bottomPaint);
+            bitmapCanvas.DrawShapedText(FitText(bottomName, bottomFont, bottomPaint, maxWidth), left, y,
+                SKTextAlign.Left, bottomFont, bottomPaint);
+            y -= capBounds.Height + 7.5f * scale;
+        }
+
+        if (topName != null)
+        {
+            bitmapCanvas.DrawShapedText(FitText(topName, topFont, topPaint, maxWidth), left, y, SKTextAlign.Left,
+                topFont, topPaint);
+        }
+    }
+
+    private static string FitText(string text, SKFont font, SKPaint paint, float maxWidth)
+    {
+        if (font.MeasureText(text, paint) <= maxWidth)
+        {
+            return text;
+        }
+
+        var length = font.BreakText(text, maxWidth - font.MeasureText("…", paint), paint);
+        if (length > 0 && char.IsHighSurrogate(text[length - 1]))
+        {
+            length--;
+        }
+
+        return $"{text[..length].TrimEnd()}…";
     }
 
     public static (ChartSettings newChartSettings, bool Changed) GetDimensions(ChartSettings chartSettings,
