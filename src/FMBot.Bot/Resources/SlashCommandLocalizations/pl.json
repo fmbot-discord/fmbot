@@ -749,6 +749,9 @@
         "amount": {
           "description": "Numer scrobbla kamienia milowego"
         },
+        "artist": {
+          "description": "Pokaż kamień milowy dla konkretnego artysty (tylko dla supporterów)"
+        },
         "user": {
           "description": "Użytkownik do wyświetlenia (domyślnie ty)"
         }

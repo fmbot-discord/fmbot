@@ -26,7 +26,8 @@ public class PlayInteractions(
     PlayService playService,
     RecapBuilders recapBuilders,
     InteractiveService interactivity,
-    IMemoryCache cache)
+    IMemoryCache cache,
+    ArtistsService artistsService)
     : ComponentInteractionModule<ComponentInteractionContext>
 {
     [ComponentInteraction(InteractionConstants.DeleteStreak)]
@@ -311,7 +312,7 @@ public class PlayInteractions(
 
     [ComponentInteraction(InteractionConstants.RandomMilestone)]
     [UsernameSetRequired]
-    public async Task RandomMilestoneAsync(string discordUser, string requesterDiscordUser)
+    public async Task RandomMilestoneAsync(string discordUser, string requesterDiscordUser, string artistId = null)
     {
         var discordUserId = ulong.Parse(discordUser);
         var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
@@ -330,16 +331,27 @@ public class PlayInteractions(
         var contextUser = await userService.GetUserWithDiscogs(requesterDiscordUserId);
         var userSettings = await settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId,
             this.Context.Guild, this.Context.User);
-        var targetUser = await userService.GetUserWithDiscogs(discordUserId);
 
         try
         {
-            var mileStoneAmount =
-                SettingService.GetMilestoneAmount("random", targetUser.TotalPlaycount.GetValueOrDefault());
+            ResponseModel response;
+            if (artistId != null)
+            {
+                var artist = await artistsService.GetArtistForId(int.Parse(artistId));
 
-            var response = await playBuilder.MileStoneAsync(new ContextModel(this.Context, contextUser),
-                userSettings, mileStoneAmount.amount, targetUser.TotalPlaycount.GetValueOrDefault(),
-                mileStoneAmount.isRandom);
+                response = await playBuilder.ArtistMilestoneAsync(new ContextModel(this.Context, contextUser),
+                    userSettings, artist.Name, "random");
+            }
+            else
+            {
+                var targetUser = await userService.GetUserWithDiscogs(discordUserId);
+                var mileStoneAmount =
+                    SettingService.GetMilestoneAmount("random", targetUser.TotalPlaycount.GetValueOrDefault());
+
+                response = await playBuilder.MileStoneAsync(new ContextModel(this.Context, contextUser),
+                    userSettings, mileStoneAmount.amount, targetUser.TotalPlaycount.GetValueOrDefault(),
+                    mileStoneAmount.isRandom);
+            }
 
             await disableButtonsTask;
             await this.Context.UpdateInteractionEmbed(response, interactivity, false);

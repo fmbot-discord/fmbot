@@ -749,6 +749,9 @@
         "amount": {
           "description": "Antal scrobbles för milstolpen"
         },
+        "artist": {
+          "description": "Visa en milstolpe för en specifik artist (endast supporters)"
+        },
         "user": {
           "description": "Användaren som ska visas (standard: du själv)"
         }

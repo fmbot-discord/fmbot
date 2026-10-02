@@ -890,6 +890,91 @@ public class SettingService
         return (goalAmount, isRandom);
     }
 
+    public static (string Amount, string ArtistName) GetArtistMilestoneOptions(string extraOptions)
+    {
+        if (string.IsNullOrWhiteSpace(extraOptions))
+        {
+            return (null, null);
+        }
+
+        var words = extraOptions.Split(' ', StringSplitOptions.RemoveEmptyEntries).ToList();
+
+        string amount = null;
+        if (IsMilestoneAmountWord(words[0]))
+        {
+            amount = words[0];
+            words.RemoveAt(0);
+        }
+        else if (IsMilestoneAmountWord(words[^1]))
+        {
+            amount = words[^1];
+            words.RemoveAt(words.Count - 1);
+        }
+
+        return (amount, words.Count > 0 ? string.Join(' ', words) : null);
+    }
+
+    public static (int amount, bool isRandom) GetArtistMilestoneAmount(string amount, int artistPlaycount)
+    {
+        var cleanedAmount = CleanMilestoneAmount(amount);
+        if (cleanedAmount is "random" or "rnd")
+        {
+            return (RandomNumberGenerator.GetInt32(1, artistPlaycount + 1), true);
+        }
+
+        var requestedAmount = ParseMilestoneNumber(cleanedAmount);
+        if (requestedAmount is > 0 && requestedAmount <= artistPlaycount)
+        {
+            return ((int)requestedAmount.Value, false);
+        }
+
+        foreach (var breakPoint in Constants.PlayCountBreakPoints.OrderByDescending(o => o))
+        {
+            if (artistPlaycount >= breakPoint)
+            {
+                return (breakPoint, false);
+            }
+        }
+
+        return (1, false);
+    }
+
+    private static bool IsMilestoneAmountWord(string word)
+    {
+        var cleanedWord = CleanMilestoneAmount(word);
+        return cleanedWord is "random" or "rnd" || ParseMilestoneNumber(cleanedWord).HasValue;
+    }
+
+    private static string CleanMilestoneAmount(string amount)
+    {
+        return amount?
+            .ToLower()
+            .Replace("(", "")
+            .Replace(")", "")
+            .Replace("*", "")
+            .Replace("`", "")
+            .Replace(",", "")
+            .Replace(".", "");
+    }
+
+    private static long? ParseMilestoneNumber(string cleanedAmount)
+    {
+        if (string.IsNullOrEmpty(cleanedAmount))
+        {
+            return null;
+        }
+
+        var thousands = cleanedAmount.EndsWith('k');
+        var number = thousands ? cleanedAmount[..^1] : cleanedAmount;
+
+        if (number.Length is 0 or > 9 || !number.All(char.IsAsciiDigit))
+        {
+            return null;
+        }
+
+        return long.Parse(number) * (thousands ? 1000 : 1);
+    }
+
     public static GuildRankingSettings SetGuildRankingSettings(GuildRankingSettings guildRankingSettings, string extraOptions)
     {
         var setGuildRankingSettings = guildRankingSettings;

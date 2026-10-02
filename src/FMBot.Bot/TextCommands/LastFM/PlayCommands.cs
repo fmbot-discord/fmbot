@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
@@ -32,7 +33,8 @@ public class PlayCommands(
     IOptions<BotSettings> botSettings,
     PlayBuilder playBuilder,
     GuildBuilders guildBuilders,
-    RecapBuilders recapBuilders)
+    RecapBuilders recapBuilders,
+    ArtistsService artistsService)
     : BaseCommandModule(botSettings)
 {
     private InteractiveService Interactivity { get; } = interactivity;
@@ -416,12 +418,14 @@ public class PlayCommands(
         }
     }
 
-    [Command("milestone", "m", "ms")]
+    [Command("milestone", "m", "ms", "artistmilestone", "ams")]
     [Summary("Shows a milestone scrobble")]
-    [Options("Optional milestone amount: For example `10000` or `10k`", Constants.UserMentionExample)]
-    [Examples("ms", "ms 10k", "milestone 500 @user", "milestone", "milestone @user 250k")]
+    [Options("Optional milestone amount: For example `10000` or `10k`", Constants.UserMentionExample,
+        "Optional artist name to see an artist milestone (supporters only)")]
+    [Examples("ms", "ms 10k", "milestone 500 @user", "milestone", "milestone @user 250k", "ms 1000 Radiohead", "ams")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Other)]
+    [SupporterEnhanced("Supporters can see milestones for a specific artist")]
     public async Task MilestoneAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
@@ -431,10 +435,24 @@ public class PlayCommands(
         try
         {
             var userSettings = await settingService.GetUser(extraOptions, contextUser, this.Context);
+            var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+
+            var artistMilestone =
+                await artistsService.GetArtistMilestoneOptions(userSettings.UserId, userSettings.NewSearchValue);
+
+            if (artistMilestone.InLibrary || ArtistMilestoneAliasUsed(prfx))
+            {
+                var artistResponse = await playBuilder.ArtistMilestoneAsync(
+                    new ContextModel(this.Context, prfx, contextUser), userSettings, artistMilestone.ArtistName,
+                    artistMilestone.Amount);
+
+                await this.Context.SendResponse(this.Interactivity, artistResponse, userService);
+                await this.Context.LogCommandUsedAsync(artistResponse, userService);
+                return;
+            }
 
             var userInfo = await dataSourceFactory.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
             var mileStoneAmount = SettingService.GetMilestoneAmount(extraOptions, userInfo.Playcount);
-            var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
             if (string.IsNullOrWhiteSpace(extraOptions) &&
                 !string.IsNullOrWhiteSpace(this.Context.Message.ReferencedMessage?.Content))
@@ -453,6 +471,26 @@ public class PlayCommands(
         {
             await this.Context.HandleCommandException(e, userService);
         }
+    }
+
+    private bool ArtistMilestoneAliasUsed(string prfx)
+    {
+        var command = this.Context.Message.Content
+            .Split([' ', '\n'], StringSplitOptions.RemoveEmptyEntries)
+            .FirstOrDefault(f => !f.StartsWith("<@"));
+
+        if (command == null)
+        {
+            return false;
+        }
+
+        if (command.StartsWith(prfx, StringComparison.OrdinalIgnoreCase))
+        {
+            command = command[prfx.Length..];
+        }
+
+        return command.EndsWith("ams", StringComparison.OrdinalIgnoreCase) ||
+               command.EndsWith("artistmilestone", StringComparison.OrdinalIgnoreCase);
     }
 
     [Command("plays", "p", "scrobbles")]

@@ -1109,6 +1109,16 @@ public class PlayService
         }
     }
 
+    public async Task<List<UserPlay>> GetArtistPlaysOldestFirst(int userId, string artistName)
+    {
+        var (connection, dataSource) = await GetConnectionWithDataSource(userId);
+        await using (connection)
+        {
+            var plays = await PlayRepository.GetUserPlaysForArtist(userId, connection, dataSource, artistName);
+            return plays.OrderBy(o => o.TimePlayed).ToList();
+        }
+    }
+
     private async Task<(NpgsqlConnection Connection, DataSource DataSource)> GetConnectionWithDataSource(int userId)
     {
         var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);

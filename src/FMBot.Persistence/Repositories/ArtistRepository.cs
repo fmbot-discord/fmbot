@@ -244,6 +244,13 @@ public class ArtistRepository
         return await connection.QueryFirstOrDefaultAsync<int>(sql, new { userId });
     }
 
+    public static async Task<bool> UserHasArtist(int userId, string artistName, NpgsqlConnection connection)
+    {
+        const string sql = "SELECT EXISTS(SELECT 1 FROM public.user_artists WHERE user_id = @userId " +
+                           "AND UPPER(name) = UPPER(CAST(@artistName AS CITEXT)))";
+        return await connection.QueryFirstOrDefaultAsync<bool>(sql, new { userId, artistName });
+    }
+
     public record UserArtistSearchResult(string Name, int Playcount, int Rank);
 
     public static async Task<IReadOnlyList<UserArtistSearchResult>> SearchUserArtists(int userId, string query,

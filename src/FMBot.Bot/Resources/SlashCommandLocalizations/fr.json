@@ -749,6 +749,9 @@
         "amount": {
           "description": "Numéro du scrobble jalon"
         },
+        "artist": {
+          "description": "Affiche un jalon pour un artiste en particulier (supporters uniquement)"
+        },
         "user": {
           "description": "L'utilisateur à afficher (toi par défaut)"
         }

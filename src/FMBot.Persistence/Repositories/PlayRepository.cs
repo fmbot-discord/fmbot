@@ -450,6 +450,21 @@ ORDER BY time_played DESC;";
         })).ToList();
     }
 
+    public static async Task<List<UserPlay>> GetUserPlaysForArtist(int userId, NpgsqlConnection connection,
+        DataSource dataSource, string artistName)
+    {
+        var sql = GetUserPlaysSqlString("SELECT track_name, album_name, artist_name, time_played ", dataSource,
+            filterSql: GetEntityFilterSql(null, null));
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        return (await connection.QueryAsync<UserPlay>(sql, new
+        {
+            userId,
+            artistName,
+            limit = 99999999
+        })).ToList();
+    }
+
     private static string GetEntityFilterSql(string albumName, string trackName)
     {
         var sql = " AND UPPER(artist_name) = UPPER(CAST(@artistName AS CITEXT)) ";
@@ -468,7 +483,7 @@ ORDER BY time_played DESC;";
     }
 
     private static string GetUserPlaysSqlString(string initialSql, DataSource dataSource, DateTime? start = null,
-        DateTime? end = null)
+        DateTime? end = null, string filterSql = null)
     {
         var sql = initialSql;
 
@@ -515,6 +530,11 @@ ORDER BY time_played DESC;";
         if (end.HasValue)
         {
             sql += " AND time_played <= @end ";
+        }
+
+        if (filterSql != null)
+        {
+            sql += filterSql;
         }
 
         if (!initialSql.Contains("COUNT(*)", StringComparison.OrdinalIgnoreCase) &&

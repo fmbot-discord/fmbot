@@ -1745,53 +1745,13 @@ public class PlayBuilder
             return response;
         }
 
-        var reply = new StringBuilder();
-
-        reply.AppendLine(StringService.TrackToLinkedString(mileStonePlay.Content));
-
         var userTitle = $"{userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}";
 
         response.Embed.WithTitle(context.Localize("milestone.titleScrobbleFrom",
             ("ordinal", context.Localizer.Ordinal(mileStoneAmount)),
             ("user", userTitle)));
 
-        var databaseAlbum =
-            await this._albumService.GetAlbumFromDatabase(mileStonePlay.Content.ArtistName,
-                mileStonePlay.Content.AlbumName);
-        var albumCoverUrl = databaseAlbum != null
-            ? databaseAlbum.SpotifyImageUrl ?? databaseAlbum.LastfmImageUrl
-            : mileStonePlay.Content.AlbumCoverUrl;
-        if (albumCoverUrl != null)
-        {
-            var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel,
-                mileStonePlay.Content.AlbumName, mileStonePlay.Content.ArtistName, albumCoverUrl);
-            if (safeForChannel == CensorService.CensorResult.Safe)
-            {
-                response.Embed.WithThumbnail(albumCoverUrl);
-            }
-
-            var accentColor = await this._albumService.GetAccentColorWithAlbum(context,
-                albumCoverUrl, databaseAlbum?.Id, mileStonePlay.Content.AlbumName, mileStonePlay.Content.ArtistName);
-
-            response.Embed.WithColor(accentColor);
-        }
-
-        if (mileStonePlay.Content.TimePlayed.HasValue)
-        {
-            var dateString = mileStonePlay.Content.TimePlayed.Value.ToString("yyyy-M-dd");
-            response.Embed.WithUrl(
-                $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library?from={dateString}&to={dateString}");
-
-            reply.AppendLine(context.Localize("milestone.datePlayed",
-                ("date", $"<t:{mileStonePlay.Content.TimePlayed.Value.ToUnixEpochDate()}:D>")));
-
-            response.ReferencedMusic = new ReferencedMusic
-            {
-                Artist = mileStonePlay.Content.ArtistName,
-                Album = mileStonePlay.Content.AlbumName,
-                Track = mileStonePlay.Content.TrackName,
-            };
-        }
+        await this.AddMilestonePlayToEmbed(context, response, userSettings, mileStonePlay.Content);
 
         if (isRandom)
         {
@@ -1800,9 +1760,167 @@ public class PlayBuilder
                 style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("🎲"));
         }
 
-        response.Embed.WithDescription(reply.ToString());
+        return response;
+    }
+
+    public async Task<ResponseModel> ArtistMilestoneAsync(
+        ContextModel context,
+        UserSettingsModel userSettings,
+        string artistValues,
+        string amount)
+    {
+        var supporterRequiredResponse = ArtistMilestoneSupporterRequired(context, userSettings);
+        if (supporterRequiredResponse != null)
+        {
+            return supporterRequiredResponse;
+        }
+
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, context.Localizer,
+            artistValues, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
+            userSettings.UserNameLastFm, userId: context.ContextUser.UserId, interactionId: context.InteractionId,
+            referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
+        if (artistSearch.Artist == null)
+        {
+            return artistSearch.Response;
+        }
+
+        await this._updateService.UpdateUser(new UpdateUserQueueItem(userSettings.UserId));
+
+        var artistPlays =
+            await this._playService.GetArtistPlaysOldestFirst(userSettings.UserId, artistSearch.Artist.ArtistName);
+
+        if (artistPlays.Count == 0)
+        {
+            response.Embed.WithDescription(context.Localize("milestone.artistNoPlays",
+                ("user", StringExtensions.Sanitize(userSettings.DisplayName)),
+                ("artist", StringExtensions.Sanitize(artistSearch.Artist.ArtistName))));
+            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+            response.CommandResponse = CommandResponse.NoScrobbles;
+            return response;
+        }
+
+        var mileStoneAmount = SettingService.GetArtistMilestoneAmount(amount, artistPlays.Count);
+        var mileStonePlay = artistPlays[mileStoneAmount.amount - 1];
+
+        var userTitle = $"{userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}";
+
+        response.Embed.WithTitle(context.Localize("milestone.titleArtistPlayFrom",
+            ("ordinal", context.Localizer.Ordinal(mileStoneAmount.amount)),
+            ("artist", artistSearch.Artist.ArtistName),
+            ("user", userTitle)));
+
+        await this.AddMilestonePlayToEmbed(context, response, userSettings, new RecentTrack
+        {
+            AlbumName = mileStonePlay.AlbumName,
+            AlbumUrl = LastfmUrlExtensions.GetAlbumUrl(mileStonePlay.ArtistName, mileStonePlay.AlbumName),
+            ArtistName = mileStonePlay.ArtistName,
+            ArtistUrl = LastfmUrlExtensions.GetArtistUrl(mileStonePlay.ArtistName),
+            TrackName = mileStonePlay.TrackName,
+            TrackUrl = LastfmUrlExtensions.GetTrackUrl(mileStonePlay.ArtistName, mileStonePlay.TrackName),
+            TimePlayed = mileStonePlay.TimePlayed
+        });
+
+        if (mileStoneAmount.isRandom)
+        {
+            var databaseArtist = await this._artistsService.GetArtistFromDatabase(artistSearch.Artist.ArtistName,
+                redirectsEnabled: false, requireSpotify: false);
+            if (databaseArtist != null)
+            {
+                response.Components = new ActionRowProperties().WithButton(context.Localize("milestone.buttonReroll"),
+                    $"{InteractionConstants.RandomMilestone}:{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}:{databaseArtist.Id}",
+                    style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("🎲"));
+            }
+        }
 
         return response;
+    }
+
+    private async Task AddMilestonePlayToEmbed(ContextModel context, ResponseModel response,
+        UserSettingsModel userSettings, RecentTrack mileStonePlay)
+    {
+        var reply = new StringBuilder();
+
+        reply.AppendLine(StringService.TrackToLinkedString(mileStonePlay));
+
+        var databaseAlbum =
+            await this._albumService.GetAlbumFromDatabase(mileStonePlay.ArtistName, mileStonePlay.AlbumName);
+        var albumCoverUrl = databaseAlbum != null
+            ? databaseAlbum.SpotifyImageUrl ?? databaseAlbum.LastfmImageUrl
+            : mileStonePlay.AlbumCoverUrl;
+        if (albumCoverUrl != null)
+        {
+            var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel,
+                mileStonePlay.AlbumName, mileStonePlay.ArtistName, albumCoverUrl);
+            if (safeForChannel == CensorService.CensorResult.Safe)
+            {
+                response.Embed.WithThumbnail(albumCoverUrl);
+            }
+
+            var accentColor = await this._albumService.GetAccentColorWithAlbum(context,
+                albumCoverUrl, databaseAlbum?.Id, mileStonePlay.AlbumName, mileStonePlay.ArtistName);
+
+            response.Embed.WithColor(accentColor);
+        }
+
+        if (mileStonePlay.TimePlayed.HasValue)
+        {
+            var dateString = mileStonePlay.TimePlayed.Value.ToString("yyyy-M-dd");
+            response.Embed.WithUrl(
+                $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library?from={dateString}&to={dateString}");
+
+            reply.AppendLine(context.Localize("milestone.datePlayed",
+                ("date", $"<t:{mileStonePlay.TimePlayed.Value.ToUnixEpochDate()}:D>")));
+
+            response.ReferencedMusic = new ReferencedMusic
+            {
+                Artist = mileStonePlay.ArtistName,
+                Album = mileStonePlay.AlbumName,
+                Track = mileStonePlay.TrackName,
+            };
+        }
+
+        response.Embed.WithDescription(reply.ToString());
+    }
+
+    private static ResponseModel ArtistMilestoneSupporterRequired(ContextModel context, UserSettingsModel userSettings)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed
+        };
+
+        if (context.ContextUser.UserType == UserType.User)
+        {
+            response.Embed.WithDescription(context.Localize("milestone.artistSupporterRequired"));
+
+            response.Components = new ActionRowProperties()
+                .WithButton(context.Localize("buttons.getSupporter"), style: ButtonStyle.Primary,
+                    customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "artistmilestone"));
+            response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+            response.CommandResponse = CommandResponse.SupporterRequired;
+
+            return response;
+        }
+
+        if (userSettings.UserType == UserType.User)
+        {
+            response.Embed.WithDescription(context.Localize("milestone.artistOtherSupporterOnly"));
+
+            response.Components = new ActionRowProperties()
+                .WithButton(".fmbot supporter", style: ButtonStyle.Secondary,
+                    customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "artistmilestone"));
+            response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+            response.CommandResponse = CommandResponse.SupporterRequired;
+
+            return response;
+        }
+
+        return null;
     }
 
     public async Task<ResponseModel> YearAsync(

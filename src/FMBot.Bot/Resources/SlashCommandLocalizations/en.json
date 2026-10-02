@@ -746,6 +746,9 @@
         "amount": {
           "description": "Milestone scrobble amount"
         },
+        "artist": {
+          "description": "Show a milestone for a specific artist (supporters only)"
+        },
         "user": {
           "description": "The user to show (defaults to self)"
         }

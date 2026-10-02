@@ -749,6 +749,9 @@
         "amount": {
           "description": "Numero dello scrobble traguardo"
         },
+        "artist": {
+          "description": "Mostra un traguardo per un artista specifico (solo supporter)"
+        },
         "user": {
           "description": "L'utente da mostrare (predefinito: te stesso)"
         }
