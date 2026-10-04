@@ -309,7 +309,7 @@ public static class GraphSeries
     public static DateTime LimitToMaxPoints(DateTime from, DateTime to, GraphInterval interval,
         GraphType style = GraphType.Line)
     {
-        var maxBuckets = style == GraphType.Bar
+        var maxBuckets = style == GraphType.Bar && interval != GraphInterval.Year
             ? MaxBarPoints
             : interval == GraphInterval.Day
                 ? MaxDailyPoints
