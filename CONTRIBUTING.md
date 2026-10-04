@@ -11,7 +11,7 @@ It's recommended to open a ticket with changes you want to make [our support Dis
 ## Release process
 
 1. When a new change is made, please create a PR for the dev branch.
-2. The change will be tested on the develop version of the bot and if everything 
+2. The change will be tested on .fmbot beta and if everything 
 goes smoothly it will be released onto the main bot and merged to master.
 
 Note: Since most of the time only one developer is working on the bot changes get 
