@@ -549,7 +549,7 @@ public class AdminCommands(
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
             {
                 Content =
-                    $"Found {oldUsers.Count} users that haven't used fmbot in 3 months. I will now remove their cached scrobbles that are over a year and a half old."
+                    $"Found {oldUsers.Count} users that haven't used fmbot in a year. I will now remove their cached Last.fm scrobbles that are over a year old, keeping at least their last 1000."
             });
 
             await indexService.RemoveOldPlaysForUsers(oldUsers);

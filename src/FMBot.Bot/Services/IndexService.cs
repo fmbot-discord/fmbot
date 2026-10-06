@@ -898,12 +898,10 @@ public class IndexService
     public async Task<IReadOnlyList<User>> GetUnusedUsers()
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
-        var recentlyUsed = DateTime.UtcNow.AddDays(-90);
+        var recentlyUsed = DateTime.UtcNow.AddDays(-365);
         return await db.Users
             .AsQueryable()
-            .Where(f => f.LastIndexed != null &&
-                        f.LastUpdated != null &&
-                        f.LastUsed <= recentlyUsed &&
+            .Where(f => f.LastUsed <= recentlyUsed &&
                         f.UserType == UserType.User)
             .OrderBy(o => o.LastUsed)
             .ToListAsync();
@@ -919,7 +917,7 @@ public class IndexService
         {
             Log.Information("RemoveOldPlaysForUsers: {userId} / {discordUserId} / {UserNameLastFM} - Removing old plays - {count}",
                 oldUser.UserId, oldUser.DiscordUserId, oldUser.UserNameLastFM, count);
-            await PlayRepository.RemoveOldPlays(oldUser.UserId, connection);
+            await PlayRepository.RemoveOldPlays(oldUser.UserId, connection, 1000);
             count++;
         }
 
