@@ -1756,7 +1756,7 @@ public class PlayBuilder
         if (isRandom)
         {
             response.Components = new ActionRowProperties().WithButton(context.Localize("milestone.buttonReroll"),
-                $"{InteractionConstants.RandomMilestone}:{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}",
+                $"{InteractionConstants.RandomMilestone}:{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}:",
                 style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("🎲"));
         }
 
