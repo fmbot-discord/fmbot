@@ -568,6 +568,37 @@ public class AdminCommands(
         }
     }
 
+    [Command("backfillids")]
+    [Summary("Backfills missing artist, album and track ids for all users")]
+    public async Task BackfillIdsAsync([CommandParameter(Remainder = true)] string fromUserId = null)
+    {
+        if (await adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+        {
+            _ = this.Context.Channel?.TriggerTypingAsync()!;
+
+            var startUserId = int.TryParse(fromUserId, out var parsedUserId) ? parsedUserId : 0;
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
+            {
+                Content =
+                    $"Starting id backfill from user {startUserId}. Progress is logged every 1000 users, rerun with the last logged user id to continue."
+            });
+
+            var usersDone = await indexService.BackfillIdsForAllUsers(startUserId);
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
+            {
+                Content =
+                    $"Done backfilling ids for {usersDone} users."
+            });
+
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
+        }
+        else
+        {
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Content = Constants.FmbotStaffOnly });
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
+        }
+    }
+
     [Command("opencollectivesupporters", "ocsupporters")]
     [Summary("Displays all .fmbot supporters.")]
     public async Task OpenCollectiveSupportersAsync([CommandParameter(Remainder = true)] string extraOptions = null)
