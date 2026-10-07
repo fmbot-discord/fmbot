@@ -370,10 +370,12 @@ public class AdminInteractions(
             return;
         }
 
-        var components =
-            new ActionRowProperties().WithButton($"Converted to ban by {this.Context.Interaction.User.Username}",
-                customId: "1", url: null, disabled: true, style: ButtonStyle.Success);
-        await message.ModifyAsync(m => m.Components = BuildBanStatusComponents(message, components));
+        var statusButton = new ButtonProperties("1",
+            $"Converted to ban by {this.Context.Interaction.User.Username}", ButtonStyle.Success)
+        {
+            Disabled = true
+        };
+        await message.ModifyAsync(m => m.Components = BuildBanStatusComponents(message, statusButton));
     }
 
     [ComponentInteraction("gwk-ban-user")]
@@ -435,20 +437,20 @@ public class AdminInteractions(
         var parsedMessageId = ulong.Parse(messageId);
         var msg = await this.Context.Channel.GetMessageAsync(parsedMessageId);
 
-        var components = new ActionRowProperties().AddComponents(new ButtonProperties("1",
+        var statusButton = new ButtonProperties("1",
             $"Banned by {this.Context.Interaction.User.Username}", ButtonStyle.Success)
         {
             Disabled = true
-        });
-        await msg.ModifyAsync(m => m.Components = BuildBanStatusComponents(msg, components));
+        };
+        await msg.ModifyAsync(m => m.Components = BuildBanStatusComponents(msg, statusButton));
     }
 
     private static IMessageComponentProperties[] BuildBanStatusComponents(RestMessage message,
-        ActionRowProperties statusRow)
+        ButtonProperties statusButton)
     {
         if (message.Components.OfType<ComponentContainer>().FirstOrDefault() is not { } container)
         {
-            return [statusRow];
+            return [new ActionRowProperties([statusButton])];
         }
 
         var rebuiltContainer = new ComponentContainerProperties
@@ -460,13 +462,24 @@ public class AdminInteractions(
         {
             switch (component)
             {
+                case ComponentSection { Accessory: Thumbnail thumbnail } section:
+                    rebuiltContainer.WithSection(section.Components.OfType<TextDisplay>()
+                        .Select(s => new TextDisplayProperties(s.Content)), thumbnail.Media.Url);
+                    break;
                 case TextDisplay textDisplay:
                     rebuiltContainer.AddComponents(new TextDisplayProperties(textDisplay.Content));
                     break;
                 case ComponentSeparator:
                     rebuiltContainer.AddComponents(new ComponentSeparatorProperties());
                     break;
-                case ActionRow:
+                case ActionRow actionRow:
+                    var statusRow = new ActionRowProperties();
+                    foreach (var linkButton in actionRow.Components.OfType<LinkButton>())
+                    {
+                        statusRow.AddComponents(new LinkButtonProperties(linkButton.Url, linkButton.Label));
+                    }
+
+                    statusRow.AddComponents(statusButton);
                     rebuiltContainer.AddComponents(statusRow);
                     break;
             }

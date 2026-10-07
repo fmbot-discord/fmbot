@@ -250,7 +250,7 @@ public class WhoKnowsFilterService
                                      LEFT JOIN artist_avgs AS aa ON aa.artist_id = p.artist_id
                                  ),
                                  daily AS (
-                                     SELECT date_trunc('day', time_played) AS day, COUNT(*) AS day_plays
+                                     SELECT (time_played AT TIME ZONE 'UTC')::date AS day, COUNT(*) AS day_plays
                                      FROM plays
                                      GROUP BY 1
                                  )

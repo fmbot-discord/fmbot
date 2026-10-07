@@ -943,6 +943,7 @@ public class AdminCommands(
             _ = this.Context.Channel?.TriggerTypingAsync()!;
 
             var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+            var numberFormat = contextUser?.NumberFormat ?? NumberFormat.NoSeparator;
             var targetedUser = await settingService.GetUser(user, contextUser, this.Context);
             var targetedDate = (DateTime?)null;
 
@@ -954,9 +955,23 @@ public class AdminCommands(
 
             var bottedUser = await adminService.GetBottedUserAsync(user, targetedDate);
             var filteredUser = await adminService.GetFilteredUserAsync(user, targetedDate);
+            var filterCount = filteredUser?.UserId != null
+                ? await adminService.GetFilteredUserCountAsync(filteredUser.UserId.Value)
+                : 0;
 
             var userInfo = await dataSourceFactory.GetLfmUserInfoAsync(user);
             var dbUser = await settingService.GetDifferentUser(user);
+
+            BottedCheckStats stats = null;
+            if (dbUser?.LastIndexed != null)
+            {
+                if (dbUser.LastUpdated == null || dbUser.LastUpdated < DateTime.UtcNow.AddHours(-1))
+                {
+                    await updateService.UpdateUserAndGetRecentTracks(dbUser);
+                }
+
+                stats = await whoKnowsFilterService.GetBottedCheckStats(dbUser.UserId);
+            }
 
             var filterActive = filteredUser != null &&
                                (filteredUser.OccurrenceEnd ?? filteredUser.Created) >
@@ -969,59 +984,87 @@ public class AdminCommands(
                     : DiscordConstants.SuccessColorGreen
             };
 
-            container.AddComponents(new TextDisplayProperties(
-                $"## Botted check for Last.fm '{user}'\n" +
-                (userInfo == null
-                    ? $"Not found on Last.fm - [User]({Constants.LastFMUserUrl}{user})"
-                    : $"[Profile]({Constants.LastFMUserUrl}{user}) - " +
-                      $"[Library]({Constants.LastFMUserUrl}{user}/library) - " +
-                      $"[Last.week]({Constants.LastFMUserUrl}{user}/listening-report) - " +
-                      $"[Last.year]({Constants.LastFMUserUrl}{user}/listening-report/year)")));
+            var header = new StringBuilder();
+            header.AppendLine($"## {StringExtensions.MarkdownLink(user, LastfmUrlExtensions.GetUserUrl(user))}");
+            header.AppendLine(userInfo != null
+                ? $"**{userInfo.Playcount.Format(numberFormat)}** scrobbles since <t:{userInfo.LfmRegisteredUnix}:D>"
+                : "Not found on Last.fm");
+            header.Append(BottedCheckStatus(bottedUser, filteredUser, filterActive, filterCount, numberFormat));
 
-            var overview = new StringBuilder();
-            if (userInfo != null)
+            if (string.IsNullOrWhiteSpace(userInfo?.Image))
             {
-                overview.Append(await BottedCheckAccountSection(user, userInfo));
-            }
-
-            if (dbUser?.LastIndexed != null)
-            {
-                overview.Append(await BottedCheckDbSection(dbUser, userInfo?.Playcount ?? dbUser.TotalPlaycount ?? 0));
+                container.WithTextDisplay(header.ToString().TrimEnd());
             }
             else
             {
-                overview.AppendLine("-# No indexed .fmbot account, database stats unavailable.");
+                container.WithSection([new TextDisplayProperties(header.ToString().TrimEnd())], userInfo.Image);
             }
 
-            container.AddComponents(new ComponentSeparatorProperties(),
-                new TextDisplayProperties(overview.ToString()));
+            var recentActivity = BottedCheckRecentActivity(user, stats, numberFormat);
+            if (recentActivity.Length > 0)
+            {
+                container.WithSeparator();
+                container.WithTextDisplay(recentActivity);
+            }
 
-            container.AddComponents(new ComponentSeparatorProperties(),
-                new TextDisplayProperties(BottedCheckBanSection(bottedUser)),
-                new ComponentSeparatorProperties(),
-                new TextDisplayProperties(BottedCheckFilterSection(filteredUser, filterActive)));
+            var library = await BottedCheckLibrary(user, userInfo, stats,
+                userInfo?.Playcount ?? dbUser?.TotalPlaycount ?? 0, numberFormat);
+            if (library.Length > 0)
+            {
+                container.WithSeparator();
+                container.WithTextDisplay(library);
+            }
 
-            ActionRowProperties components = null;
+            var history = BottedCheckHistory(bottedUser, filteredUser);
+            if (history.Length > 0)
+            {
+                container.WithSeparator();
+                container.WithTextDisplay(history);
+            }
+
+            var footer = new List<string>();
+            if (stats is { PlaysMonth: > 0 })
+            {
+                var unknownPct = Math.Round(stats.UnknownDurationPlays * 100d / stats.PlaysMonth);
+                footer.Add($"Listening time estimated from track lengths, {unknownPct.Format(numberFormat)}% unknown");
+                footer.Add("Imports excluded");
+            }
+            else if (stats == null)
+            {
+                footer.Add("Not indexed in .fmbot, only Last.fm totals available");
+            }
+
+            footer.Add("Not intended for public channels");
+
+            container.WithSeparator();
+            container.WithTextDisplay($"-# {string.Join(" · ", footer)}");
+
+            var actionRow = new ActionRowProperties();
+            if (userInfo != null)
+            {
+                actionRow.AddComponents(
+                    new LinkButtonProperties(LastfmUrlExtensions.GetUserUrl(user, "/library"), "Library"),
+                    new LinkButtonProperties(LastfmUrlExtensions.GetUserUrl(user, "/listening-report"), "Last.week"),
+                    new LinkButtonProperties(LastfmUrlExtensions.GetUserUrl(user, "/listening-report/year"), "Last.year"));
+            }
+
             if (filteredUser != null && bottedUser == null)
             {
-                components = new ActionRowProperties().WithButton($"Convert to ban",
-                    $"gwk-filtered-user-to-ban:{filteredUser.GlobalFilteredUserId}", style: ButtonStyle.Secondary);
+                actionRow.AddComponents(new ButtonProperties(
+                    $"gwk-filtered-user-to-ban:{filteredUser.GlobalFilteredUserId}", "Convert to ban",
+                    ButtonStyle.Secondary));
             }
 
             if (bottedUser is not { BanActive: true })
             {
-                components ??= new ActionRowProperties();
-                components.AddComponents(new ButtonProperties($"gwk-ban-user:{user}", "Ban from GlobalWhoKnows",
+                actionRow.AddComponents(new ButtonProperties($"gwk-ban-user:{user}", "Ban from GlobalWhoKnows",
                     ButtonStyle.Danger));
             }
 
-            if (components != null)
+            if (actionRow.Components.Any())
             {
-                container.AddComponents(new ComponentSeparatorProperties(), components);
+                container.WithActionRow(actionRow);
             }
-
-            container.AddComponents(
-                new TextDisplayProperties("-# Command not intended for use in public channels"));
 
             await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
             {
@@ -1041,164 +1084,172 @@ public class AdminCommands(
     private static string BottedCheckFlag(double value, double warning, double alarm) =>
         value >= alarm ? " 🚨" : value >= warning ? " ⚠️" : "";
 
-    private static string BottedCheckNum(double value) =>
-        Math.Round(value, 1).ToString(CultureInfo.InvariantCulture);
-
-    private async Task<string> BottedCheckAccountSection(string user, DataSourceUser userInfo)
+    private static string BottedCheckStatus(Persistence.Domain.Models.BottedUser bottedUser,
+        Persistence.Domain.Models.GlobalFilteredUser filteredUser, bool filterActive, int filterCount,
+        NumberFormat numberFormat)
     {
-        var account = new StringBuilder();
+        var status = new StringBuilder();
 
-        if (userInfo.RegisteredUnix > 0)
+        if (bottedUser is { BanActive: true })
         {
-            var accountDays = Math.Max(1,
-                (DateTime.UtcNow - DateTimeOffset.FromUnixTimeSeconds(userInfo.RegisteredUnix).UtcDateTime).TotalDays);
-            var avgTotal = userInfo.Playcount / accountDays;
-            account.AppendLine(
-                $"**Registered:** <t:{userInfo.RegisteredUnix}:D> (<t:{userInfo.RegisteredUnix}:R>) - avg {BottedCheckNum(avgTotal)}/day{BottedCheckFlag(avgTotal, 400, WhoKnowsFilterService.MaxAmountOfPlaysPerDay)}");
+            status.AppendLine(bottedUser.LastFmRegistered != null
+                ? "**Banned** from GlobalWhoKnows, by join date so it survives username changes"
+                : "**Banned** from GlobalWhoKnows");
+        }
+        else if (bottedUser != null)
+        {
+            status.AppendLine("**Unbanned** from GlobalWhoKnows after an earlier ban");
         }
 
-        var scrobbles = new StringBuilder($"**Scrobbles:** {userInfo.Playcount:N0} total");
-        foreach (var (label, days) in new[] { ("year", 365), ("week", 7) })
+        if (filteredUser != null)
         {
-            var from = ((DateTimeOffset)DateTime.UtcNow.AddDays(-days)).ToUnixTimeSeconds();
-            var count = await dataSourceFactory.GetScrobbleCountFromDateAsync(user, from);
-            if (count.HasValue)
+            var filterEnd = DateTime.SpecifyKind(
+                (filteredUser.OccurrenceEnd ?? filteredUser.Created).AddMonths(filteredUser.MonthLength ?? 3),
+                DateTimeKind.Utc);
+            var filterEndValue = ((DateTimeOffset)filterEnd).ToUnixTimeSeconds();
+            var filterTimes = filterCount > 1 ? $", filtered **{filterCount.Format(numberFormat)}** times" : "";
+
+            status.AppendLine(filterActive
+                ? $"**Filtered** until <t:{filterEndValue}:D>{filterTimes}"
+                : $"Last filter expired <t:{filterEndValue}:D>{filterTimes}");
+        }
+
+        if (status.Length == 0)
+        {
+            status.AppendLine("Not banned or filtered");
+        }
+
+        return status.ToString();
+    }
+
+    private static string BottedCheckRecentActivity(string user, BottedCheckStats stats, NumberFormat numberFormat)
+    {
+        if (stats == null)
+        {
+            return "";
+        }
+
+        if (stats.PlaysMonth == 0)
+        {
+            return "No Last.fm scrobbles stored in the last 30 days";
+        }
+
+        var activity = new StringBuilder();
+
+        var hoursPerDayWeek = TimeSpan.FromMilliseconds(stats.MsWeek).TotalHours / 7;
+        activity.AppendLine(
+            $"**{StringExtensions.GetListeningTimeString(TimeSpan.FromMilliseconds(stats.MsWeek))}** of listening in the last 7 days, **{Math.Round(hoursPerDayWeek, 1).Format(numberFormat)}h** per day{BottedCheckFlag(hoursPerDayWeek, 12, 18)}");
+
+        var hoursPerDayMonth = TimeSpan.FromMilliseconds(stats.MsMonth).TotalHours / 30;
+        activity.AppendLine(
+            $"**{StringExtensions.GetListeningTimeString(TimeSpan.FromMilliseconds(stats.MsMonth))}** of listening in the last 30 days, **{Math.Round(hoursPerDayMonth, 1).Format(numberFormat)}h** per day{BottedCheckFlag(hoursPerDayMonth, 12, 18)}");
+
+        if (stats.MaxPlaysDay.HasValue)
+        {
+            var busiestDay = stats.MaxPlaysDay.Value;
+            var busiestDayLink = StringExtensions.MarkdownLink(
+                busiestDay.ToString("MMM d", CultureInfo.InvariantCulture),
+                LastfmUrlExtensions.GetUserUrl(user, $"/library?from={busiestDay:yyyy-MM-dd}&rangetype=1day"));
+            var busiestDayFlag = BottedCheckFlag(stats.MaxPlaysInDay, 400, WhoKnowsFilterService.MaxAmountOfPlaysPerDay);
+
+            activity.AppendLine(stats.DaysOverPlayLimit > 1
+                ? $"**{stats.MaxPlaysInDay.Format(numberFormat)}** plays on {busiestDayLink}, the busiest of **{stats.DaysOverPlayLimit.Format(numberFormat)}** days over {WhoKnowsFilterService.MaxAmountOfPlaysPerDay}{busiestDayFlag}"
+                : $"**{stats.MaxPlaysInDay.Format(numberFormat)}** plays on {busiestDayLink}, the busiest day{busiestDayFlag}");
+        }
+
+        var duplicatePct = stats.DuplicatePlays * 100d / stats.PlaysMonth;
+        activity.AppendLine(
+            $"**{Math.Round(duplicatePct, 1).Format(numberFormat)}%** of plays are double scrobbles{BottedCheckFlag(duplicatePct, 3, 10)}");
+
+        var shortPct = stats.ShortTrackPlays * 100d / stats.PlaysMonth;
+        activity.AppendLine(
+            $"**{Math.Round(shortPct, 1).Format(numberFormat)}%** of plays are tracks under 1:30{BottedCheckFlag(shortPct, 15, 40)}");
+
+        return activity.ToString().TrimEnd();
+    }
+
+    private async Task<string> BottedCheckLibrary(string user, DataSourceUser userInfo, BottedCheckStats stats,
+        long totalPlaycount, NumberFormat numberFormat)
+    {
+        var library = new StringBuilder();
+
+        if (userInfo != null)
+        {
+            var periods = stats == null
+                ? new[] { ("7 days", 7), ("year", 365) }
+                : new[] { ("year", 365) };
+
+            foreach (var (period, days) in periods)
             {
-                var avg = count.Value / (double)days;
-                scrobbles.Append(
-                    $" - {label}: {count.Value:N0} ({BottedCheckNum(avg)}/day{BottedCheckFlag(avg, 400, WhoKnowsFilterService.MaxAmountOfPlaysPerDay)})");
+                var from = ((DateTimeOffset)DateTime.UtcNow.AddDays(-days)).ToUnixTimeSeconds();
+                var count = await dataSourceFactory.GetScrobbleCountFromDateAsync(user, from);
+                if (count.HasValue)
+                {
+                    var avg = count.Value / (double)days;
+                    library.AppendLine(
+                        $"**{count.Value.Format(numberFormat)}** scrobbles in the last {period}, **{Math.Round(avg).Format(numberFormat)}** per day{BottedCheckFlag(avg, 400, WhoKnowsFilterService.MaxAmountOfPlaysPerDay)}");
+                }
             }
         }
 
-        account.AppendLine(scrobbles.ToString());
-        return account.ToString();
-    }
-
-    private async Task<string> BottedCheckDbSection(Persistence.Domain.Models.User dbUser, long totalPlaycount)
-    {
-        if (dbUser.LastUpdated == null || dbUser.LastUpdated < DateTime.UtcNow.AddHours(-1))
+        if (stats == null)
         {
-            await updateService.UpdateUserAndGetRecentTracks(dbUser);
+            return library.ToString().TrimEnd();
         }
 
-        var stats = await whoKnowsFilterService.GetBottedCheckStats(dbUser.UserId);
-        var dbStats = new StringBuilder();
-
-        if (stats.PlaysMonth > 0)
+        var shortTrack = stats.TopShortTrack;
+        if (shortTrack != null)
         {
-            var hoursPerDayMonth = TimeSpan.FromMilliseconds(stats.MsMonth).TotalHours / 30;
-            var hoursPerDayWeek = TimeSpan.FromMilliseconds(stats.MsWeek).TotalHours / 7;
-            var duplicatePct = stats.DuplicatePlays * 100d / stats.PlaysMonth;
-            var shortPct = stats.ShortTrackPlays * 100d / stats.PlaysMonth;
-
-            dbStats.Append(
-                $"**Last 30 days:** {stats.PlaysMonth:N0} plays - {StringExtensions.GetListeningTimeString(TimeSpan.FromMilliseconds(stats.MsMonth))} listening ({BottedCheckNum(hoursPerDayMonth)} hr/day){BottedCheckFlag(hoursPerDayMonth, 12, 18)} - busiest day: {stats.MaxPlaysInDay:N0}{BottedCheckFlag(stats.MaxPlaysInDay, 400, WhoKnowsFilterService.MaxAmountOfPlaysPerDay)}");
-            dbStats.AppendLine(stats.DaysOverPlayLimit > 0
-                ? $" ({stats.DaysOverPlayLimit} days over {WhoKnowsFilterService.MaxAmountOfPlaysPerDay}/day)"
-                : "");
-            dbStats.AppendLine(
-                $"**Last 7 days:** {stats.PlaysWeek:N0} plays - {StringExtensions.GetListeningTimeString(TimeSpan.FromMilliseconds(stats.MsWeek))} ({BottedCheckNum(hoursPerDayWeek)} hr/day){BottedCheckFlag(hoursPerDayWeek, 12, 18)}");
-            dbStats.AppendLine(
-                $"**Double scrobbles:** {stats.DuplicatePlays:N0} ({BottedCheckNum(duplicatePct)}%){BottedCheckFlag(duplicatePct, 3, 10)} - **Short tracks (<1:30):** {stats.ShortTrackPlays:N0} ({BottedCheckNum(shortPct)}%){BottedCheckFlag(shortPct, 15, 40)}");
-        }
-        else
-        {
-            dbStats.AppendLine("No Last.fm scrobbles stored in the last 30 days.");
+            library.AppendLine(
+                $"**{shortTrack.Playcount.Format(numberFormat)}** plays of {StringExtensions.Sanitize(shortTrack.Name)} by {StringExtensions.Sanitize(shortTrack.ArtistName)}, only {StringExtensions.GetTrackLength(shortTrack.DurationMs.GetValueOrDefault())} long{BottedCheckFlag(shortTrack.Playcount, 1000, 2500)}");
         }
 
         if (totalPlaycount > 0)
         {
-            foreach (var topTrack in stats.TopTracks.Where(w => w.Playcount >= 1000))
+            foreach (var topTrack in stats.TopTracks.Where(w =>
+                         w.Playcount >= 1000 &&
+                         !(shortTrack != null && w.Name == shortTrack.Name && w.ArtistName == shortTrack.ArtistName)))
             {
                 var trackPct = topTrack.Playcount * 100d / totalPlaycount;
                 if (trackPct >= 5)
                 {
-                    dbStats.AppendLine(
-                        $"**Top track:** {topTrack.Name} by {topTrack.ArtistName} - {topTrack.Playcount:N0} plays ({BottedCheckNum(trackPct)}% of library){BottedCheckFlag(trackPct, 5, 10)}");
+                    library.AppendLine(
+                        $"**{topTrack.Playcount.Format(numberFormat)}** plays of {StringExtensions.Sanitize(topTrack.Name)} by {StringExtensions.Sanitize(topTrack.ArtistName)}, **{Math.Round(trackPct, 1).Format(numberFormat)}%** of all scrobbles{BottedCheckFlag(trackPct, 5, 10)}");
                 }
             }
-
-            if (stats.TopShortTrack is { Playcount: >= 500 })
-            {
-                var shortDuration = TimeSpan.FromMilliseconds(stats.TopShortTrack.DurationMs.GetValueOrDefault());
-                dbStats.AppendLine(
-                    $"**Top short track:** {stats.TopShortTrack.Name} by {stats.TopShortTrack.ArtistName} ({shortDuration:m\\:ss}) - {stats.TopShortTrack.Playcount:N0} plays{BottedCheckFlag(stats.TopShortTrack.Playcount, 1000, 2500)}");
-            }
-
-            var artistPct = stats.TopArtistPlaycount * 100d / totalPlaycount;
-            if (stats.TopArtistName != null && artistPct >= 25)
-            {
-                dbStats.AppendLine(
-                    $"**Top artist:** {stats.TopArtistName} - {stats.TopArtistPlaycount:N0} plays ({BottedCheckNum(artistPct)}% of library)");
-            }
         }
 
-        if (stats.PlaysMonth > 0)
-        {
-            dbStats.AppendLine(
-                $"-# Listening time estimated ({BottedCheckNum(stats.UnknownDurationPlays * 100d / stats.PlaysMonth)}% unknown durations), imports excluded");
-        }
-
-        return dbStats.ToString();
+        return library.ToString().TrimEnd();
     }
 
-    private static string BottedCheckBanSection(Persistence.Domain.Models.BottedUser bottedUser)
+    private static string BottedCheckHistory(Persistence.Domain.Models.BottedUser bottedUser,
+        Persistence.Domain.Models.GlobalFilteredUser filteredUser)
     {
-        var banStatus = new StringBuilder();
-        banStatus.AppendLine(
-            $"**Banned from GlobalWhoKnows:** {(bottedUser == null ? "No" : bottedUser.BanActive ? "Yes" : "No, but has been banned before")}");
+        var history = new StringBuilder();
 
         if (bottedUser != null)
         {
-            banStatus.AppendLine($"**Reason / additional notes:** {bottedUser.Notes ?? "*No reason/notes*"}");
-            if (bottedUser.LastFmRegistered != null)
+            history.AppendLine("**Ban notes**");
+            var notes = string.IsNullOrWhiteSpace(bottedUser.Notes)
+                ? "*No notes*"
+                : StringExtensions.TruncateLongString(bottedUser.Notes.Trim(), 1000);
+            foreach (var line in notes.Split('\n').Where(w => !string.IsNullOrWhiteSpace(w)))
             {
-                banStatus.AppendLine(
-                    "**Last.fm join date banned:** Yes (This means that the gwk ban will survive username changes)");
+                history.AppendLine($"> {line.TrimEnd()}");
             }
         }
-
-        return banStatus.ToString();
-    }
-
-    private static string BottedCheckFilterSection(Persistence.Domain.Models.GlobalFilteredUser filteredUser,
-        bool filterActive)
-    {
-        var filterStatus = new StringBuilder();
 
         if (filteredUser != null)
         {
-            if (filterActive)
+            history.AppendLine("**Latest filter**");
+            foreach (var line in WhoKnowsFilterService.FilteredUserReason(filteredUser).Split('\n')
+                         .Where(w => !string.IsNullOrWhiteSpace(w)))
             {
-                filterStatus.AppendLine("**Globally filtered:** Yes");
-                filterStatus.AppendLine($"**Filter reason:** {WhoKnowsFilterService.FilteredUserReason(filteredUser)}");
-
-                var filterStartDate = filteredUser.OccurrenceEnd ?? filteredUser.Created;
-                var filterEnd = DateTime.SpecifyKind(filterStartDate.AddMonths(filteredUser.MonthLength ?? 3),
-                    DateTimeKind.Utc);
-                var filterEndValue = ((DateTimeOffset)filterEnd).ToUnixTimeSeconds();
-
-                filterStatus.AppendLine($"**Filter expires:** <t:{filterEndValue}:R> - <t:{filterEndValue}:F>");
-
-                if (filteredUser.MonthLength is > 3)
-                {
-                    filterStatus.AppendLine(
-                        "**Repeat offender:** Yes, has been filtered at least 3 times with 4 weeks in between each filter. This filter plus all future filters will last 6 months.");
-                }
-            }
-            else
-            {
-                filterStatus.AppendLine("**Globally filtered:** No, but was filtered in the past");
-                filterStatus.AppendLine(
-                    $"**Expired filter reason:** {WhoKnowsFilterService.FilteredUserReason(filteredUser)}");
+                history.AppendLine($"> {line.TrimEnd()}");
             }
         }
-        else
-        {
-            filterStatus.AppendLine("**Globally filtered:** No");
-        }
 
-        return filterStatus.ToString();
+        return history.ToString().TrimEnd();
     }
 
     [Command("getusers")]
