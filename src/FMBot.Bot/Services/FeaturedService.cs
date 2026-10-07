@@ -827,11 +827,16 @@ public class FeaturedService
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
+        var userIds = db.Users
+            .Where(w => w.UserId == userId ||
+                        (w.UserNameLastFM.ToUpper() == userNameLastFm.ToUpper() &&
+                         w.UserNameLastFM == userNameLastFm))
+            .Select(s => (int?)s.UserId);
+
         return await db.FeaturedLogs
             .AsQueryable()
             .Include(i => i.User)
-            .Where(w => (w.UserId == userId || (w.User != null && w.User.UserNameLastFM == userNameLastFm)) &&
-                        w.HasFeatured)
+            .Where(w => userIds.Contains(w.UserId) && w.HasFeatured)
             .OrderByDescending(o => o.DateTime)
             .ToListAsync();
     }

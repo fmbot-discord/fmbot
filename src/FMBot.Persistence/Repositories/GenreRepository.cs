@@ -32,7 +32,7 @@ public static class GenreRepository
                            "FROM user_artists ua " +
                            "INNER JOIN artist_genres ag ON ag.artist_id = ua.artist_id " +
                            "WHERE ua.user_id = @userId AND ua.artist_id IS NOT NULL " +
-                           "AND LOWER(ag.name) = LOWER(CAST(@genreName AS CITEXT)) " +
+                           "AND ag.name = CAST(@genreName AS CITEXT) " +
                            "ORDER BY ua.playcount DESC";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
@@ -47,15 +47,15 @@ public static class GenreRepository
                            "FROM user_artists ua " +
                            "INNER JOIN artist_genres ag ON ag.artist_id = ua.artist_id " +
                            "WHERE ua.user_id = @userId AND ua.artist_id IS NOT NULL " +
-                           "AND LOWER(ag.name) = ANY(@genreNamesLower) " +
+                           "AND ag.name = ANY(@genreNameArray::citext[]) " +
                            "ORDER BY ua.playcount DESC";
 
-        var genreNamesLower = genreNames.Select(g => g.ToLower()).ToArray();
+        var genreNameArray = genreNames.ToArray();
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
 
         var rows = (await connection.QueryAsync<(string Genre, string ArtistName, long UserPlaycount)>(sql,
-            new { userId, genreNamesLower })).ToList();
+            new { userId, genreNameArray })).ToList();
 
         return rows
             .GroupBy(r => r.Genre, StringComparer.OrdinalIgnoreCase)
@@ -105,7 +105,7 @@ public static class GenreRepository
                            "INNER JOIN artist_genres ag ON ag.artist_id = ua.artist_id " +
                            "WHERE gu.guild_id = @guildId AND gu.bot != true " +
                            "AND ua.artist_id IS NOT NULL " +
-                           "AND LOWER(ag.name) = LOWER(CAST(@genreName AS CITEXT)) " +
+                           "AND ag.name = CAST(@genreName AS CITEXT) " +
                            "AND NOT ua.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
                            "AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL) " +
                            "GROUP BY ua.name " +
@@ -126,7 +126,7 @@ public static class GenreRepository
                            "WHERE gu.guild_id = @guildId AND gu.bot != true " +
                            "AND ua.artist_id IN ( " +
                            "    SELECT ag.artist_id FROM artist_genres ag " +
-                           "    WHERE LOWER(ag.name) = LOWER(CAST(@genreName AS CITEXT)) " +
+                           "    WHERE ag.name = CAST(@genreName AS CITEXT) " +
                            ") " +
                            "AND NOT ua.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
                            "AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL) " +
@@ -168,7 +168,7 @@ public static class GenreRepository
                            "WHERE ua.user_id = ANY(@userIds) " +
                            "AND ua.artist_id IN ( " +
                            "    SELECT ag.artist_id FROM artist_genres ag " +
-                           "    WHERE LOWER(ag.name) = LOWER(CAST(@genreName AS CITEXT)) " +
+                           "    WHERE ag.name = CAST(@genreName AS CITEXT) " +
                            ") " +
                            "GROUP BY ua.user_id " +
                            "ORDER BY Playcount DESC";

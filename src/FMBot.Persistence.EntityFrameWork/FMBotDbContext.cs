@@ -580,6 +580,8 @@ namespace FMBot.Persistence.EntityFrameWork
                 entity.Property(e => e.Name)
                     .HasColumnType("citext");
 
+                entity.HasIndex(e => e.Name);
+
                 entity.HasOne(d => d.Artist)
                     .WithMany(p => p.ArtistGenres)
                     .HasForeignKey(d => d.ArtistId)

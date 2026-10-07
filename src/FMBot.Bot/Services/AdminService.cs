@@ -217,7 +217,7 @@ public class AdminService
         await using var db = await this._contextFactory.CreateDbContextAsync();
         return await db.Users
             .AsQueryable()
-            .Where(w => w.UserNameLastFM.ToLower() == lastFmUserName.ToLower())
+            .Where(w => w.UserNameLastFM.ToUpper() == lastFmUserName.ToUpper())
             .ToListAsync();
     }
 
