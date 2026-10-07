@@ -1460,7 +1460,7 @@ public class UserService
                 await using var db = await this._contextFactory.CreateDbContextAsync();
                 var existingUserCount = await db.Users
                     .AsQueryable()
-                    .Where(w => w.UserNameLastFM.ToLower() == userSettings.UserNameLastFM.ToLower())
+                    .Where(w => w.UserNameLastFM.ToUpper() == userSettings.UserNameLastFM.ToUpper())
                     .CountAsync();
 
                 if (existingUserCount > Constants.MaxAlts)

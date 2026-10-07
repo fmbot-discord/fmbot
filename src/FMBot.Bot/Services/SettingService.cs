@@ -696,7 +696,7 @@ public class SettingService
                 .AsQueryable()
                 .OrderByDescending(o => o.LastUsed != null)
                 .ThenByDescending(o => o.LastUsed)
-                .FirstOrDefaultAsync(f => f.UserNameLastFM.ToLower() == searchValue);
+                .FirstOrDefaultAsync(f => f.UserNameLastFM.ToUpper() == searchValue.ToUpper());
         }
 
         return otherUser;
