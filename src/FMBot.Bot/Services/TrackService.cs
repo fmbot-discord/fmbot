@@ -1,11 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Dapper;
@@ -15,6 +12,7 @@ using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
+using FMBot.Core;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
@@ -25,7 +23,6 @@ using FMBot.Domain.Types;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using FMBot.Persistence.Repositories;
-using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
@@ -41,7 +38,6 @@ public class TrackService
     private readonly IDataSourceFactory _dataSourceFactory;
     private readonly SpotifyService _spotifyService;
     private readonly AppleMusicService _appleMusicService;
-    private readonly HttpClient _client;
     private readonly BotSettings _botSettings;
     private readonly IMemoryCache _cache;
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
@@ -54,8 +50,7 @@ public class TrackService
     private readonly TrackEnrichment.TrackEnrichmentClient _trackEnrichment;
     private readonly FeaturedService _featuredService;
 
-    public TrackService(HttpClient httpClient,
-        IDataSourceFactory dataSourceFactory,
+    public TrackService(IDataSourceFactory dataSourceFactory,
         IOptions<BotSettings> botSettings,
         SpotifyService spotifyService,
         AppleMusicService appleMusicService,
@@ -74,7 +69,6 @@ public class TrackService
         this._spotifyService = spotifyService;
         this._appleMusicService = appleMusicService;
         this._cache = memoryCache;
-        this._client = httpClient;
         this._botSettings = botSettings.Value;
         this._contextFactory = contextFactory;
         this._timer = timer;
@@ -587,36 +581,7 @@ public class TrackService
                     trackName = splitDesc[1];
                 }
 
-                trackName = trackName.Replace("\\", "");
-
-                var queryParams = new Dictionary<string, string>
-                {
-                    { "track", trackName }
-                };
-
-                var url = QueryHelpers.AddQueryString("https://metadata-filter.vercel.app/api/youtube", queryParams);
-
-                var request = new HttpRequestMessage
-                {
-                    RequestUri = new Uri(url),
-                    Method = HttpMethod.Post
-                };
-
-                using var httpResponse =
-                    await this._client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
-
-                if (httpResponse.IsSuccessStatusCode)
-                {
-                    await using var stream = await httpResponse.Content.ReadAsStreamAsync();
-                    using var streamReader = new StreamReader(stream);
-                    var requestBody = await streamReader.ReadToEndAsync();
-
-                    var deserializeObject = JsonSerializer.Deserialize<CleanedUpResponse>(requestBody);
-                    if (deserializeObject != null)
-                    {
-                        trackName = deserializeObject.data.track;
-                    }
-                }
+                trackName = MetadataFilter.CleanTrackName(trackName.Replace("\\", ""));
 
                 var track = await GetTrackFromDatabase(artistName, trackName);
 
@@ -652,17 +617,6 @@ public class TrackService
             Log.Error(e, "BotScrobbling: Error while getting track for description: {description}", description);
             return null;
         }
-    }
-
-    public class CleanedUpResponseTrack
-    {
-        public string track { get; set; }
-    }
-
-    public class CleanedUpResponse
-    {
-        public string status { get; set; }
-        public CleanedUpResponseTrack data { get; set; }
     }
 
     internal static TrackAndArtist ParseBoldDelimitedTrackAndArtist(string description)
