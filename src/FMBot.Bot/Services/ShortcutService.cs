@@ -3,10 +3,13 @@ using Microsoft.EntityFrameworkCore;
 using Serilog;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using FMBot.Bot.Resources;
+using FMBot.Bot.TextCommands;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
@@ -23,6 +26,12 @@ namespace FMBot.Bot.Services
 
         private static readonly ConcurrentDictionary<ulong, List<Shortcut>> UserShortcuts = new();
         private static readonly ConcurrentDictionary<ulong, List<Shortcut>> GuildShortcuts = new();
+
+        private static readonly FrozenSet<string> StaffCommandAliases = new[] { typeof(AdminCommands), typeof(OwnerCommands) }
+            .SelectMany(s => s.GetMethods())
+            .SelectMany(s => s.GetCustomAttributes<CommandAttribute>())
+            .SelectMany(s => s.Aliases)
+            .ToFrozenSet(StringComparer.InvariantCultureIgnoreCase);
 
         public ShortcutService(IDbContextFactory<FMBotDbContext> contextFactory)
         {
@@ -264,6 +273,11 @@ namespace FMBot.Bot.Services
             }
 
             return null;
+        }
+
+        public static bool IsStaffCommand(string content)
+        {
+            return StaffCommandAliases.Contains(content.Split([' ', '\n'])[0]);
         }
 
         public static async Task AddShortcutReaction(CommandContext context)
