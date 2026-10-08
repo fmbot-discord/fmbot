@@ -1052,7 +1052,7 @@ public class PremiumSettingBuilder(
         }
 
         var outputCommands = commands.Search(output);
-        if (!outputCommands.IsSuccess || outputCommands.Command == null)
+        if (!outputCommands.IsSuccess || outputCommands.Command == null || ShortcutService.IsStaffCommand(output))
         {
             if (output.Contains('.'))
             {

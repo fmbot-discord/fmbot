@@ -140,7 +140,10 @@ public class CommandHandler
             _ = Task.Run(async () => await TryScrobbling(message, context));
         }
 
-        TryForCommand(context, message, true);
+        if (message.EditedAt > DateTimeOffset.UtcNow.AddMinutes(-2))
+        {
+            TryForCommand(context, message, true);
+        }
 
         return ValueTask.CompletedTask;
     }
@@ -228,6 +231,11 @@ public class CommandHandler
         {
             var (shortcut, remainingArgs) = shortcutResult.Value;
             messageContent = $"{shortcut.Output} {remainingArgs}".Trim();
+            if (ShortcutService.IsStaffCommand(messageContent))
+            {
+                return;
+            }
+
             _ = Task.Run(() => ShortcutService.AddShortcutReaction(context));
             Statistics.ShortcutsUsed.Inc();
         }

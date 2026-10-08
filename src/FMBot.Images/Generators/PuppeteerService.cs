@@ -144,8 +144,9 @@ public class PuppeteerService : IDisposable
         var sanitizer = new HtmlSanitizer();
         sanitizer.AllowedTags.Clear();
         sanitizer.AllowedTags.Add("b");
+        sanitizer.AllowedAttributes.Clear();
 
-        content = content.Replace("{{type}}", type);
+        content = content.Replace("{{type}}", sanitizer.Sanitize(type));
         content = content.Replace("{{location}}", sanitizer.Sanitize(location));
 
         content = imageUrl != null
@@ -276,6 +277,7 @@ public class PuppeteerService : IDisposable
         }
 
 
+        await page.SetJavaScriptEnabledAsync(false);
         await page.SetContentAsync(content);
         await page.WaitForSelectorAsync(".result-list");
 
@@ -342,6 +344,7 @@ public class PuppeteerService : IDisposable
         var sanitizer = new HtmlSanitizer();
         sanitizer.AllowedTags.Clear();
         sanitizer.AllowedTags.Add("b");
+        sanitizer.AllowedAttributes.Clear();
 
         content = content.Replace("{{name}}", sanitizer.Sanitize(name) + "'s");
         content = content.Replace("{{title}}", sanitizer.Sanitize(title));
@@ -413,6 +416,7 @@ public class PuppeteerService : IDisposable
             content = content.Replace("{{users}}", "No results.");
         }
 
+        await page.SetJavaScriptEnabledAsync(false);
         await page.SetContentAsync(content);
         await page.WaitForSelectorAsync(".result-list");
 
