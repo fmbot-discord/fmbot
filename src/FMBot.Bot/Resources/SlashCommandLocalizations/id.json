@@ -749,6 +749,9 @@
         "amount": {
           "description": "Jumlah scrobble milestone"
         },
+        "artist": {
+          "description": "Tampilkan milestone untuk artis tertentu (khusus supporter)"
+        },
         "user": {
           "description": "Pengguna yang ditampilkan (default: kamu sendiri)"
         }

@@ -749,6 +749,9 @@
         "amount": {
           "description": "Número do scrobble do marco"
         },
+        "artist": {
+          "description": "Mostra um marco de um artista específico (só para supporters)"
+        },
         "user": {
           "description": "O usuário a mostrar (padrão: você)"
         }

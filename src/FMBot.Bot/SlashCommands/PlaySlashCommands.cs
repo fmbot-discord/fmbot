@@ -422,6 +422,9 @@ public class PlaySlashCommands(
     public async Task MileStoneAsync(
         [SlashCommandParameter(Name = "amount", Description = "Milestone scrobble amount")]
         int amount = 99999999,
+        [SlashCommandParameter(Name = "artist", Description = "Show a milestone for a specific artist (supporters only)",
+            AutocompleteProviderType = typeof(ArtistAutoComplete))]
+        string artist = null,
         [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
         string user = null)
     {
@@ -433,6 +436,16 @@ public class PlaySlashCommands(
 
         try
         {
+            if (!string.IsNullOrWhiteSpace(artist))
+            {
+                var artistResponse = await playBuilder.ArtistMilestoneAsync(new ContextModel(this.Context, contextUser),
+                    userSettings, artist, amount.ToString());
+
+                await this.Context.SendFollowUpResponse(this.Interactivity, artistResponse, userService);
+                await this.Context.LogCommandUsedAsync(artistResponse, userService);
+                return;
+            }
+
             var userInfo = await dataSourceFactory.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
             var mileStoneAmount = SettingService.GetMilestoneAmount(amount.ToString(), userInfo.Playcount);
 

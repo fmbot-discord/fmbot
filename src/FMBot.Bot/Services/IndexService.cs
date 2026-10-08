@@ -31,13 +31,15 @@ public class IndexService
     private readonly BotSettings _botSettings;
     private readonly IDataSourceFactory _dataSourceFactory;
     private readonly IdResolutionService _idResolutionService;
+    private readonly Core.IdBackfillService _idBackfillService;
 
     public IndexService(IUserIndexQueue userIndexQueue,
         IDbContextFactory<FMBotDbContext> contextFactory,
         IMemoryCache cache,
         IOptions<BotSettings> botSettings,
         IDataSourceFactory dataSourceFactory,
-        IdResolutionService idResolutionService)
+        IdResolutionService idResolutionService,
+        Core.IdBackfillService idBackfillService)
     {
         this._userIndexQueue = userIndexQueue;
         this._userIndexQueue.UsersToIndex.SubscribeAsync(OnNextAsync);
@@ -46,6 +48,7 @@ public class IndexService
         this._dataSourceFactory = dataSourceFactory;
         this._botSettings = botSettings.Value;
         this._idResolutionService = idResolutionService;
+        this._idBackfillService = idBackfillService;
     }
 
     private async Task OnNextAsync(IndexUserQueueItem user)
@@ -898,12 +901,10 @@ public class IndexService
     public async Task<IReadOnlyList<User>> GetUnusedUsers()
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
-        var recentlyUsed = DateTime.UtcNow.AddDays(-90);
+        var recentlyUsed = DateTime.UtcNow.AddDays(-365);
         return await db.Users
             .AsQueryable()
-            .Where(f => f.LastIndexed != null &&
-                        f.LastUpdated != null &&
-                        f.LastUsed <= recentlyUsed &&
+            .Where(f => f.LastUsed <= recentlyUsed &&
                         f.UserType == UserType.User)
             .OrderBy(o => o.LastUsed)
             .ToListAsync();
@@ -919,10 +920,43 @@ public class IndexService
         {
             Log.Information("RemoveOldPlaysForUsers: {userId} / {discordUserId} / {UserNameLastFM} - Removing old plays - {count}",
                 oldUser.UserId, oldUser.DiscordUserId, oldUser.UserNameLastFM, count);
-            await PlayRepository.RemoveOldPlays(oldUser.UserId, connection);
+            await PlayRepository.RemoveOldPlays(oldUser.UserId, connection, 1000);
             count++;
         }
 
         await connection.CloseAsync();
+    }
+
+    public async Task<int> BackfillIdsForAllUsers(int fromUserId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var userIds = await db.Users
+            .Where(w => w.UserId >= fromUserId)
+            .OrderBy(o => o.UserId)
+            .Select(s => s.UserId)
+            .ToListAsync();
+
+        Log.Information("BackfillIdsForAllUsers: Starting for {userCount} users from user {fromUserId}",
+            userIds.Count, fromUserId);
+
+        var count = 0;
+        foreach (var userId in userIds)
+        {
+            await this._idBackfillService.BackfillUserPlayIds(userId);
+            await this._idBackfillService.BackfillUserArtistIds(userId);
+            await this._idBackfillService.BackfillUserAlbumIds(userId);
+            await this._idBackfillService.BackfillUserTrackIds(userId);
+            count++;
+
+            if (count % 1000 == 0)
+            {
+                Log.Information("BackfillIdsForAllUsers: {count}/{userCount} done - last user {userId}",
+                    count, userIds.Count, userId);
+            }
+        }
+
+        Log.Information("BackfillIdsForAllUsers: Finished {count} users", count);
+
+        return count;
     }
 }

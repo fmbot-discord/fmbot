@@ -196,6 +196,13 @@ public class AdminService
         return filteredUser;
     }
 
+    public async Task<int> GetFilteredUserCountAsync(int userId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        return await db.GlobalFilteredUsers
+            .CountAsync(c => c.UserId == userId);
+    }
+
     public async Task<GlobalFilteredUser> GetFilteredUserForIdAsync(int filteredUserId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -210,7 +217,7 @@ public class AdminService
         await using var db = await this._contextFactory.CreateDbContextAsync();
         return await db.Users
             .AsQueryable()
-            .Where(w => w.UserNameLastFM.ToLower() == lastFmUserName.ToLower())
+            .Where(w => w.UserNameLastFM.ToUpper() == lastFmUserName.ToUpper())
             .ToListAsync();
     }
 

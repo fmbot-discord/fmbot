@@ -58,7 +58,7 @@ public class WebhookService
         var avatarBytes = await File.ReadAllBytesAsync(this._avatarImagePath);
 
         var botType = context.GetBotType();
-        var botTypeName = botType == BotType.Production ? "" : botType == BotType.Beta ? " develop" : " local";
+        var botTypeName = botType == BotType.Production ? "" : botType == BotType.Beta ? " beta" : " local";
 
         var webhook = new Webhook
         {

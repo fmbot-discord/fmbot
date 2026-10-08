@@ -749,6 +749,9 @@
         "amount": {
           "description": "Cantidad de scrobbles del hito"
         },
+        "artist": {
+          "description": "Muestra un hito de un artista concreto (solo supporters)"
+        },
         "user": {
           "description": "El usuario a mostrar (por defecto, tú)"
         }

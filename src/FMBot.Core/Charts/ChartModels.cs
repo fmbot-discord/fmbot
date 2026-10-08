@@ -122,5 +122,6 @@ public class ChartImage
 public enum TitleSetting
 {
     Titles = 1,
-    TitlesDisabled = 2
+    TitlesDisabled = 2,
+    TitlesWithPlays = 3
 }

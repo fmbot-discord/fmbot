@@ -749,6 +749,9 @@
         "amount": {
           "description": "Aantal scrobbles voor de mijlpaal"
         },
+        "artist": {
+          "description": "Toon een mijlpaal voor een specifieke artiest (alleen supporters)"
+        },
         "user": {
           "description": "De gebruiker om te tonen (standaard jijzelf)"
         }

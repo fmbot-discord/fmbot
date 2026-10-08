@@ -624,6 +624,30 @@ public class ArtistsService
         return await TrackRepository.GetUserTracksForArtist(userId, artistName, connection);
     }
 
+    public async Task<(string Amount, string ArtistName, bool InLibrary)> GetArtistMilestoneOptions(int userId,
+        string searchValue)
+    {
+        var (amount, artistName) = SettingService.GetArtistMilestoneOptions(searchValue);
+        if (artistName == null)
+        {
+            return (amount, null, false);
+        }
+
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        if (amount != null)
+        {
+            var fullValue = string.Join(' ', searchValue.Split(' ', StringSplitOptions.RemoveEmptyEntries));
+            if (await ArtistRepository.UserHasArtist(userId, fullValue, connection))
+            {
+                return (null, fullValue, true);
+            }
+        }
+
+        return (amount, artistName, await ArtistRepository.UserHasArtist(userId, artistName, connection));
+    }
+
     public async Task<List<UserAlbum>> GetUserAlbumsForArtist(int userId, string artistName)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);

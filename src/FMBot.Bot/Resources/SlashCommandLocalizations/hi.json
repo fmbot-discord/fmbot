@@ -749,6 +749,9 @@
         "amount": {
           "description": "माइलस्टोन scrobble संख्या"
         },
+        "artist": {
+          "description": "किसी खास artist का माइलस्टोन दिखाओ (सिर्फ़ supporters)"
+        },
         "user": {
           "description": "जिस यूज़र का डेटा दिखाना है (डिफ़ॉल्ट: तुम खुद)"
         }

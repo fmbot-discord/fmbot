@@ -53,6 +53,7 @@ public class UserService
     private readonly ShardedGatewayClient _client;
     private readonly HttpClient _httpClient;
     private readonly EurovisionService _eurovisionService;
+    private readonly IndexService _indexService;
 
     private readonly Core.UserLookup _userLookup;
 
@@ -71,7 +72,8 @@ public class UserService
         ShardedGatewayClient client,
         HttpClient httpClient,
         EurovisionService eurovisionService,
-        Core.UserLookup userLookup)
+        Core.UserLookup userLookup,
+        IndexService indexService)
     {
         this._cache = cache;
         this._userLookup = userLookup;
@@ -88,6 +90,7 @@ public class UserService
         this._client = client;
         this._httpClient = httpClient;
         this._eurovisionService = eurovisionService;
+        this._indexService = indexService;
         this._botSettings = botSettings.Value;
     }
 
@@ -280,10 +283,22 @@ public class UserService
         try
         {
             await using var db = await this._contextFactory.CreateDbContextAsync();
+            var now = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+
+            var returningUsers = await db.Users
+                .Where(w => w.DiscordUserId == discordUserId && w.LastUsed < now.AddDays(-365))
+                .ExecuteUpdateAsync(s => s.SetProperty(p => p.LastUsed, now));
+
             await db.Users
                 .Where(w => w.DiscordUserId == discordUserId)
-                .ExecuteUpdateAsync(s =>
-                    s.SetProperty(p => p.LastUsed, DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc)));
+                .ExecuteUpdateAsync(s => s.SetProperty(p => p.LastUsed, now));
+
+            if (returningUsers > 0)
+            {
+                var user = await GetUserAsync(discordUserId);
+                Log.Information("Returning user {userId} / {discordUserId} - Starting full index", user.UserId, discordUserId);
+                _ = this._indexService.IndexUser(user);
+            }
         }
         catch (Exception e)
         {
@@ -1445,7 +1460,7 @@ public class UserService
                 await using var db = await this._contextFactory.CreateDbContextAsync();
                 var existingUserCount = await db.Users
                     .AsQueryable()
-                    .Where(w => w.UserNameLastFM.ToLower() == userSettings.UserNameLastFM.ToLower())
+                    .Where(w => w.UserNameLastFM.ToUpper() == userSettings.UserNameLastFM.ToUpper())
                     .CountAsync();
 
                 if (existingUserCount > Constants.MaxAlts)

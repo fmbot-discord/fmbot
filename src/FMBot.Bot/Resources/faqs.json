@@ -33,8 +33,8 @@
         },
         {
           "id": "normal-vs-develop",
-          "title": "What's the difference between the normal and develop bot?",
-          "answer": "The develop bot is used to test new fixes and functionality before they go to the normal bot. This is usually announced in #beta-changelog on [our server](https://discord.gg/fmbot).\n\nNote that if either bot leaves your server all your server data and settings will be cleared.\n\nInvites for the develop bot are currently closed until further notice. You can use it on [our support server](https://discord.gg/fmbot) in #commands or on the unofficial [Last.fm server](https://discord.gg/lastfm)."
+          "title": "What's the difference between .fmbot and .fmbot beta?",
+          "answer": ".fmbot beta is used to test new fixes and functionality before they go to the normal bot. This is usually announced in #beta-changelog on [our server](https://discord.gg/fmbot).\n\nNote that both bots share the same server data and settings. If the normal bot leaves your server, all of it will be cleared.\n\nInvites for .fmbot beta are currently closed until further notice. You can use it on [our support server](https://discord.gg/fmbot) in #commands or on the unofficial [Last.fm server](https://discord.gg/lastfm)."
         }
       ]
     },

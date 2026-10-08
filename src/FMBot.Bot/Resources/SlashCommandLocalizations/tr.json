@@ -749,6 +749,9 @@
         "amount": {
           "description": "Kilometre taşı scrobble sayısı"
         },
+        "artist": {
+          "description": "Belirli bir sanatçı için kilometre taşı göster (yalnızca supporter'lar)"
+        },
         "user": {
           "description": "Gösterilecek kullanıcı (varsayılan: sen)"
         }

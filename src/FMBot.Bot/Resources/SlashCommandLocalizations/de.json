@@ -749,6 +749,9 @@
         "amount": {
           "description": "Scrobble-Anzahl des Meilensteins"
         },
+        "artist": {
+          "description": "Zeigt einen Meilenstein für einen bestimmten Künstler (nur für Supporter)"
+        },
         "user": {
           "description": "Der anzuzeigende Nutzer (standardmäßig du selbst)"
         }

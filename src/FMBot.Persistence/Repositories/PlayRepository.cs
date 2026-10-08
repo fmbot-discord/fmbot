@@ -131,7 +131,7 @@ public static class PlayRepository
         await deletePlays.ExecuteNonQueryAsync();
     }
 
-    public static async Task RemoveOldPlays(int userId, NpgsqlConnection connection)
+    public static async Task RemoveOldPlays(int userId, NpgsqlConnection connection, int minimumPlaysToKeep = 500)
     {
         await using var deletePlays = new NpgsqlCommand(
             @"
@@ -140,7 +140,7 @@ public static class PlayRepository
         FROM public.user_plays
         WHERE user_id = @userId
         ORDER BY time_played DESC
-        LIMIT 500
+        LIMIT @minimumPlaysToKeep
     ),
     recent_plays AS (
         SELECT user_play_id
@@ -153,7 +153,7 @@ public static class PlayRepository
     WHERE
         p.user_id = @userId
         AND (p.play_source = 0 OR p.play_source IS NULL)
-        -- Never delete the last 500 plays
+        -- Never delete the most recent plays
         AND p.user_play_id NOT IN (SELECT user_play_id FROM plays_to_keep)
         -- Delete if older than 12 months OR outside last 17.5k
         AND (
@@ -162,6 +162,7 @@ public static class PlayRepository
         );", connection);
 
         deletePlays.Parameters.AddWithValue("userId", userId);
+        deletePlays.Parameters.AddWithValue("minimumPlaysToKeep", minimumPlaysToKeep);
         await deletePlays.ExecuteNonQueryAsync();
     }
 
@@ -450,6 +451,21 @@ ORDER BY time_played DESC;";
         })).ToList();
     }
 
+    public static async Task<List<UserPlay>> GetUserPlaysForArtist(int userId, NpgsqlConnection connection,
+        DataSource dataSource, string artistName)
+    {
+        var sql = GetUserPlaysSqlString("SELECT track_name, album_name, artist_name, time_played ", dataSource,
+            filterSql: GetEntityFilterSql(null, null));
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        return (await connection.QueryAsync<UserPlay>(sql, new
+        {
+            userId,
+            artistName,
+            limit = 99999999
+        })).ToList();
+    }
+
     private static string GetEntityFilterSql(string albumName, string trackName)
     {
         var sql = " AND UPPER(artist_name) = UPPER(CAST(@artistName AS CITEXT)) ";
@@ -468,7 +484,7 @@ ORDER BY time_played DESC;";
     }
 
     private static string GetUserPlaysSqlString(string initialSql, DataSource dataSource, DateTime? start = null,
-        DateTime? end = null)
+        DateTime? end = null, string filterSql = null)
     {
         var sql = initialSql;
 
@@ -515,6 +531,11 @@ ORDER BY time_played DESC;";
         if (end.HasValue)
         {
             sql += " AND time_played <= @end ";
+        }
+
+        if (filterSql != null)
+        {
+            sql += filterSql;
         }
 
         if (!initialSql.Contains("COUNT(*)", StringComparison.OrdinalIgnoreCase) &&

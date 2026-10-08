@@ -102,10 +102,12 @@ public static class ChartOptions
     }
 
     public static ChartSettings FromEditOptions(bool artistChart, string size, string timePeriod,
-        bool titles, bool skip, bool sfw, bool rainbow, bool hideSingles, string releaseFilter,
+        bool titles, bool plays, bool skip, bool sfw, bool rainbow, bool hideSingles, string releaseFilter,
         List<string> filteredGenres, Artist filteredArtist, string timeZone, Language language)
     {
-        var titleSetting = titles ? TitleSetting.Titles : TitleSetting.TitlesDisabled;
+        var titleSetting = !titles ? TitleSetting.TitlesDisabled
+            : plays ? TitleSetting.TitlesWithPlays
+            : TitleSetting.Titles;
         var skipWithoutImage = skip || rainbow;
 
         var (releaseYear, releaseDecade) = ParseReleaseFilter(releaseFilter);
