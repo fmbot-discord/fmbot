@@ -27,7 +27,7 @@ public static class GraphExtensions
             return null;
         }
 
-        var graphType = context.GraphType ?? GraphType.Line;
+        var graphType = context.GraphType ?? GraphType.Bar;
         if (graphType == GraphType.Off)
         {
             return null;
