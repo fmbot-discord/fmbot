@@ -27,6 +27,11 @@ public class LineGraph
 
     public SKColor LineColor { get; init; } = GraphColors.FmbotBlue;
 
+    public List<GraphPoint> BasePoints { get; init; }
+    public SKColor BaseColor { get; init; } = GraphColors.FmbotBlue;
+
+    public List<GraphLegendItem> Legend { get; init; } = [];
+
     public GraphType Style { get; init; } = GraphType.Line;
 
     public bool ZeroBased { get; init; } = true;
@@ -48,10 +53,13 @@ public class PlayHistoryGraph
     public GraphInterval Interval { get; init; }
 }
 
+public record GraphLegendItem(string Label, SKColor Color);
+
 public static class GraphColors
 {
     public static readonly SKColor FmbotBlue = new(0x56, 0x74, 0xB9);
     public static readonly SKColor Cyan = new(0x68, 0xDD, 0xE4);
+    public static readonly SKColor LastFmRed = new(0xD5, 0x10, 0x07);
 }
 
 public record GraphTick(int Index, string Label);
@@ -306,14 +314,9 @@ public static class GraphSeries
         return (from, to);
     }
 
-    public static DateTime LimitToMaxPoints(DateTime from, DateTime to, GraphInterval interval,
-        GraphType style = GraphType.Line)
+    public static DateTime LimitToMaxPoints(DateTime from, DateTime to, GraphInterval interval)
     {
-        var maxBuckets = style == GraphType.Bar && interval != GraphInterval.Year
-            ? MaxBarPoints
-            : interval == GraphInterval.Day
-                ? MaxDailyPoints
-                : MaxRenderPoints;
+        var maxBuckets = interval == GraphInterval.Day ? MaxDailyPoints : MaxRenderPoints;
         var oldest = AddIntervals(StartOfInterval(to, interval), interval, -(maxBuckets - 1));
 
         return from < oldest ? oldest : from;

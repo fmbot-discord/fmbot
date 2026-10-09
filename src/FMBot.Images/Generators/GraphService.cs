@@ -86,28 +86,30 @@ public class GraphService
             }
         }
 
-        if (!windowFrom.HasValue)
+        var bar = style == GraphType.Bar;
+
+        if (!windowFrom.HasValue && !bar)
         {
             var earliestStart = GraphSeries.EarliestStart(until, interval);
             earliest = earliest < earliestStart ? earliest : earliestStart;
         }
 
-        var from = GraphSeries.LimitToMaxPoints(earliest, until, interval, style);
+        var from = bar ? earliest : GraphSeries.LimitToMaxPoints(earliest, until, interval);
 
-        if (interval != GraphInterval.Day && style != GraphType.Bar)
+        if (interval != GraphInterval.Day && !bar)
         {
             (from, until) = GraphSeries.TrimToWholeIntervals(from, until, interval);
         }
 
         var points = GraphSeries.FromDailyCounts(dailyPlays, interval, from, until,
-            style == GraphType.Bar && windowFrom.HasValue ? from : null);
+            bar && windowFrom.HasValue ? from : null);
 
-        if (!windowFrom.HasValue)
+        if (!windowFrom.HasValue && !bar)
         {
             TrimLeadingEmpty(points, GraphSeries.EarliestStart(until, interval));
         }
 
-        if (points.Count < 3 || points.Count(w => w.Value > 0) < 2 || points.Sum(s => s.Value) < MinimumPlays)
+        if ((!bar && points.Count < 3) || points.Count(w => w.Value > 0) < 2 || points.Sum(s => s.Value) < MinimumPlays)
         {
             return null;
         }
