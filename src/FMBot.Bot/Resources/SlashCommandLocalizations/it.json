@@ -593,12 +593,7 @@
       "description": "Gestisci le tue importazioni di dati",
       "subcommands": {
         "applemusic": {
-          "description": "⭐ Importa la tua cronologia Apple Music in .fmbot",
-          "parameters": {
-            "file": {
-              "description": "File 'Apple Media Services information.zip' o 'Apple Music Play Activity.csv'"
-            }
-          }
+          "description": "⭐ Importa la tua cronologia Apple Music in .fmbot"
         },
         "manage": {
           "description": "⭐ Gestisci le tue importazioni e configura come vengono usate"
@@ -607,54 +602,7 @@
           "description": "⭐ Modifica ed elimina artisti, album e brani nelle tue importazioni .fmbot"
         },
         "spotify": {
-          "description": "⭐ Importa la tua cronologia Spotify in .fmbot",
-          "parameters": {
-            "file-1": {
-              "description": "Pacchetto cronologia Spotify (.zip) o file cronologia (.json)"
-            },
-            "file-10": {
-              "description": "Pacchetto cronologia Spotify (.zip) o file cronologia (.json)"
-            },
-            "file-11": {
-              "description": "Pacchetto cronologia Spotify (.zip) o file cronologia (.json)"
-            },
-            "file-12": {
-              "description": "Pacchetto cronologia Spotify (.zip) o file cronologia (.json)"
-            },
-            "file-13": {
-              "description": "Pacchetto cronologia Spotify (.zip) o file cronologia (.json)"
-            },
-            "file-14": {
-              "description": "Pacchetto cronologia Spotify (.zip) o file cronologia (.json)"
-            },
-            "file-15": {
-              "description": "Pacchetto cronologia Spotify (.zip) o file cronologia (.json)"
-            },
-            "file-2": {
-              "description": "Pacchetto cronologia Spotify (.zip) o file cronologia (.json)"
-            },
-            "file-3": {
-              "description": "Pacchetto cronologia Spotify (.zip) o file cronologia (.json)"
-            },
-            "file-4": {
-              "description": "Pacchetto cronologia Spotify (.zip) o file cronologia (.json)"
-            },
-            "file-5": {
-              "description": "Pacchetto cronologia Spotify (.zip) o file cronologia (.json)"
-            },
-            "file-6": {
-              "description": "Pacchetto cronologia Spotify (.zip) o file cronologia (.json)"
-            },
-            "file-7": {
-              "description": "Pacchetto cronologia Spotify (.zip) o file cronologia (.json)"
-            },
-            "file-8": {
-              "description": "Pacchetto cronologia Spotify (.zip) o file cronologia (.json)"
-            },
-            "file-9": {
-              "description": "Pacchetto cronologia Spotify (.zip) o file cronologia (.json)"
-            }
-          }
+          "description": "⭐ Importa la tua cronologia Spotify in .fmbot"
         }
       }
     },

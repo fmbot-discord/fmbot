@@ -387,10 +387,13 @@ public class UserInteractions(
                             return;
                         }
 
+                        await this.Context.Interaction.SendResponseAsync(
+                            InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
+
                         response = await userBuilder.ImportMode(new ContextModel(this.Context, contextUser),
                             contextUser.UserId);
 
-                        await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
+                        await this.Context.SendFollowUpResponse(interactivity, response, userService, ephemeral: true);
                         break;
                     }
                     case UserSetting.CommandShortcuts:

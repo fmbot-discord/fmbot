@@ -183,6 +183,46 @@ public static class ModalFactory
             ]
         };
 
+    public static ModalProperties CreateImportUploadModal(string customId, PlaySource playSource) =>
+        playSource == PlaySource.AppleMusicImport
+            ? new(customId, "Import Apple Music history")
+            {
+                Components =
+                [
+                    new LabelProperties("Apple Music history file",
+                        new FileUploadProperties("files")
+                        {
+                            MinValues = 1,
+                            MaxValues = 1,
+                            FileTypes = [".zip", ".csv"]
+                        })
+                    {
+                        Description = "'Apple Media Services information.zip' or 'Apple Music Play Activity.csv'"
+                    },
+                    new TextDisplayProperties(ImportUploadLimitHint)
+                ]
+            }
+            : new(customId, "Import Spotify history")
+            {
+                Components =
+                [
+                    new LabelProperties("Spotify history files",
+                        new FileUploadProperties("files")
+                        {
+                            MinValues = 1,
+                            MaxValues = 10,
+                            FileTypes = [".zip", ".json"]
+                        })
+                    {
+                        Description = "Your 'my_spotify_data.zip', or up to 10 'Streaming_History_Audio' .json files"
+                    },
+                    new TextDisplayProperties(ImportUploadLimitHint)
+                ]
+            };
+
+    private const string ImportUploadLimitHint =
+        "-# Files bigger than Discord's upload limit? Try on our boosted server: discord.gg/fmbot";
+
     // Setting Modals
     public static ModalProperties CreateRemoveAccountConfirmModal(string customId) =>
         new(customId, "Confirm account deletion")

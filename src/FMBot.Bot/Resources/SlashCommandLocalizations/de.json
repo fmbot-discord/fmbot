@@ -593,12 +593,7 @@
       "description": "Verwalte deine Datenimporte",
       "subcommands": {
         "applemusic": {
-          "description": "⭐ Importiere deinen Hörverlauf von Apple Music in .fmbot",
-          "parameters": {
-            "file": {
-              "description": "Datei 'Apple Media Services information.zip' oder 'Apple Music Play Activity.csv'"
-            }
-          }
+          "description": "⭐ Importiere deinen Hörverlauf von Apple Music in .fmbot"
         },
         "manage": {
           "description": "⭐ Verwalte deine Importe und konfiguriere ihre Verwendung"
@@ -607,54 +602,7 @@
           "description": "⭐ Bearbeite und lösche Künstler, Alben und Tracks in deinen .fmbot-Importen"
         },
         "spotify": {
-          "description": "⭐ Importiere deinen Spotify-Verlauf in .fmbot",
-          "parameters": {
-            "file-1": {
-              "description": "Spotify-Verlaufspaket (.zip) oder Verlaufsdateien (.json)"
-            },
-            "file-10": {
-              "description": "Spotify-Verlaufspaket (.zip) oder Verlaufsdateien (.json)"
-            },
-            "file-11": {
-              "description": "Spotify-Verlaufspaket (.zip) oder Verlaufsdateien (.json)"
-            },
-            "file-12": {
-              "description": "Spotify-Verlaufspaket (.zip) oder Verlaufsdateien (.json)"
-            },
-            "file-13": {
-              "description": "Spotify-Verlaufspaket (.zip) oder Verlaufsdateien (.json)"
-            },
-            "file-14": {
-              "description": "Spotify-Verlaufspaket (.zip) oder Verlaufsdateien (.json)"
-            },
-            "file-15": {
-              "description": "Spotify-Verlaufspaket (.zip) oder Verlaufsdateien (.json)"
-            },
-            "file-2": {
-              "description": "Spotify-Verlaufspaket (.zip) oder Verlaufsdateien (.json)"
-            },
-            "file-3": {
-              "description": "Spotify-Verlaufspaket (.zip) oder Verlaufsdateien (.json)"
-            },
-            "file-4": {
-              "description": "Spotify-Verlaufspaket (.zip) oder Verlaufsdateien (.json)"
-            },
-            "file-5": {
-              "description": "Spotify-Verlaufspaket (.zip) oder Verlaufsdateien (.json)"
-            },
-            "file-6": {
-              "description": "Spotify-Verlaufspaket (.zip) oder Verlaufsdateien (.json)"
-            },
-            "file-7": {
-              "description": "Spotify-Verlaufspaket (.zip) oder Verlaufsdateien (.json)"
-            },
-            "file-8": {
-              "description": "Spotify-Verlaufspaket (.zip) oder Verlaufsdateien (.json)"
-            },
-            "file-9": {
-              "description": "Spotify-Verlaufspaket (.zip) oder Verlaufsdateien (.json)"
-            }
-          }
+          "description": "⭐ Importiere deinen Spotify-Verlauf in .fmbot"
         }
       }
     },

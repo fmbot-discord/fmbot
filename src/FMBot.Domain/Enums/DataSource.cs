@@ -10,6 +10,6 @@ public enum DataSource
     FullImportThenLastFm = 2,
     [Option("Import until full Last.fm", "Use your imported history up until you started scrobbling")]
     ImportThenFullLastFm = 3,
-    [Option("Smart deduplication", "(Beta) Combines both and removes imported plays already on Last.fm")]
+    [Option("Smart deduplication", "Combines both and removes imported plays already on Last.fm")]
     MergedDeduplicated = 4
 }

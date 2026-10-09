@@ -10,6 +10,7 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
+using NetCord;
 using NetCord.Rest;
 using NetCord.Services.Commands;
 
@@ -48,11 +49,11 @@ public class ImportCommands(
         ResponseModel response;
         if (this.Context.Message.Content.Contains("spotify", StringComparison.OrdinalIgnoreCase))
         {
-            response = await importBuilders.GetSpotifyImportInstructions(new ContextModel(this.Context, prfx, contextUser), true);
+            response = await importBuilders.GetSpotifyImportInstructions(new ContextModel(this.Context, prfx, contextUser));
         }
         else if (this.Context.Message.Content.Contains("apple", StringComparison.OrdinalIgnoreCase))
         {
-            response = await importBuilders.GetAppleMusicImportInstructions(new ContextModel(this.Context, prfx, contextUser), true);
+            response = await importBuilders.GetAppleMusicImportInstructions(new ContextModel(this.Context, prfx, contextUser));
         }
         else
         {
@@ -85,11 +86,15 @@ public class ImportCommands(
 
         if (this.Context.Guild != null)
         {
-            var serverEmbed = new EmbedProperties()
-                .WithColor(DiscordConstants.InformationColorBlue)
-                .WithDescription("Check your DMs to continue with modifying your .fmbot imports.");
+            var serverContainer = new ComponentContainerProperties();
+            serverContainer.WithAccentColor(DiscordConstants.InformationColorBlue);
+            serverContainer.WithTextDisplay("Check your DMs to continue with modifying your .fmbot imports.");
 
-            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties { Embeds = [serverEmbed] });
+            await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId, new MessageProperties
+            {
+                Components = [serverContainer],
+                Flags = MessageFlags.IsComponentsV2
+            });
         }
         else
         {
@@ -102,8 +107,8 @@ public class ImportCommands(
             var dmChannel = await userService.GetDmChannel(this.Context.User);
             await dmChannel.SendMessageAsync(new MessageProperties
             {
-                Embeds = [response.Embed],
-                Components = [response.Components]
+                Components = response.GetComponentsV2(),
+                Flags = MessageFlags.IsComponentsV2
             });
             await this.Context.LogCommandUsedAsync(response, userService);
         }

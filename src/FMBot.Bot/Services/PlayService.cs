@@ -1703,6 +1703,12 @@ public class PlayService
         return task;
     }
 
+    public void RemoveAllUserPlaysFromCache(int userId)
+    {
+        this._cache.Remove($"all-user-plays-{userId}-{true}");
+        this._cache.Remove($"all-user-plays-{userId}-{false}");
+    }
+
     private async Task<ICollection<UserPlay>> GetAllUserPlaysInternal(int userId, bool finalizeImport)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);

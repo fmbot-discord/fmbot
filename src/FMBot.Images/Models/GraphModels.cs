@@ -31,6 +31,7 @@ public class LineGraph
     public SKColor BaseColor { get; init; } = GraphColors.FmbotBlue;
 
     public List<GraphLegendItem> Legend { get; init; } = [];
+    public string LegendNote { get; init; }
 
     public GraphType Style { get; init; } = GraphType.Line;
 

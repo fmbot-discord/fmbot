@@ -13,10 +13,15 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain.Attributes;
 using FMBot.Domain.Enums;
+using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
+using FMBot.Persistence.Domain.Models;
+using Hangfire;
+using Microsoft.Extensions.Caching.Memory;
 using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ComponentInteractions;
+using User = FMBot.Persistence.Domain.Models.User;
 
 namespace FMBot.Bot.Interactions;
 
@@ -24,11 +29,300 @@ public class ImportInteractions(
     UserService userService,
     ImportService importService,
     IndexService indexService,
+    PlayService playService,
     ImportBuilders importBuilders,
     UserBuilder userBuilder,
-    InteractiveService interactivity)
+    InteractiveService interactivity,
+    IMemoryCache cache)
     : ComponentInteractionModule<ComponentInteractionContext>
 {
+    [ComponentInteraction(InteractionConstants.ImportUpload)]
+    [UsernameSetRequired]
+    public async Task ImportUploadButton(string source)
+    {
+        try
+        {
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+            var supporterRequired = ImportBuilders.ImportSupporterRequired(new ContextModel(this.Context, contextUser));
+
+            if (supporterRequired != null)
+            {
+                await this.Context.SendResponse(interactivity, supporterRequired, userService, ephemeral: true);
+                await this.Context.LogCommandUsedAsync(supporterRequired, userService);
+                return;
+            }
+
+            if (!Enum.TryParse(source, out PlaySource playSource))
+            {
+                return;
+            }
+
+            await RespondAsync(InteractionCallback.Modal(
+                ModalFactory.CreateImportUploadModal($"{InteractionConstants.ImportUploadModal}:{source}",
+                    playSource)));
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService, deferFirst: true);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.ImportUploadModal)]
+    [UsernameSetRequired]
+    public async Task ImportUpload(string source)
+    {
+        if (!Enum.TryParse(source, out PlaySource playSource))
+        {
+            return;
+        }
+
+        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        var supporterRequired = ImportBuilders.ImportSupporterRequired(new ContextModel(this.Context, contextUser));
+
+        if (supporterRequired != null)
+        {
+            await this.Context.SendResponse(interactivity, supporterRequired, userService, ephemeral: true);
+            await this.Context.LogCommandUsedAsync(supporterRequired, userService);
+            return;
+        }
+
+        var importCacheKey = $"import-in-progress-{contextUser.UserId}";
+        if (cache.TryGetValue(importCacheKey, out bool _))
+        {
+            await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                .WithContent("You already have an import running. Please wait for it to finish before uploading more files.")
+                .WithFlags(MessageFlags.Ephemeral)));
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Cooldown }, userService);
+            return;
+        }
+
+        var numberFormat = contextUser.NumberFormat ?? NumberFormat.NoSeparator;
+        var attachments = this.Context.GetModalFiles("files");
+
+        await RespondAsync(InteractionCallback.DeferredMessage());
+
+        var progress = new StringBuilder();
+        var loadingResponse = ImportBuilders.ImportProgress(playSource,
+            $"- {EmojiProperties.Custom(DiscordConstants.Loading).ToDiscordString("loading", true)} Loading import files...",
+            false);
+        var message = await this.Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
+            .WithComponents(loadingResponse.GetComponentsV2())
+            .WithFlags(MessageFlags.IsComponentsV2));
+
+        cache.Set(importCacheKey, true, TimeSpan.FromMinutes(1));
+
+        try
+        {
+            var plays = playSource == PlaySource.AppleMusicImport
+                ? await GetAppleMusicImportPlays(message.Id, contextUser, attachments, progress)
+                : await GetSpotifyImportPlays(message.Id, contextUser, attachments, progress);
+
+            if (plays == null)
+            {
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
+                return;
+            }
+
+            var playsWithoutDuplicates =
+                await importService.RemoveDuplicateImports(contextUser.UserId, plays);
+            await UpdateImportProgress(message.Id, playSource, progress,
+                $"- **{playsWithoutDuplicates.Count.Format(numberFormat)}** new plays found");
+
+            if (playsWithoutDuplicates.Count > 0)
+            {
+                await importService.InsertImportPlays(contextUser, playsWithoutDuplicates);
+                await UpdateImportProgress(message.Id, playSource, progress, "- Added plays to database");
+
+                if (contextUser.DataSource == DataSource.LastFm)
+                {
+                    var userHasImportedLastfm = await playService.UserHasImportedLastFm(contextUser.UserId);
+
+                    await userService.SetDataSource(contextUser, userHasImportedLastfm
+                        ? DataSource.FullImportThenLastFm
+                        : DataSource.MergedDeduplicated);
+                    await UpdateImportProgress(message.Id, playSource, progress, "- Updated import setting");
+                }
+            }
+
+            if (contextUser.DataSource != DataSource.LastFm)
+            {
+                await indexService.RecalculateTopLists(contextUser);
+                await UpdateImportProgress(message.Id, playSource, progress, "- Refreshed top list cache");
+
+                BackgroundJob.Schedule(() => indexService.RecalculateTopLists(contextUser.UserId),
+                    TimeSpan.FromMinutes(1));
+                BackgroundJob.Schedule(() => indexService.RecalculateTopLists(contextUser.UserId),
+                    TimeSpan.FromMinutes(2));
+            }
+
+            await importService.UpdateExistingScrobbleSource(contextUser);
+
+            contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+
+            progress.AppendLine("- Import complete!");
+            var response = await importBuilders.ImportComplete(new ContextModel(this.Context, contextUser),
+                playSource, progress.ToString());
+            await UpdateImportMessage(message.Id, response);
+
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
+        }
+        catch (Exception e)
+        {
+            await UpdateImportFailed(message.Id, playSource, progress,
+                "- ❌ Sorry, an internal error occurred. Please try again later, or open a help thread on [our server](https://discord.gg/fmbot).");
+            await this.Context.HandleCommandException(e, userService, sendReply: false);
+        }
+        finally
+        {
+            cache.Remove(importCacheKey);
+        }
+    }
+
+    private async Task<List<UserPlay>> GetSpotifyImportPlays(ulong messageId, User contextUser,
+        IReadOnlyList<Attachment> attachments, StringBuilder progress)
+    {
+        var numberFormat = contextUser.NumberFormat ?? NumberFormat.NoSeparator;
+        var imports = await importService.HandleSpotifyFiles(contextUser, attachments);
+
+        if (imports.status == ImportStatus.UnknownFailure)
+        {
+            await UpdateImportFailed(messageId, PlaySource.SpotifyImport, progress,
+                "❌ Invalid Spotify import file. Make sure you select the right files, for example `my_spotify_data.zip` or `Streaming_History_Audio_x.json`.");
+            return null;
+        }
+
+        if (imports.status == ImportStatus.WrongPackageFailure)
+        {
+            await UpdateImportFailed(messageId, PlaySource.SpotifyImport, progress,
+                "❌ Invalid Spotify import files. You have uploaded the wrong Spotify data package.\n\n" +
+                "We can only process files that are from the ['Extended Streaming History'](https://www.spotify.com/us/account/privacy/) package. Instead you have uploaded the 'Account data' package.",
+                new MediaGalleryProperties
+                {
+                    new MediaGalleryItemProperties(
+                        new ComponentMediaProperties("https://fm.bot/img/bot/import-spotify-instructions.png"))
+                },
+                new ActionRowProperties()
+                    .AddComponents(new LinkButtonProperties("https://www.spotify.com/us/account/privacy/",
+                        "Spotify privacy page")));
+            return null;
+        }
+
+        if (imports.result == null || imports.result.Count == 0 || imports.result.All(a => a.MsPlayed == 0))
+        {
+            if (attachments.Any(a => a.FileName != null) &&
+                attachments.Any(a => a.FileName.ToLower().Contains("streaminghistory")))
+            {
+                await UpdateImportFailed(messageId, PlaySource.SpotifyImport, progress,
+                    "❌ Invalid Spotify import file. We can only process files that are from the ['Extended Streaming History'](https://www.spotify.com/us/account/privacy/) package.\n\n" +
+                    "The files should have names like `my_spotify_data.zip` or `Streaming_History_Audio_x.json`.\n\n" +
+                    "The right files can take some more time to get, but actually contain your full Spotify history. Sorry for the inconvenience.");
+                return null;
+            }
+
+            await UpdateImportFailed(messageId, PlaySource.SpotifyImport, progress,
+                "❌ Invalid Spotify import file (contains no plays). Make sure you select the right files, for example `my_spotify_data.zip` or `Streaming_History_Audio_x.json`.\n\n" +
+                "If your `.zip` contains files like `Userdata.json` or `Identity.json` it's the wrong package. We can only process files that are from the ['Extended Streaming History'](https://www.spotify.com/us/account/privacy/) package. ");
+            return null;
+        }
+
+        await UpdateImportProgress(messageId, PlaySource.SpotifyImport, progress,
+            $"- **{imports.result.Count.Format(numberFormat)}** Spotify imports found");
+
+        var plays = await importService.SpotifyImportToUserPlays(contextUser, imports.result);
+        await UpdateImportProgress(messageId, PlaySource.SpotifyImport, progress,
+            $"- **{plays.Count.Format(numberFormat)}** actual plays found");
+
+        return plays;
+    }
+
+    private async Task<List<UserPlay>> GetAppleMusicImportPlays(ulong messageId, User contextUser,
+        IReadOnlyList<Attachment> attachments, StringBuilder progress)
+    {
+        var numberFormat = contextUser.NumberFormat ?? NumberFormat.NoSeparator;
+        var imports = await importService.HandleAppleMusicFiles(contextUser, attachments[0]);
+
+        if (imports.status == ImportStatus.UnknownFailure)
+        {
+            await UpdateImportFailed(messageId, PlaySource.AppleMusicImport, progress,
+                "❌ Invalid Apple Music import file, or something went wrong.\n\n" +
+                "If you've uploaded a `.zip` file you can also try to find the `Apple Music Play Activity.csv` inside the .zip and upload that instead.\n\n" +
+                "You can also open a help thread on [our server](https://discord.gg/fmbot).");
+            return null;
+        }
+
+        if (imports.status == ImportStatus.WrongCsvFailure)
+        {
+            await UpdateImportFailed(messageId, PlaySource.AppleMusicImport, progress,
+                "❌ We couldn't read the `.csv` file that was provided.\n\n" +
+                "We can only read an `Apple Music Play Activity.csv` file. Other files do not contain the data required for importing.\n\n" +
+                "Still having issues? You can also open a help thread on [our server](https://discord.gg/fmbot).");
+            return null;
+        }
+
+        await UpdateImportProgress(messageId, PlaySource.AppleMusicImport, progress,
+            $"- **{imports.result.Count.Format(numberFormat)}** Apple Music imports found");
+
+        var importsWithArtist = await importService.AppleMusicImportAddArtists(contextUser, imports.result);
+        await UpdateImportProgress(messageId, PlaySource.AppleMusicImport, progress,
+            $"- **{importsWithArtist.matchFoundPercentage}** of artist names found for imports");
+        await UpdateImportProgress(messageId, PlaySource.AppleMusicImport, progress,
+            $"- **{importsWithArtist.userPlays.Count(c => !string.IsNullOrWhiteSpace(c.ArtistName)).Format(numberFormat)}** with artist names");
+
+        var plays = ImportService.AppleMusicImportsToValidUserPlays(contextUser, importsWithArtist.userPlays);
+        await UpdateImportProgress(messageId, PlaySource.AppleMusicImport, progress,
+            $"- **{plays.Count.Format(numberFormat)}** actual plays found");
+
+        return plays;
+    }
+
+    private Task UpdateImportProgress(ulong messageId, PlaySource playSource, StringBuilder progress,
+        string lineToAdd)
+    {
+        progress.AppendLine(lineToAdd);
+        return UpdateImportMessage(messageId, ImportBuilders.ImportProgress(playSource, progress.ToString()));
+    }
+
+    private Task UpdateImportFailed(ulong messageId, PlaySource playSource, StringBuilder progress, string error,
+        MediaGalleryProperties image = null, ActionRowProperties components = null)
+    {
+        progress.AppendLine(error);
+
+        var response = ImportBuilders.ImportProgress(playSource, progress.ToString(), false,
+            DiscordConstants.WarningColorOrange);
+
+        if (image != null)
+        {
+            response.ComponentsContainer.AddComponent(image);
+        }
+
+        if (components != null)
+        {
+            response.ComponentsContainer.WithSeparator();
+            response.ComponentsContainer.WithActionRow(components);
+        }
+
+        return UpdateImportMessage(messageId, response);
+    }
+
+    private async Task UpdateImportMessage(ulong messageId, ResponseModel response)
+    {
+        await this.Context.Interaction.ModifyFollowupMessageAsync(messageId, m =>
+        {
+            m.Components = response.GetComponentsV2();
+            m.AllowedMentions = AllowedMentionsProperties.None;
+            if (response.Stream != null)
+            {
+                m.Attachments = [new AttachmentProperties(response.FileName, response.Stream)];
+            }
+        });
+
+        if (response.Stream != null)
+        {
+            await response.Stream.DisposeAsync();
+        }
+    }
+
     [ComponentInteraction(InteractionConstants.ImportModify.Modify)]
     public async Task SelectImportModifyPickButton(string pickedOption)
     {
@@ -219,7 +513,7 @@ public class ImportInteractions(
             var artistName = this.Context.GetModalValue("artist_name");
 
             await RespondAsync(InteractionCallback.DeferredModifyMessage);
-            await EditToLoader();
+            await this.Context.DisableButtonsAndMenus();
             var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
             var newArtistRef =
@@ -231,12 +525,7 @@ public class ImportInteractions(
                 selectedArtistRef,
                 newArtistRef);
 
-            await this.Context.Interaction.ModifyResponseAsync(e =>
-            {
-                e.Embeds = [response.Embed];
-                e.Components = response.Components?.Any() == true ? [response.Components] : null;
-            });
-
+            await this.Context.UpdateInteractionEmbed(response, defer: false);
             await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
@@ -254,7 +543,7 @@ public class ImportInteractions(
             var albumName = this.Context.GetModalValue("album_name");
 
             await RespondAsync(InteractionCallback.DeferredModifyMessage);
-            await EditToLoader();
+            await this.Context.DisableButtonsAndMenus();
             var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
             var newAlbumRef = importService.StoreImportReference(new ReferencedMusic
@@ -266,12 +555,7 @@ public class ImportInteractions(
                 selectedAlbumRef,
                 newAlbumRef);
 
-            await this.Context.Interaction.ModifyResponseAsync(e =>
-            {
-                e.Embeds = [response.Embed];
-                e.Components = response.Components?.Any() == true ? [response.Components] : null;
-            });
-
+            await this.Context.UpdateInteractionEmbed(response, defer: false);
             await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
@@ -289,7 +573,7 @@ public class ImportInteractions(
             var trackName = this.Context.GetModalValue("track_name");
 
             await RespondAsync(InteractionCallback.DeferredModifyMessage);
-            await EditToLoader();
+            await this.Context.DisableButtonsAndMenus();
             var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
             var newTrackRef = importService.StoreImportReference(new ReferencedMusic
@@ -301,30 +585,13 @@ public class ImportInteractions(
                 selectedTrackRef,
                 newTrackRef);
 
-            await this.Context.Interaction.ModifyResponseAsync(e =>
-            {
-                e.Embeds = [response.Embed];
-                e.Components = response.Components?.Any() == true ? [response.Components] : null;
-            });
-
+            await this.Context.UpdateInteractionEmbed(response, defer: false);
             await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
             await this.Context.HandleCommandException(e, userService);
         }
-    }
-
-    private async Task EditToLoader(string text = "Loading...")
-    {
-        await this.Context.Interaction.ModifyResponseAsync(e =>
-        {
-            e.Components =
-            [
-                new ActionRowProperties().WithButton(text, customId: "0",
-                    emote: EmojiProperties.Custom(DiscordConstants.Loading), disabled: true, style: ButtonStyle.Secondary)
-            ];
-        });
     }
 
     [ComponentInteraction(InteractionConstants.ImportSetting)]
@@ -346,44 +613,35 @@ public class ImportInteractions(
 
         if (Enum.TryParse(selectedValue, out DataSource dataSource))
         {
-            var newUserSettings = await userService.SetDataSource(contextUser, dataSource);
-
-            var name = newUserSettings.DataSource.GetAttribute<OptionAttribute>().Name;
-
-            var description = new StringBuilder();
-            description.AppendLine($"Import mode set to **{name}**");
-            description.AppendLine();
-
-            var embed = new EmbedProperties();
-            embed.WithDescription(description +
-                                  $"{EmojiProperties.Custom(DiscordConstants.Loading).ToDiscordString("loading", true)} Your stored top artist/albums/tracks are being recalculated, please wait for this to complete...");
-            embed.WithColor(DiscordConstants.WarningColorOrange);
-
-            List<ActionRowProperties> components = null;
-            if (dataSource == DataSource.LastFm)
+            try
             {
-                components =
-                [
-                    new ActionRowProperties()
-                        .WithButton("Delete imported Spotify history", InteractionConstants.ImportClearSpotify,
-                            style: ButtonStyle.Danger)
-                        .WithButton("Delete imported Apple Music history", InteractionConstants.ImportClearAppleMusic,
-                            style: ButtonStyle.Danger)
-                ];
+                var name = dataSource.GetAttribute<OptionAttribute>().Name;
+                var loadingText =
+                    $"Setting import mode to **{name}** and recalculating your stored top artist/albums/tracks...";
+
+                await RespondAsync(InteractionCallback.DeferredModifyMessage);
+                await ShowImportModeLoader(loadingText);
+
+                var newUserSettings = await userService.SetDataSource(contextUser, dataSource);
+                var recalculateTask = indexService.RecalculateTopLists(newUserSettings);
+
+                var loadingResponse = await userBuilder.ImportMode(new ContextModel(this.Context, contextUser),
+                    contextUser.UserId, loadingText: loadingText);
+                await this.Context.UpdateInteractionEmbed(loadingResponse, defer: false);
+
+                await recalculateTask;
+
+                var response = await userBuilder.ImportMode(new ContextModel(this.Context, contextUser),
+                    contextUser.UserId,
+                    "✅ Your stored top artist/albums/tracks have successfully been recalculated.");
+
+                await this.Context.UpdateInteractionEmbed(response, defer: false);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
             }
-
-            await this.Context.Interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties()
-                .WithEmbeds([embed])
-                .WithFlags(MessageFlags.Ephemeral)
-                .WithComponents(components)));
-            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
-
-            await indexService.RecalculateTopLists(newUserSettings);
-
-            embed.WithColor(DiscordConstants.SuccessColorGreen);
-            embed.WithDescription(description +
-                                  "✅ Your stored top artist/albums/tracks have successfully been recalculated.");
-            await this.Context.Interaction.ModifyResponseAsync(msg => { msg.Embeds = [embed]; });
+            catch (Exception e)
+            {
+                await this.Context.HandleCommandException(e, userService);
+            }
         }
     }
 
@@ -391,36 +649,71 @@ public class ImportInteractions(
     [UsernameSetRequired]
     public async Task ClearImportSpotify()
     {
-        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        try
+        {
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
-        await importService.RemoveImportedSpotifyPlays(contextUser);
+            await RespondAsync(InteractionCallback.DeferredModifyMessage);
+            await ShowImportModeLoader("Deleting your imported Spotify history...");
 
-        var embed = new EmbedProperties();
-        embed.WithDescription("All your imported Spotify history has been removed from .fmbot.");
-        embed.WithColor(DiscordConstants.SuccessColorGreen);
+            await importService.RemoveImportedSpotifyPlays(contextUser);
+            playService.RemoveAllUserPlaysFromCache(contextUser.UserId);
 
-        await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
-            .WithEmbeds([embed])
-            .WithFlags(MessageFlags.Ephemeral)));
-        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
+            var response = await userBuilder.ImportMode(new ContextModel(this.Context, contextUser),
+                contextUser.UserId, "✅ All your imported Spotify history has been removed from .fmbot.");
+
+            await this.Context.UpdateInteractionEmbed(response, defer: false);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
     }
 
     [ComponentInteraction(InteractionConstants.ImportClearAppleMusic)]
     [UsernameSetRequired]
     public async Task ClearImportAppleMusic()
     {
-        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+        try
+        {
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
-        await importService.RemoveImportedAppleMusicPlays(contextUser);
+            await RespondAsync(InteractionCallback.DeferredModifyMessage);
+            await ShowImportModeLoader("Deleting your imported Apple Music history...");
 
-        var embed = new EmbedProperties();
-        embed.WithDescription("All your imported Apple Music history has been removed from .fmbot.");
-        embed.WithColor(DiscordConstants.SuccessColorGreen);
+            await importService.RemoveImportedAppleMusicPlays(contextUser);
+            playService.RemoveAllUserPlaysFromCache(contextUser.UserId);
 
-        await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
-            .WithEmbeds([embed])
-            .WithFlags(MessageFlags.Ephemeral)));
-        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
+            var response = await userBuilder.ImportMode(new ContextModel(this.Context, contextUser),
+                contextUser.UserId, "✅ All your imported Apple Music history has been removed from .fmbot.");
+
+            await this.Context.UpdateInteractionEmbed(response, defer: false);
+            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
+    private async Task ShowImportModeLoader(string loadingText)
+    {
+        var message = ((MessageComponentInteraction)this.Context.Interaction).Message;
+        var components = message.Components.WithDisabled();
+
+        foreach (var container in components.OfType<ComponentContainerProperties>())
+        {
+            container.Components = container.Components
+                .Where(w => w is not ActionRowProperties)
+                .Select(s => s is StringMenuProperties
+                    ? new TextDisplayProperties(
+                        $"{EmojiProperties.Custom(DiscordConstants.Loading).ToDiscordString("loading", true)} {loadingText}")
+                    : s)
+                .ToList();
+        }
+
+        await this.Context.Interaction.ModifyResponseAsync(m => m.Components = components);
     }
 
     [ComponentInteraction(InteractionConstants.ImportManage)]
@@ -471,13 +764,13 @@ public class ImportInteractions(
         {
             await Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
 
-            var serverEmbed = new EmbedProperties()
-                .WithColor(DiscordConstants.InformationColorBlue)
-                .WithDescription("Check your DMs to continue with modifying your .fmbot imports.");
+            var serverContainer = new ComponentContainerProperties();
+            serverContainer.WithAccentColor(DiscordConstants.InformationColorBlue);
+            serverContainer.WithTextDisplay("Check your DMs to continue with modifying your .fmbot imports.");
 
             await this.Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
-                .WithEmbeds([serverEmbed])
-                .WithFlags(MessageFlags.Ephemeral));
+                .WithComponents([serverContainer])
+                .WithFlags(MessageFlags.Ephemeral | MessageFlags.IsComponentsV2));
         }
         else if (this.Context.Channel != null)
         {
@@ -492,8 +785,8 @@ public class ImportInteractions(
             var dmChannel = await userService.GetDmChannel(this.Context.User);
             await dmChannel.SendMessageAsync(new MessageProperties
             {
-                Embeds = [response.Embed],
-                Components = [response.Components]
+                Components = response.GetComponentsV2(),
+                Flags = MessageFlags.IsComponentsV2
             });
             await this.Context.LogCommandUsedAsync(response, userService);
         }
@@ -542,11 +835,14 @@ public class ImportInteractions(
 
         try
         {
-            var response =
-                await importBuilders.GetSpotifyImportInstructions(new ContextModel(this.Context, contextUser),
-                    true);
+            this.Context.DeferUpdateInBackground();
+            var disableButtonsTask = this.Context.DisableButtonsAndMenus().ObserveFaults();
 
-            await this.Context.UpdateInteractionEmbed(response);
+            var response =
+                await importBuilders.GetSpotifyImportInstructions(new ContextModel(this.Context, contextUser));
+
+            await disableButtonsTask;
+            await this.Context.UpdateInteractionEmbed(response, defer: false);
             await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
@@ -563,11 +859,14 @@ public class ImportInteractions(
 
         try
         {
-            var response =
-                await importBuilders.GetAppleMusicImportInstructions(new ContextModel(this.Context, contextUser),
-                    true);
+            this.Context.DeferUpdateInBackground();
+            var disableButtonsTask = this.Context.DisableButtonsAndMenus().ObserveFaults();
 
-            await this.Context.UpdateInteractionEmbed(response);
+            var response =
+                await importBuilders.GetAppleMusicImportInstructions(new ContextModel(this.Context, contextUser));
+
+            await disableButtonsTask;
+            await this.Context.UpdateInteractionEmbed(response, defer: false);
             await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
@@ -582,7 +881,7 @@ public class ImportInteractions(
         try
         {
             await RespondAsync(InteractionCallback.DeferredModifyMessage);
-            await EditToLoaderButton("Editing selected imports...");
+            await this.Context.DisableButtonsAndMenus();
             var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
             var selectedArtist = importService.GetImportRef(selectedArtistRef)?.Artist;
@@ -604,12 +903,7 @@ public class ImportInteractions(
                 newArtistRef,
                 selectedArtistRef);
 
-            await this.Context.Interaction.ModifyResponseAsync(e =>
-            {
-                e.Embeds = [response.Embed];
-                e.Components = response.Components?.Any() == true ? [response.Components] : [];
-            });
-
+            await this.Context.UpdateInteractionEmbed(response, defer: false);
             await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
@@ -624,7 +918,7 @@ public class ImportInteractions(
         try
         {
             await RespondAsync(InteractionCallback.DeferredModifyMessage);
-            await EditToLoaderButton();
+            await this.Context.DisableButtonsAndMenus();
             var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
             var response = await importBuilders.PickArtist(
@@ -633,12 +927,7 @@ public class ImportInteractions(
                 artistRef,
                 deletion: false);
 
-            await this.Context.Interaction.ModifyResponseAsync(e =>
-            {
-                e.Embeds = [response.Embed];
-                e.Components = response.Components?.Any() == true ? [response.Components] : [];
-            });
-
+            await this.Context.UpdateInteractionEmbed(response, defer: false);
             await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
@@ -653,7 +942,7 @@ public class ImportInteractions(
         try
         {
             await RespondAsync(InteractionCallback.DeferredModifyMessage);
-            await EditToLoaderButton("Deleting selected imports...");
+            await this.Context.DisableButtonsAndMenus();
             var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
             var artist = importService.GetImportRef(artistRef)?.Artist;
@@ -673,12 +962,7 @@ public class ImportInteractions(
                 artistRef,
                 deletion: true);
 
-            await this.Context.Interaction.ModifyResponseAsync(e =>
-            {
-                e.Embeds = [response.Embed];
-                e.Components = response.Components?.Any() == true ? [response.Components] : [];
-            });
-
+            await this.Context.UpdateInteractionEmbed(response, defer: false);
             await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
@@ -693,7 +977,7 @@ public class ImportInteractions(
         try
         {
             await RespondAsync(InteractionCallback.DeferredModifyMessage);
-            await EditToLoaderButton("Editing selected imports...");
+            await this.Context.DisableButtonsAndMenus();
             var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
             var selectedAlbum = importService.GetImportRef(selectedAlbumRef);
@@ -716,12 +1000,7 @@ public class ImportInteractions(
                 newAlbumRef,
                 selectedAlbumRef);
 
-            await this.Context.Interaction.ModifyResponseAsync(e =>
-            {
-                e.Embeds = [response.Embed];
-                e.Components = response.Components?.Any() == true ? [response.Components] : [];
-            });
-
+            await this.Context.UpdateInteractionEmbed(response, defer: false);
             await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
@@ -736,7 +1015,7 @@ public class ImportInteractions(
         try
         {
             await RespondAsync(InteractionCallback.DeferredModifyMessage);
-            await EditToLoaderButton();
+            await this.Context.DisableButtonsAndMenus();
             var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
             var response = await importBuilders.PickAlbum(
@@ -745,12 +1024,7 @@ public class ImportInteractions(
                 albumRef,
                 deletion: false);
 
-            await this.Context.Interaction.ModifyResponseAsync(e =>
-            {
-                e.Embeds = [response.Embed];
-                e.Components = response.Components?.Any() == true ? [response.Components] : [];
-            });
-
+            await this.Context.UpdateInteractionEmbed(response, defer: false);
             await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
@@ -765,7 +1039,7 @@ public class ImportInteractions(
         try
         {
             await RespondAsync(InteractionCallback.DeferredModifyMessage);
-            await EditToLoaderButton("Deleting selected imports...");
+            await this.Context.DisableButtonsAndMenus();
             var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
             var album = importService.GetImportRef(albumRef);
@@ -785,12 +1059,7 @@ public class ImportInteractions(
                 albumRef,
                 deletion: true);
 
-            await this.Context.Interaction.ModifyResponseAsync(e =>
-            {
-                e.Embeds = [response.Embed];
-                e.Components = response.Components?.Any() == true ? [response.Components] : [];
-            });
-
+            await this.Context.UpdateInteractionEmbed(response, defer: false);
             await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
@@ -805,7 +1074,7 @@ public class ImportInteractions(
         try
         {
             await RespondAsync(InteractionCallback.DeferredModifyMessage);
-            await EditToLoaderButton("Editing selected imports...");
+            await this.Context.DisableButtonsAndMenus();
             var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
             var selectedTrack = importService.GetImportRef(selectedTrackRef);
@@ -828,12 +1097,7 @@ public class ImportInteractions(
                 newTrackRef,
                 selectedTrackRef);
 
-            await this.Context.Interaction.ModifyResponseAsync(e =>
-            {
-                e.Embeds = [response.Embed];
-                e.Components = response.Components?.Any() == true ? [response.Components] : [];
-            });
-
+            await this.Context.UpdateInteractionEmbed(response, defer: false);
             await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
@@ -848,7 +1112,7 @@ public class ImportInteractions(
         try
         {
             await RespondAsync(InteractionCallback.DeferredModifyMessage);
-            await EditToLoaderButton();
+            await this.Context.DisableButtonsAndMenus();
             var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
             var response = await importBuilders.PickTrack(
@@ -857,12 +1121,7 @@ public class ImportInteractions(
                 trackRef,
                 deletion: false);
 
-            await this.Context.Interaction.ModifyResponseAsync(e =>
-            {
-                e.Embeds = [response.Embed];
-                e.Components = response.Components?.Any() == true ? [response.Components] : [];
-            });
-
+            await this.Context.UpdateInteractionEmbed(response, defer: false);
             await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
@@ -877,7 +1136,7 @@ public class ImportInteractions(
         try
         {
             await RespondAsync(InteractionCallback.DeferredModifyMessage);
-            await EditToLoaderButton("Deleting selected imports...");
+            await this.Context.DisableButtonsAndMenus();
             var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
             var track = importService.GetImportRef(trackRef);
@@ -897,29 +1156,12 @@ public class ImportInteractions(
                 trackRef,
                 deletion: true);
 
-            await this.Context.Interaction.ModifyResponseAsync(e =>
-            {
-                e.Embeds = [response.Embed];
-                e.Components = response.Components?.Any() == true ? [response.Components] : [];
-            });
-
+            await this.Context.UpdateInteractionEmbed(response, defer: false);
             await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
             await this.Context.HandleCommandException(e, userService);
         }
-    }
-
-    private async Task EditToLoaderButton(string text = "Loading...")
-    {
-        await this.Context.Interaction.ModifyResponseAsync(e =>
-        {
-            e.Components =
-            [
-                new ActionRowProperties().WithButton(text, customId: "0",
-                    emote: EmojiProperties.Custom(DiscordConstants.Loading), disabled: true, style: ButtonStyle.Secondary)
-            ];
-        });
     }
 }

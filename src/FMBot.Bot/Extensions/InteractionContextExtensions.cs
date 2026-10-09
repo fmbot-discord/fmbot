@@ -215,6 +215,19 @@ public static class InteractionContextExtensions
                 ?.Value;
         }
 
+        public IReadOnlyList<Attachment> GetModalFiles(string customId)
+        {
+            if (context.Interaction is not ModalInteraction modal)
+                return [];
+
+            return modal.Data.Components
+                .OfType<Label>()
+                .Select(l => l.Component)
+                .OfType<FileUpload>()
+                .FirstOrDefault(f => string.Equals(f.CustomId, customId, StringComparison.OrdinalIgnoreCase))
+                ?.Attachments ?? [];
+        }
+
         public string GetModalMenuValue(string customId)
         {
             if (context.Interaction is not ModalInteraction modal)

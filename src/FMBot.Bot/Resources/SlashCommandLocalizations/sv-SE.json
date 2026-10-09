@@ -593,12 +593,7 @@
       "description": "Hantera dina dataimporter",
       "subcommands": {
         "applemusic": {
-          "description": "⭐ Importera din Apple Music-historik till .fmbot",
-          "parameters": {
-            "file": {
-              "description": "Filen 'Apple Media Services information.zip' eller 'Apple Music Play Activity.csv'"
-            }
-          }
+          "description": "⭐ Importera din Apple Music-historik till .fmbot"
         },
         "manage": {
           "description": "⭐ Hantera dina importer och ställ in hur de används"
@@ -607,54 +602,7 @@
           "description": "⭐ Redigera och ta bort artister, album och låtar i dina .fmbot-importer"
         },
         "spotify": {
-          "description": "⭐ Importera din Spotify-historik till .fmbot",
-          "parameters": {
-            "file-1": {
-              "description": "Spotify-historikpaket (.zip) eller historikfiler (.json)"
-            },
-            "file-10": {
-              "description": "Spotify-historikpaket (.zip) eller historikfiler (.json)"
-            },
-            "file-11": {
-              "description": "Spotify-historikpaket (.zip) eller historikfiler (.json)"
-            },
-            "file-12": {
-              "description": "Spotify-historikpaket (.zip) eller historikfiler (.json)"
-            },
-            "file-13": {
-              "description": "Spotify-historikpaket (.zip) eller historikfiler (.json)"
-            },
-            "file-14": {
-              "description": "Spotify-historikpaket (.zip) eller historikfiler (.json)"
-            },
-            "file-15": {
-              "description": "Spotify-historikpaket (.zip) eller historikfiler (.json)"
-            },
-            "file-2": {
-              "description": "Spotify-historikpaket (.zip) eller historikfiler (.json)"
-            },
-            "file-3": {
-              "description": "Spotify-historikpaket (.zip) eller historikfiler (.json)"
-            },
-            "file-4": {
-              "description": "Spotify-historikpaket (.zip) eller historikfiler (.json)"
-            },
-            "file-5": {
-              "description": "Spotify-historikpaket (.zip) eller historikfiler (.json)"
-            },
-            "file-6": {
-              "description": "Spotify-historikpaket (.zip) eller historikfiler (.json)"
-            },
-            "file-7": {
-              "description": "Spotify-historikpaket (.zip) eller historikfiler (.json)"
-            },
-            "file-8": {
-              "description": "Spotify-historikpaket (.zip) eller historikfiler (.json)"
-            },
-            "file-9": {
-              "description": "Spotify-historikpaket (.zip) eller historikfiler (.json)"
-            }
-          }
+          "description": "⭐ Importera din Spotify-historik till .fmbot"
         }
       }
     },

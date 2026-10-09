@@ -375,8 +375,7 @@ public class PlayInteractions(
     public async Task RecapAllTime(string userId)
     {
         await RespondAsync(InteractionCallback.DeferredModifyMessage);
-        _ = this.Context.DisableInteractionButtons(specificButtonOnly: $"{InteractionConstants.RecapAlltime}:{userId}",
-            addLoaderToSpecificButton: true);
+        _ = this.Context.DisableButtonsAndMenus($"{InteractionConstants.RecapAlltime}:{userId}").ObserveFaults();
 
         var contextUser = await userService.GetUserForIdAsync(int.Parse(userId));
         var userSettings =
@@ -392,9 +391,6 @@ public class PlayInteractions(
 
             await this.Context.SendFollowUpResponse(interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);
-
-            _ = this.Context.DisableInteractionButtons(
-                specificButtonOnly: $"{InteractionConstants.RecapAlltime}:{userId}");
         }
         catch (Exception e)
         {

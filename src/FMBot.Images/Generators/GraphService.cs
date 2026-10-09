@@ -22,6 +22,8 @@ public class GraphService
     private const float LabelCenter = FontSize * 0.33f;
     private const float LineWidth = 2.5f;
     private const float DotRadius = 4.5f;
+    private const float BarGap = 2f;
+    private const float LegendHeight = FontSize * 1.6f;
     private const double MinimumPlays = 5;
 
     private static readonly SKColor AxisColor = new(0x8B, 0x9B, 0xA0);
@@ -135,6 +137,67 @@ public class GraphService
             };
     }
 
+    public PlayHistoryGraph RenderStackedPlayHistory(IReadOnlyList<GraphPoint> dailyBase,
+        IReadOnlyList<GraphPoint> dailyTop, GraphLegendItem baseLegend, GraphLegendItem topLegend,
+        CultureInfo culture, Func<double, string> valueLabel, string legendNote = null, int width = 660,
+        int height = 190)
+    {
+        var dailyTotals = dailyBase
+            .Concat(dailyTop)
+            .GroupBy(g => g.Date)
+            .OrderBy(o => o.Key)
+            .Select(s => new GraphPoint
+            {
+                Date = s.Key,
+                Value = s.Sum(v => v.Value)
+            })
+            .ToList();
+
+        if (dailyTotals.Count == 0)
+        {
+            return null;
+        }
+
+        var from = dailyTotals[0].Date;
+        var until = DateTime.UtcNow;
+
+        var totalPlays = dailyTotals.Sum(s => s.Value);
+        var sampleCount = totalPlays >= int.MaxValue ? int.MaxValue : (int)totalPlays;
+        var interval = GraphSeries.PickInterval(from, until, sampleCount, GraphType.Bar);
+
+        var points = GraphSeries.FromDailyCounts(dailyTotals, interval, from, until);
+        var basePoints = GraphSeries.FromDailyCounts(dailyBase, interval, from, until);
+
+        if (points.Count(w => w.Value > 0) < 2 || totalPlays < MinimumPlays)
+        {
+            return null;
+        }
+
+        var image = RenderLineGraph(new LineGraph
+        {
+            Points = points,
+            BasePoints = basePoints,
+            BaseColor = baseLegend.Color,
+            LineColor = topLegend.Color,
+            Legend = [baseLegend, topLegend],
+            LegendNote = legendNote,
+            Width = width,
+            Height = height,
+            ValueLabel = valueLabel,
+            Culture = culture,
+            Interval = interval,
+            Style = GraphType.Bar
+        });
+
+        return image == null
+            ? null
+            : new PlayHistoryGraph
+            {
+                Image = image,
+                Interval = interval
+            };
+    }
+
     private static void TrimLeadingEmpty(List<GraphPoint> points, DateTime keepFrom)
     {
         var firstWithPlays = points.FindIndex(f => f.Value > 0);
@@ -203,7 +266,8 @@ public class GraphService
 
         var plotRight = graph.Width - PaddingRight * scale;
         var plotTop = PaddingTop * scale;
-        var plotBottom = graph.Height - AxisHeight * scale;
+        var legendHeight = graph.Legend.Count > 0 ? LegendHeight * scale : 0;
+        var plotBottom = graph.Height - AxisHeight * scale - legendHeight;
         var plotHeight = plotBottom - plotTop;
         var maxYTicks = Math.Clamp((int)(plotHeight / (FontSize * 1.3f * scale)) + 1, 2, graph.MaxYTicks);
         var valueGap = 2f * scale;
@@ -277,9 +341,26 @@ public class GraphService
 
         if (barStyle)
         {
-            DrawBars(canvas, graph, xPositions, yPositions, plotBottom, plotWidth, scale);
+            if (graph.BasePoints != null)
+            {
+                var basePositions = new float[graph.Points.Count];
+                for (var i = 0; i < graph.Points.Count; i++)
+                {
+                    basePositions[i] = plotTop +
+                                       (float)(1 - (graph.BasePoints[i].Value - axis.Min) / range) * plotHeight;
+                }
+
+                yPositions = DrawStackedBars(canvas, graph, xPositions, yPositions, basePositions, plotBottom,
+                    plotWidth, scale);
+            }
+            else
+            {
+                DrawBars(canvas, graph, xPositions, yPositions, plotBottom, plotWidth, scale);
+            }
+
             DrawBarValues(canvas, barValues, xPositions, yPositions, plotBottom, valueGap, scale, valueFont);
             DrawDateLabels(canvas, graph, ticks, xPositions, plotBottom, scale, font, labelPaint);
+            DrawLegend(canvas, graph, plotLeft, scale, valueFont, labelPaint);
 
             return EncodeSurface(surface);
         }
@@ -361,18 +442,6 @@ public class GraphService
         var capHeight = LineWidth * scale;
         var cornerRadius = Math.Min(2.5f * scale, barWidth / 2);
 
-        using var fillPaint = new SKPaint
-        {
-            IsAntialias = true,
-            Style = SKPaintStyle.Fill
-        };
-        using var capPaint = new SKPaint
-        {
-            IsAntialias = true,
-            Style = SKPaintStyle.Fill,
-            Color = graph.LineColor
-        };
-
         for (var i = 0; i < graph.Points.Count; i++)
         {
             if (graph.Points[i].Value <= 0)
@@ -381,29 +450,137 @@ public class GraphService
             }
 
             var top = Math.Min(yPositions[i], plotBottom - capHeight);
-            var rect = new SKRect(xPositions[i] - barWidth / 2, top, xPositions[i] + barWidth / 2, plotBottom);
-
-            using var roundRect = new SKRoundRect();
-            roundRect.SetRectRadii(rect,
-            [
-                new SKPoint(cornerRadius, cornerRadius), new SKPoint(cornerRadius, cornerRadius),
-                new SKPoint(0, 0), new SKPoint(0, 0)
-            ]);
-
-            using var fillShader = SKShader.CreateLinearGradient(
-                new SKPoint(0, top),
-                new SKPoint(0, plotBottom),
-                [graph.LineColor.WithAlpha(130), graph.LineColor.WithAlpha(35)],
-                SKShaderTileMode.Clamp);
-            fillPaint.Shader = fillShader;
-
-            canvas.DrawRoundRect(roundRect, fillPaint);
-
-            canvas.Save();
-            canvas.ClipRect(new SKRect(rect.Left, rect.Top, rect.Right, rect.Top + capHeight));
-            canvas.DrawRoundRect(roundRect, capPaint);
-            canvas.Restore();
+            DrawBarSegment(canvas,
+                new SKRect(xPositions[i] - barWidth / 2, top, xPositions[i] + barWidth / 2, plotBottom),
+                graph.LineColor, cornerRadius, capHeight);
         }
+    }
+
+    private static float[] DrawStackedBars(SKCanvas canvas, LineGraph graph, float[] xPositions, float[] yPositions,
+        float[] basePositions, float plotBottom, float plotWidth, float scale)
+    {
+        var slot = plotWidth / graph.Points.Count;
+        var barWidth = Math.Max(Math.Min(slot * 0.8f, slot - scale), scale);
+        var capHeight = LineWidth * scale;
+        var gap = BarGap * scale;
+        var cornerRadius = Math.Min(2.5f * scale, barWidth / 2);
+
+        var barTops = (float[])yPositions.Clone();
+
+        for (var i = 0; i < graph.Points.Count; i++)
+        {
+            var baseValue = graph.BasePoints[i].Value;
+            var topValue = graph.Points[i].Value - baseValue;
+            var left = xPositions[i] - barWidth / 2;
+            var right = xPositions[i] + barWidth / 2;
+            var segmentBottom = plotBottom;
+
+            if (baseValue > 0)
+            {
+                var baseTop = topValue > 0
+                    ? Math.Max(basePositions[i], yPositions[i] + capHeight + gap)
+                    : basePositions[i];
+                baseTop = Math.Min(baseTop, plotBottom - capHeight);
+                DrawBarSegment(canvas, new SKRect(left, baseTop, right, plotBottom), graph.BaseColor,
+                    topValue > 0 ? 0 : cornerRadius, capHeight);
+
+                barTops[i] = baseTop;
+                segmentBottom = baseTop - gap;
+            }
+
+            if (topValue > 0)
+            {
+                var top = Math.Min(yPositions[i], segmentBottom - capHeight);
+                DrawBarSegment(canvas, new SKRect(left, top, right, segmentBottom), graph.LineColor, cornerRadius,
+                    capHeight);
+
+                barTops[i] = top;
+            }
+        }
+
+        return barTops;
+    }
+
+    private static void DrawBarSegment(SKCanvas canvas, SKRect rect, SKColor color, float cornerRadius,
+        float capHeight)
+    {
+        using var roundRect = new SKRoundRect();
+        roundRect.SetRectRadii(rect,
+        [
+            new SKPoint(cornerRadius, cornerRadius), new SKPoint(cornerRadius, cornerRadius),
+            new SKPoint(0, 0), new SKPoint(0, 0)
+        ]);
+
+        using var fillShader = SKShader.CreateLinearGradient(
+            new SKPoint(0, rect.Top),
+            new SKPoint(0, rect.Bottom),
+            [color.WithAlpha(130), color.WithAlpha(35)],
+            SKShaderTileMode.Clamp);
+        using var fillPaint = new SKPaint
+        {
+            IsAntialias = true,
+            Style = SKPaintStyle.Fill,
+            Shader = fillShader
+        };
+        using var capPaint = new SKPaint
+        {
+            IsAntialias = true,
+            Style = SKPaintStyle.Fill,
+            Color = color
+        };
+
+        canvas.DrawRoundRect(roundRect, fillPaint);
+
+        canvas.Save();
+        canvas.ClipRect(new SKRect(rect.Left, rect.Top, rect.Right, rect.Top + capHeight));
+        canvas.DrawRoundRect(roundRect, capPaint);
+        canvas.Restore();
+    }
+
+    private static void DrawLegend(SKCanvas canvas, LineGraph graph, float left, float scale, SKFont font,
+        SKPaint labelPaint)
+    {
+        if (graph.Legend.Count == 0)
+        {
+            return;
+        }
+
+        var swatchSize = font.Size * 0.8f;
+        var centerY = graph.Height - LegendHeight * scale / 2;
+        var x = left;
+
+        using var swatchPaint = new SKPaint
+        {
+            IsAntialias = true,
+            Style = SKPaintStyle.Fill
+        };
+
+        foreach (var item in graph.Legend)
+        {
+            swatchPaint.Color = item.Color;
+            canvas.DrawRoundRect(
+                new SKRect(x, centerY - swatchSize / 2, x + swatchSize, centerY + swatchSize / 2),
+                2 * scale, 2 * scale, swatchPaint);
+
+            x += swatchSize + font.Size * 0.45f;
+            canvas.DrawShapedText(item.Label, x, centerY + font.Size * 0.35f, SKTextAlign.Left, font, labelPaint);
+
+            x += font.MeasureText(item.Label, labelPaint) + font.Size * 1.4f;
+        }
+
+        if (string.IsNullOrWhiteSpace(graph.LegendNote))
+        {
+            return;
+        }
+
+        var noteRight = graph.Width - PaddingRight * scale;
+        if (noteRight - font.MeasureText(graph.LegendNote, labelPaint) < x)
+        {
+            return;
+        }
+
+        canvas.DrawShapedText(graph.LegendNote, noteRight, centerY + font.Size * 0.35f, SKTextAlign.Right, font,
+            labelPaint);
     }
 
     private static void DrawBarValues(SKCanvas canvas, string[] barValues, float[] xPositions, float[] yPositions,
