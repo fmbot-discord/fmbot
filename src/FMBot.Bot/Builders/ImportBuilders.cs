@@ -308,6 +308,7 @@ public class ImportBuilders
             context.ContextUser.DataSource, "imports.png");
         if (importGraph != null)
         {
+            container.WithSeparator();
             container.AddComponent(importGraph);
         }
 
