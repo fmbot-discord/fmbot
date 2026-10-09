@@ -300,6 +300,22 @@ public class SpotifyRemoteService(
         }
     }
 
+    public async Task<RemoteTrack> GetNextTrackAsync(UserToken token)
+    {
+        try
+        {
+            Statistics.SpotifyApiCalls.Inc();
+            var queue = await GetClient(token).Player.GetQueue();
+
+            return RemoteTrack.From(queue.Queue?.FirstOrDefault() as FullTrack);
+        }
+        catch (Exception e)
+        {
+            Log.Warning(e, "SpotifyRemote: Failed to get next track for {discordUserId}", token.DiscordUserId);
+            return null;
+        }
+    }
+
     public async Task<List<Device>> GetDevicesAsync(UserToken token)
     {
         try

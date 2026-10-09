@@ -163,8 +163,9 @@ public class SpotifyRemoteSlashCommands(
                 return;
             }
 
+            var nextTrack = await spotifyRemoteService.GetNextTrackAsync(token);
             var result = await spotifyRemoteService.SkipAsync(token);
-            await SendFollowUp(SpotifyRemoteBuilders.SkipResult(result));
+            await SendFollowUp(SpotifyRemoteBuilders.SkipResult(result, nextTrack));
         }
         catch (Exception e)
         {
