@@ -109,7 +109,7 @@ public class UserBuilder
         var container = response.ComponentsContainer;
         container.WithAccentColor(DiscordConstants.InformationColorBlue);
 
-        container.WithTextDisplay($"## .fmbot user settings — {context.DiscordUser.GlobalName}");
+        container.WithTextDisplay($"## .fmbot user settings — {context.DiscordUser.GlobalName}{context.ContextUser.UserType.UserTypeToIcon()}");
 
         container.WithSeparator();
         container.WithTextDisplay(
@@ -812,7 +812,9 @@ public class UserBuilder
         container.WithAccentColor(DiscordConstants.InformationColorBlue);
 
         container.WithTextDisplay("### Configuring your graphs\n" +
-                                  "Graphs show your listening history on the `artist`, `album`, `track`, `profile` and all `plays` commands.");
+                                  "Listening graphs are visible on the following commands:\n" +
+                                  "- `artist`, `album`, `track` and `profile`\n" +
+                                  "- `plays`, `artistplays`, `albumplays` and `trackplays`");
 
         container.WithSeparator();
         container.WithTextDisplay("**Graph type**");
