@@ -427,7 +427,6 @@ public class Startup
         services.AddHttpClient<DiscogsApi>();
         services.AddHttpClient<GeniusService>();
         services.AddHttpClient<ILastfmRepository, LastFmRepository>();
-        services.AddHttpClient<TrackService>();
         services.AddHttpClient<DiscordSkuService>();
         services.AddHttpClient<OpenAiService>();
         services.AddHttpClient<WebhookService>();

@@ -1,0 +1,16 @@
+{
+    "hooks": {
+        "PostToolUse": [
+            {
+                "matcher": "Edit|Write|MultiEdit|apply_patch",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "C:/Users/Thom/AppData/Local/JetBrains/Rider2026.2/aia/bundledHooks/quality-check.cmd",
+                        "timeout": 30
+                    }
+                ]
+            }
+        ]
+    }
+}

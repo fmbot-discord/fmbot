@@ -314,7 +314,10 @@ public class SpotifyRemoteBuilders(SpotifyRemoteService spotifyRemoteService)
     {
         return result != RemoteActionResult.Ok
             ? ErrorResponse(result)
-            : TrackResultMessage("Added to Spotify queue:", track);
+            : TrackResultMessage(
+                EmojiProperties.Custom(DiscordConstants.AddToQueue).ToDiscordString("addtoqueue"),
+                "Added to queue",
+                track);
     }
 
     public static ResponseModel PlayResult(RemoteActionResult result, RemoteTrack track)
@@ -322,7 +325,8 @@ public class SpotifyRemoteBuilders(SpotifyRemoteService spotifyRemoteService)
         return result != RemoteActionResult.Ok
             ? ErrorResponse(result)
             : TrackResultMessage(
-                $"{EmojiProperties.Custom(DiscordConstants.PagesNext).ToDiscordString("play")} Started playing on Spotify:",
+                EmojiProperties.Custom(DiscordConstants.PagesNext).ToDiscordString("play"),
+                "Started playing",
                 track);
     }
 
@@ -330,7 +334,10 @@ public class SpotifyRemoteBuilders(SpotifyRemoteService spotifyRemoteService)
     {
         return result != RemoteActionResult.Ok
             ? ErrorResponse(result)
-            : AlbumResultMessage($"Added album to your Spotify queue ({album.Tracks.Count} tracks):", album);
+            : AlbumResultMessage(
+                EmojiProperties.Custom(DiscordConstants.AddToQueue).ToDiscordString("addtoqueue"),
+                $"Added album to queue ({album.Tracks.Count} tracks)",
+                album);
     }
 
     private static ResponseModel PlayAlbumResult(RemoteActionResult result, RemoteAlbum album)
@@ -338,7 +345,8 @@ public class SpotifyRemoteBuilders(SpotifyRemoteService spotifyRemoteService)
         return result != RemoteActionResult.Ok
             ? ErrorResponse(result)
             : AlbumResultMessage(
-                $"{EmojiProperties.Custom(DiscordConstants.PagesNext).ToDiscordString("play")} Started playing album on Spotify:",
+                EmojiProperties.Custom(DiscordConstants.PagesNext).ToDiscordString("play"),
+                "Started playing album",
                 album);
     }
 
@@ -352,8 +360,8 @@ public class SpotifyRemoteBuilders(SpotifyRemoteService spotifyRemoteService)
         var artistLink = $"**[{StringExtensions.Sanitize(artist.Name)}](https://open.spotify.com/artist/{artist.Id})**";
 
         var response = SuccessMessage(
-            $"{EmojiProperties.Custom(DiscordConstants.PagesNext).ToDiscordString("play")} Started playing artist on Spotify:\n{artistLink}",
-            artist.ImageUrl);
+            $"{EmojiProperties.Custom(DiscordConstants.PagesNext).ToDiscordString("play")} {artistLink}",
+            "Started playing artist");
 
         response.ReferencedMusic = new ReferencedMusic
         {
@@ -363,11 +371,18 @@ public class SpotifyRemoteBuilders(SpotifyRemoteService spotifyRemoteService)
         return response;
     }
 
-    public static ResponseModel SkipResult(RemoteActionResult result)
+    public static ResponseModel SkipResult(RemoteActionResult result, RemoteTrack nextTrack = null)
     {
-        return result != RemoteActionResult.Ok
-            ? ErrorResponse(result)
-            : SuccessMessage($"{EmojiProperties.Custom(DiscordConstants.PagesLast).ToDiscordString("next")} Skipped to the next track.");
+        if (result != RemoteActionResult.Ok)
+        {
+            return ErrorResponse(result);
+        }
+
+        var emoji = EmojiProperties.Custom(DiscordConstants.PagesLast).ToDiscordString("next");
+
+        return nextTrack != null
+            ? TrackResultMessage(emoji, "Skipped to next track", nextTrack)
+            : SuccessMessage($"{emoji} Skipped to the next track.");
     }
 
     public static ResponseModel PreviousResult(RemoteActionResult result)
@@ -400,30 +415,22 @@ public class SpotifyRemoteBuilders(SpotifyRemoteService spotifyRemoteService)
             return ErrorResponse(result);
         }
 
-        var label = (unlike, wasInLibrary) switch
+        var (emoji, label) = (unlike, wasInLibrary) switch
         {
-            (true, true) => "💔 Removed from your liked songs on Spotify:",
-            (true, false) => "Wasn't in your liked songs on Spotify:",
-            (false, true) => "❤️ Already in your liked songs on Spotify:",
-            (false, false) => "❤️ Added to your liked songs on Spotify:"
+            (true, true) => ("💔", "Removed from your liked songs"),
+            (true, false) => ("", "Wasn't in your liked songs"),
+            (false, true) => ("❤️", "Already in your liked songs"),
+            (false, false) => ("❤️", "Added to your liked songs")
         };
 
-        return TrackResultMessage(label, track);
+        return TrackResultMessage(emoji, label, track);
     }
 
-    private static ResponseModel TrackResultMessage(string label, RemoteTrack track)
+    private static ResponseModel TrackResultMessage(string emoji, string label, RemoteTrack track)
     {
-        var recentTrack = new RecentTrack
-        {
-            TrackName = track.Name,
-            TrackUrl = $"https://open.spotify.com/track/{track.Id}",
-            ArtistName = track.ArtistName,
-            AlbumName = track.AlbumName
-        };
-
         var response = SuccessMessage(
-            $"{label}\n{StringService.TrackToLinkedString(recentTrack).TrimEnd()}",
-            track.AlbumImageUrl);
+            $"{emoji} **[{StringExtensions.Sanitize(track.Name)}](https://open.spotify.com/track/{track.Id})** by **{StringExtensions.Sanitize(track.ArtistName)}**".TrimStart(),
+            label);
 
         response.ReferencedMusic = new ReferencedMusic
         {
@@ -435,12 +442,12 @@ public class SpotifyRemoteBuilders(SpotifyRemoteService spotifyRemoteService)
         return response;
     }
 
-    private static ResponseModel AlbumResultMessage(string label, RemoteAlbum album)
+    private static ResponseModel AlbumResultMessage(string emoji, string label, RemoteAlbum album)
     {
         var albumLink =
             $"**[{StringExtensions.Sanitize(album.Name)}](https://open.spotify.com/album/{album.Id})** by **{StringExtensions.Sanitize(album.ArtistName)}**";
 
-        var response = SuccessMessage($"{label}\n{albumLink}", album.AlbumImageUrl);
+        var response = SuccessMessage($"{emoji} {albumLink}", label);
 
         response.ReferencedMusic = new ReferencedMusic
         {
@@ -460,38 +467,19 @@ public class SpotifyRemoteBuilders(SpotifyRemoteService spotifyRemoteService)
         return response;
     }
 
-    private static ResponseModel SuccessMessage(string description, string thumbnailUrl = null)
+    private static ResponseModel SuccessMessage(string description, string label = null)
     {
         var response = new ResponseModel
         {
             ResponseType = ResponseType.ComponentsV2
         };
 
-        var container = response.ComponentsContainer;
-        container.WithAccentColor(DiscordConstants.SpotifyColorGreen);
+        var footer = new Random().Next(1, 12) == 1
+            ? " - controls playback only, does not scrobble or track. Last.fm handles your stats."
+            : "";
 
-        if (thumbnailUrl != null)
-        {
-            container.AddComponent(new ComponentSectionProperties(
-                new ComponentSectionThumbnailProperties(new ComponentMediaProperties(thumbnailUrl)))
-            {
-                Components =
-                [
-                    new TextDisplayProperties(description)
-                ]
-            });
-        }
-        else
-        {
-            container.WithTextDisplay(description);
-        }
-
-        container.WithSeparator();
-        container.WithTextDisplay(
-            new Random().Next(1, 8) == 1
-                ? $"{EmojiProperties.Custom(DiscordConstants.Spotify).ToDiscordString("Spotify")} Spotify remote\n" +
-                  $"-# Remote only - controls playback, does not scrobble or track. Last.fm handles your stats."
-                : $"{EmojiProperties.Custom(DiscordConstants.Spotify).ToDiscordString("Spotify")} Spotify remote");
+        response.TopLevelComponents.Add(new TextDisplayProperties(
+            $"{description}\n-# {EmojiProperties.Custom(DiscordConstants.Spotify).ToDiscordString("Spotify")} {(label != null ? $"{label} - " : "")}Spotify remote{footer}"));
 
         return response;
     }

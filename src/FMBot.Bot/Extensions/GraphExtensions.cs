@@ -1,12 +1,16 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services;
+using FMBot.Domain.Attributes;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
 using FMBot.Images.Generators;
 using FMBot.Images.Models;
+using FMBot.Persistence.Domain.Models;
 using NetCord.Rest;
 using SkiaSharp;
 
@@ -27,7 +31,7 @@ public static class GraphExtensions
             return null;
         }
 
-        var graphType = context.GraphType ?? GraphType.Line;
+        var graphType = context.GraphType ?? GraphType.Bar;
         if (graphType == GraphType.Off)
         {
             return null;
@@ -54,6 +58,52 @@ public static class GraphExtensions
             style: graphType);
 
         return AttachGraph(response, graph, fileName);
+    }
+
+    public static MediaGalleryProperties BuildImportGraph(this GraphService graphService, ContextModel context,
+        ResponseModel response, IEnumerable<UserPlay> plays, DataSource dataSource, string fileName)
+    {
+        if (plays == null || context.GraphType == GraphType.Off)
+        {
+            return null;
+        }
+
+        var importDays = new Dictionary<DateTime, double>();
+        var lastFmDays = new Dictionary<DateTime, double>();
+        foreach (var play in plays)
+        {
+            var days = play.PlaySource == PlaySource.LastFm ? lastFmDays : importDays;
+            days.TryGetValue(play.TimePlayed.Date, out var count);
+            days[play.TimePlayed.Date] = count + 1;
+        }
+
+        if (importDays.Count == 0)
+        {
+            return null;
+        }
+
+        var graph = graphService.RenderStackedPlayHistory(
+            ToGraphPoints(importDays),
+            ToGraphPoints(lastFmDays),
+            new GraphLegendItem("Imports", GraphColors.FmbotBlue),
+            new GraphLegendItem("Last.fm", GraphColors.LastFmRed),
+            context.Localizer.Language.GetCultureInfo(),
+            value => value.Format(context.NumberFormat),
+            dataSource.GetAttribute<OptionAttribute>().Name);
+
+        return AttachGraph(response, graph, fileName);
+    }
+
+    private static List<GraphPoint> ToGraphPoints(Dictionary<DateTime, double> days)
+    {
+        return days
+            .OrderBy(o => o.Key)
+            .Select(s => new GraphPoint
+            {
+                Date = s.Key,
+                Value = s.Value
+            })
+            .ToList();
     }
 
     private static DateTime? ToWindowStart(DateTime? start, string timeZone)

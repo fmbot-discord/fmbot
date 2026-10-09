@@ -593,12 +593,7 @@
       "description": "अपने डेटा इंपोर्ट मैनेज करो",
       "subcommands": {
         "applemusic": {
-          "description": "⭐ अपनी Apple Music हिस्ट्री .fmbot में इंपोर्ट करो",
-          "parameters": {
-            "file": {
-              "description": "'Apple Media Services information.zip' या 'Apple Music Play Activity.csv' फ़ाइल"
-            }
-          }
+          "description": "⭐ अपनी Apple Music हिस्ट्री .fmbot में इंपोर्ट करो"
         },
         "manage": {
           "description": "⭐ अपने इंपोर्ट मैनेज करो और तय करो कि वे कैसे इस्तेमाल हों"
@@ -607,54 +602,7 @@
           "description": "⭐ अपने .fmbot इंपोर्ट में artists, albums और tracks एडिट/डिलीट करो"
         },
         "spotify": {
-          "description": "⭐ अपनी Spotify हिस्ट्री .fmbot में इंपोर्ट करो",
-          "parameters": {
-            "file-1": {
-              "description": "Spotify हिस्ट्री पैकेज (.zip) या हिस्ट्री फ़ाइलें (.json)"
-            },
-            "file-10": {
-              "description": "Spotify हिस्ट्री पैकेज (.zip) या हिस्ट्री फ़ाइलें (.json)"
-            },
-            "file-11": {
-              "description": "Spotify हिस्ट्री पैकेज (.zip) या हिस्ट्री फ़ाइलें (.json)"
-            },
-            "file-12": {
-              "description": "Spotify हिस्ट्री पैकेज (.zip) या हिस्ट्री फ़ाइलें (.json)"
-            },
-            "file-13": {
-              "description": "Spotify हिस्ट्री पैकेज (.zip) या हिस्ट्री फ़ाइलें (.json)"
-            },
-            "file-14": {
-              "description": "Spotify हिस्ट्री पैकेज (.zip) या हिस्ट्री फ़ाइलें (.json)"
-            },
-            "file-15": {
-              "description": "Spotify हिस्ट्री पैकेज (.zip) या हिस्ट्री फ़ाइलें (.json)"
-            },
-            "file-2": {
-              "description": "Spotify हिस्ट्री पैकेज (.zip) या हिस्ट्री फ़ाइलें (.json)"
-            },
-            "file-3": {
-              "description": "Spotify हिस्ट्री पैकेज (.zip) या हिस्ट्री फ़ाइलें (.json)"
-            },
-            "file-4": {
-              "description": "Spotify हिस्ट्री पैकेज (.zip) या हिस्ट्री फ़ाइलें (.json)"
-            },
-            "file-5": {
-              "description": "Spotify हिस्ट्री पैकेज (.zip) या हिस्ट्री फ़ाइलें (.json)"
-            },
-            "file-6": {
-              "description": "Spotify हिस्ट्री पैकेज (.zip) या हिस्ट्री फ़ाइलें (.json)"
-            },
-            "file-7": {
-              "description": "Spotify हिस्ट्री पैकेज (.zip) या हिस्ट्री फ़ाइलें (.json)"
-            },
-            "file-8": {
-              "description": "Spotify हिस्ट्री पैकेज (.zip) या हिस्ट्री फ़ाइलें (.json)"
-            },
-            "file-9": {
-              "description": "Spotify हिस्ट्री पैकेज (.zip) या हिस्ट्री फ़ाइलें (.json)"
-            }
-          }
+          "description": "⭐ अपनी Spotify हिस्ट्री .fmbot में इंपोर्ट करो"
         }
       }
     },

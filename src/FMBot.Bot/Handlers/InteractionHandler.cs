@@ -253,8 +253,30 @@ public class InteractionHandler
     private async Task ExecuteModal(ModalInteraction modal, GatewayClient client)
     {
         var context = new ComponentInteractionContext(modal, client);
+        context.Guild?.CacheInvoker(context.User);
+        var contextUser = await this._userService.GetUserAsync(context.User.Id);
+
+        var customId = modal.Data.CustomId;
+
+        if (contextUser?.Blocked == true)
+        {
+            return;
+        }
+
+        var componentInfo = GetComponentInteractionInfo(customId);
+        if (componentInfo != null)
+        {
+            CheckCustomIdShape(componentInfo, customId);
+
+            var keepGoing = await CheckComponentAttributes(context, componentInfo.Attributes, customId);
+            if (!keepGoing)
+            {
+                return;
+            }
+        }
+
         var result = await this._componentCommands.ExecuteAsync(context, this._provider);
-        LogExecutionResult(result, "Modal", modal.Data.CustomId, modal);
+        LogExecutionResult(result, "Modal", customId, modal);
 
         Statistics.ModalsExecuted.Inc();
     }
@@ -363,8 +385,7 @@ public class InteractionHandler
         foreach (var kvp in interactions)
         {
             var pattern = kvp.Key.ToString();
-            if (pattern.Equals(basePattern, StringComparison.OrdinalIgnoreCase) ||
-                customId.StartsWith(pattern, StringComparison.OrdinalIgnoreCase))
+            if (pattern.Equals(basePattern, StringComparison.OrdinalIgnoreCase))
             {
                 return kvp.Value;
             }

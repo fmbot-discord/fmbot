@@ -217,7 +217,7 @@ public class TrackBuilders
             if (guild?.LastIndexed != null && dbTrack != null)
             {
                 indexedUsersTask = this._whoKnowsTrackService.GetIndexedUsersForTrack(context.DiscordGuild,
-                    guildUsers, guild.GuildId, dbTrack.ArtistName, dbTrack.Name);
+                    guildUsers, dbTrack.ArtistName, dbTrack.Name);
             }
         }
 
@@ -595,7 +595,7 @@ public class TrackBuilders
         var guildUsers = await guildUsersTask;
 
         var usersWithTrackTask = this._whoKnowsTrackService.GetIndexedUsersForTrack(context.DiscordGuild, guildUsers,
-            guild.GuildId, track.Track.ArtistName, track.Track.TrackName).ObserveFaults();
+            track.Track.ArtistName, track.Track.TrackName).ObserveFaults();
 
         var albumCoverTask = track.Track.AlbumName != null
             ? GetAlbumCoverUrl(context, track, response).ObserveFaults()

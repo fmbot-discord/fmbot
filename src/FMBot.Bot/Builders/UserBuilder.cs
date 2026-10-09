@@ -109,7 +109,7 @@ public class UserBuilder
         var container = response.ComponentsContainer;
         container.WithAccentColor(DiscordConstants.InformationColorBlue);
 
-        container.WithTextDisplay($"## .fmbot user settings — {context.DiscordUser.GlobalName}");
+        container.WithTextDisplay($"## .fmbot user settings — {context.DiscordUser.GlobalName}{context.ContextUser.UserType.UserTypeToIcon()}");
 
         container.WithSeparator();
         container.WithTextDisplay(
@@ -812,7 +812,9 @@ public class UserBuilder
         container.WithAccentColor(DiscordConstants.InformationColorBlue);
 
         container.WithTextDisplay("### Configuring your graphs\n" +
-                                  "Graphs show your listening history on the `artist`, `album`, `track`, `profile` and all `plays` commands.");
+                                  "Listening graphs are visible on the following commands:\n" +
+                                  "- `artist`, `album`, `track` and `profile`\n" +
+                                  "- `plays`, `artistplays`, `albumplays` and `trackplays`");
 
         container.WithSeparator();
         container.WithTextDisplay("**Graph type**");
@@ -829,7 +831,7 @@ public class UserBuilder
             var optionDescription = option.GetAttribute<OptionAttribute>().Description;
             var value = Enum.GetName(option);
 
-            var active = isSupporter && (context.ContextUser.GraphType ?? GraphType.Line) == option;
+            var active = isSupporter && (context.ContextUser.GraphType ?? GraphType.Bar) == option;
 
             graphTypeMenu.AddOption(new StringMenuSelectOptionProperties(name, value)
             {
@@ -2054,11 +2056,12 @@ public class UserBuilder
         return response;
     }
 
-    public async Task<ResponseModel> ImportMode(ContextModel context, int userId)
+    public async Task<ResponseModel> ImportMode(ContextModel context, int userId, string notice = null,
+        string loadingText = null)
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed,
+            ResponseType = ResponseType.ComponentsV2,
         };
 
         var importSetting = new StringMenuProperties(InteractionConstants.ImportSetting)
@@ -2092,10 +2095,9 @@ public class UserBuilder
             importSetting.AddOption(menuOption);
         }
 
-        response.StringMenus.Add(importSetting);
-
-        response.Embed.WithAuthor("Configuring how imports are combined with your Last.fm");
-        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+        var container = response.ComponentsContainer;
+        container.WithAccentColor(DiscordConstants.InformationColorBlue);
+        container.WithTextDisplay("### Configuring how imports are combined with your Last.fm");
 
         var importSource = "import data";
         if (allPlays.Any(a => a.PlaySource == PlaySource.AppleMusicImport) &&
@@ -2116,52 +2118,23 @@ public class UserBuilder
 
         embedDescription.AppendLine("**Last.fm**");
         embedDescription.AppendLine("- Use only your Last.fm for stats and ignore imports");
-        embedDescription.AppendLine(
-            $"- {allPlays.Count(c => c.PlaySource == PlaySource.LastFm).Format(context.NumberFormat)} Last.fm scrobbles");
         embedDescription.AppendLine();
 
         embedDescription.AppendLine($"**Full Imports, then Last.fm**");
         embedDescription.AppendLine($"- Uses your full {importSource} history and adds Last.fm afterwards");
         embedDescription.AppendLine("- Plays from other music apps you scrobbled to Last.fm will not be included");
-
-        var playsWithFullImportThenLastFm =
-            await this._playService.GetPlaysWithDataSource(userId, DataSource.FullImportThenLastFm);
-        embedDescription.Append(
-            $"- {playsWithFullImportThenLastFm.Count(c => c.PlaySource == PlaySource.SpotifyImport || c.PlaySource == PlaySource.AppleMusicImport).Format(context.NumberFormat)} imports + ");
-        embedDescription.Append(
-            $"{playsWithFullImportThenLastFm.Count(c => c.PlaySource == PlaySource.LastFm).Format(context.NumberFormat)} scrobbles = ");
-        embedDescription.Append($"{playsWithFullImportThenLastFm.Count().Format(context.NumberFormat)} plays");
-        embedDescription.AppendLine();
         embedDescription.AppendLine();
 
         embedDescription.AppendLine($"**Imports until full Last.fm**");
         embedDescription.AppendLine(
             $"- Uses your {importSource} history up until the point you started scrobbling on Last.fm");
         embedDescription.AppendLine($"- Best if you have scrobbles on Last.fm from sources other than {importSource}");
-
-        var playsWithImportUntilFullLastFm =
-            await this._playService.GetPlaysWithDataSource(userId, DataSource.ImportThenFullLastFm);
-        embedDescription.Append(
-            $"- {playsWithImportUntilFullLastFm.Count(c => c.PlaySource == PlaySource.SpotifyImport || c.PlaySource == PlaySource.AppleMusicImport).Format(context.NumberFormat)} imports + ");
-        embedDescription.Append(
-            $"{playsWithImportUntilFullLastFm.Count(c => c.PlaySource == PlaySource.LastFm).Format(context.NumberFormat)} scrobbles = ");
-        embedDescription.Append($"{playsWithImportUntilFullLastFm.Count().Format(context.NumberFormat)} plays");
-        embedDescription.AppendLine();
         embedDescription.AppendLine();
 
-        embedDescription.AppendLine($"**Smart deduplication** *(Beta)*");
+        embedDescription.AppendLine($"**Smart deduplication**");
         embedDescription.AppendLine(
             $"- Combines both sources and removes imported plays you already scrobbled to Last.fm");
         embedDescription.AppendLine("- Keeps your Last.fm scrobble whenever an import is a duplicate");
-
-        var playsWithMergedDeduplicated =
-            await this._playService.GetPlaysWithDataSource(userId, DataSource.MergedDeduplicated);
-        embedDescription.Append(
-            $"- {playsWithMergedDeduplicated.Count(c => c.PlaySource == PlaySource.SpotifyImport || c.PlaySource == PlaySource.AppleMusicImport).Format(context.NumberFormat)} imports + ");
-        embedDescription.Append(
-            $"{playsWithMergedDeduplicated.Count(c => c.PlaySource == PlaySource.LastFm).Format(context.NumberFormat)} scrobbles = ");
-        embedDescription.Append($"{playsWithMergedDeduplicated.Count().Format(context.NumberFormat)} plays");
-        embedDescription.AppendLine();
 
         if (!hasImported)
         {
@@ -2190,7 +2163,54 @@ public class UserBuilder
                 $"- {allPlays.Count(c => c.PlaySource == PlaySource.LastFm).Format(context.NumberFormat)} Last.fm scrobbles");
         }
 
-        response.Embed.WithDescription(embedDescription.ToString());
+        container.WithSeparator();
+        container.WithTextDisplay(embedDescription.ToString());
+
+        var currentModePlays = context.ContextUser.DataSource != DataSource.LastFm
+            ? await this._playService.GetPlaysWithDataSource(userId, context.ContextUser.DataSource)
+            : null;
+
+        var importGraph = this._graphService.BuildImportGraph(context, response, currentModePlays,
+            context.ContextUser.DataSource, "imports.png");
+        if (importGraph != null)
+        {
+            container.WithSeparator();
+            container.AddComponent(importGraph);
+        }
+
+        container.WithSeparator();
+
+        if (loadingText != null)
+        {
+            container.WithTextDisplay(
+                $"{EmojiProperties.Custom(DiscordConstants.Loading).ToDiscordString("loading", true)} {loadingText}");
+            return response;
+        }
+
+        if (notice != null)
+        {
+            container.WithTextDisplay(notice);
+        }
+
+        container.AddComponents(importSetting);
+
+        if (context.ContextUser.DataSource == DataSource.LastFm && hasImported)
+        {
+            var deleteButtons = new ActionRowProperties();
+            if (allPlays.Any(a => a.PlaySource == PlaySource.SpotifyImport))
+            {
+                deleteButtons.AddComponents(new ButtonProperties(InteractionConstants.ImportClearSpotify,
+                    "Delete imported Spotify history", ButtonStyle.Danger));
+            }
+
+            if (allPlays.Any(a => a.PlaySource == PlaySource.AppleMusicImport))
+            {
+                deleteButtons.AddComponents(new ButtonProperties(InteractionConstants.ImportClearAppleMusic,
+                    "Delete imported Apple Music history", ButtonStyle.Danger));
+            }
+
+            container.WithActionRow(deleteButtons);
+        }
 
         return response;
     }

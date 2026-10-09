@@ -593,12 +593,7 @@
       "description": "Veri içe aktarmalarını yönet",
       "subcommands": {
         "applemusic": {
-          "description": "⭐ Apple Music geçmişini .fmbot'a aktar",
-          "parameters": {
-            "file": {
-              "description": "'Apple Media Services information.zip' veya 'Apple Music Play Activity.csv' dosyası"
-            }
-          }
+          "description": "⭐ Apple Music geçmişini .fmbot'a aktar"
         },
         "manage": {
           "description": "⭐ İçe aktarmalarını yönet ve nasıl kullanılacaklarını yapılandır"
@@ -607,54 +602,7 @@
           "description": "⭐ .fmbot içe aktarmalarındaki sanatçıları, albümleri ve parçaları düzenle ve sil"
         },
         "spotify": {
-          "description": "⭐ Spotify geçmişini .fmbot'a aktar",
-          "parameters": {
-            "file-1": {
-              "description": "Spotify geçmiş paketi (.zip) veya geçmiş dosyaları (.json)"
-            },
-            "file-10": {
-              "description": "Spotify geçmiş paketi (.zip) veya geçmiş dosyaları (.json)"
-            },
-            "file-11": {
-              "description": "Spotify geçmiş paketi (.zip) veya geçmiş dosyaları (.json)"
-            },
-            "file-12": {
-              "description": "Spotify geçmiş paketi (.zip) veya geçmiş dosyaları (.json)"
-            },
-            "file-13": {
-              "description": "Spotify geçmiş paketi (.zip) veya geçmiş dosyaları (.json)"
-            },
-            "file-14": {
-              "description": "Spotify geçmiş paketi (.zip) veya geçmiş dosyaları (.json)"
-            },
-            "file-15": {
-              "description": "Spotify geçmiş paketi (.zip) veya geçmiş dosyaları (.json)"
-            },
-            "file-2": {
-              "description": "Spotify geçmiş paketi (.zip) veya geçmiş dosyaları (.json)"
-            },
-            "file-3": {
-              "description": "Spotify geçmiş paketi (.zip) veya geçmiş dosyaları (.json)"
-            },
-            "file-4": {
-              "description": "Spotify geçmiş paketi (.zip) veya geçmiş dosyaları (.json)"
-            },
-            "file-5": {
-              "description": "Spotify geçmiş paketi (.zip) veya geçmiş dosyaları (.json)"
-            },
-            "file-6": {
-              "description": "Spotify geçmiş paketi (.zip) veya geçmiş dosyaları (.json)"
-            },
-            "file-7": {
-              "description": "Spotify geçmiş paketi (.zip) veya geçmiş dosyaları (.json)"
-            },
-            "file-8": {
-              "description": "Spotify geçmiş paketi (.zip) veya geçmiş dosyaları (.json)"
-            },
-            "file-9": {
-              "description": "Spotify geçmiş paketi (.zip) veya geçmiş dosyaları (.json)"
-            }
-          }
+          "description": "⭐ Spotify geçmişini .fmbot'a aktar"
         }
       }
     },

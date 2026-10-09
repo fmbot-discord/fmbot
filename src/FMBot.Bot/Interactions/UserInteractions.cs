@@ -361,6 +361,13 @@ public class UserInteractions(
                         await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
                         break;
                     }
+                    case UserSetting.Graphs:
+                    {
+                        response = UserBuilder.GraphMode(new ContextModel(this.Context, contextUser));
+
+                        await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
+                        break;
+                    }
                     case UserSetting.BotScrobbling:
                     {
                         response = UserBuilder.BotScrobblingAsync(new ContextModel(this.Context, contextUser));
@@ -380,10 +387,13 @@ public class UserInteractions(
                             return;
                         }
 
+                        await this.Context.Interaction.SendResponseAsync(
+                            InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
+
                         response = await userBuilder.ImportMode(new ContextModel(this.Context, contextUser),
                             contextUser.UserId);
 
-                        await this.Context.SendResponse(interactivity, response, userService, ephemeral: true);
+                        await this.Context.SendFollowUpResponse(interactivity, response, userService, ephemeral: true);
                         break;
                     }
                     case UserSetting.CommandShortcuts:
@@ -503,6 +513,7 @@ public class UserInteractions(
             UserSetting.FmMode => "fmmode",
             UserSetting.WkMode => "responsemode",
             UserSetting.CoverType => "covermode",
+            UserSetting.Graphs => "graphmode",
             UserSetting.BotScrobbling => "botscrobbling",
             UserSetting.SpotifyImport => "import manage",
             UserSetting.CommandShortcuts => "shortcuts",

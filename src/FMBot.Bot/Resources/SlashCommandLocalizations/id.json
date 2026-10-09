@@ -593,12 +593,7 @@
       "description": "Kelola impor datamu",
       "subcommands": {
         "applemusic": {
-          "description": "⭐ Impor riwayat Apple Music kamu ke .fmbot",
-          "parameters": {
-            "file": {
-              "description": "File 'Apple Media Services information.zip' atau 'Apple Music Play Activity.csv'"
-            }
-          }
+          "description": "⭐ Impor riwayat Apple Music kamu ke .fmbot"
         },
         "manage": {
           "description": "⭐ Kelola impormu dan atur bagaimana impor digunakan"
@@ -607,54 +602,7 @@
           "description": "⭐ Edit dan hapus artis, album, dan lagu di impor .fmbot kamu"
         },
         "spotify": {
-          "description": "⭐ Impor riwayat Spotify kamu ke .fmbot",
-          "parameters": {
-            "file-1": {
-              "description": "Paket riwayat Spotify (.zip) atau file riwayat (.json)"
-            },
-            "file-10": {
-              "description": "Paket riwayat Spotify (.zip) atau file riwayat (.json)"
-            },
-            "file-11": {
-              "description": "Paket riwayat Spotify (.zip) atau file riwayat (.json)"
-            },
-            "file-12": {
-              "description": "Paket riwayat Spotify (.zip) atau file riwayat (.json)"
-            },
-            "file-13": {
-              "description": "Paket riwayat Spotify (.zip) atau file riwayat (.json)"
-            },
-            "file-14": {
-              "description": "Paket riwayat Spotify (.zip) atau file riwayat (.json)"
-            },
-            "file-15": {
-              "description": "Paket riwayat Spotify (.zip) atau file riwayat (.json)"
-            },
-            "file-2": {
-              "description": "Paket riwayat Spotify (.zip) atau file riwayat (.json)"
-            },
-            "file-3": {
-              "description": "Paket riwayat Spotify (.zip) atau file riwayat (.json)"
-            },
-            "file-4": {
-              "description": "Paket riwayat Spotify (.zip) atau file riwayat (.json)"
-            },
-            "file-5": {
-              "description": "Paket riwayat Spotify (.zip) atau file riwayat (.json)"
-            },
-            "file-6": {
-              "description": "Paket riwayat Spotify (.zip) atau file riwayat (.json)"
-            },
-            "file-7": {
-              "description": "Paket riwayat Spotify (.zip) atau file riwayat (.json)"
-            },
-            "file-8": {
-              "description": "Paket riwayat Spotify (.zip) atau file riwayat (.json)"
-            },
-            "file-9": {
-              "description": "Paket riwayat Spotify (.zip) atau file riwayat (.json)"
-            }
-          }
+          "description": "⭐ Impor riwayat Spotify kamu ke .fmbot"
         }
       }
     },

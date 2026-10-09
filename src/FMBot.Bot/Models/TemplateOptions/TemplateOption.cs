@@ -139,21 +139,21 @@ public class TemplateContext
     private async Task<IList<WhoKnowsObjectWithUser>> FetchServerArtistListeners()
     {
         var listeners = await this.WhoKnowsArtistService.GetIndexedUsersForArtist(null,
-            this.GuildUsers, this.Guild.GuildId, this.CurrentTrack.ArtistName);
+            this.GuildUsers, this.CurrentTrack.ArtistName);
         return WhoKnowsService.FilterWhoKnowsObjects(listeners, this.GuildUsers, this.Guild, 0).filteredUsers;
     }
 
     private async Task<IList<WhoKnowsObjectWithUser>> FetchServerAlbumListeners()
     {
         var listeners = await this.WhoKnowsAlbumService.GetIndexedUsersForAlbum(null,
-            this.GuildUsers, this.Guild.GuildId, this.DbAlbum.Id);
+            this.GuildUsers, this.DbAlbum.Id);
         return WhoKnowsService.FilterWhoKnowsObjects(listeners, this.GuildUsers, this.Guild, 0).filteredUsers;
     }
 
     private async Task<IList<WhoKnowsObjectWithUser>> FetchServerTrackListeners()
     {
         var listeners = await this.WhoKnowsTrackService.GetIndexedUsersForTrack(null,
-            this.GuildUsers, this.Guild.GuildId, this.DbTrack.ArtistName, this.DbTrack.Name);
+            this.GuildUsers, this.DbTrack.ArtistName, this.DbTrack.Name);
         return WhoKnowsService.FilterWhoKnowsObjects(listeners, this.GuildUsers, this.Guild, 0).filteredUsers;
     }
 }

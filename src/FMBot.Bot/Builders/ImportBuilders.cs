@@ -12,6 +12,7 @@ using FMBot.Domain.Attributes;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
+using FMBot.Images.Generators;
 using FMBot.Persistence.Domain.Models;
 using NetCord;
 using NetCord.Rest;
@@ -26,9 +27,10 @@ public class ImportBuilders
     private readonly TrackService _trackService;
     private readonly CensorService _censorService;
     private readonly ImportService _importService;
+    private readonly GraphService _graphService;
 
     public ImportBuilders(PlayService playService, ArtistsService artistsService, CensorService censorService,
-        AlbumService albumService, TrackService trackService, ImportService importService)
+        AlbumService albumService, TrackService trackService, ImportService importService, GraphService graphService)
     {
         this._playService = playService;
         this._artistsService = artistsService;
@@ -36,6 +38,7 @@ public class ImportBuilders
         this._albumService = albumService;
         this._trackService = trackService;
         this._importService = importService;
+        this._graphService = graphService;
     }
 
     public static ResponseModel ImportSupporterRequired(ContextModel context, string source = "importing")
@@ -88,8 +91,7 @@ public class ImportBuilders
         return response;
     }
 
-    public async Task<ResponseModel> GetSpotifyImportInstructions(ContextModel context,
-        bool warnAgainstPublicFiles = false)
+    public async Task<ResponseModel> GetSpotifyImportInstructions(ContextModel context)
     {
         var response = new ResponseModel
         {
@@ -120,10 +122,13 @@ public class ImportBuilders
         var importing = new StringBuilder();
         importing.AppendLine($"### {EmojiProperties.Custom(DiscordConstants.Imports).ToDiscordString("imports")} Importing your data into .fmbot");
         importing.AppendLine("1. Download the file Spotify provided");
-        importing.AppendLine(
-            $"2. Use the `/import spotify` slash command and add the `.zip` file as an attachment through the options");
-        importing.AppendLine("3. Having issues? You can also attach each `.json` file separately");
+        importing.AppendLine("2. Press **Upload files** below and add the `.zip` file");
+        importing.AppendLine("3. Having issues? You can also upload the `.json` files separately, up to 10 at a time");
         response.ComponentsContainer.AddComponent(new TextDisplayProperties(importing.ToString()));
+        response.ComponentsContainer.AddComponents(new ActionRowProperties()
+            .AddComponents(new ButtonProperties(
+                $"{InteractionConstants.ImportUpload}:{nameof(PlaySource.SpotifyImport)}", "Upload files",
+                ButtonStyle.Primary)));
         response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
 
         var notes = new StringBuilder();
@@ -142,20 +147,8 @@ public class ImportBuilders
             var importedPlays = new StringBuilder();
             importedPlays.AppendLine("### ⚙️ Your imported Spotify plays");
             importedPlays.AppendLine(
-                $"You have already imported **{count}** {StringExtensions.GetPlaysString(count)}. To configure how these are used and combined with your Last.fm scrobbles, use the buttons below.");
+                $"You have already imported **{count.Format(context.NumberFormat)}** {StringExtensions.GetPlaysString(count)}. To configure how these are used and combined with your Last.fm scrobbles, use the buttons below.");
             response.ComponentsContainer.AddComponent(new TextDisplayProperties(importedPlays.ToString()));
-        }
-
-        response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
-
-        var footer = new StringBuilder();
-        if (warnAgainstPublicFiles)
-        {
-            footer.AppendLine("-# Do not share your import files publicly");
-        }
-
-        if (count > 0)
-        {
             response.ComponentsContainer.AddComponent(new ActionRowProperties()
                 .AddComponents(new ButtonProperties(
                     InteractionConstants.ImportManage, "Manage import settings", ButtonStyle.Secondary))
@@ -163,14 +156,10 @@ public class ImportBuilders
                     InteractionConstants.ImportModify.Start, "Modify imports", ButtonStyle.Secondary)));
         }
 
-        footer.AppendLine("-# Having issues with importing? Please open a help thread on discord.gg/fmbot");
-        response.ComponentsContainer.AddComponent(new TextDisplayProperties(footer.ToString()));
-
         return response;
     }
 
-    public async Task<ResponseModel> GetAppleMusicImportInstructions(ContextModel context,
-        bool warnAgainstPublicFiles = false)
+    public async Task<ResponseModel> GetAppleMusicImportInstructions(ContextModel context)
     {
         var response = new ResponseModel
         {
@@ -185,13 +174,12 @@ public class ImportBuilders
         var requesting = new StringBuilder();
         requesting.AppendLine($"### {EmojiProperties.Custom(DiscordConstants.AppleMusic).ToDiscordString("apple_music")} Requesting your data from Apple");
         requesting.AppendLine("1. Go to your **[Apple privacy settings](https://privacy.apple.com/)**");
-        requesting.AppendLine("2. Sign in to your account");
-        requesting.AppendLine("3. Click on **Request a copy of your data**");
-        requesting.AppendLine("4. Select **Apple Media Services Information**");
-        requesting.AppendLine("5. De-select the other options");
-        requesting.AppendLine("6. Press **Continue**");
-        requesting.AppendLine("7. Press **Complete request**");
-        requesting.AppendLine("8. Wait up to 7 days for Apple to deliver your files");
+        requesting.AppendLine("2. Click on **Request a copy of your data**");
+        requesting.AppendLine("3. Select **Apple Media Services Information**");
+        requesting.AppendLine("4. De-select the other options");
+        requesting.AppendLine("5. Press **Continue**");
+        requesting.AppendLine("6. Press **Complete request**");
+        requesting.AppendLine("7. Wait up to 7 days for Apple to deliver your files");
         response.ComponentsContainer.AddComponent(new TextDisplayProperties(requesting.ToString()));
         response.ComponentsContainer.AddComponents(
             new ActionRowProperties().AddComponents(new LinkButtonProperties(
@@ -201,13 +189,16 @@ public class ImportBuilders
         var importing = new StringBuilder();
         importing.AppendLine($"### {EmojiProperties.Custom(DiscordConstants.Imports).ToDiscordString("imports")} Importing your data into .fmbot");
         importing.AppendLine("1. Download the file Apple provided");
-        importing.AppendLine(
-            "2. Use the `/import applemusic` slash command and add the `.zip` file as an attachment through the options");
+        importing.AppendLine("2. Press **Upload file** below and add the `.zip` file");
         importing.AppendLine(
             "3. Got multiple zip files? You can try them all until one succeeds. Only one of them contains your play history");
         importing.AppendLine(
-            "4. Having issues? You can also attach the `Apple Music Play Activity.csv` file separately");
+            "4. Having issues? You can also upload the `Apple Music Play Activity.csv` file separately");
         response.ComponentsContainer.AddComponent(new TextDisplayProperties(importing.ToString()));
+        response.ComponentsContainer.AddComponents(new ActionRowProperties()
+            .AddComponents(new ButtonProperties(
+                $"{InteractionConstants.ImportUpload}:{nameof(PlaySource.AppleMusicImport)}", "Upload file",
+                ButtonStyle.Primary)));
         response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
 
         var notes = new StringBuilder();
@@ -228,20 +219,8 @@ public class ImportBuilders
             var importedPlays = new StringBuilder();
             importedPlays.AppendLine("### ⚙️ Your imported Apple Music plays");
             importedPlays.AppendLine(
-                $"You have already imported **{count}** {StringExtensions.GetPlaysString(count)}. To configure how these are used and combined with your Last.fm scrobbles, use the buttons below.");
+                $"You have already imported **{count.Format(context.NumberFormat)}** {StringExtensions.GetPlaysString(count)}. To configure how these are used and combined with your Last.fm scrobbles, use the buttons below.");
             response.ComponentsContainer.AddComponent(new TextDisplayProperties(importedPlays.ToString()));
-        }
-
-        response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
-
-        var footer = new StringBuilder();
-        if (warnAgainstPublicFiles)
-        {
-            footer.AppendLine("-# Do not share your import files publicly");
-        }
-
-        if (count > 0)
-        {
             response.ComponentsContainer.AddComponent(new ActionRowProperties()
                 .AddComponents(new ButtonProperties(
                     InteractionConstants.ImportManage, "Manage import settings", ButtonStyle.Secondary))
@@ -249,83 +228,133 @@ public class ImportBuilders
                     InteractionConstants.ImportModify.Start, "Modify imports", ButtonStyle.Secondary)));
         }
 
-        footer.AppendLine("-# Having issues with importing? Please open a help thread on discord.gg/fmbot");
-        response.ComponentsContainer.AddComponent(new TextDisplayProperties(footer.ToString()));
+        return response;
+    }
+
+    public static ResponseModel ImportProgress(PlaySource playSource, string progress, bool loading = true,
+        Color? accentColor = null)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.ComponentsV2
+        };
+
+        var emoji = playSource == PlaySource.AppleMusicImport
+            ? EmojiProperties.Custom(DiscordConstants.AppleMusic).ToDiscordString("apple_music")
+            : EmojiProperties.Custom(DiscordConstants.Spotify).ToDiscordString("spotify");
+
+        response.ComponentsContainer.WithAccentColor(accentColor ?? DiscordConstants.InformationColorBlue);
+        response.ComponentsContainer.WithTextDisplay($"### {emoji} Importing history into .fmbot..");
+        response.ComponentsContainer.WithTextDisplay(loading
+            ? progress + $"- {EmojiProperties.Custom(DiscordConstants.Loading).ToDiscordString("loading", true)} Processing..."
+            : progress);
 
         return response;
     }
 
-    public async Task<string> GetImportedYears(int userId, PlaySource playSource, NumberFormat numberFormat)
+    public async Task<ResponseModel> ImportComplete(ContextModel context, PlaySource playSource, string progress)
     {
-        var years = new StringBuilder();
-        var allPlays = await this._playService
-            .GetAllUserPlays(userId, false);
+        var appleMusic = playSource == PlaySource.AppleMusicImport;
+        var serviceName = appleMusic ? "Apple Music" : "Spotify";
 
-        var yearGroups = allPlays
-            .Where(w => w.PlaySource == playSource)
-            .OrderBy(o => o.TimePlayed)
-            .GroupBy(g => g.TimePlayed.Year);
+        var response = ImportProgress(playSource, progress, false,
+            appleMusic ? DiscordConstants.AppleMusicRed : DiscordConstants.SpotifyColorGreen);
+        var container = response.ComponentsContainer;
 
-        foreach (var year in yearGroups)
+        var importActivated = new StringBuilder();
+        var importSetting = new StringBuilder();
+
+        switch (context.ContextUser.DataSource)
         {
-            var playcount = year.Count();
-            years.AppendLine(
-                $"**`{year.Key}`** " +
-                $"- **{playcount.Format(numberFormat)}** {StringExtensions.GetPlaysString(playcount)}");
+            case DataSource.LastFm:
+                importActivated.AppendLine(
+                    "Your import setting is currently still set to just Last.fm, so imports will not be used. You can change this manually with the button below.");
+                break;
+            case DataSource.FullImportThenLastFm:
+                importActivated.AppendLine(
+                    "With this service all playcounts and history in the bot will consist of your imports combined with your Last.fm history. The bot re-calculates this every time you run a command, all while still responding quickly.");
+
+                importSetting.AppendLine(
+                    $"Your import setting has been set to **Full imports, then Last.fm**. This uses your full {serviceName} history and adds your Last.fm scrobbles afterwards.");
+                break;
+            case DataSource.ImportThenFullLastFm:
+                importActivated.AppendLine(
+                    "With this service all playcounts and history in the bot will consist of your imports combined with your Last.fm history. The bot re-calculates this every time you run a command, all while still responding quickly.");
+
+                importSetting.AppendLine(
+                    $"Your import setting has been set to **Imports, then full Last.fm**. This uses your {serviceName} history up until you started using Last.fm.");
+                break;
+            case DataSource.MergedDeduplicated:
+                importActivated.AppendLine(
+                    "With this service all playcounts and history in the bot will consist of your imports combined with your Last.fm history. The bot re-calculates this every time you run a command, all while still responding quickly.");
+
+                importSetting.AppendLine(
+                    $"Your import setting has been set to **Smart deduplication**. This combines your full {serviceName} history with your Last.fm scrobbles and removes imported plays you already scrobbled to Last.fm.");
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
         }
 
-        return years.Length > 0 ? years.ToString() : null;
+        container.WithSeparator();
+        container.WithTextDisplay($"**✅ Importing service activated**\n{importActivated}");
+
+        if (importSetting.Length > 0)
+        {
+            container.WithTextDisplay($"**⚙️ Current import setting**\n{importSetting}");
+        }
+
+        var plays = await this._playService.GetAllUserPlays(context.ContextUser.UserId);
+        var importGraph = this._graphService.BuildImportGraph(context, response, plays,
+            context.ContextUser.DataSource, "imports.png");
+        if (importGraph != null)
+        {
+            container.WithSeparator();
+            container.AddComponent(importGraph);
+        }
+
+        container.WithSeparator();
+        container.WithActionRow(new ActionRowProperties()
+            .AddComponents(new ButtonProperties($"{InteractionConstants.RecapAlltime}:{context.ContextUser.UserId}",
+                "View your stats", ButtonStyle.Primary))
+            .AddComponents(new ButtonProperties(InteractionConstants.ImportManage, "Manage import settings",
+                ButtonStyle.Secondary)));
+
+        return response;
     }
 
     public async Task<ResponseModel> ImportModify(ContextModel context, int userId)
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed,
+            ResponseType = ResponseType.ComponentsV2,
         };
 
         var allPlays = await this._playService.GetAllUserPlays(userId, false);
         var hasImported = allPlays.Any(a =>
             a.PlaySource == PlaySource.SpotifyImport || a.PlaySource == PlaySource.AppleMusicImport);
 
-        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
-        response.Components = new ActionRowProperties()
-            .WithButton("Artist",
-                $"{InteractionConstants.ImportModify.Modify}:{nameof(ImportModifyPick.Artist)}",
-                ButtonStyle.Secondary,
-                disabled: !hasImported)
-            .WithButton("Album",
-                $"{InteractionConstants.ImportModify.Modify}:{nameof(ImportModifyPick.Album)}",
-                ButtonStyle.Secondary,
-                disabled: !hasImported)
-            .WithButton("Track",
-                $"{InteractionConstants.ImportModify.Modify}:{nameof(ImportModifyPick.Track)}",
-                ButtonStyle.Secondary,
-                disabled: !hasImported)
-            .WithButton("Manage import settings", InteractionConstants.ImportManage, style: ButtonStyle.Secondary,
-                disabled: !hasImported);
+        var container = response.ComponentsContainer;
+        container.WithAccentColor(DiscordConstants.InformationColorBlue);
 
-        var embedDescription = new StringBuilder();
-        embedDescription.AppendLine(
+        var description = new StringBuilder();
+        description.AppendLine("### ✏️ Select what you want to modify");
+        description.AppendLine(
             "Please keep in mind that this only modifies imports that are stored in .fmbot. It doesn't modify any of your Last.fm scrobbles or data.");
 
         if (!hasImported)
         {
-            embedDescription.AppendLine();
-            embedDescription.AppendLine(
+            description.AppendLine();
+            description.AppendLine(
                 "Run the `.import` command to see how to request your data and to get started with imports. " +
                 "After importing you'll be able to use this command.");
         }
 
-        response.Embed.AddField("✏️ Select what you want to modify",
-            embedDescription.ToString());
+        container.WithTextDisplay(description.ToString());
 
-        if (!hasImported)
+        if (hasImported)
         {
-            return response;
-        }
+            container.WithSeparator();
 
-        {
             var storedDescription = new StringBuilder();
             if (allPlays.Any(a => a.PlaySource == PlaySource.AppleMusicImport))
             {
@@ -339,8 +368,8 @@ public class ImportBuilders
                     $"- {allPlays.Count(c => c.PlaySource == PlaySource.SpotifyImport).Format(context.NumberFormat)} imported Spotify plays");
             }
 
-            response.Embed.AddField($"{EmojiProperties.Custom(DiscordConstants.Imports).ToDiscordString("imports")} Your stored imports",
-                storedDescription.ToString());
+            container.WithTextDisplay(
+                $"**{EmojiProperties.Custom(DiscordConstants.Imports).ToDiscordString("imports")} Your stored imports**\n{storedDescription}");
 
             var noteDescription = new StringBuilder();
             if (context.ContextUser.DataSource == DataSource.ImportThenFullLastFm)
@@ -352,17 +381,31 @@ public class ImportBuilders
             if (context.ContextUser.DataSource == DataSource.MergedDeduplicated)
             {
                 noteDescription.AppendLine(
-                    "Because you have selected the mode **Smart deduplication** *(Beta)* imported plays that you also scrobbled to Last.fm are removed, keeping your Last.fm scrobble. All other imports are used.");
+                    "Because you have selected the mode **Smart deduplication**, imported plays that you also scrobbled to Last.fm are removed, keeping your Last.fm scrobble. All other imports are used.");
             }
 
             if (noteDescription.Length > 0)
             {
-                response.Embed.AddField($"📝 How your imports are used", noteDescription.ToString());
+                container.WithTextDisplay($"**📝 How your imports are used**\n{noteDescription}");
             }
 
-            response.Embed.AddField($"🗑️ Deleting imports",
-                "To delete all of your imports, use  'Manage import settings' and set your source to Last.fm.");
+            container.WithTextDisplay(
+                "**🗑️ Deleting imports**\nTo delete all of your imports, use 'Manage import settings' and set your source to Last.fm.");
         }
+
+        container.WithSeparator();
+        container.WithActionRow(new ActionRowProperties()
+            .AddComponents(new ButtonProperties(
+                $"{InteractionConstants.ImportModify.Modify}:{nameof(ImportModifyPick.Artist)}", "Artist",
+                ButtonStyle.Secondary) { Disabled = !hasImported })
+            .AddComponents(new ButtonProperties(
+                $"{InteractionConstants.ImportModify.Modify}:{nameof(ImportModifyPick.Album)}", "Album",
+                ButtonStyle.Secondary) { Disabled = !hasImported })
+            .AddComponents(new ButtonProperties(
+                $"{InteractionConstants.ImportModify.Modify}:{nameof(ImportModifyPick.Track)}", "Track",
+                ButtonStyle.Secondary) { Disabled = !hasImported })
+            .AddComponents(new ButtonProperties(InteractionConstants.ImportManage, "Manage import settings",
+                ButtonStyle.Secondary) { Disabled = !hasImported }));
 
         return response;
     }
@@ -372,23 +415,24 @@ public class ImportBuilders
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed,
+            ResponseType = ResponseType.ComponentsV2,
         };
 
+        var container = response.ComponentsContainer;
         var artistName = this._importService.GetImportRef(importRef)?.Artist;
 
         if (artistName == null)
         {
-            response.Embed.AddField("Modifying your imports", "Import modify expired. Please start again.");
-            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+            container.WithAccentColor(DiscordConstants.WarningColorOrange);
+            container.WithTextDisplay("### Modifying your imports\nImport modify expired. Please start again.");
             response.CommandResponse = CommandResponse.NotFound;
             return response;
         }
 
         var artist = await this._artistsService.GetArtistFromDatabase(artistName, false);
         var capitalizedArtistName = artist?.Name ?? artistName;
-        response.Embed.AddField("Modifying your imports", $"- Artist: **{capitalizedArtistName}**");
-        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+        container.WithTextDisplay($"### Modifying your imports\n- Artist: **{capitalizedArtistName}**");
+        container.WithAccentColor(DiscordConstants.InformationColorBlue);
 
         var allPlays = await this._playService
             .GetAllUserPlays(userId, false);
@@ -402,27 +446,27 @@ public class ImportBuilders
             .Where(w => w.ArtistName != null && w.ArtistName.Equals(artistName, StringComparison.OrdinalIgnoreCase))
             .ToList();
 
-        AddImportPickCounts(response.Embed, numberFormat, allPlays, processedPlays);
+        AddImportPickCounts(container, numberFormat, allPlays, processedPlays);
 
         if (deletion != null)
         {
             if (deletion == true)
             {
-                response.Embed.WithColor(DiscordConstants.SuccessColorGreen);
-                response.Embed.AddField("Imports deleted",
-                    $"Your imports for this artist have been deleted.");
+                container.WithAccentColor(DiscordConstants.SuccessColorGreen);
+                container.WithTextDisplay("**Imports deleted**\nYour imports for this artist have been deleted.");
             }
             else
             {
-                response.Embed.WithColor(DiscordConstants.WarningColorOrange);
-                response.Embed.AddField("Warning ⚠️",
-                    $"This will delete **{processedPlays.Count(c => c.PlaySource != PlaySource.LastFm)}** imported plays. \n" +
+                container.WithAccentColor(DiscordConstants.WarningColorOrange);
+                container.WithTextDisplay(
+                    $"**Warning ⚠️**\nThis will delete **{processedPlays.Count(c => c.PlaySource != PlaySource.LastFm).Format(numberFormat)}** imported plays. \n" +
                     "This action can only be reversed by re-importing.");
 
-                response.Components = new ActionRowProperties()
-                    .WithButton("Confirm deletion", style: ButtonStyle.Danger,
-                        customId:
-                        $"{InteractionConstants.ImportModify.ArtistDeleteConfirmed}:{importRef}");
+                container.WithSeparator();
+                container.WithActionRow(new ActionRowProperties()
+                    .AddComponents(new ButtonProperties(
+                        $"{InteractionConstants.ImportModify.ArtistDeleteConfirmed}:{importRef}",
+                        "Confirm deletion", ButtonStyle.Danger)));
             }
         }
         else
@@ -432,32 +476,33 @@ public class ImportBuilders
 
             if (string.IsNullOrWhiteSpace(newArtistName))
             {
-                response.Embed.WithColor(DiscordConstants.InformationColorBlue);
-                response.Components = new ActionRowProperties()
-                    .WithButton("Edit artist imports", style: ButtonStyle.Secondary,
-                        customId: $"{InteractionConstants.ImportModify.ArtistRename}:{importRef}")
-                    .WithButton("Delete imports", style: ButtonStyle.Danger,
-                        customId: $"{InteractionConstants.ImportModify.ArtistDelete}:{importRef}");
+                container.WithAccentColor(DiscordConstants.InformationColorBlue);
+                container.WithSeparator();
+                container.WithActionRow(new ActionRowProperties()
+                    .AddComponents(new ButtonProperties($"{InteractionConstants.ImportModify.ArtistRename}:{importRef}",
+                        "Edit artist imports", ButtonStyle.Secondary))
+                    .AddComponents(new ButtonProperties($"{InteractionConstants.ImportModify.ArtistDelete}:{importRef}",
+                        "Delete imports", ButtonStyle.Danger)));
             }
             else if (oldArtistName == null)
             {
-                response.Embed.WithColor(DiscordConstants.WarningColorOrange);
-                response.Embed.AddField("Confirm your edit ⚠️",
-                    $"`{capitalizedArtistName}` to `{newArtistName}`");
+                container.WithAccentColor(DiscordConstants.WarningColorOrange);
+                container.WithTextDisplay(
+                    $"**Confirm your edit ⚠️**\n`{capitalizedArtistName}` to `{newArtistName}`");
 
-                response.Components = new ActionRowProperties()
-                    .WithButton("Confirm edit", style: ButtonStyle.Secondary,
-                        customId:
-                        $"{InteractionConstants.ImportModify.ArtistRenameConfirmed}:{importRef}:{newImportRef}");
+                container.WithSeparator();
+                container.WithActionRow(new ActionRowProperties()
+                    .AddComponents(new ButtonProperties(
+                        $"{InteractionConstants.ImportModify.ArtistRenameConfirmed}:{importRef}:{newImportRef}",
+                        "Confirm edit", ButtonStyle.Secondary)));
             }
             else
             {
-                response.Embed.WithColor(DiscordConstants.SuccessColorGreen);
-                response.Embed.AddField("Imports successfully edited ✅",
-                    $"`{oldArtistName}` to `{newArtistName}`");
-                response.Embed.AddField("Note about future imports",
-                    $"Usually when you import, duplicates will be filtered out. However, note that since your imports are now edited, there might be duplicates when you import the same service again.");
-                response.Components = null;
+                container.WithAccentColor(DiscordConstants.SuccessColorGreen);
+                container.WithTextDisplay(
+                    $"**Imports successfully edited ✅**\n`{oldArtistName}` to `{newArtistName}`");
+                container.WithTextDisplay(
+                    "**Note about future imports**\nUsually when you import, duplicates will be filtered out. However, note that since your imports are now edited, there might be duplicates when you import the same service again.");
             }
         }
 
@@ -469,15 +514,16 @@ public class ImportBuilders
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed,
+            ResponseType = ResponseType.ComponentsV2,
         };
 
+        var container = response.ComponentsContainer;
         var albumRef = this._importService.GetImportRef(importRef);
 
         if (albumRef?.Artist == null || albumRef?.Album == null)
         {
-            response.Embed.AddField("Modifying your imports", "Import modify expired. Please start again.");
-            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+            container.WithAccentColor(DiscordConstants.WarningColorOrange);
+            container.WithTextDisplay("### Modifying your imports\nImport modify expired. Please start again.");
             response.CommandResponse = CommandResponse.NotFound;
             return response;
         }
@@ -489,10 +535,10 @@ public class ImportBuilders
         var capitalizedArtistName = album?.ArtistName ?? artistName;
         var capitalizedAlbumName = album?.Name ?? albumName;
 
-        response.Embed.AddField("Modifying your imports",
-            $"- Artist: **{capitalizedArtistName}**\n" +
-            $"- Album: **{capitalizedAlbumName}**");
-        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+        container.WithTextDisplay("### Modifying your imports\n" +
+                                  $"- Artist: **{capitalizedArtistName}**\n" +
+                                  $"- Album: **{capitalizedAlbumName}**");
+        container.WithAccentColor(DiscordConstants.InformationColorBlue);
 
         var allPlays = await this._playService
             .GetAllUserPlays(userId, false);
@@ -512,28 +558,28 @@ public class ImportBuilders
                         w.AlbumName.Equals(albumName, StringComparison.OrdinalIgnoreCase))
             .ToList();
 
-        AddImportPickCounts(response.Embed, numberFormat, allPlays, processedPlays);
+        AddImportPickCounts(container, numberFormat, allPlays, processedPlays);
 
         if (deletion != null)
         {
             if (deletion == false)
             {
-                response.Embed.WithColor(DiscordConstants.WarningColorOrange);
-                response.Embed.AddField("Warning ⚠️",
-                    $"This will delete **{processedPlays.Count(c => c.PlaySource != PlaySource.LastFm)}** imported plays. \n" +
+                container.WithAccentColor(DiscordConstants.WarningColorOrange);
+                container.WithTextDisplay(
+                    $"**Warning ⚠️**\nThis will delete **{processedPlays.Count(c => c.PlaySource != PlaySource.LastFm).Format(numberFormat)}** imported plays. \n" +
                     "This action can only be reversed by re-importing.");
 
-                response.Components = new ActionRowProperties()
-                    .WithButton("Confirm deletion", style: ButtonStyle.Danger,
-                        customId:
-                        $"{InteractionConstants.ImportModify.AlbumDeleteConfirmed}:{importRef}");
+                container.WithSeparator();
+                container.WithActionRow(new ActionRowProperties()
+                    .AddComponents(new ButtonProperties(
+                        $"{InteractionConstants.ImportModify.AlbumDeleteConfirmed}:{importRef}",
+                        "Confirm deletion", ButtonStyle.Danger)));
             }
             else
             {
-                response.Embed.WithColor(DiscordConstants.SuccessColorGreen);
-                response.Embed.AddField("Imports successfully deleted ✅",
-                    $"Removed `{capitalizedAlbumName}` by `{capitalizedArtistName}`");
-                response.Components = null;
+                container.WithAccentColor(DiscordConstants.SuccessColorGreen);
+                container.WithTextDisplay(
+                    $"**Imports successfully deleted ✅**\nRemoved `{capitalizedAlbumName}` by `{capitalizedArtistName}`");
             }
         }
         else
@@ -543,32 +589,33 @@ public class ImportBuilders
 
             if (string.IsNullOrWhiteSpace(newImportRef))
             {
-                response.Embed.WithColor(DiscordConstants.InformationColorBlue);
-                response.Components = new ActionRowProperties()
-                    .WithButton("Edit album imports", style: ButtonStyle.Secondary,
-                        customId: $"{InteractionConstants.ImportModify.AlbumRename}:{importRef}")
-                    .WithButton("Delete imports", style: ButtonStyle.Danger,
-                        customId: $"{InteractionConstants.ImportModify.AlbumDelete}:{importRef}");
+                container.WithAccentColor(DiscordConstants.InformationColorBlue);
+                container.WithSeparator();
+                container.WithActionRow(new ActionRowProperties()
+                    .AddComponents(new ButtonProperties($"{InteractionConstants.ImportModify.AlbumRename}:{importRef}",
+                        "Edit album imports", ButtonStyle.Secondary))
+                    .AddComponents(new ButtonProperties($"{InteractionConstants.ImportModify.AlbumDelete}:{importRef}",
+                        "Delete imports", ButtonStyle.Danger)));
             }
             else if (oldAlbumRef == null)
             {
-                response.Embed.WithColor(DiscordConstants.WarningColorOrange);
-                response.Embed.AddField("Confirm your edit ⚠️",
-                    $"`{capitalizedAlbumName}` by `{capitalizedArtistName}` to `{newAlbumRef.Album}` by `{newAlbumRef.Artist}`");
+                container.WithAccentColor(DiscordConstants.WarningColorOrange);
+                container.WithTextDisplay(
+                    $"**Confirm your edit ⚠️**\n`{capitalizedAlbumName}` by `{capitalizedArtistName}` to `{newAlbumRef.Album}` by `{newAlbumRef.Artist}`");
 
-                response.Components = new ActionRowProperties()
-                    .WithButton("Confirm edit", style: ButtonStyle.Secondary,
-                        customId:
-                        $"{InteractionConstants.ImportModify.AlbumRenameConfirmed}:{importRef}:{newImportRef}");
+                container.WithSeparator();
+                container.WithActionRow(new ActionRowProperties()
+                    .AddComponents(new ButtonProperties(
+                        $"{InteractionConstants.ImportModify.AlbumRenameConfirmed}:{importRef}:{newImportRef}",
+                        "Confirm edit", ButtonStyle.Secondary)));
             }
             else
             {
-                response.Embed.WithColor(DiscordConstants.SuccessColorGreen);
-                response.Embed.AddField("Imports successfully edited ✅",
-                    $"`{oldAlbumRef.Album}` by `{oldAlbumRef.Artist}` to `{newAlbumRef.Album}` by `{newAlbumRef.Artist}`");
-                response.Embed.AddField("Note about future imports",
-                    $"Usually when you import, duplicates will be filtered out. However, note that since your imports are now edited, there might be duplicates when you import the same service again.");
-                response.Components = null;
+                container.WithAccentColor(DiscordConstants.SuccessColorGreen);
+                container.WithTextDisplay(
+                    $"**Imports successfully edited ✅**\n`{oldAlbumRef.Album}` by `{oldAlbumRef.Artist}` to `{newAlbumRef.Album}` by `{newAlbumRef.Artist}`");
+                container.WithTextDisplay(
+                    "**Note about future imports**\nUsually when you import, duplicates will be filtered out. However, note that since your imports are now edited, there might be duplicates when you import the same service again.");
             }
         }
 
@@ -580,15 +627,16 @@ public class ImportBuilders
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed,
+            ResponseType = ResponseType.ComponentsV2,
         };
 
+        var container = response.ComponentsContainer;
         var trackRef = this._importService.GetImportRef(importRef);
 
         if (trackRef?.Artist == null || trackRef?.Track == null)
         {
-            response.Embed.AddField("Modifying your imports", "Import modify expired. Please start again.");
-            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+            container.WithAccentColor(DiscordConstants.WarningColorOrange);
+            container.WithTextDisplay("### Modifying your imports\nImport modify expired. Please start again.");
             response.CommandResponse = CommandResponse.NotFound;
             return response;
         }
@@ -600,10 +648,10 @@ public class ImportBuilders
         var capitalizedArtistName = track?.ArtistName ?? artistName;
         var capitalizedTrackName = track?.Name ?? trackName;
 
-        response.Embed.AddField("Modifying your imports",
-            $"- Artist: **{capitalizedArtistName}**\n" +
-            $"- Track: **{capitalizedTrackName}**");
-        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+        container.WithTextDisplay("### Modifying your imports\n" +
+                                  $"- Artist: **{capitalizedArtistName}**\n" +
+                                  $"- Track: **{capitalizedTrackName}**");
+        container.WithAccentColor(DiscordConstants.InformationColorBlue);
 
         var allPlays = await this._playService
             .GetAllUserPlays(userId, false);
@@ -623,28 +671,28 @@ public class ImportBuilders
                         w.TrackName.Equals(trackName, StringComparison.OrdinalIgnoreCase))
             .ToList();
 
-        AddImportPickCounts(response.Embed, numberFormat, allPlays, processedPlays);
+        AddImportPickCounts(container, numberFormat, allPlays, processedPlays);
 
         if (deletion != null)
         {
             if (deletion == false)
             {
-                response.Embed.WithColor(DiscordConstants.WarningColorOrange);
-                response.Embed.AddField("Warning ⚠️",
-                    $"This will delete **{processedPlays.Count(c => c.PlaySource != PlaySource.LastFm)}** imported plays. \n" +
+                container.WithAccentColor(DiscordConstants.WarningColorOrange);
+                container.WithTextDisplay(
+                    $"**Warning ⚠️**\nThis will delete **{processedPlays.Count(c => c.PlaySource != PlaySource.LastFm).Format(numberFormat)}** imported plays. \n" +
                     "This action can only be reversed by re-importing.");
 
-                response.Components = new ActionRowProperties()
-                    .WithButton("Confirm deletion", style: ButtonStyle.Danger,
-                        customId:
-                        $"{InteractionConstants.ImportModify.TrackDeleteConfirmed}:{importRef}");
+                container.WithSeparator();
+                container.WithActionRow(new ActionRowProperties()
+                    .AddComponents(new ButtonProperties(
+                        $"{InteractionConstants.ImportModify.TrackDeleteConfirmed}:{importRef}",
+                        "Confirm deletion", ButtonStyle.Danger)));
             }
             else
             {
-                response.Embed.WithColor(DiscordConstants.SuccessColorGreen);
-                response.Embed.AddField("Imports successfully deleted ✅",
-                    $"Removed `{capitalizedTrackName}` by `{capitalizedArtistName}`");
-                response.Components = null;
+                container.WithAccentColor(DiscordConstants.SuccessColorGreen);
+                container.WithTextDisplay(
+                    $"**Imports successfully deleted ✅**\nRemoved `{capitalizedTrackName}` by `{capitalizedArtistName}`");
             }
         }
         else
@@ -654,38 +702,39 @@ public class ImportBuilders
 
             if (string.IsNullOrWhiteSpace(newImportRef))
             {
-                response.Components = new ActionRowProperties()
-                    .WithButton("Edit track imports", style: ButtonStyle.Secondary,
-                        customId: $"{InteractionConstants.ImportModify.TrackRename}:{importRef}")
-                    .WithButton("Delete imports", style: ButtonStyle.Danger,
-                        customId: $"{InteractionConstants.ImportModify.TrackDelete}:{importRef}");
+                container.WithSeparator();
+                container.WithActionRow(new ActionRowProperties()
+                    .AddComponents(new ButtonProperties($"{InteractionConstants.ImportModify.TrackRename}:{importRef}",
+                        "Edit track imports", ButtonStyle.Secondary))
+                    .AddComponents(new ButtonProperties($"{InteractionConstants.ImportModify.TrackDelete}:{importRef}",
+                        "Delete imports", ButtonStyle.Danger)));
             }
             else if (oldTrackRef == null)
             {
-                response.Embed.WithColor(DiscordConstants.WarningColorOrange);
-                response.Embed.AddField("Confirm your edit ⚠️",
-                    $"`{capitalizedTrackName}` by `{capitalizedArtistName}` to `{newTrackRef.Track}` by `{newTrackRef.Artist}`");
+                container.WithAccentColor(DiscordConstants.WarningColorOrange);
+                container.WithTextDisplay(
+                    $"**Confirm your edit ⚠️**\n`{capitalizedTrackName}` by `{capitalizedArtistName}` to `{newTrackRef.Track}` by `{newTrackRef.Artist}`");
 
-                response.Components = new ActionRowProperties()
-                    .WithButton("Confirm edit", style: ButtonStyle.Secondary,
-                        customId:
-                        $"{InteractionConstants.ImportModify.TrackRenameConfirmed}:{importRef}:{newImportRef}");
+                container.WithSeparator();
+                container.WithActionRow(new ActionRowProperties()
+                    .AddComponents(new ButtonProperties(
+                        $"{InteractionConstants.ImportModify.TrackRenameConfirmed}:{importRef}:{newImportRef}",
+                        "Confirm edit", ButtonStyle.Secondary)));
             }
             else
             {
-                response.Embed.WithColor(DiscordConstants.SuccessColorGreen);
-                response.Embed.AddField("Imports successfully edited ✅",
-                    $"`{oldTrackRef.Track}` by `{oldTrackRef.Artist}` to `{newTrackRef.Track}` by `{newTrackRef.Artist}`");
-                response.Embed.AddField("Note about future imports",
-                    $"Usually when you import, duplicates will be filtered out. However, note that since your imports are now edited, there might be duplicates when you import the same service again.");
-                response.Components = null;
+                container.WithAccentColor(DiscordConstants.SuccessColorGreen);
+                container.WithTextDisplay(
+                    $"**Imports successfully edited ✅**\n`{oldTrackRef.Track}` by `{oldTrackRef.Artist}` to `{newTrackRef.Track}` by `{newTrackRef.Artist}`");
+                container.WithTextDisplay(
+                    "**Note about future imports**\nUsually when you import, duplicates will be filtered out. However, note that since your imports are now edited, there might be duplicates when you import the same service again.");
             }
         }
 
         return response;
     }
 
-    private static void AddImportPickCounts(EmbedProperties embed, NumberFormat numberFormat,
+    private static void AddImportPickCounts(ComponentContainerProperties container, NumberFormat numberFormat,
         ICollection<UserPlay> allPlays,
         ICollection<UserPlay> processedPlays)
     {
@@ -709,7 +758,7 @@ public class ImportBuilders
                 $"- {allPlays.Count(c => c.PlaySource == PlaySource.AppleMusicImport).Format(numberFormat)} Apple Music imports");
         }
 
-        embed.AddField("Total playcounts - Including overlapping/duplicate plays", totalDescription.ToString());
+        container.WithTextDisplay($"**Total playcounts - Including overlapping/duplicate plays**\n{totalDescription}");
 
         var processedDescription = new StringBuilder();
         processedDescription.AppendLine($"- {processedPlays.Count().Format(numberFormat)} total plays");
@@ -731,6 +780,6 @@ public class ImportBuilders
                 $"- {processedPlays.Count(c => c.PlaySource == PlaySource.AppleMusicImport).Format(numberFormat)} of those are Apple Music imports");
         }
 
-        embed.AddField("Final playcounts - Overlapping plays filtered", processedDescription.ToString());
+        container.WithTextDisplay($"**Final playcounts - Overlapping plays filtered**\n{processedDescription}");
     }
 }

@@ -37,6 +37,7 @@ public static class DiscordConstants
 
     public const ulong Pause = 1517493964880609310;
     public const ulong Refresh = 1517501604167811093;
+    public const ulong AddToQueue = 1558098079842828288;
 
     public const int PaginationTimeoutInSeconds = 120;
 

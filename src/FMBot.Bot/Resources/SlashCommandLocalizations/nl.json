@@ -593,12 +593,7 @@
       "description": "Beheer je data-imports",
       "subcommands": {
         "applemusic": {
-          "description": "⭐ Importeer je Apple Music-geschiedenis in .fmbot",
-          "parameters": {
-            "file": {
-              "description": "'Apple Media Services information.zip'- of 'Apple Music Play Activity.csv'-bestand"
-            }
-          }
+          "description": "⭐ Importeer je Apple Music-geschiedenis in .fmbot"
         },
         "manage": {
           "description": "⭐ Beheer je imports en stel in hoe ze worden gebruikt"
@@ -607,54 +602,7 @@
           "description": "⭐ Bewerk en verwijder artiesten, albums en tracks in je .fmbot-imports"
         },
         "spotify": {
-          "description": "⭐ Importeer je Spotify-geschiedenis in .fmbot",
-          "parameters": {
-            "file-1": {
-              "description": "Spotify-geschiedenispakket (.zip) of geschiedenisbestanden (.json)"
-            },
-            "file-10": {
-              "description": "Spotify-geschiedenispakket (.zip) of geschiedenisbestanden (.json)"
-            },
-            "file-11": {
-              "description": "Spotify-geschiedenispakket (.zip) of geschiedenisbestanden (.json)"
-            },
-            "file-12": {
-              "description": "Spotify-geschiedenispakket (.zip) of geschiedenisbestanden (.json)"
-            },
-            "file-13": {
-              "description": "Spotify-geschiedenispakket (.zip) of geschiedenisbestanden (.json)"
-            },
-            "file-14": {
-              "description": "Spotify-geschiedenispakket (.zip) of geschiedenisbestanden (.json)"
-            },
-            "file-15": {
-              "description": "Spotify-geschiedenispakket (.zip) of geschiedenisbestanden (.json)"
-            },
-            "file-2": {
-              "description": "Spotify-geschiedenispakket (.zip) of geschiedenisbestanden (.json)"
-            },
-            "file-3": {
-              "description": "Spotify-geschiedenispakket (.zip) of geschiedenisbestanden (.json)"
-            },
-            "file-4": {
-              "description": "Spotify-geschiedenispakket (.zip) of geschiedenisbestanden (.json)"
-            },
-            "file-5": {
-              "description": "Spotify-geschiedenispakket (.zip) of geschiedenisbestanden (.json)"
-            },
-            "file-6": {
-              "description": "Spotify-geschiedenispakket (.zip) of geschiedenisbestanden (.json)"
-            },
-            "file-7": {
-              "description": "Spotify-geschiedenispakket (.zip) of geschiedenisbestanden (.json)"
-            },
-            "file-8": {
-              "description": "Spotify-geschiedenispakket (.zip) of geschiedenisbestanden (.json)"
-            },
-            "file-9": {
-              "description": "Spotify-geschiedenispakket (.zip) of geschiedenisbestanden (.json)"
-            }
-          }
+          "description": "⭐ Importeer je Spotify-geschiedenis in .fmbot"
         }
       }
     },

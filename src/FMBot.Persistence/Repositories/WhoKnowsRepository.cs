@@ -12,23 +12,20 @@ namespace FMBot.Persistence.Repositories;
 public static class WhoKnowsRepository
 {
     public static async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForArtist(
-        IDictionary<int, FullGuildUser> guildUsers, int guildId, string artistName, NpgsqlConnection connection)
+        IDictionary<int, FullGuildUser> guildUsers, string artistName, NpgsqlConnection connection)
     {
-        const string sql = "BEGIN; " +
-                           "SET LOCAL enable_nestloop = OFF; " +
-                           "SELECT ua.user_id, " +
+        const string sql = "SELECT ua.user_id, " +
                            "ua.playcount " +
                            "FROM user_artists AS ua " +
                            "WHERE UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT)) " +
-                           "AND ua.user_id = ANY(SELECT user_id FROM guild_users WHERE guild_id = @guildId) " +
-                           "ORDER BY ua.playcount DESC; " +
-                           "COMMIT; ";
+                           "AND ua.user_id = ANY(@userIds) " +
+                           "ORDER BY ua.playcount DESC";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
 
         var userArtists = (await connection.QueryAsync<WhoKnowsArtistDto>(sql, new
         {
-            guildId,
+            userIds = guildUsers.Keys.ToArray(),
             artistName
         })).ToList();
 
@@ -36,23 +33,20 @@ public static class WhoKnowsRepository
     }
 
     public static async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForAlbum(
-        IDictionary<int, FullGuildUser> guildUsers, int guildId, int albumId, NpgsqlConnection connection)
+        IDictionary<int, FullGuildUser> guildUsers, int albumId, NpgsqlConnection connection)
     {
-        const string sql = "BEGIN; " +
-                           "SET LOCAL enable_nestloop = OFF; " +
-                           "SELECT ub.user_id, " +
+        const string sql = "SELECT ub.user_id, " +
                            "ub.playcount " +
                            "FROM user_albums AS ub " +
                            "WHERE ub.album_id = @albumId " +
-                           "AND ub.user_id = ANY(SELECT user_id FROM guild_users WHERE guild_id = @guildId) " +
-                           "ORDER BY ub.playcount DESC; " +
-                           "COMMIT; ";
+                           "AND ub.user_id = ANY(@userIds) " +
+                           "ORDER BY ub.playcount DESC";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
 
         var userAlbums = (await connection.QueryAsync<WhoKnowsAlbumDto>(sql, new
         {
-            guildId,
+            userIds = guildUsers.Keys.ToArray(),
             albumId
         })).ToList();
 
@@ -60,20 +54,20 @@ public static class WhoKnowsRepository
     }
 
     public static async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForTrack(
-        IDictionary<int, FullGuildUser> guildUsers, int guildId, int trackId, NpgsqlConnection connection)
+        IDictionary<int, FullGuildUser> guildUsers, int trackId, NpgsqlConnection connection)
     {
         const string sql = "SELECT ut.user_id, " +
                            "ut.playcount " +
                            "FROM user_tracks AS ut " +
                            "WHERE ut.track_id = @trackId " +
-                           "AND ut.user_id = ANY(SELECT user_id FROM guild_users WHERE guild_id = @guildId) " +
+                           "AND ut.user_id = ANY(@userIds) " +
                            "ORDER BY ut.playcount DESC";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
 
         var userTracks = (await connection.QueryAsync<WhoKnowsTrackDto>(sql, new
         {
-            guildId,
+            userIds = guildUsers.Keys.ToArray(),
             trackId
         })).ToList();
 

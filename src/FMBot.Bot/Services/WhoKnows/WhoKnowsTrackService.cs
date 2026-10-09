@@ -32,7 +32,7 @@ public class WhoKnowsTrackService
     }
 
     public async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForTrack(NetCord.Gateway.Guild discordGuild,
-        IDictionary<int, FullGuildUser> guildUsers, int guildId, string artistName, string trackName)
+        IDictionary<int, FullGuildUser> guildUsers, string artistName, string trackName)
     {
         var trackId = await this._idResolutionService.ResolveTrackId(artistName, trackName);
         if (!trackId.HasValue)
@@ -44,7 +44,7 @@ public class WhoKnowsTrackService
         await connection.OpenAsync();
 
         var whoKnowsTrackList =
-            await WhoKnowsRepository.GetIndexedUsersForTrack(guildUsers, guildId, trackId.Value, connection);
+            await WhoKnowsRepository.GetIndexedUsersForTrack(guildUsers, trackId.Value, connection);
 
         return whoKnowsTrackList.WithDiscordDisplayNames(discordGuild, guildUsers);
     }

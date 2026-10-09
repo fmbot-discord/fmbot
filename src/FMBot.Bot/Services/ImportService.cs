@@ -39,6 +39,8 @@ public class ImportService(
 {
     private readonly BotSettings _botSettings = botSettings.Value;
 
+    private const long MaxImportBytes = 2L * 1024 * 1024 * 1024;
+    private const int MaxImportRecords = 3_000_000;
 
     public async Task<(ImportStatus status, List<AppleMusicCsvImportModel> result)> HandleAppleMusicFiles(User user,
         Attachment attachment)
@@ -68,6 +70,15 @@ public class ImportService(
                     Log.Information(
                         "Importing: {userId} / {discordUserId} - HandleAppleMusicFiles - Could not find 'Apple_Media_Services.zip' inside first zip - {zipName}",
                         user.UserId, user.DiscordUserId, attachment.FileName);
+
+                    return (ImportStatus.UnknownFailure, null);
+                }
+
+                if (innerZipEntry.Length > MaxImportBytes)
+                {
+                    Log.Warning(
+                        "Importing: {userId} / {discordUserId} - HandleAppleMusicFiles - 'Apple_Media_Services.zip' is too large ({size} bytes) - {zipName}",
+                        user.UserId, user.DiscordUserId, innerZipEntry.Length, attachment.FileName);
 
                     return (ImportStatus.UnknownFailure, null);
                 }
@@ -102,14 +113,7 @@ public class ImportService(
             {
                 using var csv = new CsvReader(innerCsvStreamReader, csvConfig);
 
-
-                var records = csv.GetRecords<AppleMusicCsvImportModel>().ToList();
-                if (records.Count != 0)
-                {
-                    appleMusicPlays.AddRange(records.Where(w => w.PlayDurationMs > 0 &&
-                                                                !string.IsNullOrWhiteSpace(w.AlbumName) &&
-                                                                !string.IsNullOrWhiteSpace(w.SongName)).ToList());
-                }
+                appleMusicPlays.AddRange(GetValidAppleMusicRecords(csv));
             }
             catch (Exception e)
             {
@@ -118,6 +122,15 @@ public class ImportService(
                     user.UserId, user.DiscordUserId, attachment.FileName);
                 return (ImportStatus.WrongCsvFailure, appleMusicPlays);
             }
+        }
+
+        if (appleMusicPlays.Count > MaxImportRecords)
+        {
+            Log.Warning(
+                "Importing: {userId} / {discordUserId} - HandleAppleMusicFiles - Too many plays (over {maxRecords}) - {fileName}",
+                user.UserId, user.DiscordUserId, MaxImportRecords, attachment.FileName);
+
+            return (ImportStatus.UnknownFailure, null);
         }
 
         if (appleMusicPlays.Any())
@@ -129,19 +142,31 @@ public class ImportService(
 
         async Task ExtractPlaysFromCsv(ZipArchiveEntry csvEntry)
         {
+            if (csvEntry.Length > MaxImportBytes)
+            {
+                Log.Warning(
+                    "Importing: {userId} / {discordUserId} - HandleAppleMusicFiles - 'Apple Music Play Activity.csv' is too large ({size} bytes) - {zipName}",
+                    user.UserId, user.DiscordUserId, csvEntry.Length, attachment.FileName);
+                return;
+            }
+
             await using var innerCsvStream = csvEntry.Open();
             using var innerCsvStreamReader = new StreamReader(innerCsvStream);
 
             var csv = new CsvReader(innerCsvStreamReader, csvConfig);
 
-            var records = csv.GetRecords<AppleMusicCsvImportModel>().ToList();
-            if (records.Count != 0)
-            {
-                appleMusicPlays.AddRange(records.Where(w => w.PlayDurationMs > 0 &&
-                                                            !string.IsNullOrWhiteSpace(w.AlbumName) &&
-                                                            !string.IsNullOrWhiteSpace(w.SongName)).ToList());
-            }
+            appleMusicPlays.AddRange(GetValidAppleMusicRecords(csv));
         }
+    }
+
+    private static List<AppleMusicCsvImportModel> GetValidAppleMusicRecords(CsvReader csv)
+    {
+        return csv.GetRecords<AppleMusicCsvImportModel>()
+            .Where(w => w.PlayDurationMs > 0 &&
+                        !string.IsNullOrWhiteSpace(w.AlbumName) &&
+                        !string.IsNullOrWhiteSpace(w.SongName))
+            .Take(MaxImportRecords + 1)
+            .ToList();
     }
 
     public async Task<(RepeatedField<PlayWithoutArtist> userPlays, string matchFoundPercentage)>
@@ -234,17 +259,31 @@ public class ImportService(
         {
             var spotifyPlays = new List<SpotifyEndSongImportModel>();
             var processedFiles = new List<string>();
+            long importBytes = 0;
 
             foreach (var attachment in attachments.Where(w => w?.Url != null && w.FileName.Contains(".json", StringComparison.OrdinalIgnoreCase))
                          .GroupBy(g => g.FileName))
             {
+                importBytes += attachment.First().Size;
+                if (importBytes > MaxImportBytes)
+                {
+                    return SpotifyImportTooLarge(user, importBytes, spotifyPlays.Count);
+                }
+
                 await using var stream = await httpClient.GetStreamAsync(attachment.First().Url);
 
                 try
                 {
-                    var result = await JsonSerializer.DeserializeAsync<List<SpotifyEndSongImportModel>>(stream);
+                    var result = await JsonSerializer.DeserializeAsyncEnumerable<SpotifyEndSongImportModel>(stream)
+                        .Take(MaxImportRecords - spotifyPlays.Count + 1)
+                        .ToListAsync();
 
                     spotifyPlays.AddRange(result);
+                    if (spotifyPlays.Count > MaxImportRecords)
+                    {
+                        return SpotifyImportTooLarge(user, importBytes, spotifyPlays.Count);
+                    }
+
                     processedFiles.Add(attachment.Key);
                 }
                 catch (Exception e)
@@ -268,12 +307,25 @@ public class ImportService(
 
                 foreach (var entry in zip.Entries.Where(w => w.Name.Contains(".json", StringComparison.OrdinalIgnoreCase)))
                 {
+                    importBytes += entry.Length;
+                    if (importBytes > MaxImportBytes)
+                    {
+                        return SpotifyImportTooLarge(user, importBytes, spotifyPlays.Count);
+                    }
+
                     try
                     {
                         await using var zipStream = await entry.OpenAsync();
-                        var result = await JsonSerializer.DeserializeAsync<List<SpotifyEndSongImportModel>>(zipStream);
+                        var result = await JsonSerializer.DeserializeAsyncEnumerable<SpotifyEndSongImportModel>(zipStream)
+                            .Take(MaxImportRecords - spotifyPlays.Count + 1)
+                            .ToListAsync();
 
                         spotifyPlays.AddRange(result);
+                        if (spotifyPlays.Count > MaxImportRecords)
+                        {
+                            return SpotifyImportTooLarge(user, importBytes, spotifyPlays.Count);
+                        }
+
                         processedFiles.Add(entry.Name);
                     }
                     catch (Exception e)
@@ -292,6 +344,16 @@ public class ImportService(
                 user.UserId, user.DiscordUserId);
             return (ImportStatus.UnknownFailure, null, null);
         }
+    }
+
+    private static (ImportStatus status, List<SpotifyEndSongImportModel> result, List<string> processedFiles)
+        SpotifyImportTooLarge(User user, long importBytes, int importRecords)
+    {
+        Log.Warning(
+            "Importing: {userId} / {discordUserId} - HandleSpotifyFiles - Import too large ({importBytes} bytes, {importRecords} records)",
+            user.UserId, user.DiscordUserId, importBytes, importRecords);
+
+        return (ImportStatus.UnknownFailure, null, null);
     }
 
     public async Task<List<UserPlay>> SpotifyImportToUserPlays(User user, List<SpotifyEndSongImportModel> spotifyPlays)
