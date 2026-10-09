@@ -29,13 +29,13 @@ public class WhoKnowsAlbumService
     }
 
     public async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForAlbum(NetCord.Gateway.Guild discordGuild,
-        IDictionary<int, FullGuildUser> guildUsers, int guildId, int albumId)
+        IDictionary<int, FullGuildUser> guildUsers, int albumId)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
         var whoKnowsAlbumList =
-            await WhoKnowsRepository.GetIndexedUsersForAlbum(guildUsers, guildId, albumId, connection);
+            await WhoKnowsRepository.GetIndexedUsersForAlbum(guildUsers, albumId, connection);
 
         return whoKnowsAlbumList.WithDiscordDisplayNames(discordGuild, guildUsers);
     }

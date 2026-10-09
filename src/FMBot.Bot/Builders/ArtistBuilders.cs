@@ -180,7 +180,7 @@ public class ArtistBuilders
             if (guild?.LastIndexed != null)
             {
                 indexedUsersTask = this._whoKnowsArtistService.GetIndexedUsersForArtist(context.DiscordGuild,
-                    guildUsers, guild.GuildId, artistSearch.Artist.ArtistName);
+                    guildUsers, artistSearch.Artist.ArtistName);
             }
         }
 

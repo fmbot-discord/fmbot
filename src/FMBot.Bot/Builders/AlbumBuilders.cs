@@ -149,7 +149,7 @@ public class AlbumBuilders
             if (guild?.LastIndexed != null && databaseAlbum != null)
             {
                 indexedUsersTask = this._whoKnowsAlbumService.GetIndexedUsersForAlbum(context.DiscordGuild,
-                    guildUsers, guild.GuildId, databaseAlbum.Id);
+                    guildUsers, databaseAlbum.Id);
             }
         }
         var userTitle = await userTitleTask;
@@ -479,7 +479,7 @@ public class AlbumBuilders
         var guildUsers = await guildUsersTask;
 
         var usersWithAlbumTask = this._whoKnowsAlbumService.GetIndexedUsersForAlbum(context.DiscordGuild, guildUsers,
-            guild.GuildId, databaseAlbum.Id).ObserveFaults();
+            databaseAlbum.Id).ObserveFaults();
 
         var discordGuildUser = await context.DiscordGuild.GetCachedGuildUserAsync(context.ContextUser.DiscordUserId);
         var currentUser =

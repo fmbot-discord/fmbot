@@ -50,7 +50,7 @@ public class WhoKnowsArtistService
 
         var guildUsers = await this._guildService.GetGuildUsers(discordGuild.Id);
 
-        var usersWithArtist = await GetIndexedUsersForArtist(discordGuild, guildUsers, guild.GuildId, artistName);
+        var usersWithArtist = await GetIndexedUsersForArtist(discordGuild, guildUsers, artistName);
 
         var discordGuildUser = await discordGuild.GetCachedGuildUserAsync(contextUser.DiscordUserId);
         await this._indexService.GetOrAddUserToGuild(guildUsers, guild, discordGuildUser, contextUser);
@@ -72,13 +72,13 @@ public class WhoKnowsArtistService
     }
 
     public async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForArtist(NetCord.Gateway.Guild discordGuild,
-        IDictionary<int, FullGuildUser> guildUsers, int guildId, string artistName)
+        IDictionary<int, FullGuildUser> guildUsers, string artistName)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
         var whoKnowsArtistList =
-            await WhoKnowsRepository.GetIndexedUsersForArtist(guildUsers, guildId, artistName, connection);
+            await WhoKnowsRepository.GetIndexedUsersForArtist(guildUsers, artistName, connection);
 
         return whoKnowsArtistList.WithDiscordDisplayNames(discordGuild, guildUsers);
     }

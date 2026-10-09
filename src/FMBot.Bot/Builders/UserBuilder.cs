@@ -829,7 +829,7 @@ public class UserBuilder
             var optionDescription = option.GetAttribute<OptionAttribute>().Description;
             var value = Enum.GetName(option);
 
-            var active = isSupporter && (context.ContextUser.GraphType ?? GraphType.Line) == option;
+            var active = isSupporter && (context.ContextUser.GraphType ?? GraphType.Bar) == option;
 
             graphTypeMenu.AddOption(new StringMenuSelectOptionProperties(name, value)
             {
