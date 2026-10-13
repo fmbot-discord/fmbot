@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.Encodings.Web;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Fergun.Interactive;
 using Fergun.Interactive.Pagination;
@@ -376,8 +375,13 @@ public class AlbumBuilders
                     }
                 }
 
+                Color? albumImageColor = albumCoverUrl != null
+                    ? await this._albumService.GetAlbumImageColor(context, albumCoverUrl, databaseAlbum?.Id,
+                        albumSearch.Album.AlbumName, albumSearch.Album.ArtistName, databaseAlbum)
+                    : null;
+
                 playHistoryGraph = await this._graphService.BuildPlayHistoryGraph(context, response,
-                    playHistory.DailyPlays, "album-plays.png");
+                    playHistory.DailyPlays, "album-plays.png", imageColor: albumImageColor);
             }
             else
             {
@@ -1839,7 +1843,6 @@ public class AlbumBuilders
             foreach (var album in albumPage)
             {
                 var url = album.AlbumUrl;
-                var escapedAlbumName = Regex.Replace(album.AlbumName, @"([|\\*])", @"\$1");
 
                 if (context.ContextUser.RymEnabled == true)
                 {
@@ -1847,7 +1850,7 @@ public class AlbumBuilders
                 }
 
                 var name =
-                    $"**{album.ArtistName}** - **{StringExtensions.MarkdownLink(escapedAlbumName, url)}** - *{context.LocalizeCount("shared.plays", album.UserPlaycount.GetValueOrDefault())}*";
+                    $"**{album.ArtistName}** - **{StringExtensions.MarkdownLink(album.AlbumName, url)}** - *{context.LocalizeCount("shared.plays", album.UserPlaycount.GetValueOrDefault())}*";
 
                 if (topListSettings.Billboard && previousTopAlbums.Any())
                 {

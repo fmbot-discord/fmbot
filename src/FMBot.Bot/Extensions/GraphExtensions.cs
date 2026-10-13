@@ -24,7 +24,7 @@ public static class GraphExtensions
     public static async Task<MediaGalleryProperties> BuildPlayHistoryGraph(this GraphService graphService,
         ContextModel context, ResponseModel response, IReadOnlyList<DayPlayCount> dailyPlays, string fileName,
         GraphInterval? fixedInterval = null, int height = DefaultGraphHeight, DateTime? windowFrom = null,
-        DateTime? windowUntil = null, string windowTimeZone = null)
+        DateTime? windowUntil = null, string windowTimeZone = null, NetCord.Color? imageColor = null)
     {
         if (dailyPlays == null || dailyPlays.Count == 0)
         {
@@ -49,7 +49,7 @@ public static class GraphExtensions
 
         var graph = graphService.RenderPlayHistory(points,
             context.Localizer.Language.GetCultureInfo(),
-            await GetLineColor(context, response),
+            await GetLineColor(context, imageColor),
             value => value.Format(context.NumberFormat),
             fixedInterval,
             ToWindowStart(windowFrom, windowTimeZone),
@@ -155,11 +155,11 @@ public static class GraphExtensions
 
     private const float MinimumLineLightness = 40f;
 
-    private static async Task<SKColor> GetLineColor(ContextModel context, ResponseModel response)
+    private static async Task<SKColor> GetLineColor(ContextModel context, NetCord.Color? imageColor)
     {
         var user = context.ContextUser;
 
-        switch (user?.GraphColor ?? GraphColor.EmbedColor)
+        switch (user?.GraphColor ?? GraphColor.ImageColor)
         {
             case GraphColor.FmbotBlue:
                 return GraphColors.FmbotBlue;
@@ -175,11 +175,8 @@ public static class GraphExtensions
                 break;
         }
 
-        var accentColor = response.ComponentsContainer?.AccentColor ??
-                          await UserService.GetCustomAccentColor(user, context.DiscordGuild);
-
-        return accentColor.HasValue
-            ? Brighten(ToSkColor(accentColor.Value))
+        return imageColor.HasValue
+            ? Brighten(ToSkColor(imageColor.Value))
             : GraphColors.FmbotBlue;
     }
 

@@ -518,6 +518,7 @@ public class UserBuilder
         }
 
         container.AddComponents(accentColorMenu);
+        container.WithTextDisplay("Also used by `album`, `track`, `cover` and WhoKnows commands with album covers");
 
         container.WithSeparator();
         container.WithTextDisplay("**Adjust small text type**");
@@ -845,7 +846,7 @@ public class UserBuilder
 
         container.WithSeparator();
 
-        var graphColor = context.ContextUser.GraphColor ?? GraphColor.EmbedColor;
+        var graphColor = context.ContextUser.GraphColor ?? GraphColor.ImageColor;
         if (graphColor == GraphColor.Custom &&
             isSupporter &&
             ColorExtensions.TryParseHexColor(context.ContextUser.GraphCustomColor, out var customGraphColor))

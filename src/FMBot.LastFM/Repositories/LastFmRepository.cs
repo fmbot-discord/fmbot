@@ -359,12 +359,12 @@ public class LastFmRepository : ILastfmRepository
 
     public static string ResponseTrackToLinkedString(TrackInfo trackInfo)
     {
-        if (string.IsNullOrEmpty(trackInfo.TrackUrl) || trackInfo.TrackUrl.IndexOfAny(new[] { '(', ')' }) >= 0)
+        if (string.IsNullOrEmpty(trackInfo.TrackUrl))
         {
             return ResponseTrackToString(trackInfo);
         }
 
-        return $"[{trackInfo.TrackName}]({trackInfo.TrackUrl})\n" +
+        return $"{DiscordStringExtensions.MarkdownLink(trackInfo.TrackName, trackInfo.TrackUrl)}\n" +
                $"By **{trackInfo.ArtistName}**" +
                (string.IsNullOrWhiteSpace(trackInfo.AlbumName)
                    ? "\n"
@@ -387,7 +387,7 @@ public class LastFmRepository : ILastfmRepository
 
     public static string TrackToOneLinedLinkedString(RecentTrack trackLfm)
     {
-        return $"**[{trackLfm.TrackName}]({trackLfm.TrackUrl})** by **{trackLfm.ArtistName}**";
+        return $"**{DiscordStringExtensions.MarkdownLink(trackLfm.TrackName, trackLfm.TrackUrl)}** by **{trackLfm.ArtistName}**";
     }
 
     public static string TagsToLinkedString(List<Tag> tags)

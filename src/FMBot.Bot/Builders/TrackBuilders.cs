@@ -463,8 +463,13 @@ public class TrackBuilders
                     }
                 }
 
+                Color? albumImageColor = albumCoverUrl != null
+                    ? await this._albumService.GetAlbumImageColor(context, albumCoverUrl, databaseAlbum.Id,
+                        trackSearch.Track.AlbumName, trackSearch.Track.ArtistName)
+                    : null;
+
                 playHistoryGraph = await this._graphService.BuildPlayHistoryGraph(context, response,
-                    playHistory.DailyPlays, "track-plays.png");
+                    playHistory.DailyPlays, "track-plays.png", imageColor: albumImageColor);
             }
             else
             {
