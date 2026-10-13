@@ -451,9 +451,10 @@ public class FriendBuilders
                     context.Localize("friends.limitReached",
                         ("max", Constants.MaxFriends.ToString()),
                         ("supporterMax", Constants.MaxFriendsSupporter.ToString()))));
-                response.Components = new ActionRowProperties().WithButton(Constants.GetSupporterButton,
+                response.ComponentsContainer.AddComponent(new ActionRowProperties().WithButton(
+                    context.Localize("buttons.getSupporter"),
                     style: ButtonStyle.Primary,
-                    customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "friends-limit"));
+                    customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "friends-limit")));
             }
             else
             {

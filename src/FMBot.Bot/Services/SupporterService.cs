@@ -507,11 +507,15 @@ public class SupporterService
                 }
                 case 16:
                 {
-                    SetGuildSupporterPromoCache(guildId);
-                    message =
-                        $"*🎤 Supporters can read along with the exclusive `{prfx}lyrics` command*";
-                    showUpgradeButton = true;
-                    supporterSource = "updatepromo-lyrics";
+                    if (guildId == null || !PublicProperties.PremiumServers.ContainsKey(guildId.Value))
+                    {
+                        SetGuildSupporterPromoCache(guildId);
+                        message =
+                            $"*🎤 Supporters can read along with the exclusive `{prfx}lyrics` command*";
+                        showUpgradeButton = true;
+                        supporterSource = "updatepromo-lyrics";
+                    }
+
                     break;
                 }
                 case 17:
@@ -1515,7 +1519,7 @@ public class SupporterService
 
         var automation = new StringBuilder();
         automation.AppendLine("### 👑 Generate crowns automatically");
-        automation.AppendLine("- `/configuration` — Open the crownseeder setting and pick a daily, weekly or monthly schedule");
+        automation.AppendLine("- `/settings` — Open the crowns section, then the crownseeder, and pick a daily, weekly or monthly schedule");
         automation.AppendLine("- Running the crownseeder manually stays available too");
         container.AddComponent(new TextDisplayProperties(automation.ToString()));
         container.AddComponent(new ComponentSeparatorProperties());

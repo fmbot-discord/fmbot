@@ -318,10 +318,20 @@ public class HelpBuilders(HelpService helpService)
             showPurchaseButton = !IsSupporter(context);
         }
 
+        var showPremiumServerButton = false;
+        if (entry.PremiumServerEnhanced != null)
+        {
+            container.WithSeparator();
+            container.WithTextDisplay($"**{context.Localize("help.premiumServerEnhanced")}**\n{entry.PremiumServerEnhanced}");
+
+            showPremiumServerButton = context.DiscordGuild != null &&
+                                      !PublicProperties.PremiumServers.ContainsKey(context.DiscordGuild.Id);
+        }
+
         container.WithSeparator();
         AddUserAppNotice(container, context);
         AddNavigation(container, context, mode, HelpView.Command, entry.PrimaryCategory, entry,
-            showPurchaseButton ? entry.Name : null);
+            showPurchaseButton ? entry.Name : null, premiumServerSource: showPremiumServerButton ? entry.Name : null);
 
         return response;
     }
@@ -467,7 +477,7 @@ public class HelpBuilders(HelpService helpService)
 
     private void AddNavigation(ComponentContainerProperties container, ContextModel context, HelpMode mode,
         HelpView view, CommandCategory? category, HelpCommandEntry command, string purchaseSource = null,
-        (int Page, int Pages)? paging = null)
+        (int Page, int Pages)? paging = null, string premiumServerSource = null)
     {
         var categoryMenu = new StringMenuProperties($"{InteractionConstants.Help.CategoryMenu}:{ModeString(mode)}")
             .WithPlaceholder(context.Localize("help.browseCategories"));
@@ -579,14 +589,31 @@ public class HelpBuilders(HelpService helpService)
             container.WithActionRow(pageRow);
         }
 
-        if (purchaseSource != null)
+        if (purchaseSource != null || premiumServerSource != null)
         {
-            container.WithActionRow(new ActionRowProperties().AddComponents(new ButtonProperties(
-                InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: $"help-{purchaseSource}"),
-                Constants.GetSupporterButton, ButtonStyle.Primary)
+            var purchaseRow = new ActionRowProperties();
+
+            if (purchaseSource != null)
             {
-                Emoji = EmojiProperties.Standard("⭐")
-            }));
+                purchaseRow.AddComponents(new ButtonProperties(
+                    InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: $"help-{purchaseSource}"),
+                    Constants.GetSupporterButton, ButtonStyle.Primary)
+                {
+                    Emoji = EmojiProperties.Standard("⭐")
+                });
+            }
+
+            if (premiumServerSource != null)
+            {
+                purchaseRow.AddComponents(new ButtonProperties(
+                    $"{InteractionConstants.PremiumServer.GetOverview}:help-{premiumServerSource}",
+                    PremiumSettingBuilder.GetPremiumButtonLabel, ButtonStyle.Secondary)
+                {
+                    Emoji = EmojiProperties.Standard("✨")
+                });
+            }
+
+            container.WithActionRow(purchaseRow);
         }
     }
 

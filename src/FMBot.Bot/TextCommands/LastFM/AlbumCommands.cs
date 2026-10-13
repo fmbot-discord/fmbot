@@ -185,6 +185,7 @@ public class AlbumCommands(
     [UsernameSetRequired]
     [GuildOnly]
     [RequiresIndex]
+    [PremiumServerEnhanced("Premium servers can filter WhoKnows by role, limit it to allowed roles, hide blocked roles and hide members who haven't talked in the server recently")]
     [CommandCategories(CommandCategory.Albums, CommandCategory.WhoKnows)]
     public async Task WhoKnowsAlbumAsync([CommandParameter(Remainder = true)] string albumValues = null)
     {

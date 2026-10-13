@@ -448,7 +448,7 @@ public class GuildSettingInteractions(
     {
         if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
         {
-            await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
+            await guildSettingBuilder.UserNotAllowedResponse(this.Context);
             return;
         }
 
@@ -479,7 +479,7 @@ public class GuildSettingInteractions(
 
         if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
         {
-            await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
+            await guildSettingBuilder.UserNotAllowedResponse(this.Context);
             await this.Context.LogCommandUsedAsync(
                 new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             return false;
@@ -590,7 +590,7 @@ public class GuildSettingInteractions(
     {
         if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
         {
-            await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
+            await guildSettingBuilder.UserNotAllowedResponse(this.Context);
             await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             return;
         }
@@ -644,7 +644,7 @@ public class GuildSettingInteractions(
     {
         if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
         {
-            await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
+            await guildSettingBuilder.UserNotAllowedResponse(this.Context);
             await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             return;
         }
@@ -680,7 +680,7 @@ public class GuildSettingInteractions(
     {
         if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
         {
-            await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
+            await guildSettingBuilder.UserNotAllowedResponse(this.Context);
             await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             return;
         }
@@ -720,7 +720,7 @@ public class GuildSettingInteractions(
 
         if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
         {
-            await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
+            await guildSettingBuilder.UserNotAllowedResponse(this.Context);
             await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             return;
         }
@@ -758,7 +758,7 @@ public class GuildSettingInteractions(
 
         if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
         {
-            await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
+            await guildSettingBuilder.UserNotAllowedResponse(this.Context);
             await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             return;
         }
