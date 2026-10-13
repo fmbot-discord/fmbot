@@ -35,6 +35,7 @@ public class CrownCommands(
     [GuildOnly]
     [SupportsPagination]
     [RequiresIndex]
+    [PremiumServerEnhanced("Premium servers can limit crowns to members with specific roles and seed crowns automatically every day, week or month")]
     [CommandCategories(CommandCategory.Crowns)]
     public async Task UserCrownsAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
@@ -64,6 +65,7 @@ public class CrownCommands(
     [UsernameSetRequired]
     [GuildOnly]
     [RequiresIndex]
+    [PremiumServerEnhanced("Premium servers can limit crowns to members with specific roles and seed crowns automatically every day, week or month")]
     [CommandCategories(CommandCategory.Crowns)]
     public async Task CrownAsync([CommandParameter(Remainder = true)] string artistValues = null)
     {
@@ -94,6 +96,7 @@ public class CrownCommands(
     [GuildOnly]
     [SupportsPagination]
     [RequiresIndex]
+    [PremiumServerEnhanced("Premium servers can limit crowns to members with specific roles and seed crowns automatically every day, week or month")]
     [CommandCategories(CommandCategory.Crowns)]
     public async Task CrownLeaderboardAsync()
     {

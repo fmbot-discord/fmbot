@@ -249,6 +249,7 @@ public class HelpService
                 Examples = attributes.OfType<ExamplesAttribute>().FirstOrDefault()?.Examples ?? [],
                 SupporterEnhanced = attributes.OfType<SupporterEnhancedAttribute>().FirstOrDefault()?.Explainer,
                 SupporterExclusive = attributes.OfType<SupporterExclusiveAttribute>().FirstOrDefault()?.Explainer,
+                PremiumServerEnhanced = attributes.OfType<PremiumServerEnhancedAttribute>().FirstOrDefault()?.Explainer,
                 ServerStaffOnly = attributes.OfType<ServerStaffOnly>().Any(),
                 TextCommand = command
             });

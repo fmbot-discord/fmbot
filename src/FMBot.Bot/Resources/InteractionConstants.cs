@@ -84,6 +84,7 @@ public static class InteractionConstants
     public const string SetBlockedRoleMenu = "guild-blocked-roles-menu";
     public const string SetBotManagementRoleMenu = "guild-bot-management-roles-menu";
     public const string SetCrownRoleMenu = "guild-crown-roles-menu";
+    public const string ClearRoleSetting = "guild-clear-role-setting";
 
     public const string SetGuildActivityThreshold = "set-guild-activity-threshold";
     public const string SetGuildActivityThresholdModal = "set-guild-activity-threshold-modal";
@@ -276,6 +277,8 @@ public static class InteractionConstants
     public static class BotBranding
     {
         public const string RemoveAvatar = "remove-bot-branding-avatar";
+        public const string UploadAvatar = "upload-bot-branding-avatar";
+        public const string UploadAvatarModal = "upload-bot-branding-avatar-modal";
         public const string SetFeaturedMode = "set-bot-featured-mode";
         public const string SetFeaturedFrequency = "set-bot-featured-frequency";
     }

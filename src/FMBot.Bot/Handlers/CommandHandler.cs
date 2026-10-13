@@ -613,6 +613,7 @@ public class CommandHandler
             {
                 var permissions = guildUser.GetPermissions(context.Guild);
                 if (permissions.HasFlag(Permissions.BanUsers) ||
+                    permissions.HasFlag(Permissions.ManageGuild) ||
                     permissions.HasFlag(Permissions.Administrator))
                 {
                     isMod = true;

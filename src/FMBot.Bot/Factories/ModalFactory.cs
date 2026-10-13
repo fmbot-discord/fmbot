@@ -220,6 +220,25 @@ public static class ModalFactory
                 ]
             };
 
+    public static ModalProperties CreateBotAvatarUploadModal(string customId) =>
+        new(customId, "Upload custom avatar")
+        {
+            Components =
+            [
+                new LabelProperties("Avatar image",
+                    new FileUploadProperties("files")
+                    {
+                        MinValues = 1,
+                        MaxValues = 1,
+                        FileTypes = [".png", ".jpg", ".jpeg", ".webp", ".gif"]
+                    })
+                {
+                    Description = "A png, jpg, webp or gif image under 10 MB"
+                },
+                new TextDisplayProperties("-# Custom avatars may be viewed by .fmbot staff to prevent abuse.")
+            ]
+        };
+
     private const string ImportUploadLimitHint =
         "-# Files bigger than Discord's upload limit? Try on our boosted server: discord.gg/fmbot";
 

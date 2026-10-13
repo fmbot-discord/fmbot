@@ -87,7 +87,7 @@ public class ServerRecapRenderer(PlayService playService, IServiceProvider servi
             Footer = AutopostRendering.GetNextPostFooter(context, "Next server recap"),
             HasMoreEntries = snapshot.Sections.Any(s => s.Entries.Count >
                                                         (s.EntityType == AutopostEntityType.Artist
-                                                            ? AutopostRendering.GetInlineCount(context.Autopost.ContentSize)
+                                                            ? AutopostRendering.GetRecapInlineCount(context.Autopost.ContentSize)
                                                             : AutopostRendering.GetSecondaryInlineCount(context.Autopost.ContentSize)))
         };
     }
@@ -124,7 +124,7 @@ public class ServerRecapRenderer(PlayService playService, IServiceProvider servi
             container.AddComponent(new ComponentSeparatorProperties());
 
             var inlineCount = section.EntityType == AutopostEntityType.Artist
-                ? AutopostRendering.GetInlineCount(context.Autopost.ContentSize)
+                ? AutopostRendering.GetRecapInlineCount(context.Autopost.ContentSize)
                 : AutopostRendering.GetSecondaryInlineCount(context.Autopost.ContentSize);
 
             var billboard = section.EntityType != AutopostEntityType.NewRelease;

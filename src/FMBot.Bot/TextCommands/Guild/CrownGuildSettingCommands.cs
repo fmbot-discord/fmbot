@@ -401,6 +401,7 @@ public class CrownGuildSettingCommands(
     [Summary("Automatically generates or updates all crowns for your server")]
     [GuildOnly]
     [RequiresIndex]
+    [PremiumServerEnhanced("Premium servers can run the crownseeder automatically every day, week or month")]
     [CommandCategories(CommandCategory.Crowns, CommandCategory.ServerSettings)]
     public async Task SeedCrownsAsync([CommandParameter(Remainder = true)] string _ = null)
     {

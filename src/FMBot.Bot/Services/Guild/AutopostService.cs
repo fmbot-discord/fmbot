@@ -88,7 +88,7 @@ public class AutopostService(
 
                 var result = await PostAutopost(autopost, now);
 
-                if (result == AutopostPostResult.Failed)
+                if (result is AutopostPostResult.Failed or AutopostPostResult.ChannelUnavailable)
                 {
                     await db.GuildAutoposts
                         .Where(w => w.Id == autopost.Id && w.LastPosted == now)
@@ -256,21 +256,20 @@ public class AutopostService(
             db.GuildAutopostRuns.Remove(run);
             await db.SaveChangesAsync();
 
-            if (e.Message.Contains("Unknown Channel", StringComparison.OrdinalIgnoreCase) ||
-                e.Message.Contains("Missing Access", StringComparison.OrdinalIgnoreCase))
+            if (e is RestException { Error.Code: 10003 or 50001 or 50013 or 50083 } restException)
             {
                 await db.GuildAutoposts
                     .Where(w => w.Id == autopost.Id)
                     .ExecuteUpdateAsync(s => s.SetProperty(p => p.Enabled, false));
 
-                Log.Information("Autopost: Disabled autopost {autopostId} for guild {guildId} - channel unavailable",
-                    autopost.Id, autopost.GuildId);
+                Log.Information("Autopost: Disabled autopost {autopostId} for guild {guildId} - channel unavailable ({errorCode})",
+                    autopost.Id, autopost.GuildId, restException.Error.Code);
+
+                return AutopostPostResult.ChannelUnavailable;
             }
-            else
-            {
-                Log.Error(e, "Autopost: Error posting autopost {autopostId} for guild {guildId}",
-                    autopost.Id, autopost.GuildId);
-            }
+
+            Log.Error(e, "Autopost: Error posting autopost {autopostId} for guild {guildId}",
+                autopost.Id, autopost.GuildId);
 
             return AutopostPostResult.Failed;
         }
@@ -340,6 +339,16 @@ public class AutopostService(
         return await db.GuildAutopostRuns
             .AsNoTracking()
             .FirstOrDefaultAsync(f => f.Id == runId);
+    }
+
+    public async Task<DateTime?> GetLastPostedAt(int autopostId)
+    {
+        await using var db = await contextFactory.CreateDbContextAsync();
+        return await db.GuildAutopostRuns
+            .Where(w => w.AutopostId == autopostId)
+            .OrderByDescending(o => o.PostedAt)
+            .Select(s => (DateTime?)s.PostedAt)
+            .FirstOrDefaultAsync();
     }
 
     public async Task<GuildAutopostRun> GetPreviousRun(GuildAutopostRun run)

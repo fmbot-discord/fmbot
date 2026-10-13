@@ -2380,9 +2380,10 @@ public class TrackBuilders
             ResponseType = ResponseType.Embed
         };
 
-        response.Embed.WithDescription(
-            "Viewing track lyrics in .fmbot is only available for .fmbot supporters.\n" +
-            "-# Or unlock it for everyone in this server with Premium server.");
+        response.Embed.WithDescription(context.DiscordGuild != null
+            ? "Viewing track lyrics in .fmbot is only available for .fmbot supporters.\n" +
+              "-# Or unlock it for everyone in this server with Premium server."
+            : "Viewing track lyrics in .fmbot is only available for .fmbot supporters.");
 
         var components = new ActionRowProperties()
             .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,

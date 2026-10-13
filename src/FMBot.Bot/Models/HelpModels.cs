@@ -51,6 +51,7 @@ public class HelpCommandEntry
     public IReadOnlyList<string> Examples { get; init; } = [];
     public string SupporterEnhanced { get; init; }
     public string SupporterExclusive { get; init; }
+    public string PremiumServerEnhanced { get; init; }
     public bool ServerStaffOnly { get; init; }
     public ICommandInfo<CommandContext> TextCommand { get; init; }
     public List<HelpSlashCommand> SlashCommands { get; } = [];

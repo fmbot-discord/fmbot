@@ -512,13 +512,12 @@ public class FeaturedService
         var guildUsers = await this._guildService.GetGuildUsers(guild.DiscordGuildId);
         var (_, filteredGuildUsers) = WhoKnowsService.FilterGuildUsers(guildUsers, guild, 0);
 
-        var filterDate = DateTime.UtcNow.AddDays(-5);
-        var eligibleUserIds = filteredGuildUsers.Values
-            .Where(w => w.Bot != true &&
-                        ((w.LastUsed != null && w.LastUsed > filterDate) ||
-                         (w.LastMessage != null && w.LastMessage > filterDate)))
-            .Select(s => s.UserId)
-            .ToList();
+        var eligibleUserIds = GetActiveUserIds(DateTime.UtcNow.AddDays(-5));
+
+        if (eligibleUserIds.Count == 0)
+        {
+            eligibleUserIds = GetActiveUserIds(DateTime.UtcNow.AddDays(-30));
+        }
 
         if (eligibleUserIds.Count == 0)
         {
@@ -558,6 +557,16 @@ public class FeaturedService
         var pickedUser = users[RandomNumberGenerator.GetInt32(0, users.Count)];
         filteredGuildUsers.TryGetValue(pickedUser.UserId, out var pickedGuildUser);
         return (pickedUser, pickedGuildUser?.UserName);
+
+        List<int> GetActiveUserIds(DateTime filterDate)
+        {
+            return filteredGuildUsers.Values
+                .Where(w => w.Bot != true &&
+                            ((w.LastUsed != null && w.LastUsed > filterDate) ||
+                             (w.LastMessage != null && w.LastMessage > filterDate)))
+                .Select(s => s.UserId)
+                .ToList();
+        }
     }
 
     private async Task<bool> GuildAlbumNotFeaturedRecently(int guildId, string albumName, string artistName)

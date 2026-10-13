@@ -453,7 +453,7 @@ public class AutopostInteractions(
 
         try
         {
-            await this.Context.Interaction.SendResponseAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
+            this.Context.DeferUpdateInBackground();
 
             var autopost = await GetOwnedAutopost(autopostId);
             var result = autopost != null
@@ -464,13 +464,15 @@ public class AutopostInteractions(
             {
                 AutopostPostResult.Posted => $"✅ Autopost posted in <#{autopost.ChannelId}>.",
                 AutopostPostResult.NoData => "⚠️ No listening data found for the previous period, so nothing was posted.",
+                AutopostPostResult.ChannelUnavailable => $"❌ The bot can't post in <#{autopost.ChannelId}>, so this autopost has been paused. Make sure the bot can view the channel and send messages in it, then resume the autopost.",
                 _ => "❌ Could not post the autopost. Make sure the bot can send messages in the configured channel."
             };
 
-            await this.Context.Interaction.ModifyResponseAsync(m =>
-            {
-                m.Content = content;
-            });
+            await UpdateEditView(autopost);
+
+            await this.Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
+                .WithContent(content)
+                .WithFlags(MessageFlags.Ephemeral));
 
             var commandResponse = result switch
             {
@@ -560,7 +562,7 @@ public class AutopostInteractions(
     {
         if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
         {
-            await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
+            await guildSettingBuilder.UserNotAllowedResponse(this.Context);
             await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             return false;
         }

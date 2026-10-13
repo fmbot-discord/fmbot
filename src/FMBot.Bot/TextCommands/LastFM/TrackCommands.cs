@@ -315,6 +315,7 @@ public class TrackCommands(
     [UsernameSetRequired]
     [GuildOnly]
     [RequiresIndex]
+    [PremiumServerEnhanced("Premium servers can filter WhoKnows by role, limit it to allowed roles, hide blocked roles and hide members who haven't talked in the server recently")]
     [CommandCategories(CommandCategory.Tracks, CommandCategory.WhoKnows)]
     public async Task WhoKnowsTrackAsync([CommandParameter(Remainder = true)] string trackValues = null)
     {
@@ -607,6 +608,7 @@ public class TrackCommands(
     [SupportsPagination]
     [CommandCategories(CommandCategory.Tracks)]
     [SupporterExclusive("Viewing track lyrics in .fmbot is only available for .fmbot supporters")]
+    [PremiumServerEnhanced("Premium servers unlock lyrics for every member")]
     public async Task LyricsAsync([CommandParameter(Remainder = true)] string trackValues = null)
     {
         try

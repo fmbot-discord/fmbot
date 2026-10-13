@@ -990,6 +990,7 @@ public class GuildSettingBuilder(
         var permissions = guildUser.GetPermissions(context.DiscordGuild);
 
         if (permissions.HasFlag(Permissions.BanUsers) ||
+            permissions.HasFlag(Permissions.ManageGuild) ||
             permissions.HasFlag(Permissions.Administrator))
         {
             return true;
@@ -1021,6 +1022,7 @@ public class GuildSettingBuilder(
         response.AppendLine();
         response.AppendLine("To change .fmbot settings, you need at least one of the following:");
         response.AppendLine("- `Administrator` permission");
+        response.AppendLine("- `Manage Server` permission");
         response.AppendLine("- `Ban Members` permission");
         if (managersAllowed)
         {
@@ -1030,10 +1032,33 @@ public class GuildSettingBuilder(
         return response.ToString();
     }
 
-    public static async Task UserNotAllowedResponse(IInteractionContext context, bool managersAllowed = true)
+    public async Task<string> GetUserNotAllowedResponseText(ulong? discordGuildId, ulong discordUserId,
+        bool managersAllowed = true)
+    {
+        var response = new StringBuilder(UserNotAllowedResponseText(managersAllowed));
+
+        if (discordGuildId.HasValue)
+        {
+            var subscription = await supporterService.GetPremiumGuildSubscription(discordGuildId.Value);
+            if (subscription?.PurchaserDiscordUserId == discordUserId)
+            {
+                response.AppendLine();
+                response.AppendLine(managersAllowed
+                    ? "You bought Premium for this server, but setting it up still needs one of the above. " +
+                      "Ask a server admin to give you a bot management role with `.botmanagementroles`, or to set it up for you."
+                    : "You bought Premium for this server, but this setting still needs one of the above. " +
+                      "Ask a server admin to change it for you.");
+            }
+        }
+
+        return response.ToString();
+    }
+
+    public async Task UserNotAllowedResponse(IInteractionContext context, bool managersAllowed = true)
     {
         await context.Interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties()
-            .WithContent(UserNotAllowedResponseText(managersAllowed))
+            .WithContent(await GetUserNotAllowedResponseText(context.Interaction.GuildId, context.Interaction.User.Id,
+                managersAllowed))
             .WithFlags(MessageFlags.Ephemeral)));
     }
 

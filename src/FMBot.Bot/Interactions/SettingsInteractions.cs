@@ -32,7 +32,7 @@ public class SettingsInteractions(
             var availableTabs = await guildSettingBuilder.GetAvailableSettingsTabs(context);
             if (!availableTabs.Contains(SettingsTab.Server))
             {
-                await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
+                await guildSettingBuilder.UserNotAllowedResponse(this.Context);
                 return;
             }
 
@@ -82,7 +82,7 @@ public class SettingsInteractions(
 
             if (!availableTabs.Contains(tab))
             {
-                await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
+                await guildSettingBuilder.UserNotAllowedResponse(this.Context);
                 return;
             }
 
