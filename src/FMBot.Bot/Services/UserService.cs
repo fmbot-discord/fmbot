@@ -14,7 +14,6 @@ using FMBot.Bot.Models.TemplateOptions;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
-using FMBot.Domain.Attributes;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
@@ -1259,21 +1258,21 @@ public class UserService
         return footer;
     }
 
-    public static (bool promo, string description) GetIndexCompletedUserStats(User user, IndexedUserStats stats,
-        NumberFormat numberFormat, Localizer localizer)
+    public static (string promo, string header, string description) GetIndexCompletedUserStats(User user,
+        IndexedUserStats stats, NumberFormat numberFormat, Localizer localizer)
     {
         var description = new StringBuilder();
-        var promo = false;
+        string promo = null;
 
         if (stats == null)
         {
-            description.AppendLine(localizer.Translate("update.fullUpdateFailed"));
-            return (false, description.ToString());
+            return (null, localizer.Translate("update.fullUpdateFailed"), null);
         }
 
+        string header;
         if (stats.UpdateError == true)
         {
-            description.AppendLine(localizer.Translate("update.lastfmUpdateError", ("user", user.UserNameLastFM)));
+            header = localizer.Translate("update.lastfmUpdateError", ("user", user.UserNameLastFM));
             if (stats.FailedUpdates.HasFlag(UpdateType.Full))
             {
                 description.AppendLine(localizer.Translate("update.errorUserInfo"));
@@ -1298,8 +1297,7 @@ public class UserService
         }
         else
         {
-            description.AppendLine(localizer.Translate("update.fullyUpdated", ("user", user.UserNameLastFM)));
-            description.AppendLine();
+            header = localizer.Translate("update.fullyUpdated", ("user", user.UserNameLastFM));
             description.AppendLine(localizer.Translate("update.cachedFollowing"));
 
             if (user.UserType == UserType.User)
@@ -1349,9 +1347,6 @@ public class UserService
                 if (stats.ImportCount != null)
                 {
                     description.AppendLine();
-
-                    var name = user.DataSource.GetAttribute<OptionAttribute>().Name;
-                    description.AppendLine(localizer.Translate("update.importSetting", ("setting", name)));
                     description.AppendLine(localizer.Translate("update.importTotal",
                         ("importCount", stats.ImportCount.Format(numberFormat)),
                         ("totalCount", stats.TotalCount.Format(numberFormat))));
@@ -1364,14 +1359,11 @@ public class UserService
                  stats.AlbumCount >= 4900 ||
                  stats.ArtistCount >= 3900))
             {
-                description.AppendLine();
-                description.AppendLine(localizer.Translate("update.supporterPromoHistory",
-                    ("url", Constants.GetSupporterOverviewLink)));
-                promo = true;
+                promo = localizer.Translate("update.supporterPromoHistory");
             }
         }
 
-        return (promo, description.ToString());
+        return (promo, header, description.ToString());
     }
 
     private async Task AddOrUpdateUser(NetCord.User discordUser, User newUserSettings)

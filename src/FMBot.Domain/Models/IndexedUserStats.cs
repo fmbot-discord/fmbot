@@ -13,4 +13,8 @@ public class IndexedUserStats
 
     public bool? UpdateError { get; set; }
     public UpdateType FailedUpdates { get; set; }
+
+    public UpdateType CompletedUpdates { get; set; }
+    public long? PlaysFetched { get; set; }
+    public long? PlaysExpected { get; set; }
 }

@@ -107,16 +107,9 @@ public class IndexSlashCommands(
 
         if (updateTypeInput == UpdateType.RecentPlays || updateType.updateType.HasFlag(UpdateType.RecentPlays))
         {
-            var initialResponse = UserBuilder.UpdatePlaysInit(new ContextModel(this.Context, contextUser));
-            var updateTask = userBuilder.UpdatePlays(new ContextModel(this.Context, contextUser)).ObserveFaults();
-            await this.Context.SendResponse(this.Interactivity, initialResponse, userService);
-
-            var updatedResponse = await updateTask;
-            await this.Context.Interaction.ModifyResponseAsync(e =>
-            {
-                e.Embeds = [updatedResponse.Embed];
-                e.Components = updatedResponse.Components?.Any() == true ? [updatedResponse.Components] : [];
-            });
+            this.Context.DeferInBackground();
+            var updatedResponse = await userBuilder.UpdatePlays(new ContextModel(this.Context, contextUser));
+            await this.Context.SendResponse(this.Interactivity, updatedResponse, userService);
             await this.Context.LogCommandUsedAsync(updatedResponse, userService);
         }
         else
@@ -133,11 +126,20 @@ public class IndexSlashCommands(
 
             var updatedResponse =
                 await userBuilder.UpdateOptions(new ContextModel(this.Context, contextUser),
-                    updateType.updateType);
+                    updateType.updateType,
+                    progress => this.Context.Interaction.ModifyResponseAsync(e =>
+                    {
+                        e.Components = progress.GetComponentsV2();
+                        e.AllowedMentions = AllowedMentionsProperties.None;
+                    }));
             await this.Context.Interaction.ModifyResponseAsync(e =>
             {
-                e.Embeds = [updatedResponse.Embed];
-                e.Components = updatedResponse.Components?.Any() == true ? [updatedResponse.Components] : [];
+                e.Components = updatedResponse.GetComponentsV2();
+                e.AllowedMentions = AllowedMentionsProperties.None;
+                if (updatedResponse.Stream != null)
+                {
+                    e.Attachments = [new AttachmentProperties(updatedResponse.FileName, updatedResponse.Stream)];
+                }
             });
             await this.Context.LogCommandUsedAsync(updatedResponse, userService);
         }
