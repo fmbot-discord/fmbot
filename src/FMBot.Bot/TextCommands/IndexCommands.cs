@@ -119,18 +119,9 @@ public class IndexCommands(
 
         if (!updateType.optionPicked)
         {
-            var initialResponse = UserBuilder.UpdatePlaysInit(new ContextModel(this.Context, prfx, contextUser));
-            var updateTask = userBuilder.UpdatePlays(new ContextModel(this.Context, prfx, contextUser)).ObserveFaults();
-            var message = await this.Context.SendResponse(this.Interactivity, initialResponse, userService);
-
-            var updatedResponse = await updateTask;
-
-            await message.ModifyAsync(m =>
-            {
-                m.Embeds = [updatedResponse.Embed];
-                m.Components = updatedResponse.Components != null && updatedResponse.Components.Any() ? [updatedResponse.Components] : [];
-            });
-
+            _ = this.Context.Channel?.TriggerTypingAsync()!;
+            var updatedResponse = await userBuilder.UpdatePlays(new ContextModel(this.Context, prfx, contextUser));
+            await this.Context.SendResponse(this.Interactivity, updatedResponse, userService);
             await this.Context.LogCommandUsedAsync(updatedResponse, userService);
         }
         else
@@ -145,16 +136,23 @@ public class IndexCommands(
                 return;
             }
 
+            Task EditResponse(ResponseModel response) => message != null
+                ? message.ModifyAsync(m =>
+                {
+                    m.Components = response.GetComponentsV2();
+                    m.AllowedMentions = AllowedMentionsProperties.None;
+                    if (response.Stream != null)
+                    {
+                        m.Attachments = [new AttachmentProperties(response.FileName, response.Stream)];
+                    }
+                })
+                : this.Context.SendResponse(this.Interactivity, response, userService);
+
             var updatedResponse =
                 await userBuilder.UpdateOptions(new ContextModel(this.Context, prfx, contextUser),
-                    updateType.updateType);
+                    updateType.updateType, EditResponse);
 
-            await message.ModifyAsync(m =>
-            {
-                m.Embeds = [updatedResponse.Embed];
-                m.Components = updatedResponse.Components != null && updatedResponse.Components.Any() ? [updatedResponse.Components] : [];
-            });
-
+            await EditResponse(updatedResponse);
             await this.Context.LogCommandUsedAsync(updatedResponse, userService);
         }
     }

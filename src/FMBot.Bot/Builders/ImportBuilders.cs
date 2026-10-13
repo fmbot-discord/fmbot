@@ -300,6 +300,7 @@ public class ImportBuilders
 
         if (importSetting.Length > 0)
         {
+            container.WithSeparator();
             container.WithTextDisplay($"**⚙️ Current import setting**\n{importSetting}");
         }
 

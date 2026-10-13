@@ -119,7 +119,8 @@ public class IndexService
         return true;
     }
 
-    public async Task<IndexedUserStats> ModularUpdate(User user, UpdateType updateType, bool queue = false)
+    public async Task<IndexedUserStats> ModularUpdate(User user, UpdateType updateType, bool queue = false,
+        Action<IndexedUserStats> onProgress = null)
     {
         Log.Information("Index: {userId} / {discordUserId} / {UserNameLastFM} - Starting", user.UserId, user.DiscordUserId, user.UserNameLastFM);
 
@@ -146,7 +147,7 @@ public class IndexService
 
         if (updateType.HasFlag(UpdateType.AllPlays) || updateType.HasFlag(UpdateType.Full))
         {
-            var plays = await GetPlaysForUserFromLastFm(user, userInfo.Playcount, stats);
+            var plays = await GetPlaysForUserFromLastFm(user, userInfo.Playcount, stats, onProgress);
 
             if (plays.Any())
             {
@@ -158,6 +159,9 @@ public class IndexService
 
                 await UserRepository.SetUserIndexTime(user.UserId, connection, plays);
             }
+
+            stats.CompletedUpdates |= UpdateType.AllPlays;
+            onProgress?.Invoke(stats);
         }
 
         if (updateType.HasFlag(UpdateType.Artists) || updateType.HasFlag(UpdateType.Full))
@@ -178,6 +182,9 @@ public class IndexService
                 await ArtistRepository.AddOrReplaceUserArtistsInDatabase(artists, user.UserId, connection);
                 stats.ArtistCount = artists.Count;
             }
+
+            stats.CompletedUpdates |= UpdateType.Artists;
+            onProgress?.Invoke(stats);
         }
 
         if (updateType.HasFlag(UpdateType.Albums) || updateType.HasFlag(UpdateType.Full))
@@ -199,6 +206,9 @@ public class IndexService
 
                 stats.AlbumCount = albums.Count;
             }
+
+            stats.CompletedUpdates |= UpdateType.Albums;
+            onProgress?.Invoke(stats);
         }
 
         if (updateType.HasFlag(UpdateType.Tracks) || updateType.HasFlag(UpdateType.Full))
@@ -220,6 +230,9 @@ public class IndexService
 
                 stats.TrackCount = tracks.Count;
             }
+
+            stats.CompletedUpdates |= UpdateType.Tracks;
+            onProgress?.Invoke(stats);
         }
 
         var importUser = await UserRepository.GetImportUserForUserId(user.UserId, connection);
@@ -298,7 +311,7 @@ public class IndexService
     }
 
     private async Task<IReadOnlyList<UserPlay>> GetPlaysForUserFromLastFm(User user, long expectedCount,
-        IndexedUserStats stats)
+        IndexedUserStats stats, Action<IndexedUserStats> onProgress)
     {
         Log.Information("Index: {userId} / {discordUserId} / {UserNameLastFM} - Getting plays",
             user.UserId, user.DiscordUserId, user.UserNameLastFM);
@@ -306,7 +319,13 @@ public class IndexService
         var pages = UserHasHigherIndexLimit(user) ? 1000 : Constants.NonSupporterMaxSavedPlayPages;
 
         var recentPlays = await this._dataSourceFactory.GetRecentTracksAsync(user.UserNameLastFM, 1000,
-            sessionKey: user.SessionKeyLastFm, amountOfPages: pages, errorRetries: 5);
+            sessionKey: user.SessionKeyLastFm, amountOfPages: pages, errorRetries: 5,
+            onPageFetched: (fetched, total) =>
+            {
+                stats.PlaysFetched = fetched;
+                stats.PlaysExpected = Math.Min(total, pages * 1000L);
+                onProgress?.Invoke(stats);
+            });
 
         if (!recentPlays.Success || recentPlays.Content?.RecentTracks == null || recentPlays.Content.RecentTracks.Count == 0)
         {

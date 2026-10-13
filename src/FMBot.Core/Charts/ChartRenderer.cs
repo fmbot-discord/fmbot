@@ -11,7 +11,6 @@ using System.Threading.Tasks;
 using FMBot.Domain.Models;
 using Serilog;
 using SkiaSharp;
-using SkiaSharp.HarfBuzz;
 using Color = System.Drawing.Color;
 
 namespace FMBot.Core.Charts;
@@ -22,9 +21,6 @@ public class ChartRenderer
 
     private readonly MusicCensorService _censorService;
 
-    private readonly string _fontPath;
-
-    private readonly Lazy<SKTypeface> _typeface;
     private readonly string _workSansFontPath;
     private readonly string _loadingErrorImagePath;
     private readonly string _unknownImagePath;
@@ -45,8 +41,6 @@ public class ChartRenderer
             Directory.CreateDirectory(cachePath);
         }
 
-        this._fontPath = Path.Combine(cachePath, "sourcehansans-medium.otf");
-        this._typeface = new Lazy<SKTypeface>(() => SKTypeface.FromFile(this._fontPath));
         this._workSansFontPath = Path.Combine(cachePath, "worksans-regular.otf");
         this._loadingErrorImagePath = Path.Combine(cachePath, "loading-error.png");
         this._unknownImagePath = Path.Combine(cachePath, "unknown.png");
@@ -57,15 +51,8 @@ public class ChartRenderer
 
     public async Task DownloadChartFilesAsync()
     {
-        if (File.Exists(this._fontPath))
-        {
-            Log.Information("Chart files already exist, not downloading them again");
-            return;
-        }
-
         var files = new Dictionary<string, string>
         {
-            { "https://fm.bot/fonts/sourcehansans-medium.otf", this._fontPath },
             { "https://fm.bot/fonts/worksans-regular.otf", this._workSansFontPath },
             { "https://fm.bot/img/bot/loading-error.png", this._loadingErrorImagePath },
             { "https://fm.bot/img/bot/unknown.png", this._unknownImagePath },
@@ -74,7 +61,12 @@ public class ChartRenderer
             { "https://fm.bot/img/bot/avatar.png", this._avatarImagePath }
         };
 
-        foreach (var file in files)
+        foreach (var font in FontChain.Downloads)
+        {
+            files.Add(font.Url, font.Path);
+        }
+
+        foreach (var file in files.Where(w => !File.Exists(w.Value)))
         {
             _ = Task.Run(() => DownloadFileAsync(file.Key, file.Value));
         }
@@ -93,7 +85,6 @@ public class ChartRenderer
         catch (Exception e)
         {
             Log.Error(e, "Error while downloading chart files - {url} - {filePath}", url, filePath);
-            ;
         }
     }
 
@@ -700,14 +691,9 @@ public class ChartRenderer
         var textColor = AccentColors.TextColorFor(chartImage);
         var rectangleColor = textColor == SKColors.Black ? SKColors.White : SKColors.Black;
 
-        var typeface = this._typeface.Value;
-
         var textSize = 17 * scale;
 
-        using var font = new SKFont(typeface)
-        {
-            Size = textSize
-        };
+        using var font = new FallbackFont(textSize);
 
         using var textPaint = new SKPaint
         {
@@ -715,8 +701,8 @@ public class ChartRenderer
             Color = textColor
         };
 
-        if ((bottomName != null && font.MeasureText(bottomName, textPaint) > chartImage.Width) ||
-            (topName != null && font.MeasureText(topName, textPaint) > chartImage.Width))
+        if ((bottomName != null && font.MeasureText(bottomName) > chartImage.Width) ||
+            (topName != null && font.MeasureText(topName) > chartImage.Width))
         {
             font.Size -= 5 * scale;
         }
@@ -734,7 +720,7 @@ public class ChartRenderer
 
         if (topName != null)
         {
-            font.MeasureText(topName, out topNameBounds, textPaint);
+            font.MeasureText(topName, out topNameBounds);
         }
         else
         {
@@ -743,7 +729,7 @@ public class ChartRenderer
 
         if (bottomName != null)
         {
-            font.MeasureText(bottomName, out bottomNameBounds, textPaint);
+            font.MeasureText(bottomName, out bottomNameBounds);
         }
         else
         {
@@ -769,7 +755,7 @@ public class ChartRenderer
             var yTopName = -topNameBounds.Top + chartImage.Height -
                            (bottomName != null ? 39 : 20) * scale;
 
-            bitmapCanvas.DrawShapedText(topName, (float)chartImage.Width / 2, yTopName, SKTextAlign.Center, font,
+            font.DrawText(bitmapCanvas, topName, (float)chartImage.Width / 2, yTopName, SKTextAlign.Center,
                 textPaint);
         }
 
@@ -777,7 +763,7 @@ public class ChartRenderer
         {
             var yBottomName = -bottomNameBounds.Top + chartImage.Height - 20 * scale;
 
-            bitmapCanvas.DrawShapedText(bottomName, (float)chartImage.Width / 2, yBottomName, SKTextAlign.Center, font,
+            font.DrawText(bitmapCanvas, bottomName, (float)chartImage.Width / 2, yBottomName, SKTextAlign.Center,
                 textPaint);
         }
     }
@@ -785,8 +771,6 @@ public class ChartRenderer
     private void AddFadeTitleToChartImage(SKBitmap chartImage, float scale, string topName, string bottomName,
         string plays)
     {
-        var typeface = this._typeface.Value;
-
         var fadeHeight = (bottomName != null ? 104 : 80) * scale;
         var fadeTop = chartImage.Height - fadeHeight;
 
@@ -804,9 +788,9 @@ public class ChartRenderer
         using var shadow = SKImageFilter.CreateDropShadow(0, 1 * scale, 2 * scale, 2 * scale,
             SKColors.Black.WithAlpha(150));
 
-        using var topFont = new SKFont(typeface) { Size = 17 * scale };
-        using var bottomFont = new SKFont(typeface) { Size = 15 * scale };
-        using var playsFont = new SKFont(typeface) { Size = 13 * scale };
+        using var topFont = new FallbackFont(17 * scale);
+        using var bottomFont = new FallbackFont(15 * scale);
+        using var playsFont = new FallbackFont(13 * scale);
 
         using var topPaint = new SKPaint { IsAntialias = true, Color = SKColors.White, ImageFilter = shadow };
         using var bottomPaint = new SKPaint
@@ -820,41 +804,24 @@ public class ChartRenderer
 
         if (plays != null)
         {
-            playsFont.MeasureText("0", out var digitBounds, playsPaint);
-            bitmapCanvas.DrawShapedText(FitText(plays, playsFont, playsPaint, maxWidth), left, y, SKTextAlign.Left,
-                playsFont, playsPaint);
+            playsFont.MeasureText("0", out var digitBounds);
+            playsFont.DrawText(bitmapCanvas, playsFont.FitText(plays, maxWidth), left, y, SKTextAlign.Left,
+                playsPaint);
             y -= digitBounds.Height + 8.5f * scale;
         }
 
         if (bottomName != null)
         {
-            bottomFont.MeasureText("H", out var capBounds, bottomPaint);
-            bitmapCanvas.DrawShapedText(FitText(bottomName, bottomFont, bottomPaint, maxWidth), left, y,
-                SKTextAlign.Left, bottomFont, bottomPaint);
+            bottomFont.MeasureText("H", out var capBounds);
+            bottomFont.DrawText(bitmapCanvas, bottomFont.FitText(bottomName, maxWidth), left, y, SKTextAlign.Left,
+                bottomPaint);
             y -= capBounds.Height + 7.5f * scale;
         }
 
         if (topName != null)
         {
-            bitmapCanvas.DrawShapedText(FitText(topName, topFont, topPaint, maxWidth), left, y, SKTextAlign.Left,
-                topFont, topPaint);
+            topFont.DrawText(bitmapCanvas, topFont.FitText(topName, maxWidth), left, y, SKTextAlign.Left, topPaint);
         }
-    }
-
-    private static string FitText(string text, SKFont font, SKPaint paint, float maxWidth)
-    {
-        if (font.MeasureText(text, paint) <= maxWidth)
-        {
-            return text;
-        }
-
-        var length = font.BreakText(text, maxWidth - font.MeasureText("…", paint), paint);
-        if (length > 0 && char.IsHighSurrogate(text[length - 1]))
-        {
-            length--;
-        }
-
-        return $"{text[..length].TrimEnd()}…";
     }
 
     public static (ChartSettings newChartSettings, bool Changed) GetDimensions(ChartSettings chartSettings,

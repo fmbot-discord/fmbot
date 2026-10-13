@@ -1,9 +1,9 @@
 using System.Globalization;
+using FMBot.Core.Charts;
 using FMBot.Domain.Models;
 using FMBot.Images.Models;
 using Serilog;
 using SkiaSharp;
-using SkiaSharp.HarfBuzz;
 
 namespace FMBot.Images.Generators;
 
@@ -28,33 +28,6 @@ public class GraphService
 
     private static readonly SKColor AxisColor = new(0x8B, 0x9B, 0xA0);
     private static readonly SKColor LabelColor = new(0x93, 0xA1, 0xA6);
-
-    private SKTypeface _typeface;
-
-    private SKTypeface GetTypeface()
-    {
-        if (this._typeface != null)
-        {
-            return this._typeface;
-        }
-
-        var fontPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", "bot",
-            "sourcehansans-medium.otf");
-
-        if (!File.Exists(fontPath))
-        {
-            return SKTypeface.Default;
-        }
-
-        var typeface = SKTypeface.FromFile(fontPath);
-        if (typeface == null)
-        {
-            return SKTypeface.Default;
-        }
-
-        this._typeface = typeface;
-        return typeface;
-    }
 
     public PlayHistoryGraph RenderPlayHistory(IReadOnlyList<GraphPoint> dailyPlays, CultureInfo culture,
         SKColor lineColor, Func<double, string> valueLabel, GraphInterval? fixedInterval = null,
@@ -246,18 +219,8 @@ public class GraphService
         var scale = graph.Width / BaseWidth;
         var barStyle = graph.Style == GraphType.Bar;
 
-        using var font = new SKFont(GetTypeface())
-        {
-            Size = FontSize * scale,
-            Subpixel = true,
-            Edging = SKFontEdging.SubpixelAntialias
-        };
-        using var valueFont = new SKFont(GetTypeface())
-        {
-            Size = FontSize * 0.8f * scale,
-            Subpixel = true,
-            Edging = SKFontEdging.SubpixelAntialias
-        };
+        using var font = new FallbackFont(FontSize * scale, SKFontEdging.SubpixelAntialias, subpixel: true);
+        using var valueFont = new FallbackFont(FontSize * 0.8f * scale, SKFontEdging.SubpixelAntialias, subpixel: true);
         using var labelPaint = new SKPaint
         {
             IsAntialias = true,
@@ -273,12 +236,12 @@ public class GraphService
         var valueGap = 2f * scale;
 
         var barValues = barStyle
-            ? BarValueLabels(graph, valueFont, labelPaint, (plotRight - EdgeMargin * scale) / graph.Points.Count)
+            ? BarValueLabels(graph, valueFont, (plotRight - EdgeMargin * scale) / graph.Points.Count)
             : null;
 
         var axis = barValues == null
-            ? LayoutYAxis(graph, font, labelPaint, dataMin, dataMax, maxYTicks, scale)
-            : ValueOnlyAxis(graph, valueFont, labelPaint, dataMin, dataMax, plotTop, plotHeight, valueGap, scale);
+            ? LayoutYAxis(graph, font, dataMin, dataMax, maxYTicks, scale)
+            : ValueOnlyAxis(graph, valueFont, dataMin, dataMax, plotTop, plotHeight, valueGap, scale);
 
         var plotLeft = axis.PlotLeft;
         var plotWidth = plotRight - plotLeft;
@@ -299,7 +262,7 @@ public class GraphService
             yPositions[i] = plotTop + (float)(1 - (graph.Points[i].Value - axis.Min) / range) * plotHeight;
         }
 
-        var ticks = PlanDateTicks(graph, xPositions, font, labelPaint, scale);
+        var ticks = PlanDateTicks(graph, xPositions, font, scale);
 
         var imageInfo = new SKImageInfo((int)(graph.Width * RenderScale), (int)(graph.Height * RenderScale),
             SKColorType.Rgba8888, SKAlphaType.Premul);
@@ -328,8 +291,8 @@ public class GraphService
             var y = plotTop + (float)(1 - i * axis.Step / range) * plotHeight;
 
             canvas.DrawLine(plotLeft, y, plotRight, y, gridPaint);
-            canvas.DrawShapedText(axis.Labels[i], plotLeft - LabelSpacing * scale, y + LabelCenter * scale,
-                SKTextAlign.Right, font, labelPaint);
+            font.DrawText(canvas, axis.Labels[i], plotLeft - LabelSpacing * scale, y + LabelCenter * scale,
+                SKTextAlign.Right, labelPaint);
         }
 
         if (axis.Labels.Length > 0)
@@ -537,7 +500,7 @@ public class GraphService
         canvas.Restore();
     }
 
-    private static void DrawLegend(SKCanvas canvas, LineGraph graph, float left, float scale, SKFont font,
+    private static void DrawLegend(SKCanvas canvas, LineGraph graph, float left, float scale, FallbackFont font,
         SKPaint labelPaint)
     {
         if (graph.Legend.Count == 0)
@@ -563,9 +526,9 @@ public class GraphService
                 2 * scale, 2 * scale, swatchPaint);
 
             x += swatchSize + font.Size * 0.45f;
-            canvas.DrawShapedText(item.Label, x, centerY + font.Size * 0.35f, SKTextAlign.Left, font, labelPaint);
+            font.DrawText(canvas, item.Label, x, centerY + font.Size * 0.35f, SKTextAlign.Left, labelPaint);
 
-            x += font.MeasureText(item.Label, labelPaint) + font.Size * 1.4f;
+            x += font.MeasureText(item.Label) + font.Size * 1.4f;
         }
 
         if (string.IsNullOrWhiteSpace(graph.LegendNote))
@@ -574,17 +537,17 @@ public class GraphService
         }
 
         var noteRight = graph.Width - PaddingRight * scale;
-        if (noteRight - font.MeasureText(graph.LegendNote, labelPaint) < x)
+        if (noteRight - font.MeasureText(graph.LegendNote) < x)
         {
             return;
         }
 
-        canvas.DrawShapedText(graph.LegendNote, noteRight, centerY + font.Size * 0.35f, SKTextAlign.Right, font,
+        font.DrawText(canvas, graph.LegendNote, noteRight, centerY + font.Size * 0.35f, SKTextAlign.Right,
             labelPaint);
     }
 
     private static void DrawBarValues(SKCanvas canvas, string[] barValues, float[] xPositions, float[] yPositions,
-        float plotBottom, float valueGap, float scale, SKFont valueFont)
+        float plotBottom, float valueGap, float scale, FallbackFont valueFont)
     {
         if (barValues == null)
         {
@@ -605,23 +568,22 @@ public class GraphService
             }
 
             var top = Math.Min(yPositions[i], plotBottom - LineWidth * scale);
-            canvas.DrawShapedText(barValues[i], xPositions[i], top - valueGap, SKTextAlign.Center, valueFont,
-                valuePaint);
+            valueFont.DrawText(canvas, barValues[i], xPositions[i], top - valueGap, SKTextAlign.Center, valuePaint);
         }
     }
 
-    private static string[] BarValueLabels(LineGraph graph, SKFont valueFont, SKPaint paint, float slot)
+    private static string[] BarValueLabels(LineGraph graph, FallbackFont valueFont, float slot)
     {
         if (slot < valueFont.Size * 1.4f)
         {
             return null;
         }
 
-        return FittingBarValues(graph, valueFont, paint, slot, value => FormatValue(graph, value)) ??
-               FittingBarValues(graph, valueFont, paint, slot, value => CompactValue(graph, value));
+        return FittingBarValues(graph, valueFont, slot, value => FormatValue(graph, value)) ??
+               FittingBarValues(graph, valueFont, slot, value => CompactValue(graph, value));
     }
 
-    private static string[] FittingBarValues(LineGraph graph, SKFont valueFont, SKPaint paint, float slot,
+    private static string[] FittingBarValues(LineGraph graph, FallbackFont valueFont, float slot,
         Func<double, string> format)
     {
         var labels = new string[graph.Points.Count];
@@ -633,7 +595,7 @@ public class GraphService
             }
 
             labels[i] = format(graph.Points[i].Value);
-            if (valueFont.MeasureText(labels[i], paint) > slot - valueFont.Size * 0.5f)
+            if (valueFont.MeasureText(labels[i]) > slot - valueFont.Size * 0.5f)
             {
                 return null;
             }
@@ -650,7 +612,7 @@ public class GraphService
         return FormatValue(graph, divisor == 1 ? scaled : Math.Round(scaled, scaled < 10 ? 1 : 0)) + suffix;
     }
 
-    private List<GraphTick> PlanDateTicks(LineGraph graph, float[] xPositions, SKFont font, SKPaint paint, float scale)
+    private List<GraphTick> PlanDateTicks(LineGraph graph, float[] xPositions, FallbackFont font, float scale)
     {
         var currentYear = DateTime.UtcNow.Year;
 
@@ -659,7 +621,7 @@ public class GraphService
             var previousRight = float.MinValue;
             foreach (var tick in ticks)
             {
-                var (left, width) = DateLabelBounds(tick, graph, xPositions, font, paint, scale);
+                var (left, width) = DateLabelBounds(tick, graph, xPositions, font, scale);
                 if (left < previousRight + FontSize * 0.5f * scale)
                 {
                     return false;
@@ -681,10 +643,10 @@ public class GraphService
     }
 
     private static (float Left, float Width) DateLabelBounds(GraphTick tick, LineGraph graph, float[] xPositions,
-        SKFont font, SKPaint paint, float scale)
+        FallbackFont font, float scale)
     {
         var margin = EdgeMargin * scale;
-        var width = font.MeasureText(tick.Label, paint);
+        var width = font.MeasureText(tick.Label);
         var left = Math.Clamp(xPositions[tick.Index] - width / 2, margin,
             Math.Max(margin, graph.Width - margin - width));
 
@@ -692,7 +654,7 @@ public class GraphService
     }
 
     private static void DrawDateLabels(SKCanvas canvas, LineGraph graph, List<GraphTick> ticks, float[] xPositions,
-        float plotBottom, float scale, SKFont font, SKPaint labelPaint)
+        float plotBottom, float scale, FallbackFont font, SKPaint labelPaint)
     {
         var minGap = FontSize * 0.5f * scale;
         var previousRight = float.MinValue;
@@ -713,7 +675,7 @@ public class GraphService
             }
 
             var x = xPositions[tick.Index];
-            var (left, labelWidth) = DateLabelBounds(tick, graph, xPositions, font, labelPaint, scale);
+            var (left, labelWidth) = DateLabelBounds(tick, graph, xPositions, font, scale);
 
             if (left < previousRight + minGap)
             {
@@ -721,15 +683,14 @@ public class GraphService
             }
 
             canvas.DrawLine(x, plotBottom, x, plotBottom + TickLength * scale, tickPaint);
-            canvas.DrawShapedText(tick.Label, left, plotBottom + LabelBaseline * scale, SKTextAlign.Left, font,
-                labelPaint);
+            font.DrawText(canvas, tick.Label, left, plotBottom + LabelBaseline * scale, SKTextAlign.Left, labelPaint);
 
             previousRight = left + labelWidth;
         }
     }
 
     private static (double Min, double Max, double Step, string[] Labels, float PlotLeft) LayoutYAxis(
-        LineGraph graph, SKFont font, SKPaint paint, double dataMin, double dataMax, int maxTicks, float scale)
+        LineGraph graph, FallbackFont font, double dataMin, double dataMax, int maxTicks, float scale)
     {
         var axis = NiceAxis(dataMin, dataMax, maxTicks, graph.ZeroBased, graph.IntegerValues);
         var tickCount = (int)Math.Round((axis.Max - axis.Min) / axis.Step) + 1;
@@ -742,17 +703,17 @@ public class GraphService
             labels[i] = value == 0
                 ? FormatValue(graph, 0)
                 : FormatValue(graph, value / unit.Divisor) + unit.Suffix;
-            widestLabel = Math.Max(widestLabel, font.MeasureText(labels[i], paint));
+            widestLabel = Math.Max(widestLabel, font.MeasureText(labels[i]));
         }
 
         return (axis.Min, axis.Max, axis.Step, labels, (EdgeMargin + LabelSpacing) * scale + widestLabel);
     }
 
     private static (double Min, double Max, double Step, string[] Labels, float PlotLeft) ValueOnlyAxis(
-        LineGraph graph, SKFont valueFont, SKPaint paint, double dataMin, double dataMax, float plotTop,
+        LineGraph graph, FallbackFont valueFont, double dataMin, double dataMax, float plotTop,
         float plotHeight, float valueGap, float scale)
     {
-        valueFont.MeasureText("0", out var digitBounds, paint);
+        valueFont.MeasureText("0", out var digitBounds);
         var headroom = Math.Max(0, (-digitBounds.Top + valueGap - plotTop) / plotHeight);
         var min = graph.ZeroBased ? Math.Min(0, dataMin) : dataMin;
         var max = Math.Max(dataMax / (1 - headroom), min + 1);

@@ -77,8 +77,6 @@ public class BotConfig
     public string MetricsPusherName { get; set; }
 
     public bool? UseShardEnvConfig { get; set; }
-
-    public bool? UseDiscordGuildLocale { get; set; }
 }
 
 public class InternalApiConfig

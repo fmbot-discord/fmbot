@@ -668,6 +668,7 @@ public class GenreBuilders
 
             var topGenresList = topGenres.OrderByDescending(o => o.UserPlaycount).ToList();
             var resultSet = genreResults.ToHashSet();
+            var shownGenre = selectedValue ?? genreResults.First();
 
             var firstResult = topGenresList.FirstOrDefault(f =>
                 f.GenreName.Equals(genreResults.First(), StringComparison.OrdinalIgnoreCase));
@@ -677,14 +678,14 @@ public class GenreBuilders
                 firstOptionId,
                 description: firstResult == null
                     ? null
-                    : $"{firstResult.UserPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(firstResult.UserPlaycount)}");
+                    : $"{firstResult.UserPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(firstResult.UserPlaycount)}",
+                isDefault: genreResults.First().Equals(shownGenre, StringComparison.OrdinalIgnoreCase));
 
             foreach (var genre in topGenresList.Where(w =>
                          resultSet.Contains(w.GenreName) && !w.GenreName.Equals(genreResults.First(),
                              StringComparison.OrdinalIgnoreCase)).Take(24))
             {
-                var selected = selectedValue != null &&
-                               genre.GenreName.Equals(selectedValue, StringComparison.OrdinalIgnoreCase);
+                var selected = genre.GenreName.Equals(shownGenre, StringComparison.OrdinalIgnoreCase);
 
                 var optionId = StringExtensions.TruncateLongString(
                     $"{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}:{selectCommandId}:{genre.GenreName}:{genreOptions}", 100);
