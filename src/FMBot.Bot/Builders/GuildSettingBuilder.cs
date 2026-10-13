@@ -123,9 +123,8 @@ public class GuildSettingBuilder(
         general.AppendLine("**General**");
         general.Append($"Prefix `{guild.Prefix ?? this._botSettings.Bot.Prefix}`");
         general.Append(guild.Prefix == null ? " (default) · " : " · ");
-        general.Append(guild.Language.HasValue
-            ? $"Language {guild.Language.Value.GetAttribute<OptionAttribute>().Name}"
-            : "Language English (default)");
+        general.Append($"Language {context.Localizer.Language.GetAttribute<OptionAttribute>().Name}");
+        general.Append(guild.Language.HasValue ? "" : " (default)");
         general.AppendLine();
         general.Append(guild.EmoteReactions is { Length: > 0 }
             ? $"{guild.EmoteReactions.Length} emote reactions"
@@ -428,9 +427,9 @@ public class GuildSettingBuilder(
         language.Append("The language .fmbot replies in here. ");
         language.AppendLine(guild.Language.HasValue
             ? $"Currently **{guild.Language.Value.GetAttribute<OptionAttribute>().Name}**."
-            : "Currently **English** (default).");
+            : $"Currently **{context.Localizer.Language.GetAttribute<OptionAttribute>().Name}** (default).");
         language.Append(
-            "-# Translations are in beta and might be incomplete. De-select to go back to the default.");
+            "-# The default is your server's primary language in Discord, or English if .fmbot doesn't support it. Translations are in beta and might be incomplete. De-select to go back to the default.");
 
         container.WithTextDisplay(language.ToString());
 
