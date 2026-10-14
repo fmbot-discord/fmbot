@@ -158,15 +158,16 @@ public static class GraphExtensions
     private static async Task<SKColor> GetLineColor(ContextModel context, NetCord.Color? imageColor)
     {
         var user = context.ContextUser;
+        var graphColor = user?.GraphColor ?? GraphColor.ImageColor;
 
-        switch (user?.GraphColor ?? GraphColor.ImageColor)
+        switch (graphColor)
         {
             case GraphColor.FmbotBlue:
                 return GraphColors.FmbotBlue;
             case GraphColor.Custom when ColorExtensions.TryParseHexColor(user.GraphCustomColor, out var customColor):
                 return Brighten(ToSkColor(customColor));
             case GraphColor.RoleColor:
-                var roleColor = await UserService.GetRoleColor(user, context.DiscordGuild);
+                var roleColor = await GetRoleColor(context, user);
                 if (roleColor.HasValue)
                 {
                     return Brighten(ToSkColor(roleColor.Value));
@@ -175,9 +176,33 @@ public static class GraphExtensions
                 break;
         }
 
-        return imageColor.HasValue
-            ? Brighten(ToSkColor(imageColor.Value))
-            : GraphColors.FmbotBlue;
+        if (imageColor.HasValue)
+        {
+            return Brighten(ToSkColor(imageColor.Value));
+        }
+
+        if (user != null && graphColor != GraphColor.RoleColor)
+        {
+            var roleColor = await GetRoleColor(context, user);
+            if (roleColor.HasValue)
+            {
+                return Brighten(ToSkColor(roleColor.Value));
+            }
+        }
+
+        return GraphColors.FmbotBlue;
+    }
+
+    private static async Task<NetCord.Color?> GetRoleColor(ContextModel context, User user)
+    {
+        if (context.DiscordGuild != null &&
+            context.DiscordUser is NetCord.GuildUser guildUser &&
+            guildUser.Id == user.DiscordUserId)
+        {
+            return UserService.GetHighestRoleColor(context.DiscordGuild, guildUser);
+        }
+
+        return await UserService.GetRoleColor(user, context.DiscordGuild);
     }
 
     private static SKColor ToSkColor(NetCord.Color color)
