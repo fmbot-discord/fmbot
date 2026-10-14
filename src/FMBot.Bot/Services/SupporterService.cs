@@ -480,11 +480,11 @@ public class SupporterService
             c => c.Context.Localize("update.promo.userShortcuts",
                 ("emote", EmojiProperties.Custom(DiscordConstants.Shortcut).ToDiscordString("shortcut")))),
         new("closefriends", 2, UpdatePromoButton.Supporter,
-            c => !c.Supporter && c.Probe.HasFriends,
+            c => !c.Supporter,
             c => c.Context.Localize("update.promo.closeFriends", ("command", c.Command("friendsfm")))),
         new("artistmilestones", 1, UpdatePromoButton.Supporter,
             c => !c.Supporter,
-            c => c.Context.Localize("update.promo.artistMilestones", ("command", c.Command("ams", "milestone")))),
+            c => c.Context.Localize("update.promo.artistMilestones", ("command", c.Command("ams", "milestone artist:")))),
         new("winback", 4, UpdatePromoButton.Supporter,
             c => !c.Supporter && c.WinBack,
             c => c.Context.Localize("update.promo.winBack")),
@@ -524,7 +524,7 @@ public class SupporterService
             c => c.Context.Localize("update.promo.perkGift")),
         new("perk-artistmilestones", 1, UpdatePromoButton.None,
             c => c.Supporter,
-            c => c.Context.Localize("update.promo.perkArtistMilestones", ("command", c.Command("ams", "milestone")))),
+            c => c.Context.Localize("update.promo.perkArtistMilestones", ("command", c.Command("ams", "milestone artist:")))),
         new("perk-lyrics", 3, UpdatePromoButton.None,
             c => c.Supporter && c.NeverUsed("lyrics"),
             c => c.Context.Localize("update.promo.perkLyrics", ("command", c.Command("lyrics")))),
@@ -636,7 +636,7 @@ public class SupporterService
             return (null, null);
         }
 
-        this._cache.Set(cacheKey, true, new DateTimeOffset(DateTime.UtcNow.Date.AddHours(12)));
+        this._cache.Set(cacheKey, true, TimeSpan.FromHours(12));
 
         if (RandomNumberGenerator.GetInt32(100) >= 65)
         {
