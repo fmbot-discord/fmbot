@@ -368,7 +368,8 @@ public class SupporterService
         }
     }
 
-    public async Task<(string message, bool showUpgradeButton, bool showPremiumServerButton, string supporterSource)> GetPromotionalUpdateMessage(
+    public async Task<(string message, bool showUpgradeButton, bool showPremiumServerButton, string supporterSource)>
+        GetPromotionalUpdateMessage(
         User user, string prfx,
         ulong? guildId = null)
     {
