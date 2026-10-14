@@ -65,12 +65,21 @@ public class StaticSlashCommands(
     [UsernameSetRequired]
     public async Task GetSupporterAsync()
     {
-        var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
-        var response = await staticBuilders.SupporterButtons(new ContextModel(this.Context, contextUser),
-            false, true, userLocale: this.Context.Interaction.UserLocale, source: "getsupporter");
+        this.Context.DeferInBackground(MessageFlags.Ephemeral);
 
-        await this.Context.SendResponse(this.Interactivity, response, userService, ephemeral: true);
-        await this.Context.LogCommandUsedAsync(response, userService);
+        try
+        {
+            var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
+            var response = await staticBuilders.SupporterButtons(new ContextModel(this.Context, contextUser),
+                false, true, userLocale: this.Context.Interaction.UserLocale, source: "getsupporter");
+
+            await this.Context.SendResponse(this.Interactivity, response, userService, ephemeral: true);
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
     }
 
     [SlashCommand("giftsupporter", "🎁 Gift supporter to another user", Contexts =

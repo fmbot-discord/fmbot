@@ -39,13 +39,25 @@ public class StaticInteractions(
     {
         try
         {
+            var clickedMessage = (this.Context.Interaction as MessageComponentInteraction)?.Message;
+            var isNewResponse = newResponse.Equals("true", StringComparison.OrdinalIgnoreCase) ||
+                                clickedMessage == null ||
+                                !clickedMessage.Flags.HasFlag(MessageFlags.Ephemeral);
+            if (isNewResponse)
+            {
+                this.Context.DeferInBackground(MessageFlags.Ephemeral);
+            }
+            else
+            {
+                this.Context.DeferUpdateInBackground();
+            }
+
             var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
             var response = await staticBuilders.SupporterButtons(new ContextModel(this.Context, contextUser),
                 expandWithPerks.Equals("true", StringComparison.OrdinalIgnoreCase),
                 showExpandButton.Equals("true", StringComparison.OrdinalIgnoreCase),
                 userLocale: this.Context.Interaction.UserLocale, source: source);
 
-            var isNewResponse = newResponse.Equals("true", StringComparison.OrdinalIgnoreCase);
             if (isNewResponse)
             {
                 await this.Context.SendResponse(interactivity, response, userService, true);
