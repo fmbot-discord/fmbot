@@ -518,6 +518,7 @@ public class UserBuilder
         }
 
         container.AddComponents(accentColorMenu);
+        container.WithTextDisplay("Also used by `album`, `track`, `cover` and WhoKnows commands with album covers");
 
         container.WithSeparator();
         container.WithTextDisplay("**Adjust small text type**");
@@ -845,7 +846,7 @@ public class UserBuilder
 
         container.WithSeparator();
 
-        var graphColor = context.ContextUser.GraphColor ?? GraphColor.EmbedColor;
+        var graphColor = context.ContextUser.GraphColor ?? GraphColor.ImageColor;
         if (graphColor == GraphColor.Custom &&
             isSupporter &&
             ColorExtensions.TryParseHexColor(context.ContextUser.GraphCustomColor, out var customGraphColor))
@@ -2336,23 +2337,13 @@ public class UserBuilder
 
         var update = await this._updateService.UpdateUserAndGetRecentTracks(context.ContextUser);
 
-        var updatePromo =
-            await this._supporterService.GetPromotionalUpdateMessage(context.ContextUser, context.Prefix,
-                context.DiscordGuild?.Id);
-        var upgradeButton = new ActionRowProperties().WithButton(context.Localize("buttons.getFmbotSupporter"),
-            style: ButtonStyle.Secondary,
-            customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: updatePromo.supporterSource));
-        var premiumServerButton = new ActionRowProperties().AddComponents(new ButtonProperties(
-            $"{InteractionConstants.PremiumServer.GetOverview}:{updatePromo.supporterSource}",
-            context.Localize("buttons.premiumServer"), ButtonStyle.Secondary));
-
         if (GenericEmbedService.RecentScrobbleCallFailed(update))
         {
             return GenericEmbedService.RecentScrobbleCallFailedResponse(update, context.ContextUser.UserNameLastFM, context.Localizer);
         }
 
         var updatedDescription = new StringBuilder();
-        ActionRowProperties promoButton = null;
+        var showPromo = false;
 
         if (update.Content.NewRecentTracksAmount == 0 && update.Content.RemovedRecentTracksAmount == 0)
         {
@@ -2401,19 +2392,7 @@ public class UserBuilder
             }
             else
             {
-                if (updatePromo.message != null)
-                {
-                    updatedDescription.AppendLine();
-                    updatedDescription.AppendLine(updatePromo.message);
-                    if (updatePromo.showUpgradeButton)
-                    {
-                        promoButton = upgradeButton;
-                    }
-                    else if (updatePromo.showPremiumServerButton)
-                    {
-                        promoButton = premiumServerButton;
-                    }
-                }
+                showPromo = true;
             }
         }
         else
@@ -2432,26 +2411,28 @@ public class UserBuilder
                     ("removedScrobbles", context.LocalizeCount("update.removedScrobbles", update.Content.RemovedRecentTracksAmount))));
             }
 
-            if (updatePromo.message != null)
-            {
-                updatedDescription.AppendLine();
-                updatedDescription.AppendLine(updatePromo.message);
-                if (updatePromo.showUpgradeButton)
-                {
-                    promoButton = upgradeButton;
-                }
-                else if (updatePromo.showPremiumServerButton)
-                {
-                    promoButton = premiumServerButton;
-                }
-            }
+            showPromo = true;
         }
 
         response.ComponentsContainer.WithAccentColor(DiscordConstants.SuccessColorGreen);
         response.ComponentsContainer.WithTextDisplay(updatedDescription.ToString());
-        if (promoButton != null)
+
+        if (showPromo)
         {
-            response.ComponentsContainer.WithActionRow(promoButton);
+            var promo = await this._supporterService.GetUpdatePromo(context);
+            if (promo.message != null)
+            {
+                response.ComponentsContainer.WithSeparator();
+                if (promo.button != null)
+                {
+                    response.ComponentsContainer.AddComponent(new ComponentSectionProperties(promo.button,
+                        [new TextDisplayProperties(promo.message)]));
+                }
+                else
+                {
+                    response.ComponentsContainer.WithTextDisplay(promo.message);
+                }
+            }
         }
 
         _ = this._userService.UpdateLinkedRole(context.ContextUser.DiscordUserId).ObserveFaults();

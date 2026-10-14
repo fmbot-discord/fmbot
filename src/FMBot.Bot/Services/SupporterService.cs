@@ -5,7 +5,9 @@ using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using Dapper;
 using FMBot.Bot.Extensions;
+using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
@@ -20,6 +22,7 @@ using Microsoft.Extensions.Options;
 using NetCord;
 using NetCord.Gateway;
 using NetCord.Rest;
+using Npgsql;
 using Serilog;
 using FMBot.Bot.Services.Guild;
 using Web.InternalApi;
@@ -368,417 +371,359 @@ public class SupporterService
         }
     }
 
-    public async Task<(string message, bool showUpgradeButton, bool showPremiumServerButton, string supporterSource)> GetPromotionalUpdateMessage(
-        User user, string prfx,
-        ulong? guildId = null)
+    private enum UpdatePromoButton
     {
-        var randomHintNumber = RandomNumberGenerator.GetInt32(1, 95);
-        string message = null;
-        var showUpgradeButton = false;
-        var showPremiumServerButton = false;
-        var supporterSource = "updatepromo";
+        None,
+        Supporter,
+        PremiumServer
+    }
 
-        if (!IsSupporter(user.UserType))
+    private record UpdatePromo(
+        string Id,
+        double Weight,
+        UpdatePromoButton Button,
+        Func<UpdatePromoContext, bool> Eligible,
+        Func<UpdatePromoContext, string> Message);
+
+    private class UpdatePromoProbe
+    {
+        public string[] UsedCommands { get; set; }
+        public bool RecentPlaysCommand { get; set; }
+        public bool HasFriends { get; set; }
+        public bool HasCloseFriends { get; set; }
+        public bool HasShortcuts { get; set; }
+        public bool HasDiscogs { get; set; }
+        public long? FooterOptions { get; set; }
+        public DateTime? SupporterLapsed { get; set; }
+    }
+
+    private class UpdatePromoContext(ContextModel context, UpdatePromoProbe probe)
+    {
+        public ContextModel Context => context;
+        public User User => context.ContextUser;
+        public UpdatePromoProbe Probe => probe;
+        public bool Supporter => IsSupporter(context.ContextUser.UserType);
+        public bool TextCommand => !context.SlashCommand;
+        public bool InGuild => context.DiscordGuild != null;
+
+        public bool InPremiumGuild =>
+            context.DiscordGuild != null && PublicProperties.PremiumServers.ContainsKey(context.DiscordGuild.Id);
+
+        public bool DefaultFooter =>
+            (probe.FooterOptions ?? (long)FmFooterOption.TotalScrobbles) == (long)FmFooterOption.TotalScrobbles;
+
+        public bool WinBack => probe.SupporterLapsed < DateTime.UtcNow.AddDays(-14) &&
+                               probe.SupporterLapsed > DateTime.UtcNow.AddMonths(-12);
+
+        public bool NeverUsed(string commandName) => !probe.UsedCommands.Contains(commandName);
+
+        public string Command(string text, string slash = null) =>
+            context.SlashCommand ? $"/{slash ?? text}" : $"{context.Prefix}{text}";
+    }
+
+    private static readonly UpdatePromo[] UpdatePromos =
+    [
+        new("insights", 1, UpdatePromoButton.Supporter,
+            c => !c.Supporter,
+            c => c.Context.Localize("update.promo.insights")),
+        new("fmfooter", 2, UpdatePromoButton.Supporter,
+            c => !c.Supporter && !c.DefaultFooter,
+            c => c.Context.Localize("update.promo.fmFooter", ("command", c.Command("fm")))),
+        new("improvedjudge", 1, UpdatePromoButton.Supporter,
+            c => !c.Supporter,
+            c => c.Context.Localize("update.promo.improvedJudge", ("command", c.Command("judge")))),
+        new("spotifyimport", 4, UpdatePromoButton.Supporter,
+            c => !c.Supporter && c.User.TotalPlaycount < 100000,
+            c => c.Context.Localize("update.promo.spotifyImport", ("emote", "<:spotify:882221219334725662>"))),
+        new("applemusicimport", 3, UpdatePromoButton.Supporter,
+            c => !c.Supporter && c.User.TotalPlaycount < 100000,
+            c => c.Context.Localize("update.promo.appleMusicImport", ("emote", "<:apple_music:1218182727149420544>"))),
+        new("importgaps", 3, UpdatePromoButton.Supporter,
+            c => !c.Supporter && c.User.TotalPlaycount >= 100000,
+            c => c.Context.Localize("update.promo.importGaps",
+                ("emote", EmojiProperties.Custom(DiscordConstants.Imports).ToDiscordString("imports")))),
+        new("discoveries", 1, UpdatePromoButton.Supporter,
+            c => !c.Supporter,
+            c => c.Context.Localize("update.promo.discoveries",
+                ("emote", EmojiProperties.Custom(DiscordConstants.Discoveries).ToDiscordString("discoveries")))),
+        new("userreactions", 1, UpdatePromoButton.Supporter,
+            c => !c.Supporter,
+            c => c.Context.Localize("update.promo.userReactions", ("emote", "<:1_to_5_up:912085138232442920>"),
+                ("command", c.Command("fm")))),
+        new("gaps", 1, UpdatePromoButton.Supporter,
+            c => !c.Supporter,
+            c => c.Context.Localize("update.promo.gaps",
+                ("emote", EmojiProperties.Custom(DiscordConstants.Discoveries).ToDiscordString("discoveries")))),
+        new("discoverydate", 1, UpdatePromoButton.Supporter,
+            c => !c.Supporter,
+            c => c.Context.Localize("update.promo.discoveryDate",
+                ("emote", EmojiProperties.Custom(DiscordConstants.Discoveries).ToDiscordString("discoveries")),
+                ("command", c.Command("discoverydate")))),
+        new("lastlistened", 1, UpdatePromoButton.Supporter,
+            c => !c.Supporter,
+            c => c.Context.Localize("update.promo.lastListened", ("command", c.Command("lastlistened")))),
+        new("recent", 1, UpdatePromoButton.Supporter,
+            c => !c.Supporter,
+            c => c.Context.Localize("update.promo.recent", ("command", c.Command("recent")))),
+        new("overview", 1, UpdatePromoButton.Supporter,
+            c => !c.Supporter,
+            c => c.Context.Localize("update.promo.overview", ("command", c.Command("overview")))),
+        new("graphs", 1, UpdatePromoButton.Supporter,
+            c => !c.Supporter,
+            c => c.Context.Localize("update.promo.graphs", ("command", c.Command("artist")),
+                ("example", c.Command("plays")))),
+        new("lyrics", 1, UpdatePromoButton.Supporter,
+            c => !c.Supporter && !c.InPremiumGuild,
+            c => c.Context.Localize("update.promo.lyrics", ("command", c.Command("lyrics")))),
+        new("usershortcuts", 1, UpdatePromoButton.Supporter,
+            c => !c.Supporter,
+            c => c.Context.Localize("update.promo.userShortcuts",
+                ("emote", EmojiProperties.Custom(DiscordConstants.Shortcut).ToDiscordString("shortcut")))),
+        new("closefriends", 2, UpdatePromoButton.Supporter,
+            c => !c.Supporter,
+            c => c.Context.Localize("update.promo.closeFriends", ("command", c.Command("friendsfm")))),
+        new("artistmilestones", 1, UpdatePromoButton.Supporter,
+            c => !c.Supporter,
+            c => c.Context.Localize("update.promo.artistMilestones", ("command", c.Command("ams", "milestone artist:")))),
+        new("winback", 4, UpdatePromoButton.Supporter,
+            c => !c.Supporter && c.WinBack,
+            c => c.Context.Localize("update.promo.winBack")),
+
+        new("premiumserver-crownseeder", 1, UpdatePromoButton.PremiumServer,
+            c => c.InGuild && !c.InPremiumGuild,
+            c => c.Context.Localize("update.promo.premiumCrownSeeder")),
+        new("premiumserver-recaps", 1, UpdatePromoButton.PremiumServer,
+            c => c.InGuild && !c.InPremiumGuild,
+            c => c.Context.Localize("update.promo.premiumRecaps")),
+        new("premiumserver-branding", 1, UpdatePromoButton.PremiumServer,
+            c => c.InGuild && !c.InPremiumGuild,
+            c => c.Context.Localize("update.promo.premiumBranding")),
+        new("premiumserver-perks", 1, UpdatePromoButton.PremiumServer,
+            c => c.InGuild && !c.InPremiumGuild,
+            c => c.Context.Localize("update.promo.premiumPerks", ("command", c.Command("lyrics")))),
+
+        new("perk-footer", 1, UpdatePromoButton.None,
+            c => c.Supporter && c.DefaultFooter,
+            c => c.Context.Localize("update.promo.perkFooter", ("command", c.Command("fm")))),
+        new("perk-spotifyimport", 1, UpdatePromoButton.None,
+            c => c.Supporter && c.User.DataSource == DataSource.LastFm,
+            c => c.Context.Localize("update.promo.perkSpotifyImport", ("emote", "<:spotify:882221219334725662>"))),
+        new("perk-applemusicimport", 1, UpdatePromoButton.None,
+            c => c.Supporter && c.User.DataSource == DataSource.LastFm,
+            c => c.Context.Localize("update.promo.perkAppleMusicImport", ("emote", "<:apple_music:1218182727149420544>"))),
+        new("perk-userreactions", 1, UpdatePromoButton.None,
+            c => c.Supporter && c.TextCommand && (c.User.EmoteReactions == null || c.User.EmoteReactions.Length == 0),
+            c => c.Context.Localize("update.promo.perkUserReactions", ("command", c.Command("userreactions")))),
+        new("perk-discoverydate", 1, UpdatePromoButton.None,
+            c => c.Supporter && c.NeverUsed("discoverydate"),
+            c => c.Context.Localize("update.promo.perkDiscoveryDate",
+                ("emote", EmojiProperties.Custom(DiscordConstants.Discoveries).ToDiscordString("discoveries")),
+                ("command", c.Command("discoverydate")))),
+        new("perk-gift", 1, UpdatePromoButton.None,
+            c => c.Supporter,
+            c => c.Context.Localize("update.promo.perkGift")),
+        new("perk-artistmilestones", 1, UpdatePromoButton.None,
+            c => c.Supporter,
+            c => c.Context.Localize("update.promo.perkArtistMilestones", ("command", c.Command("ams", "milestone artist:")))),
+        new("perk-lyrics", 3, UpdatePromoButton.None,
+            c => c.Supporter && c.NeverUsed("lyrics"),
+            c => c.Context.Localize("update.promo.perkLyrics", ("command", c.Command("lyrics")))),
+        new("perk-discoveries", 1, UpdatePromoButton.None,
+            c => c.Supporter && c.NeverUsed("discoveries"),
+            c => c.Context.Localize("update.promo.perkDiscoveries",
+                ("emote", EmojiProperties.Custom(DiscordConstants.Discoveries).ToDiscordString("discoveries")),
+                ("command", c.Command("discoveries")))),
+        new("perk-lastlistened", 1, UpdatePromoButton.None,
+            c => c.Supporter && c.NeverUsed("lastlistened"),
+            c => c.Context.Localize("update.promo.perkLastListened", ("command", c.Command("lastlistened")))),
+        new("perk-closefriends", 1, UpdatePromoButton.None,
+            c => c.Supporter && c.Probe.HasFriends && !c.Probe.HasCloseFriends,
+            c => c.Context.Localize("update.promo.perkCloseFriends", ("command", c.Command("friendsfm")))),
+        new("perk-shortcuts", 1, UpdatePromoButton.None,
+            c => c.Supporter && c.TextCommand && !c.Probe.HasShortcuts,
+            c => c.Context.Localize("update.promo.perkShortcuts",
+                ("emote", EmojiProperties.Custom(DiscordConstants.Shortcut).ToDiscordString("shortcut")),
+                ("command", c.Command("shortcuts")))),
+        new("perk-streaks", 1, UpdatePromoButton.None,
+            c => c.Supporter && c.NeverUsed("streaks"),
+            c => c.Context.Localize("update.promo.perkStreaks", ("command", c.Command("streaks")))),
+
+        new("tip-discogs", 1, UpdatePromoButton.None,
+            c => !c.Probe.HasDiscogs,
+            c => c.Context.Localize("update.promo.discogs", ("emote", "<:vinyl:1043644602969763861>"),
+                ("command", c.Command("discogs")))),
+        new("tip-fmmode", 2, UpdatePromoButton.None,
+            c => !c.Supporter && c.DefaultFooter,
+            c => c.Context.Localize("update.promo.fmMode", ("command", c.Command("fm")))),
+        new("tip-jumble", 1, UpdatePromoButton.None,
+            c => c.TextCommand && c.InGuild && c.NeverUsed("jumble"),
+            c => c.Context.Localize("update.promo.jumble", ("command", c.Command("jumble")))),
+        new("tip-pixel", 1, UpdatePromoButton.None,
+            c => c.TextCommand && c.InGuild && c.NeverUsed("pixel"),
+            c => c.Context.Localize("update.promo.pixel", ("command", c.Command("pixel")))),
+        new("tip-userapp", 1, UpdatePromoButton.None,
+            c => c.InGuild,
+            c => c.Context.Localize("update.promo.userApp",
+                ("url", "https://discord.com/oauth2/authorize?client_id=356268235697553409&scope=applications.commands&integration_type=1"))),
+        new("tip-recap", 1, UpdatePromoButton.None,
+            c => c.NeverUsed("recap"),
+            c => c.Context.Localize("update.promo.recap", ("command", c.Command("recap")))),
+        new("tip-numberformat", 1, UpdatePromoButton.None,
+            c => c.User.NumberFormat == null,
+            c => c.Context.Localize("update.promo.numberFormat")),
+        new("tip-timezone", 1, UpdatePromoButton.None,
+            c => c.User.TimeZone == null,
+            c => c.Context.Localize("update.promo.timezone")),
+        new("tip-responsemode", 1, UpdatePromoButton.None,
+            c => c.User.Mode == null && c.User.WhoKnowsMode == null,
+            c => c.Context.Localize("update.promo.responseMode")),
+        new("tip-featured", 1, UpdatePromoButton.None,
+            c => c.TextCommand && c.NeverUsed("featured"),
+            c => c.Context.Localize("update.promo.featured", ("command", c.Command("featured")),
+                ("example", c.Command("wk featured")))),
+        new("tip-replycontext", 1, UpdatePromoButton.None,
+            c => c.TextCommand,
+            c => c.Context.Localize("update.promo.replyContext")),
+        new("tip-coverrandom", 1, UpdatePromoButton.None,
+            c => c.TextCommand,
+            c => c.Context.Localize("update.promo.coverRandom", ("example", c.Command("cover random")))),
+        new("tip-milestonerandom", 1, UpdatePromoButton.None,
+            c => c.TextCommand,
+            c => c.Context.Localize("update.promo.milestoneRandom", ("example", c.Command("milestone random")))),
+        new("tip-timeframes", 1, UpdatePromoButton.None,
+            _ => true,
+            c => c.Context.Localize("update.promo.timeframes")),
+        new("tip-deleteresponse", 1, UpdatePromoButton.None,
+            _ => true,
+            c => c.Context.Localize("update.promo.deleteResponse")),
+        new("tip-commandsupdate", 1, UpdatePromoButton.None,
+            _ => true,
+            c => c.Context.Localize("update.promo.commandsUpdate")),
+        new("tip-autoupdate", 1, UpdatePromoButton.None,
+            _ => true,
+            c => c.Context.Localize("update.promo.autoUpdate")),
+        new("tip-airfryer", 0.01, UpdatePromoButton.None,
+            _ => true,
+            c => c.Context.Localize("update.promo.airfryer", ("emote", "<:airfryer:924432772087562280>"))),
+        new("tip-remote", 1, UpdatePromoButton.None,
+            c => c.NeverUsed("remote"),
+            c => c.Context.Localize("update.promo.remote", ("emote", "<:spotify:882221219334725662>"),
+                ("command", c.Command("rc", "remote")))),
+        new("tip-queue", 1, UpdatePromoButton.None,
+            c => c.NeverUsed("queue"),
+            c => c.Context.Localize("update.promo.queue", ("emote", "<:spotify:882221219334725662>"),
+                ("command", c.Command("queue")))),
+        new("tip-timeperiods", 1, UpdatePromoButton.None,
+            c => c.TextCommand && c.Probe.RecentPlaysCommand,
+            c => c.Context.Localize("update.promo.timePeriods", ("command", c.Command("ap")))),
+        new("tip-friends", 1, UpdatePromoButton.None,
+            c => !c.Probe.HasFriends,
+            c => c.Context.Localize("update.promo.friends", ("command", c.Command("addfriends", "addfriend")),
+                ("example", c.Command("friends", "friendsfm")))),
+        new("tip-streak", 1, UpdatePromoButton.None,
+            c => c.NeverUsed("streak"),
+            c => c.Context.Localize("update.promo.streak", ("command", c.Command("streak")))),
+        new("tip-taste", 1, UpdatePromoButton.None,
+            c => c.NeverUsed("taste"),
+            c => c.Context.Localize("update.promo.taste", ("command", c.Command("taste"))))
+    ];
+
+    public async Task<(string message, ButtonProperties button)> GetUpdatePromo(ContextModel context)
+    {
+        var cacheKey = $"update-promo-{context.ContextUser.UserId}";
+        if (this._cache.TryGetValue(cacheKey, out _))
         {
-            switch (randomHintNumber)
-            {
-                case 2:
-                {
-                    SetGuildSupporterPromoCache(guildId);
-                    message =
-                        $"*⭐ .fmbot supporters get extra stats and insights into their music history*";
-                    showUpgradeButton = true;
-                    supporterSource = "updatepromo-insights";
-                    break;
-                }
-                case 3:
-                {
-                    message =
-                        $"*<:vinyl:1043644602969763861> Use Discogs for your vinyl collection? Link your account with `{prfx}discogs`*";
-                    break;
-                }
-                case 1:
-                case 4:
-                {
-                    if ((user.FmSetting?.FooterOptions ?? FmFooterOption.TotalScrobbles) == FmFooterOption.TotalScrobbles)
-                    {
-                        message =
-                            $"*⚙️ Customize your `{prfx}fm` command with the new `/mode` command. Enable custom buttons, colors, footer options and more.*";
-                        break;
-                    }
-
-                    SetGuildSupporterPromoCache(guildId);
-                    message =
-                        $"*⚙️ Set up to 10 footer options, 5 custom buttons and configure your own color in the `{prfx}fm` command as an .fmbot supporter*";
-                    showUpgradeButton = true;
-                    supporterSource = "updatepromo-fmfooter";
-                    break;
-                }
-                case 5:
-                {
-                    SetGuildSupporterPromoCache(guildId);
-                    message =
-                        $"*🔥 Supporters get an improved `{prfx}judge` command with sharper outputs, and higher usage limits*";
-                    showUpgradeButton = true;
-                    supporterSource = "updatepromo-improvedjudge";
-                    break;
-                }
-                case 6:
-                case 7:
-                {
-                    if (user.TotalPlaycount < 100000)
-                    {
-                        SetGuildSupporterPromoCache(guildId);
-                        message =
-                            $"*<:spotify:882221219334725662> Supporters can import and access their full Spotify history in the bot*";
-                        showUpgradeButton = true;
-                        supporterSource = "updatepromo-spotifyimport";
-                    }
-
-                    break;
-                }
-                case 8:
-                case 9:
-                {
-                    if (user.TotalPlaycount < 100000)
-                    {
-                        SetGuildSupporterPromoCache(guildId);
-                        message =
-                            $"*<:apple_music:1218182727149420544> Supporters can import and access their full Apple Music history in the bot*";
-                        showUpgradeButton = true;
-                        supporterSource = "updatepromo-applemusicimport";
-                    }
-
-                    break;
-                }
-                case 10:
-                {
-                    SetGuildSupporterPromoCache(guildId);
-                    message =
-                        $"*{EmojiProperties.Custom(DiscordConstants.Discoveries).ToDiscordString("discoveries")} View which artists you recently discovered with .fmbot supporter*";
-                    showUpgradeButton = true;
-                    supporterSource = "updatepromo-discoveries";
-                    break;
-                }
-                case 11:
-                {
-                    SetGuildSupporterPromoCache(guildId);
-                    message =
-                        $"*<:1_to_5_up:912085138232442920> Set your own `{prfx}fm` emote reactions to be used everywhere with .fmbot supporter*";
-                    showUpgradeButton = true;
-                    supporterSource = "updatepromo-userreactions";
-                    break;
-                }
-                case 12:
-                {
-                    SetGuildSupporterPromoCache(guildId);
-                    message =
-                        $"*{EmojiProperties.Custom(DiscordConstants.Discoveries).ToDiscordString("discoveries")} View which artists you recently returned to with .fmbot supporter*";
-                    showUpgradeButton = true;
-                    supporterSource = "updatepromo-gaps";
-                    break;
-                }
-                case 13:
-                {
-                    SetGuildSupporterPromoCache(guildId);
-                    message =
-                        $"*{EmojiProperties.Custom(DiscordConstants.Discoveries).ToDiscordString("discoveries")} See your discovery date for an artist, album and track with `{prfx}discoverydate`/`{prfx}dd`*";
-                    showUpgradeButton = true;
-                    supporterSource = "updatepromo-discoverydate";
-                    break;
-                }
-                case 14:
-                {
-                    SetGuildSupporterPromoCache(guildId);
-                    message =
-                        $"*🎵 View your lifetime history in `{prfx}recent` and filter to artists with .fmbot supporter*";
-                    showUpgradeButton = true;
-                    supporterSource = "updatepromo-recent";
-                    break;
-                }
-                case 15:
-                {
-                    SetGuildSupporterPromoCache(guildId);
-                    message =
-                        $"*🎵 View your lifetime history day to day in `{prfx}overview` with .fmbot supporter*";
-                    showUpgradeButton = true;
-                    supporterSource = "updatepromo-overview";
-                    break;
-                }
-                case 16:
-                {
-                    if (guildId == null || !PublicProperties.PremiumServers.ContainsKey(guildId.Value))
-                    {
-                        SetGuildSupporterPromoCache(guildId);
-                        message =
-                            $"*🎤 Supporters can read along with the exclusive `{prfx}lyrics` command*";
-                        showUpgradeButton = true;
-                        supporterSource = "updatepromo-lyrics";
-                    }
-
-                    break;
-                }
-                case 17:
-                {
-                    SetGuildSupporterPromoCache(guildId);
-                    message =
-                        $"*{EmojiProperties.Custom(DiscordConstants.Shortcut).ToDiscordString("shortcut")} Supporters can set up up to 10 text command shortcuts*";
-                    showUpgradeButton = true;
-                    supporterSource = "updatepromo-usershortcuts";
-                    break;
-                }
-                case 18:
-                case 19:
-                {
-                    SetGuildSupporterPromoCache(guildId);
-                    message =
-                        $"*⭐ Supporters can set close friends - always visible in WhoKnows no matter their rank, plus in `{prfx}friendsfm`*";
-                    showUpgradeButton = true;
-                    supporterSource = "updatepromo-closefriends";
-                    break;
-                }
-                case 20:
-                {
-                    message =
-                        $"*🎮 Play the new `{prfx}jumble` game and guess the artist together with your friends*";
-                    break;
-                }
-                case 21:
-                {
-                    message =
-                        $"*🎮 Play the new `{prfx}pixel` game and guess the album together with your friends*";
-                    break;
-                }
-                case 22:
-                {
-                    message =
-                        $"*🤖 Use .fmbot slash commands everywhere by [adding it to your Discord account](https://discord.com/oauth2/authorize?client_id=356268235697553409&scope=applications.commands&integration_type=1)*";
-                    break;
-                }
-                case 23:
-                {
-                    message =
-                        $"*🗒️ See all commands into one overview with the `{prfx}recap` command. Supports timeframes like `monthly` or `2025`*";
-                    break;
-                }
-                case 24:
-                {
-                    if (user.NumberFormat == null)
-                    {
-                        message =
-                            $"*🧮 Set your preferred number formatting with the `/localization` slash command*";
-                    }
-
-                    break;
-                }
-                case 26:
-                {
-                    if (user.TimeZone == null)
-                    {
-                        message =
-                            $"*🕒 Set your timezone with the `/localization` slash command*";
-                    }
-
-                    break;
-                }
-                case 28:
-                {
-                    message =
-                        $"*📚 Configure what type of top list and WhoKnows responses you get with `/mode`*";
-
-                    break;
-                }
-            }
-        }
-        else
-        {
-            switch (randomHintNumber)
-            {
-                case 3:
-                {
-                    message =
-                        $"*<:vinyl:1043644602969763861> Use Discogs for your vinyl collection? Link your account with `{prfx}discogs`.*";
-                    break;
-                }
-                case 4:
-                {
-                    if ((user.FmSetting?.FooterOptions ?? FmFooterOption.TotalScrobbles) == FmFooterOption.TotalScrobbles)
-                    {
-                        message =
-                            $"*⭐ Customize your `{prfx}fm` with the custom footer options. Get started by using `/mode`.*";
-                    }
-
-                    break;
-                }
-                case 5:
-                {
-                    if (user.DataSource == DataSource.LastFm)
-                    {
-                        message =
-                            $"*<:spotify:882221219334725662> Import your full Spotify history with `/import spotify`*";
-                    }
-
-                    break;
-                }
-                case 6:
-                {
-                    if (user.DataSource == DataSource.LastFm)
-                    {
-                        message =
-                            $"*<:apple_music:1218182727149420544> Import your full Apple Music history with `/import applemusic`*";
-                    }
-
-                    break;
-                }
-                case 7:
-                {
-                    if (user.EmoteReactions == null || !user.EmoteReactions.Any())
-                    {
-                        message =
-                            $"*⭐ Set your own emote reactions that will be used globally with `{prfx}userreactions`*";
-                    }
-
-                    break;
-                }
-                case 8:
-                {
-                    message =
-                        $"*{EmojiProperties.Custom(DiscordConstants.Discoveries).ToDiscordString("discoveries")} View when you discovered an artist, album, and track with `{prfx}discoverydate` / `{prfx}dd`*";
-
-                    break;
-                }
-                case 9:
-                {
-                    message =
-                        $"*🎁 You can gift someone supporter with the `/giftsupporter` command*";
-
-                    break;
-                }
-            }
+            return (null, null);
         }
 
-        switch (randomHintNumber)
+        this._cache.Set(cacheKey, true, TimeSpan.FromHours(12));
+
+        if (RandomNumberGenerator.GetInt32(100) >= 65)
         {
-            case 30:
-            {
-                message =
-                    $"*🌞 Tip: look up what's `.featured` in other commands. For example, `.wk featured`*";
-                break;
-            }
-            case 31:
-            {
-                message =
-                    $"*🌞 Tip: Reply to a command to use that artist, album or track as context for your next command*";
-                break;
-            }
-            case 32:
-            {
-                message =
-                    $"*🌞 Tip: Album commands support the `random` parameter. For example, `.cover random`*";
-                break;
-            }
-            case 33:
-            {
-                message =
-                    $"*🌞 Tip: Milestone commands support the `random` parameter. For example, `.milestone random`*";
-                break;
-            }
-            case 34:
-            {
-                message =
-                    $"*🌞 Tip: All commands that support time periods also support timeframes like `july` or `2025`*";
-                break;
-            }
-            case 35:
-            {
-                message =
-                    $"*🌞 Tip: Delete an unwanted bot response yourself by opening the message options > Apps > 'Delete response'*";
-                break;
-            }
-            case 36:
-            {
-                message =
-                    $"*🔢 Most commands, like all artist, album, and track commands without input, also update you before loading the results*";
-                break;
-            }
-            case 37:
-            {
-                message =
-                    $"*🔢 To make sure your data is always up to date, .fmbot also automatically runs an update for you every 48 hours*";
-                break;
-            }
-            case 38:
-            {
-                var otherHintNumber = RandomNumberGenerator.GetInt32(1, 100);
+            return (null, null);
+        }
 
-                switch (otherHintNumber)
-                {
-                    case 1:
-                        message =
-                            $"*<:airfryer:924432772087562280> A Dutch engineer named Fred van der Weij invented the first airfryer in 2006. It was initially made out of wood and named 'FritAir'*";
-                        break;
-                }
+        var promoContext = new UpdatePromoContext(context, await GetUpdatePromoProbe(context.ContextUser));
+        var eligible = UpdatePromos.Where(w => w.Eligible(promoContext)).ToList();
+        if (eligible.Count == 0)
+        {
+            return (null, null);
+        }
 
-                break;
-            }
-            case 39:
+        var roll = Random.Shared.NextDouble() * eligible.Sum(s => s.Weight);
+        var promo = eligible.Last();
+        foreach (var candidate in eligible)
+        {
+            roll -= candidate.Weight;
+            if (roll < 0)
             {
-                message =
-                    $"*<:spotify:882221219334725662> Control your Spotify playback from Discord with the new `{prfx}rc` command*";
-                break;
-            }
-            case 40:
-            {
-                message =
-                    $"*<:spotify:882221219334725662> Add a track to your Spotify queue with `{prfx}queue`, or reply to a song to queue it*";
+                promo = candidate;
                 break;
             }
         }
 
-        if (guildId != null && !PublicProperties.PremiumServers.ContainsKey(guildId.Value))
+        ButtonProperties button = null;
+        if (promo.Button == UpdatePromoButton.Supporter)
         {
-            switch (randomHintNumber)
-            {
-                case 41:
-                {
-                    SetGuildSupporterPromoCache(guildId);
-                    message =
-                        $"*👑 Premium servers can seed WhoKnows crowns automatically, daily, weekly or monthly*";
-                    showPremiumServerButton = true;
-                    supporterSource = "updatepromo-premiumserver-crownseeder";
-                    break;
-                }
-                case 42:
-                {
-                    SetGuildSupporterPromoCache(guildId);
-                    message =
-                        $"*📊 Premium servers get weekly or monthly server recaps, posted automatically*";
-                    showPremiumServerButton = true;
-                    supporterSource = "updatepromo-premiumserver-recaps";
-                    break;
-                }
-                case 43:
-                {
-                    SetGuildSupporterPromoCache(guildId);
-                    message =
-                        $"*🤖 Give .fmbot a custom avatar, or a rotating featured based on what this server listens to, with Premium server*";
-                    showPremiumServerButton = true;
-                    supporterSource = "updatepromo-premiumserver-branding";
-                    break;
-                }
-                case 44:
-                {
-                    SetGuildSupporterPromoCache(guildId);
-                    message =
-                        $"*🎮 Premium servers unlock 60 daily Jumble and Pixel games and the `{prfx}lyrics` command for every member*";
-                    showPremiumServerButton = true;
-                    supporterSource = "updatepromo-premiumserver-perks";
-                    break;
-                }
-            }
+            button = new ButtonProperties(
+                InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: $"updatepromo-{promo.Id}"),
+                promoContext.Probe.SupporterLapsed.HasValue
+                    ? context.Localize("buttons.resubscribe")
+                    : context.Localize("buttons.getSupporter"),
+                ButtonStyle.Secondary);
+        }
+        else if (promo.Button == UpdatePromoButton.PremiumServer)
+        {
+            button = new ButtonProperties($"{InteractionConstants.PremiumServer.GetOverview}:updatepromo-{promo.Id}",
+                context.Localize("buttons.premiumServer"), ButtonStyle.Secondary);
         }
 
-        return (message, showUpgradeButton, showPremiumServerButton, supporterSource);
+        if (button != null)
+        {
+            SetGuildSupporterPromoCache(context.DiscordGuild?.Id);
+        }
+
+        Log.Information("PromoShown: {discordUserId} | {guildId} | {promoId} | {promoLanguage} | {slashCommand}",
+            context.DiscordUser.Id, context.DiscordGuild?.Id, promo.Id, context.Localizer.Language,
+            context.SlashCommand);
+
+        return (promo.Message(promoContext), button);
+    }
+
+    private async Task<UpdatePromoProbe> GetUpdatePromoProbe(User user)
+    {
+        const string sql = """
+                           SELECT
+                               ARRAY(SELECT c FROM unnest(@commandNames) c
+                                     WHERE EXISTS (SELECT 1 FROM user_interactions ui
+                                                   WHERE ui.user_id = @userId AND ui.command_name = c)) AS used_commands,
+                               EXISTS (SELECT 1 FROM user_interactions ui
+                                       WHERE ui.user_id = @userId
+                                         AND ui.command_name IN ('artistplays', 'albumplays', 'trackplays')
+                                         AND ui.timestamp > now() - interval '30 days') AS recent_plays_command,
+                               EXISTS (SELECT 1 FROM friends f WHERE f.user_id = @userId) AS has_friends,
+                               EXISTS (SELECT 1 FROM friends f WHERE f.user_id = @userId AND f.friend_type = 3) AS has_close_friends,
+                               EXISTS (SELECT 1 FROM user_shortcuts us WHERE us.user_id = @userId) AS has_shortcuts,
+                               EXISTS (SELECT 1 FROM user_discogs d WHERE d.user_id = @userId) AS has_discogs,
+                               (SELECT s.footer_options FROM user_fm_settings s WHERE s.user_id = @userId) AS footer_options,
+                               (SELECT MAX(GREATEST(s.last_payment, s.modified)) FROM supporters s
+                                WHERE s.discord_user_id = @discordUserId AND s.expired = true) AS supporter_lapsed
+                           """;
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        return await connection.QueryFirstAsync<UpdatePromoProbe>(sql, new
+        {
+            userId = user.UserId,
+            discordUserId = (decimal)user.DiscordUserId,
+            commandNames = new[]
+            {
+                "featured", "recap", "jumble", "pixel", "remote", "queue", "streak", "taste", "discoverydate",
+                "lyrics", "discoveries", "lastlistened", "streaks"
+            }
+        });
     }
 
     private static string GetGuildPromoCacheKey(ulong? guildId = null)

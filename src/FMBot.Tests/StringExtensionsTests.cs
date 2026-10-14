@@ -32,6 +32,20 @@ public class StringExtensionsTests
     }
 
     [Test]
+    [TestCase("ÉXITO SONIDO TIMBAL 2025 🔥", "https://www.last.fm/music/CARNAVAL+EN+CAYAMBE+%F0%9F%87%AA%F0%9F%87%A8/_/%C3%89XITO+SONIDO+TIMBAL+2025+%F0%9F%94%A5",
+        "ÉXITO SONIDO TIMBAL 2025 🔥")]
+    [TestCase("U_05", "https://www.last.fm/music/Burial/_/U_05", @"U\_05")]
+    [TestCase("New Pigtails :(", "https://www.last.fm/music/LOVE+BANK/_/New+Pigtails+%3A(",
+        "[New Pigtails :(](https://www.last.fm/music/LOVE+BANK/_/New+Pigtails+%3A%28)")]
+    [TestCase("100%", "https://www.last.fm/music/msftz/_/100%25", "100%")]
+    [TestCase("Dog Days Are Over", "https://www.last.fm/music/Florence+%252B+the+Machine/_/Dog+Days+Are+Over",
+        "[Dog Days Are Over](https://www.last.fm/music/Florence+%252B+the+Machine/_/Dog+Days+Are+Over)")]
+    public void TestMarkdownLink(string text, string url, string expected)
+    {
+        Assert.That(StringExtensions.MarkdownLink(text, url), Is.EqualTo(expected));
+    }
+
+    [Test]
     [TestCase("<a href=\"https://www.last.fm/music/Muse\">Muse</a> are a rock band", "Muse are a rock band")]
     [TestCase("Formed in <b>1994</b>", "Formed in 1994")]
     [TestCase("foo<br />bar", "foo bar")]

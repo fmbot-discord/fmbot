@@ -37,6 +37,27 @@ public class OpenAIModels
     {
         [JsonPropertyName("type")]
         public string Type { get; set; }
+
+        [JsonPropertyName("name")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string Name { get; set; }
+
+        [JsonPropertyName("strict")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public bool? Strict { get; set; }
+
+        [JsonPropertyName("schema")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public object Schema { get; set; }
+    }
+
+    public class CoverCheck
+    {
+        [JsonPropertyName("category")]
+        public string Category { get; set; }
+
+        [JsonPropertyName("reason")]
+        public string Reason { get; set; }
     }
 
     public class TextConfig
