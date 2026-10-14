@@ -390,6 +390,8 @@ public class SupporterService
         public string[] UsedCommands { get; set; }
         public bool RecentPlaysCommand { get; set; }
         public bool HasFriends { get; set; }
+        public bool HasCloseFriends { get; set; }
+        public bool HasShortcuts { get; set; }
         public bool HasDiscogs { get; set; }
         public long? FooterOptions { get; set; }
         public DateTime? SupporterLapsed { get; set; }
@@ -457,12 +459,19 @@ public class SupporterService
             c => c.Context.Localize("update.promo.discoveryDate",
                 ("emote", EmojiProperties.Custom(DiscordConstants.Discoveries).ToDiscordString("discoveries")),
                 ("command", c.Command("discoverydate")))),
+        new("lastlistened", 1, UpdatePromoButton.Supporter,
+            c => !c.Supporter,
+            c => c.Context.Localize("update.promo.lastListened", ("command", c.Command("lastlistened")))),
         new("recent", 1, UpdatePromoButton.Supporter,
             c => !c.Supporter,
             c => c.Context.Localize("update.promo.recent", ("command", c.Command("recent")))),
         new("overview", 1, UpdatePromoButton.Supporter,
             c => !c.Supporter,
             c => c.Context.Localize("update.promo.overview", ("command", c.Command("overview")))),
+        new("graphs", 1, UpdatePromoButton.Supporter,
+            c => !c.Supporter,
+            c => c.Context.Localize("update.promo.graphs", ("command", c.Command("artist")),
+                ("example", c.Command("plays")))),
         new("lyrics", 1, UpdatePromoButton.Supporter,
             c => !c.Supporter && !c.InPremiumGuild,
             c => c.Context.Localize("update.promo.lyrics", ("command", c.Command("lyrics")))),
@@ -516,6 +525,28 @@ public class SupporterService
         new("perk-artistmilestones", 1, UpdatePromoButton.None,
             c => c.Supporter,
             c => c.Context.Localize("update.promo.perkArtistMilestones", ("command", c.Command("ams", "milestone")))),
+        new("perk-lyrics", 3, UpdatePromoButton.None,
+            c => c.Supporter && c.NeverUsed("lyrics"),
+            c => c.Context.Localize("update.promo.perkLyrics", ("command", c.Command("lyrics")))),
+        new("perk-discoveries", 1, UpdatePromoButton.None,
+            c => c.Supporter && c.NeverUsed("discoveries"),
+            c => c.Context.Localize("update.promo.perkDiscoveries",
+                ("emote", EmojiProperties.Custom(DiscordConstants.Discoveries).ToDiscordString("discoveries")),
+                ("command", c.Command("discoveries")))),
+        new("perk-lastlistened", 1, UpdatePromoButton.None,
+            c => c.Supporter && c.NeverUsed("lastlistened"),
+            c => c.Context.Localize("update.promo.perkLastListened", ("command", c.Command("lastlistened")))),
+        new("perk-closefriends", 1, UpdatePromoButton.None,
+            c => c.Supporter && c.Probe.HasFriends && !c.Probe.HasCloseFriends,
+            c => c.Context.Localize("update.promo.perkCloseFriends", ("command", c.Command("friendsfm")))),
+        new("perk-shortcuts", 1, UpdatePromoButton.None,
+            c => c.Supporter && c.TextCommand && !c.Probe.HasShortcuts,
+            c => c.Context.Localize("update.promo.perkShortcuts",
+                ("emote", EmojiProperties.Custom(DiscordConstants.Shortcut).ToDiscordString("shortcut")),
+                ("command", c.Command("shortcuts")))),
+        new("perk-streaks", 1, UpdatePromoButton.None,
+            c => c.Supporter && c.NeverUsed("streaks"),
+            c => c.Context.Localize("update.promo.perkStreaks", ("command", c.Command("streaks")))),
 
         new("tip-discogs", 1, UpdatePromoButton.None,
             c => !c.Probe.HasDiscogs,
@@ -671,6 +702,8 @@ public class SupporterService
                                          AND ui.command_name IN ('artistplays', 'albumplays', 'trackplays')
                                          AND ui.timestamp > now() - interval '30 days') AS recent_plays_command,
                                EXISTS (SELECT 1 FROM friends f WHERE f.user_id = @userId) AS has_friends,
+                               EXISTS (SELECT 1 FROM friends f WHERE f.user_id = @userId AND f.friend_type = 3) AS has_close_friends,
+                               EXISTS (SELECT 1 FROM user_shortcuts us WHERE us.user_id = @userId) AS has_shortcuts,
                                EXISTS (SELECT 1 FROM user_discogs d WHERE d.user_id = @userId) AS has_discogs,
                                (SELECT s.footer_options FROM user_fm_settings s WHERE s.user_id = @userId) AS footer_options,
                                (SELECT MAX(GREATEST(s.last_payment, s.modified)) FROM supporters s
@@ -687,7 +720,8 @@ public class SupporterService
             discordUserId = (decimal)user.DiscordUserId,
             commandNames = new[]
             {
-                "featured", "recap", "jumble", "pixel", "remote", "queue", "streak", "taste", "discoverydate"
+                "featured", "recap", "jumble", "pixel", "remote", "queue", "streak", "taste", "discoverydate",
+                "lyrics", "discoveries", "lastlistened", "streaks"
             }
         });
     }
