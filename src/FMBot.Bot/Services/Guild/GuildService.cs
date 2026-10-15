@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
 using FMBot.Bot.Extensions;
-using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Core;
 using FMBot.Domain;
@@ -12,18 +12,15 @@ using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
-using FMBot.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using NetCord;
 using NetCord.Rest;
-using NetCord.Services.ApplicationCommands;
 using NetCord.Services.Commands;
 using Npgsql;
 using Serilog;
 using Channel = FMBot.Persistence.Domain.Models.Channel;
-using GuildUser = FMBot.Persistence.Domain.Models.GuildUser;
 
 namespace FMBot.Bot.Services.Guild;
 
@@ -629,11 +626,12 @@ public class GuildService(
         return true;
     }
 
-    public async Task SendBotBrandingAuditLog(string description, string imageUrl = null, bool warning = false)
+    public async Task<string> SendBotBrandingAuditLog(string description, byte[] imageBytes = null,
+        string imageFileName = null, bool warning = false)
     {
         if (string.IsNullOrWhiteSpace(this._botSettings.Bot.SupporterAuditLogWebhookUrl))
         {
-            return;
+            return null;
         }
 
         try
@@ -646,16 +644,22 @@ public class GuildService(
                 .WithColor(warning ? DiscordConstants.WarningColorOrange : DiscordConstants.InformationColorBlue)
                 .WithTimestamp(DateTimeOffset.UtcNow);
 
-            if (!string.IsNullOrWhiteSpace(imageUrl))
+            var message = new WebhookMessageProperties { Embeds = [embed] };
+
+            if (imageBytes != null)
             {
-                embed.WithImage(imageUrl);
+                embed.WithImage($"attachment://{imageFileName}");
+                message.Attachments = [new AttachmentProperties(imageFileName, new MemoryStream(imageBytes))];
             }
 
-            await auditLogChannel.ExecuteAsync(new WebhookMessageProperties { Embeds = [embed] });
+            var sentMessage = await auditLogChannel.ExecuteAsync(message, wait: imageBytes != null);
+
+            return sentMessage?.Attachments.FirstOrDefault()?.Url;
         }
         catch (Exception e)
         {
             Log.Error(e, "Failed to send bot branding audit log");
+            return null;
         }
     }
 

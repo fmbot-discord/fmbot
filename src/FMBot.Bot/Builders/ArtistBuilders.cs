@@ -193,6 +193,7 @@ public class ArtistBuilders
         var guildFeaturedHistory = guildFeaturedHistoryTask != null ? await guildFeaturedHistoryTask : null;
 
         var showThumbnail = false;
+        Color? artistImageColor = null;
         if (fullArtist.SpotifyImageUrl != null)
         {
             var safeForChannelTask = this._censorService.IsSafeForChannel(context.DiscordGuild,
@@ -205,7 +206,8 @@ public class ArtistBuilders
                 showThumbnail = true;
             }
 
-            response.ComponentsContainer.WithAccentColor(await accentColorTask);
+            artistImageColor = await accentColorTask;
+            response.ComponentsContainer.WithAccentColor(artistImageColor);
         }
 
         var headerSection = new StringBuilder();
@@ -336,7 +338,7 @@ public class ArtistBuilders
                 }
 
                 playHistoryGraph = await this._graphService.BuildPlayHistoryGraph(context, response,
-                    playHistory.DailyPlays, "artist-plays.png");
+                    playHistory.DailyPlays, "artist-plays.png", imageColor: artistImageColor);
             }
             else
             {
@@ -1650,21 +1652,32 @@ public class ArtistBuilders
         return response;
     }
 
-    public static ResponseModel DiscoverySupporterRequired(ContextModel context, UserSettingsModel userSettings)
+    public static ResponseModel DiscoverySupporterRequired(ContextModel context, UserSettingsModel userSettings,
+        string source = "discoveries")
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed
+            ResponseType = ResponseType.ComponentsV2
         };
 
         if (context.ContextUser.UserType == UserType.User)
         {
-            response.Embed.WithDescription(context.Localize("artist.discoveriesSupporterRequired"));
+            var description = source switch
+            {
+                "discoverydate" => context.Localize("artist.discoveryDateSupporterRequired"),
+                "lastlistened" => context.Localize("artist.lastListenedSupporterRequired"),
+                _ => context.Localize("artist.discoveriesSupporterRequired")
+            };
 
-            response.Components = new ActionRowProperties()
-                .WithButton(context.Localize("buttons.getSupporter"), style: ButtonStyle.Primary,
-                    customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "discoveries"));
-            response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+            response.ComponentsContainer.WithAccentColor(DiscordConstants.InformationColorBlue);
+            response.ComponentsContainer.AddComponent(new TextDisplayProperties(description));
+
+            response.ComponentsContainer.WithSeparator();
+            response.ComponentsContainer.AddComponent(new ActionRowProperties()
+                .AddComponents(new ButtonProperties(
+                    InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: source),
+                    context.Localize("buttons.getFmbotSupporter"), ButtonStyle.Primary)));
+
             response.CommandResponse = CommandResponse.SupporterRequired;
 
             return response;
@@ -1672,12 +1685,16 @@ public class ArtistBuilders
 
         if (userSettings.UserType == UserType.User)
         {
-            response.Embed.WithDescription(context.Localize("artist.discoveriesOtherSupporterOnly"));
+            response.ComponentsContainer.WithAccentColor(DiscordConstants.InformationColorBlue);
+            response.ComponentsContainer.AddComponent(
+                new TextDisplayProperties(context.Localize("artist.discoveriesOtherSupporterOnly")));
 
-            response.Components = new ActionRowProperties()
-                .WithButton(".fmbot supporter", style: ButtonStyle.Secondary,
-                    customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "discoveries"));
-            response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+            response.ComponentsContainer.WithSeparator();
+            response.ComponentsContainer.AddComponent(new ActionRowProperties()
+                .AddComponents(new ButtonProperties(
+                    InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: source),
+                    ".fmbot supporter", ButtonStyle.Secondary)));
+
             response.CommandResponse = CommandResponse.SupporterRequired;
 
             return response;
@@ -3085,7 +3102,7 @@ public class ArtistBuilders
                 guildUsers.TryGetValue(neighbor.Key, out var guildUser);
                 pageString.AppendLine(
                     $"**{CalculateAffinityPercentage(neighbor.Value.TotalPoints, self.TotalPoints)}** — " +
-                    $"**{StringExtensions.MarkdownLink(StringExtensions.Sanitize(guildUser?.UserName), LastfmUrlExtensions.GetUserUrl(guildUser?.UserNameLastFM))}** — " +
+                    $"**{StringExtensions.MarkdownLink(guildUser?.UserName, LastfmUrlExtensions.GetUserUrl(guildUser?.UserNameLastFM))}** — " +
                     $"`{CalculateAffinityPercentage(neighbor.Value.ArtistPoints, self.ArtistPoints)}` artists, " +
                     $"`{CalculateAffinityPercentage(neighbor.Value.GenrePoints, self.GenrePoints, 1)}` genres, " +
                     $"`{CalculateAffinityPercentage(neighbor.Value.CountryPoints, self.CountryPoints, 1)}` countries");

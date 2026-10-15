@@ -463,8 +463,13 @@ public class TrackBuilders
                     }
                 }
 
+                Color? albumImageColor = albumCoverUrl != null
+                    ? await this._albumService.GetAlbumImageColor(context, albumCoverUrl, databaseAlbum.Id,
+                        trackSearch.Track.AlbumName, trackSearch.Track.ArtistName)
+                    : null;
+
                 playHistoryGraph = await this._graphService.BuildPlayHistoryGraph(context, response,
-                    playHistory.DailyPlays, "track-plays.png");
+                    playHistory.DailyPlays, "track-plays.png", imageColor: albumImageColor);
             }
             else
             {
@@ -2377,25 +2382,35 @@ public class TrackBuilders
 
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed
+            ResponseType = ResponseType.ComponentsV2
         };
 
-        response.Embed.WithDescription(
-            "Viewing track lyrics in .fmbot is only available for .fmbot supporters.\n" +
-            "-# Or unlock it for everyone in this server with Premium server.");
+        response.ComponentsContainer.WithAccentColor(DiscordConstants.InformationColorBlue);
 
-        var components = new ActionRowProperties()
-            .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
-                customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "lyrics"));
+        response.ComponentsContainer.AddComponent(new ComponentSectionProperties(new ButtonProperties(
+            InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "lyrics"),
+            "Get supporter", ButtonStyle.Primary))
+        {
+            Components =
+            [
+                new TextDisplayProperties("Viewing track lyrics in .fmbot is only available for .fmbot supporters.")
+            ]
+        });
 
         if (context.DiscordGuild != null)
         {
-            components = components.WithButton("Premium server", style: ButtonStyle.Secondary,
-                customId: $"{InteractionConstants.PremiumServer.GetOverview}:lyrics");
+            response.ComponentsContainer.WithSeparator();
+            response.ComponentsContainer.AddComponent(new ComponentSectionProperties(new ButtonProperties(
+                $"{InteractionConstants.PremiumServer.GetOverview}:lyrics",
+                "Premium server", ButtonStyle.Secondary))
+            {
+                Components =
+                [
+                    new TextDisplayProperties("Or unlock it for everyone in this server with Premium server.")
+                ]
+            });
         }
 
-        response.Components = components;
-        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
         response.CommandResponse = CommandResponse.SupporterRequired;
 
         return response;

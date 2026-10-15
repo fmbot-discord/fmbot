@@ -444,10 +444,11 @@ public class RecapBuilders
                 }
                 else
                 {
-                    response.Embed.Description = ArtistBuilders.DiscoverySupporterRequired(context, userSettings).Embed
-                        .Description;
+                    response.Embed.Description = context.ContextUser.UserType == UserType.User
+                        ? context.Localize("artist.discoveriesSupporterRequired")
+                        : context.Localize("artist.discoveriesOtherSupporterOnly");
                     response.Embed.WithColor(DiscordConstants.InformationColorBlue);
-                    response.Components.WithButton(context.Localize("buttons.getSupporter"), style: ButtonStyle.Primary,
+                    response.Components.WithButton(context.Localize("buttons.getFmbotSupporter"), style: ButtonStyle.Primary,
                         customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "recap-discoveries"));
                 }
 
@@ -593,7 +594,7 @@ public class RecapBuilders
                 {
                     response.Embed.WithDescription(context.Localize("recap.listeningTimeSupporterRequired"));
                     response.Embed.WithColor(DiscordConstants.InformationColorBlue);
-                    response.Components.WithButton(context.Localize("buttons.getSupporter"), style: ButtonStyle.Primary,
+                    response.Components.WithButton(context.Localize("buttons.getFmbotSupporter"), style: ButtonStyle.Primary,
                         customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "recap-listeningtime"));
                 }
 

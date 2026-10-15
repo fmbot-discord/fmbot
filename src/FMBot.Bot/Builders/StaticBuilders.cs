@@ -259,7 +259,7 @@ public class StaticBuilders
         {
             container.WithTextDisplay(
                 "⭐ Take your .fmbot experience to the next level with new features and benefits. " +
-                "Import and use your history, access extra statistics, play unlimited games, support development and much more. " +
+                "Import and use your history, access extra statistics and graphs, play unlimited games, support development and much more. " +
                 "Please note that .fmbot is not affiliated with Last.fm.");
         }
 
@@ -335,11 +335,38 @@ public class StaticBuilders
             {
                 var pricing = await this._supporterService.GetPricing(userLocale, stripeSupporter?.Currency);
 
+                var showLifetime = pricing.LifetimePriceId != null &&
+                                   pricing.LifetimePriceString != null &&
+                                   pricing.LifetimeSubText != null;
+
+                var createLinks = !SupporterService.IsSupporter(context.ContextUser.UserType);
+
+                var monthlyLinkTask = createLinks
+                    ? this._supporterService.GetSupporterCheckoutLink(context.DiscordUser.Id,
+                        context.DiscordUser.Username, context.ContextUser.UserNameLastFM, "monthly", pricing,
+                        stripeSupporter, source)
+                    : Task.FromResult<string>(null);
+                var yearlyLinkTask = createLinks
+                    ? this._supporterService.GetSupporterCheckoutLink(context.DiscordUser.Id,
+                        context.DiscordUser.Username, context.ContextUser.UserNameLastFM, "yearly", pricing,
+                        stripeSupporter, source)
+                    : Task.FromResult<string>(null);
+                var lifetimeLinkTask = createLinks && showLifetime
+                    ? this._supporterService.GetSupporterCheckoutLink(context.DiscordUser.Id,
+                        context.DiscordUser.Username, context.ContextUser.UserNameLastFM, "lifetime", pricing,
+                        stripeSupporter, source)
+                    : Task.FromResult<string>(null);
+
+                await Task.WhenAll(monthlyLinkTask, yearlyLinkTask, lifetimeLinkTask);
+
+                var shownLinks = showLifetime
+                    ? new[] { monthlyLinkTask.Result, yearlyLinkTask.Result, lifetimeLinkTask.Result }
+                    : new[] { monthlyLinkTask.Result, yearlyLinkTask.Result };
+                var useDirectLinks = shownLinks.All(l => !string.IsNullOrEmpty(l) && l.Length <= 512);
+
                 container.WithSeparator();
                 container.AddComponent(new ComponentSectionProperties(
-                    new ButtonProperties(
-                        $"{InteractionConstants.SupporterLinks.GetPurchaseLink}:monthly:{source}", "Get monthly",
-                        ButtonStyle.Primary))
+                    CheckoutButton(useDirectLinks, monthlyLinkTask.Result, "monthly", "Get monthly", source))
                 {
                     Components =
                     [
@@ -349,9 +376,7 @@ public class StaticBuilders
                 });
                 container.WithSeparator();
                 container.AddComponent(new ComponentSectionProperties(
-                    new ButtonProperties(
-                        $"{InteractionConstants.SupporterLinks.GetPurchaseLink}:yearly:{source}", "Get yearly",
-                        ButtonStyle.Primary))
+                    CheckoutButton(useDirectLinks, yearlyLinkTask.Result, "yearly", "Get yearly", source))
                 {
                     Components =
                     [
@@ -360,15 +385,11 @@ public class StaticBuilders
                     ]
                 });
 
-                if (pricing.LifetimePriceId != null &&
-                    pricing.LifetimePriceString != null &&
-                    pricing.LifetimeSubText != null)
+                if (showLifetime)
                 {
                     container.WithSeparator();
                     container.AddComponent(new ComponentSectionProperties(
-                        new ButtonProperties(
-                            $"{InteractionConstants.SupporterLinks.GetPurchaseLink}:lifetime:{source}", "Get lifetime",
-                            ButtonStyle.Primary))
+                        CheckoutButton(useDirectLinks, lifetimeLinkTask.Result, "lifetime", "Get lifetime", source))
                     {
                         Components =
                         [
@@ -403,6 +424,18 @@ public class StaticBuilders
         }
 
         return response;
+    }
+
+    private static IButtonProperties CheckoutButton(bool useDirectLink, string link, string type, string label,
+        string source)
+    {
+        if (!useDirectLink)
+        {
+            return new ButtonProperties($"{InteractionConstants.SupporterLinks.GetPurchaseLink}:{type}:{source}", label,
+                ButtonStyle.Primary);
+        }
+
+        return new LinkButtonProperties(link, label);
     }
 
     public async Task<ResponseModel> BuildGiftSupporterResponse(ulong purchaserDiscordId, User recipient,

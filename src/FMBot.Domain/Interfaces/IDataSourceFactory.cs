@@ -9,7 +9,8 @@ namespace FMBot.Domain.Interfaces;
 public interface IDataSourceFactory
 {
     Task<Response<RecentTrackList>> GetRecentTracksAsync(string lastFmUserName, int count = 2, bool useCache = false,
-        string sessionKey = null, long? fromUnixTimestamp = null, int amountOfPages = 1, int errorRetries = 1);
+        string sessionKey = null, long? fromUnixTimestamp = null, int amountOfPages = 1, int errorRetries = 1,
+        Action<long, long> onPageFetched = null);
 
     Task<long?> GetScrobbleCountFromDateAsync(string lastFmUserName, long? from = null, string sessionKey = null,
         long? until = null);

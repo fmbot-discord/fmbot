@@ -1031,7 +1031,7 @@ public class PlayBuilder
 
             container.WithTextDisplay(context.Localize("recent.title",
                 ("user",
-                    $"{StringExtensions.MarkdownLink(StringExtensions.Sanitize(userSettings.DisplayName), recentTracks.Content.UserRecentTracksUrl)}{userSettings.UserType.UserTypeToIcon()}")));
+                    $"{StringExtensions.MarkdownLink(userSettings.DisplayName, recentTracks.Content.UserRecentTracksUrl)}{userSettings.UserType.UserTypeToIcon()}")));
 
             foreach (var track in trackPage)
             {
@@ -1176,7 +1176,7 @@ public class PlayBuilder
 
         response.ComponentsContainer.WithAccentColor(DiscordConstants.LastFmColorRed);
         response.ComponentsContainer.WithTextDisplay(context.Localize("streak.overviewTitle",
-            ("user", $"{StringExtensions.MarkdownLink(StringExtensions.Sanitize(userSettings.DisplayName), $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library")}{userSettings.UserType.UserTypeToIcon()}")));
+            ("user", $"{StringExtensions.MarkdownLink(userSettings.DisplayName, $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library")}{userSettings.UserType.UserTypeToIcon()}")));
 
         string emoji = null;
         if (PlayService.StreakExists(streak))
@@ -1260,7 +1260,7 @@ public class PlayBuilder
         var libraryUrl = $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library";
         var title = !userSettings.DifferentUser
             ? context.Localize("streak.historyTitleSelf",
-                ("user", StringExtensions.MarkdownLink(StringExtensions.Sanitize(userTitle), libraryUrl)))
+                ("user", StringExtensions.MarkdownLink(userTitle, libraryUrl)))
             : context.Localize("streak.historyTitleOther",
                 ("user", StringExtensions.MarkdownLink(userSettings.UserNameLastFm, libraryUrl)),
                 ("requester", StringExtensions.Sanitize(userTitle)));
@@ -1567,7 +1567,7 @@ public class PlayBuilder
             var container = new ComponentContainerProperties();
 
             container.WithTextDisplay(context.Localize("overview.title",
-                ("user", $"{StringExtensions.MarkdownLink(StringExtensions.Sanitize(userSettings.DisplayName), $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library?date_preset=LAST_7_DAYS")}{userSettings.UserType.UserTypeToIcon()}")));
+                ("user", $"{StringExtensions.MarkdownLink(userSettings.DisplayName, $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library?date_preset=LAST_7_DAYS")}{userSettings.UserType.UserTypeToIcon()}")));
 
             container.WithSeparator();
 
@@ -1899,7 +1899,7 @@ public class PlayBuilder
             response.Embed.WithDescription(context.Localize("milestone.artistSupporterRequired"));
 
             response.Components = new ActionRowProperties()
-                .WithButton(context.Localize("buttons.getSupporter"), style: ButtonStyle.Primary,
+                .WithButton(context.Localize("buttons.getFmbotSupporter"), style: ButtonStyle.Primary,
                     customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "artistmilestone"));
             response.Embed.WithColor(DiscordConstants.InformationColorBlue);
             response.CommandResponse = CommandResponse.SupporterRequired;

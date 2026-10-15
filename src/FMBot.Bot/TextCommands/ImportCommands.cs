@@ -8,6 +8,7 @@ using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
 using NetCord;
@@ -36,8 +37,19 @@ public class ImportCommands(
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
 
+        PlaySource? importSource = null;
+        if (this.Context.Message.Content.Contains("spotify", StringComparison.OrdinalIgnoreCase))
+        {
+            importSource = PlaySource.SpotifyImport;
+        }
+        else if (this.Context.Message.Content.Contains("apple", StringComparison.OrdinalIgnoreCase))
+        {
+            importSource = PlaySource.AppleMusicImport;
+        }
+
         var supporterRequiredResponse =
-            ImportBuilders.ImportSupporterRequired(new ContextModel(this.Context, prfx, contextUser));
+            ImportBuilders.ImportSupporterRequired(new ContextModel(this.Context, prfx, contextUser),
+                importSource: importSource);
 
         if (supporterRequiredResponse != null)
         {
@@ -47,11 +59,11 @@ public class ImportCommands(
         }
 
         ResponseModel response;
-        if (this.Context.Message.Content.Contains("spotify", StringComparison.OrdinalIgnoreCase))
+        if (importSource == PlaySource.SpotifyImport)
         {
             response = await importBuilders.GetSpotifyImportInstructions(new ContextModel(this.Context, prfx, contextUser));
         }
-        else if (this.Context.Message.Content.Contains("apple", StringComparison.OrdinalIgnoreCase))
+        else if (importSource == PlaySource.AppleMusicImport)
         {
             response = await importBuilders.GetAppleMusicImportInstructions(new ContextModel(this.Context, prfx, contextUser));
         }

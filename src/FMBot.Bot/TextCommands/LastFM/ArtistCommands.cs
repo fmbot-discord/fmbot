@@ -420,6 +420,7 @@ public class ArtistCommands(
     [UsernameSetRequired]
     [GuildOnly]
     [RequiresIndex]
+    [PremiumServerEnhanced("Premium servers can filter WhoKnows by role, limit it to allowed roles, hide blocked roles and hide members who haven't talked in the server recently")]
     [CommandCategories(CommandCategory.Artists, CommandCategory.WhoKnows)]
     public async Task WhoKnowsAsync([CommandParameter(Remainder = true)] string artistValues = null)
     {

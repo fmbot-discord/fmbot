@@ -40,7 +40,6 @@ public class PremiumGuildCommands(
     [Summary("Unlock server-wide perks and automation for this server")]
     [CommandCategories(CommandCategory.ServerSettings)]
     [GuildOnly]
-    [UsernameSetRequired]
     public async Task PremiumServerAsync([CommandParameter(Remainder = true)] string unused = null)
     {
         try
@@ -91,8 +90,8 @@ public class PremiumGuildCommands(
                     return;
                 }
 
-                var error = await premiumSettingBuilder.SetGuildBotAvatar(this.Context.Client.Rest,
-                    this.Context.Guild, attachment.Url, attachment.Size);
+                var error = await premiumSettingBuilder.UploadGuildBotAvatar(this.Context.Client.Rest,
+                    this.Context.Guild, this.Context.User, attachment);
 
                 if (error != null)
                 {
@@ -101,19 +100,6 @@ public class PremiumGuildCommands(
                     await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
                     return;
                 }
-
-                var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
-                if (guild.FeaturedMode is null or GuildFeaturedMode.GlobalFeatured)
-                {
-                    await this._guildService.SetFeaturedModeAsync(this.Context.Guild,
-                        GuildFeaturedMode.CustomBotGlobalFeatured);
-                }
-
-                await this._guildService.SendBotBrandingAuditLog(
-                    $"🖼️ **Custom bot avatar set**\n" +
-                    $"Server: **{StringExtensions.Sanitize(this.Context.Guild.Name)}** — `{this.Context.Guild.Id}`\n" +
-                    $"By: <@{this.Context.User.Id}> — `{this.Context.User.Username}`",
-                    attachment.Url);
             }
 
             var response = await premiumSettingBuilder.BotBranding(context);

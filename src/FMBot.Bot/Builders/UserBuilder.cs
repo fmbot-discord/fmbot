@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Fergun.Interactive;
 using Fergun.Interactive.Pagination;
@@ -517,6 +518,7 @@ public class UserBuilder
         }
 
         container.AddComponents(accentColorMenu);
+        container.WithTextDisplay("Also used by `album`, `track`, `cover` and WhoKnows commands with album covers");
 
         container.WithSeparator();
         container.WithTextDisplay("**Adjust small text type**");
@@ -844,7 +846,7 @@ public class UserBuilder
 
         container.WithSeparator();
 
-        var graphColor = context.ContextUser.GraphColor ?? GraphColor.EmbedColor;
+        var graphColor = context.ContextUser.GraphColor ?? GraphColor.ImageColor;
         if (graphColor == GraphColor.Custom &&
             isSupporter &&
             ColorExtensions.TryParseHexColor(context.ContextUser.GraphCustomColor, out var customGraphColor))
@@ -1817,7 +1819,7 @@ public class UserBuilder
                 container.WithSeparator();
                 container.AddComponents(new ComponentSectionProperties(new ButtonProperties(
                     InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "judge-dailylimit"),
-                    context.Localize("buttons.getSupporter"), ButtonStyle.Primary))
+                    context.Localize("buttons.getFmbotSupporter"), ButtonStyle.Primary))
                 {
                     Components =
                     [
@@ -2326,37 +2328,14 @@ public class UserBuilder
         return response;
     }
 
-    public static ResponseModel UpdatePlaysInit(ContextModel context)
-    {
-        var response = new ResponseModel
-        {
-            ResponseType = ResponseType.Embed
-        };
-
-        response.Embed.WithDescription(
-            $"<a:loading:821676038102056991> {context.Localize("update.fetchingScrobbles", ("user", context.ContextUser.UserNameLastFM))}");
-
-        return response;
-    }
-
     public async Task<ResponseModel> UpdatePlays(ContextModel context)
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed
+            ResponseType = ResponseType.ComponentsV2
         };
 
         var update = await this._updateService.UpdateUserAndGetRecentTracks(context.ContextUser);
-
-        var updatePromo =
-            await this._supporterService.GetPromotionalUpdateMessage(context.ContextUser, context.Prefix,
-                context.DiscordGuild?.Id);
-        var upgradeButton = new ActionRowProperties().WithButton(context.Localize("buttons.getFmbotSupporter"),
-            style: ButtonStyle.Secondary,
-            customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: updatePromo.supporterSource));
-        var premiumServerButton = new ActionRowProperties().AddComponents(new ButtonProperties(
-            $"{InteractionConstants.PremiumServer.GetOverview}:{updatePromo.supporterSource}",
-            context.Localize("buttons.premiumServer"), ButtonStyle.Secondary));
 
         if (GenericEmbedService.RecentScrobbleCallFailed(update))
         {
@@ -2364,6 +2343,7 @@ public class UserBuilder
         }
 
         var updatedDescription = new StringBuilder();
+        var showPromo = false;
 
         if (update.Content.NewRecentTracksAmount == 0 && update.Content.RemovedRecentTracksAmount == 0)
         {
@@ -2412,25 +2392,8 @@ public class UserBuilder
             }
             else
             {
-                if (updatePromo.message != null)
-                {
-                    updatedDescription.AppendLine();
-                    updatedDescription.AppendLine(updatePromo.message);
-                    if (updatePromo.showUpgradeButton)
-                    {
-                        response.Components = upgradeButton;
-                    }
-                    else if (updatePromo.showPremiumServerButton)
-                    {
-                        response.Components = premiumServerButton;
-                    }
-                }
+                showPromo = true;
             }
-
-            response.Embed =
-                new EmbedProperties()
-                    .WithDescription(updatedDescription.ToString())
-                    .WithColor(DiscordConstants.SuccessColorGreen);
         }
         else
         {
@@ -2448,26 +2411,31 @@ public class UserBuilder
                     ("removedScrobbles", context.LocalizeCount("update.removedScrobbles", update.Content.RemovedRecentTracksAmount))));
             }
 
-            if (updatePromo.message != null)
-            {
-                updatedDescription.AppendLine();
-                updatedDescription.AppendLine(updatePromo.message);
-                if (updatePromo.showUpgradeButton)
-                {
-                    response.Components = upgradeButton;
-                }
-                else if (updatePromo.showPremiumServerButton)
-                {
-                    response.Components = premiumServerButton;
-                }
-            }
-
-            response.Embed = new EmbedProperties()
-                .WithDescription(updatedDescription.ToString())
-                .WithColor(DiscordConstants.SuccessColorGreen);
+            showPromo = true;
         }
 
-        await this._userService.UpdateLinkedRole(context.ContextUser.DiscordUserId);
+        response.ComponentsContainer.WithAccentColor(DiscordConstants.SuccessColorGreen);
+        response.ComponentsContainer.WithTextDisplay(updatedDescription.ToString());
+
+        if (showPromo)
+        {
+            var promo = await this._supporterService.GetUpdatePromo(context);
+            if (promo.message != null)
+            {
+                response.ComponentsContainer.WithSeparator();
+                if (promo.button != null)
+                {
+                    response.ComponentsContainer.AddComponent(new ComponentSectionProperties(promo.button,
+                        [new TextDisplayProperties(promo.message)]));
+                }
+                else
+                {
+                    response.ComponentsContainer.WithTextDisplay(promo.message);
+                }
+            }
+        }
+
+        _ = this._userService.UpdateLinkedRole(context.ContextUser.DiscordUserId).ObserveFaults();
 
         return response;
     }
@@ -2476,7 +2444,7 @@ public class UserBuilder
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed
+            ResponseType = ResponseType.ComponentsV2
         };
 
         if (PublicProperties.IssuesAtLastFm)
@@ -2491,86 +2459,118 @@ public class UserBuilder
                 issueDescription.AppendLine($"*{PublicProperties.IssuesReason}*");
             }
 
-            response.Embed.WithDescription(issueDescription.ToString());
-            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+            response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
+            response.ComponentsContainer.WithTextDisplay(issueDescription.ToString());
             response.CommandResponse = CommandResponse.Disabled;
             return response;
         }
 
-        if (context.ContextUser.LastIndexed > DateTime.UtcNow.AddMinutes(-30))
-        {
-            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
-            response.Embed.WithDescription(context.Localize("update.fullUpdateCooldown",
-                ("command", $"{context.Prefix}outofsync")));
-            response.CommandResponse = CommandResponse.Cooldown;
-            return response;
-        }
+        // if (context.ContextUser.LastIndexed > DateTime.UtcNow.AddMinutes(-30))
+        // {
+        //     response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
+        //     response.ComponentsContainer.WithTextDisplay(context.Localize("update.fullUpdateCooldown",
+        //         ("command", $"{context.Prefix}outofsync")));
+        //     response.CommandResponse = CommandResponse.Cooldown;
+        //     return response;
+        // }
 
         var indexAlreadyStarted = this._indexService.IndexStarted(context.ContextUser.UserId);
 
         if (!indexAlreadyStarted)
         {
-            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
-            response.Embed.WithDescription(context.Localize("update.advancedUpdateAlreadyStarted"));
+            response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
+            response.ComponentsContainer.WithTextDisplay(context.Localize("update.advancedUpdateAlreadyStarted"));
             response.CommandResponse = CommandResponse.Cooldown;
             return response;
         }
 
-        var indexDescription = new StringBuilder();
-        indexDescription.AppendLine(
-            $"<a:loading:821676038102056991> {context.Localize("update.fetchingPlaycounts", ("user", context.ContextUser.UserNameLastFM))}");
-        indexDescription.AppendLine();
-        indexDescription.AppendLine(context.Localize("update.cachesBeingRebuilt"));
+        return UpdateOptionsProgress(context, updateType, null);
+    }
 
-        if (updateType.HasFlag(UpdateType.Full))
+    private static ResponseModel UpdateOptionsProgress(ContextModel context, UpdateType updateType,
+        IndexedUserStats progress)
+    {
+        var response = new ResponseModel
         {
-            indexDescription.AppendLine(context.Localize("update.typeEverything"));
+            ResponseType = ResponseType.ComponentsV2
+        };
+
+        var completed = progress?.CompletedUpdates ?? default;
+        var failed = progress?.FailedUpdates ?? default;
+        var loading = EmojiProperties.Custom(DiscordConstants.Loading).ToDiscordString("loading", true);
+        var currentPhaseFound = false;
+        var checklist = new StringBuilder();
+
+        void AddPhase(UpdateType phase, string label)
+        {
+            if (!updateType.HasFlag(UpdateType.Full) && !updateType.HasFlag(phase))
+            {
+                return;
+            }
+
+            string icon;
+            if (failed.HasFlag(phase))
+            {
+                icon = "❌";
+            }
+            else if (completed.HasFlag(phase))
+            {
+                icon = "✅";
+            }
+            else if (!currentPhaseFound)
+            {
+                icon = loading;
+                currentPhaseFound = true;
+            }
+            else
+            {
+                icon = "▫️";
+            }
+
+            checklist.AppendLine($"{icon} {label}");
+        }
+
+        var allPlays = SupporterService.IsSupporter(context.ContextUser.UserType);
+        string playsLabel;
+        if (progress?.PlaysExpected > 0 && !completed.HasFlag(UpdateType.AllPlays))
+        {
+            var fetched = progress.PlaysFetched.Format(context.NumberFormat);
+            var total = progress.PlaysExpected.Format(context.NumberFormat);
+            playsLabel = allPlays
+                ? context.Localize("update.progressPlaysCount", ("fetched", fetched), ("total", total))
+                : context.Localize("update.progressLastPlaysCount", ("fetched", fetched), ("total", total));
         }
         else
         {
-            if (updateType.HasFlag(UpdateType.AllPlays))
-            {
-                indexDescription.AppendLine(SupporterService.IsSupporter(context.ContextUser.UserType)
-                    ? context.Localize("update.typeAllScrobbles")
-                    : context.Localize("update.typeLastScrobbles",
-                        ("amount", Constants.NonSupporterMaxSavedPlays.ToString())));
-            }
-
-            if (updateType.HasFlag(UpdateType.Artists))
-            {
-                indexDescription.AppendLine(context.Localize("update.typeTopArtists"));
-            }
-
-            if (updateType.HasFlag(UpdateType.Albums))
-            {
-                indexDescription.AppendLine(context.Localize("update.typeTopAlbums"));
-            }
-
-            if (updateType.HasFlag(UpdateType.Tracks))
-            {
-                indexDescription.AppendLine(context.Localize("update.typeTopTracks"));
-            }
+            playsLabel = allPlays
+                ? context.Localize("update.progressPlays")
+                : context.Localize("update.progressLastPlays");
         }
 
-        indexDescription.AppendLine();
+        AddPhase(UpdateType.AllPlays, playsLabel);
+        AddPhase(UpdateType.Artists, context.Localize("update.progressTopArtists"));
+        AddPhase(UpdateType.Albums, context.Localize("update.progressTopAlbums"));
+        AddPhase(UpdateType.Tracks, context.Localize("update.progressTopTracks"));
+
+        response.ComponentsContainer.WithAccentColor(DiscordConstants.InformationColorBlue);
+        response.ComponentsContainer.WithTextDisplay(
+            $"### {context.Localize("update.fetchingPlaycounts", ("user", context.ContextUser.UserNameLastFM))}");
+        response.ComponentsContainer.WithTextDisplay(checklist.ToString());
 
         if (context.ContextUser.UserType != UserType.User)
         {
-            indexDescription.AppendLine(context.Localize("update.supporterFullHistory",
-                ("userType", context.ContextUser.UserType.ToString().ToLower())));
+            response.ComponentsContainer.WithSeparator();
+            response.ComponentsContainer.WithTextDisplay($"{context.Localize("update.supporterFullHistory",
+                ("userType", context.ContextUser.UserType.ToString().ToLower()))}");
         }
-
-        response.Embed.WithDescription(indexDescription.ToString());
 
         return response;
     }
 
-    public async Task<ResponseModel> UpdateOptions(ContextModel context, UpdateType updateType)
+    public async Task<ResponseModel> UpdateOptions(ContextModel context, UpdateType updateType,
+        Func<ResponseModel, Task> sendProgress)
     {
-        var response = new ResponseModel
-        {
-            ResponseType = ResponseType.Embed
-        };
+        var lastEdit = DateTime.UtcNow;
 
         if (!updateType.HasFlag(UpdateType.Full) && !updateType.HasFlag(UpdateType.AllPlays))
         {
@@ -2579,29 +2579,129 @@ public class UserBuilder
 
             if (GenericEmbedService.RecentScrobbleCallFailed(update))
             {
-                return GenericEmbedService.RecentScrobbleCallFailedResponse(update, context.ContextUser.UserNameLastFM, context.Localizer);
+                var failedResponse = GenericEmbedService.RecentScrobbleCallFailedResponse(update,
+                    context.ContextUser.UserNameLastFM, context.Localizer);
+                failedResponse.ResponseType = ResponseType.ComponentsV2;
+
+                await WaitForEditGap(lastEdit);
+                return failedResponse;
             }
         }
 
-        var result = await this._indexService.ModularUpdate(context.ContextUser, updateType);
+        IndexedUserStats latestProgress = null;
+        var progressChanged = false;
+        using var progressCancellation = new CancellationTokenSource();
 
-        var description = UserService.GetIndexCompletedUserStats(context.ContextUser, result, context.NumberFormat,
-            context.Localizer);
+        var progressLoop = Task.Run(async () =>
+        {
+            while (true)
+            {
+                try
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(2), progressCancellation.Token);
+                }
+                catch (OperationCanceledException)
+                {
+                    return;
+                }
 
-        response.Embed = new EmbedProperties()
-            .WithDescription(description.description)
-            .WithColor(result.UpdateError != true
-                ? DiscordConstants.SuccessColorGreen
-                : DiscordConstants.WarningColorOrange);
-        response.Components = description.promo
-            ? new ActionRowProperties()
-                .WithButton(context.Localize("buttons.getFmbotSupporter"), style: ButtonStyle.Secondary,
-                    customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "update-alldata"))
-            : null;
+                if (!progressChanged)
+                {
+                    continue;
+                }
 
-        await this._userService.UpdateLinkedRole(context.DiscordUser.Id);
+                progressChanged = false;
 
+                try
+                {
+                    await sendProgress(UpdateOptionsProgress(context, updateType, latestProgress));
+                }
+                catch (Exception e)
+                {
+                    Log.Warning(e, "Update: Could not edit progress message for {userId}", context.ContextUser.UserId);
+                    return;
+                }
+                finally
+                {
+                    lastEdit = DateTime.UtcNow;
+                }
+            }
+        });
+
+        IndexedUserStats result;
+        try
+        {
+            result = await this._indexService.ModularUpdate(context.ContextUser, updateType,
+                onProgress: progress =>
+                {
+                    latestProgress = progress;
+                    progressChanged = true;
+                });
+        }
+        finally
+        {
+            await progressCancellation.CancelAsync();
+            await progressLoop;
+        }
+
+        var completedStats = UserService.GetIndexCompletedUserStats(context.ContextUser, result,
+            context.NumberFormat, context.Localizer);
+
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.ComponentsV2
+        };
+
+        response.ComponentsContainer.WithAccentColor(result.UpdateError != true
+            ? DiscordConstants.SuccessColorGreen
+            : DiscordConstants.WarningColorOrange);
+        response.ComponentsContainer.WithTextDisplay($"### {completedStats.header}");
+
+        if (!string.IsNullOrWhiteSpace(completedStats.description))
+        {
+            response.ComponentsContainer.WithTextDisplay(completedStats.description);
+        }
+
+        if (result.UpdateError != true && result.ImportCount != null)
+        {
+            var plays = await this._playService.GetPlaysWithDataSource(context.ContextUser.UserId,
+                context.ContextUser.DataSource);
+            var importGraph = this._graphService.BuildImportGraph(context, response, plays,
+                context.ContextUser.DataSource, "imports.png");
+            if (importGraph != null)
+            {
+                response.ComponentsContainer.WithSeparator();
+                response.ComponentsContainer.AddComponent(importGraph);
+            }
+        }
+
+        if (completedStats.promo != null)
+        {
+            response.ComponentsContainer.WithSeparator();
+            response.ComponentsContainer.AddComponents(new ComponentSectionProperties(new ButtonProperties(
+                InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "update-alldata"),
+                context.Localize("buttons.getSupporter"), ButtonStyle.Secondary))
+            {
+                Components =
+                [
+                    new TextDisplayProperties(completedStats.promo)
+                ]
+            });
+        }
+
+        _ = this._userService.UpdateLinkedRole(context.DiscordUser.Id).ObserveFaults();
+
+        await WaitForEditGap(lastEdit);
         return response;
+    }
+
+    private static async Task WaitForEditGap(DateTime lastEdit)
+    {
+        var sinceLastEdit = DateTime.UtcNow - lastEdit;
+        if (sinceLastEdit < TimeSpan.FromSeconds(1))
+        {
+            await Task.Delay(TimeSpan.FromSeconds(1) - sinceLastEdit);
+        }
     }
 
     public static ResponseModel ShortcutsSupporterRequired(ContextModel context)

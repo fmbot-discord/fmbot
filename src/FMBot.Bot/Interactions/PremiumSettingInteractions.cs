@@ -48,7 +48,7 @@ public class PremiumSettingInteractions(
 
             if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
             {
-                await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
+                await guildSettingBuilder.UserNotAllowedResponse(this.Context);
                 await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
                 return;
             }
@@ -113,7 +113,7 @@ public class PremiumSettingInteractions(
 
             if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
             {
-                await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
+                await guildSettingBuilder.UserNotAllowedResponse(this.Context);
                 await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
                 return;
             }
@@ -152,7 +152,7 @@ public class PremiumSettingInteractions(
         {
             if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
             {
-                await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
+                await guildSettingBuilder.UserNotAllowedResponse(this.Context);
                 await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
                 return;
             }
@@ -166,6 +166,92 @@ public class PremiumSettingInteractions(
                 $"🗑️ **Custom bot avatar removed**\n" +
                 $"Server: **{StringExtensions.Sanitize(this.Context.Guild.Name)}** — `{this.Context.Guild.Id}`\n" +
                 $"By: <@{this.Context.User.Id}> — `{this.Context.User.Username}`");
+
+            var response = await premiumSettingBuilder.BotBranding(new ContextModel(this.Context), this.Context.User);
+            await this.Context.UpdateInteractionEmbed(response);
+            await this.Context.LogCommandUsedAsync(response, userService);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.BotBranding.UploadAvatar)]
+    [ServerStaffOnly]
+    public async Task UploadBotBrandingAvatarButton()
+    {
+        try
+        {
+            if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
+            {
+                var premiumRequiredResponse = PremiumSettingBuilder.PremiumServerRequired("botbranding",
+                    "**Custom bot branding** gives .fmbot a custom avatar and look in this server. You can also enable **server featured**, a rotating featured based on your own server's members.");
+                await this.Context.SendResponse(interactivity, premiumRequiredResponse, userService, true);
+                await this.Context.LogCommandUsedAsync(premiumRequiredResponse, userService);
+                return;
+            }
+
+            var guild = await guildService.GetGuildAsync(this.Context.Guild.Id);
+            if (guild?.FeaturedMode != GuildFeaturedMode.CustomBotGlobalFeatured)
+            {
+                await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
+                    .WithContent("Pick the **Custom avatar** branding mode first to upload an avatar.")
+                    .WithFlags(MessageFlags.Ephemeral)));
+                return;
+            }
+
+            await RespondAsync(InteractionCallback.Modal(
+                ModalFactory.CreateBotAvatarUploadModal(InteractionConstants.BotBranding.UploadAvatarModal)));
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, userService, deferFirst: true);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.BotBranding.UploadAvatarModal)]
+    [ServerStaffOnly]
+    public async Task UploadBotBrandingAvatar()
+    {
+        try
+        {
+            if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
+            {
+                var premiumRequiredResponse = PremiumSettingBuilder.PremiumServerRequired("botbranding",
+                    "**Custom bot branding** gives .fmbot a custom avatar and look in this server. You can also enable **server featured**, a rotating featured based on your own server's members.");
+                await this.Context.SendResponse(interactivity, premiumRequiredResponse, userService, true);
+                await this.Context.LogCommandUsedAsync(premiumRequiredResponse, userService);
+                return;
+            }
+
+            if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
+            {
+                await guildSettingBuilder.UserNotAllowedResponse(this.Context);
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
+                return;
+            }
+
+            var attachment = this.Context.GetModalFiles("files").FirstOrDefault();
+            if (attachment == null)
+            {
+                return;
+            }
+
+            this.Context.DeferUpdateInBackground();
+
+            var error = await premiumSettingBuilder.UploadGuildBotAvatar(this.Context.Client.Rest,
+                this.Context.Guild, this.Context.User, attachment);
+
+            if (error != null)
+            {
+                await this.Context.WaitForPendingDefer();
+                await this.Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
+                    .WithContent(error)
+                    .WithFlags(MessageFlags.Ephemeral));
+                await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
+                return;
+            }
 
             var response = await premiumSettingBuilder.BotBranding(new ContextModel(this.Context), this.Context.User);
             await this.Context.UpdateInteractionEmbed(response);
@@ -236,7 +322,7 @@ public class PremiumSettingInteractions(
             embed.WithColor(DiscordConstants.InformationColorBlue);
 
             var description = new StringBuilder();
-            description.AppendLine("**Click the unique link below to purchase Premium server!**");
+            description.AppendLine($"**Click the unique link below to purchase Premium server for {StringExtensions.Sanitize(this.Context.Guild.Name)}!**");
             description.AppendLine(type.Equals("yearly", StringComparison.OrdinalIgnoreCase)
                 ? $"-# {pricing.YearlySummary}"
                 : $"-# {pricing.MonthlySummary}");
@@ -258,7 +344,6 @@ public class PremiumSettingInteractions(
     }
 
     [ComponentInteraction(InteractionConstants.PremiumServer.ManageSubscription)]
-    [UserSessionRequired]
     public async Task PremiumServerManage(string flowType)
     {
         try
@@ -476,7 +561,7 @@ public class PremiumSettingInteractions(
 
             if (!await guildSettingBuilder.UserIsAllowed(context))
             {
-                await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
+                await guildSettingBuilder.UserNotAllowedResponse(this.Context);
                 await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
                 return;
             }
@@ -505,7 +590,7 @@ public class PremiumSettingInteractions(
 
             if (!await guildSettingBuilder.UserIsAllowed(context))
             {
-                await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
+                await guildSettingBuilder.UserNotAllowedResponse(this.Context);
                 return;
             }
 
@@ -553,7 +638,7 @@ public class PremiumSettingInteractions(
 
             if (!await guildSettingBuilder.UserIsAllowed(context))
             {
-                await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
+                await guildSettingBuilder.UserNotAllowedResponse(this.Context);
                 await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
                 return;
             }
@@ -613,7 +698,7 @@ public class PremiumSettingInteractions(
 
             if (!await guildSettingBuilder.UserIsAllowed(context))
             {
-                await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
+                await guildSettingBuilder.UserNotAllowedResponse(this.Context);
                 return;
             }
 
@@ -665,9 +750,11 @@ public class PremiumSettingInteractions(
 
             if (!await guildSettingBuilder.UserIsAllowed(context))
             {
+                var notAllowedText = await guildSettingBuilder.GetUserNotAllowedResponseText(this.Context.Guild?.Id,
+                    this.Context.User.Id);
                 await this.Context.Interaction.ModifyResponseAsync(m =>
                 {
-                    m.Content = GuildSettingBuilder.UserNotAllowedResponseText();
+                    m.Content = notAllowedText;
                 });
                 await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
                 return;
@@ -707,17 +794,17 @@ public class PremiumSettingInteractions(
         }
     }
 
-    private async Task<bool> RoleFilterAccessAllowed(bool managersAllowed = true)
+    private async Task<bool> RoleFilterAccessAllowed(bool managersAllowed = true, bool premiumRequired = true)
     {
         if (!await guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context), managersAllowed))
         {
-            await GuildSettingBuilder.UserNotAllowedResponse(this.Context, managersAllowed);
+            await guildSettingBuilder.UserNotAllowedResponse(this.Context, managersAllowed);
             await this.Context.LogCommandUsedAsync(
                 new ResponseModel { CommandResponse = CommandResponse.NoPermission }, userService);
             return false;
         }
 
-        if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
+        if (premiumRequired && !PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
         {
             var premiumRequiredResponse = PremiumSettingBuilder.PremiumServerRequired("rolefilter-settings",
                 PremiumSettingBuilder.RoleFilterFeatureDescription);
@@ -806,11 +893,44 @@ public class PremiumSettingInteractions(
         await RefreshMemberFilters();
     }
 
+    [ComponentInteraction(InteractionConstants.ClearRoleSetting)]
+    [ServerStaffOnly]
+    public async Task ClearRoleSetting(string roleSetting)
+    {
+        if (!await RoleFilterAccessAllowed(managersAllowed: roleSetting != "management", premiumRequired: false))
+        {
+            return;
+        }
+
+        switch (roleSetting)
+        {
+            case "allowed":
+                await guildService.ChangeGuildAllowedRoles(this.Context.Guild, []);
+                break;
+            case "blocked":
+                await guildService.ChangeGuildBlockedRoles(this.Context.Guild, []);
+                break;
+            case "management":
+                await guildService.ChangeGuildBotManagementRoles(this.Context.Guild, []);
+                break;
+            case "crown":
+                await guildService.ChangeGuildCrownRoles(this.Context.Guild, []);
+                var response = await guildSettingBuilder.ServerSettingsSection(new ContextModel(this.Context),
+                    GuildSettingSection.Crowns);
+                await this.Context.UpdateInteractionEmbed(response);
+                return;
+            default:
+                return;
+        }
+
+        await RefreshMemberFilters();
+    }
+
     [ComponentInteraction(InteractionConstants.RemoveGuildActivityThreshold)]
     [ServerStaffOnly]
     public async Task RemoveGuildActivityThreshold()
     {
-        if (!await RoleFilterAccessAllowed())
+        if (!await RoleFilterAccessAllowed(premiumRequired: false))
         {
             return;
         }

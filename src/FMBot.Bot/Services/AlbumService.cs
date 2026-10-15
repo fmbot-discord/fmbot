@@ -691,7 +691,12 @@ public class AlbumService
                 throw new ArgumentOutOfRangeException();
         }
 
-        if (accentColor == FmAccentColor.AppleMusicBackgroundColor && albumId.HasValue)
+        return await GetAlbumImageColor(context, albumCoverUrl, albumId, albumName, artistName, prefetchedAlbum);
+    }
+
+    public async Task<Color> GetAlbumImageColor(ContextModel context, string albumCoverUrl, int? albumId, string albumName, string artistName, Album prefetchedAlbum = null)
+    {
+        if (context.ContextUser?.FmSetting?.AccentColor == FmAccentColor.AppleMusicBackgroundColor && albumId.HasValue)
         {
             var bgColor = await GetAlbumColorAsync(albumId.Value);
             if (!string.IsNullOrEmpty(bgColor) &&

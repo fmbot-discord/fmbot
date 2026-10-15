@@ -8,6 +8,7 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Models;
 using FMBot.Bot.Builders;
+using FMBot.Domain.Enums;
 using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
@@ -43,7 +44,8 @@ public class ImportGroupSlashCommands(
             contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         }
 
-        var supporterRequired = ImportBuilders.ImportSupporterRequired(new ContextModel(this.Context, contextUser));
+        var supporterRequired = ImportBuilders.ImportSupporterRequired(new ContextModel(this.Context, contextUser),
+            importSource: PlaySource.SpotifyImport);
 
         if (supporterRequired != null)
         {
@@ -73,7 +75,8 @@ public class ImportGroupSlashCommands(
             contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         }
 
-        var supporterRequired = ImportBuilders.ImportSupporterRequired(new ContextModel(this.Context, contextUser));
+        var supporterRequired = ImportBuilders.ImportSupporterRequired(new ContextModel(this.Context, contextUser),
+            importSource: PlaySource.AppleMusicImport);
 
         if (supporterRequired != null)
         {

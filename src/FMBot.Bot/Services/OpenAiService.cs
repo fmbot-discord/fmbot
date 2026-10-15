@@ -61,7 +61,8 @@ public class OpenAiService(
         ["Mr.", "Mrs.", "Ms.", "Dr.", "St.", "vs.", "feat.", "No.", "Jr.", "Sr.", "U.S.", "etc."];
 
     private async Task<OpenAiResponse> SendRequest(string prompt, string model = "gpt-5.6-luna",
-        string userMessage = null, string imageUrl = null, CancellationToken cancellationToken = default)
+        string userMessage = null, string imageUrl = null, CancellationToken cancellationToken = default,
+        TextFormat format = null)
     {
         var request = new HttpRequestMessage(HttpMethod.Post, "https://api.openai.com/v1/responses");
         request.Headers.Add("Authorization", $"Bearer {this._botSettings.OpenAi.Key}");
@@ -107,7 +108,7 @@ public class OpenAiService(
             Input = inputMessages,
             Text = new TextConfig
             {
-                Format = new TextFormat { Type = "text" },
+                Format = format ?? new TextFormat { Type = "text" },
                 Verbosity = "medium"
             },
             Reasoning = new ReasoningConfig
@@ -264,13 +265,10 @@ public class OpenAiService(
         }
     }
 
-    public async Task<bool> CheckIfAlbumOffensive(string albumName, string artistName, string imageUrl)
+    public async Task<CoverCheck> CheckIfAlbumOffensive(string albumName, string artistName, string imageUrl)
     {
         try
         {
-            Log.Information("Featured: Album offensive check for {Album} by {Artist}, image: {ImageUrl}",
-                albumName, artistName, imageUrl);
-
             var description = new StringBuilder();
             if (!string.IsNullOrWhiteSpace(albumName))
             {
@@ -282,21 +280,54 @@ public class OpenAiService(
             }
 
             var response = await SendRequest(
-                "You check whether an album cover is safe to use as the public avatar of a Discord bot. Consider the album name, the artist name and the cover image. " +
-                "Reply 'true' if it contains: nudity (genitalia, anuses or female-presenting nipples), erotic or sexual content, " +
-                "people covered in blood or wounds, gore, hate speech or hate symbols, or slurs in the album or artist name. " +
-                "Parental Advisory stickers, dark or unsettling artwork and profanity that is not a slur are 'false'. " +
-                "If unsure whether any of the above is present, reply 'true'. Only reply with 'true' or 'false'.",
+                "You review album covers before a Discord bot uses one as its public avatar and posts it in a public channel. " +
+                "Decide whether the cover image breaks one of these rules. Judge only what is actually visible; do not guess what is outside the frame.\n\n" +
+                "nudity: a nude or topless woman, or a fully nude man, in a photo, drawing or painting, even when nipples or genitals are covered by hands, hair, pose, objects or censor bars. " +
+                "Also any visible genitalia, anus, bare buttocks or female-presenting nipples. " +
+                "Not nudity: shirtless men, bare shoulders, backs or legs, cleavage, and anyone in a bikini, swimwear, underwear, lingerie or a revealing outfit.\n" +
+                "sexual: a sex act, sexual touching of genitals or breasts, bondage, or sex toys. Not sexual: suggestive poses, kissing, hugging, lingerie.\n" +
+                "gore: graphic injury in a photo, drawing or painting: open wounds, cuts, self-harm, mutilation, exposed organs or flesh, corpses, severed body parts, or a person or animal covered in blood. " +
+                "Not gore: a nosebleed or a little blood on the lips or hands, decorative red drips or splatter, skulls, skeletons, and dark, horror or monster artwork without graphic injury.\n" +
+                "hate: a hate symbol (swastika, SS runes, KKK imagery, white power symbols), or a slur written in the album or artist name.\n\n" +
+                "The album and artist name only help you read the cover. Profanity, sexual or drug words and crude jokes in a name never break a rule on their own; only a slur does. " +
+                "Parental Advisory stickers, middle fingers, drugs, weapons, occult or religious imagery and edgy text are fine. " +
+                "If nothing in the cover breaks a rule, the category is 'none'.",
+                "gpt-6-astra",
                 userMessage: description.Length > 0 ? description.ToString() : null,
-                imageUrl: string.IsNullOrWhiteSpace(imageUrl) ? null : imageUrl);
+                imageUrl: string.IsNullOrWhiteSpace(imageUrl) ? null : imageUrl,
+                format: new TextFormat
+                {
+                    Type = "json_schema",
+                    Name = "cover_check",
+                    Strict = true,
+                    Schema = new
+                    {
+                        type = "object",
+                        properties = new
+                        {
+                            category = new { type = "string", @enum = new[] { "none", "nudity", "sexual", "gore", "hate" } },
+                            reason = new
+                            {
+                                type = "string",
+                                description = "What in the cover breaks the rule, max 12 words. Empty when category is none."
+                            }
+                        },
+                        required = new[] { "category", "reason" },
+                        additionalProperties = false
+                    }
+                });
 
-            var output = response.Output;
-            return output != null && output.Contains("true", StringComparison.OrdinalIgnoreCase);
+            var check = response.Output != null ? JsonSerializer.Deserialize<CoverCheck>(response.Output) : null;
+
+            Log.Information("Featured: Album cover check for {Album} by {Artist}, image: {ImageUrl}: {Category} - {Reason}",
+                albumName, artistName, imageUrl, check?.Category, check?.Reason);
+
+            return check;
         }
         catch (Exception e)
         {
             Log.Error(e, "Feature: Error in OpenAI call");
-            return false;
+            return null;
         }
     }
 

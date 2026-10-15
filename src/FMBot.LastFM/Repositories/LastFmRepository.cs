@@ -78,7 +78,7 @@ public class LastFmRepository : ILastfmRepository
 
     public async Task<Response<RecentTrackList>> GetRecentTracksAsync(string lastFmUserName, int count = 2,
         bool useCache = false, string sessionKey = null, long? fromUnixTimestamp = null, int amountOfPages = 1,
-        int errorRetries = 1)
+        int errorRetries = 1, Action<long, long> onPageFetched = null)
     {
         var cacheKey = $"{lastFmUserName}-lastfm-recent-tracks";
         var queryParams = new Dictionary<string, string>
@@ -119,6 +119,14 @@ public class LastFmRepository : ILastfmRepository
             var recentTracksCall = await CallApiWithRetryAsync<RecentTracksListLfmResponseModel>(
                 queryParams, Call.RecentTracks, authorizedCall, errorRetries, lastFmUserName);
 
+            var fetchedScrobbles = 0;
+            if (recentTracksCall.Success && onPageFetched != null)
+            {
+                fetchedScrobbles = recentTracksCall.Content.RecentTracks.Track.Count(w =>
+                    w.AttributesLfm == null || !w.AttributesLfm.Nowplaying);
+                onPageFetched(fetchedScrobbles, recentTracksCall.Content.RecentTracks.AttributesLfm.Total);
+            }
+
             if (amountOfPages > 1 && recentTracksCall.Success &&
                 recentTracksCall.Content.RecentTracks.Track.Count >= (count - 2) && count >= 400)
             {
@@ -134,6 +142,12 @@ public class LastFmRepository : ILastfmRepository
                     {
                         recentTracksCall.Content.RecentTracks.Track.AddRange(
                             pageResponse.Content.RecentTracks.Track);
+                        if (onPageFetched != null)
+                        {
+                            fetchedScrobbles += pageResponse.Content.RecentTracks.Track.Count(w =>
+                                w.AttributesLfm == null || !w.AttributesLfm.Nowplaying);
+                            onPageFetched(fetchedScrobbles, recentTracksCall.Content.RecentTracks.AttributesLfm.Total);
+                        }
 
                         if (pageResponse.Content.RecentTracks.Track.Count < (count - 2))
                         {
@@ -345,12 +359,12 @@ public class LastFmRepository : ILastfmRepository
 
     public static string ResponseTrackToLinkedString(TrackInfo trackInfo)
     {
-        if (string.IsNullOrEmpty(trackInfo.TrackUrl) || trackInfo.TrackUrl.IndexOfAny(new[] { '(', ')' }) >= 0)
+        if (string.IsNullOrEmpty(trackInfo.TrackUrl))
         {
             return ResponseTrackToString(trackInfo);
         }
 
-        return $"[{trackInfo.TrackName}]({trackInfo.TrackUrl})\n" +
+        return $"{DiscordStringExtensions.MarkdownLink(trackInfo.TrackName, trackInfo.TrackUrl)}\n" +
                $"By **{trackInfo.ArtistName}**" +
                (string.IsNullOrWhiteSpace(trackInfo.AlbumName)
                    ? "\n"
@@ -373,7 +387,7 @@ public class LastFmRepository : ILastfmRepository
 
     public static string TrackToOneLinedLinkedString(RecentTrack trackLfm)
     {
-        return $"**[{trackLfm.TrackName}]({trackLfm.TrackUrl})** by **{trackLfm.ArtistName}**";
+        return $"**{DiscordStringExtensions.MarkdownLink(trackLfm.TrackName, trackLfm.TrackUrl)}** by **{trackLfm.ArtistName}**";
     }
 
     public static string TagsToLinkedString(List<Tag> tags)

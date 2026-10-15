@@ -26,12 +26,22 @@ public static class AutopostRendering
         };
     }
 
+    public static int GetRecapInlineCount(AutopostSize size)
+    {
+        return size switch
+        {
+            AutopostSize.Compact => 5,
+            AutopostSize.Detailed => 16,
+            _ => 10
+        };
+    }
+
     public static int GetSecondaryInlineCount(AutopostSize size)
     {
         return size switch
         {
             AutopostSize.Compact => 3,
-            AutopostSize.Detailed => 10,
+            AutopostSize.Detailed => 8,
             _ => 5
         };
     }

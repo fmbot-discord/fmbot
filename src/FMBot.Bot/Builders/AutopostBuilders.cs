@@ -14,16 +14,16 @@ using FMBot.Bot.Services.Guild.Renderers;
 using FMBot.Domain;
 using FMBot.Domain.Attributes;
 using FMBot.Domain.Enums;
-using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using NetCord;
+using NetCord.Gateway;
 using NetCord.Rest;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 
 namespace FMBot.Bot.Builders;
 
-public class AutopostBuilders(AutopostService autopostService, GuildService guildService)
+public class AutopostBuilders(AutopostService autopostService, GuildService guildService, ShardedGatewayClient client)
 {
     public const string PremiumFeatureDescription =
         "**Server autoposts** automatically post recaps and top charts to channels or threads on a schedule. " +
@@ -167,9 +167,18 @@ public class AutopostBuilders(AutopostService autopostService, GuildService guil
             description.AppendLine($"Filtered to the artist **{StringExtensions.Sanitize(autopost.ArtistFilter)}**.");
         }
 
-        if (autopost.LastPosted.HasValue)
+        var lastPostedAt = await autopostService.GetLastPostedAt(autopost.Id);
+        if (lastPostedAt.HasValue)
         {
-            description.AppendLine($"Last posted <t:{((DateTimeOffset)autopost.LastPosted.Value).ToUnixTimeSeconds()}:R>.");
+            description.AppendLine($"Last posted <t:{((DateTimeOffset)lastPostedAt.Value).ToUnixTimeSeconds()}:R>.");
+        }
+
+        var missingPermission = GetMissingPostPermission(context, autopost.ChannelId);
+        if (missingPermission != null)
+        {
+            description.AppendLine();
+            description.AppendLine(
+                $"⚠️ .fmbot can't post in <#{autopost.ChannelId}>, it's missing the `{missingPermission}` permission there.");
         }
 
         container.WithTextDisplay(description.ToString());
@@ -237,12 +246,9 @@ public class AutopostBuilders(AutopostService autopostService, GuildService guil
         foreach (var size in Enum.GetValues<AutopostSize>())
         {
             sizeMenu.AddOption(Enum.GetName(size), Enum.GetName(size),
-                description: size switch
-                {
-                    AutopostSize.Compact => "Top 5 per list",
-                    AutopostSize.Detailed => "Top 20 per list",
-                    _ => "Top 10 per list"
-                },
+                description: isChartType
+                    ? $"Top {AutopostRendering.GetInlineCount(size)}"
+                    : $"Top {AutopostRendering.GetRecapInlineCount(size)} artists, top {AutopostRendering.GetSecondaryInlineCount(size)} of the rest",
                 isDefault: autopost.ContentSize == size);
         }
 
@@ -419,6 +425,36 @@ public class AutopostBuilders(AutopostService autopostService, GuildService guil
     private static string GetTypeName(AutopostType type)
     {
         return type.GetAttribute<OptionAttribute>().Name;
+    }
+
+    private string GetMissingPostPermission(ContextModel context, ulong channelId)
+    {
+        var guild = context.DiscordGuild;
+        var botUserId = client.GetCurrentUser()?.Id;
+        if (guild == null || !botUserId.HasValue || !guild.Users.TryGetValue(botUserId.Value, out var botUser))
+        {
+            return null;
+        }
+
+        var isThread = guild.ActiveThreads.TryGetValue(channelId, out var thread);
+        if (!guild.Channels.TryGetValue(isThread ? thread.ParentId : channelId, out var channel))
+        {
+            return null;
+        }
+
+        var permissions = botUser.GetChannelPermissions(botUser.GetPermissions(guild), channel);
+
+        if (!permissions.HasFlag(Permissions.ViewChannel))
+        {
+            return "View Channel";
+        }
+
+        if (isThread)
+        {
+            return permissions.HasFlag(Permissions.SendMessagesInThreads) ? null : "Send Messages in Threads";
+        }
+
+        return permissions.HasFlag(Permissions.SendMessages) ? null : "Send Messages";
     }
 
     private static string GetChannelName(ContextModel context, ulong channelId)

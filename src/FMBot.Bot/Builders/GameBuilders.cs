@@ -274,23 +274,30 @@ public class GameBuilders
     {
         response.ComponentsContainer.WithAccentColor(DiscordConstants.InformationColorBlue);
 
-        var limitDescription = new StringBuilder();
-        limitDescription.AppendLine(limitReachedText);
-
-        var limitButtons = new ActionRowProperties()
-            .WithButton(context.Localize("buttons.getFmbotSupporter"), style: ButtonStyle.Primary,
-                customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: source));
+        response.ComponentsContainer.AddComponent(new ComponentSectionProperties(new ButtonProperties(
+            InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: source),
+            context.Localize("buttons.getSupporter"), ButtonStyle.Primary))
+        {
+            Components =
+            [
+                new TextDisplayProperties(limitReachedText)
+            ]
+        });
 
         if (!premiumGuild)
         {
-            limitDescription.AppendLine(context.Localize("jumble.premiumServerUpsell",
-                ("premiumLimit", Constants.PremiumServerJumbleDailyLimit.Format(context.NumberFormat))));
-            limitButtons.WithButton(context.Localize("buttons.premiumServer"), style: ButtonStyle.Secondary,
-                customId: $"{InteractionConstants.PremiumServer.GetOverview}:{source}");
+            response.ComponentsContainer.WithSeparator();
+            response.ComponentsContainer.AddComponent(new ComponentSectionProperties(new ButtonProperties(
+                $"{InteractionConstants.PremiumServer.GetOverview}:{source}",
+                context.Localize("buttons.premiumServer"), ButtonStyle.Secondary))
+            {
+                Components =
+                [
+                    new TextDisplayProperties(context.Localize("jumble.premiumServerUpsell",
+                        ("premiumLimit", Constants.PremiumServerJumbleDailyLimit.Format(context.NumberFormat))))
+                ]
+            });
         }
-
-        response.ComponentsContainer.WithTextDisplay(limitDescription.ToString().TrimEnd());
-        response.ComponentsContainer.WithActionRow(limitButtons);
     }
 
     private static void BuildJumbleContainer(ResponseModel response, string jumbledArtist, List<JumbleSessionHint> hints,

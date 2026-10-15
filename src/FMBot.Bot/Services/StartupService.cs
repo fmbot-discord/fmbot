@@ -133,7 +133,15 @@ public class StartupService
             Log.Warning(e, "Could not fetch gateway bot info");
         }
 
-        await this._timerService.UpdateHealthCheck();
+        try
+        {
+            await this._timerService.UpdateHealthCheck();
+        }
+        catch (Exception e)
+        {
+            Log.Warning(e, "Initial health check failed, continuing startup");
+        }
+
         await this.RegisterSlashCommands();
 
         InitializeHangfireConfig();

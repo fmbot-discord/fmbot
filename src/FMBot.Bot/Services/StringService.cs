@@ -29,7 +29,7 @@ public static class StringService
         var description = new StringBuilder();
 
         description.AppendLine(
-            $"**[{StringExtensions.Sanitize(StringExtensions.TruncateLongString(track.TrackName, 200))}]({track.TrackUrl})** by **{StringExtensions.Sanitize(track.ArtistName)}**");
+            $"**{StringExtensions.MarkdownLink(StringExtensions.TruncateLongString(track.TrackName, 200), track.TrackUrl)}** by **{StringExtensions.Sanitize(track.ArtistName)}**");
 
         description.Append("-# ");
 

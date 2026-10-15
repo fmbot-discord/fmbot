@@ -11,5 +11,6 @@ public enum AutopostPostResult
 {
     Posted = 1,
     NoData = 3,
-    Failed = 4
+    Failed = 4,
+    ChannelUnavailable = 5
 }

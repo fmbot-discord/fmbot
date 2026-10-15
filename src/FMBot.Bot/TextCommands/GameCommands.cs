@@ -38,6 +38,7 @@ public class GameCommands(
     [CommandCategories(CommandCategory.Games)]
     [Options("stats")]
     [SupporterEnhanced("Supporters can play unlimited Jumble games without a daily limit")]
+    [PremiumServerEnhanced("Premium servers raise the daily limit to 60 Jumble games for every member")]
     public async Task JumbleAsync([CommandParameter(Remainder = true)] string options = null)
     {
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
@@ -134,6 +135,7 @@ public class GameCommands(
     [CommandCategories(CommandCategory.Games)]
     [Options("stats")]
     [SupporterEnhanced("Supporters can play unlimited Pixel Jumble games without a daily limit")]
+    [PremiumServerEnhanced("Premium servers raise the daily limit to 60 Pixel Jumble games for every member")]
     public async Task PixelAsync([CommandParameter(Remainder = true)] string options = null)
     {
         _ = this.Context.Channel?.TriggerTypingAsync()!;

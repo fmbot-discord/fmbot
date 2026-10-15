@@ -41,7 +41,8 @@ public class ImportBuilders
         this._graphService = graphService;
     }
 
-    public static ResponseModel ImportSupporterRequired(ContextModel context, string source = "importing")
+    public static ResponseModel ImportSupporterRequired(ContextModel context, string source = "importing",
+        PlaySource? importSource = null)
     {
         var response = new ResponseModel
         {
@@ -50,16 +51,22 @@ public class ImportBuilders
 
         if (context.ContextUser.UserType == UserType.User)
         {
+            var service = importSource switch
+            {
+                PlaySource.SpotifyImport => "Spotify",
+                PlaySource.AppleMusicImport => "Apple Music",
+                _ => "Spotify or Apple Music"
+            };
+
             response.ComponentsContainer.WithAccentColor(DiscordConstants.InformationColorBlue);
             response.ComponentsContainer.AddComponent(new TextDisplayProperties(
-                "Only supporters can import and access their Spotify or Apple Music history in .fmbot."));
+                $"Only supporters can import and access their {service} history in .fmbot."));
 
             response.ComponentsContainer.WithSeparator();
             response.ComponentsContainer.AddComponent(new ActionRowProperties()
                 .AddComponents(new ButtonProperties(
                     InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: source),
-                    Constants.GetSupporterButton, ButtonStyle.Primary))
-                .AddComponents(new LinkButtonProperties("https://fm.bot/importing/", "Import info")));
+                    Constants.GetSupporterButton, ButtonStyle.Primary)));
 
             response.CommandResponse = CommandResponse.SupporterRequired;
 
@@ -300,6 +307,7 @@ public class ImportBuilders
 
         if (importSetting.Length > 0)
         {
+            container.WithSeparator();
             container.WithTextDisplay($"**⚙️ Current import setting**\n{importSetting}");
         }
 

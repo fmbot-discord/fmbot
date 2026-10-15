@@ -7,7 +7,6 @@ using System.Linq;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using FMBot.Bot.Configurations;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using FMBot.Persistence.EntityFrameWork;
@@ -161,12 +160,7 @@ public class LocalizationService
             return storedLanguage;
         }
 
-        if (ConfigData.Data.Bot.UseDiscordGuildLocale == true && discordLocale != null)
-        {
-            return LanguageExtensions.FromDiscordLocale(discordLocale) ?? Language.English;
-        }
-
-        return Language.English;
+        return LanguageExtensions.FromDiscordLocale(discordLocale) ?? Language.English;
     }
 
     internal static string GetTranslation(Language language, string key)

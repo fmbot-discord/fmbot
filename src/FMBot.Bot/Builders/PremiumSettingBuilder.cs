@@ -128,7 +128,7 @@ public class PremiumSettingBuilder(
             description.AppendLine();
             AppendPerkPitchList(description);
             description.AppendLine();
-            description.AppendLine("Anyone can purchase Premium for this server. Configuring features requires server management permissions.");
+            description.AppendLine("Anyone can purchase Premium for this server. Configuring features requires the `Administrator`, `Manage Server` or `Ban Members` permission.");
 
             container.WithTextDisplay(description.ToString());
 
@@ -329,7 +329,7 @@ public class PremiumSettingBuilder(
 
     private static void AppendPerkListWithCommands(StringBuilder description)
     {
-        description.AppendLine("👑 **Automatic crownseeder**: crownseeder setting in `/configuration`");
+        description.AppendLine("👑 **Automatic crownseeder**: crownseeder in the crowns section of `/settings`");
         description.AppendLine("📊 **Scheduled server recaps**: `.serverrecap`");
         description.AppendLine("🤖 **Custom bot branding**: `.botbranding`");
         description.AppendLine("⭐ **Server featured**: member-based avatar rotation, set in `.botbranding`");
@@ -350,10 +350,31 @@ public class PremiumSettingBuilder(
 
     private static string FormatRoleList(NetCord.Gateway.Guild discordGuild, ulong[] roleIds)
     {
+        if (roleIds == null || roleIds.Length == 0)
+        {
+            return null;
+        }
+
         var existing = ExistingRoles(discordGuild, roleIds);
-        return existing.Length == 0
-            ? null
-            : string.Join(" ", existing.Select(s => $"<@&{s}>"));
+        var deletedCount = roleIds.Count(c => !discordGuild.Roles.ContainsKey(c));
+
+        var roles = new List<string>();
+        if (existing.Length > 0)
+        {
+            roles.Add(string.Join(" ", existing.Select(s => $"<@&{s}>")));
+        }
+
+        if (deletedCount > 0)
+        {
+            roles.Add(deletedCount == 1 ? "1 deleted role" : $"{deletedCount} deleted roles");
+        }
+
+        return string.Join(" · ", roles);
+    }
+
+    private static bool AllRolesDeleted(NetCord.Gateway.Guild discordGuild, ulong[] roleIds)
+    {
+        return roleIds is { Length: > 0 } && roleIds.All(a => !discordGuild.Roles.ContainsKey(a));
     }
 
     /// Deleted roles must be filtered out: Discord rejects a menu whose default values
@@ -363,6 +384,23 @@ public class PremiumSettingBuilder(
         return roleIds == null
             ? []
             : roleIds.Where(w => discordGuild.Roles.ContainsKey(w)).Take(25).ToArray();
+    }
+
+    private static void AddRoleSettingText(ComponentContainerProperties container, StringBuilder description,
+        ulong[] roleIds, string clearType)
+    {
+        if (roleIds is { Length: > 0 })
+        {
+            container.AddComponent(new ComponentSectionProperties(new ButtonProperties(
+                $"{InteractionConstants.ClearRoleSetting}:{clearType}", "Clear", ButtonStyle.Secondary))
+            {
+                Components = [new TextDisplayProperties(description.ToString().TrimEnd())]
+            });
+        }
+        else
+        {
+            container.WithTextDisplay(description.ToString().TrimEnd());
+        }
     }
 
     public static void AppendAllowedRoles(ComponentContainerProperties container, ContextModel context,
@@ -375,10 +413,20 @@ public class PremiumSettingBuilder(
         if (pickedRoles != null)
         {
             description.AppendLine();
-            description.Append(pickedRoles);
+            description.AppendLine(pickedRoles);
+
+            if (!isPremium)
+            {
+                description.AppendLine("-# Paused while this server doesn't have Premium.");
+            }
+            else if (AllRolesDeleted(context.DiscordGuild, guild.AllowedRoles))
+            {
+                description.AppendLine(
+                    "-# These roles no longer exist in this server, so nobody shows up in WhoKnows or autoposts. Clear them or pick new roles.");
+            }
         }
 
-        container.WithTextDisplay(description.ToString());
+        AddRoleSettingText(container, description, guild.AllowedRoles, "allowed");
         var roleMenu = new RoleMenuProperties(InteractionConstants.SetAllowedRoleMenu)
             .WithPlaceholder("Pick allowed roles")
             .WithMinValues(0)
@@ -399,10 +447,15 @@ public class PremiumSettingBuilder(
         if (pickedRoles != null)
         {
             description.AppendLine();
-            description.Append(pickedRoles);
+            description.AppendLine(pickedRoles);
+
+            if (!isPremium)
+            {
+                description.AppendLine("-# Paused while this server doesn't have Premium.");
+            }
         }
 
-        container.WithTextDisplay(description.ToString());
+        AddRoleSettingText(container, description, guild.BlockedRoles, "blocked");
         var roleMenu = new RoleMenuProperties(InteractionConstants.SetBlockedRoleMenu)
             .WithPlaceholder("Pick blocked roles")
             .WithMinValues(0)
@@ -421,25 +474,31 @@ public class PremiumSettingBuilder(
         description.Append("Only members with these roles can earn crowns. ");
 
         var pickedRoles = FormatRoleList(context.DiscordGuild, guild.CrownRoles);
-        if (pickedRoles != null)
+        if (pickedRoles == null)
+        {
+            description.AppendLine("Currently off - everyone can earn crowns.");
+        }
+        else if (!isPremium)
         {
             description.AppendLine("Currently:");
             description.AppendLine(pickedRoles);
+            description.AppendLine("-# Paused while this server doesn't have Premium.");
         }
-        else if (guild.CrownRoles is { Length: > 0 })
+        else if (AllRolesDeleted(context.DiscordGuild, guild.CrownRoles))
         {
             description.AppendLine(
-                "The configured roles no longer exist in this server, so nobody can earn crowns. Pick new roles or clear the menu to turn this off.");
+                "The configured roles no longer exist in this server, so nobody can earn crowns. Pick new roles or clear them to turn this off.");
         }
         else
         {
-            description.AppendLine("Currently off - everyone can earn crowns.");
+            description.AppendLine("Currently:");
+            description.AppendLine(pickedRoles);
         }
 
         description.Append(
             "-# Members without these roles still show up in WhoKnows, they just can't claim or keep a crown.");
 
-        container.WithTextDisplay(description.ToString());
+        AddRoleSettingText(container, description, guild.CrownRoles, "crown");
         var roleMenu = new RoleMenuProperties(InteractionConstants.SetCrownRoleMenu)
             .WithPlaceholder("Pick crown roles")
             .WithMinValues(0)
@@ -461,13 +520,18 @@ public class PremiumSettingBuilder(
         if (pickedRoles != null)
         {
             description.AppendLine(pickedRoles);
+
+            if (!isPremium)
+            {
+                description.AppendLine("-# Paused while this server doesn't have Premium.");
+            }
         }
 
         description.Append(
             "-# These roles can change every setting except this one, block members and manage crowns. " +
-            "Only members with `Administrator` or `Ban Members` can change this list.");
+            "Only members with `Administrator`, `Manage Server` or `Ban Members` can change this list.");
 
-        container.WithTextDisplay(description.ToString());
+        AddRoleSettingText(container, description, guild.BotManagementRoles, "management");
         var roleMenu = new RoleMenuProperties(InteractionConstants.SetBotManagementRoleMenu)
             .WithPlaceholder("Pick bot management roles")
             .WithMinValues(0)
@@ -496,23 +560,29 @@ public class PremiumSettingBuilder(
         }
         else
         {
-            description.AppendLine(
-                $"Currently hiding anyone who hasn't sent a message in **{guild.UserActivityThresholdDays.Value}** days.");
+            if (!isPremium)
+            {
+                description.AppendLine(
+                    $"Set to **{guild.UserActivityThresholdDays.Value}** days.");
+                description.Append("-# Paused while this server doesn't have Premium.");
+            }
+            else
+            {
+                description.AppendLine(
+                    $"Currently hiding anyone who hasn't sent a message in **{guild.UserActivityThresholdDays.Value}** days.");
 
-            var filterDate = DateTime.UtcNow.AddDays(-guild.UserActivityThresholdDays.Value);
-            var activeUserCount =
-                guildUsers?.Count(w => w.Value.LastMessage != null && w.Value.LastMessage >= filterDate) ?? 0;
+                var filterDate = DateTime.UtcNow.AddDays(-guild.UserActivityThresholdDays.Value);
+                var activeUserCount =
+                    guildUsers?.Count(w => w.Value.LastMessage != null && w.Value.LastMessage >= filterDate) ?? 0;
 
-            description.AppendLine();
-            description.Append(
-                $".fmbot has seen **{activeUserCount}** {StringExtensions.GetUsersString(activeUserCount)} talk in this timeframe. " +
-                "Activity is only tracked from the moment Premium server was activated.");
+                description.AppendLine();
+                description.Append(
+                    $".fmbot has seen **{activeUserCount}** {StringExtensions.GetUsersString(activeUserCount)} talk in this timeframe. " +
+                    "Activity is only tracked from the moment Premium server was activated.");
+            }
 
             button = new ButtonProperties(InteractionConstants.RemoveGuildActivityThreshold, "Remove",
-                ButtonStyle.Secondary)
-            {
-                Disabled = !isPremium
-            };
+                ButtonStyle.Secondary);
         }
 
         container.AddComponent(new ComponentSectionProperties(button)
@@ -570,7 +640,7 @@ public class PremiumSettingBuilder(
             case GuildFeaturedMode.CustomBotGlobalFeatured:
                 description.AppendLine(!string.IsNullOrWhiteSpace(guild.CustomLogo)
                     ? $"**Custom avatar:** [image]({guild.CustomLogo})"
-                    : "**Custom avatar:** None yet. Set one by running `.botbranding` with an image attached. Please note that custom avatars may be viewed by .fmbot staff to prevent abuse.");
+                    : "**Custom avatar:** None yet. Upload one with the button below. Please note that custom avatars may be viewed by .fmbot staff to prevent abuse.");
                 break;
             case GuildFeaturedMode.GuildFeatured:
                 description.AppendLine($"**Featured changes:** {GetFeaturedFrequencyName(featuredFrequency)}");
@@ -599,6 +669,12 @@ public class PremiumSettingBuilder(
             isDefault: featuredMode == GuildFeaturedMode.GuildFeatured);
 
         var components = new ActionRowProperties();
+        if (featuredMode == GuildFeaturedMode.CustomBotGlobalFeatured)
+        {
+            components.WithButton("Upload avatar", InteractionConstants.BotBranding.UploadAvatar,
+                style: ButtonStyle.Primary);
+        }
+
         components.WithButton("Remove custom avatar", InteractionConstants.BotBranding.RemoveAvatar,
             style: ButtonStyle.Secondary,
             disabled: featuredMode != GuildFeaturedMode.CustomBotGlobalFeatured ||
@@ -654,10 +730,10 @@ public class PremiumSettingBuilder(
         };
     }
 
-    public async Task<string> SetGuildBotAvatar(RestClient rest, NetCord.Gateway.Guild discordGuild,
-        string attachmentUrl, long attachmentSize)
+    public async Task<string> UploadGuildBotAvatar(RestClient rest, NetCord.Gateway.Guild discordGuild,
+        NetCord.User uploader, Attachment attachment)
     {
-        if (attachmentSize > 10 * 1024 * 1024)
+        if (attachment.Size > 10 * 1024 * 1024)
         {
             return "❌ The attached image is too large. Please use an image under 10MB.";
         }
@@ -665,7 +741,7 @@ public class PremiumSettingBuilder(
         byte[] imageBytes;
         try
         {
-            using var imageResponse = await httpClient.GetAsync(attachmentUrl);
+            using var imageResponse = await httpClient.GetAsync(attachment.Url);
             if (!imageResponse.IsSuccessStatusCode)
             {
                 return "❌ Could not download the attached image. Please try again.";
@@ -686,15 +762,26 @@ public class PremiumSettingBuilder(
 
         try
         {
-            await rest.ModifyCurrentGuildUserAsync(discordGuild.Id,
-                o => o.Avatar = new ImageProperties(imageFormat.Value, imageBytes));
+            await rest.ModifyCurrentGuildUserAsync(discordGuild.Id, o =>
+            {
+                o.Avatar = new ImageProperties(imageFormat.Value, imageBytes);
+                o.Bio = "";
+            });
         }
         catch (RestException e)
         {
             return $"❌ Discord did not accept this image. Please try a different image.\n-# {e.Message}";
         }
 
-        await guildService.SetCustomLogoAsync(discordGuild, attachmentUrl);
+        await guildService.SetFeaturedModeAsync(discordGuild, GuildFeaturedMode.CustomBotGlobalFeatured);
+
+        var auditImageUrl = await guildService.SendBotBrandingAuditLog(
+            $"🖼️ **Custom bot avatar set**\n" +
+            $"Server: **{StringExtensions.Sanitize(discordGuild.Name)}** — `{discordGuild.Id}`\n" +
+            $"By: <@{uploader.Id}> — `{uploader.Username}`",
+            imageBytes, $"avatar.{imageFormat.Value.ToString().ToLowerInvariant()}");
+
+        await guildService.SetCustomLogoAsync(discordGuild, auditImageUrl ?? attachment.Url);
 
         return null;
     }

@@ -437,7 +437,8 @@ public class InteractionHandler
             if (!await this._guildSettingBuilder.UserIsAllowed(contextModel))
             {
                 await interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties()
-                    .WithContent(GuildSettingBuilder.UserNotAllowedResponseText())
+                    .WithContent(await this._guildSettingBuilder.GetUserNotAllowedResponseText(interaction.GuildId,
+                        interaction.User.Id))
                     .WithFlags(MessageFlags.Ephemeral)));
                 await logCommandUsed(new ResponseModel { CommandResponse = CommandResponse.NoPermission });
                 return false;
