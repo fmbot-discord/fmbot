@@ -373,7 +373,8 @@ public class TrackService
     public async Task FillMissingTrackCovers(IReadOnlyList<TopTrack> topTracks)
     {
         var tracksToUpdate = topTracks
-            .Where(w => string.IsNullOrWhiteSpace(w.AlbumCoverUrl))
+            .Where(w => string.IsNullOrWhiteSpace(w.AlbumCoverUrl) ||
+                        w.AlbumCoverUrl.Contains(Constants.LastFmNonExistentImageName))
             .ToList();
 
         if (tracksToUpdate.Count == 0)
@@ -395,9 +396,10 @@ public class TrackService
                 string.Equals(f.ArtistName, track.ArtistName, StringComparison.OrdinalIgnoreCase) &&
                 string.Equals(f.Name, track.TrackName, StringComparison.OrdinalIgnoreCase));
 
+            track.AlbumCoverUrl = cover?.ImageUrl;
+
             if (cover?.ImageUrl != null)
             {
-                track.AlbumCoverUrl = cover.ImageUrl;
                 track.AlbumName ??= cover.AlbumName;
             }
         }

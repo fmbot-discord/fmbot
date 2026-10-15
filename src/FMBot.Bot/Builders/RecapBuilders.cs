@@ -16,6 +16,7 @@ using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Images.Generators;
 using FMBot.Images.Models;
+using FMBot.Persistence.Domain.Models;
 using NetCord;
 using NetCord.Rest;
 using SkiaSharp;
@@ -34,6 +35,7 @@ public class RecapBuilders
     private readonly TrackService _trackService;
     private readonly CensorService _censorService;
     private readonly PuppeteerService _puppeteerService;
+    private readonly IChartImageFallback _chartImageFallback;
     private readonly TrackBuilders _trackBuilders;
     private readonly AlbumBuilders _albumBuilders;
     private readonly ArtistBuilders _artistBuilders;
@@ -45,7 +47,7 @@ public class RecapBuilders
     public RecapBuilders(UserService userService, PlayService playService,
         GenreService genreService, IDataSourceFactory dataSourceFactory, TimeService timeService,
         ArtistsService artistsService, AlbumService albumService, TrackService trackService,
-        CensorService censorService, PuppeteerService puppeteerService,
+        CensorService censorService, PuppeteerService puppeteerService, IChartImageFallback chartImageFallback,
         TrackBuilders trackBuilders, AlbumBuilders albumBuilders, ArtistBuilders artistBuilders,
         GenreBuilders genreBuilders, CountryBuilders countryBuilders, GameBuilders gameBuilders,
         ChartBuilders chartBuilders)
@@ -60,6 +62,7 @@ public class RecapBuilders
         this._trackService = trackService;
         this._censorService = censorService;
         this._puppeteerService = puppeteerService;
+        this._chartImageFallback = chartImageFallback;
         this._trackBuilders = trackBuilders;
         this._albumBuilders = albumBuilders;
         this._artistBuilders = artistBuilders;
@@ -563,7 +566,7 @@ public class RecapBuilders
         var tracks = topTracks.Content?.TopTracks?.Take(5).ToList() ?? [];
 
         await this._artistsService.FillArtistImages(artists);
-        await this._trackService.FillMissingTrackCovers(tracks);
+        await FillTrackCovers(tracks, plays, userSettings.UserNameLastFm);
 
         var artistItems = new List<RecapCardItem>();
         foreach (var artist in artists)
@@ -704,6 +707,47 @@ public class RecapBuilders
         });
 
         return response;
+    }
+
+    private async Task FillTrackCovers(List<TopTrack> tracks, ICollection<UserPlay> plays, string lastFmUserName)
+    {
+        await this._trackService.FillMissingTrackCovers(tracks);
+
+        var trackAlbums = new List<(TopTrack Track, TopAlbum Album)>();
+        foreach (var track in tracks.Where(w => w.AlbumCoverUrl == null))
+        {
+            var albumName = track.AlbumName ?? plays
+                .Where(w => w.AlbumName != null &&
+                            string.Equals(w.ArtistName, track.ArtistName, StringComparison.OrdinalIgnoreCase) &&
+                            string.Equals(w.TrackName, track.TrackName, StringComparison.OrdinalIgnoreCase))
+                .GroupBy(g => g.AlbumName, StringComparer.OrdinalIgnoreCase)
+                .MaxBy(m => m.Count())?.Key;
+
+            if (albumName != null)
+            {
+                trackAlbums.Add((track, new TopAlbum { ArtistName = track.ArtistName, AlbumName = albumName }));
+            }
+        }
+
+        if (trackAlbums.Count == 0)
+        {
+            return;
+        }
+
+        await this._albumService.FillMissingAlbumCovers(trackAlbums.Select(s => s.Album).ToList());
+
+        var fetched = 0;
+        foreach (var (track, album) in trackAlbums)
+        {
+            if (album.AlbumCoverUrl == null && fetched < 3)
+            {
+                album.AlbumCoverUrl = await this._chartImageFallback.GetAlbumCoverAsync(album, lastFmUserName);
+                fetched++;
+            }
+
+            track.AlbumName = album.AlbumName;
+            track.AlbumCoverUrl = album.AlbumCoverUrl;
+        }
     }
 
     private static RecapCardStat CardStat(ContextModel context, long count, string text)
