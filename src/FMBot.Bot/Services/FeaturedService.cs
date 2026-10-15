@@ -435,7 +435,7 @@ public class FeaturedService
                     {
                         if (await this._censorService.AlbumResult(track.AlbumName, track.ArtistName, true) ==
                             CensorService.CensorResult.Safe &&
-                            await GuildAlbumNotFeaturedRecently(guild.GuildId, track.AlbumName, track.ArtistName) &&
+                            await GuildAlbumNotFeaturedRecently(guild.GuildId, user.UserId, track.AlbumName, track.ArtistName) &&
                             await AlbumPopularEnough(track.AlbumName, track.ArtistName))
                         {
                             guildFeaturedLog.Description = $"[{track.AlbumName}]({track.TrackUrl}) \n" +
@@ -476,7 +476,7 @@ public class FeaturedService
                     {
                         if (await this._censorService.AlbumResult(album.AlbumName, album.ArtistName, true) ==
                             CensorService.CensorResult.Safe &&
-                            await GuildAlbumNotFeaturedRecently(guild.GuildId, album.AlbumName, album.ArtistName) &&
+                            await GuildAlbumNotFeaturedRecently(guild.GuildId, user.UserId, album.AlbumName, album.ArtistName) &&
                             await AlbumPopularEnough(album.AlbumName, album.ArtistName))
                         {
                             var artistLink = LastfmUrlExtensions.GetArtistUrl(album.ArtistName);
@@ -535,7 +535,7 @@ public class FeaturedService
             return (null, null);
         }
 
-        var featuredsToExclude = Math.Min(20, eligibleUsers.Count / 2);
+        var featuredsToExclude = Math.Min(200, eligibleUsers.Count / 2);
         var recentlyFeaturedUserIds = await db.GuildFeaturedLogs
             .AsQueryable()
             .Where(w => w.GuildId == guild.GuildId &&
@@ -569,7 +569,7 @@ public class FeaturedService
         }
     }
 
-    private async Task<bool> GuildAlbumNotFeaturedRecently(int guildId, string albumName, string artistName)
+    private async Task<bool> GuildAlbumNotFeaturedRecently(int guildId, int userId, string albumName, string artistName)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
@@ -578,6 +578,13 @@ public class FeaturedService
             .AsQueryable()
             .Where(w => w.GuildId == guildId && w.DateTime > filterDate)
             .ToListAsync();
+
+        recentlyFeaturedAlbums.AddRange(await db.GuildFeaturedLogs
+            .AsQueryable()
+            .Where(w => w.GuildId == guildId && w.UserId == userId)
+            .OrderByDescending(o => o.DateTime)
+            .Take(10)
+            .ToListAsync());
 
         if (recentlyFeaturedAlbums.Count == 0)
         {
