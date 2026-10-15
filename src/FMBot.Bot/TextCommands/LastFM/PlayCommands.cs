@@ -62,7 +62,7 @@ public class PlayCommands(
             var context = new ContextModel(this.Context, prfx, contextUser);
             var userSettings = await settingService.GetUser(options, contextUser, this.Context);
 
-            var supporterRequiredResponse = ArtistBuilders.DiscoverySupporterRequired(context, userSettings);
+            var supporterRequiredResponse = ArtistBuilders.DiscoverySupporterRequired(context, userSettings, "discoverydate");
             if (supporterRequiredResponse != null)
             {
                 await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse, userService);
@@ -100,7 +100,7 @@ public class PlayCommands(
             var context = new ContextModel(this.Context, prfx, contextUser);
             var userSettings = await settingService.GetUser(options, contextUser, this.Context);
 
-            var supporterRequiredResponse = ArtistBuilders.DiscoverySupporterRequired(context, userSettings);
+            var supporterRequiredResponse = ArtistBuilders.DiscoverySupporterRequired(context, userSettings, "lastlistened");
             if (supporterRequiredResponse != null)
             {
                 await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse, userService);

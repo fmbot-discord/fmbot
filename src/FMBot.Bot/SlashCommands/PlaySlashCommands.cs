@@ -55,7 +55,7 @@ public class PlaySlashCommands(
 
         try
         {
-            var supporterRequiredResponse = ArtistBuilders.DiscoverySupporterRequired(context, userSettings);
+            var supporterRequiredResponse = ArtistBuilders.DiscoverySupporterRequired(context, userSettings, "discoverydate");
 
             if (supporterRequiredResponse != null)
             {
@@ -98,7 +98,7 @@ public class PlaySlashCommands(
 
         try
         {
-            var supporterRequiredResponse = ArtistBuilders.DiscoverySupporterRequired(context, userSettings);
+            var supporterRequiredResponse = ArtistBuilders.DiscoverySupporterRequired(context, userSettings, "lastlistened");
 
             if (supporterRequiredResponse != null)
             {
@@ -553,7 +553,7 @@ public class PlaySlashCommands(
 
         var context = new ContextModel(this.Context, contextUser);
 
-        var supporterRequiredResponse = ArtistBuilders.DiscoverySupporterRequired(context, userSettings);
+        var supporterRequiredResponse = PlayBuilder.GapsSupporterRequired(context, userSettings);
 
         if (supporterRequiredResponse != null)
         {
