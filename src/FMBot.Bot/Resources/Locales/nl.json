@@ -946,6 +946,7 @@
   "recap.privacyBotStats": "Sorry, om privacyredenen kunnen gebruikers alleen hun eigen botgebruiksstatistieken opvragen.",
   "recap.card.topArtist": "Top artiest",
   "recap.card.topArtistWeeks": "#1 in {{weeks}} van de {{total}} weken",
+  "recap.card.topArtistDays": "#1 op {{days}} van de {{total}} dagen",
   "recap.card.title": "Recap {{period}} voor {{user}}",
   "recap.botTitle": "Bot-recap voor {{user}} - {{period}}",
   "recap.fieldViewedCounts": "Bekeken",

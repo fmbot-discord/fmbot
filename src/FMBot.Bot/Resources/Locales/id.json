@@ -823,6 +823,7 @@
   "recap.privacyBotStats": "Maaf, karena alasan privasi hanya pengguna itu sendiri yang bisa melihat statistik penggunaan bot miliknya.",
   "recap.card.topArtist": "Top artis",
   "recap.card.topArtistWeeks": "#1 selama {{weeks}} dari {{total}} minggu",
+  "recap.card.topArtistDays": "#1 selama {{days}} dari {{total}} hari",
   "recap.card.title": "Recap {{period}} untuk {{user}}",
   "recap.botTitle": "Recap bot untuk {{user}} - {{period}}",
   "recap.fieldViewedCounts": "Jumlah yang dilihat",

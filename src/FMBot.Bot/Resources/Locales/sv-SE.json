@@ -946,6 +946,7 @@
   "recap.privacyBotStats": "Tyvärr, av integritetsskäl kan bara användaren själv slå upp sin statistik för botanvändning.",
   "recap.card.topArtist": "Top-artist",
   "recap.card.topArtistWeeks": "#1 i {{weeks}} av {{total}} veckor",
+  "recap.card.topArtistDays": "#1 i {{days}} av {{total}} dagar",
   "recap.card.title": "Recap {{period}} för {{user}}",
   "recap.botTitle": "Bot-recap för {{user}} - {{period}}",
   "recap.fieldViewedCounts": "Visat för dig",

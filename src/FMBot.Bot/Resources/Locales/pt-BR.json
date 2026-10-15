@@ -946,6 +946,7 @@
   "recap.privacyBotStats": "Desculpe, por motivos de privacidade, apenas o próprio usuário pode consultar suas estatísticas de uso do bot.",
   "recap.card.topArtist": "Top artista",
   "recap.card.topArtistWeeks": "#1 em {{weeks}} de {{total}} semanas",
+  "recap.card.topArtistDays": "#1 em {{days}} de {{total}} dias",
   "recap.card.title": "Recap {{period}} de {{user}}",
   "recap.botTitle": "Recap do bot de {{user}} - {{period}}",
   "recap.fieldViewedCounts": "Contagens visualizadas",

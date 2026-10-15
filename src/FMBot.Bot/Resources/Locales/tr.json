@@ -946,6 +946,7 @@
   "recap.privacyBotStats": "Üzgünüz, gizlilik nedeniyle bot kullanım istatistiklerini yalnızca kullanıcının kendisi görüntüleyebilir.",
   "recap.card.topArtist": "Top sanatçı",
   "recap.card.topArtistWeeks": "{{total}} haftanın {{weeks}} haftasında #1",
+  "recap.card.topArtistDays": "{{total}} günün {{days}} gününde #1",
   "recap.card.title": "{{user}} için {{period}} Recap",
   "recap.botTitle": "{{user}} için bot Recap'i - {{period}}",
   "recap.fieldViewedCounts": "Görüntüleme sayıları",

@@ -605,22 +605,27 @@ public class RecapBuilders
                 timeSettings.StartDateTime))
         {
             var periodStart = timeSettings.StartDateTime ?? plays.Min(m => m.TimePlayed);
-            var weeklyTopArtists = plays
-                .GroupBy(g => (int)((g.TimePlayed - periodStart).TotalDays / 7))
+            var daily = timeSettings.PlayDays <= 120;
+            var bucketTopArtists = plays
+                .GroupBy(g => (int)((g.TimePlayed - periodStart).TotalDays / (daily ? 1 : 7)))
                 .Select(s => s
                     .GroupBy(a => a.ArtistName, StringComparer.OrdinalIgnoreCase)
                     .MaxBy(m => m.Count())
                     .Key)
                 .ToList();
 
-            var weeksAsTopArtist = weeklyTopArtists.Count(c =>
+            var bucketsAsTopArtist = bucketTopArtists.Count(c =>
                 string.Equals(c, topArtist.ArtistName, StringComparison.OrdinalIgnoreCase));
 
-            if (weeklyTopArtists.Count >= 2 && weeksAsTopArtist > 0)
+            if (bucketTopArtists.Count >= 2 && bucketsAsTopArtist > 0)
             {
-                topArtistLabel = context.Localize("recap.card.topArtistWeeks",
-                    ("weeks", weeksAsTopArtist.Format(context.NumberFormat)),
-                    ("total", weeklyTopArtists.Count.Format(context.NumberFormat)));
+                topArtistLabel = daily
+                    ? context.Localize("recap.card.topArtistDays",
+                        ("days", bucketsAsTopArtist.Format(context.NumberFormat)),
+                        ("total", bucketTopArtists.Count.Format(context.NumberFormat)))
+                    : context.Localize("recap.card.topArtistWeeks",
+                        ("weeks", bucketsAsTopArtist.Format(context.NumberFormat)),
+                        ("total", bucketTopArtists.Count.Format(context.NumberFormat)));
             }
         }
 

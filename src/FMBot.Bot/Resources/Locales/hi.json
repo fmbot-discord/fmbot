@@ -946,6 +946,7 @@
   "recap.privacyBotStats": "माफ़ करना, प्राइवेसी की वजह से bot इस्तेमाल के आँकड़े सिर्फ़ यूज़र खुद ही देख सकता है।",
   "recap.card.topArtist": "Top artist",
   "recap.card.topArtistWeeks": "{{total}} में से {{weeks}} हफ़्तों तक #1",
+  "recap.card.topArtistDays": "{{total}} में से {{days}} दिनों तक #1",
   "recap.card.title": "{{user}} का {{period}} Recap",
   "recap.botTitle": "{{user}} का bot Recap - {{period}}",
   "recap.fieldViewedCounts": "देखने के आँकड़े",
