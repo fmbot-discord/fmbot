@@ -152,7 +152,8 @@ public static class InteractionContextExtensions
         public async Task LogCommandUsedAsync(ResponseModel response,
             UserService userService,
             string commandName = null,
-            string flowCommand = null)
+            string flowCommand = null,
+            Dictionary<string, string> commandOptions = null)
         {
             // 1. Serilog logging + in-memory dictionary
             context.LogCommandUsed(response.CommandResponse);
@@ -197,6 +198,7 @@ public static class InteractionContextExtensions
                 context.Channel?.Id,
                 type,
                 commandContent: flowTarget,
+                commandOptions: commandOptions,
                 referencedMusic: response.ReferencedMusic,
                 hostMessageId: hostMessageId);
         }
