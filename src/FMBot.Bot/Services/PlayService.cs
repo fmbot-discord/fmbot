@@ -1736,6 +1736,17 @@ public class PlayService
         return plays;
     }
 
+    public async Task<ICollection<UserPlay>> GetUserPlaysForPeriod(int userId, DateTime? start, DateTime? end)
+    {
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        var importUser = await UserRepository.GetImportUserForUserId(userId, connection, true);
+
+        return await PlayRepository.GetUserPlays(userId, connection, importUser?.DataSource ?? DataSource.LastFm,
+            start: start, end: end);
+    }
+
     public async Task<ICollection<UserPlay>> GetPlaysWithDataSource(int userId, DataSource dataSource)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);

@@ -370,6 +370,39 @@ public class TrackService
         return await TrackRepository.SearchTrack(searchQuery, userId, connection);
     }
 
+    public async Task FillMissingTrackCovers(IReadOnlyList<TopTrack> topTracks)
+    {
+        var tracksToUpdate = topTracks
+            .Where(w => string.IsNullOrWhiteSpace(w.AlbumCoverUrl))
+            .ToList();
+
+        if (tracksToUpdate.Count == 0)
+        {
+            return;
+        }
+
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        var covers = await TrackRepository.GetImageUrlsForTracks(
+            tracksToUpdate.Select(s => s.ArtistName).ToArray(),
+            tracksToUpdate.Select(s => s.TrackName).ToArray(),
+            connection);
+
+        foreach (var track in tracksToUpdate)
+        {
+            var cover = covers.FirstOrDefault(f =>
+                string.Equals(f.ArtistName, track.ArtistName, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(f.Name, track.TrackName, StringComparison.OrdinalIgnoreCase));
+
+            if (cover?.ImageUrl != null)
+            {
+                track.AlbumCoverUrl = cover.ImageUrl;
+                track.AlbumName ??= cover.AlbumName;
+            }
+        }
+    }
+
     public async Task<List<TopTrack>> GetUserAllTimeTopTracks(int userId, bool useCache = false)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);

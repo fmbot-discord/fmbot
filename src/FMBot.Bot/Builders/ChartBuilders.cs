@@ -249,14 +249,6 @@ public class ChartBuilders
         response.ResponseType = ResponseType.ComponentsV2;
         response.ComponentsContainer.WithAccentColor(DiscordConstants.LastFmColorRed);
 
-        if (context.SelectMenu != null)
-        {
-            response.Embed.WithDescription($"**{embedTitle}**");
-            response.Spoiler = chartSettings.ContainsNsfw;
-            response.ResponseType = ResponseType.Embed;
-            response.StringMenus.Add(context.SelectMenu);
-        }
-
         if (supporter != null)
         {
             var actionRow = new ActionRowProperties();
@@ -415,14 +407,6 @@ public class ChartBuilders
         response.Stream = encoded.AsStream(true);
         response.ResponseType = ResponseType.ComponentsV2;
         response.ComponentsContainer.WithAccentColor(DiscordConstants.LastFmColorRed);
-
-        if (context.SelectMenu != null)
-        {
-            response.Embed.WithDescription($"**{embedTitle}**");
-            response.Spoiler = chartSettings.ContainsNsfw;
-            response.ResponseType = ResponseType.Embed;
-            response.StringMenus.Add(context.SelectMenu);
-        }
 
         if (supporter != null)
         {

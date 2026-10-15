@@ -991,9 +991,11 @@ public static class InteractionContextExtensions
             }
         }
 
-        private async Task ModifyComponentsList(RestMessage message,
+        public async Task ModifyComponentsList(RestMessage message,
             IEnumerable<IMessageComponentProperties> newComponents, bool interactionEdit = false)
         {
+            await context.EnsureDeferCompleted();
+
             var isUserInstalledApp =
                 context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
                 !context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall);

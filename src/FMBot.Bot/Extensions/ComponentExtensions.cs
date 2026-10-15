@@ -42,6 +42,8 @@ public static class ComponentExtensions
                 Disabled = specificButtonOnly == null || menu.Disabled == true
             },
 
+            MediaGallery gallery => ToMediaGalleryProperties(gallery),
+
             _ => throw new NotSupportedException($"Unknown component: {component.GetType().Name}")
         };
     }
@@ -79,16 +81,21 @@ public static class ComponentExtensions
 
             ComponentSection section => ToSectionProperties(section, specificButtonOnly),
 
-            MediaGallery gallery => new MediaGalleryProperties(
-                gallery.Items.Select(item => new MediaGalleryItemProperties(
-                    new ComponentMediaProperties(item.Media.Url))
-                {
-                    Description = item.Description,
-                    Spoiler = item.Spoiler
-                })),
+            MediaGallery gallery => ToMediaGalleryProperties(gallery),
 
             _ => throw new NotSupportedException($"Unknown container component: {component.GetType().Name}")
         };
+    }
+
+    private static MediaGalleryProperties ToMediaGalleryProperties(MediaGallery gallery)
+    {
+        return new MediaGalleryProperties(
+            gallery.Items.Select(item => new MediaGalleryItemProperties(
+                new ComponentMediaProperties(item.Media.Url))
+            {
+                Description = item.Description,
+                Spoiler = item.Spoiler
+            }));
     }
 
     private static ComponentSectionProperties ToSectionProperties(

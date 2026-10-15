@@ -1641,31 +1641,10 @@ public class TrackBuilders
                 .WithMaxValues(25);
         }
 
-        var paginator = new ComponentPaginatorBuilder()
-            .WithPageFactory(GeneratePage)
-            .WithPageCount(Math.Max(1, pageDescriptions.Count))
-            .WithActionOnTimeout(ActionOnStop.DisableInput);
-
-        response.ComponentPaginator = paginator;
-        response.ResponseType = ResponseType.Paginator;
-        return response;
-
-        IPage GeneratePage(IComponentPaginator p)
+        var pageFooters = new List<string>();
+        for (var i = 0; i < pageDescriptions.Count; i++)
         {
-            var container = new ComponentContainerProperties();
-
-            container.WithTextDisplay($"### {title}");
-            container.WithSeparator();
-
-            var currentPage = pageDescriptions.ElementAtOrDefault(p.CurrentPageIndex);
-            if (currentPage != null)
-            {
-                container.WithTextDisplay(currentPage.TrimEnd());
-            }
-
-            container.WithSeparator();
-
-            var pageFooter = $"-# {footerLabel} - {context.Localize("shared.pageCounter", ("page", (p.CurrentPageIndex + 1).ToString()), ("pages", pageDescriptions.Count.ToString()))}";
+            var pageFooter = $"-# {footerLabel} - {context.Localize("shared.pageCounter", ("page", (i + 1).ToString()), ("pages", pageDescriptions.Count.ToString()))}";
             if (roles != null && roles.Any())
             {
                 pageFooter += $"\n-# {context.LocalizeCount("shared.roleFilterEnabled", roles.Count)}";
@@ -1675,24 +1654,13 @@ public class TrackBuilders
                 pageFooter += $"\n-# {footerHint}";
             }
 
-            container.WithTextDisplay(pageFooter);
-
-            if (pageDescriptions.Count > 1)
-            {
-                container.WithActionRow(StringService.GetPaginationActionRow(p));
-            }
-
-            if (roleMenu != null)
-            {
-                container.AddComponent(roleMenu);
-            }
-
-            return new PageBuilder()
-                .WithAllowedMentions(AllowedMentionsProperties.None)
-                .WithMessageFlags(MessageFlags.IsComponentsV2)
-                .WithComponents([container])
-                .Build();
+            pageFooters.Add(pageFooter);
         }
+
+        response.ComponentPaginator =
+            StringService.BuildContainerPaginator($"### {title}", pageDescriptions, pageFooters, menu: roleMenu);
+        response.ResponseType = ResponseType.Paginator;
+        return response;
     }
 
     public async Task<ResponseModel> TopTracksAsync(ContextModel context,
@@ -1706,25 +1674,16 @@ public class TrackBuilders
             ResponseType = ResponseType.Paginator,
         };
 
-        var pages = new List<PageBuilder>();
+        var requesterTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
 
-        string userTitle;
-        if (!userSettings.DifferentUser)
-        {
-            userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
-        }
-        else
-        {
-            userTitle = context.Localize("track.userRequestedBy",
+        var userTitle = !userSettings.DifferentUser
+            ? requesterTitle
+            : context.Localize("track.userRequestedBy",
                 ("name", userSettings.UserNameLastFm),
-                ("user", await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)));
-        }
+                ("user", requesterTitle));
 
         var userUrl =
             $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library/tracks?{timeSettings.UrlParameter}";
-        response.EmbedAuthor.WithName(context.Localize("track.topTracksTitle",
-            ("period", context.Localizer.PeriodLabel(timeSettings)), ("user", userTitle)));
-        response.EmbedAuthor.WithUrl(userUrl);
 
         var topTracks = await this._dataSourceFactory.GetTopTracksAsync(userSettings.UserNameLastFm, timeSettings, topListSettings.ListAmount,
             calculateTimeListened: topListSettings.Type == TopListType.TimeListened,
@@ -1732,18 +1691,18 @@ public class TrackBuilders
 
         if (!topTracks.Success)
         {
-            response.Embed.ErrorResponse(topTracks.Error, topTracks.Message, "top tracks", context.Localizer, context.DiscordUser);
+            response.ComponentsContainer.ErrorResponse(topTracks.Error, topTracks.Message, "top tracks", context.Localizer, context.DiscordUser);
             response.CommandResponse = CommandResponse.LastFmError;
-            response.ResponseType = ResponseType.Embed;
+            response.ResponseType = ResponseType.ComponentsV2;
             return response;
         }
 
         if (topTracks.Content?.TopTracks == null || !topTracks.Content.TopTracks.Any())
         {
-            response.Embed.WithDescription(context.Localize("track.noTopTracks", ("url", userUrl)));
-            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+            response.ComponentsContainer.WithTextDisplay(context.Localize("track.noTopTracks", ("url", userUrl)));
+            response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
             response.CommandResponse = CommandResponse.NoScrobbles;
-            response.ResponseType = ResponseType.Embed;
+            response.ResponseType = ResponseType.ComponentsV2;
             return response;
         }
 
@@ -1783,7 +1742,16 @@ public class TrackBuilders
             }
         }
 
-        response.Embed.WithAuthor(response.EmbedAuthor);
+        var titleUser = !userSettings.DifferentUser
+            ? await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser, userUrl)
+            : context.Localize("track.userRequestedBy",
+                ("name", StringExtensions.MarkdownLink(userSettings.UserNameLastFm, userUrl)),
+                ("user", StringExtensions.Sanitize(requesterTitle)));
+        var title = context.Localize("track.topTracksTitle",
+            ("period", context.Localizer.PeriodLabel(timeSettings)), ("user", titleUser));
+
+        var importDescription = new StringBuilder();
+        ImportService.AddImportDescription(importDescription, topTracks.PlaySources);
 
         var topTrackList = topTracks.Content.TopTracks;
         if (topListSettings.Type == TopListType.TimeListened)
@@ -1802,10 +1770,12 @@ public class TrackBuilders
         var counter = 1;
         var pageCounter = 1;
         var rnd = new Random().Next(0, 4);
+        var pageDescriptions = new List<string>();
+        var pageFooters = new List<string>();
 
         foreach (var trackPage in trackPages)
         {
-            var tooMuchChars = trackPage.Select(s => s.TrackUrl?.Length).Sum() > 3000;
+            var tooMuchChars = trackPage.Select(s => s.TrackUrl?.Length).Sum() > 2700;
 
             var trackPageString = new StringBuilder();
             foreach (var track in trackPage)
@@ -1852,41 +1822,41 @@ public class TrackBuilders
 
             var footer = new StringBuilder();
 
-            ImportService.AddImportDescription(footer, topTracks.PlaySources);
+            if (importDescription.Length > 0)
+            {
+                footer.AppendLine($"-# {importDescription.ToString().TrimEnd()}");
+            }
 
             if (topTracks.Content.TotalAmount.HasValue)
             {
-                footer.Append(context.LocalizeCount("track.topTracksPageCounterTotal",
+                footer.AppendLine($"-# {context.LocalizeCount("track.topTracksPageCounterTotal",
                     topTracks.Content.TotalAmount.Value,
-                    ("page", pageCounter.ToString()), ("pages", trackPages.Count.ToString())));
+                    ("page", pageCounter.ToString()), ("pages", trackPages.Count.ToString()))}");
             }
             else
             {
-                footer.Append(context.Localize("shared.pageCounter",
-                    ("page", pageCounter.ToString()), ("pages", trackPages.Count.ToString())));
+                footer.AppendLine($"-# {context.Localize("shared.pageCounter",
+                    ("page", pageCounter.ToString()), ("pages", trackPages.Count.ToString()))}");
             }
 
             if (topListSettings.Billboard)
             {
-                footer.AppendLine();
-                footer.Append(StringService.GetBillBoardSettingString(timeSettings, userSettings.RegisteredLastFm));
+                footer.AppendLine($"-# {StringService.GetBillBoardSettingString(timeSettings, userSettings.RegisteredLastFm)}");
             }
 
             if (rnd == 1 && !topListSettings.Billboard && context.SelectMenu == null)
             {
-                footer.AppendLine();
-                footer.Append(context.Localize("shared.billboardHint"));
+                footer.AppendLine($"-# {context.Localize("shared.billboardHint")}");
             }
 
-            pages.Add(new PageBuilder()
-                .WithDescription(trackPageString.ToString())
-                .WithColor(DiscordConstants.LastFmColorRed)
-                .WithAuthor(response.EmbedAuthor)
-                .WithFooter(footer.ToString()));
+            pageDescriptions.Add(trackPageString.ToString());
+            pageFooters.Add(footer.ToString());
             pageCounter++;
         }
 
-        response.ComponentPaginator = StringService.BuildComponentPaginator(pages, selectMenuBuilder: context.SelectMenu);
+        response.ComponentPaginator =
+            StringService.BuildContainerPaginator($"### {title}", pageDescriptions, pageFooters,
+                DiscordConstants.LastFmColorRed, context.SelectMenu);
         response.ResponseType = ResponseType.Paginator;
         return response;
     }

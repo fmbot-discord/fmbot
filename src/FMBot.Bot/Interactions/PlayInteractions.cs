@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Fergun.Interactive;
@@ -431,10 +432,10 @@ public class PlayInteractions(
                  viewType == RecapPage.BotStatsCommands))
             {
                 var noPermResponse = new ResponseModel();
-                noPermResponse.Embed.WithDescription(context.Localize("recap.privacyBotStats"));
+                noPermResponse.ComponentsContainer.WithTextDisplay(context.Localize("recap.privacyBotStats"));
+                noPermResponse.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
                 noPermResponse.CommandResponse = CommandResponse.NoPermission;
-                noPermResponse.ResponseType = ResponseType.Embed;
-                noPermResponse.Embed.WithColor(DiscordConstants.WarningColorOrange);
+                noPermResponse.ResponseType = ResponseType.ComponentsV2;
                 await this.Context.SendResponse(interactivity, noPermResponse, userService, true);
                 await this.Context.LogCommandUsedAsync(noPermResponse, userService);
                 return;
@@ -449,13 +450,16 @@ public class PlayInteractions(
                 return;
             }
 
-            var loadingLabel = context.Localize("recap.loadingPage",
-                ("page", context.LocalizeOption(viewType)),
-                ("period", context.Localizer.PeriodLabel(timeSettings)));
-            var components =
-                new ActionRowProperties().WithButton(loadingLabel, customId: "1",
-                    emote: EmojiProperties.Custom(DiscordConstants.Loading), disabled: true, style: ButtonStyle.Secondary);
-            disableButtonsTask = Context.ModifyComponents(message, components).ObserveFaults();
+            var loadingButton = new ButtonProperties("1",
+                context.Localize("recap.loadingPage",
+                    ("page", context.LocalizeOption(viewType)),
+                    ("period", context.Localizer.PeriodLabel(timeSettings))),
+                EmojiProperties.Custom(DiscordConstants.Loading), ButtonStyle.Secondary)
+            {
+                Disabled = true
+            };
+            disableButtonsTask = this.Context.ModifyComponentsList(message,
+                ReplaceRecapPicker(message.Components, loadingButton)).ObserveFaults();
 
             var response =
                 await recapBuilders.RecapAsync(context, userSettings, timeSettings,
@@ -668,5 +672,32 @@ public class PlayInteractions(
         {
             await this.Context.HandleCommandException(e, userService);
         }
+    }
+
+    private static List<IMessageComponentProperties> ReplaceRecapPicker(
+        IReadOnlyList<IMessageComponent> messageComponents, ButtonProperties replacement)
+    {
+        var components = messageComponents.WithDisabled();
+        var replacementRow = new ActionRowProperties().AddComponents(replacement);
+
+        for (var i = 0; i < components.Count; i++)
+        {
+            switch (components[i])
+            {
+                case StringMenuProperties menu when menu.CustomId == InteractionConstants.RecapPicker:
+                    components[i] = replacementRow;
+                    break;
+                case ComponentContainerProperties container:
+                    container.Components = container.Components
+                        .Select(IComponentContainerComponentProperties (c) =>
+                            c is StringMenuProperties menu && menu.CustomId == InteractionConstants.RecapPicker
+                                ? replacementRow
+                                : c)
+                        .ToList();
+                    break;
+            }
+        }
+
+        return components;
     }
 }

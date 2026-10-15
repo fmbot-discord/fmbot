@@ -1,10 +1,12 @@
 using System.Drawing;
+using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using FMBot.Core.Charts;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
+using FMBot.Images.Models;
 using FMBot.Persistence.Domain.Models;
 using Ganss.Xss;
 using PuppeteerSharp;
@@ -448,6 +450,82 @@ public class PuppeteerService : IDisposable
                     <div>
                         <div>{name} <span class="float-right" style="padding-top:12px;">{plays.Format(numberFormat)}</span></div>
                         <div class="sub">{sub}</div>
+                    </div>
+                </li>
+                """;
+    }
+
+    public async Task<SKBitmap> GetRecap(RecapCard card)
+    {
+        await this._initializationTask;
+
+        await using var page = await this._browser.NewPageAsync();
+
+        await page.SetViewportAsync(new ViewPortOptions
+        {
+            Width = 800,
+            Height = 600,
+            DeviceScaleFactor = 1.5
+        });
+
+        var localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Pages", "recap.html");
+        var content = await File.ReadAllTextAsync(localPath);
+
+        var sanitizer = new HtmlSanitizer();
+        sanitizer.AllowedTags.Clear();
+        sanitizer.AllowedAttributes.Clear();
+
+        var stats = new StringBuilder();
+        foreach (var stat in card.Stats)
+        {
+            stats.Append($"""
+                          <div>
+                              <div class="stat-num">{sanitizer.Sanitize(stat.Number)}</div>
+                              <div class="label muted">{sanitizer.Sanitize(stat.Label)}</div>
+                          </div>
+                          """);
+        }
+
+        var values = new Dictionary<string, string>
+        {
+            ["title"] = sanitizer.Sanitize(card.Title),
+            ["photo-url"] = WebUtility.HtmlEncode(card.PhotoUrl ?? ""),
+            ["photo-class"] = card.PhotoUrl == null ? "no-photo" : "",
+            ["top-artist-label"] = sanitizer.Sanitize(card.TopArtistLabel),
+            ["top-artist-name"] = sanitizer.Sanitize(card.TopArtistName),
+            ["top-artist-line"] = sanitizer.Sanitize(card.TopArtistLine),
+            ["stats"] = stats.ToString(),
+            ["stats-class"] = card.Stats.Any(a => a.Number.Length > 7) ? "compact" : "",
+            ["top-artists-label"] = sanitizer.Sanitize(card.TopArtistsLabel),
+            ["artists"] = string.Concat(card.Artists.Select(s =>
+                GetRecapLine(s, "round", "https://fm.bot/img/bot/unknown-artist.png", sanitizer))),
+            ["top-tracks-label"] = sanitizer.Sanitize(card.TopTracksLabel),
+            ["tracks"] = string.Concat(card.Tracks.Select(s =>
+                GetRecapLine(s, "square", "https://fm.bot/img/bot/unknown.png", sanitizer))),
+            ["genres"] = sanitizer.Sanitize(string.Join(" - ", card.Genres)),
+            ["genres-class"] = card.Genres.Count == 0 ? "hidden" : ""
+        };
+
+        content = Regex.Replace(content, @"\{\{([a-z-]+)\}\}", m => values.GetValueOrDefault(m.Groups[1].Value, ""));
+
+        await page.SetJavaScriptEnabledAsync(false);
+        await page.SetContentAsync(content);
+        await page.WaitForSelectorAsync(".main");
+
+        var img = await page.ScreenshotDataAsync(new ScreenshotOptions { FullPage = true });
+        using var skImage = SKImage.FromEncodedData(img);
+        return SKBitmap.FromImage(skImage);
+    }
+
+    private static string GetRecapLine(RecapCardItem item, string shape, string placeholderUrl,
+        HtmlSanitizer sanitizer)
+    {
+        return $"""
+                <li>
+                    <img class="thumb {shape}" src="{WebUtility.HtmlEncode(item.ImageUrl ?? placeholderUrl)}">
+                    <div>
+                        <div class="item-name ellipsis">{sanitizer.Sanitize(item.Name)}</div>
+                        <div class="item-sub muted ellipsis">{sanitizer.Sanitize(item.Subtitle)}</div>
                     </div>
                 </li>
                 """;

@@ -5,7 +5,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Fergun.Interactive;
-using Fergun.Interactive.Pagination;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
@@ -317,51 +316,16 @@ public class DiscogsBuilder
             pageCounter++;
         }
 
-        var paginator = new ComponentPaginatorBuilder()
-            .WithPageFactory(GeneratePage)
-            .WithPageCount(Math.Max(1, pageDescriptions.Count))
-            .WithActionOnTimeout(ActionOnStop.DisableInput);
+        if (pageDescriptions.Count == 0)
+        {
+            pageDescriptions.Add("No collection could be found or there are no results.");
+            pageFooters.Add(null);
+        }
 
-        response.ComponentPaginator = paginator;
-
+        response.ComponentPaginator =
+            StringService.BuildContainerPaginator($"### {title}", pageDescriptions, pageFooters);
         response.ResponseType = ResponseType.Paginator;
         return response;
-
-        IPage GeneratePage(IComponentPaginator p)
-        {
-            var container = new ComponentContainerProperties();
-
-            container.WithTextDisplay($"### {title}");
-            container.WithSeparator();
-
-            var currentPage = pageDescriptions.ElementAtOrDefault(p.CurrentPageIndex);
-            if (currentPage != null)
-            {
-                container.WithTextDisplay(currentPage.TrimEnd());
-
-                var pageFooter = pageFooters.ElementAtOrDefault(p.CurrentPageIndex);
-                if (pageFooter != null)
-                {
-                    container.WithSeparator();
-                    container.WithTextDisplay(pageFooter.TrimEnd());
-                }
-            }
-            else
-            {
-                container.WithTextDisplay("No collection could be found or there are no results.");
-            }
-
-            if (pageDescriptions.Count > 1)
-            {
-                container.WithActionRow(StringService.GetPaginationActionRow(p));
-            }
-
-            return new PageBuilder()
-                .WithAllowedMentions(AllowedMentionsProperties.None)
-                .WithMessageFlags(MessageFlags.IsComponentsV2)
-                .WithComponents([container])
-                .Build();
-        }
     }
 
     public async Task<ResponseModel> DiscogsTopArtistsAsync(
@@ -442,7 +406,9 @@ public class DiscogsBuilder
             .ChunkBy((int)topListSettings.EmbedSize);
 
         var counter = 1;
+        var pageCounter = 1;
         var pageDescriptions = new List<string>();
+        var pageFooters = new List<string>();
 
         foreach (var artistPage in artistPages)
         {
@@ -460,48 +426,21 @@ public class DiscogsBuilder
             }
 
             pageDescriptions.Add(artistPageString.ToString());
+            pageFooters.Add(
+                $"-# Page {pageCounter}/{artistPages.Count} - {topArtists.Count} different artists added to collection in this time period");
+            pageCounter++;
         }
 
-        var paginator = new ComponentPaginatorBuilder()
-            .WithPageFactory(GeneratePage)
-            .WithPageCount(Math.Max(1, pageDescriptions.Count))
-            .WithActionOnTimeout(ActionOnStop.DisableInput);
+        if (pageDescriptions.Count == 0)
+        {
+            pageDescriptions.Add("No Discogs artists added in this time period.");
+            pageFooters.Add(null);
+        }
 
-        response.ComponentPaginator = paginator;
+        response.ComponentPaginator =
+            StringService.BuildContainerPaginator($"### {title}", pageDescriptions, pageFooters);
         response.ResponseType = ResponseType.Paginator;
         return response;
-
-        IPage GeneratePage(IComponentPaginator p)
-        {
-            var container = new ComponentContainerProperties();
-
-            container.WithTextDisplay($"### {title}");
-            container.WithSeparator();
-
-            var currentPage = pageDescriptions.ElementAtOrDefault(p.CurrentPageIndex);
-            if (currentPage != null)
-            {
-                container.WithTextDisplay(currentPage.TrimEnd());
-                container.WithSeparator();
-                container.WithTextDisplay(
-                    $"-# Page {p.CurrentPageIndex + 1}/{pageDescriptions.Count} - {topArtists.Count} different artists added to collection in this time period");
-            }
-            else
-            {
-                container.WithTextDisplay("No Discogs artists added in this time period.");
-            }
-
-            if (pageDescriptions.Count > 1)
-            {
-                container.WithActionRow(StringService.GetPaginationActionRow(p));
-            }
-
-            return new PageBuilder()
-                .WithAllowedMentions(AllowedMentionsProperties.None)
-                .WithMessageFlags(MessageFlags.IsComponentsV2)
-                .WithComponents([container])
-                .Build();
-        }
     }
 
     public static ResponseModel DiscogsManage(ContextModel context)
