@@ -328,11 +328,11 @@ public class PuppeteerService : IDisposable
         await using var page = await this._browser.NewPageAsync();
 
         var extraHeight = 0;
-        if (title.Length > 38)
+        if (title.Length > 32)
         {
-            var lines = (int)(title.Length / 38);
+            var lines = (int)(title.Length / 32);
 
-            extraHeight += (lines) * 32;
+            extraHeight += (lines) * 38;
         }
 
         var subNamesEnabled = topListObjects.Any(a => a.SubName != null);
@@ -340,7 +340,8 @@ public class PuppeteerService : IDisposable
         await page.SetViewportAsync(new ViewPortOptions
         {
             Width = 650,
-            Height = 810 + extraHeight + (subNamesEnabled ? 125 : 0),
+            Height = 756 + extraHeight + (subNamesEnabled ? 125 : 0),
+            DeviceScaleFactor = 2
         });
 
         var localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Pages", "top.html");
